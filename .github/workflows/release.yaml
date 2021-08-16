@@ -3,7 +3,9 @@ name: Release Charts
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
-
+  push:
+    branches:
+      - main
 env:
   HELM_VERSION: 3.6.3
 
