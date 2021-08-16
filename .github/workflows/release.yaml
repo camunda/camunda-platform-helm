@@ -28,6 +28,7 @@ jobs:
       - name: Add stable helm repo
         run: |
           helm repo add stable https://charts.helm.sh/stable
+          helm repo update
 
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.2.1
