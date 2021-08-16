@@ -29,6 +29,8 @@ jobs:
           version: "${{ env.HELM_VERSION }}"
       - name: Add stable helm repo
         run: |
+          helm repo add elastic https://helm.elastic.co
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo add stable https://charts.helm.sh/stable
           helm repo update
 
