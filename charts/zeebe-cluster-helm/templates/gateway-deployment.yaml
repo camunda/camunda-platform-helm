@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zeebe-cluster.names.gateway" . }}
+  labels:
+    {{- include "zeebe-cluster.labels.gateway" . | nindent 4 }}
+  annotations:
+      {{- range $key, $value := .Values.annotations }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+spec:
+  replicas: {{ .Values.gateway.replicas  }}
+  selector:
+    matchLabels:
+      {{- include "zeebe-cluster.labels.gateway" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zeebe-cluster.labels.gateway" . | nindent 8 }}
+        {{- if .Values.gateway.podLabels }}
+        {{- toYaml .Values.gateway.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- range $key, $value := .Values.gateway.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{  .Values.serviceHttpPort }}
+              name: {{  default "http" .Values.serviceHttpName }}
+            - containerPort: {{  .Values.serviceGatewayPort }}
+              name: {{ default "gateway" .Values.serviceGatewayName  }}
+            - containerPort: {{  .Values.serviceInternalPort }}
+              name: {{ default "internal" .Values.serviceInternalName  }}
+          env:
+            - name: ZEEBE_STANDALONE_GATEWAY
+              value: "true"
+            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
+              value: {{ tpl .Values.global.zeebe . }}
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ZEEBE_LOG_LEVEL
+              value: {{ .Values.gateway.logLevel | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.JavaOpts | quote }}
+            - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
+              value: {{ tpl .Values.global.zeebe . }}:{{ .Values.serviceInternalPort }}
+            - name: ZEEBE_GATEWAY_NETWORK_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_NETWORK_PORT
+              value: {{  .Values.serviceGatewayPort | quote }}
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ZEEBE_GATEWAY_CLUSTER_PORT
+              value: {{  .Values.serviceInternalPort | quote }}
+            - name: ZEEBE_GATEWAY_MONITORING_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_MONITORING_PORT
+              value: {{  .Values.serviceHttpPort | quote }}
+            {{- if .Values.gateway.env }}
+            {{ toYaml .Values.gateway.env | indent 12 | trim }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.gateway.log4j2 }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/log4j2.xml
+              subPath: gateway-log4j2.xml
+            {{- end }}
+          securityContext:
+            {{ toYaml .Values.podSecurityContext | indent 12 | trim }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ default "gateway" .Values.serviceGatewayName  }}
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          {{- if .Values.gateway.resources}}
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "zeebe-cluster.fullname" . }}
+            defaultMode: 0744
+{{- with .Values.gateway.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.gateway.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.gateway.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

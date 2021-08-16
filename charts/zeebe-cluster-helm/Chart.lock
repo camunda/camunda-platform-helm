@@ -1,0 +1,12 @@
+dependencies:
+- name: elasticsearch
+  repository: https://helm.elastic.co
+  version: 7.13.2
+- name: kibana
+  repository: https://helm.elastic.co
+  version: 7.13.2
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 12.0.4
+digest: sha256:f46122f3dccf3c53ca770c82a2ff4a6ac884b9fe5ce63ad745b89b0702f1914f
+generated: "2021-08-10T11:07:06.559230871+02:00"

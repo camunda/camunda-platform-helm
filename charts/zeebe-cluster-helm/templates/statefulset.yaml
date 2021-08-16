@@ -1,0 +1,146 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "zeebe-cluster.names.broker" . }}
+  labels:
+    {{- include "zeebe-cluster.labels.broker" . | nindent 4 }}
+    {{- toYaml  .Values.labels | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}   
+spec:
+  replicas: {{ .Values.clusterSize  }}
+  selector:
+    matchLabels:
+      {{- include "zeebe-cluster.labels.broker" . | nindent 6 }}
+  serviceName: {{ include "zeebe-cluster.names.broker" . }}
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        {{- include "zeebe-cluster.labels.broker" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- range $key, $value := .Values.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}   
+    spec:
+      initContainers:
+        {{- if .Values.extraInitContainers }}
+        {{ tpl .Values.extraInitContainers . | indent 8 | trim }}
+        {{- end }}    
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
+          value: {{ tpl .Values.global.zeebe . }}
+        - name: ZEEBE_LOG_LEVEL
+          value: {{ .Values.logLevel | quote }}
+        - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
+          value: {{ .Values.partitionCount | quote }}
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
+          value: {{ .Values.clusterSize | quote }}
+        - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
+          value: {{ .Values.replicationFactor | quote }}
+        - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+          value: {{ .Values.cpuThreadCount  | quote }}
+        - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+          value: {{ .Values.ioThreadCount  | quote }}
+        - name: ZEEBE_BROKER_GATEWAY_ENABLE
+          value: "false"
+        {{- if not .Values.global.elasticsearch.disableExporter }}
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
+          value: "http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}"
+        {{- end }}
+        - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
+          value: {{ .Values.serviceCommandPort  | quote }}
+        - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
+          value: {{  .Values.serviceInternalPort | quote }}
+        - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
+          value: {{  .Values.serviceHttpPort | quote }}         
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name              
+        - name: JAVA_TOOL_OPTIONS
+          value: {{ .Values.JavaOpts | quote }}
+      {{- if .Values.envTemplated }}      
+        {{- range $key, $value := .Values.envTemplated }}
+        - name: {{ $key }}
+          value: {{ tpl ($value | toString) $ }}
+        {{- end }}
+      {{- end }}   
+      {{- if .Values.env }}
+        {{ toYaml .Values.env | indent 8 | trim }}
+      {{- end }}
+        ports:
+        - containerPort: {{ .Values.serviceHttpPort  }}
+          name: {{ default "http" .Values.serviceHttpName  }}
+        - containerPort: {{ .Values.serviceCommandPort  }}
+          name: {{ default "command" .Values.serviceCommandName  }}
+        - containerPort: {{ .Values.serviceInternalPort  }}
+          name: {{ default "internal" .Values.serviceInternalName  }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.probePath }}
+            port: {{ .Values.serviceHttpPort }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/zeebe/config/application.yaml
+          subPath: application.yaml
+        - name: config
+          mountPath: /usr/local/bin/startup.sh
+          subPath: startup.sh
+        - name: data
+          mountPath: /usr/local/zeebe/data
+        - name: exporters
+          mountPath: /exporters
+        {{- if .Values.log4j2 }}
+        - name: config
+          mountPath: /usr/local/zeebe/config/log4j2.xml
+          subPath: broker-log4j2.xml
+        {{- end }}
+        securityContext:
+          {{ toYaml .Values.podSecurityContext | indent 12 | trim }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "zeebe-cluster.fullname" . }}
+          defaultMode: 0744
+      - name: exporters
+        emptyDir: {}    
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: {{ .Values.pvcAccessModes }}
+      storageClassName: {{ .Values.pvcStorageClassName }}
+      resources:
+        requests:
+          storage: {{ .Values.pvcSize | quote }}
