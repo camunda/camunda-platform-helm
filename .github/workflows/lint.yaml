@@ -1,4 +1,4 @@
-name: Release Charts
+name: Lint Charts
 
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
