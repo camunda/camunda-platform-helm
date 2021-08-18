@@ -1,0 +1,29 @@
+apiVersion: v2
+appVersion: "1.1.2"
+description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+name: zeebe-full-helm
+version: 1.0.0
+type: application
+icon: https://zeebe.io/img/zeebe-logo.png
+dependencies:
+- name: zeebe-cluster-helm
+  repository: http://jenkins-x-chartmuseum:8080
+  version: 0.0.225
+- name: zeebe-operate-helm
+  repository: http://jenkins-x-chartmuseum:8080
+  version: 0.0.51
+- condition: zeeqs.enabled
+  name: zeebe-zeeqs-helm
+  repository: http://jenkins-x-chartmuseum:8080
+  version: 0.0.27
+- condition: tasklist.enabled
+  name: zeebe-tasklist-helm
+  repository: http://jenkins-x-chartmuseum:8080
+  version: 0.0.17
+- condition: cloudevents.enabled
+  name: zeebe-cloud-events-router
+  repository: http://jenkins-x-chartmuseum:8080
+  version: 0.0.51  
+- name: ingress-nginx
+  repository: https://kubernetes.github.io/ingress-nginx
+  version: 3.19.0
