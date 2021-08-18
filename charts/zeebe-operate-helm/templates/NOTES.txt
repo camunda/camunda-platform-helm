@@ -1,0 +1,21 @@
+ ______     ______   ______     ______     ______     ______   ______    
+/\  __ \   /\  == \ /\  ___\   /\  == \   /\  __ \   /\__  _\ /\  ___\   
+\ \ \/\ \  \ \  _-/ \ \  __\   \ \  __<   \ \  __ \  \/_/\ \/ \ \  __\   
+ \ \_____\  \ \_\    \ \_____\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_____\ 
+  \/_____/   \/_/     \/_____/   \/_/ /_/   \/_/\/_/     \/_/   \/_____/ 
+
+
+({{ .Chart.Name }} - {{ .Chart.Version }})
+
+- Docker Image used for Operate: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+- Zeebe Cluster Name: {{ tpl .Values.global.zeebe . }}
+- ElasticSearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
+
+As part of the Zeebe Operate HELM Chart an Ingress definition is deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
+If you don't have an Ingress Controller you can do kubectl port-forward to access Operate from outside the cluster:
+
+> kubectl port-forward svc/{{ include "zeebe-operate.fullname" . }} 8080:80
+
+Now you can point your browser to `http://localhost:8080`
+
+Default user and password: "demo/demo"

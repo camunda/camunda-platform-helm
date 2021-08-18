@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zeebe-operate.fullname" . }}
+  labels:
+    app: {{ include "zeebe-operate.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "zeebe-operate.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "zeebe-operate.fullname" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 768Mi
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/operate/config/application.yml
+          subPath: application.yml
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "zeebe-operate.fullname" . }}
+          defaultMode: 0744
+      securityContext:
+{{ toYaml .Values.podSecurityContext | indent 8 }}

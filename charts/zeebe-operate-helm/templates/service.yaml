@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zeebe-operate.fullname" . }}
+  labels:
+    app: {{ include "zeebe-operate.fullname" . }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - port: {{ .Values.service.port }}
+    name: http
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: {{ include "zeebe-operate.fullname" . }}

@@ -1,0 +1,36 @@
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe-operate.fullname" . }}
+apiVersion: v1
+data:
+  application.yml: |
+    # Operate configuration file
+    camunda.operate:
+      # ELS instance to store Operate data
+      elasticsearch:
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        # Host
+        host: {{ .Values.global.elasticsearch.host }}
+        # Transport port
+        port: {{ .Values.global.elasticsearch.port }}
+      # Zeebe instance
+      zeebe:
+        # Broker contact point
+        brokerContactPoint: {{ tpl .Values.global.zeebe . }}-gateway:26500
+      # ELS instance to export Zeebe data to
+      zeebeElasticsearch:
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        # Host
+        host: {{ .Values.global.elasticsearch.host }}
+        # Transport port
+        port: {{ .Values.global.elasticsearch.port }}
+        # Index prefix, configured in Zeebe Elasticsearch exporter
+        prefix: {{ .Values.global.elasticsearch.prefix }}
+    logging:
+{{- with .Values.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
+    #Spring Boot Actuator endpoints to be exposed
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
