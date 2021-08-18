@@ -74,4 +74,20 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.0.0/zeebe-tasklist-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-08-18T11:06:41.228856452Z"
+  zeebe-zeeqs-helm:
+  - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2021-08-18T11:41:57.73988652Z"
+    dependencies:
+    - condition: hazelcast.enabled
+      name: hazelcast
+      repository: https://hazelcast-charts.s3.amazonaws.com/
+      version: 3.7.7
+    description: ZeeQS Helm Chart for Kubernetes
+    digest: 7e3aa6753974708d1e1c9516d431d44a376222682afb2497f96dcf44c06c74c5
+    icon: https://zeebe.io/img/zeebe-logo.png
+    name: zeebe-zeeqs-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
+    version: 1.0.0
+generated: "2021-08-18T11:41:57.741056995Z"
