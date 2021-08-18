@@ -38,6 +38,7 @@ jobs:
         run: |
           helm dependency build charts/zeebe-full-helm
           helm dependency build charts/zeebe-cluster-helm
+          helm dependency build charts/zeebe-zeeqs-helm
 
       - name: Run Helm lint 
         run: |
