@@ -11,18 +11,10 @@ The charts can be accessed by adding the following HELM repo to your HELM setup:
 The charts are represented in the following image:
 ![HELM CHARTS](imgs/HelmChartImage.png)
 
+
 You can consume each individual chart, or use the `zeebe-full-helm` chart which will install all the components, including an NGINX Ingress Controller.
 
-Currently we host the following charts:
-- [zeebe-cluster-helm](charts/zeebe-cluster-helm)
-  - Depends on: [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch), [Kibana](https://github.com/elastic/helm-charts/tree/master/kibana), [Prometheus Operator](https://github.com/helm/charts/tree/master/stable/prometheus-operator)
-- [zeebe-operate-helm](charts/zeebe-operate-helm)
-  - Can be configured to point to a Zeebe Cluster
-- [zeebe-full-helm](charts/zeebe-full-helm)
-  - Depends on: zeebe-cluster, zeebe-operate, zeebe-tasklist, zeebe-zeeqs and [nginx-ingress](https://github.com/helm/charts/tree/master/stable/nginx-ingress)
-- [zeebe-tasklist-helm](charts/zeebe-tasklist-helm) **(Experimental)**
-- [zeebe-zeeqs-helm](charts/zeebe-zeeqs-helm) **(Experimental)**
-  - Depends on: [Hazelcast](https://github.com/hazelcast/charts)
+What is inside the helm repo check the [index.yaml](https://helm.camunda.io/index.yaml) or the [github repository](https://github.com/camunda-community-hub/camunda-cloud-helm).
 
 Follow [the instructions in the Zeebe docs](https://docs.zeebe.io/kubernetes/installing-helm.html) to install Zeebe to a K8s cluster using these charts.
 
