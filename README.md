@@ -11,7 +11,7 @@ The charts can be accessed by adding the following HELM repo to your HELM setup:
 ```
 
 There are three main charts which are represented in the following image:
-![HELM CHARTS](imgs/charts.png)
+![HELM CHARTS](imgs/HelmChartImage.png)
 
 You can consume each individual chart, or use the `zeebe-full-helm` chart which will install all the components, including an NGINX Ingress Controller.
 
