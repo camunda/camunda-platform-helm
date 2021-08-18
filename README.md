@@ -13,24 +13,24 @@ The charts can be accessed by adding the following HELM repo to your HELM setup:
 There are three main charts which are represented in the following image:
 ![HELM CHARTS](imgs/charts.png)
 
-**Note check the [Zeebe Helm Profiles](https://github.com/zeebe-io/zeebe-helm-profiles) repository for different configurations for your clusters, such as Dev, HA, etc. Feel free to contribute with your own profiles if you want to**
-
 You can consume each individual chart, or use the `zeebe-full-helm` chart which will install all the components, including an NGINX Ingress Controller.
 
-Currently hosting the following charts:
-- [zeebe-cluster-helm](http://github.com/zeebe-io/zeebe-cluster-helm)
+Currently we host the following charts:
+- [zeebe-cluster-helm](charts/zeebe-cluster-helm)
   - Depends on: [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch), [Kibana](https://github.com/elastic/helm-charts/tree/master/kibana), [Prometheus Operator](https://github.com/helm/charts/tree/master/stable/prometheus-operator)
-- [zeebe-operate-helm](http://github.com/zeebe-io/zeebe-operate-helm)
+- [zeebe-operate-helm](charts/zeebe-operate-helm)
   - Can be configured to point to a Zeebe Cluster
-- [zeebe-full-helm](http://github.com/zeebe-io/zeebe-full-helm)
+- [zeebe-full-helm](charts/zeebe-full-helm)
   - Depends on: zeebe-cluster, zeebe-operate and [nginx-ingress](https://github.com/helm/charts/tree/master/stable/nginx-ingress)
-- [zeebe-tasklist-helm](http://github.com/zeebe-io/zeebe-tasklist-helm) **(Experimental)**
-- [zeebe-zeeqs-helm](http://github.com/zeebe-io/zeebe-zeeqs-helm) **(Experimental)**
+- [zeebe-tasklist-helm](charts/zeebe-tasklist-helm) **(Experimental)**
+- [zeebe-zeeqs-helm](charts/zeebe-zeeqs-helm) **(Experimental)**
   - Depends on: [Hazelcast](https://github.com/hazelcast/charts)
 
 Follow [the instructions in the Zeebe docs](https://docs.zeebe.io/kubernetes/installing-helm.html) to install Zeebe to a K8s cluster using these charts.
 
 Each Chart contains it's own configurations and parameters, you can visit each chart README for more information. 
+
+**Note check the [Zeebe Helm Profiles](https://github.com/zeebe-io/zeebe-helm-profiles) repository for different configurations for your clusters, such as Dev, HA, etc. Feel free to contribute with your own profiles if you want to**
 
 ## Installing Charts
 
