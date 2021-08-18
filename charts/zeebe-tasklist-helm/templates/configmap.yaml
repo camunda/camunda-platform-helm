@@ -1,0 +1,40 @@
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe-tasklist.fullname" . }}
+apiVersion: v1
+data:
+  application.yml: |
+    # Tasklist configuration file
+
+    zeebe.tasklist:
+      # Set Tasklist username and password.
+      # If user with <username> does not exists it will be created.
+      # Default: demo/demo
+      #username:
+      #password:
+      # ELS instance to store Tasklist data
+      elasticsearch:
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        # Host
+        host: {{ .Values.global.elasticsearch.host }}
+        # Transport port
+        port: {{ .Values.global.elasticsearch.port }}
+      # Zeebe instance
+      zeebe:
+        # Broker contact point
+        brokerContactPoint: {{ tpl .Values.global.zeebe . }}-gateway:26500
+      # ELS instance to export Zeebe data to
+      zeebeElasticsearch:
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        # Host
+        host: {{ .Values.global.elasticsearch.host }}
+        # Transport port
+        port: {{ .Values.global.elasticsearch.port }}
+        # Index prefix, configured in Zeebe Elasticsearch exporter
+        prefix: zeebe-record
+    #Spring Boot Actuator endpoints to be exposed
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+    # Enable or disable metrics
+    #management.metrics.export.prometheus.enabled: false

@@ -1,0 +1,20 @@
+ _______ ___ ___ ___   _____ _   ___ _  ___    ___ ___ _____
+ |_  / __| __| _ ) __| |_   _/_\ / __| |/ / |  |_ _/ __|_   _|
+  / /| _|| _|| _ \ _|    | |/ _ \\__ \ ' <| |__ | |\__ \ | |
+ /___|___|___|___/___|   |_/_/ \_\___/_|\_\____|___|___/ |_|
+
+
+({{ .Chart.Name }} - {{ .Chart.Version }})
+
+- Docker Image used for tasklist: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+- Zeebe Cluster Name: {{ tpl .Values.global.zeebe . }}
+- ElasticSearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
+
+As part of the Zeebe tasklist HELM Chart an Ingress definition is deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
+If you don't have an Ingress Controller you can do kubectl port-forward to access tasklist from outside the cluster:
+
+> kubectl port-forward svc/{{ include "zeebe-tasklist.fullname" . }} 8080:80
+
+Now you can point your browser to `http://localhost:8080`
+
+Default user and password: "demo/demo"
