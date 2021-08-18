@@ -41,7 +41,7 @@ jobs:
 
       - name: Run Helm lint 
         run: |
-          helm lint charts/*
+          helm lint --strict charts/*
           
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.1.0
