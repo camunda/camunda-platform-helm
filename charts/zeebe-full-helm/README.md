@@ -14,7 +14,7 @@ These charts install:
    
 
 ```
-zeebe-cluster: 
+zeebe-cluster-helm: 
   kibana:
     enabled: true     
     healthCheckPath: "/logs/app/kibana"
