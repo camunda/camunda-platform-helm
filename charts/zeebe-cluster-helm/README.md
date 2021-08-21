@@ -68,6 +68,8 @@ This functionality is in beta and is subject to change. The design and code is l
 | `gateway.podDisruptionBudget.enabled`         | Create a PodDisruptionBudget for the gateway pods | `false`
 | `gateway.podDisruptionBudget.minAvailable`         | minimum number of available gateway pods for PodDisruptionBudget | `1`
 | `gateway.podDisruptionBudget.maxUnavailable`       | maximum number of unavailable gateway pods for PodDisruptionBudget |
+| `serviceType`         | The type of cluster service | `ClusterIP`
+| `serviceGatewayType`         | The type of cluster gateway service | `ClusterIP`
 | `serviceHttpPort`         | The http port used by the brokers and the gateway| `9600`
 | `serviceGatewayPort`         | The gateway port used by the gateway | `26500`
 | `serviceInternalPort`         | The internal port used by the brokers and the gateway | `26502`
