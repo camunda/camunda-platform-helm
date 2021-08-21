@@ -14,6 +14,10 @@ data:
         host: {{ .Values.global.elasticsearch.host }}
         # Transport port
         port: {{ .Values.global.elasticsearch.port }}
+        {{- if .Values.global.elasticsearch.url }}
+        # Elasticsearch full url
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
       # Zeebe instance
       zeebe:
         # Broker contact point
@@ -28,6 +32,10 @@ data:
         port: {{ .Values.global.elasticsearch.port }}
         # Index prefix, configured in Zeebe Elasticsearch exporter
         prefix: {{ .Values.global.elasticsearch.prefix }}
+        {{- if .Values.global.elasticsearch.url }}
+        # Elasticsearch full url
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
     logging:
 {{- with .Values.logging }}
 {{ . | toYaml | indent 6 }}

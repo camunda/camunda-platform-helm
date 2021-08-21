@@ -5,6 +5,7 @@ global:
     port: 9200
     clusterName: "elasticsearch"
     prefix: zeebe-record
+    url:
 
 logging:
   level:
