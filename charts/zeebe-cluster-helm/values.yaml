@@ -4,8 +4,9 @@
 
 global: 
   elasticsearch:
+    url: 
     host: "elasticsearch-master"
-    port: 9200 
+    port: 9200
   zeebe: "{{ .Release.Name }}-zeebe"
 
 image:
