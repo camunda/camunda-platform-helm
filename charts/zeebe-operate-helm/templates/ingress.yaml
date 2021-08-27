@@ -1,13 +1,5 @@
 {{- if .Values.ingress.enabled -}}
-{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
-{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1
-{{- else }}
-apiVersion: networking.k8s.io/v1beta1
-{{- end }}
-{{- else }}
-apiVersion: extensions/v1beta1
-{{- end }}
 kind: Ingress
 metadata:
   name: {{ include "zeebe-operate.fullname" . }}
@@ -20,13 +12,15 @@ spec:
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.host }}
-      http:
+    - http:
         paths:
           - path: {{ .Values.ingress.path }}
+            pathType: Prefix
             backend:
-              serviceName: {{ include "zeebe-operate.fullname" . }}
-              servicePort: 80
+              service:
+                name: {{ include "zeebe-operate.fullname" . }}
+                port:
+                  number: 80
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
