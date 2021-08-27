@@ -27,6 +27,7 @@ resources:
 
 ingress:
   enabled: true
+  className: nginx
   annotations:
     ingress.kubernetes.io/rewrite-target: "/"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"    
