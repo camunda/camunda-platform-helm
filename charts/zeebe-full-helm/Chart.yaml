@@ -2,7 +2,7 @@ apiVersion: v2
 appVersion: "1.1.2"
 description: Zeebe Cluster + Operate Helm Chart for Kubernetes
 name: zeebe-full-helm
-version: 1.1.0
+version: 1.1.1
 type: application
 icon: https://zeebe.io/img/zeebe-logo.png
 dependencies:
@@ -11,11 +11,11 @@ dependencies:
   version: 1.2.0
 - name: zeebe-operate-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
-  version: 1.1.0
+  version: 1.1.2
 - condition: tasklist.enabled
   name: zeebe-tasklist-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
-  version: 1.0.0
+  version: 1.0.3
 - name: ingress-nginx
   repository: https://kubernetes.github.io/ingress-nginx
   version: 3.19.0
