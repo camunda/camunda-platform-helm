@@ -39,7 +39,8 @@ This functionality is in beta and is subject to change. The design and code is l
 | `global.elasticsearch.host`         | ElasticSearch host to use in Elasticsearch Exporter connection  | `elasticsearch-master` |
 | `global.elasticsearch.port`         | ElasticSearch port to use in Elasticsearch Exporter connection | `9200` |
 | `global.elasticsearch.url`         | ElasticSearch full url to use in Elasticsearch Exporter connection. This config overrides the `host` and `port` above.  |  |
-| `zeebe`                 | Zeebe Cluster to connect Operate to                                                                                                                               |                                                                                                            |
+| `global.zeebe`                 | Zeebe Cluster to connect Operate to                                                                                                                               |                                                                                                            |
+| `global.zeebePort` | Zeebe Cluster Port to connect Operate to | `26500` |
 | `logging`               | Additional logging configuration                                                                                                                                  | `{level: { ROOT: INFO, org.camunda.operate: DEBUG }}`                                                     |
                                                                                                                                                                                                                                                                                                                 
 

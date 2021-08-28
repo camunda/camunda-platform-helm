@@ -1,5 +1,6 @@
 global:
   zeebe: "{{ .Release.Name }}-zeebe"
+  zeebePort: 26500
   elasticsearch:
     host: "elasticsearch-master"
     port: 9200
