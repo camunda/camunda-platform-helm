@@ -51,5 +51,5 @@ Or delete the related kubernetes namespace, which contains the resources.
 
 ## Issues
 
-Please create [new issues](https://github.com/zeebe-io/zeebe-helm/issues) if you find problems with these charts. This repository is hosted using GitHub Pages and the source code repository can be found here: [https://github.com/zeebe-io/zeebe-helm/](https://github.com/zeebe-io/zeebe-helm/)
+Please create [new issues](https://github.com/camunda-community-hub/camunda-cloud-helm) if you find problems with these charts. This repository is hosted using GitHub Pages and the source code repository can be found here: [https://github.com/camunda-community-hub/camunda-cloud-helm](https://github.com/camunda-community-hub/camunda-cloud-helm)
 
