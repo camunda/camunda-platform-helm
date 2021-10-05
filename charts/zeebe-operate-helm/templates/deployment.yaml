@@ -4,7 +4,9 @@ metadata:
   name: {{ include "zeebe-operate.fullname" . }}
   labels:
     app: {{ include "zeebe-operate.fullname" . }}
-    {{- toYaml  .Values.labels | nindent 4 }}
+    {{- if .Values.labels }}
+    {{- toYaml .Values.labels | nindent 4 }}
+    {{- end }}
 spec:
   replicas: 1
   selector:
