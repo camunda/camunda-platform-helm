@@ -28,6 +28,8 @@ resources:
     cpu: 1000m
     memory: 2Gi
 
+labels:
+
 ingress:
   enabled: true
   className: nginx
