@@ -4,6 +4,7 @@ metadata:
   name: {{ include "zeebe-operate.fullname" . }}
   labels:
     app: {{ include "zeebe-operate.fullname" . }}
+    {{- toYaml  .Values.labels | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
