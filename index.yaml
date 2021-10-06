@@ -52,6 +52,31 @@ entries:
   zeebe-full-helm:
   - apiVersion: v2
     appVersion: 1.1.2
+    created: "2021-10-06T06:43:55.18249217Z"
+    dependencies:
+    - name: zeebe-cluster-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.0
+    - name: zeebe-operate-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.1.4
+    - condition: tasklist.enabled
+      name: zeebe-tasklist-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.0.3
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 3.19.0
+    description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+    digest: 974d38f0fb0855d48367374be92917d814354305998ca18fa85b2e07a95ed8b1
+    icon: https://zeebe.io/img/zeebe-logo.png
+    name: zeebe-full-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.1.4/zeebe-full-helm-1.1.4.tgz
+    version: 1.1.4
+  - apiVersion: v2
+    appVersion: 1.1.2
     created: "2021-10-06T06:38:16.575874679Z"
     dependencies:
     - name: zeebe-cluster-helm
@@ -335,4 +360,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-10-06T06:38:16.738985549Z"
+generated: "2021-10-06T06:43:55.18255207Z"
