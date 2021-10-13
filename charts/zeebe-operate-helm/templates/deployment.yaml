@@ -20,6 +20,13 @@ spec:
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- if .Values.extraEnv}}
+        env:
+        {{ .Values.extraEnv | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
         resources:
           requests:
             cpu: 500m
@@ -35,10 +42,19 @@ spec:
         - name: config
           mountPath: /usr/local/operate/config/application.yml
           subPath: application.yml
+        {{- if .Values.extraVolumeMounts}}
+        {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
       volumes:
       - name: config
         configMap:
           name: {{ include "zeebe-operate.fullname" . }}
           defaultMode: 0744
+      {{- if .Values.extraVolumes}}
+      {{ .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
       securityContext:
 {{ toYaml .Values.podSecurityContext | indent 8 }}
