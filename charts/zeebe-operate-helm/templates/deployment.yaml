@@ -20,7 +20,7 @@ spec:
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        {{- if .Values.extraEnv}}
+        {{- if .Values.env}}
         env:
         {{ .Values.extraEnv | toYaml | nindent 10 }}
         {{- end }}
