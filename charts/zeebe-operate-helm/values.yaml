@@ -20,13 +20,24 @@ image:
   repository: camunda/operate
   tag: 1.1.2
 
-resources: 
+resources:
   requests:
     cpu: 500m
     memory: 1Gi
   limits:
     cpu: 1000m
     memory: 2Gi
+
+extraenv:
+
+extravolume:
+
+extravolumemount:
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
 
 labels:
 
@@ -35,7 +46,7 @@ ingress:
   className: nginx
   annotations:
     ingress.kubernetes.io/rewrite-target: "/"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"    
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
   path: /
   host:
   tls:

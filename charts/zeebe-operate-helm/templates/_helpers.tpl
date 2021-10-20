@@ -43,3 +43,14 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
+
+{{/*
+[zeebe-operate] Create the name of the service account to use
+*/}}
+{{- define "zeebe-operate.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "zeebe-operate.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
