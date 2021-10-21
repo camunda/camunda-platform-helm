@@ -1,18 +1,18 @@
 apiVersion: v2
-appVersion: "1.1.2"
+appVersion: "1.2.1"
 description: Zeebe Cluster Helm Chart for Kubernetes
 name: zeebe-cluster-helm
 type: application
-version: 1.2.0
+version: 1.2.1
 icon: https://zeebe.io/img/zeebe-logo.png
 dependencies:
 - name: elasticsearch
   repository: "https://helm.elastic.co"
-  version: 7.13.2
+  version: 7.14.0
   condition: "elasticsearch.enabled"
 - name: kibana
   repository: "https://helm.elastic.co" 
-  version: 7.13.2
+  version: 7.14.0
   condition: "kibana.enabled"
 - name: kube-prometheus-stack
   repository: "https://prometheus-community.github.io/helm-charts"
