@@ -2,5 +2,5 @@ apiVersion: v2
 appVersion: "1.1.2"
 description: Zeebe TaskList Helm Chart for Kubernetes
 name: zeebe-tasklist-helm
-version: 1.0.3
+version: 1.0.4
 icon: https://zeebe.io/img/zeebe-logo.png
