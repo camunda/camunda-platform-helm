@@ -12,7 +12,7 @@ dependencies:
   condition: "elasticsearch.enabled"
 - name: kibana
   repository: "https://helm.elastic.co" 
-  version: 7.14.0
+  version: 7.15.0
   condition: "kibana.enabled"
 - name: kube-prometheus-stack
   repository: "https://prometheus-community.github.io/helm-charts"

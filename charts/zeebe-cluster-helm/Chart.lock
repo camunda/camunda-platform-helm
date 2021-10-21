@@ -4,9 +4,9 @@ dependencies:
   version: 7.14.0
 - name: kibana
   repository: https://helm.elastic.co
-  version: 7.14.0
+  version: 7.15.0
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
   version: 12.0.4
-digest: sha256:f46122f3dccf3c53ca770c82a2ff4a6ac884b9fe5ce63ad745b89b0702f1914f
-generated: "2021-08-10T11:07:06.559230871+02:00"
+digest: sha256:30daf85c1f1575cd00cf738e91c3c706f6f9817b5615e51603789cc944770a5d
+generated: "2021-10-21T18:33:02.228907474Z"
