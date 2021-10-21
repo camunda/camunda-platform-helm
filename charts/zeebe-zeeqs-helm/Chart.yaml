@@ -7,5 +7,5 @@ icon: https://zeebe.io/img/zeebe-logo.png
 dependencies:
 - name: hazelcast
   repository: https://hazelcast-charts.s3.amazonaws.com/
-  version: 3.7.7
+  version: 3.8.0
   condition: "hazelcast.enabled"
