@@ -15,7 +15,7 @@ dependencies:
 - condition: tasklist.enabled
   name: zeebe-tasklist-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
-  version: 1.0.3
+  version: 1.0.4
 - name: ingress-nginx
   repository: https://kubernetes.github.io/ingress-nginx
   version: 3.19.0
