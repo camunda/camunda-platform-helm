@@ -3,7 +3,7 @@ appVersion: "1.2.1"
 description: Zeebe Cluster Helm Chart for Kubernetes
 name: zeebe-cluster-helm
 type: application
-version: 1.2.1
+version: 1.2.2
 icon: https://zeebe.io/img/zeebe-logo.png
 dependencies:
 - name: elasticsearch
