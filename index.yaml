@@ -498,6 +498,21 @@ entries:
   zeebe-zeeqs-helm:
   - apiVersion: v2
     appVersion: 2.0.0
+    created: "2021-10-26T07:27:13.10099143Z"
+    dependencies:
+    - condition: hazelcast.enabled
+      name: hazelcast
+      repository: https://hazelcast-charts.s3.amazonaws.com/
+      version: 3.9.0
+    description: ZeeQS Helm Chart for Kubernetes
+    digest: f8b0854752c648e3006c4a0bc8c82bcff81b30309a46a2fc6066c7c01c20cf41
+    icon: https://zeebe.io/img/zeebe-logo.png
+    name: zeebe-zeeqs-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.1.1/zeebe-zeeqs-helm-1.1.1.tgz
+    version: 1.1.1
+  - apiVersion: v2
+    appVersion: 2.0.0
     created: "2021-10-22T06:24:30.53267916Z"
     dependencies:
     - condition: hazelcast.enabled
@@ -526,4 +541,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-10-25T20:00:46.813700166Z"
+generated: "2021-10-26T07:27:13.102502951Z"
