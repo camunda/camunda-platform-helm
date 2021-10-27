@@ -7,6 +7,10 @@ metadata:
     {{- if .Values.labels }}
     {{- toYaml .Values.labels | nindent 4 }}
     {{- end }}
+  annotations:
+      {{- range $key, $value := .Values.annotations }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
 spec:
   replicas: 1
   selector:
@@ -22,7 +26,7 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         {{- if .Values.env}}
         env:
-        {{ .Values.extraEnv | toYaml | nindent 10 }}
+        {{ .Values.env | toYaml | nindent 10 }}
         {{- end }}
         {{- if .Values.command}}
         command: {{ .Values.command }}
