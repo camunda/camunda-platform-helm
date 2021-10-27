@@ -25,6 +25,24 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "zeebe-gateway.fullname" -}}
+{{- if .Values.gateway.fullnameOverride -}}
+{{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Release.Name (tpl .Values.global.zeebe .) -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s-gateway" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "zeebe-cluster.chart" -}}
@@ -72,3 +90,24 @@ Creates a valid DNS name for the gateway
 {{- $name := default .Release.Name (tpl .Values.global.zeebe .) -}}
 {{- printf "%s-gateway" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end -}}
+{{/*
+[zeebe-cluster] Create the name of the service account to use
+*/}}
+{{- define "zeebe-cluster.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "zeebe-cluster.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+[zeebe-gateway] Create the name of the service account to use
+*/}}
+{{- define "zeebe-gateway.serviceAccountName" -}}
+{{- if .Values.gateway.serviceAccount.create }}
+{{- default (include "zeebe-gateway.fullname" .) .Values.gateway.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.gateway.serviceAccount.name }}
+{{- end }}
+{{- end }}

@@ -2,7 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-global: 
+# Annotations to apply to the statefullset
+annotations: {}
+
+global:
   elasticsearch:
     url: 
     host: "elasticsearch-master"
@@ -25,6 +28,7 @@ env: []
 logLevel: info
 
 gateway:
+  annotations: {}
   replicas: 1
   logLevel: info
   env: []
@@ -33,6 +37,10 @@ gateway:
     minAvailable: 1
     maxUnavailable:
   resources:  {}
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
 
 elasticsearch:
   enabled: true
@@ -80,8 +88,16 @@ podDisruptionBudget:
   minAvailable:
   maxUnavailable: 1
 
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
 nodeSelector: {}
 
 tolerations: []
 
 affinity: {}
+
+extraVolumes: {}
+extraVolumeMounts: {}

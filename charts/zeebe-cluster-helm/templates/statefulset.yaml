@@ -87,6 +87,9 @@ spec:
       {{- if .Values.env }}
         {{ toYaml .Values.env | indent 8 | trim }}
       {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
         ports:
         - containerPort: {{ .Values.serviceHttpPort  }}
           name: {{ default "http" .Values.serviceHttpName  }}
@@ -119,6 +122,9 @@ spec:
           mountPath: /usr/local/zeebe/config/log4j2.xml
           subPath: broker-log4j2.xml
         {{- end }}
+        {{- if .Values.extraVolumeMounts}}
+        {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
         securityContext:
           {{ toYaml .Values.podSecurityContext | indent 12 | trim }}
       volumes:
@@ -128,6 +134,12 @@ spec:
           defaultMode: 0744
       - name: exporters
         emptyDir: {}    
+      {{- if .Values.extraVolumes}}
+      {{ .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
 {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
