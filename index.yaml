@@ -3,6 +3,30 @@ entries:
   zeebe-cluster-helm:
   - apiVersion: v2
     appVersion: 1.2.1
+    created: "2021-10-29T13:07:23.913322017Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.14.0
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.14.0
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: b9d2e91d0a232f955add2c3f483864d6dcfd739cf57fb07e2024c157db07c499
+    icon: https://zeebe.io/img/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.2.3/zeebe-cluster-helm-1.2.3.tgz
+    version: 1.2.3
+  - apiVersion: v2
+    appVersion: 1.2.1
     created: "2021-10-25T20:00:46.813533865Z"
     dependencies:
     - condition: elasticsearch.enabled
@@ -351,6 +375,17 @@ entries:
   zeebe-operate-helm:
   - apiVersion: v2
     appVersion: 1.2.2
+    created: "2021-10-29T13:07:24.253518876Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: 0f569b749c27129d98f125639d1abae394aeb5bd1b78fd6209db596a23e528bf
+    icon: https://zeebe.io/img/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.2.1/zeebe-operate-helm-1.2.1.tgz
+    version: 1.2.1
+  - apiVersion: v2
+    appVersion: 1.2.2
     created: "2021-10-29T12:47:28.77464969Z"
     description: Zeebe Operate Helm Chart for Kubernetes
     digest: 884cc4be90d3c7923c2c9199bda49306b083c4ee589d4b880c644a3c9a0947fd
@@ -597,4 +632,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-10-29T12:47:28.774797292Z"
+generated: "2021-10-29T13:07:24.253814573Z"
