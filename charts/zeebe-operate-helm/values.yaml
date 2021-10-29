@@ -28,11 +28,14 @@ resources:
     cpu: 1000m
     memory: 2Gi
 
-extraenv:
+# Annotations to apply to the deployment
+annotations: {}
 
-extravolume:
+env:
 
-extravolumemount:
+extraVolumes:
+
+extraVolumeMounts:
 
 serviceAccount:
   create: true
