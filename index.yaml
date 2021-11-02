@@ -2,6 +2,30 @@ apiVersion: v1
 entries:
   zeebe-cluster-helm:
   - apiVersion: v2
+    appVersion: 1.2.3
+    created: "2021-11-02T13:13:29.488865421Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.14.0
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.14.0
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: 3ad2abd006af04b35c1bd5a2b4fff6c6d8d661b2dc5a447dfc667ad4224ead2e
+    icon: https://zeebe.io/img/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.2.4/zeebe-cluster-helm-1.2.4.tgz
+    version: 1.2.4
+  - apiVersion: v2
     appVersion: 1.2.1
     created: "2021-10-29T13:07:23.913322017Z"
     dependencies:
@@ -400,6 +424,17 @@ entries:
   zeebe-operate-helm:
   - apiVersion: v2
     appVersion: 1.2.2
+    created: "2021-11-02T13:13:29.641078115Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: a9b03f7ece5f3d06a522b168f6a485af0b785a36b255bb62f23747e53753d827
+    icon: https://zeebe.io/img/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.2.2/zeebe-operate-helm-1.2.2.tgz
+    version: 1.2.2
+  - apiVersion: v2
+    appVersion: 1.2.2
     created: "2021-10-29T13:07:24.253518876Z"
     description: Zeebe Operate Helm Chart for Kubernetes
     digest: 0f569b749c27129d98f125639d1abae394aeb5bd1b78fd6209db596a23e528bf
@@ -657,4 +692,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-10-29T13:09:18.672223586Z"
+generated: "2021-11-02T13:13:29.641237121Z"
