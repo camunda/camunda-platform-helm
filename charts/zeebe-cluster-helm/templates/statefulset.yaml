@@ -8,7 +8,7 @@ metadata:
   annotations:
     {{- range $key, $value := .Values.annotations }}
     {{ $key }}: {{ $value | quote }}
-    {{- end }}   
+    {{- end }}
 spec:
   replicas: {{ .Values.clusterSize  }}
   selector:
@@ -28,16 +28,19 @@ spec:
       annotations:
         {{- range $key, $value := .Values.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
-        {{- end }}   
+        {{- end }}
     spec:
       initContainers:
         {{- if .Values.extraInitContainers }}
         {{ tpl .Values.extraInitContainers . | indent 8 | trim }}
-        {{- end }}    
+        {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if .Values.priorityClassName }}
+        priorityClassName: {{ .Values.priorityClassName | quote }}
+        {{- end }}
         env:
         - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
           value: {{ tpl .Values.global.zeebe . }}
@@ -71,19 +74,19 @@ spec:
         - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
           value: {{  .Values.serviceInternalPort | quote }}
         - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
-          value: {{  .Values.serviceHttpPort | quote }}         
+          value: {{  .Values.serviceHttpPort | quote }}
         - name: K8S_POD_NAME
           valueFrom:
             fieldRef:
-              fieldPath: metadata.name              
+              fieldPath: metadata.name
         - name: JAVA_TOOL_OPTIONS
           value: {{ .Values.JavaOpts | quote }}
-      {{- if .Values.envTemplated }}      
+      {{- if .Values.envTemplated }}
         {{- range $key, $value := .Values.envTemplated }}
         - name: {{ $key }}
           value: {{ tpl ($value | toString) $ }}
         {{- end }}
-      {{- end }}   
+      {{- end }}
       {{- if .Values.env }}
         {{ toYaml .Values.env | indent 8 | trim }}
       {{- end }}
@@ -133,7 +136,7 @@ spec:
           name: {{ include "zeebe-cluster.fullname" . }}
           defaultMode: 0744
       - name: exporters
-        emptyDir: {}    
+        emptyDir: {}
       {{- if .Values.extraVolumes}}
       {{ .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
