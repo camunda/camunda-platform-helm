@@ -7,7 +7,7 @@ annotations: {}
 
 global:
   elasticsearch:
-    url: 
+    url:
     host: "elasticsearch-master"
     port: 9200
   zeebe: "{{ .Release.Name }}-zeebe"
@@ -36,6 +36,7 @@ gateway:
     enabled: false
     minAvailable: 1
     maxUnavailable:
+  priorityClassName: ""
   resources:  {}
   serviceAccount:
     create: true
@@ -63,14 +64,15 @@ JavaOpts: >-
   -XX:+ExitOnOutOfMemoryError
 
 labels:
-  app: zeebe    
+  app: zeebe
 serviceType: ClusterIP
 serviceGatewayType: ClusterIP
 serviceHttpPort: 9600
-serviceGatewayPort: 26500    
-serviceCommandPort: 26501     
-serviceInternalPort: 26502  
-resources: 
+serviceGatewayPort: 26500
+serviceCommandPort: 26501
+serviceInternalPort: 26502
+priorityClassName: ""
+resources:
   requests:
     cpu: 500m
     memory: 2Gi

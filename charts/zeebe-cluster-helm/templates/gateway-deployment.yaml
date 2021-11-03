@@ -29,6 +29,9 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.gateway.priorityClassName }}
+          priorityClassName: {{ .Values.gateway.priorityClassName | quote }}
+          {{- end }}
           ports:
             - containerPort: {{  .Values.serviceHttpPort }}
               name: {{  default "http" .Values.serviceHttpName }}
