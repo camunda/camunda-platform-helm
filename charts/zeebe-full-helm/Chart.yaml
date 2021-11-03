@@ -1,8 +1,8 @@
 apiVersion: v2
-appVersion: "1.2.2"
+appVersion: "1.2.3"
 description: Zeebe Cluster + Operate Helm Chart for Kubernetes
 name: zeebe-full-helm
-version: 1.2.3
+version: 1.2.4
 type: application
 icon: https://zeebe.io/img/zeebe-logo.png
 dependencies:
