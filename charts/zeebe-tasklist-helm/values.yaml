@@ -15,7 +15,7 @@ service:
   port: 80
 image:
   repository: camunda/tasklist
-  tag: 1.2.3
+  tag: 1.2.4
 
 resources: 
   requests:
