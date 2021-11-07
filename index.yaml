@@ -187,7 +187,7 @@ entries:
       version: 12.0.X
     description: Zeebe Cluster Helm Chart for Kubernetes
     digest: 3962908a2849bc121952632260d807a7b1ef6c45ec7dbdf98e4a5803c7fdcbfc
-    icon: https://zeebe.io/img/zeebe-logo.png
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
     name: zeebe-cluster-helm
     type: application
     urls:
@@ -538,7 +538,7 @@ entries:
       version: 3.19.0
     description: Zeebe Cluster + Operate Helm Chart for Kubernetes
     digest: 14a5f57790c1799fd706ab8d1cb8e9332d95d5613bfe6bf93a6177b682668275
-    icon: https://zeebe.io/img/zeebe-logo.png
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
     name: zeebe-full-helm
     type: application
     urls:
@@ -682,7 +682,7 @@ entries:
     created: "2021-08-18T12:07:21.826931214Z"
     description: Zeebe Operate Helm Chart for Kubernetes
     digest: 05983e860fd7a4ff8673d0f04edd6ea1f2e4d3cc002785bc3471337acf5577af
-    icon: https://zeebe.io/img/zeebe-logo.png
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
     name: zeebe-operate-helm
     type: application
     urls:
@@ -693,7 +693,7 @@ entries:
     created: "2021-08-18T10:37:32.001595757Z"
     description: Zeebe Operate Helm Chart for Kubernetes
     digest: 42bc3f778b3229fb465dd6b811c56f316c49cea6f31f936e6256d3d746b3eb37
-    icon: https://zeebe.io/img/zeebe-logo.png
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
     name: zeebe-operate-helm
     type: application
     urls:
@@ -785,7 +785,7 @@ entries:
     created: "2021-08-18T12:07:21.95515029Z"
     description: Zeebe TaskList Helm Chart for Kubernetes
     digest: b5c659d722fa15247c9997263a0a582a3c5823633c07f6d49485ab3001a81ec5
-    icon: https://zeebe.io/img/zeebe-logo.png
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
     name: zeebe-tasklist-helm
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.0.1/zeebe-tasklist-helm-1.0.1.tgz
@@ -795,7 +795,7 @@ entries:
     created: "2021-08-18T10:46:36.907218081Z"
     description: Zeebe TaskList Helm Chart for Kubernetes
     digest: 642b91bbffedce889b31151e427f6374b1065197b6cfbc642b3e286b3e68932f
-    icon: https://zeebe.io/img/zeebe-logo.png
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
     name: zeebe-tasklist-helm
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.0.0/zeebe-tasklist-helm-1.0.0.tgz
@@ -841,7 +841,7 @@ entries:
       version: 3.7.7
     description: ZeeQS Helm Chart for Kubernetes
     digest: 7e3aa6753974708d1e1c9516d431d44a376222682afb2497f96dcf44c06c74c5
-    icon: https://zeebe.io/img/zeebe-logo.png
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
     name: zeebe-zeeqs-helm
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
