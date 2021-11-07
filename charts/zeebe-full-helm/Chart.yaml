@@ -4,7 +4,7 @@ description: Zeebe Cluster + Operate Helm Chart for Kubernetes
 name: zeebe-full-helm
 version: 1.2.6
 type: application
-icon: https://zeebe.io/img/zeebe-logo.png
+icon: https://helm.camunda.io/imgs/zeebe-logo.png
 dependencies:
 - name: zeebe-cluster-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/

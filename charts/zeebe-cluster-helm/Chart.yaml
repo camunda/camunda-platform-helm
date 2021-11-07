@@ -4,7 +4,7 @@ description: Zeebe Cluster Helm Chart for Kubernetes
 name: zeebe-cluster-helm
 type: application
 version: 1.2.6
-icon: https://zeebe.io/img/zeebe-logo.png
+icon: https://helm.camunda.io/imgs/zeebe-logo.png
 dependencies:
 - name: elasticsearch
   repository: "https://helm.elastic.co"
