@@ -56,6 +56,7 @@ This functionality is in beta and is subject to change. The design and code is l
 | `podDisruptionBudget.enabled`         | Create a podDisruptionBudget for the broker pods | `false`
 | `podDisruptionBudget.minAvailable`         | Minimum number of available broker pods for PodDisruptionBudget |
 | `podDisruptionBudget.maxUnavailable`       | Maximum number of unavailable broker pods for PodDisruptionBudget | `1`
+| `podSecurityContext` | Sets the [securityContext](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for the Zeebe pod. Can hold pod-level security attributes and common container settings. |  {}
 | `pvcSize`                 | Set the Zeebe Cluster Persistence Volume Claim Request storage size                                                                                                                                | `10Gi`
 | `pvcAccessModes`                 | Set the Zeebe Cluster Persistence Volume Claim Request accessModes                                                                                                                                | `[ "ReadWriteOnce" ]`
 | `pvcStorageClassName`                 | Set the Zeebe Cluster Persistence Volume Claim Request storageClassName                                                                                                                                | ``

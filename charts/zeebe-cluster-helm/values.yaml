@@ -89,7 +89,7 @@ podDisruptionBudget:
   enabled: false
   minAvailable:
   maxUnavailable: 1
-
+podSecurityContext: {}
 serviceAccount:
   create: true
   name: ""
