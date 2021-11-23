@@ -30,6 +30,9 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
     spec:
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
       initContainers:
         {{- if .Values.extraInitContainers }}
         {{ tpl .Values.extraInitContainers . | indent 8 | trim }}
@@ -38,9 +41,6 @@ spec:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        {{- if .Values.priorityClassName }}
-        priorityClassName: {{ .Values.priorityClassName | quote }}
-        {{- end }}
         env:
         - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
           value: {{ tpl .Values.global.zeebe . }}
