@@ -1,9 +1,9 @@
 apiVersion: v2
-appVersion: "1.2.4"
+appVersion: "1.2.5"
 description: Zeebe Cluster Helm Chart for Kubernetes
 name: zeebe-cluster-helm
 type: application
-version: 1.2.7
+version: 1.2.8
 icon: https://helm.camunda.io/imgs/zeebe-logo.png
 dependencies:
 - name: elasticsearch
