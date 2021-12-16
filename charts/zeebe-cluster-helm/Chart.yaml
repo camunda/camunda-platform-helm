@@ -8,7 +8,7 @@ icon: https://helm.camunda.io/imgs/zeebe-logo.png
 dependencies:
 - name: elasticsearch
   repository: "https://helm.elastic.co"
-  version: 7.14.0
+  version: 7.16.1
   condition: "elasticsearch.enabled"
 - name: kibana
   repository: "https://helm.elastic.co" 
