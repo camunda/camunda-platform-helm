@@ -1,8 +1,8 @@
 apiVersion: v2
-appVersion: "1.2.6"
+appVersion: "1.2.7"
 description: Zeebe Cluster + Operate Helm Chart for Kubernetes
 name: zeebe-full-helm
-version: 1.2.8
+version: 1.2.9
 type: application
 icon: https://helm.camunda.io/imgs/zeebe-logo.png
 dependencies:
@@ -19,3 +19,9 @@ dependencies:
 - name: ingress-nginx
   repository: https://kubernetes.github.io/ingress-nginx
   version: 3.19.0
+annotations:
+  artifacthub.io/changes: |
+    - bump tasklist chart version to 1.2.5
+    - bump operate chart version to 1.2.6
+    - bump cluster chart version to 1.2.10
+  artifacthub.io/containsSecurityUpdates: "true"
