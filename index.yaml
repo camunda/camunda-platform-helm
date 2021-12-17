@@ -815,6 +815,20 @@ entries:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.0.0/zeebe-operate-helm-1.0.0.tgz
     version: 1.0.0
   zeebe-tasklist-helm:
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist version to 1.2.7
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.7
+    created: "2021-12-17T09:17:38.804864347Z"
+    description: Zeebe TaskList Helm Chart for Kubernetes
+    digest: 7ee61e3673d62d4bc3f82a1eda01a27895bd8aa65f7206a6b2591f7ef2cb4907
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-tasklist-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.2.5/zeebe-tasklist-helm-1.2.5.tgz
+    version: 1.2.5
   - apiVersion: v2
     appVersion: 1.2.6
     created: "2021-12-14T12:28:29.821737729Z"
@@ -986,4 +1000,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-12-16T06:21:53.954703152Z"
+generated: "2021-12-17T09:17:38.805064648Z"
