@@ -3,6 +3,34 @@ entries:
   zeebe-cluster-helm:
   - annotations:
       artifacthub.io/changes: |
+        - bump zeebe version to 1.2.8
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.8
+    created: "2021-12-21T19:47:16.031392102Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: 422d03bd224f113bf0e573bcba58326231709056a426b19578ef8e6ab564c5b5
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.2.12/zeebe-cluster-helm-1.2.12.tgz
+    version: 1.2.12
+  - annotations:
+      artifacthub.io/changes: |
         - bump zeebe version to 1.2.7
         - bump elastic version to 7.16.1
         - bump kibana version to 7.16.1
@@ -863,6 +891,20 @@ entries:
   zeebe-tasklist-helm:
   - annotations:
       artifacthub.io/changes: |
+        - bump tasklist version to 1.2.8
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.8
+    created: "2021-12-21T19:47:16.170373551Z"
+    description: Zeebe TaskList Helm Chart for Kubernetes
+    digest: 6e513dd3859f120b7c4ba760e0fdf3d82cd7b0513eb2c7c030c00e08368ecdfa
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-tasklist-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.2.6/zeebe-tasklist-helm-1.2.6.tgz
+    version: 1.2.6
+  - annotations:
+      artifacthub.io/changes: |
         - bump tasklist version to 1.2.7
       artifacthub.io/containsSecurityUpdates: "true"
     apiVersion: v2
@@ -1061,4 +1103,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-12-17T20:48:52.282567936Z"
+generated: "2021-12-21T19:47:16.170876556Z"
