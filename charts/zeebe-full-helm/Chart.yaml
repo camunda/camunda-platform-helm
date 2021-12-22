@@ -1,8 +1,8 @@
 apiVersion: v2
-appVersion: "1.2.7"
+appVersion: "1.2.8"
 description: Zeebe Cluster + Operate Helm Chart for Kubernetes
 name: zeebe-full-helm
-version: 1.2.9
+version: 1.2.10
 type: application
 icon: https://helm.camunda.io/imgs/zeebe-logo.png
 dependencies:
@@ -11,7 +11,7 @@ dependencies:
   version: 1.2.12
 - name: zeebe-operate-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
-  version: 1.2.6
+  version: 1.2.7
 - condition: tasklist.enabled
   name: zeebe-tasklist-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
@@ -21,7 +21,7 @@ dependencies:
   version: 3.19.0
 annotations:
   artifacthub.io/changes: |
-    - bump tasklist chart version to 1.2.5
-    - bump operate chart version to 1.2.6
-    - bump cluster chart version to 1.2.10
+    - bump tasklist chart version to 1.2.6
+    - bump operate chart version to 1.2.7
+    - bump cluster chart version to 1.2.12
   artifacthub.io/containsSecurityUpdates: "true"
