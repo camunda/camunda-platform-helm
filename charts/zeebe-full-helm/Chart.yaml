@@ -11,7 +11,7 @@ dependencies:
   version: 1.2.12
 - name: zeebe-operate-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
-  version: 1.2.6
+  version: 1.2.7
 - condition: tasklist.enabled
   name: zeebe-tasklist-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
