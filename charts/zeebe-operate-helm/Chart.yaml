@@ -1,11 +1,11 @@
 apiVersion: v2
-appVersion: "1.2.8"
+appVersion: "1.2.9"
 description: Zeebe Operate Helm Chart for Kubernetes
 name: zeebe-operate-helm
-version: 1.2.7
+version: 1.2.8
 type: application
 icon: https://helm.camunda.io/imgs/zeebe-logo.png
 annotations:
   artifacthub.io/changes: |
-    - bump operate version to 1.2.8
+    - bump operate version to 1.2.9
   artifacthub.io/containsSecurityUpdates: "true"
