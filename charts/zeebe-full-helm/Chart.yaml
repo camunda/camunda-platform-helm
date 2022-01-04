@@ -18,7 +18,7 @@ dependencies:
   version: 1.2.7
 - name: ingress-nginx
   repository: https://kubernetes.github.io/ingress-nginx
-  version: 3.19.0
+  version: 3.40.0
 annotations:
   artifacthub.io/changes: |
     - bump tasklist chart version to 1.2.6
