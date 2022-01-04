@@ -34,9 +34,6 @@ jobs:
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo add stable https://charts.helm.sh/stable
           helm repo update
-      - name: Create and Print Helm Templates
-        run: |
-          for i in charts/*; do helm template test $i; done
 
       - name: Get Helm Deps
         run: |
@@ -44,6 +41,9 @@ jobs:
           helm dependency build charts/zeebe-cluster-helm
           helm dependency build charts/zeebe-zeeqs-helm
       
+      - name: Create and Print Helm Templates
+        run: |
+          for i in charts/*; do helm template test $i; done
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*
