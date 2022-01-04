@@ -1,0 +1,51 @@
+name: Chart Testing
+
+on:
+  # Allow to run the workflow from GitHub UI and other workflows.
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+env:
+  HELM_VERSION: 3.6.3
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: "${{ env.HELM_VERSION }}"
+      - name: Add stable helm repo
+        run: |
+          helm repo add elastic https://helm.elastic.co
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add stable https://charts.helm.sh/stable
+          helm repo update
+
+      - name: Get Helm Deps
+        run: |
+          helm dependency build charts/zeebe-full-helm
+          helm dependency build charts/zeebe-cluster-helm
+          helm dependency build charts/zeebe-zeeqs-helm
+          
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.1.0
+
+      - name: Run chart testing and lint
+        run: ct lint --config .github/chart-testing.yaml
