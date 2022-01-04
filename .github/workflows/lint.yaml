@@ -1,4 +1,4 @@
-name: Lint Charts
+name: Helm Lint Charts
 
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
@@ -44,13 +44,3 @@ jobs:
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*
-          
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.1.0
-
-      - name: Run chart testing and lint
-        run: ct lint --config .github/chart-testing.yaml
