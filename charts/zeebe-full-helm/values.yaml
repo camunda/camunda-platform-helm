@@ -3,3 +3,18 @@ global:
 
 tasklist:
   enabled: false
+
+# Zeebe configuration
+# for available values see `helm show values zeebe/zeebe-cluster-helm`
+# or https://github.com/camunda-community-hub/camunda-cloud-helm/tree/main/charts/zeebe-cluster-helm
+zeebe-cluster-helm: {}
+
+# Operate configuration
+# for available values see `helm show values zeebe/zeebe-operate-helm`
+# or https://github.com/camunda-community-hub/camunda-cloud-helm/tree/main/charts/zeebe-operate-helm
+zeebe-operate-helm: {}
+
+# Tasklist configuration
+# for available values see `helm show values zeebe/zeebe-tasklist-helm`
+# or https://github.com/camunda-community-hub/camunda-cloud-helm/tree/main/charts/zeebe-tasklist-helm
+zeebe-tasklist-helm: {}
