@@ -32,12 +32,7 @@ spec:
         command: {{ .Values.command }}
         {{- end }}
         resources:
-          requests:
-            cpu: 500m
-            memory: 512Mi
-          limits:
-            cpu: 1000m
-            memory: 768Mi
+          {{- toYaml .Values.resources | nindent 10 }}
         ports:
         - containerPort: 8080
           name: http
