@@ -1,6 +1,172 @@
 apiVersion: v1
 entries:
   zeebe-cluster-helm:
+  - annotations:
+      artifacthub.io/changes: |
+        - fix resources indention
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.0
+    created: "2022-01-05T06:11:35.290643837Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: d5ef649904ccbf74435e71a5daad8dfbb293491038438acca8ddb2dc645c91ab
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.3.1/zeebe-cluster-helm-1.3.1.tgz
+    version: 1.3.1
+  - annotations:
+      artifacthub.io/changes: |
+        - bump zeebe version to 1.3.0
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.3.0
+    created: "2022-01-05T05:41:42.647719922Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: c7e5f450bd5d1f2aa48656cf0557810d58b8bf81aad8f3064e996d7f10074407
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.3.0/zeebe-cluster-helm-1.3.0.tgz
+    version: 1.3.0
+  - annotations:
+      artifacthub.io/changes: |
+        - bump zeebe version to 1.2.9
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.9
+    created: "2022-01-03T09:00:42.751717786Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: 0d4b9e9b29639b50ed1ab5d63c74d02095457e874257ca1c6180ebd2707d4946
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.2.13/zeebe-cluster-helm-1.2.13.tgz
+    version: 1.2.13
+  - annotations:
+      artifacthub.io/changes: |
+        - bump zeebe version to 1.2.8
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.8
+    created: "2021-12-21T19:47:16.031392102Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.2
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: 422d03bd224f113bf0e573bcba58326231709056a426b19578ef8e6ab564c5b5
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.2.12/zeebe-cluster-helm-1.2.12.tgz
+    version: 1.2.12
+  - annotations:
+      artifacthub.io/changes: |
+        - bump zeebe version to 1.2.7
+        - bump elastic version to 7.16.1
+        - bump kibana version to 7.16.1
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.7
+    created: "2021-12-16T06:21:53.954492252Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.1
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.1
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: b766fd2d3ce81510d1d4e0d83c33e7c34e6b500e5ea85beeb8c5e426d839086c
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.2.10/zeebe-cluster-helm-1.2.10.tgz
+    version: 1.2.10
+  - apiVersion: v2
+    appVersion: 1.2.6
+    created: "2021-12-14T12:28:29.153587507Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.14.0
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.14.0
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: 971d13fb26c3709b7bfd46ccf7c7013cc15995975fc88eef3838bc41a3b888bc
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.2.9/zeebe-cluster-helm-1.2.9.tgz
+    version: 1.2.9
   - apiVersion: v2
     appVersion: 1.2.4
     created: "2021-11-05T20:43:07.605954116Z"
@@ -194,6 +360,179 @@ entries:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.0.0/zeebe-cluster-helm-1.0.0.tgz
     version: 1.0.0
   zeebe-full-helm:
+  - annotations:
+      artifacthub.io/changes: |
+        - bump operate chart version to 1.2.9
+        - add empty default values for chart configurations
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.2.9
+    created: "2022-01-05T05:39:35.918476069Z"
+    dependencies:
+    - name: zeebe-cluster-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.13
+    - name: zeebe-operate-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.9
+    - condition: tasklist.enabled
+      name: zeebe-tasklist-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.7
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 3.19.0
+    description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+    digest: 98a9202cf50641e62f244e546eb95ce745a3b9e5815f35c81e66ff5a469d57fd
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-full-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.2.12/zeebe-full-helm-1.2.12.tgz
+    version: 1.2.12
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist chart version to 1.2.6
+        - bump operate chart version to 1.2.7
+        - bump cluster chart version to 1.2.12
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.9
+    created: "2022-01-03T10:09:48.383383463Z"
+    dependencies:
+    - name: zeebe-cluster-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.13
+    - name: zeebe-operate-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.8
+    - condition: tasklist.enabled
+      name: zeebe-tasklist-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.7
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 3.19.0
+    description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+    digest: 107dd72c0175a333a8254cffe413dd62303fcf6668b9581027b4f00c73e9da47
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-full-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.2.11/zeebe-full-helm-1.2.11.tgz
+    version: 1.2.11
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist chart version to 1.2.6
+        - bump operate chart version to 1.2.7
+        - bump cluster chart version to 1.2.12
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.8
+    created: "2021-12-22T13:22:36.260640844Z"
+    dependencies:
+    - name: zeebe-cluster-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.12
+    - name: zeebe-operate-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.7
+    - condition: tasklist.enabled
+      name: zeebe-tasklist-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.6
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 3.19.0
+    description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+    digest: 529352ae841c2195508d2c24a29c4bce44ac091c72e6b07ca883e4fe93bf90c1
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-full-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.2.10/zeebe-full-helm-1.2.10.tgz
+    version: 1.2.10
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist chart version to 1.2.5
+        - bump operate chart version to 1.2.6
+        - bump cluster chart version to 1.2.10
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.7
+    created: "2021-12-17T20:48:52.282270832Z"
+    dependencies:
+    - name: zeebe-cluster-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.10
+    - name: zeebe-operate-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.6
+    - condition: tasklist.enabled
+      name: zeebe-tasklist-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.5
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 3.19.0
+    description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+    digest: f2ecc3e137378c4d94ccddda8dec56d16b305ded284a50351b3f871a8ec706fb
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-full-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.2.9/zeebe-full-helm-1.2.9.tgz
+    version: 1.2.9
+  - apiVersion: v2
+    appVersion: 1.2.6
+    created: "2021-12-14T12:34:21.001266761Z"
+    dependencies:
+    - name: zeebe-cluster-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.9
+    - name: zeebe-operate-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.5
+    - condition: tasklist.enabled
+      name: zeebe-tasklist-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.4
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 3.19.0
+    description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+    digest: afaebb019370fce6d48bebae38dbc6a62c1cfce4d2ab7fa303d82497d8ac75be
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-full-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.2.8/zeebe-full-helm-1.2.8.tgz
+    version: 1.2.8
+  - apiVersion: v2
+    appVersion: 1.2.4
+    created: "2021-12-14T12:28:29.412666954Z"
+    dependencies:
+    - name: zeebe-cluster-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.6
+    - name: zeebe-operate-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.3
+    - condition: tasklist.enabled
+      name: zeebe-tasklist-helm
+      repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
+      version: 1.2.2
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 3.19.0
+    description: Zeebe Cluster + Operate Helm Chart for Kubernetes
+    digest: 8e46d38f5729472582fc3839cb366e44de4663b87ccb9c57b5844a7a91beb056
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-full-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.2.7/zeebe-full-helm-1.2.7.tgz
+    version: 1.2.7
   - apiVersion: v2
     appVersion: 1.2.4
     created: "2021-11-05T20:49:43.369618432Z"
@@ -545,6 +884,92 @@ entries:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-full-helm-1.0.0/zeebe-full-helm-1.0.0.tgz
     version: 1.0.0
   zeebe-operate-helm:
+  - annotations:
+      artifacthub.io/changes: |
+        - bump operate version to 1.3.0
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.3.0
+    created: "2022-01-07T14:33:57.005330749Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: 57d1e0f1897545badbaaa6c6c3ba9f4baabe8601818094c8243fc0914f854e31
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.3.0/zeebe-operate-helm-1.3.0.tgz
+    version: 1.3.0
+  - annotations:
+      artifacthub.io/changes: |
+        - enable resource configuration
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.2.9
+    created: "2022-01-05T05:35:30.358831552Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: 13feff12b10507681fe7cc301a244ca23f389c2aa83f00f0bcb7e0a13be29121
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.2.9/zeebe-operate-helm-1.2.9.tgz
+    version: 1.2.9
+  - annotations:
+      artifacthub.io/changes: |
+        - bump operate version to 1.2.9
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.9
+    created: "2022-01-03T08:33:13.963762894Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: 5942c26fc26ff99af8c3690ea382bfb9df4b30cca3189a668599c7d7ba9e2e67
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.2.8/zeebe-operate-helm-1.2.8.tgz
+    version: 1.2.8
+  - annotations:
+      artifacthub.io/changes: |
+        - bump operate version to 1.2.8
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.8
+    created: "2021-12-22T09:16:24.763110547Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: 7bef3d5ecbec3216615925d220ed33592706f0edd28a62a17327a3f72f304b4d
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.2.7/zeebe-operate-helm-1.2.7.tgz
+    version: 1.2.7
+  - annotations:
+      artifacthub.io/changes: |
+        - bump operate version to 1.2.7
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.7
+    created: "2021-12-17T09:21:48.525801112Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: 26ae97216a23fb086a6a93f9b6f739c51a02eba002722615f252863aece830cf
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.2.6/zeebe-operate-helm-1.2.6.tgz
+    version: 1.2.6
+  - apiVersion: v2
+    appVersion: 1.2.6
+    created: "2021-12-14T12:28:29.629389794Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: ef72532c760abf7b321ef398768bb4e30c9cc8eaf5175bc3bd2f02db71454c02
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.2.5/zeebe-operate-helm-1.2.5.tgz
+    version: 1.2.5
   - apiVersion: v2
     appVersion: 1.2.4
     created: "2021-11-05T20:41:12.842533041Z"
@@ -700,6 +1125,72 @@ entries:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.0.0/zeebe-operate-helm-1.0.0.tgz
     version: 1.0.0
   zeebe-tasklist-helm:
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist version to 1.3.0
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.3.0
+    created: "2022-01-11T12:47:24.290322041+01:00"
+    description: Zeebe TaskList Helm Chart for Kubernetes
+    digest: c8560931f4cad9df0ab03d3e91a5fd516e29cd90be60bdfb59328adfe6ed6300
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-tasklist-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.3.0/zeebe-tasklist-helm-1.3.0.tgz
+    version: 1.3.0
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist version to 1.2.9
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.9
+    created: "2022-01-03T08:57:22.29693302Z"
+    description: Zeebe TaskList Helm Chart for Kubernetes
+    digest: 40a677d2e18012d3996a8b2ed9b8ffb3b6ab117a9f90cb17aca8b2e80ed27de4
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-tasklist-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.2.7/zeebe-tasklist-helm-1.2.7.tgz
+    version: 1.2.7
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist version to 1.2.8
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.8
+    created: "2021-12-21T19:47:16.170373551Z"
+    description: Zeebe TaskList Helm Chart for Kubernetes
+    digest: 6e513dd3859f120b7c4ba760e0fdf3d82cd7b0513eb2c7c030c00e08368ecdfa
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-tasklist-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.2.6/zeebe-tasklist-helm-1.2.6.tgz
+    version: 1.2.6
+  - annotations:
+      artifacthub.io/changes: |
+        - bump tasklist version to 1.2.7
+      artifacthub.io/containsSecurityUpdates: "true"
+    apiVersion: v2
+    appVersion: 1.2.7
+    created: "2021-12-17T09:17:38.804864347Z"
+    description: Zeebe TaskList Helm Chart for Kubernetes
+    digest: 7ee61e3673d62d4bc3f82a1eda01a27895bd8aa65f7206a6b2591f7ef2cb4907
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-tasklist-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.2.5/zeebe-tasklist-helm-1.2.5.tgz
+    version: 1.2.5
+  - apiVersion: v2
+    appVersion: 1.2.6
+    created: "2021-12-14T12:28:29.821737729Z"
+    description: Zeebe TaskList Helm Chart for Kubernetes
+    digest: 14147dad79bbb524561f6ee58def75b01a34a4f7dabc99bbd88cae10352e70c9
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-tasklist-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-tasklist-helm-1.2.4/zeebe-tasklist-helm-1.2.4.tgz
+    version: 1.2.4
   - apiVersion: v2
     appVersion: 1.2.4
     created: "2021-11-05T20:41:56.823950059Z"
@@ -803,6 +1294,51 @@ entries:
   zeebe-zeeqs-helm:
   - apiVersion: v2
     appVersion: 2.0.0
+    created: "2021-12-22T09:20:38.136349606Z"
+    dependencies:
+    - condition: hazelcast.enabled
+      name: hazelcast
+      repository: https://hazelcast-charts.s3.amazonaws.com/
+      version: 3.10.3
+    description: ZeeQS Helm Chart for Kubernetes
+    digest: cd1772059cb8d7174630687f698253d4d0db1508681ba3d5abba20d31a572f31
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-zeeqs-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.1.4/zeebe-zeeqs-helm-1.1.4.tgz
+    version: 1.1.4
+  - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2021-12-17T18:12:36.188557663Z"
+    dependencies:
+    - condition: hazelcast.enabled
+      name: hazelcast
+      repository: https://hazelcast-charts.s3.amazonaws.com/
+      version: 3.10.2
+    description: ZeeQS Helm Chart for Kubernetes
+    digest: 803b8aae26d163e58a88b8edba1efd7a8b05e324d7a900c6eae29841c28b5318
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-zeeqs-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.1.3/zeebe-zeeqs-helm-1.1.3.tgz
+    version: 1.1.3
+  - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2021-12-14T12:28:30.034596168Z"
+    dependencies:
+    - condition: hazelcast.enabled
+      name: hazelcast
+      repository: https://hazelcast-charts.s3.amazonaws.com/
+      version: 3.10.1
+    description: ZeeQS Helm Chart for Kubernetes
+    digest: b5a3a50114cb459c52b71f7d06eb2f03e8235d628ff0e7aeb4ee0f885fa4bf3b
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-zeeqs-helm
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.1.2/zeebe-zeeqs-helm-1.1.2.tgz
+    version: 1.1.2
+  - apiVersion: v2
+    appVersion: 2.0.0
     created: "2021-10-26T07:27:13.10099143Z"
     dependencies:
     - condition: hazelcast.enabled
@@ -846,4 +1382,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2021-11-05T20:49:43.369846447Z"
+generated: "2022-01-11T12:47:24.291435359+01:00"
