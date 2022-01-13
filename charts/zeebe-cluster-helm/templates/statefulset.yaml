@@ -42,6 +42,8 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
+        - name: LC_ALL
+          value: C.UTF-8
         - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
           value: {{ tpl .Values.global.zeebe . }}
         - name: ZEEBE_LOG_LEVEL
