@@ -16,6 +16,8 @@ image:
   repository: camunda/zeebe
   tag: 1.3.0
   pullPolicy: IfNotPresent
+  pullSecrets: []
+  #  - name: myregistrykey
 
 clusterSize: "3"
 partitionCount: "3"
