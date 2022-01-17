@@ -1,12 +1,12 @@
 dependencies:
 - name: elasticsearch
   repository: https://helm.elastic.co
-  version: 7.16.2
+  version: 7.16.3
 - name: kibana
   repository: https://helm.elastic.co
   version: 7.16.3
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
   version: 12.0.4
-digest: sha256:5caa7c44a1a38bda6196e6176793ebc5a62bae1b5b1e6ef6b4c3f85943a8dd48
-generated: "2022-01-14T13:31:03.963506309Z"
+digest: sha256:4d3ed46ab4e4eb4f203cef65e559e2f7dc999c9b3c883e4832e6da67f3f086cb
+generated: "2022-01-17T05:30:31.119276869Z"
