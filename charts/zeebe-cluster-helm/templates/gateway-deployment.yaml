@@ -28,6 +28,10 @@ spec:
       {{- if .Values.gateway.priorityClassName }}
       priorityClassName: {{ .Values.gateway.priorityClassName | quote }}
       {{- end }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{ toYaml .Values.image.pullSecrets | indent 8 | trim }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
