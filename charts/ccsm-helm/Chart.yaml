@@ -1,0 +1,24 @@
+apiVersion: v2
+appVersion: "1.3.1"
+description: Zeebe Cluster Helm Chart for Kubernetes
+name: zeebe-cluster-helm
+type: application
+version: 1.3.4
+icon: https://helm.camunda.io/imgs/zeebe-logo.png
+dependencies:
+- name: elasticsearch
+  repository: "https://helm.elastic.co"
+  version: 7.16.3
+  condition: "elasticsearch.enabled"
+- name: kibana
+  repository: "https://helm.elastic.co" 
+  version: 7.16.3
+  condition: "kibana.enabled"
+- name: kube-prometheus-stack
+  repository: "https://prometheus-community.github.io/helm-charts"
+  version: 12.0.X
+  condition: "prometheus.enabled"
+annotations:
+  artifacthub.io/changes: |
+    - support imagePullSecrets
+  artifacthub.io/containsSecurityUpdates: "false"

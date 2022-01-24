@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zeebe-cluster.names.gateway" . }}
+  labels:
+    {{- include "zeebe-cluster.labels.gateway" . | nindent 4 }}
+  annotations:
+    {{- toYaml  .Values.annotations | nindent 4 }}
+spec:
+  type: {{ .Values.serviceGatewayType }}
+  selector:
+    {{- include "zeebe-cluster.labels.gateway" . | nindent 6 }}
+  ports:
+    - port: {{ .Values.serviceHttpPort }}
+      protocol: TCP
+      name: {{ default "http" .Values.serviceHttpName  }}
+    - port: {{ .Values.serviceGatewayPort }}
+      protocol: TCP
+      name: {{ default "gateway" .Values.serviceGatewayName }}
