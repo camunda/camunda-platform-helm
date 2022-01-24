@@ -976,6 +976,21 @@ entries:
   zeebe-operate-helm:
   - annotations:
       artifacthub.io/changes: |
+        - bump operate version to 1.3.1
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.1
+    created: "2022-01-24T06:10:07.766648669Z"
+    description: Zeebe Operate Helm Chart for Kubernetes
+    digest: 74bd6e7ec4db92ed987d4f115b833b0411c5469fc80af1d6438c0a2958683c29
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-operate-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-operate-helm-1.3.1/zeebe-operate-helm-1.3.1.tgz
+    version: 1.3.1
+  - annotations:
+      artifacthub.io/changes: |
         - bump operate version to 1.3.0
       artifacthub.io/containsSecurityUpdates: "true"
     apiVersion: v2
@@ -1501,4 +1516,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-01-24T06:06:53.29960314Z"
+generated: "2022-01-24T06:10:07.767429173Z"
