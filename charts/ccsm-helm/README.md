@@ -1,30 +1,30 @@
 [![Community Extension](https://img.shields.io/badge/Community%20Extension-An%20open%20source%20community%20maintained%20project-FF4700)](https://github.com/camunda-community-hub/community)[![Lifecycle: Incubating](https://img.shields.io/badge/Lifecycle-Incubating-blue)](https://github.com/Camunda-Community-Hub/community/blob/main/extension-lifecycle.md#incubating-)[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# Zeebe Cluster Helm Chart
+# Camunda Cloud Self-Managed Helm Chart
 
 This functionality is in beta and is subject to change. The design and code is less mature than official GA features and is provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.
 
 ## Requirements
 
 * [Helm](https://helm.sh/) >= 3.x +
-* Kubernetes >= 1.18+
+* Kubernetes >= 1.20+
 * Minimum cluster requirements include the following to run this chart with default settings. All of these settings are configurable.
   * Three Kubernetes nodes to respect the default "hard" affinity settings
-  * 1GB of RAM for the JVM heap
+  * 2GB of RAM for the JVM heap
 
 
 ## Installing
 
-* Add the official Zeebe helm charts repo
+* Add the official CCSM helm charts repo
 
   ```shell
-  helm repo add zeebe https://helm.camunda.io
+  helm repo add ccsm https://helm.camunda.io
   ```
 
 * Install it
 
   ```shell
-  helm install zb zeebe/zeebe-cluster-helm
+  helm install camunda-cloud ccsm/ccsm-helm
   ```
 
  ## Configuration
@@ -131,7 +131,7 @@ This chart currently depends on the following charts:
 * [Kibana Helm Chart](https://github.com/elastic/helm-charts/tree/master/kibana)
 * [Prometheus Operator Helm Chart](https://github.com/helm/charts/tree/master/stable/prometheus-operator)
 
-These dependencies can be turned on or off and parameters can be overriden from these dependent charts by changing the `values.yaml` file. For example:
+These dependencies can be turned on or off and parameters can be overiden from these dependent charts by changing the `values.yaml` file. For example:
 
 ```yaml
 elasticsearch:
@@ -146,7 +146,7 @@ kibana:
 For development purpose you might want to deploy and test the charts without creating a new release. In order to do this you can run the following:
 
 ```sh
- helm install <RELEASENAME> charts/zeebe-cluster-helm/
+ helm install <RELEASENAME> charts/ccsm-helm/
 ```
 
 If you see errors like:
@@ -155,16 +155,16 @@ If you see errors like:
 Error: found in Chart.yaml, but missing in charts/ directory: elasticsearch, kibana, kube-prometheus-stack
 ```
 
-Then you need to download the depenencies first. You can do this via:
+Then you need to download the dependencies first. You can do this via:
 
 ```sh
-$ helm dependency update charts/zeebe-cluster-helm/
+$ helm dependency update charts/ccsm-helm/
 Getting updates for unmanaged Helm repositories...
 ...Successfully got an update from the "https://helm.elastic.co" chart repository
 ...Successfully got an update from the "https://helm.elastic.co" chart repository
 ...Successfully got an update from the "https://prometheus-community.github.io/helm-charts" chart repository
 Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "zeebe" chart repository
+...Successfully got an update from the "ccsm" chart repository
 ...Successfully got an update from the "stable" chart repository
 Update Complete. ⎈Happy Helming!⎈
 Saving 3 charts
