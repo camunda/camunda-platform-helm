@@ -3,6 +3,34 @@ entries:
   zeebe-cluster-helm:
   - annotations:
       artifacthub.io/changes: |
+        - bump zeebe release version
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.1
+    created: "2022-01-24T06:16:35.267450872Z"
+    dependencies:
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Zeebe Cluster Helm Chart for Kubernetes
+    digest: ffcf760dce9a4ee76df2f97c114a1e9bedc6df093589896b0d5d7d66a8f17bdc
+    icon: https://helm.camunda.io/imgs/zeebe-logo.png
+    name: zeebe-cluster-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-cluster-helm-1.3.3/zeebe-cluster-helm-1.3.3.tgz
+    version: 1.3.3
+  - annotations:
+      artifacthub.io/changes: |
         - set locale to support utf8
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -1516,4 +1544,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-01-24T06:10:07.767429173Z"
+generated: "2022-01-24T06:16:35.267982374Z"
