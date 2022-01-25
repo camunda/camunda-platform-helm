@@ -9,6 +9,7 @@ labels:
 
 global:
   elasticsearch:
+    disableExporter: false
     url:
     host: "elasticsearch-master"
     port: 9200
@@ -27,9 +28,9 @@ zeebe:
   clusterSize: "3"
   partitionCount: "3"
   replicationFactor: "3"
-
   env: []
   logLevel: info
+  log4j2: ''
   JavaOpts: >-
     -XX:MaxRAMPercentage=25.0
     -XX:+HeapDumpOnOutOfMemoryError
@@ -45,6 +46,9 @@ zeebe:
   serviceHttpPort: 9600
   serviceCommandPort: 26501
   serviceInternalPort: 26502
+  serviceHttpName: "http"
+  serviceInternalName: "internal"
+  serviceCommandName: "command"
 
   #############
   # RESOURCES
@@ -62,12 +66,15 @@ zeebe:
 
   pvcSize: "10Gi"
   pvcAccessModes: [ "ReadWriteOnce" ]
+  pvcStorageClassName: ''
 
   extraVolumes: {}
   extraVolumeMounts: {}
+  extraInitContainers: {}
   #############
   # POD
   #############
+  podAnnotations: {}
   podDisruptionBudget:
     enabled: false
     minAvailable:
@@ -89,6 +96,7 @@ zeebe:
   # GATEWAY
   #############
   gateway:
+    podAnnotations: {}
     annotations: {}
     replicas: 1
     logLevel: info
