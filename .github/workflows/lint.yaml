@@ -37,10 +37,7 @@ jobs:
 
       - name: Get Helm Deps
         run: |
-          helm dependency build charts/zeebe-full-helm
-          helm dependency build charts/zeebe-cluster-helm
-          helm dependency build charts/zeebe-zeeqs-helm
-      
+          for i in charts/*; do helm dependency build $i; done 
       - name: Create and Print Helm Templates
         run: |
           for i in charts/*; do helm template test $i; done
