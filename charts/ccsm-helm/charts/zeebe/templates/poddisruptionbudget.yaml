@@ -1,0 +1,14 @@
+{{ if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "zeebe-cluster.names.broker" . }}
+  labels:
+    {{- include "zeebe-cluster.labels.broker" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  selector:
+    matchLabels:
+      {{- include "zeebe-cluster.labels.broker" . | nindent 6 }}
+{{ end }}

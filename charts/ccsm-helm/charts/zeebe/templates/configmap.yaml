@@ -1,0 +1,54 @@
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe-cluster.fullname" . }}
+  labels: 
+    {{- include "zeebe-cluster.labels" . | nindent 4 }}
+apiVersion: v1
+data:
+  startup.sh: |
+    #!/usr/bin/env bash
+    set -eux -o pipefail
+
+    export ZEEBE_BROKER_NETWORK_ADVERTISEDHOST=${ZEEBE_BROKER_NETWORK_ADVERTISEDHOST:-$(hostname -f)}
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-${K8S_POD_NAME##*-}}
+
+    # As the number of replicas or the DNS is not obtainable from the downward API yet,
+    # defined them here based on conventions
+    export ZEEBE_BROKER_CLUSTER_CLUSTERSIZE=${ZEEBE_BROKER_CLUSTER_CLUSTERSIZE:-1}
+    contactPointPrefix=${K8S_POD_NAME%-*}
+    contactPoints=${ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS:-""}
+    if [[ -z "${contactPoints}" ]]; then
+      for ((i=0; i<${ZEEBE_BROKER_CLUSTER_CLUSTERSIZE}; i++))
+      do
+        contactPoints="${contactPoints},${contactPointPrefix}-$i.$(hostname -d):{{ .Values.serviceInternalPort }}"
+      done
+
+      export ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS="${contactPoints}"
+    fi
+    
+    if [ "$(ls -A /exporters/)" ]; then
+      mkdir /usr/local/zeebe/exporters/
+      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+    else  
+      echo "No exporters available."
+    fi
+
+    exec /usr/local/zeebe/bin/broker
+
+  application.yaml: |
+{{- if .Values.zeebeCfg }}
+{{- with .Values.zeebeCfg }}
+{{ . | toYaml | indent 4 }}
+{{- end }}
+{{- end }}
+
+  broker-log4j2.xml: |
+{{- if .Values.log4j2 }}
+    {{ .Values.log4j2 | indent 4 | trim }}
+{{- end }}
+
+  gateway-log4j2.xml: |
+{{- if .Values.gateway.log4j2 }}
+    {{ .Values.gateway.log4j2 | indent 4 | trim }}
+{{- end }}
+

@@ -1,0 +1,107 @@
+# Default values for zeebe-cluster-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Annotations to apply to the statefullset
+annotations: {}
+
+global:
+  elasticsearch:
+    url:
+    host: "elasticsearch-master"
+    port: 9200
+  zeebe: "{{ .Release.Name }}-zeebe"
+
+image:
+  repository: camunda/zeebe
+  tag: 1.3.1
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+  #  - name: myregistrykey
+
+clusterSize: "3"
+partitionCount: "3"
+replicationFactor: "3"
+cpuThreadCount: "2"
+ioThreadCount: "2"
+pvcSize: "10Gi"
+pvcAccessModes: [ "ReadWriteOnce" ]
+env: []
+logLevel: info
+
+gateway:
+  annotations: {}
+  replicas: 1
+  logLevel: info
+  env: []
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+    maxUnavailable:
+  priorityClassName: ""
+  resources:  {}
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+elasticsearch:
+  enabled: true
+  imageTag: 7.16.2
+
+kibana:
+  enabled: false
+  imageTag: 7.16.2
+
+prometheus:
+  enabled: false
+  servicemonitor:
+    enabled: false
+
+JavaOpts: >-
+  -XX:MaxRAMPercentage=25.0
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/usr/local/zeebe/data
+  -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+  -XX:+ExitOnOutOfMemoryError
+
+labels:
+  app: zeebe
+serviceType: ClusterIP
+serviceGatewayType: ClusterIP
+serviceHttpPort: 9600
+serviceGatewayPort: 26500
+serviceCommandPort: 26501
+serviceInternalPort: 26502
+priorityClassName: ""
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 1000m
+    memory: 4Gi
+probePath: /ready
+readinessProbe:
+  failureThreshold: 1
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+podDisruptionBudget:
+  enabled: false
+  minAvailable:
+  maxUnavailable: 1
+podSecurityContext: {}
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+extraVolumes: {}
+extraVolumeMounts: {}
