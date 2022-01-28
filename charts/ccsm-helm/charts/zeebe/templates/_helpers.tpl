@@ -104,7 +104,7 @@ Creates a valid DNS name for the gateway
 {{/*
 [zeebe-gateway] Create the name of the service account to use
 */}}
-{{- define "zeebe.serviceAccountName" -}}
+{{- define "zeebe-gateway.serviceAccountName" -}}
 {{- if .Values.gateway.serviceAccount.create }}
 {{- default (include "zeebe.fullname" .) .Values.gateway.serviceAccount.name }}
 {{- else }}
