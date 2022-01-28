@@ -2,7 +2,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "zeebe-cluster.name" -}}
+{{- define "zeebe.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -11,7 +11,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "zeebe-cluster.fullname" -}}
+{{- define "zeebe.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -45,39 +45,39 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "zeebe-cluster.chart" -}}
+{{- define "zeebe.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Common labels
 */}}
-{{- define "zeebe-cluster.labels" -}}
+{{- define "zeebe.labels" -}}
 app.kubernetes.io/name: {{ include "zeebe-cluster.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
-{{- define "zeebe-cluster.version" -}}
+{{- define "zeebe.version" -}}
 {{- printf "%s:%s" .Values.image.repository .Values.image.tag -}}
 {{- end -}}
 
-{{- define "zeebe-cluster.labels.broker" -}}
-{{- template "zeebe-cluster.labels" . }}
+{{- define "zeebe.labels.broker" -}}
+{{- template "zeebe.labels" . }}
 app.kubernetes.io/component: broker
 {{- end -}}
 
-{{- define "zeebe-cluster.labels.gateway" -}}
-{{- template "zeebe-cluster.labels" . }}
+{{- define "zeebe.labels.gateway" -}}
+{{- template "zeebe.labels" . }}
 app.kubernetes.io/component: gateway
 {{- end -}}
 
 {{/*
 Common names
 */}}
-{{- define "zeebe-cluster.names.broker" -}}
-{{- if .Values.global.zeebe -}}
-{{- tpl .Values.global.zeebe . | trunc 63 | trimSuffix "-" | quote -}}
+{{- define "zeebe.names.broker" -}}
+{{- if .Values.zeebeName -}}
+{{- tpl .Values.zeebeName . | trunc 63 | trimSuffix "-" | quote -}}
 {{- else -}}
 {{- printf "%s-broker" .Release.Name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end -}}
@@ -86,16 +86,16 @@ Common names
 {{/*
 Creates a valid DNS name for the gateway
 */}}
-{{- define "zeebe-cluster.names.gateway" -}}
-{{- $name := default .Release.Name (tpl .Values.global.zeebe .) -}}
+{{- define "zeebe.names.gateway" -}}
+{{- $name := default .Release.Name (tpl .Values.zeebeName .) -}}
 {{- printf "%s-gateway" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end -}}
 {{/*
-[zeebe-cluster] Create the name of the service account to use
+[zeebe] Create the name of the service account to use
 */}}
-{{- define "zeebe-cluster.serviceAccountName" -}}
+{{- define "zeebe.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "zeebe-cluster.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "zeebe.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -104,9 +104,9 @@ Creates a valid DNS name for the gateway
 {{/*
 [zeebe-gateway] Create the name of the service account to use
 */}}
-{{- define "zeebe-gateway.serviceAccountName" -}}
+{{- define "zeebe.serviceAccountName" -}}
 {{- if .Values.gateway.serviceAccount.create }}
-{{- default (include "zeebe-gateway.fullname" .) .Values.gateway.serviceAccount.name }}
+{{- default (include "zeebe.fullname" .) .Values.gateway.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.gateway.serviceAccount.name }}
 {{- end }}
