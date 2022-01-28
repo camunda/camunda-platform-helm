@@ -1,8 +1,8 @@
 kind: ConfigMap
 metadata:
-  name: {{ include "zeebe-cluster.fullname" . }}
+  name: {{ include "zeebe.fullname" . }}
   labels: 
-    {{- include "zeebe-cluster.labels" . | nindent 4 }}
+    {{- include "zeebe.labels" . | nindent 4 }}
 apiVersion: v1
 data:
   startup.sh: |

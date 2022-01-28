@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zeebe-cluster.names.gateway" . }}
+  name: {{ include "zeebe.names.gateway" . }}
   labels:
-    {{- include "zeebe-cluster.labels.gateway" . | nindent 4 }}
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
   annotations:
       {{- range $key, $value := .Values.gateway.annotations }}
       {{ $key }}: {{ $value | quote }}
@@ -12,11 +12,11 @@ spec:
   replicas: {{ .Values.gateway.replicas  }}
   selector:
     matchLabels:
-      {{- include "zeebe-cluster.labels.gateway" . | nindent 6 }}
+      {{- include "zeebe.labels.gateway" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "zeebe-cluster.labels.gateway" . | nindent 8 }}
+        {{- include "zeebe.labels.gateway" . | nindent 8 }}
         {{- if .Values.gateway.podLabels }}
         {{- toYaml .Values.gateway.podLabels | nindent 8 }}
         {{- end }}
@@ -98,7 +98,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "zeebe-cluster.fullname" . }}
+            name: {{ include "zeebe.fullname" . }}
             defaultMode: 0744
         {{- if .Values.extraGatewayVolumes}}
         {{ .Values.extraGatewayVolumes | toYaml | nindent 8 }}

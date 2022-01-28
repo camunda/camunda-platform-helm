@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "zeebe-cluster.names.broker" . }}
+  name: {{ include "zeebe.names.broker" . }}
   labels:
-    {{- include "zeebe-cluster.labels.broker" . | nindent 4 }}
+    {{- include "zeebe.labels.broker" . | nindent 4 }}
     {{- toYaml  .Values.labels | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.annotations }}
@@ -13,15 +13,15 @@ spec:
   replicas: {{ .Values.clusterSize  }}
   selector:
     matchLabels:
-      {{- include "zeebe-cluster.labels.broker" . | nindent 6 }}
-  serviceName: {{ include "zeebe-cluster.names.broker" . }}
+      {{- include "zeebe.labels.broker" . | nindent 6 }}
+  serviceName: {{ include "zeebe.names.broker" . }}
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
   template:
     metadata:
       labels:
-        {{- include "zeebe-cluster.labels.broker" . | nindent 8 }}
+        {{- include "zeebe.labels.broker" . | nindent 8 }}
         {{- if .Values.podLabels }}
         {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
@@ -139,7 +139,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: {{ include "zeebe-cluster.fullname" . }}
+          name: {{ include "zeebe.fullname" . }}
           defaultMode: 0744
       - name: exporters
         emptyDir: {}

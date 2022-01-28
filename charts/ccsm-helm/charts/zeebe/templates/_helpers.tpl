@@ -53,7 +53,7 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "zeebe.labels" -}}
-app.kubernetes.io/name: {{ include "zeebe-cluster.name" . }}
+app.kubernetes.io/name: {{ include "zeebe.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
