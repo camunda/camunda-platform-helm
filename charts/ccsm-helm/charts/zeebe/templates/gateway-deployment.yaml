@@ -47,7 +47,7 @@ spec:
             - name: ZEEBE_STANDALONE_GATEWAY
               value: "true"
             - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
-              value: {{ tpl .Values.zeebeName . }}
+              value: {{ tpl .Values.zeebeClusterName . }}
             - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
               valueFrom:
                 fieldRef:
@@ -57,7 +57,7 @@ spec:
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.JavaOpts | quote }}
             - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
-              value: {{ tpl .Values.zeebeName . }}:{{ .Values.service.internalPort }}
+              value: {{ tpl .Values.zeebeClusterName . }}:{{ .Values.service.internalPort }}
             - name: ZEEBE_GATEWAY_NETWORK_HOST
               value: 0.0.0.0
             - name: ZEEBE_GATEWAY_NETWORK_PORT

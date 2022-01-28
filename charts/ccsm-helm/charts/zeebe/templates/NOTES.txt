@@ -7,12 +7,12 @@
 ({{ .Chart.Name }} - {{ .Chart.Version }})
 
 - Docker Image used for Broker: {{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}
-- Cluster Name: {{ tpl .Values.zeebeName . | quote }}
+- Cluster Name: {{ tpl .Values.zeebeClusterName . | quote }}
 - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
 
 The Cluster itself is not exposed as a service that means that you can use kubectl port-forward to access the Zeebe cluster from outside Kubernetes:
 
-> kubectl port-forward svc/{{ tpl .Values.zeebeName . }}-gateway 26500:26500 -n {{ .Release.Namespace }}
+> kubectl port-forward svc/{{ tpl .Values.zeebeClusterName . }}-gateway 26500:26500 -n {{ .Release.Namespace }}
 
 Now you can connect your workers and clients to `localhost:26500`
 
