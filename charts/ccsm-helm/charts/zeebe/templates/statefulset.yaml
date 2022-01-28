@@ -94,12 +94,12 @@ spec:
         command: {{ .Values.command }}
         {{- end }}
         ports:
-        - containerPort: {{ .Values.serviceHttpPort  }}
-          name: {{ default "http" .Values.serviceHttpName  }}
-        - containerPort: {{ .Values.serviceCommandPort  }}
-          name: {{ default "command" .Values.serviceCommandName  }}
-        - containerPort: {{ .Values.serviceInternalPort  }}
-          name: {{ default "internal" .Values.serviceInternalName  }}
+        - containerPort: {{ .Values.service.httpPort  }}
+          name: {{ default "http" .Values.service.httpName  }}
+        - containerPort: {{ .Values.service.commandPort  }}
+          name: {{ default "command" .Values.service.commandName  }}
+        - containerPort: {{ .Values.service.internalPort  }}
+          name: {{ default "internal" .Values.service.internalName  }}
         readinessProbe:
           httpGet:
             path: {{ .Values.probePath }}
