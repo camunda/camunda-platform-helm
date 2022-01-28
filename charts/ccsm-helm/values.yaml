@@ -1,11 +1,9 @@
-# Default values for ccsm-helm.
+# Default values for Camunda Cloud Self Managed helm.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# Annotations to apply to all deployments
-
-
 global:
+  # Annotations to apply to all deployments
   annotations: {}
   labels:
     app: camunda-cloud-self-managed
@@ -19,7 +17,7 @@ global:
     url:
     host: "elasticsearch-master"
     port: 9200
-  ccsm: "{{ .Release.Name }}-ccsm"
+  zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
 zeebe:
   enabled: true

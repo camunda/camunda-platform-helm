@@ -76,8 +76,8 @@ app.kubernetes.io/component: gateway
 Common names
 */}}
 {{- define "zeebe.names.broker" -}}
-{{- if .Values.zeebeClusterName -}}
-{{- tpl .Values.zeebeClusterName . | trunc 63 | trimSuffix "-" | quote -}}
+{{- if .Values.global.zeebeClusterName -}}
+{{- tpl .Values.global.zeebeClusterName . | trunc 63 | trimSuffix "-" | quote -}}
 {{- else -}}
 {{- printf "%s-broker" .Release.Name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end -}}
@@ -87,7 +87,7 @@ Common names
 Creates a valid DNS name for the gateway
 */}}
 {{- define "zeebe.names.gateway" -}}
-{{- $name := default .Release.Name (tpl .Values.zeebeClusterName .) -}}
+{{- $name := default .Release.Name (tpl .Values.global.zeebeClusterName .) -}}
 {{- printf "%s-gateway" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end -}}
 {{/*
