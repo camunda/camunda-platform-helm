@@ -32,6 +32,9 @@ operate:
 elasticsearch:
   enabled: true
   imageTag: 7.16.2
+  extraEnvs:
+    - name: "xpack.security.enabled"
+      value: "false"
 
 kibana:
   enabled: false
