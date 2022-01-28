@@ -89,6 +89,7 @@ gateway:
   annotations: {}
   replicas: 1
   logLevel: info
+  log4j2: ''
   env: []
   podDisruptionBudget:
     enabled: false
