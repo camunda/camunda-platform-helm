@@ -3,6 +3,44 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - add operate as sub chart
+        - add new notes file for better usability
+        - adjust some properties in zeebe chart
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.1
+    created: "2022-01-28T14:15:08.995855756Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.1
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.1
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: acbbc1b6e2b2fba2071c535f1044dea1a4fa8b17745c066247caa8d916a383cd
+    icon: https://helm.camunda.io/imgs/camunda-cloud.png
+    name: ccsm-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.2/ccsm-helm-0.0.2.tgz
+    version: 0.0.2
+  - annotations:
+      artifacthub.io/changes: |
         - initial ccsm setup with zeebe only support
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -1667,4 +1705,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-01-28T09:27:49.782786262Z"
+generated: "2022-01-28T14:15:08.99620356Z"
