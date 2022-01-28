@@ -15,17 +15,17 @@ This functionality is in beta and is subject to change. The design and code is l
 
 ## Installing
 
-* Add the official CCSM helm charts repo
+* Add the official Camunda Cloud helm charts repo
 
-  ```shell
-  helm repo add ccsm https://helm.camunda.io
-  ```
+```shell
+  helm repo add camunda-cloud https://helm.camunda.io
+```
 
 * Install it
 
-  ```shell
-  helm install camunda-cloud ccsm/ccsm-helm
-  ```
+```shell
+  helm install camunda-cloud camunda-cloud/ccsm-helm
+ ```
 
  ## Configuration
 | Section | Parameter | Description | Default |
