@@ -6,7 +6,7 @@ type: application
 version: 0.0.1
 icon: https://helm.camunda.io/imgs/camunda-cloud.png
 dependencies:
-- name: zeebe-cluster-helm
+- name: zeebe
   version: 1.3.4
   condition: "zeebe.enabled"
 - name: elasticsearch
