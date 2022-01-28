@@ -26,6 +26,9 @@ probePath: /ready
 #############
 # SERVICE
 #############
+prometheusServiceMonitor:
+  enabled: false
+
 service:
   type: ClusterIP
   httpPort: 9600
@@ -65,6 +68,7 @@ extraInitContainers: {}
 # POD
 #############
 podAnnotations: {}
+podLabels: {}
 podDisruptionBudget:
   enabled: false
   minAvailable:
