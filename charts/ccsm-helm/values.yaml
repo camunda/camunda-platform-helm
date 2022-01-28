@@ -22,6 +22,7 @@ image:
   pullSecrets: []
 
 zeebe:
+  enabled: true
   #############
   # CONFIGS
   #############
@@ -49,6 +50,11 @@ zeebe:
   serviceHttpName: "http"
   serviceInternalName: "internal"
   serviceCommandName: "command"
+
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: { }
 
   #############
   # RESOURCES
@@ -129,8 +135,3 @@ prometheus:
   enabled: false
   servicemonitor:
     enabled: false
-
-serviceAccount:
-  create: true
-  name: ""
-  annotations: {}
