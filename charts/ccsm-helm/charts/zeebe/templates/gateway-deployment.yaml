@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zeebe.names.gateway" . }}
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+  annotations:
+      {{- range $key, $value := .Values.gateway.annotations }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+spec:
+  replicas: {{ .Values.gateway.replicas  }}
+  selector:
+    matchLabels:
+      {{- include "zeebe.labels.gateway" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zeebe.labels.gateway" . | nindent 8 }}
+        {{- if .Values.gateway.podLabels }}
+        {{- toYaml .Values.gateway.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- range $key, $value := .Values.gateway.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      {{- if .Values.gateway.priorityClassName }}
+      priorityClassName: {{ .Values.gateway.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.global.image.pullSecrets }}
+      imagePullSecrets:
+        {{ toYaml .Values.global.image.pullSecrets | indent 8 | trim }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - containerPort: {{  .Values.gateway.service.httpPort }}
+              name: {{  default "http" .Values.gateway.service.httpName }}
+            - containerPort: {{  .Values.gateway.service.gatewayPort }}
+              name: {{ default "gateway" .Values.gateway.service.gatewayName  }}
+            - containerPort: {{  .Values.gateway.service.internalPort }}
+              name: {{ default "internal" .Values.gateway.service.internalName  }}
+          env:
+            - name: ZEEBE_STANDALONE_GATEWAY
+              value: "true"
+            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
+              value: {{ tpl .Values.zeebeClusterName . }}
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ZEEBE_LOG_LEVEL
+              value: {{ .Values.gateway.logLevel | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.JavaOpts | quote }}
+            - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
+              value: {{ tpl .Values.zeebeClusterName . }}:{{ .Values.service.internalPort }}
+            - name: ZEEBE_GATEWAY_NETWORK_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_NETWORK_PORT
+              value: {{  .Values.gateway.service.gatewayPort | quote }}
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ZEEBE_GATEWAY_CLUSTER_PORT
+              value: {{  .Values.gateway.service.internalPort | quote }}
+            - name: ZEEBE_GATEWAY_MONITORING_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_MONITORING_PORT
+              value: {{  .Values.gateway.service.httpPort | quote }}
+            {{- if .Values.gateway.env }}
+            {{ toYaml .Values.gateway.env | indent 12 | trim }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.gateway.log4j2 }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/log4j2.xml
+              subPath: gateway-log4j2.xml
+            {{- end }}
+            {{- if .Values.gateway.extraVolumeMounts}}
+            {{ .Values.gateway.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+          securityContext:
+            {{ toYaml .Values.podSecurityContext | indent 12 | trim }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ default "gateway" .Values.gateway.service.gatewayName  }}
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          {{- if .Values.gateway.resources}}
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "zeebe.fullname" . }}
+            defaultMode: 0744
+        {{- if .Values.gateway.extraVolumes}}
+        {{ .Values.gateway.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.gateway.serviceAccount.name}}
+      serviceAccountName: {{ .Values.gateway.serviceAccount.name }}
+      {{- end }}
+{{- with .Values.gateway.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.gateway.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.gateway.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

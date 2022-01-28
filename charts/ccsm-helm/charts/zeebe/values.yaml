@@ -1,0 +1,122 @@
+# Default values for zeebe-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Annotations to apply to all deployments
+
+zeebeClusterName: "{{ .Release.Name }}-zeebe"
+
+#############
+# CONFIGS
+#############
+clusterSize: "3"
+partitionCount: "3"
+replicationFactor: "3"
+env: []
+logLevel: info
+log4j2: ''
+JavaOpts: >-
+  -XX:MaxRAMPercentage=25.0
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/usr/local/zeebe/data
+  -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+  -XX:+ExitOnOutOfMemoryError
+probePath: /ready
+
+#############
+# SERVICE
+#############
+prometheusServiceMonitor:
+  enabled: false
+
+service:
+  type: ClusterIP
+  httpPort: 9600
+  commandPort: 26501
+  internalPort: 26502
+  httpName: "http"
+  commandName: "command"
+  internalName: "internal"
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+#############
+# RESOURCES
+#############
+cpuThreadCount: "2"
+ioThreadCount: "2"
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 1000m
+    memory: 4Gi
+
+pvcSize: "10Gi"
+pvcAccessModes: [ "ReadWriteOnce" ]
+pvcStorageClassName: ''
+
+extraVolumes: {}
+extraVolumeMounts: {}
+extraInitContainers: {}
+#############
+# POD
+#############
+podAnnotations: {}
+podLabels: {}
+podDisruptionBudget:
+  enabled: false
+  minAvailable:
+  maxUnavailable: 1
+
+podSecurityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+priorityClassName: ""
+
+readinessProbe:
+  failureThreshold: 1
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+
+#############
+# GATEWAY
+#############
+gateway:
+  podAnnotations: {}
+  podLabels: {}
+  annotations: {}
+  replicas: 1
+  logLevel: info
+  log4j2: ''
+  env: []
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+    maxUnavailable:
+  priorityClassName: ""
+  resources:  {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  extraVolumeMounts: {}
+  extraVolumes: {}
+  service:
+    type: ClusterIP
+    httpPort: 9600
+    gatewayPort: 26500
+    internalPort: 26502
+    httpName: "http"
+    gatewayName: "gateway"
+    internalName: "internal"
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}

@@ -1,0 +1,38 @@
+# Default values for ccsm-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Annotations to apply to all deployments
+
+
+global:
+  annotations: {}
+  labels:
+    app: camunda-cloud-self-managed
+  image:
+    repository: camunda/zeebe
+    tag: 1.3.1
+    pullPolicy: IfNotPresent
+    pullSecrets: [ ]
+  elasticsearch:
+    disableExporter: false
+    url:
+    host: "elasticsearch-master"
+    port: 9200
+  ccsm: "{{ .Release.Name }}-ccsm"
+
+zeebe:
+  enabled: true
+
+elasticsearch:
+  enabled: true
+  imageTag: 7.16.2
+
+kibana:
+  enabled: false
+  imageTag: 7.16.2
+
+prometheus:
+  enabled: false
+  servicemonitor:
+    enabled: false

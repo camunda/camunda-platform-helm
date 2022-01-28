@@ -1,0 +1,17 @@
+{{- if .Values.prometheusServiceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "zeebe.fullname" . }}
+  labels:
+    {{- include "zeebe.labels" . | nindent 4 }}
+    release: metrics
+spec:
+  selector:
+    matchLabels:
+      {{- include "zeebe.labels" . | nindent 6 }}
+  endpoints:
+    - honorLabels: true
+      port: http
+      interval: 10s
+{{- end }}
