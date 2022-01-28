@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ tpl .Values.global.zeebe . }}-test-connection"
+  name: "{{ tpl .Values.zeebeName . }}-test-connection"
   labels:
 {{ include "zeebe-cluster.labels" . | indent 4 }}
   annotations:
@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args:  ['{{ tpl .Values.global.zeebe . }}:{{ .Values.serviceHttpPort }}']
+      args:  ['{{ tpl .Values.zeebeName . }}:{{ .Values.serviceHttpPort }}']
   restartPolicy: Never

@@ -4,6 +4,8 @@
 
 # Annotations to apply to all deployments
 
+zeebeName: "{{ .Release.Name }}-zeebe"
+
 #############
 # CONFIGS
 #############
