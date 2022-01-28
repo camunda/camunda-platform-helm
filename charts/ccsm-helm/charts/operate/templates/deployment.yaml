@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zeebe-operate.fullname" . }}
+  labels:
+    app: {{ include "zeebe-operate.fullname" . }}
+    {{- if .Values.labels }}
+    {{- toYaml .Values.labels | nindent 4 }}
+    {{- end }}
+  annotations:
+      {{- range $key, $value := .Values.annotations }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "zeebe-operate.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "zeebe-operate.fullname" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+        {{- if .Values.env}}
+        env:
+        {{ .Values.env | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/operate/config/application.yml
+          subPath: application.yml
+        {{- if .Values.extraVolumeMounts}}
+        {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "zeebe-operate.fullname" . }}
+          defaultMode: 0744
+      {{- if .Values.extraVolumes}}
+      {{ .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      securityContext:
+{{ toYaml .Values.podSecurityContext | indent 8 }}

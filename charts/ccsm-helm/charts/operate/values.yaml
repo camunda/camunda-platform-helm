@@ -1,0 +1,49 @@
+global:
+  image:
+    # global.image.repository overwrites the default repository to the operate image
+    repository: camunda/operate
+
+
+# Annotations to apply to the deployment
+annotations: {}
+labels:
+
+logging:
+  level:
+    ROOT: INFO
+    org.camunda.operate: DEBUG
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+
+env:
+extraVolumes:
+extraVolumeMounts:
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  path: /
+  host:
+  tls:
+    enabled: false
+    secretName:
+
+podSecurityContext:
