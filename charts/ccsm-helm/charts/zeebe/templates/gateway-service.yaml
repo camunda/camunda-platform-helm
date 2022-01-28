@@ -5,15 +5,15 @@ metadata:
   labels:
     {{- include "zeebe.labels.gateway" . | nindent 4 }}
   annotations:
-    {{- toYaml  .Values.annotations | nindent 4 }}
+    {{- toYaml  .Values.gateway.annotations | nindent 4 }}
 spec:
-  type: {{ .Values.serviceGatewayType }}
+  type: {{ .Values.gateway.service.type }}
   selector:
     {{- include "zeebe.labels.gateway" . | nindent 6 }}
   ports:
-    - port: {{ .Values.serviceHttpPort }}
+    - port: {{ .Values.gateway.service.httpPort }}
       protocol: TCP
-      name: {{ default "http" .Values.serviceHttpName  }}
-    - port: {{ .Values.serviceGatewayPort }}
+      name: {{ default "http" .Values.gateway.service.httpName  }}
+    - port: {{ .Values.gateway.service.gatewayPort }}
       protocol: TCP
-      name: {{ default "gateway" .Values.serviceGatewayName }}
+      name: {{ default "gateway" .Values.gateway.service.gatewayName }}

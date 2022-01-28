@@ -26,13 +26,14 @@ probePath: /ready
 #############
 # SERVICE
 #############
-serviceType: ClusterIP
-serviceHttpPort: 9600
-serviceCommandPort: 26501
-serviceInternalPort: 26502
-serviceHttpName: "http"
-serviceInternalName: "internal"
-serviceCommandName: "command"
+service:
+  type: ClusterIP
+  httpPort: 9600
+  commandPort: 26501
+  internalPort: 26502
+  httpName: "http"
+  commandName: "command"
+  internalName: "internal"
 
 serviceAccount:
   create: true
@@ -86,6 +87,7 @@ readinessProbe:
 #############
 gateway:
   podAnnotations: {}
+  podLabels: {}
   annotations: {}
   replicas: 1
   logLevel: info
@@ -100,8 +102,16 @@ gateway:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  serviceGatewayType: ClusterIP
-  serviceGatewayPort: 26500
+  extraVolumeMounts: {}
+  extraVolumes: {}
+  service:
+    type: ClusterIP
+    httpPort: 9600
+    gatewayPort: 26500
+    internalPort: 26502
+    httpName: "http"
+    gatewayName: "gateway"
+    internalName: "internal"
   serviceAccount:
     create: true
     name: ""
