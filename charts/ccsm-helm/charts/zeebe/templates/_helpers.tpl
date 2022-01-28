@@ -33,7 +33,7 @@ If release name contains chart name it will be used as a full name.
 {{- if .Values.gateway.fullnameOverride -}}
 {{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := default .Release.Name (tpl .Values.global.zeebe .) -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -59,7 +59,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
 {{- define "zeebe.version" -}}
-{{- printf "%s:%s" .Values.image.repository .Values.image.tag -}}
+{{- printf "%s:%s" .Values.global.image.repository .Values.global.image.tag -}}
 {{- end -}}
 
 {{- define "zeebe.labels.broker" -}}
@@ -106,7 +106,7 @@ Creates a valid DNS name for the gateway
 */}}
 {{- define "zeebe-gateway.serviceAccountName" -}}
 {{- if .Values.gateway.serviceAccount.create }}
-{{- default (include "zeebe.fullname" .) .Values.gateway.serviceAccount.name }}
+{{- default (include "zeebe-gateway.fullname" .) .Values.gateway.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.gateway.serviceAccount.name }}
 {{- end }}
