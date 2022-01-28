@@ -8,7 +8,7 @@
 global:
   annotations: {}
   labels:
-    app: zeebe
+    app: camunda-cloud-self-managed
   image:
     repository: camunda/zeebe
     tag: 1.3.1
