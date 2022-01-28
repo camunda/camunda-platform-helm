@@ -8,10 +8,7 @@
 
 - Docker Image used for Broker: {{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}
 - Cluster Name: {{ tpl .Values.zeebeName . | quote }}
-- ElasticSearch Enabled: {{ .Values.elasticsearch.enabled }} - URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
-- Kibana Enabled: {{ .Values.kibana.enabled }}
-- Prometheus Enabled: {{ .Values.prometheus.enabled }}
-- Prometheus ServiceMonitor Enabled: {{ .Values.prometheus.servicemonitor.enabled }}
+- Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
 
 The Cluster itself is not exposed as a service that means that you can use kubectl port-forward to access the Zeebe cluster from outside Kubernetes:
 
