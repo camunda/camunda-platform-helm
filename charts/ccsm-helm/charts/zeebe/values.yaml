@@ -116,6 +116,6 @@ gateway:
     gatewayName: "gateway"
     internalName: "internal"
   serviceAccount:
-    create: true
+    enabled: true
     name: ""
     annotations: {}
