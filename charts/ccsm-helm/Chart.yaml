@@ -12,6 +12,9 @@ dependencies:
 - name: operate
   version: 0.0.1
   condition: "operate.enabled"
+- name: tasklist
+  version: 0.0.1
+  condition: "tasklist.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
   version: 7.16.3

@@ -1,6 +1,6 @@
 kind: ConfigMap
 metadata:
-  name: {{ include "zeebe-tasklist.fullname" . }}
+  name: {{ include "tasklist.fullname" . }}
 apiVersion: v1
 data:
   application.yml: |
@@ -23,7 +23,7 @@ data:
       # Zeebe instance
       zeebe:
         # Broker contact point
-        brokerContactPoint: {{ tpl .Values.global.zeebe . }}-gateway:26500
+        brokerContactPoint: {{ tpl .Values.global.zeebeClusterName . }}-gateway:26500
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name

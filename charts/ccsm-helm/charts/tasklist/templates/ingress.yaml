@@ -2,8 +2,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "zeebe-tasklist.fullname" . }}
-  labels: {{ include "zeebe-tasklist.labels" . | nindent 4 }}
+  name: {{ include "tasklist.fullname" . }}
+  labels: {{ include "tasklist.labels" . | nindent 4 }}
 {{- with .Values.ingress.annotations }}
   annotations: {{ toYaml . | nindent 4 }}
 {{- end }}
@@ -17,7 +17,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name:  {{ include "zeebe-tasklist.fullname" . }}
+                name:  {{ include "tasklist.fullname" . }}
                 port:
                   number: 80
 {{- end }}

@@ -1,9 +1,7 @@
 global:
-  zeebe: "{{ .Release.Name }}-zeebe"
-  elasticsearch:
-    host: "elasticsearch-master"
-    port: 9200
-    clusterName: "elasticsearch"
+  image:
+    # global.image.repository overwrites the default repository to the operate image
+    repository: camunda/tasklist
 
 logging:
   level:
@@ -13,9 +11,11 @@ logging:
 service:
   type: ClusterIP
   port: 80
-image:
-  repository: camunda/tasklist
-  tag: 1.3.1
+
+springProfilesActive:
+graphqlPlaygroundEnabled:
+graphqlPlaygroundRequestCredentials:
+podSecurityContext:
 
 resources: 
   requests:

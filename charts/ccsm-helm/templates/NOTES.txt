@@ -15,6 +15,9 @@
 - Operate:
   - Enabled: {{ .Values.operate.enabled }}
   - Docker Image used for Operate: {{ .Values.operate.global.image.repository }}:{{ .Values.global.image.tag }}
+- Tasklist:
+  - Enabled: {{ .Values.tasklist.enabled }}
+  - Docker Image used for Operate: {{ .Values.tasklist.global.image.repository }}:{{ .Values.global.image.tag }}
 - Prometheus:
   - Enabled: {{ .Values.prometheus.enabled }}
 - Elasticsearch:
@@ -37,7 +40,18 @@ Now you can connect your workers and clients to `localhost:26500`
 As part of the Operate HELM Chart an Ingress definition is deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
 If you don't have an Ingress Controller you can do kubectl port-forward to access Operate from outside the cluster:
 
-> kubectl port-forward svc/{{ include "zeebe-operate.fullname" . }} 8080:80
+> kubectl port-forward svc/{{ .Release.Name }}-operate 8080:80
+
+Now you can point your browser to `http://localhost:8080`
+
+Default user and password: "demo/demo"
+
+### Tasklist
+
+As part of Tasklist an Ingress definition is deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
+If you don't have an Ingress Controller you can do kubectl port-forward to access tasklist from outside the cluster:
+
+> kubectl port-forward svc/{{ .Release.Name }}-tasklist 8081:80
 
 Now you can point your browser to `http://localhost:8080`
 

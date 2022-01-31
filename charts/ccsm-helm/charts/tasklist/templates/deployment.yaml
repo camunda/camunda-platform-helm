@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zeebe-tasklist.fullname" . }}
+  name: {{ include "tasklist.fullname" . }}
   labels:
-    app: {{ include "zeebe-tasklist.fullname" . }}
+    app: {{ include "tasklist.fullname" . }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ include "zeebe-tasklist.fullname" . }}
+      app: {{ include "tasklist.fullname" . }}
   template:
     metadata:
       labels:
-        app: {{ include "zeebe-tasklist.fullname" . }}
+        app: {{ include "tasklist.fullname" . }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
         env:
           - name: SPRING_PROFILES_ACTIVE
             value: {{ default "auth" .Values.springProfilesActive | quote }}
@@ -42,7 +42,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: {{ include "zeebe-tasklist.fullname" . }}
+          name: {{ include "tasklist.fullname" . }}
           defaultMode: 0744
       securityContext:
 {{ toYaml .Values.podSecurityContext | indent 8 }}
