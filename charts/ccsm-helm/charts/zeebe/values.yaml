@@ -15,7 +15,7 @@ replicationFactor: "3"
 env: []
 logLevel: info
 log4j2: ''
-JavaOpts: >-
+javaOpts: >-
   -XX:MaxRAMPercentage=25.0
   -XX:+HeapDumpOnOutOfMemoryError
   -XX:HeapDumpPath=/usr/local/zeebe/data

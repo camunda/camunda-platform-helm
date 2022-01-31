@@ -86,7 +86,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: JAVA_TOOL_OPTIONS
-          value: {{ .Values.JavaOpts | quote }}
+          value: {{ .Values.javaOpts | quote }}
       {{- if .Values.env }}
         {{ toYaml .Values.env | indent 8 | trim }}
       {{- end }}
