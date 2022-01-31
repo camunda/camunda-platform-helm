@@ -236,6 +236,9 @@ zeebe:
 operate:
   enabled: true
 
+tasklist:
+  enabled: true
+
 elasticsearch:
   enabled: true
   imageTag: 7.16.2

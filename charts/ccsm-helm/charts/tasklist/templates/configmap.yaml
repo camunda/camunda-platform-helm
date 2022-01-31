@@ -1,12 +1,18 @@
 kind: ConfigMap
 metadata:
-  name: {{ include "operate.fullname" . }}
+  name: {{ include "tasklist.fullname" . }}
 apiVersion: v1
 data:
   application.yml: |
-    # Operate configuration file
-    camunda.operate:
-      # ELS instance to store Operate data
+    # Tasklist configuration file
+
+    camunda.tasklist:
+      # Set Tasklist username and password.
+      # If user with <username> does not exists it will be created.
+      # Default: demo/demo
+      #username:
+      #password:
+      # ELS instance to store Tasklist data
       elasticsearch:
         # Cluster name
         clusterName: {{ .Values.global.elasticsearch.clusterName }}
@@ -14,14 +20,10 @@ data:
         host: {{ .Values.global.elasticsearch.host }}
         # Transport port
         port: {{ .Values.global.elasticsearch.port }}
-        {{- if .Values.global.elasticsearch.url }}
-        # Elasticsearch full url
-        url: {{ .Values.global.elasticsearch.url }}
-        {{- end }}
       # Zeebe instance
       zeebe:
         # Broker contact point
-        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.global.zeebePort }}"
+        brokerContactPoint: {{ tpl .Values.global.zeebeClusterName . }}-gateway:26500
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name
@@ -31,14 +33,8 @@ data:
         # Transport port
         port: {{ .Values.global.elasticsearch.port }}
         # Index prefix, configured in Zeebe Elasticsearch exporter
-        prefix: {{ .Values.global.elasticsearch.prefix }}
-        {{- if .Values.global.elasticsearch.url }}
-        # Elasticsearch full url
-        url: {{ .Values.global.elasticsearch.url }}
-        {{- end }}
-    logging:
-{{- with .Values.logging }}
-{{ . | toYaml | indent 6 }}
-{{- end }}
+        prefix: zeebe-record
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+    # Enable or disable metrics
+    #management.metrics.export.prometheus.enabled: false

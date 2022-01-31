@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tasklist.fullname" . }}
+  labels:
+    app: {{ include "tasklist.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "tasklist.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "tasklist.fullname" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+        env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: {{ default "auth" .Values.springProfilesActive | quote }}
+          - name: GRAPHQL_PLAYGROUND_ENABLED
+            value: {{ default "true" .Values.graphqlPlaygroundEnabled | quote }}
+          - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
+            value: {{ default "include" .Values.graphqlPlaygroundRequestCredentials | quote }}      
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 768Mi
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /app/resources/application.yml
+          subPath: application.yml
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "tasklist.fullname" . }}
+          defaultMode: 0744
+      securityContext:
+{{ toYaml .Values.podSecurityContext | indent 8 }}
