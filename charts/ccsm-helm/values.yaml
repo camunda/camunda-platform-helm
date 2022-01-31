@@ -23,8 +23,215 @@ global:
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
   zeebePort: 26500
 
+# The values file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
+#
+# This means:
+#   * Variable names should begin with a lowercase letter, and words should be separated with camelcase.
+#   * Every defined property in values.yaml should be documented. The documentation string should begin with the name of the property that it describes, and then give at least a one-sentence description
+#
+# Furthermore, we try to apply the following pattern: # [VarName] [conjunction] [definition]
+#
+# VarName:
+#
+#  * In the documentation the variable name is started with a big letter, similar to kubernetes resource documentation.
+#  * If the variable is part of a subsection/object we use a json path expression (to make it more clear where the variable belongs to).
+#    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in helm.
+#
+# Conjunction:
+#   * [defines] for mandatory configuration
+#   * [can be used] for optional configuration
+#   * [if true] for toggles
+#   * [configuration] for section/group of variables
+
+# Zeebe configuration for the zeebe sub chart. Contains configuration for the broker and gateway pods and related resources.
 zeebe:
+  # Enabled if true, all zeebe related resources are deployed via the helm release
   enabled: true
+
+  # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  clusterSize: "3"
+  # PartitionCount defines how many zeebe partitions are set up in the cluster
+  partitionCount: "3"
+  # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
+  replicationFactor: "3"
+  # Env can be used to set extra environment variables in each zeebe broker container
+  env: [ ]
+  # LogLevel defines the log level which is used by the zeebe brokers
+  logLevel: info
+  # Log4j2 can be used to overwrite the log4j2 configuration of the zeebe brokers
+  log4j2: ''
+  # JavaOpts can be used to set java options for the zeebe brokers
+  javaOpts: >-
+    -XX:MaxRAMPercentage=25.0
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/zeebe/data
+    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+    -XX:+ExitOnOutOfMemoryError
+
+  # PrometheusServiceMonitor configuration for the prometheus service monitor
+  prometheusServiceMonitor:
+    # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows a installed prometheus controller to scrape metrics from the broker pods
+    enabled: false
+
+ # Service configuration for the broker service
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 9600
+    # Service.httpName defines the name of the http endpoint, where for example metrics are provided
+    httpName: "http"
+    # Service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
+    commandPort: 26501
+    # Service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    commandName: "command"
+    # Service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    internalPort: 26502
+    # Service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    internalName: "internal"
+
+  # ServiceAccount configuration for the service account where the broker pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the broker service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the broker service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the broker service account
+    annotations: { }
+
+  # CpuThreadCount defines how many threads can be used for the processing on each broker pod
+  cpuThreadCount: "2"
+  # ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ioThreadCount: "2"
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 1000m
+      memory: 4Gi
+
+  # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  pvcSize: "10Gi"
+  # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  pvcAccessModes: [ "ReadWriteOnce" ]
+  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
+  pvcStorageClassName: ''
+
+  # ExtraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
+  extraVolumes: { }
+  # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  extraVolumeMounts: { }
+  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  extraInitContainers: { }
+
+  # PodAnnotations can be used to define extra broker pod annotations
+  podAnnotations: { }
+  # PodLabels can be used to define extra broker pod labels
+  podLabels: { }
+  # PodDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    # PodDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
+    enabled: false
+    # PodDisruptionBudget.minAvailable can be used to set how many pods should be available
+    minAvailable:
+    # podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    maxUnavailable: 1
+
+  # PodSecurityContext defines the security options the broker and gateway container should be run with
+  podSecurityContext: { }
+  # NodeSelector can be used to define on which nodes the broker pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: { }
+  # PriorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  priorityClassName: ""
+
+  # ReadinessProbe configuration for the zeebe broker readiness probe
+  readinessProbe:
+    # ReadinessProbe.probePath defines the readiness probe route used on the zeebe brokers
+    probePath: /ready
+    # ReadinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 10
+    # ReadinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    # ReadinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  # Gateway configuration to define properties related to the standalone gateway
+  gateway:
+    # Gateway.replicas defines how many standalone gateways are deployed
+    replicas: 1
+    # Gateway.podAnnotations can be used to define extra gateway pod annotations
+    podAnnotations: { }
+    # Gateway.podLabels can be used to define extra gateway pod labels
+    podLabels: { }
+    # Gateway.annotations can be used to define gateway deployment annotations
+    annotations: { }
+
+    # Gateway.logLevel defines the log level which is used by the gateway
+    logLevel: info
+    # Gateway.log4j2 can be used to overwrite the log4j2 configuration of the gateway
+    log4j2: ''
+
+    # Gateway.env can be used to set extra environment variables in each gateway container
+    env: [ ]
+
+    # Gateway.podDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+    podDisruptionBudget:
+      # Gateway.podDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
+      enabled: false
+      # Gateway.podDisruptionBudget.minAvailable can be used to set how many pods should be available
+      minAvailable: 1
+      # Gateway.PodDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+      maxUnavailable:
+
+    # Gateway.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+    resources: { }
+
+    # Gateway.priorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+    priorityClassName: ""
+    # Gateway.nodeSelector can be used to define on which nodes the gateway pods should run
+    nodeSelector: { }
+    # Gateway.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+    tolerations: [ ]
+    # Gateway.affinity can be used to define pod affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    affinity: { }
+
+    # Gateway.extraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+    extraVolumeMounts: { }
+    # Gateway.extraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+    extraVolumes: { }
+
+    # Gateway.service configuration for the gateway service
+    service:
+      # Gateway.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
+      # Gateway.Service.httpPort defines the port of the http endpoint, where for example metrics are provided
+      httpPort: 9600
+      # Gateway.Service.httpName defines the name of the http endpoint, where for example metrics are provided
+      httpName: "http"
+      # Gateway.Service.gatewayPort defines the port of the gateway endpoint, where client commands (grpc) are sent to
+      gatewayPort: 26500
+      # Gateway.Service.gatewayName defines the name of the gateway endpoint, where client commands (grpc) are sent to
+      gatewayName: "gateway"
+      # Gateway.Service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+      internalPort: 26502
+      # Gateway.Service.internalName defines the name of the internal api endpoint, which is used for internal communication
+      internalName: "internal"
+
+    # Gateway.serviceAccount configuration for the service account where the gateway pods are assigned to
+    serviceAccount:
+      # Gateway.serviceAccount.enabled if true, enables the gateway service account
+      enabled: true
+      # Gateway.serviceAccount.name can be used to set the name of the gateway service account
+      name: ""
+      # Gateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
+      annotations: { }
+
 
 operate:
   enabled: true

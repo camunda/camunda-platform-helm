@@ -86,7 +86,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: JAVA_TOOL_OPTIONS
-          value: {{ .Values.JavaOpts | quote }}
+          value: {{ .Values.javaOpts | quote }}
       {{- if .Values.env }}
         {{ toYaml .Values.env | indent 8 | trim }}
       {{- end }}
@@ -102,7 +102,7 @@ spec:
           name: {{ default "internal" .Values.service.internalName  }}
         readinessProbe:
           httpGet:
-            path: {{ .Values.probePath }}
+            path: {{ .Values.readinessProbe.probePath }}
             port: {{ .Values.service.httpPort }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
           successThreshold: {{ .Values.readinessProbe.successThreshold }}
