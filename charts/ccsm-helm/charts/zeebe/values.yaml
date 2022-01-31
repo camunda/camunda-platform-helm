@@ -39,7 +39,7 @@ service:
   internalName: "internal"
 
 serviceAccount:
-  create: true
+  enabled: true
   name: ""
   annotations: {}
 
