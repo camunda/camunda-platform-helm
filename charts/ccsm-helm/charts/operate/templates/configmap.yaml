@@ -1,6 +1,6 @@
 kind: ConfigMap
 metadata:
-  name: {{ include "zeebe-operate.fullname" . }}
+  name: {{ include "operate.fullname" . }}
 apiVersion: v1
 data:
   application.yml: |

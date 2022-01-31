@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zeebe-operate.fullname" . }}
+  name: {{ include "operate.fullname" . }}
   labels:
-    app: {{ include "zeebe-operate.fullname" . }}
+    app: {{ include "operate.fullname" . }}
     {{- if .Values.labels }}
     {{- toYaml .Values.labels | nindent 4 }}
     {{- end }}
@@ -15,11 +15,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ include "zeebe-operate.fullname" . }}
+      app: {{ include "operate.fullname" . }}
   template:
     metadata:
       labels:
-        app: {{ include "zeebe-operate.fullname" . }}
+        app: {{ include "operate.fullname" . }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
@@ -47,7 +47,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: {{ include "zeebe-operate.fullname" . }}
+          name: {{ include "operate.fullname" . }}
           defaultMode: 0744
       {{- if .Values.extraVolumes}}
       {{ .Values.extraVolumes | toYaml | nindent 6 }}

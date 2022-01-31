@@ -29,7 +29,7 @@ helm install operate camunda-cloud/operate --set global.zeebe=<YOUR ZEEBE CLUSTE
   Example if you installed the `zeebe-cluster-helm` chart manually with the name: `zb`
 
    ```
-  helm install zeebe-operate zeebe/zeebe-operate --set global.zeebe=zb-zeebe
+  helm install operate zeebe/zeebe-operate --set global.zeebe=zb-zeebe
   ```
 
   > Note that you can find the Zeebe Cluster name by doing `kubectl get services` and copy the name of the Zeebe service, which will include the Helm Release name used to install the cluster. 

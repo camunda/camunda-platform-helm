@@ -14,7 +14,7 @@
 As part of the Operate HELM Chart an Ingress definition is deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
 If you don't have an Ingress Controller you can do kubectl port-forward to access Operate from outside the cluster:
 
-> kubectl port-forward svc/{{ include "zeebe-operate.fullname" . }} 8080:80
+> kubectl port-forward svc/{{ include "operate.fullname" . }} 8080:80
 
 Now you can point your browser to `http://localhost:8080`
 

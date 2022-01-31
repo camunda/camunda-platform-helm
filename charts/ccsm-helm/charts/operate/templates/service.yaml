@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "zeebe-operate.fullname" . }}
+  name: {{ include "operate.fullname" . }}
   labels:
-    app: {{ include "zeebe-operate.fullname" . }}
+    app: {{ include "operate.fullname" . }}
     {{- if .Values.labels }}
     {{- toYaml .Values.labels | nindent 4 }}
     {{- end }}
@@ -15,4 +15,4 @@ spec:
     targetPort: 8080
     protocol: TCP
   selector:
-    app: {{ include "zeebe-operate.fullname" . }}
+    app: {{ include "operate.fullname" . }}
