@@ -18,7 +18,11 @@ We'd also love PRs. If you're thinking of a large PR, we advise opening up an is
 
 Please feel free to fork this repository and open a pull request to update this documentation.
 
-Work in Progress pull requests are also welcome to get feedback early on, or if there is something blocked you.
+Make sure that your provided PR's works via:
+
+ * `helm lint` to run the linting
+ * `helm template <releasename> chartPath/` to generate the template files
+ * `helm install <releasename> chartPath/` to install a helm release in your k8 cluster (e.g. kind)
 
 ### Best Practices
 
@@ -28,7 +32,6 @@ Make sure you're familiar with some helm best practices like:
  * https://codersociety.com/blog/articles/helm-best-practices
 
 ### Commit Guidelines
-
 
 Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format.
 
