@@ -102,7 +102,7 @@ spec:
           name: {{ default "internal" .Values.service.internalName  }}
         readinessProbe:
           httpGet:
-            path: {{ .Values.probePath }}
+            path: {{ .Values.readinessProbe.probePath }}
             port: {{ .Values.service.httpPort }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
           successThreshold: {{ .Values.readinessProbe.successThreshold }}
