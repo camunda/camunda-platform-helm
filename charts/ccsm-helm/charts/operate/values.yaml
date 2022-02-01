@@ -25,7 +25,7 @@ extraVolumes:
 extraVolumeMounts:
 
 serviceAccount:
-  create: true
+  enabled: true
   name: ""
   annotations: {}
 
