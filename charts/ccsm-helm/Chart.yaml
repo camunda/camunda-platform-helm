@@ -9,6 +9,9 @@ dependencies:
 - name: zeebe
   version: 0.0.1
   condition: "zeebe.enabled"
+- name: zeebe-gateway
+  version: 0.0.1
+  condition: "zeebe.enabled"
 - name: operate
   version: 0.0.1
   condition: "operate.enabled"
