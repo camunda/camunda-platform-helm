@@ -30,8 +30,8 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "zeebe-gateway.fullname" -}}
-{{- if .Values.gateway.fullnameOverride -}}
-{{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- $name := default .Chart.Name .Values.nameOverride -}}
 {{- if contains $name .Release.Name -}}
@@ -62,25 +62,10 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- printf "%s:%s" .Values.global.image.repository .Values.global.image.tag -}}
 {{- end -}}
 
-{{- define "zeebe.labels.broker" -}}
-{{- template "zeebe.labels" . }}
-app.kubernetes.io/component: broker
-{{- end -}}
 
 {{- define "zeebe.labels.gateway" -}}
 {{- template "zeebe.labels" . }}
 app.kubernetes.io/component: gateway
-{{- end -}}
-
-{{/*
-Common names
-*/}}
-{{- define "zeebe.names.broker" -}}
-{{- if .Values.global.zeebeClusterName -}}
-{{- tpl .Values.global.zeebeClusterName . | trunc 63 | trimSuffix "-" | quote -}}
-{{- else -}}
-{{- printf "%s-broker" .Release.Name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end -}}
 {{- end -}}
 
 {{/*
@@ -90,24 +75,14 @@ Creates a valid DNS name for the gateway
 {{- $name := default .Release.Name (tpl .Values.global.zeebeClusterName .) -}}
 {{- printf "%s-gateway" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end -}}
-{{/*
-[zeebe] Create the name of the service account to use
-*/}}
-{{- define "zeebe.serviceAccountName" -}}
-{{- if .Values.serviceAccount.enabled }}
-{{- default (include "zeebe.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
 
 {{/*
 [zeebe-gateway] Create the name of the service account to use
 */}}
 {{- define "zeebe-gateway.serviceAccountName" -}}
-{{- if .Values.gateway.serviceAccount.enabled }}
-{{- default (include "zeebe-gateway.fullname" .) .Values.gateway.serviceAccount.name }}
+{{- if .Values.serviceAccount.enabled }}
+{{- default (include "zeebe-gateway.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.gateway.serviceAccount.name }}
+{{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
