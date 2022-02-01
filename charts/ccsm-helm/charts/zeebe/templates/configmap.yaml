@@ -46,8 +46,3 @@ data:
 {{- if .Values.log4j2 }}
     {{ .Values.log4j2 | indent 4 | trim }}
 {{- end }}
-
-  gateway-log4j2.xml: |
-{{- if .Values.gateway.log4j2 }}
-    {{ .Values.gateway.log4j2 | indent 4 | trim }}
-{{- end }}

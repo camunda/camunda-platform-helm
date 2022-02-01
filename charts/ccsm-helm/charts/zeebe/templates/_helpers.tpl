@@ -84,13 +84,6 @@ Common names
 {{- end -}}
 
 {{/*
-Creates a valid DNS name for the gateway
-*/}}
-{{- define "zeebe.names.gateway" -}}
-{{- $name := default .Release.Name (tpl .Values.global.zeebeClusterName .) -}}
-{{- printf "%s-gateway" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end -}}
-{{/*
 [zeebe] Create the name of the service account to use
 */}}
 {{- define "zeebe.serviceAccountName" -}}
@@ -98,16 +91,5 @@ Creates a valid DNS name for the gateway
 {{- default (include "zeebe.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{/*
-[zeebe-gateway] Create the name of the service account to use
-*/}}
-{{- define "zeebe-gateway.serviceAccountName" -}}
-{{- if .Values.gateway.serviceAccount.enabled }}
-{{- default (include "zeebe-gateway.fullname" .) .Values.gateway.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.gateway.serviceAccount.name }}
 {{- end }}
 {{- end }}
