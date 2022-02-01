@@ -236,8 +236,52 @@ zeebe:
 operate:
   enabled: true
 
+# Tasklist configuration for the tasklist sub chart.
 tasklist:
+  # Enabled if true, the tasklist deployment and its related resources are deployed via a helm release
   enabled: true
+
+  # Service configuration to configure the tasklist service.
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.port defines the port of the service, where the tasklist web application will be available
+    port: 80
+
+  # SpringProfilesActive can be used to set the active spring profiles used by tasklist
+  springProfilesActive:
+  # GraphqlPlaygroundEnabled if true, enables the graphql playground
+  graphqlPlaygroundEnabled:
+  # GraphqlPlaygroundEnabled can be set to include the credentials in each request, should be set to "include" if graphql playground is enabled
+  graphqlPlaygroundRequestCredentials:
+
+  # PodSecurityContext defines the security options the operate container should be run with
+  podSecurityContext:
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: true
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host:
 
 elasticsearch:
   enabled: true
