@@ -3,11 +3,6 @@ global:
     # global.image.repository overwrites the default repository to the operate image
     repository: camunda/tasklist
 
-logging:
-  level:
-    ROOT: INFO
-    org.camunda.tasklist: DEBUG
-
 service:
   type: ClusterIP
   port: 80
