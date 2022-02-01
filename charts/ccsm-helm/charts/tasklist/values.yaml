@@ -2,29 +2,3 @@ global:
   image:
     # global.image.repository overwrites the default repository to the operate image
     repository: camunda/tasklist
-
-service:
-  type: ClusterIP
-  port: 80
-
-springProfilesActive:
-graphqlPlaygroundEnabled:
-graphqlPlaygroundRequestCredentials:
-podSecurityContext:
-
-resources: 
-  requests:
-    cpu: 500m
-    memory: 1Gi
-  limits:
-    cpu: 1000m
-    memory: 2Gi
-
-ingress:
-  enabled: true
-  className: nginx
-  annotations:
-    ingress.kubernetes.io/rewrite-target: "/"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"    
-  path: /
-  host:
