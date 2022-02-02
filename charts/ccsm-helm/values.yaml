@@ -281,7 +281,7 @@ operate:
   # Ingress configuration to configure the ingress resource
   ingress:
     # Ingress.enabled if true, an ingress resource is deployed with the operate deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: true
+    enabled: false
     # Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
@@ -337,7 +337,7 @@ tasklist:
   # Ingress configuration to configure the ingress resource
   ingress:
     # Ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: true
+    enabled: false
     # Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
