@@ -30,10 +30,20 @@ This functionality is in beta and is subject to change. The design and code is l
  ## Configuration
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `global` | `elasticsearch.disableExporter` | Disable [Elasticsearch Exporter](https://github.com/camunda-cloud/zeebe/tree/develop/exporters/elasticsearch-exporter) in Zeebe | `false` |
-| | `elasticsearch.host` | ElasticSearch host to use in Elasticsearch Exporter connection | `elasticsearch-master` |
-| | `elasticsearch.port` | ElasticSearch port to use in Elasticsearch Exporter connection | `9200` |
-| | `elasticsearch.url` | ElasticSearch full url to use in Elasticsearch Exporter connection. This config overrides the `host` and `port` above.  | |
+| `global` | | Global variables which can be accessed by all sub charts | |
+| | `annotations` | Can be used to define common annotations, which should be applied to all deployments | |
+| | `labels` | Can be used to define common labels, which should be applied to all deployments | |
+| | `image.tag` | Defines the tag / version which should be used in the chart. | |
+| | `image.pullPolicy` | Defines the [image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) which should be used. | IfNotPresent |
+| | `image.pullSecrets` | Can be used to configure [image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) which should be used. | `[]` |
+| | `elasticsearch.disableExporter` | If true, disables [Elasticsearch Exporter](https://github.com/camunda-cloud/zeebe/tree/develop/exporters/elasticsearch-exporter) in Zeebe | `false` |
+| | `elasticsearch.url` | Can be used to configure the URL to access Elasticsearch, if not set services fallback to host and port configuration. | |
+| | `elasticsearch.host` | Defines the Elasticsearch host, ideally the service name inside the namespace. | `elasticsearch-master` |
+| | `elasticsearch.port` | Defines the Elasticsearch port, under which Elasticsearch can be accessed | `9200` |
+| | `elasticsearch.clusterName` | Defines the cluster name which is used by Elasticsearch. | `elasticsearch` |
+| | `elasticsearch.prefix` | Defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes | `zeebe-record` |
+| | `zeebeClusterName` | Defines the cluster name for the Zeebe cluster. All pods get this prefix in their name. | `{{ .Release.Name }}-zeebe` |
+| | `zeebePort` | Defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers. | 26500 |
 | `elasticsearch`| `enabled` | Enable ElasticSearch deployment as part of the Zeebe Cluster | `true` |
 | `kibana`| `enabled` | Enable Kibana deployment as part of the Zeebe Cluster | `false` |
 | `prometheus`| `enabled` | Enable Prometheus operator as part of the Zeebe Cluster | `false` |

@@ -2,27 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-global:
-  # Annotations to apply to all deployments
-  annotations: {}
-  labels:
-    app: camunda-cloud-self-managed
-  image:
-    # global.image.repository is net set here, otherwise it will overwrite the values from the sub chart
-    #    repository: camunda/zeebe
-    tag: 1.3.1
-    pullPolicy: IfNotPresent
-    pullSecrets: [ ]
-  elasticsearch:
-    disableExporter: false
-    url:
-    host: "elasticsearch-master"
-    port: 9200
-    clusterName: "elasticsearch"
-    prefix: zeebe-record
-  zeebeClusterName: "{{ .Release.Name }}-zeebe"
-  zeebePort: 26500
-
 # The values file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
 #
 # This means:
@@ -42,6 +21,46 @@ global:
 #   * [can be used] for optional configuration
 #   * [if true] for toggles
 #   * [configuration] for section/group of variables
+
+# Global configuration for variables which can be accessed by all sub charts
+global:
+
+  # Annotations can be used to define common annotations, which should be applied to all deployments
+  annotations: {}
+  # Labels can be used to define common labels, which should be applied to all deployments
+  labels:
+    app: camunda-cloud-self-managed
+
+  # Image configuration to be used in each sub chart
+  image:
+    # global.image.repository is net set here, otherwise it will overwrite the values from the sub chart
+    #    repository: camunda/zeebe
+
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 1.3.1
+    # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    pullPolicy: IfNotPresent
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: [ ]
+
+  # Elasticsearch configuration which is shared between the sub charts  
+  elasticsearch:
+    # Elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
+    disableExporter: false
+    # Elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+    url:
+    # Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
+    host: "elasticsearch-master"
+    # Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
+    port: 9200
+    # Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
+    clusterName: "elasticsearch"
+    # Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
+    prefix: zeebe-record
+  # ZeebeClusterName defines the cluster name for the Zeebe cluster. All pods get this prefix in their name.
+  zeebeClusterName: "{{ .Release.Name }}-zeebe"
+  # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
+  zeebePort: 26500
 
 # Zeebe configuration for the zeebe sub chart. Contains configuration for the broker and gateway pods and related resources.
 zeebe:
