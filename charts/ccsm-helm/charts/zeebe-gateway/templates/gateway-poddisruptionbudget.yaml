@@ -3,8 +3,7 @@ apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
   name: {{ printf "%s-gateway" (tpl .Values.global.zeebeClusterName .) | quote }}
-  labels:
-    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+  labels: {{- include "zeebe.labels.gateway" . | nindent 4 }}
 spec:
   minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
   maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
