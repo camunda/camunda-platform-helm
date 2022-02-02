@@ -11,4 +11,4 @@ spec:
     targetPort: 8080
     protocol: TCP
   selector:
-    app: {{ include "operate.fullname" . }}
+    {{- include "operate.labels" . | nindent 4 }}
