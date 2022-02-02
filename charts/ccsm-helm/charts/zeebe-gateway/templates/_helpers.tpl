@@ -18,12 +18,11 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
-{{- define "zeebe.version" -}}
-{{- printf "%s:%s" .Values.global.image.repository .Values.global.image.tag -}}
-{{- end -}}
-
+{{/*
+Defines labels for the gateway.
+*/}}
 {{- define "zeebe.labels.gateway" -}}
-{{- template "zeebe.labels" . }}
+{{- template "ccsm.labels" . }}
 app.kubernetes.io/component: gateway
 {{- end -}}
 
