@@ -4,11 +4,11 @@ metadata:
   name: {{ include "operate.fullname" . }}
   labels:
     app: {{ include "operate.fullname" . }}
-    {{- if .Values.labels }}
-    {{- toYaml .Values.labels | nindent 4 }}
+    {{- if .Values.global.labels }}
+    {{- toYaml .Values.global.labels | nindent 4 }}
     {{- end }}
   annotations:
-      {{- range $key, $value := .Values.annotations }}
+      {{- range $key, $value := .Values.global.annotations }}
       {{ $key }}: {{ $value | quote }}
       {{- end }}
 spec:

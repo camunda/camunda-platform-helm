@@ -4,8 +4,8 @@ metadata:
   name: {{ include "operate.fullname" . }}
   labels:
     app: {{ include "operate.fullname" . }}
-    {{- if .Values.labels }}
-    {{- toYaml .Values.labels | nindent 4 }}
+    {{- if .Values.global.labels }}
+    {{- toYaml .Values.global.labels | nindent 4 }}
     {{- end }}
 spec:
   type: {{ .Values.service.type }}
