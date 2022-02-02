@@ -2,9 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "zeebe.names.broker" . }}
-  labels:
-    {{- include "zeebe.labels.broker" . | nindent 4 }}
-    {{- toYaml  .Values.global.labels | nindent 4 }}
+  labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.global.annotations }}
     {{ $key }}: {{ $value | quote }}

@@ -1,8 +1,7 @@
 kind: ConfigMap
 metadata:
   name: {{ include "zeebe.fullname" . }}
-  labels: 
-    {{- include "zeebe.labels" . | nindent 4 }}
+  labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
 apiVersion: v1
 data:
   startup.sh: |
