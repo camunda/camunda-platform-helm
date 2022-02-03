@@ -48,41 +48,52 @@ This functionality is in beta and is subject to change. The design and code is l
 | `kibana`| `enabled` | Enable Kibana deployment as part of the Zeebe Cluster | `false` |
 | `prometheus`| `enabled` | Enable Prometheus operator as part of the Zeebe Cluster | `false` |
 | | `servicemonitor.enabled` | Deploy a `ServiceMonitor` for your Zeebe Cluster | `false` |
-| `zeebe` |`labels` | labels to be applied to the StatefulSet and Service | `app: zeebe` |
-| | `annotations`| annotations to be applied to the StatefulSet and Service | `{}`|
-| |`podAnnotations`| annotations to be applied to the StatefulSet pod Template | `{}`|
-| | `clusterSize` | Set the Zeebe Cluster Size and the number of replicas of the replica set | `3` |
-| | `partitionCount` | Set the Zeebe Cluster partition count | `3` |
-| | `replicationFactor` | Set the Zeebe Cluster replication factor | `3` |
-| | `cpuThreadCount` | Set the Zeebe Cluster CPU thread count | `2` |
-| | `ioThreadCount` | Set the Zeebe Cluster IO thread count | `2` |
-| | `logLevel` | Sets the log level for io.zeebe packages; must be one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
-| | `log4j2` | Log4J 2.x XML configuration; if provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | `` |
-| | `JavaOpts` | Set the Zeebe Cluster Broker JavaOpts. This is where you should configure the jvm heap size. | `-XX:MaxRAMPercentage=25.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
-| | `resources` | Set the Zeebe Cluster Broker Kubernetes Resource Request and Limits | `requests:`<br>  `cpu: 500m`<br>  ` memory: 1Gi`<br>`limits:`<br>  ` cpu: 1000m`<br>  ` memory: 2Gi` |
-| | `env` | Pass additional environment variables to the Zeebe broker pods; <br> variables should be specified using standard Kubernetes raw YAML format. See below for an example.| `[]` |
-| | `podDisruptionBudget.enabled` | Create a podDisruptionBudget for the broker pods | `false` |
-| | `podDisruptionBudget.minAvailable` | Minimum number of available broker pods for PodDisruptionBudget | |
-| | `podDisruptionBudget.maxUnavailable` | Maximum number of unavailable broker pods for PodDisruptionBudget | `1` |
-| | `podSecurityContext` | Sets the [securityContext](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for the Zeebe pod. Can hold pod-level security attributes and common container settings. |  {} |
-| | `pvcSize`| Set the Zeebe Cluster Persistence Volume Claim Request storage size | `10Gi` |
-| | `pvcAccessModes` | Set the Zeebe Cluster Persistence Volume Claim Request accessModes | `[ "ReadWriteOnce" ]` |
-| | `pvcStorageClassName` | Set the Zeebe Cluster Persistence Volume Claim Request storageClassName | `` |
-| | `extraInitContainers` | Add extra initContainers sections to the StatefulSet | `` |
-| | `extraVolumes` | Add extra volumnes to the StatefulSet | `{}` |
-| | `extraVolumeMounts` | Add extra volumne mounts to the StatefulSet | `{}` |
-| | `nodeSelector` | Node selection constraint to schedule Zeebe on specific nodes | `{}` |
-| | `priorityClassName` | Name of the priority class to assign on Zeebe pods | `` |
-| | `tolerations` | Tolerations to allow Zeebe to run on dedicated nodes | `[]` |
-| | `affinity` | Use affinity constraints to schedule Zeebe on specific nodes | `{}` |
-| | `serviceType` | The type of cluster service | `ClusterIP` |
-| | `serviceHttpPort` | The http port used by the brokers and the gateway| `9600` |
-| | `serviceInternalPort` | The internal port used by the brokers and the gateway | `26502` |
-| | `serviceCommandPort` | The command port used the brokers | `26501` |
-| | `serviceHttpName` | The http port name used by the brokers and the gateway| `http` | 
-| | `serviceInternalName` | The internal port name used by the brokers and the gateway | `internal` |
-| | `serviceCommandName` | The command port name used the brokers | `command`
-| `gateway` | `replicas` | The number of standalone gateways that should be deployed, if zero the embedded gateway is used. | `1` |
+| `zeebe` | Configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources. | |
+| | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
+| | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
+| | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
+| | `env` | Can be used to set extra environment variables in each Zeebe broker container | `[ ]` |
+| | `logLevel` | Defines the log level which is used by the Zeebe brokers; must be one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
+| | `log4j2` | Can be used to overwrite the Log4J 2.x XML configuration. If provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | `` |
+| | `JavaOpts` | Can be used to set the Zeebe Broker JavaOpts. This is where you should configure the jvm heap size. | `-XX:MaxRAMPercentage=25.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
+| |`prometheusServiceMonitor.enabled`| If true, then a service monitor will be deployed, which allows an installed Prometheus controller to scrape metrics from the broker pods | `false`|
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.httpPort` | Defines the port of the HTTP endpoint, where for example metrics are provided | `9600` |
+| | `service.httpName` | Defines the name of the HTTP endpoint, where for example metrics are provided | `http` |
+| | `service.commandPort` | Defines the port of the Command API endpoint, where the broker commands are sent to | `26501` |
+| | `service.commandName` | Defines the name of the Command API endpoint, where the broker commands are sent to | `command` |
+| | `service.internalPort` | Defines the port of the Internal API endpoint, which is used for internal communication | `26502` |
+| | `service.internalName` | Defines the name of the Internal API endpoint, which is used for internal communication | `internal` |
+| | `serviceAccount.enabled` | If true, enables the broker service account | `true` |
+| | `serviceAccount.name` | Can be used to set the name of the broker service account | `""` |
+| | `serviceAccount.annotations` | Can be used to set the annotations of the broker service account | `{ }` |
+| | `cpuThreadCount` | Defines how many threads can be used for the processing on each broker pod | `2` |
+| | `ioThreadCount` | Defines how many threads can be used for the exporting on each broker pod | `2` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 500m`<br> `  memory: 2Gi`<br>`limits:`<br>  ` cpu: 1000m`<br>  ` memory: 4Gi` |
+| | `pvcSize` | Defines the [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) size, which is used by each broker pod | `10Gi` |
+| | `pvcAccessModes` | Can be used to configure the [persistent volume claim access mode](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) | `[ "ReadWriteOnce" ]` |
+| | `pvcStorageClassName` | Can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD. | `` |
+| | `extraVolumes` | Can be used to define extra volumes for the broker pods, useful for additional exporters | `{ }`|
+| | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for additional exporters | `{ }` |
+| | `extraInitContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `{ }` |
+| | `podAnnotations` | Can be used to define extra broker pod annotations | `{ }` |
+| | `podLabels` | Can be used to define extra broker pod labels | `{ }` |
+| | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods | |
+| | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
+| | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available | `` |
+| | `podDisruptionBudget.maxUnavailable` | Can be used to set how many pods should be at max. unavailable | `1` |
+| | `podSecurityContext` | Defines the security options the broker and gateway container should be run with | |
+| | `nodeSelector` | Can be used to define on which nodes the broker pods should run | `{ } ` |
+| | `tolerations` | Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
+| | `affinity` | Can be used to define [pod affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
+| | `priorityClassName` | Can be used to define the broker [pods priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass) | `""` |
+| | `readinessProbe` | Configuration for the Zeebe broker readiness probe | |
+| | `readinessProbe.probePath` | Defines the readiness probe route used on the Zeebe brokers | `/ready` |
+| | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `10` |
+| | `readinessProbe.successThreshold` | Defines how often it needs to be true to be marked as ready, after failure | `1` |
+| | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
+| `zeebe-gateway`| | Configuration to define properties related to the Zeebe standalone gateway | |
+| | `replicas` | The number of standalone gateways that should be deployed, if zero the embedded gateway is used. | `1` |
 | | `priorityClassName` | Name of the priority class to assign on Zeebe gateway pods | `` |
 | | `logLevel` | The log level of the gateway, one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
 | | `log4j2` | Log4J 2.x XML configuration; if provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | `` |

@@ -62,7 +62,7 @@ global:
   # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
 
-# Zeebe configuration for the zeebe sub chart. Contains configuration for the broker and gateway pods and related resources.
+# Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
   # Enabled if true, all zeebe related resources are deployed via the helm release
   enabled: true
@@ -120,7 +120,7 @@ zeebe:
 
   # CpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "2"
-  # ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  # IoThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "2"
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
