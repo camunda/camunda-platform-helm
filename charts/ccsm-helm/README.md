@@ -166,6 +166,26 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 | | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
 
+### Tasklist
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| | `tasklist` | Configuration for the Tasklist sub chart. | |
+| | `enabled` | If true, the Tasklist deployment and its related resources are deployed via a helm release | `true` |
+| | `service` | Configuration to configure the Tasklist service. | |
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.port` | Defines the port of the service, where the Tasklist web application will be available | `80` |
+| | `springProfilesActive` | Can be used to set the active spring profiles used by Tasklist | `""` |
+| | `graphqlPlaygroundEnabled` | If true, enables the GraphQl playground | `""` |
+| | `graphqlPlaygroundEnabled` | Can be set to include the credentials in each request, should be set to "include" if GraphQl playground is enabled | `""` |
+| | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 500m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` |
+| | `ingress` | Configuration to configure the ingress resource | |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Tasklist deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
+| | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
+| | `ingress.path` | Defines the path which is associated with the Tasklist service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
+| | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 
 ## Examples
 
