@@ -47,7 +47,7 @@ Defines labels for the broker.
 */}}
 {{- define "zeebe.labels.broker" -}}
 {{- template "ccsm.labels" . }}
-app.kubernetes.io/component: broker
+app.kubernetes.io/component: zeebe-broker
 {{- end -}}
 
 {{/*

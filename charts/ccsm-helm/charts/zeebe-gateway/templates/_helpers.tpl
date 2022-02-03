@@ -23,7 +23,7 @@ Defines labels for the gateway.
 */}}
 {{- define "zeebe.labels.gateway" -}}
 {{- template "ccsm.labels" . }}
-app.kubernetes.io/component: gateway
+app.kubernetes.io/component: zeebe-gateway
 {{- end -}}
 
 {{/*
