@@ -2,7 +2,24 @@
 
 # Camunda Cloud Self-Managed Helm Chart
 
-This functionality is in beta and is subject to change. The design and code is less mature than official GA features and is provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.
+> This functionality is in beta and is subject to change. The design and code is less mature than official GA features and is provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.
+
+- [Camunda Cloud Self-Managed Helm Chart](#camunda-cloud-self-managed-helm-chart)
+  * [Requirements](#requirements)
+  * [Installing](#installing)
+  * [Configuration](#configuration)
+    + [Global](#global)
+    + [Zeebe](#zeebe)
+    + [Zeebe-gateway](#zeebe-gateway)
+    + [Operate](#operate)
+    + [Tasklist](#tasklist)
+    + [Elasticsearch](#elasticsearch)
+    + [Kibana](#kibana)
+    + [Prometheus](#prometheus)
+  * [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
+  * [Development](#development)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Requirements
 
