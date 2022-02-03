@@ -38,7 +38,7 @@ entries:
       version: 12.0.X
     description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
     digest: b94e69556d1a55d52e62e4b9e2486ea97f162ebe127d9fdaa61d10e2932597a4
-    icon: https://helm.camunda.io/imgs/camunda-cloud.png
+    icon: https://helm.camunda.io/imgs/self-managed.png
     name: ccsm-helm
     type: application
     urls:
