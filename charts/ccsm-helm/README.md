@@ -105,18 +105,38 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `zeebe-gateway`| | Configuration to define properties related to the Zeebe standalone gateway | |
-| | `replicas` | The number of standalone gateways that should be deployed, if zero the embedded gateway is used. | `1` |
-| | `priorityClassName` | Name of the priority class to assign on Zeebe gateway pods | `` |
-| | `logLevel` | The log level of the gateway, one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
-| | `log4j2` | Log4J 2.x XML configuration; if provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | `` |
-| | `env` | Pass additional environment variables to the Zeebe broker pods; <br> variables should be specified using standard Kubernetes raw YAML format. See below for an example. | `[]` |
-| | `podAnnotations` | Annotations to be applied to the gateway Deployment pod template | `` |
-| | `podDisruptionBudget.enabled` | Create a PodDisruptionBudget for the gateway pods | `false` |
-| | `podDisruptionBudget.minAvailable` | minimum number of available gateway pods for PodDisruptionBudget | `1` |
-| | `podDisruptionBudget.maxUnavailable` | maximum number of unavailable gateway pods for PodDisruptionBudget | `` |
-| | `serviceGatewayType` | The type of cluster gateway service | `ClusterIP` |
-| | `serviceGatewayPort` | The gateway port used by the gateway | `26500` |
-| | `serviceGatewayName` | The gateway port name used by the gateway | `gateway` |
+| | `replicas` | Defines how many standalone gateways are deployed | `1` |
+| | `podAnnotations` | Can be used to define extra gateway pod annotations | `{ }` |
+| | `podLabels` | Can be used to define extra gateway pod labels | `{ }` |
+| | `annotations` | Can be used to define gateway deployment annotations | `{ } `|
+| | `logLevel` | Defines the log level which is used by the gateway | `info` |
+| | `log4j2` | Can be used to overwrite the log4j2 configuration of the gateway | `""` |
+| | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |
+| | `podSecurityContext` | Defines the security options the gateway container should be run with | `{ } `|
+| | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods | |
+| | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
+| | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available | `` |
+| | `podDisruptionBudget.maxUnavailable` | Can be used to set how many pods should be at max. unavailable | `1` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `{ }` |
+| | `priorityClassName` | Can be used to define the broker [pods priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass) | `""` |
+| | `nodeSelector` | Can be used to define on which nodes the gateway pods should run | `{ } ` |
+| | `tolerations` | Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
+| | `affinity` | Can be used to define [pod affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
+| | `extraVolumeMounts` | Can be used to mount extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `{ }` |
+| | `extraVolumes` | Can be used to define extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `{ }` |
+| | `service` | Configuration for the gateway service | |
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.httpPort` | Defines the port of the HTTP endpoint, where for example metrics are provided | `9600` |
+| | `service.httpName` | Defines the name of the HTTP endpoint, where for example metrics are provided | `http` |
+| | `service.gatewayPort` | Defines the port of the gateway endpoint, where client commands (gRPC) are sent to | `26500` |
+| | `service.gatewayName` | Defines the name of the gateway endpoint, where client commands (gRPC) are sent to | `gateway` |
+| | `service.internalPort` | Defines the port of the Internal API endpoint, which is used for internal communication | `26502` |
+| | `service.internalName` | Defines the name of the Internal API endpoint, which is used for internal communication | `internal` |
+| | `serviceAccount` | Configuration for the service account where the gateway pods are assigned to | |
+| | `serviceAccount.enabled` | If true, enables the gateway service account | `true` |
+| | `serviceAccount.name` | Can be used to set the name of the gateway service account | `""` |
+| | `serviceAccount.annotations` | Can be used to set the annotations of the gateway service account | `{ }` |
+
 
 ## Examples
 
