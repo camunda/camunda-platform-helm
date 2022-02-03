@@ -235,16 +235,6 @@ prometheus:
   imageTag: <YOUR VERSION HERE>
 ```
 
-## Examples
-
-### Env Example
-```yaml
-
-env:
-  - name: ZEEBE_GATEWAY_MONITORING_ENABLED
-    value: "true"
-```
-
 ## Adding dynamic exporters to Zeebe Brokers
 
 This chart supports the addition of Zeebe Exporters by using initContainer as shown in the following example:
@@ -271,24 +261,6 @@ env:
   ZEEBE_HAZELCAST_REMOTE_ADDRESS: "{{ .Release.Name }}-hazelcast"
 ```
 This example is downloading the exporters Jar from a URL and adding the Jars to the `exporters` directory that will be scanned for jars and added to the zeebe broker classpath. Then with `environment variables` you can configure the exporter parameters.
-
-## Dependencies
-
-This chart currently depends on the following charts:
-
-* [ElasticSearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md)
-* *optional* [Kibana Helm Chart](https://github.com/elastic/helm-charts/tree/master/kibana)
-* *optional* [Prometheus Operator Helm Chart](https://github.com/helm/charts/tree/master/stable/prometheus-operator)
-
-These dependencies can be turned on or off and parameters can be overwritten from these dependent charts by changing the `values.yaml` file. For example:
-
-```yaml
-elasticsearch:
-  enabled: true
-  imageTag: <YOUR VERSION HERE>
-kibana:
-  enabled: false
-```
 
 ## Development
 
