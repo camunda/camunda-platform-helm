@@ -22,13 +22,14 @@ This functionality is in beta and is subject to change. The design and code is l
   helm install camunda-cloud camunda-cloud/ccsm-helm
 ```
 
-* Install it
+## Configuration
 
-```shell
-  helm install camunda-cloud camunda-cloud/ccsm-helm
- ```
+The following sections contain the configuration values for the chart and each sub chart. All of them can be overwritten via an separate `values.yaml` file.
 
- ## Configuration
+Check out the default [values.yaml](values.yaml) file, which contains the same content and documentation.
+
+### Global 
+
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `global` | | Global variables which can be accessed by all sub charts | |
@@ -49,6 +50,11 @@ This functionality is in beta and is subject to change. The design and code is l
 | `kibana`| `enabled` | Enable Kibana deployment as part of the Zeebe Cluster | `false` |
 | `prometheus`| `enabled` | Enable Prometheus operator as part of the Zeebe Cluster | `false` |
 | | `servicemonitor.enabled` | Deploy a `ServiceMonitor` for your Zeebe Cluster | `false` |
+
+### Zeebe
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
 | `zeebe` | Configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources. | |
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
 | | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
@@ -93,6 +99,11 @@ This functionality is in beta and is subject to change. The design and code is l
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `10` |
 | | `readinessProbe.successThreshold` | Defines how often it needs to be true to be marked as ready, after failure | `1` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
+
+### Zeebe-gateway
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
 | `zeebe-gateway`| | Configuration to define properties related to the Zeebe standalone gateway | |
 | | `replicas` | The number of standalone gateways that should be deployed, if zero the embedded gateway is used. | `1` |
 | | `priorityClassName` | Name of the priority class to assign on Zeebe gateway pods | `` |
