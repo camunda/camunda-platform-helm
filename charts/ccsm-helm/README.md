@@ -187,6 +187,22 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `ingress.path` | Defines the path which is associated with the Tasklist service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 
+### Elasticsearch
+
+This chart has a dependency to the [ElasticSearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch which can be found [here](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) can be set under `elasticsearch`.
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `elasticsearch`| `enabled` | If true, enables Elasticsearch deployment as part of the Camunda cloud self-managed helm chart | `true` |
+
+**Example:**
+
+```yaml
+elasticsearch:
+  enabled: true
+  imageTag: <YOUR VERSION HERE>
+```
+
 ## Examples
 
 ### Env Example
@@ -232,7 +248,7 @@ This chart currently depends on the following charts:
 * *optional* [Kibana Helm Chart](https://github.com/elastic/helm-charts/tree/master/kibana)
 * *optional* [Prometheus Operator Helm Chart](https://github.com/helm/charts/tree/master/stable/prometheus-operator)
 
-These dependencies can be turned on or off and parameters can be overiden from these dependent charts by changing the `values.yaml` file. For example:
+These dependencies can be turned on or off and parameters can be overwritten from these dependent charts by changing the `values.yaml` file. For example:
 
 ```yaml
 elasticsearch:
