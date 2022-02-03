@@ -219,6 +219,22 @@ kibana:
   imageTag: <YOUR VERSION HERE>
 ```
 
+### Prometheus
+
+This chart has an **optional** dependency to the [Prometheus Helm Chart](https://github.com/prometheus-community/helm-charts). All variables related to Prometheus which can be found [here](https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml) can be set under `prometheus`.
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `prometheus`| `enabled` | If true, enables the Prometheus deployment as part of the Camunda cloud self-managed helm chart | `true` |
+
+**Example:**
+
+```yaml
+prometheus:
+  enabled: true
+  imageTag: <YOUR VERSION HERE>
+```
+
 ## Examples
 
 ### Env Example
