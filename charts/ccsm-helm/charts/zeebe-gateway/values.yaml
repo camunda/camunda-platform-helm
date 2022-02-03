@@ -1,0 +1,7 @@
+# Default values for zeebe-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+global:
+  image:
+    # global.image.repository overwrites the default repository to the operate image
+    repository: camunda/zeebe

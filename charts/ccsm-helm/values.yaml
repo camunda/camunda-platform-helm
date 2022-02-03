@@ -161,76 +161,79 @@ zeebe:
     # ReadinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  # Gateway configuration to define properties related to the standalone gateway
-  gateway:
-    # Gateway.replicas defines how many standalone gateways are deployed
-    replicas: 1
-    # Gateway.podAnnotations can be used to define extra gateway pod annotations
-    podAnnotations: { }
-    # Gateway.podLabels can be used to define extra gateway pod labels
-    podLabels: { }
-    # Gateway.annotations can be used to define gateway deployment annotations
+# Gateway configuration to define properties related to the standalone gateway
+zeebe-gateway:
+  # Replicas defines how many standalone gateways are deployed
+  replicas: 1
+  # PodAnnotations can be used to define extra gateway pod annotations
+  podAnnotations: { }
+  # PodLabels can be used to define extra gateway pod labels
+  podLabels: { }
+  # Annotations can be used to define gateway deployment annotations
+  annotations: { }
+
+  # LogLevel defines the log level which is used by the gateway
+  logLevel: info
+  # Log4j2 can be used to overwrite the log4j2 configuration of the gateway
+  log4j2: ''
+
+  # Env can be used to set extra environment variables in each gateway container
+  env: [ ]
+
+  # PodSecurityContext defines the security options the gateway container should be run with
+  podSecurityContext: { }
+  # PodDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    # PodDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
+    enabled: false
+    # PodDisruptionBudget.minAvailable can be used to set how many pods should be available
+    minAvailable: 1
+    # PodDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    maxUnavailable:
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources: { }
+
+  # PriorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  priorityClassName: ""
+  # NodeSelector can be used to define on which nodes the gateway pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: { }
+
+  # ExtraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+  extraVolumeMounts: { }
+  # ExtraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+  extraVolumes: { }
+
+  # Service configuration for the gateway service
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 9600
+    # Service.httpName defines the name of the http endpoint, where for example metrics are provided
+    httpName: "http"
+    # Service.gatewayPort defines the port of the gateway endpoint, where client commands (grpc) are sent to
+    gatewayPort: 26500
+    # Service.gatewayName defines the name of the gateway endpoint, where client commands (grpc) are sent to
+    gatewayName: "gateway"
+    # Service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    internalPort: 26502
+    # Service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    internalName: "internal"
+
+  # ServiceAccount configuration for the service account where the gateway pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the gateway service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the gateway service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: { }
 
-    # Gateway.logLevel defines the log level which is used by the gateway
-    logLevel: info
-    # Gateway.log4j2 can be used to overwrite the log4j2 configuration of the gateway
-    log4j2: ''
-
-    # Gateway.env can be used to set extra environment variables in each gateway container
-    env: [ ]
-
-    # Gateway.podDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
-    podDisruptionBudget:
-      # Gateway.podDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
-      enabled: false
-      # Gateway.podDisruptionBudget.minAvailable can be used to set how many pods should be available
-      minAvailable: 1
-      # Gateway.PodDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
-      maxUnavailable:
-
-    # Gateway.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    resources: { }
-
-    # Gateway.priorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
-    priorityClassName: ""
-    # Gateway.nodeSelector can be used to define on which nodes the gateway pods should run
-    nodeSelector: { }
-    # Gateway.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-    tolerations: [ ]
-    # Gateway.affinity can be used to define pod affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-    affinity: { }
-
-    # Gateway.extraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
-    extraVolumeMounts: { }
-    # Gateway.extraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
-    extraVolumes: { }
-
-    # Gateway.service configuration for the gateway service
-    service:
-      # Gateway.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-      type: ClusterIP
-      # Gateway.Service.httpPort defines the port of the http endpoint, where for example metrics are provided
-      httpPort: 9600
-      # Gateway.Service.httpName defines the name of the http endpoint, where for example metrics are provided
-      httpName: "http"
-      # Gateway.Service.gatewayPort defines the port of the gateway endpoint, where client commands (grpc) are sent to
-      gatewayPort: 26500
-      # Gateway.Service.gatewayName defines the name of the gateway endpoint, where client commands (grpc) are sent to
-      gatewayName: "gateway"
-      # Gateway.Service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-      internalPort: 26502
-      # Gateway.Service.internalName defines the name of the internal api endpoint, which is used for internal communication
-      internalName: "internal"
-
-    # Gateway.serviceAccount configuration for the service account where the gateway pods are assigned to
-    serviceAccount:
-      # Gateway.serviceAccount.enabled if true, enables the gateway service account
-      enabled: true
-      # Gateway.serviceAccount.name can be used to set the name of the gateway service account
-      name: ""
-      # Gateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
-      annotations: { }
 
 # Operate configuration for the operate sub chart.
 operate:

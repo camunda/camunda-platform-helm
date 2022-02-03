@@ -1,8 +1,8 @@
 kind: ConfigMap
 metadata:
-  name: {{ include "zeebe.fullname" . }}
+  name: {{ include "zeebe-gateway.fullname" . }}
   labels: 
-    {{- include "zeebe.labels" . | nindent 4 }}
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
 apiVersion: v1
 data:
   startup.sh: |
@@ -35,14 +35,7 @@ data:
 
     exec /usr/local/zeebe/bin/broker
 
-  application.yaml: |
-{{- if .Values.zeebeCfg }}
-{{- with .Values.zeebeCfg }}
-{{ . | toYaml | indent 4 }}
-{{- end }}
-{{- end }}
-
-  broker-log4j2.xml: |
+  gateway-log4j2.xml: |
 {{- if .Values.log4j2 }}
     {{ .Values.log4j2 | indent 4 | trim }}
 {{- end }}
