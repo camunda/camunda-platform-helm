@@ -203,6 +203,22 @@ elasticsearch:
   imageTag: <YOUR VERSION HERE>
 ```
 
+### Kibana
+
+This chart has an **optional** dependency to the [Kibana Helm Chart](https://github.com/elastic/helm-charts/blob/main/kibana/README.md). All variables related to Kibana which can be found [here](https://github.com/elastic/helm-charts/blob/main/kibana/values.yaml) can be set under `kibana`.
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `kibana`| `enabled` | If true, enables the Kibana deployment as part of the Camunda cloud self-managed helm chart | `true` |
+
+**Example:**
+
+```yaml
+kibana:
+  enabled: true
+  imageTag: <YOUR VERSION HERE>
+```
+
 ## Examples
 
 ### Env Example
