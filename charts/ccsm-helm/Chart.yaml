@@ -32,6 +32,8 @@ dependencies:
   condition: "prometheus.enabled"
 annotations:
   artifacthub.io/changes: |
-    - add tasklist sub chart
-    - add zeebe values documentation 
+    - Add operate value docs by
+    - Create separate gateway sub chart
+    - Document tasklist values
+    - Add Common labels
   artifacthub.io/containsSecurityUpdates: "false"
