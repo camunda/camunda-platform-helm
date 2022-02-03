@@ -70,6 +70,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 ### Zeebe
 
+Information about Zeebe you can find [here](https://docs.camunda.io/docs/components/zeebe/zeebe-overview/).
+
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `zeebe` | Configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources. | |
@@ -119,6 +121,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 ### Zeebe-gateway
 
+Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/docs/components/zeebe/technical-concepts/architecture/#gateway).
+
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `zeebe-gateway`| | Configuration to define properties related to the Zeebe standalone gateway | |
@@ -156,6 +160,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 ### Operate
 
+Information about Operate you can find [here](https://docs.camunda.io/docs/components/operate/index/).
+
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `operate` | | Configuration for the Operate sub chart. | |
@@ -184,6 +190,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
 
 ### Tasklist
+
+Information about Tasklist you can find [here](https://docs.camunda.io/docs/components/tasklist/introduction/).
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
