@@ -175,11 +175,19 @@ kibana:
 
 ## Development
 
-For development purpose you might want to deploy and test the charts without creating a new release. In order to do this you can run the following:
+For development purpose you might want to deploy and test the charts without creating a new helm chart release. In order to do this you can run the following:
 
 ```sh
- helm install <RELEASENAME> charts/ccsm-helm/
+ helm install <RELEASENAME> --atomic --debug charts/ccsm-helm/
 ```
+
+ * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
+
+ * `--debug enable verbose output`
+
+To generate the resources / manifests without really install them you can use: 
+
+ * `--dry-run simulate an install`
 
 If you see errors like:
 
