@@ -137,6 +137,35 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `serviceAccount.name` | Can be used to set the name of the gateway service account | `""` |
 | | `serviceAccount.annotations` | Can be used to set the annotations of the gateway service account | `{ }` |
 
+### Operate
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `operate` | | Configuration for the operate sub chart. | |
+| | `enabled` | If true, the operate deployment and its related resources are deployed via a helm release | `true` |
+| | `logging` | Configuration for the operate logging. This template will be directly included in the operate configuration yaml file | `level:` <br/> `ROOT: INFO` <br/> `org.camunda.operate: DEBUG` |
+| | `service` | Configuration to configure the operate service. | |
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.port` | Defines the port of the service, where the operate web application will be available | `80` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 500m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` |
+| | `env` | Can be used to set extra environment variables in each operate container | `[ ]` |
+| | `extraVolumes` | Can be used to define extra volumes for the operate pods, useful for TLS and self-signed certificates | `{ }` |
+| | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for TLS and self-signed certificates | `{ }` |
+| | `serviceAccount` | Configuration for the service account where the operate pods are assigned to | |
+| | `serviceAccount.enabled` | If true, enables the operate service account | `true` |
+| | `serviceAccount.name` | Can be used to set the name of the operate service account | `""` |
+| | `serviceAccount.annotations` | Can be used to set the annotations of the operate service account | `{ }` |
+| | `ingress` | Configuration to configure the ingress resource | |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the operate deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
+| | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
+| | `ingress.path` | Defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
+| | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+| | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
+| | `podSecurityContext` | Defines the security options the operate container should be run with | `{ }` |
+
 
 ## Examples
 
