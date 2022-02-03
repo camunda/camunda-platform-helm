@@ -3,20 +3,20 @@ appVersion: "1.3.1"
 description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
 name: ccsm-helm
 type: application
-version: 0.0.3
+version: 0.0.4
 icon: https://helm.camunda.io/imgs/camunda-cloud.png
 dependencies:
 - name: zeebe
-  version: 0.0.1
+  version: 0.0.4
   condition: "zeebe.enabled"
 - name: zeebe-gateway
-  version: 0.0.1
+  version: 0.0.4
   condition: "zeebe.enabled"
 - name: operate
-  version: 0.0.1
+  version: 0.0.4
   condition: "operate.enabled"
 - name: tasklist
-  version: 0.0.1
+  version: 0.0.4
   condition: "tasklist.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
