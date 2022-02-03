@@ -4,7 +4,7 @@ description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
 name: ccsm-helm
 type: application
 version: 0.0.4
-icon: https://helm.camunda.io/imgs/camunda-cloud.png
+icon: https://helm.camunda.io/imgs/self-managed.png
 dependencies:
 - name: zeebe
   version: 0.0.4
