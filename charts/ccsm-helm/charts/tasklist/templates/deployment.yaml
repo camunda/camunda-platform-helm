@@ -2,17 +2,15 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "tasklist.fullname" . }}
-  labels:
-    app: {{ include "tasklist.fullname" . }}
+  labels: {{- include "tasklist.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ include "tasklist.fullname" . }}
+      {{- include "tasklist.labels" . | nindent 6 }}
   template:
     metadata:
-      labels:
-        app: {{ include "tasklist.fullname" . }}
+      labels: {{- include "tasklist.labels" . | nindent 8 }}
     spec:
       containers:
       - name: {{ .Chart.Name }}

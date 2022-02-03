@@ -2,8 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "zeebe.names.gateway" . }}
-  labels:
-    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+  labels: {{- include "zeebe.labels.gateway" . | nindent 4 }}
   annotations:
       {{- range $key, $value := .Values.annotations }}
       {{ $key }}: {{ $value | quote }}

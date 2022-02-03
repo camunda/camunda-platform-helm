@@ -3,8 +3,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "zeebe.fullname" . }}
-  labels:
-    {{- include "zeebe.labels" . | nindent 4 }}
+  labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
     release: metrics
 spec:
   selector:

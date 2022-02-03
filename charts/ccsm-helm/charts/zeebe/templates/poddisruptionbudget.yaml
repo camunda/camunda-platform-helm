@@ -3,8 +3,7 @@ apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
   name: {{ include "zeebe.names.broker" . }}
-  labels:
-    {{- include "zeebe.labels.broker" . | nindent 4 }}
+  labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
 spec:
   minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
   maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}

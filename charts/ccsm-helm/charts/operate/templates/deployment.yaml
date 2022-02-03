@@ -2,11 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "operate.fullname" . }}
-  labels:
-    app: {{ include "operate.fullname" . }}
-    {{- if .Values.global.labels }}
-    {{- toYaml .Values.global.labels | nindent 4 }}
-    {{- end }}
+  labels: {{- include "operate.labels" . | nindent 4 }}
   annotations:
       {{- range $key, $value := .Values.global.annotations }}
       {{ $key }}: {{ $value | quote }}
@@ -14,12 +10,10 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels:
-      app: {{ include "operate.fullname" . }}
+    matchLabels: {{- include "operate.labels" . | nindent 6 }}
   template:
     metadata:
-      labels:
-        app: {{ include "operate.fullname" . }}
+      labels: {{- include "operate.labels" . | nindent 8 }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
