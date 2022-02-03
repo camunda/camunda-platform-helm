@@ -282,11 +282,11 @@ operate:
       memory: 2Gi
 
   # Env can be used to set extra environment variables in each operate container
-  env:
+  env: []
   # ExtraVolumes can be used to define extra volumes for the operate pods, useful for tls and self-signed certificates
-  extraVolumes:
+  extraVolumes: {}
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for tls and self-signed certificates
-  extraVolumeMounts:
+  extraVolumeMounts: {}
 
   # ServiceAccount configuration for the service account where the operate pods are assigned to
   serviceAccount:
@@ -311,16 +311,16 @@ operate:
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host:
+    host: ""
     # Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName:
+      secretName: ""
 
   # PodSecurityContext defines the security options the operate container should be run with
-  podSecurityContext:
+  podSecurityContext: {}
 
 # Tasklist configuration for the tasklist sub chart.
 tasklist:
