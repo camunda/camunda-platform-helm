@@ -7,6 +7,50 @@ entries:
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
     appVersion: 1.3.1
+    created: "2022-02-03T21:06:08.423759562Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.4
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.4
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.4
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.4
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: b94e69556d1a55d52e62e4b9e2486ea97f162ebe127d9fdaa61d10e2932597a4
+    icon: https://helm.camunda.io/imgs/camunda-cloud.png
+    name: ccsm-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.4/ccsm-helm-0.0.4.tgz
+    version: 0.0.4
+  - annotations:
+      artifacthub.io/changes: "- add tasklist sub chart\n- add zeebe values documentation
+        \n"
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.1
     created: "2022-01-31T14:23:13.527095056Z"
     dependencies:
     - condition: zeebe.enabled
@@ -1745,4 +1789,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-01-31T14:23:13.527811461Z"
+generated: "2022-02-03T21:06:08.424072875Z"
