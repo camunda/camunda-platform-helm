@@ -4,7 +4,7 @@ metadata:
   name: {{ include "operate.fullname" . }}
   labels: {{- include "operate.labels" . | nindent 4 }}
   annotations:
-      {{- range $key, $value := .Values.annotations }}
+      {{- range $key, $value := .Values.global.annotations }}
       {{ $key }}: {{ $value | quote }}
       {{- end }}
 spec:
