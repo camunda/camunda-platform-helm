@@ -335,14 +335,14 @@ tasklist:
     port: 80
 
   # SpringProfilesActive can be used to set the active spring profiles used by tasklist
-  springProfilesActive:
+  springProfilesActive: ""
   # GraphqlPlaygroundEnabled if true, enables the graphql playground
-  graphqlPlaygroundEnabled:
+  graphqlPlaygroundEnabled: ""
   # GraphqlPlaygroundEnabled can be set to include the credentials in each request, should be set to "include" if graphql playground is enabled
-  graphqlPlaygroundRequestCredentials:
+  graphqlPlaygroundRequestCredentials: ""
 
   # PodSecurityContext defines the security options the operate container should be run with
-  podSecurityContext:
+  podSecurityContext: {}
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
