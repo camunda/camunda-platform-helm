@@ -15,10 +15,11 @@ This functionality is in beta and is subject to change. The design and code is l
 
 ## Installing
 
-* Add the official Camunda Cloud helm charts repo
-
 ```shell
+  # Add the official Camunda Cloud helm charts repo
   helm repo add camunda-cloud https://helm.camunda.io
+  # Install the Camunda Cloud Self Managed chart
+  helm install camunda-cloud camunda-cloud/ccsm-helm
 ```
 
 * Install it
