@@ -61,7 +61,7 @@ spec:
         - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
           value:
           {{- range (untilStep 0 (int .Values.clusterSize) 1) }}
-            $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local,
+            $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local:{{$.Values.service.internalPort}},
           {{- end }}
         - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
           value: {{ tpl .Values.global.zeebeClusterName . }}
