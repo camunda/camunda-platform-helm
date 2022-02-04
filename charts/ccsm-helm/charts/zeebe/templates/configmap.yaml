@@ -20,13 +20,6 @@ data:
     env
     exec /usr/local/zeebe/bin/broker
 
-  application.yaml: |
-{{- if .Values.zeebeCfg }}
-{{- with .Values.zeebeCfg }}
-{{ . | toYaml | indent 4 }}
-{{- end }}
-{{- end }}
-
   broker-log4j2.xml: |
 {{- if .Values.log4j2 }}
     {{ .Values.log4j2 | indent 4 | trim }}
