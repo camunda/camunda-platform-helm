@@ -46,6 +46,23 @@ spec:
         env:
         - name: LC_ALL
           value: C.UTF-8
+        - name: K8S_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_SERVICE_NAME
+          value: {{ include "zeebe.names.broker" . }}
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
+          value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local"
+        - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+          value:
+          {{- range (untilStep 0 (int .Values.clusterSize) 1) }}
+            $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local,
+          {{- end }}
         - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
           value: {{ tpl .Values.global.zeebeClusterName . }}
         - name: ZEEBE_LOG_LEVEL
