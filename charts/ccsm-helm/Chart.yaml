@@ -36,4 +36,7 @@ annotations:
     - Create separate gateway sub chart
     - Document tasklist values
     - Add Common labels
+    - Use correct labels in servicemonitor
+    - Remove unused zeebe.cfg from configmap
+    - Rework config map's
   artifacthub.io/containsSecurityUpdates: "false"
