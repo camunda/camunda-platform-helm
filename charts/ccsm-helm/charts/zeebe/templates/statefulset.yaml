@@ -126,9 +126,6 @@ spec:
           {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
         - name: config
-          mountPath: /usr/local/zeebe/config/application.yaml
-          subPath: application.yaml
-        - name: config
           mountPath: /usr/local/bin/startup.sh
           subPath: startup.sh
         - name: data
