@@ -14,10 +14,14 @@
   - Prometheus ServiceMonitor Enabled: {{ .Values.zeebe.prometheusServiceMonitor.enabled }}
 - Operate:
   - Enabled: {{ .Values.operate.enabled }}
+  {{- if .Values.operate.enabled }}
   - Docker Image used for Operate: {{ .Values.operate.global.image.repository }}:{{ .Values.global.image.tag }}
+  {{- end }}
 - Tasklist:
   - Enabled: {{ .Values.tasklist.enabled }}
+  {{- if .Values.tasklist.enabled }}
   - Docker Image used for Operate: {{ .Values.tasklist.global.image.repository }}:{{ .Values.global.image.tag }}
+  {{- end }}
 - Prometheus:
   - Enabled: {{ .Values.prometheus.enabled }}
 - Elasticsearch:
