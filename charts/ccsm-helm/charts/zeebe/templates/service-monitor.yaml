@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      {{- include "zeebe.labels" . | nindent 6 }}
+      {{- include "zeebe.labels.broker" . | nindent 6 }}
   endpoints:
     - honorLabels: true
       port: http
