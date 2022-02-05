@@ -41,7 +41,7 @@
 
 ## Configuration
 
-The following sections contain the configuration values for the chart and each sub chart. All of them can be overwritten via an separate `values.yaml` file.
+The following sections contain the configuration values for the chart and each sub chart. All of them can be overwritten via a separate `values.yaml` file.
 
 Check out the default [values.yaml](values.yaml) file, which contains the same content and documentation.
 
