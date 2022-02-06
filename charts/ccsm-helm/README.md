@@ -10,7 +10,7 @@
   * [Configuration](#configuration)
     + [Global](#global)
     + [Zeebe](#zeebe)
-    + [Zeebe-gateway](#zeebe-gateway)
+    + [Zeebe Gateway](#zeebe-gateway)
     + [Operate](#operate)
     + [Tasklist](#tasklist)
     + [Elasticsearch](#elasticsearch)
@@ -119,7 +119,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `readinessProbe.successThreshold` | Defines how often it needs to be true to be marked as ready, after failure | `1` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 
-### Zeebe-gateway
+### Zeebe Gateway
 
 Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/docs/components/zeebe/technical-concepts/architecture/#gateway).
 
