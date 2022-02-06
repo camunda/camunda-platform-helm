@@ -3,6 +3,50 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - rewrite README
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.1
+    created: "2022-02-06T13:40:10.120410394Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.9
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.9
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.9
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.9
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: f5d0378aced1e45eb3566c6cd42710678a31aceaab72ecf9d0a56fbb6740c331
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    name: ccsm-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.9/ccsm-helm-0.0.9.tgz
+    version: 0.0.9
+  - annotations:
+      artifacthub.io/changes: |
         - fix initial contactpoints
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -1974,4 +2018,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-02-04T14:07:55.143433974Z"
+generated: "2022-02-06T13:40:10.12073869Z"
