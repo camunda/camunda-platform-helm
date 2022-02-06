@@ -63,7 +63,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `elasticsearch.prefix` | Defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes | `zeebe-record` |
 | | `zeebeClusterName` | Defines the cluster name for the Zeebe cluster. All pods get this prefix in their name. | `{{ .Release.Name }}-zeebe` |
 | | `zeebePort` | Defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers. | 26500 |
-| `elasticsearch`| `enabled` | Enable ElasticSearch deployment as part of the Zeebe Cluster | `true` |
+| `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Zeebe Cluster | `true` |
 | `kibana`| `enabled` | Enable Kibana deployment as part of the Zeebe Cluster | `false` |
 | `prometheus`| `enabled` | Enable Prometheus operator as part of the Zeebe Cluster | `false` |
 | | `servicemonitor.enabled` | Deploy a `ServiceMonitor` for your Zeebe Cluster | `false` |
@@ -214,7 +214,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 
 ### Elasticsearch
 
-This chart has a dependency to the [ElasticSearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch which can be found [here](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) can be set under `elasticsearch`.
+This chart has a dependency to the [Elasticsearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch which can be found [here](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) can be set under `elasticsearch`.
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
