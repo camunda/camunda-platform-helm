@@ -75,6 +75,9 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `zeebe` | Configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources. | |
+| | `image` | Configuration to configure the Zeebe image specifics. | |
+| | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
+| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
 | | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
 | | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
@@ -127,6 +130,9 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 |-|-|-|-|
 | `zeebe-gateway`| | Configuration to define properties related to the Zeebe standalone gateway | |
 | | `replicas` | Defines how many standalone gateways are deployed | `1` |
+| | `image` | Configuration to configure the zeebe-gateway image specifics. | |
+| | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
+| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `podAnnotations` | Can be used to define extra gateway pod annotations | `{ }` |
 | | `podLabels` | Can be used to define extra gateway pod labels | `{ }` |
 | | `annotations` | Can be used to define gateway deployment annotations | `{ } `|
@@ -166,6 +172,9 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 |-|-|-|-|
 | `operate` | | Configuration for the Operate sub chart. | |
 | | `enabled` | If true, the Operate deployment and its related resources are deployed via a helm release | `true` |
+| | `image` | Configuration to configure the operate image specifics. | |
+| | `image.repository` | Defines which image repository to use. | `camunda/operate` |
+| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `logging` | Configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file | `level:` <br/> `ROOT: INFO` <br/> `org.camunda.operate: DEBUG` |
 | | `service` | Configuration to configure the Operate service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
@@ -197,6 +206,9 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 |-|-|-|-|
 | | `tasklist` | Configuration for the Tasklist sub chart. | |
 | | `enabled` | If true, the Tasklist deployment and its related resources are deployed via a helm release | `true` |
+| | `image` | Configuration to configure the tasklist image specifics. | |
+| | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
+| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `service` | Configuration to configure the Tasklist service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Tasklist web application will be available | `80` |

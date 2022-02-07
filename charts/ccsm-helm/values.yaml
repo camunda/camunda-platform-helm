@@ -33,9 +33,6 @@ global:
 
   # Image configuration to be used in each sub chart
   image:
-    # global.image.repository is net set here, otherwise it will overwrite the values from the sub chart
-    #    repository: camunda/zeebe
-
     # Image.tag defines the tag / version which should be used in the chart
     tag: 1.3.1
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
@@ -66,6 +63,13 @@ global:
 zeebe:
   # Enabled if true, all zeebe related resources are deployed via the helm release
   enabled: true
+
+  # Image configuration to configure the zeebe image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/zeebe
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
 
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
@@ -184,6 +188,12 @@ zeebe:
 zeebe-gateway:
   # Replicas defines how many standalone gateways are deployed
   replicas: 1
+  # Image configuration to configure the zeebe-gateway image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/zeebe
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
   # PodAnnotations can be used to define extra gateway pod annotations
   podAnnotations: { }
   # PodLabels can be used to define extra gateway pod labels
@@ -259,6 +269,13 @@ operate:
   # Enabled if true, the operate deployment and its related resources are deployed via a helm release
   enabled: true
 
+  # Image configuration to configure the operate image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/operate
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
+
   # Logging configuration for the operate logging. This template will be directly included in the operate configuration yaml file
   logging:
     level:
@@ -326,6 +343,13 @@ operate:
 tasklist:
   # Enabled if true, the tasklist deployment and its related resources are deployed via a helm release
   enabled: true
+
+  # Image configuration to configure the tasklist image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/tasklist
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
 
   # Service configuration to configure the tasklist service.
   service:

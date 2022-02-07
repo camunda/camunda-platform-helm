@@ -1,4 +1,0 @@
-global:
-  image:
-    # global.image.repository overwrites the default repository to the operate image
-    repository: camunda/operate
