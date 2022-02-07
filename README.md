@@ -37,6 +37,17 @@ Follow [the instructions in the Camunda Cloud documentation](https://docs.zeebe.
 
 **Note check the [kind/ccsm-kind-values](kind/ccsm-kind-values) file to get ccsm-helm running with kind*
 
+
+## Configure Charts
+
+Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [CCSM-HELM Readme](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md) for more information.
+
+Example to enable the prometheus servicemonitor for Zeebe:
+
+```sh
+helm install <YOUR HELM RELEASE NAME> camunda-cloud/ccsm-helm --set zeebe.prometheusServiceMonitor.enabled=true
+```
+
 ## Uninstalling Charts
 
 You can remove these charts by running:
