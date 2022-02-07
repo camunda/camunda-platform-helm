@@ -371,7 +371,7 @@ tasklist:
 
 # RetentionPolicy configuration to configure the elasticsearch index retention policies
 retentionPolicy:
-  # RetentionPolicy.enabled if true, elasticsearch curator cronjob will be deployed
+  # RetentionPolicy.enabled if true, elasticsearch curator cronjob and configuration will be deployed.
   enabled: false
   # RetentionPolicy.schedule defines how often/when the curator should run
   schedule: "0 0 * * *"
@@ -381,7 +381,7 @@ retentionPolicy:
   # After reaching that size, curator will delete that corresponding index on the next run.
   # To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes.
   zeebeIndexMaxSize:
-  # RetentionPolicy.operateIndexTTL defines after how many days an Operate index can be deleted
+  # RetentionPolicy.operateIndexTTL defines after how many days an operate index can be deleted
   operateIndexTTL: 30
   # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
   tasklistIndexTTL: 30
