@@ -35,7 +35,7 @@ spec:
         - name: {{ .Chart.Name }}
           {{- if .Values.image.tag }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          {{- else -}}
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
           {{- end }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
