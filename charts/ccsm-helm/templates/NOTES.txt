@@ -22,14 +22,9 @@
   {{- if .Values.tasklist.enabled }}
   - Docker Image used for Operate: {{ .Values.tasklist.global.image.repository }}:{{ .Values.global.image.tag }}
   {{- end }}
-- Prometheus:
-  - Enabled: {{ .Values.prometheus.enabled }}
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
   - ElasticSearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
-- Kibana:
-  - Enabled: {{ .Values.kibana.enabled }}
-
 
 ### Zeebe
 

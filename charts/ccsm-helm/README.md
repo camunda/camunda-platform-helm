@@ -14,8 +14,6 @@
     + [Operate](#operate)
     + [Tasklist](#tasklist)
     + [Elasticsearch](#elasticsearch)
-    + [Kibana](#kibana)
-    + [Prometheus](#prometheus)
   * [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
   * [Development](#development)
 
@@ -64,8 +62,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `zeebeClusterName` | Defines the cluster name for the Zeebe cluster. All pods get this prefix in their name. | `{{ .Release.Name }}-zeebe` |
 | | `zeebePort` | Defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers. | 26500 |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Zeebe Cluster | `true` |
-| `kibana`| `enabled` | Enable Kibana deployment as part of the Zeebe Cluster | `false` |
-| `prometheus`| `enabled` | Enable Prometheus operator as part of the Zeebe Cluster | `false` |
 | | `servicemonitor.enabled` | Deploy a `ServiceMonitor` for your Zeebe Cluster | `false` |
 
 ### CCSM
@@ -252,38 +248,6 @@ elasticsearch:
   imageTag: <YOUR VERSION HERE>
 ```
 
-### Kibana
-
-This chart has an **optional** dependency to the [Kibana Helm Chart](https://github.com/elastic/helm-charts/blob/main/kibana/README.md). All variables related to Kibana which can be found [here](https://github.com/elastic/helm-charts/blob/main/kibana/values.yaml) can be set under `kibana`.
-
-| Section | Parameter | Description | Default |
-|-|-|-|-|
-| `kibana`| `enabled` | If true, enables the Kibana deployment as part of the Camunda cloud self-managed helm chart | `true` |
-
-**Example:**
-
-```yaml
-kibana:
-  enabled: true
-  imageTag: <YOUR VERSION HERE>
-```
-
-### Prometheus
-
-This chart has an **optional** dependency to the [Prometheus Helm Chart](https://github.com/prometheus-community/helm-charts). All variables related to Prometheus which can be found [here](https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml) can be set under `prometheus`.
-
-| Section | Parameter | Description | Default |
-|-|-|-|-|
-| `prometheus`| `enabled` | If true, enables the Prometheus deployment as part of the Camunda cloud self-managed helm chart | `true` |
-
-**Example:**
-
-```yaml
-prometheus:
-  enabled: true
-  imageTag: <YOUR VERSION HERE>
-```
-
 ## Adding dynamic exporters to Zeebe Brokers
 
 This chart supports the addition of Zeebe Exporters by using initContainer as shown in the following example:
@@ -330,7 +294,7 @@ To generate the resources / manifests without really install them you can use:
 If you see errors like:
 
 ```sh
-Error: found in Chart.yaml, but missing in charts/ directory: elasticsearch, kibana, kube-prometheus-stack
+Error: found in Chart.yaml, but missing in charts/ directory: elasticsearch
 ```
 
 Then you need to download the dependencies first. You can do this via:
@@ -347,7 +311,5 @@ Hang tight while we grab the latest from your chart repositories...
 Update Complete. ⎈Happy Helming!⎈
 Saving 3 charts
 Downloading elasticsearch from repo https://helm.elastic.co
-Downloading kibana from repo https://helm.elastic.co
-Downloading kube-prometheus-stack from repo https://prometheus-community.github.io/helm-charts
 Deleting outdated charts
 ```
