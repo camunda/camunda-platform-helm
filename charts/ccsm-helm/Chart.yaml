@@ -3,20 +3,20 @@ appVersion: "1.3.1"
 description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
 name: ccsm-helm
 type: application
-version: 0.0.9
+version: 0.0.10
 icon: https://helm.camunda.io/imgs/self-managed.png
 dependencies:
 - name: zeebe
-  version: 0.0.9
+  version: 0.0.10
   condition: "zeebe.enabled"
 - name: zeebe-gateway
-  version: 0.0.9
+  version: 0.0.10
   condition: "zeebe.enabled"
 - name: operate
-  version: 0.0.9
+  version: 0.0.10
   condition: "operate.enabled"
 - name: tasklist
-  version: 0.0.9
+  version: 0.0.10
   condition: "tasklist.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
@@ -32,5 +32,5 @@ dependencies:
   condition: "prometheus.enabled"
 annotations:
   artifacthub.io/changes: |
-    - rewrite README
+    - disable ingress per default
   artifacthub.io/containsSecurityUpdates: "false"
