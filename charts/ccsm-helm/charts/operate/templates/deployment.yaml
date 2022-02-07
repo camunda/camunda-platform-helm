@@ -17,7 +17,11 @@ spec:
     spec:
       containers:
       - name: {{ .Chart.Name }}
-        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+        {{- if .Values.image.tag }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- else -}}
+        image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
+        {{- end }}
         {{- if .Values.env}}
         env:
         {{ .Values.env | toYaml | nindent 10 }}
