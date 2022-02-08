@@ -8,7 +8,7 @@ icon: https://helm.camunda.io/imgs/zeebe-logo.png
 dependencies:
 - name: zeebe-cluster-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
-  version: 1.3.4
+  version: 1.3.5
 - name: zeebe-operate-helm
   repository: https://camunda-community-hub.github.io/camunda-cloud-helm/
   version: 1.3.1
