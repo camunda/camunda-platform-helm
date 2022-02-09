@@ -1,0 +1,149 @@
+---
+# Source: ccsm-helm/charts/zeebe/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "ccsm-helm-test-zeebe"
+  labels:
+    app: camunda-cloud-self-managed
+    app.kubernetes.io/name: zeebe
+    helm.sh/chart: zeebe-0.0.11
+    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/version: 1.3.1
+    app.kubernetes.io/part-of: camunda-cloud-self-managed
+    app.kubernetes.io/component: zeebe-broker
+  annotations:
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: camunda-cloud-self-managed
+      app.kubernetes.io/name: zeebe
+      helm.sh/chart: zeebe-0.0.11
+      app.kubernetes.io/instance: ccsm-helm-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/version: 1.3.1
+      app.kubernetes.io/part-of: camunda-cloud-self-managed
+      app.kubernetes.io/component: zeebe-broker
+  serviceName: "ccsm-helm-test-zeebe"
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: camunda-cloud-self-managed
+        app.kubernetes.io/name: zeebe
+        helm.sh/chart: zeebe-0.0.11
+        app.kubernetes.io/instance: ccsm-helm-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/version: 1.3.1
+        app.kubernetes.io/part-of: camunda-cloud-self-managed
+        app.kubernetes.io/component: zeebe-broker
+      annotations:
+    spec:
+      initContainers:
+      containers:
+      - name: zeebe
+        image: "camunda/zeebe:1.3.1"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: LC_ALL
+          value: C.UTF-8
+        - name: K8S_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_SERVICE_NAME
+          value: "ccsm-helm-test-zeebe"
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
+          value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local"
+        - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+          value:
+            $(K8S_SERVICE_NAME)-0.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local:26502,
+            $(K8S_SERVICE_NAME)-1.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local:26502,
+            $(K8S_SERVICE_NAME)-2.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc.cluster.local:26502,
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
+          value: ccsm-helm-test-zeebe
+        - name: ZEEBE_LOG_LEVEL
+          value: "info"
+        - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
+          value: "3"
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
+          value: "3"
+        - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
+          value: "3"
+        - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+          value: "2"
+        - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+          value: "2"
+        - name: ZEEBE_BROKER_GATEWAY_ENABLE
+          value: "false"
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
+          value: "http://elasticsearch-master:9200"
+        - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
+          value: "26501"
+        - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
+          value: "26502"
+        - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
+          value: "9600"
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: JAVA_TOOL_OPTIONS
+          value: "-XX:MaxRAMPercentage=25.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
+        ports:
+        - containerPort: 9600
+          name: http
+        - containerPort: 26501
+          name: command
+        - containerPort: 26502
+          name: internal
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9600
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/bin/startup.sh
+          subPath: startup.sh
+        - name: data
+          mountPath: /usr/local/zeebe/data
+        - name: exporters
+          mountPath: /exporters
+        securityContext:
+          {}
+      volumes:
+      - name: config
+        configMap:
+          name: ccsm-helm-test-zeebe
+          defaultMode: 0744
+      - name: exporters
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ReadWriteOnce]
+      storageClassName: 
+      resources:
+        requests:
+          storage: "10Gi"

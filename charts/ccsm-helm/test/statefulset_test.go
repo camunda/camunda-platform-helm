@@ -1,6 +1,7 @@
 package test
 
 import (
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -71,4 +72,30 @@ func (s *statefulSetTemplateTest) TestContainerDefaults() {
 	expectedEnv := v1.EnvVar{Name: "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", Value: "3"}
 	envs := statefulSet.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(envs, expectedEnv)
+}
+
+func (s *statefulSetTemplateTest) TestContainerDefaultsStatefulsetGolden() {
+	options := &helm.Options{
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	actual := []byte(output)
+
+	goldenFile := "statefulset.golden.json"
+
+	update := false
+
+	if (update) {
+		err := ioutil.WriteFile(goldenFile, actual, 0644)
+		if err != nil {
+			return
+		}
+	}
+
+	expected, err := ioutil.ReadFile(goldenFile)
+	if err != nil {
+		return
+	}
+
+	s.Require().Equal(string(expected), output)
 }

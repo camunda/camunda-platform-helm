@@ -41,11 +41,7 @@ spec:
         {{- end }}
       containers:
       - name: {{ .Chart.Name }}
-        {{- if .Values.image.tag }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        {{- else }}
-        image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
-        {{- end }}
+        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         env:
         - name: LC_ALL
