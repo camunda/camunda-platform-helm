@@ -68,6 +68,18 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `prometheus`| `enabled` | Enable Prometheus operator as part of the Zeebe Cluster | `false` |
 | | `servicemonitor.enabled` | Deploy a `ServiceMonitor` for your Zeebe Cluster | `false` |
 
+### CCSM
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `retentionPolicy` | | Configuration to configure the elasticsearch index retention policies | |
+| | `enabled` | If true, elasticsearch curator cronjob and configuration will be deployed. | `false` |
+| | `schedule` | Defines how often/when the curator should run. | `"0 0 * * *"` |
+| | `zeebeIndexTTL` | Defines after how many days a zeebe index can be deleted. | `1` |
+| | `zeebeIndexMaxSize` | Can be set to configure the maximum allowed zeebe index size in gigabytes. After reaching that size, curator will delete that corresponding index on the next run. To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes. | `` |
+| | `operateIndexTTL` | Defines after how many days an operate index can be deleted. | `30` |
+| | `tasklistIndexTTL` | Defines after how many days an tasklist index can be deleted. | `30` |
+
 ### Zeebe
 
 Information about Zeebe you can find [here](https://docs.camunda.io/docs/components/zeebe/zeebe-overview/).

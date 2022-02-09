@@ -1,0 +1,30 @@
+{{- if .Values.retentionPolicy.enabled -}}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: ccsm-curator
+  labels:
+    {{- include "ccsm.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.retentionPolicy.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - image: bitnami/elasticsearch-curator:5.8.4
+              name: curator
+              args: ["--config", "/etc/config/config.yml", "/etc/config/action_file.yml"]
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/config
+          volumes:
+            - name: config
+              configMap:
+                name: curator-config
+          restartPolicy: OnFailure
+{{- end }}
