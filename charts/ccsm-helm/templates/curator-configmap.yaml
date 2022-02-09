@@ -15,7 +15,7 @@ data:
     # want to use this action as a template, be sure to set this to False after
     # copying it.
     actions:
-      # delete zeebe- indicies
+      # delete zeebe- indices
       1:
         action: delete_indices
         description: "Clean up ES by deleting old Zeebe indices"
@@ -38,7 +38,7 @@ data:
             stats_result:
             epoch:
             exclude: False
-      # delete operate- indicies
+      # delete operate- indices
       2:
         action: delete_indices
         description: "Clean up ES by deleting old Operate indices"
@@ -61,7 +61,7 @@ data:
             stats_result:
             epoch:
             exclude: False
-      # delete tasklist- indicies
+      # delete tasklist- indices
       3:
         action: delete_indices
         description: "Clean up ES by deleting old Tasklist indices"
@@ -84,7 +84,7 @@ data:
             stats_result:
             epoch:
             exclude: False
-      # or delete indicies which exceed the total size of 10 gig
+      # or delete indices which exceed the total size of 10 gig
     {{- if .Values.retentionPolicy.zeebeIndexMaxSize }}
       4:
         action: delete_indices
