@@ -3,6 +3,50 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - add retention policy for elastic data
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.1
+    created: "2022-02-09T14:37:45.139746238Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.12
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.12
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.12
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.12
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: kibana.enabled
+      name: kibana
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    - condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 12.0.X
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: 42c92ec28b5ed448297ddbf713ec59de7bc6169c90f923038e99326bab29592c
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    name: ccsm-helm
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.12/ccsm-helm-0.0.12.tgz
+    version: 0.0.12
+  - annotations:
+      artifacthub.io/changes: |
         - allow to set image tag and repo per subchart
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -2163,4 +2207,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-02-08T12:33:48.482385826Z"
+generated: "2022-02-09T14:37:45.314557165Z"
