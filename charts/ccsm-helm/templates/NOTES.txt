@@ -33,6 +33,7 @@ The Cluster itself is not exposed as a service that means that you can use `kube
 > kubectl port-forward svc/{{ tpl .Values.global.zeebeClusterName . }}-gateway 26500:26500 -n {{ .Release.Namespace }}
 
 Now you can connect your workers and clients to `localhost:26500`
+{{- if .Values.operate.enabled }}
 
 ### Operate
 
@@ -44,6 +45,8 @@ If you don't have an Ingress Controller you can do kubectl port-forward to acces
 Now you can point your browser to `http://localhost:8080`
 
 Default user and password: "demo/demo"
+{{- end }}
+{{- if .Values.tasklist.enabled }}
 
 ### Tasklist
 
@@ -55,3 +58,4 @@ If you don't have an Ingress Controller you can do kubectl port-forward to acces
 Now you can point your browser to `http://localhost:8080`
 
 Default user and password: "demo/demo"
+{{- end }}
