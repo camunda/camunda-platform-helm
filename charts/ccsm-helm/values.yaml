@@ -34,7 +34,7 @@ global:
   # Image configuration to be used in each sub chart
   image:
     # Image.tag defines the tag / version which should be used in the chart
-    tag: 1.3.1
+    tag: 1.3.4
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
