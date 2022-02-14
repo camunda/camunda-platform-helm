@@ -55,5 +55,5 @@ spec:
       {{- end }}
       {{- if .Values.podSecurityContext }}
       securityContext:
-        {{ toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}
