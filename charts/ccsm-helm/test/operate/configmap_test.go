@@ -1,7 +1,6 @@
 package operate
 
 import (
-	"flag"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -13,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
-
-var update = flag.Bool("update-golden", false, "update golden test output files")
 
 type configmapTemplateTest struct {
 	suite.Suite
@@ -49,16 +46,12 @@ func (s *configmapTemplateTest) TestContainerGoldenTestConfigMapDefaults() {
 
 	if *update {
 		err := ioutil.WriteFile(goldenFile, actual, 0644)
-		if err != nil {
-			return
-		}
+		s.Require().NoError(err, "Golden file was not writable")
 	}
 
 	expected, err := ioutil.ReadFile(goldenFile)
-	if err != nil {
-		s.Fail("Golden file doesn't exist or was not readable", err)
-		return
-	}
 
+	// then
+	s.Require().NoError(err, "Golden file doesn't exist or was not readable")
 	s.Require().Equal(string(expected), output)
 }
