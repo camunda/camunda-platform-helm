@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  HELM_VERSION: 3.6.3
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,6 +29,15 @@ jobs:
           echo "Some files are not following the go format ($diff), run gofmt and fix your files."
           exit 1
         fi
-     
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: "${{ env.HELM_VERSION }}"
+    - name: Add stable helm repo
+      run: |
+        helm repo add elastic https://helm.elastic.co
+        helm repo update
+    - name: Get Helm Deps
+      run: make deps
     - name: Test
-      run: go test -v ./...
+      run: make test
