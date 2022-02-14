@@ -101,8 +101,8 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// then
 	expectedContainerImage := "camunda/operate:a.b.c"
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(len(containers), 1)
-	s.Require().Equal(containers[0].Image, expectedContainerImage)
+	s.Require().Equal(1, len(containers))
+	s.Require().Equal(expectedContainerImage, containers[0].Image)
 }
 
 func (s *deploymentTemplateTest) TestContainerGoldenTestDeploymentDefaults() {
