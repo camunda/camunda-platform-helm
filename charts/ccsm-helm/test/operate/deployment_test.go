@@ -221,6 +221,26 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
+func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.serviceAccount.name":        "accName",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	serviceAccName := deployment.Spec.Template.Spec.ServiceAccountName
+	s.Require().Equal("accName", serviceAccName)
+}
+
 func (s *deploymentTemplateTest) TestContainerGoldenTestDeploymentDefaults() {
 	// given
 	options := &helm.Options{
