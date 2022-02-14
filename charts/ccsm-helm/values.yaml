@@ -416,12 +416,3 @@ elasticsearch:
   extraEnvs:
     - name: "xpack.security.enabled"
       value: "false"
-
-kibana:
-  enabled: false
-  imageTag: 7.16.2
-
-prometheus:
-  enabled: false
-  servicemonitor:
-    enabled: false
