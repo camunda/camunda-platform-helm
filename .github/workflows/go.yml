@@ -18,13 +18,13 @@ jobs:
         go-version: 1.17
 
     - name: Format
-      uses: actions/github-script@v3
-      with:
-       script: |
+      run: |
         go fmt -v ./...
-        if [ -n "$(git status --porcelain)" ]
+        diff=$(git status --porcelain)
+        if [ -n "$diff" ]
         then
-          core.setFailed('Some files are not following the go format, run gofmt and fix your files.')
+          echo "Some files are not following the go format ($diff), run gofmt and fix your files."
+          exit 1
         fi
      
     - name: Test
