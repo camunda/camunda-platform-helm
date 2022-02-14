@@ -1,6 +1,5 @@
 package operate
 
-
 import (
 	"io/ioutil"
 	"path/filepath"
@@ -14,7 +13,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 )
-
 
 type deploymentTemplateTest struct {
 	suite.Suite
@@ -42,10 +40,10 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.image.tag":        "a.b.c",
+			"operate.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -64,10 +62,10 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag":        "a.b.c",
+			"global.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -86,11 +84,11 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag":        "x.y.z",
-			"operate.image.tag":        "a.b.c",
+			"global.image.tag":  "x.y.z",
+			"operate.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -109,10 +107,10 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.command":        "[printenv]",
+			"operate.command": "[printenv]",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -131,12 +129,12 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.extraVolumes[0].name":        "extraVolume",
+			"operate.extraVolumes[0].name":                  "extraVolume",
 			"operate.extraVolumes[0].configMap.name":        "otherConfigMap",
-			"operate.extraVolumes[0].configMap.defaultMode":        "744",
+			"operate.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -159,11 +157,11 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.extraVolumeMounts[0].name":        "otherConfigMap",
-			"operate.extraVolumeMounts[0].mountPath":        "/usr/local/config",
+			"operate.extraVolumeMounts[0].name":      "otherConfigMap",
+			"operate.extraVolumeMounts[0].mountPath": "/usr/local/config",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -186,14 +184,14 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.extraVolumeMounts[0].name":        "otherConfigMap",
+			"operate.extraVolumeMounts[0].name":             "otherConfigMap",
 			"operate.extraVolumeMounts[0].mountPath":        "/usr/local/config",
-			"operate.extraVolumes[0].name":        "extraVolume",
+			"operate.extraVolumes[0].name":                  "extraVolume",
 			"operate.extraVolumes[0].configMap.name":        "otherConfigMap",
-			"operate.extraVolumes[0].configMap.defaultMode":        "744",
+			"operate.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -225,10 +223,10 @@ func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.serviceAccount.name":        "accName",
+			"operate.serviceAccount.name": "accName",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -248,7 +246,7 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 			"operate.podSecurityContext.runAsUser": "1000",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
 	}
 
 	// when
@@ -281,4 +279,3 @@ func (s *deploymentTemplateTest) TestContainerGoldenTestDeploymentDefaults() {
 	s.Require().NoError(err, "Golden file doesn't exist or was not readable")
 	s.Require().Equal(string(expected), output)
 }
-
