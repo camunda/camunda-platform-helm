@@ -1,9 +1,10 @@
-clusterSize: 1
-partitionCount: 1
-replicationFactor: 1
+zeebe: 
+  clusterSize: 1
+  partitionCount: 1
+  replicationFactor: 1
 
 elasticsearch:
-  imageTag: 7.14.0
+  imageTag: 7.16.1
   replicas: 1
   minimumMasterNodes: 1
   # Allow no backup for single node setups
@@ -25,3 +26,4 @@ elasticsearch:
     resources:
       requests:
         storage: 15Gi
+
