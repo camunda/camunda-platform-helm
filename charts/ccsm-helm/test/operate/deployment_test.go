@@ -105,6 +105,28 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
 }
 
+func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.command":        "[printenv]",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs: map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	containers := deployment.Spec.Template.Spec.Containers
+	s.Require().Equal(len(containers), 1)
+	s.Require().Equal(1, len(containers[0].Command))
+	s.Require().Equal("printenv", containers[0].Command[0])
+}
+
 func (s *deploymentTemplateTest) TestContainerGoldenTestDeploymentDefaults() {
 	// given
 	options := &helm.Options{
