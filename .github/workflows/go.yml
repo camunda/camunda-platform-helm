@@ -19,7 +19,7 @@ jobs:
 
     - name: Format
       run: |
-        go fmt -v ./...
+        go fmt ./...
         diff=$(git status --porcelain)
         if [ -n "$diff" ]
         then
