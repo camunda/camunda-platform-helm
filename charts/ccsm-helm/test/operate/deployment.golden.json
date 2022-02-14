@@ -61,5 +61,3 @@ spec:
         configMap:
           name: ccsm-helm-test-operate
           defaultMode: 0744
-      securityContext:
-        {}
