@@ -33,7 +33,7 @@ Per default the following will be installed:
   - Tasklist
   - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
 
-Follow [the instructions in the Camunda Cloud documentation](https://docs.zeebe.io/kubernetes/installing-helm.html) to install Camunda Cloud to a K8s cluster.
+Follow [the instructions in the Camunda Cloud documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Cloud to a K8s cluster.
 
 **Note check the [kind/ccsm-kind-values](kind/ccsm-kind-values) file to get ccsm-helm running with kind*
 
