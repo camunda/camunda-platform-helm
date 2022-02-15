@@ -3,6 +3,50 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - bump appVersion in Chart.yaml to 1.3.4
+        - fix notes, not show service messages if disabled
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.4
+    created: "2022-02-15T05:54:01.037336565Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.15
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.15
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.15
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.15
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: 89f8303a279f7538b29ae03ed96224a4bc5466461e1f46a8c01d8f027bee88ca
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: ccsm-helm
+    sources:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm
+    - https://github.com/camunda-cloud/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.15/ccsm-helm-0.0.15.tgz
+    version: 0.0.15
+  - annotations:
+      artifacthub.io/changes: |
         - bump versions to 1.3.4
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -2383,4 +2427,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-02-14T07:39:13.648695611Z"
+generated: "2022-02-15T05:54:01.037905373Z"
