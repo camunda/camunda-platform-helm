@@ -6,7 +6,6 @@
   * [Uninstalling Charts](#uninstalling-charts)
   * [Deprecation of zeebe charts](#deprecation-of-zeebe-charts)
   * [Issues](#issues)
-  * [Releasing the Charts](#releasing-the-charts)
 
  
 The Camunda Cloud Helm repo, contains and host Camunda Cloud related helm charts.
@@ -32,7 +31,7 @@ helm install <YOUR HELM RELEASE NAME> camunda-cloud/ccsm-helm
 
 Per default the following will be installed:
 
-- [ccsm-helm](charts/ccsm-helm)
+- [ccsm-helm](https://github.com/camunda-community-hub/camunda-cloud-helm/tree/main/charts/ccsm-helm)
   - Zeebe
   - Zeebe Gateway
   - Operate
@@ -41,7 +40,7 @@ Per default the following will be installed:
 
 Follow [the instructions in the Camunda Cloud documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Cloud to a K8s cluster.
 
-> ***Note**: check the [kind/ccsm-kind-values](kind/ccsm-kind-values.yaml) file to get ccsm-helm running with kind*
+> ***Note**: check the [kind/ccsm-kind-values](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/kind/ccsm-kind-values.yaml) file to get ccsm-helm running with kind*
 
 
 ## Configure Charts
