@@ -1,8 +1,16 @@
 [![Community Extension](https://img.shields.io/badge/Community%20Extension-An%20open%20source%20community%20maintained%20project-FF4700)](https://github.com/camunda-community-hub/community)[![Lifecycle: Incubating](https://img.shields.io/badge/Lifecycle-Incubating-blue)](https://github.com/Camunda-Community-Hub/community/blob/main/extension-lifecycle.md#incubating-)[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda-cloud-helm)](https://artifacthub.io/packages/search?repo=camunda-cloud-helm)
 
 
-# Camunda Cloud Helm
+- [Camunda Cloud Helm](#camunda-cloud-helm)
+  * [Installing Charts](#installing-charts)
+  * [Configure Charts](#configure-charts)
+  * [Uninstalling Charts](#uninstalling-charts)
+  * [Issues](#issues)
+  * [Releasing the Charts](#releasing-the-charts)
 
+
+# Camunda Cloud Helm
+ 
 The Camunda Cloud Helm repo, contains and host Camunda Cloud related helm charts.
 
 The charts can be accessed by adding the following Helm repo to your Helm setup:
