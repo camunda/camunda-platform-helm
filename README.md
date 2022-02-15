@@ -35,7 +35,7 @@ Per default the following will be installed:
 
 Follow [the instructions in the Camunda Cloud documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Cloud to a K8s cluster.
 
-**Note check the [kind/ccsm-kind-values](kind/ccsm-kind-values) file to get ccsm-helm running with kind*
+> ***Note**: check the [kind/ccsm-kind-values](kind/ccsm-kind-values.yaml) file to get ccsm-helm running with kind*
 
 
 ## Configure Charts
