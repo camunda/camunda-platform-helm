@@ -5,6 +5,7 @@
   * [Installing Charts](#installing-charts)
   * [Configure Charts](#configure-charts)
   * [Uninstalling Charts](#uninstalling-charts)
+  * [Deprecation of zeebe charts](#deprecation-of-zeebe-charts)
   * [Issues](#issues)
   * [Releasing the Charts](#releasing-the-charts)
 
@@ -78,7 +79,7 @@ kubectl delete pvc <PVC ids here>
 
 Or delete the related kubernetes namespace, which contains the resources.
 
-## Deprecation of zeebe-*-helm
+## Deprecation of zeebe charts
 
 With the creation of the Camunda Cloud Self Managed (CCSM) helm charts, the old zeebe-* charts have been deprecated.
 This means they are no longer part of the repository and no longer maintained. The packaged charts are still available
