@@ -20,4 +20,16 @@ The Cluster itself is not exposed as a service that means that you can use kubec
 Now you can connect your workers and clients to `localhost:26500`
 
 
+  _____    ______   _____    _____    ______    _____              _______   ______   _____
+ |  __ \  |  ____| |  __ \  |  __ \  |  ____|  / ____|     /\     |__   __| |  ____| |  __ \
+ | |  | | | |__    | |__) | | |__) | | |__    | |         /  \       | |    | |__    | |  | |
+ | |  | | |  __|   |  ___/  |  _  /  |  __|   | |        / /\ \      | |    |  __|   | |  | |
+ | |__| | | |____  | |      | | \ \  | |____  | |____   / ____ \     | |    | |____  | |__| |
+ |_____/  |______| |_|      |_|  \_\ |______|  \_____| /_/    \_\    |_|    |______| |_____/
+
+
+Please be aware that this helm chart has been deprecated and is no longer maintained!
+It was fully replaced by new helm chart, check out helm.camunda.io for more details.
+
+
 
