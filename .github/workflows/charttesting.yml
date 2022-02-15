@@ -27,19 +27,14 @@ jobs:
         uses: azure/setup-helm@v1
         with:
           version: "${{ env.HELM_VERSION }}"
-      - name: Add stable helm repo
+      - name: Add elastic helm repo
         run: |
           helm repo add elastic https://helm.elastic.co
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo add stable https://charts.helm.sh/stable
           helm repo update
 
       - name: Get Helm Deps
         run: |
-          helm dependency build charts/zeebe-full-helm
-          helm dependency build charts/zeebe-cluster-helm
-          helm dependency build charts/zeebe-zeeqs-helm
-          
+          helm dependency build charts/ccsm-helm
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7
