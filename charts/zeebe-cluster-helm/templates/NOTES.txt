@@ -28,8 +28,8 @@ Now you can connect your workers and clients to `localhost:26500`
  |_____/  |______| |_|      |_|  \_\ |______|  \_____| /_/    \_\    |_|    |______| |_____/
 
 
-Please be aware that this helm chart has been deprecated and is no longer maintained!
-It was fully replaced by new helm chart, check out helm.camunda.io for more details.
+Please note that this helm chart has been deprecated and is no longer maintained!
+Check out helm.camunda.io to find more information on how to upgrade to the new helm chart.
 
 
 
