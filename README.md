@@ -78,6 +78,24 @@ kubectl delete pvc <PVC ids here>
 
 Or delete the related kubernetes namespace, which contains the resources.
 
+## Deprecation of zeebe-*-helm
+
+With the creation of the Camunda Cloud Self Managed (CCSM) helm charts, the old zeebe-* charts have been deprecated.
+This means they are no longer part of the repository and no longer maintained. The packaged charts are still available
+for download.
+
+The following charts are deprecated:
+
+ * zeebe-full-helm
+ * zeebe-cluster-helm
+ * zeebe-operate-helm
+ * zeebe-tasklist-helm
+
+The new `ccsm-helm` chart is a full replacement of `zeebe-full-helm` and replaces (contains) all other charts as sub-charts.
+All sub-charts in `ccsm-helm` are per default enabled.
+
+For a complete migration guide see [here](MIGRATION.md).
+
 ## Issues
 
 Please create [new issues](https://github.com/camunda-community-hub/camunda-cloud-helm) if you find problems with these charts. This repository is hosted using GitHub Pages and the source code repository can be found here: [https://github.com/camunda-community-hub/camunda-cloud-helm](https://github.com/camunda-community-hub/camunda-cloud-helm)
