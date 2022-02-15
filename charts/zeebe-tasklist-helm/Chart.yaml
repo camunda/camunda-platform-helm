@@ -4,6 +4,7 @@ description: Zeebe TaskList Helm Chart for Kubernetes
 name: zeebe-tasklist-helm
 version: 1.3.3
 icon: https://helm.camunda.io/imgs/zeebe-logo.png
+deprecated: true
 annotations:
   artifacthub.io/changes: |
     - bump tasklist version to 1.3.4

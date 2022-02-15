@@ -18,3 +18,15 @@ If you don't have an Ingress Controller you can do kubectl port-forward to acces
 Now you can point your browser to `http://localhost:8080`
 
 Default user and password: "demo/demo"
+
+
+  _____    ______   _____    _____    ______    _____              _______   ______   _____
+ |  __ \  |  ____| |  __ \  |  __ \  |  ____|  / ____|     /\     |__   __| |  ____| |  __ \
+ | |  | | | |__    | |__) | | |__) | | |__    | |         /  \       | |    | |__    | |  | |
+ | |  | | |  __|   |  ___/  |  _  /  |  __|   | |        / /\ \      | |    |  __|   | |  | |
+ | |__| | | |____  | |      | | \ \  | |____  | |____   / ____ \     | |    | |____  | |__| |
+ |_____/  |______| |_|      |_|  \_\ |______|  \_____| /_/    \_\    |_|    |______| |_____/
+
+
+Please note that this helm chart has been deprecated and is no longer maintained!
+Check out helm.camunda.io to find more information on how to upgrade to the new helm chart.

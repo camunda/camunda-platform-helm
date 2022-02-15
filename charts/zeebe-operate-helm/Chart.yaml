@@ -5,6 +5,7 @@ name: zeebe-operate-helm
 version: 1.3.3
 type: application
 icon: https://helm.camunda.io/imgs/zeebe-logo.png
+deprecated: true
 annotations:
   artifacthub.io/changes: |
     - bump operate version to 1.3.4
