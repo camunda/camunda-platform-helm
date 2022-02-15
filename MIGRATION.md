@@ -6,10 +6,9 @@
 ## Migrating from zeebe-full-helm
 
 If you're running an earlier `zeebe-full-helm` chart release, and you want to migrate to `ccsm-helm` you need to
-adjust your `values.yaml` file. The dependencies have been renamed, which means in the `values.yaml` you have to rename
-the objects/charts
+adjust your `values.yaml` file, since the dependencies (sub-charts) have been renamed.
 
-| Old Names | New Names |
+| Old Chart Names | New Sub-Chart Names |
 |-----------|-----------|
 | zeebe-cluster-helm | zeebe |
 | zeebe-operate-helm | operate |
