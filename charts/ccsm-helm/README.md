@@ -224,7 +224,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `graphqlPlaygroundEnabled` | If true, enables the GraphQl playground | `""` |
 | | `graphqlPlaygroundEnabled` | Can be set to include the credentials in each request, should be set to "include" if GraphQl playground is enabled | `""` |
 | | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
-| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 500m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 400m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` |
 | | `ingress` | Configuration to configure the ingress resource | |
 | | `ingress.enabled` | If true, an ingress resource is deployed with the Tasklist deployment. Only useful if an ingress controller is available, like nginx. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
