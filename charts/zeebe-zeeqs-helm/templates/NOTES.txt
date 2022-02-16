@@ -20,3 +20,15 @@ If you don't have an Ingress Controller you can do kubectl port-forward to acces
 > kubectl port-forward svc/{{ include "zeeqs.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
 
 Now you can point your browser to `http://localhost:{{ .Values.service.port }}`
+
+
+  _____    ______   _____    _____    ______    _____              _______   ______   _____
+ |  __ \  |  ____| |  __ \  |  __ \  |  ____|  / ____|     /\     |__   __| |  ____| |  __ \
+ | |  | | | |__    | |__) | | |__) | | |__    | |         /  \       | |    | |__    | |  | |
+ | |  | | |  __|   |  ___/  |  _  /  |  __|   | |        / /\ \      | |    |  __|   | |  | |
+ | |__| | | |____  | |      | | \ \  | |____  | |____   / ____ \     | |    | |____  | |__| |
+ |_____/  |______| |_|      |_|  \_\ |______|  \_____| /_/    \_\    |_|    |______| |_____/
+
+
+Please note that this helm chart has been deprecated and is no longer maintained!
+Check out https://github.com/camunda-community-hub/zeeqs/issues/217 for more information.
