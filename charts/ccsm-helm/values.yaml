@@ -301,9 +301,9 @@ operate:
   # Env can be used to set extra environment variables in each operate container
   env: []
   # ExtraVolumes can be used to define extra volumes for the operate pods, useful for tls and self-signed certificates
-  extraVolumes: {}
+  extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for tls and self-signed certificates
-  extraVolumeMounts: {}
+  extraVolumeMounts: []
 
   # ServiceAccount configuration for the service account where the operate pods are assigned to
   serviceAccount:

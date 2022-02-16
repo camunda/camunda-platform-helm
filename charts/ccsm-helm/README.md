@@ -189,8 +189,8 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 500m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` |
 | | `env` | Can be used to set extra environment variables in each operate container | `[ ]` |
-| | `extraVolumes` | Can be used to define extra volumes for the Operate pods, useful for TLS and self-signed certificates | `{ }` |
-| | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for TLS and self-signed certificates | `{ }` |
+| | `extraVolumes` | Can be used to define extra volumes for the Operate pods, useful for TLS and self-signed certificates | `[ ]` |
+| | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for TLS and self-signed certificates | `[ ]` |
 | | `serviceAccount` | Configuration for the service account where the Operate pods are assigned to | |
 | | `serviceAccount.enabled` | If true, enables the Operate service account | `true` |
 | | `serviceAccount.name` | Can be used to set the name of the Operate service account | `""` |
