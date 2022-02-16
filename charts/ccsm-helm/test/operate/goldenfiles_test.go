@@ -1,6 +1,7 @@
 package operate
 
 import (
+	"flag"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -13,36 +14,43 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type configmapTemplateTest struct {
+var update = flag.Bool("update-golden", false, "update golden test output files")
+
+type templateGoldenTest struct {
 	suite.Suite
 	chartPath string
 	release   string
 	namespace string
+	goldenFileName string
 	templates []string
 }
 
-func TestConfigmapTemplate(t *testing.T) {
+func TestGoldenDefaultsTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
+	templateNames := []string{"service", "deployment", "configmap"}
 
-	suite.Run(t, &configmapTemplateTest{
-		chartPath: chartPath,
-		release:   "ccsm-helm-test",
-		namespace: "ccsm-helm-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/operate/templates/configmap.yaml"},
-	})
+	for _, name := range templateNames {
+		suite.Run(t, &templateGoldenTest{
+			chartPath: chartPath,
+			release:   "ccsm-helm-test",
+			namespace: "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+			goldenFileName: name,
+			templates: []string{"charts/operate/templates/" + name + ".yaml"},
+		})
+	}
 }
 
-func (s *configmapTemplateTest) TestContainerGoldenTestConfigMapDefaults() {
+func (s *templateGoldenTest) TestContainerGoldenTestDefaults() {
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
 	actual := []byte(output)
 
-	goldenFile := "configmap.golden.yaml"
+	goldenFile := "golden/" + s.goldenFileName + ".golden.yaml"
 
 	if *update {
 		err := ioutil.WriteFile(goldenFile, actual, 0644)
