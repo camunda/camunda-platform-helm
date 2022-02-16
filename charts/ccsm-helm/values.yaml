@@ -425,3 +425,22 @@ elasticsearch:
   extraEnvs:
     - name: "xpack.security.enabled"
       value: "false"
+
+  replicas: 2
+  minimumMasterNodes: 1
+
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+      requests:
+        storage: 64Gi
+
+  esJavaOpts: "-Xmx1g -Xms1g"
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
