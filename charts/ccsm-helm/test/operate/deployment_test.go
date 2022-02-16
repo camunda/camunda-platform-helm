@@ -150,7 +150,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
-	s.Require().Equal(int32(744), *extraVolume.ConfigMap.DefaultMode)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 }
 
 func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
@@ -207,7 +207,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
-	s.Require().Equal(int32(744), *extraVolume.ConfigMap.DefaultMode)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(len(containers), 1)
@@ -256,7 +256,7 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 
 	// then
 	securityContext := deployment.Spec.Template.Spec.SecurityContext
-	s.Require().Equal(int64(1000), *securityContext.RunAsUser)
+	s.Require().EqualValues(1000, *securityContext.RunAsUser)
 }
 
 func (s *deploymentTemplateTest) TestContainerGoldenTestDeploymentDefaults() {
