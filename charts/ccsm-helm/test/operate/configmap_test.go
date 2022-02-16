@@ -42,7 +42,7 @@ func (s *configmapTemplateTest) TestContainerGoldenTestConfigMapDefaults() {
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
 	actual := []byte(output)
 
-	goldenFile := "configmap.golden.json"
+	goldenFile := "configmap.golden.yaml"
 
 	if *update {
 		err := ioutil.WriteFile(goldenFile, actual, 0644)

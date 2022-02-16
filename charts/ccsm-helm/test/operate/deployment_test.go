@@ -265,7 +265,7 @@ func (s *deploymentTemplateTest) TestContainerGoldenTestDeploymentDefaults() {
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	goldenFile := "deployment.golden.json"
+	goldenFile := "deployment.golden.yaml"
 
 	if *update {
 		err := ioutil.WriteFile(goldenFile, []byte(output), 0644)
