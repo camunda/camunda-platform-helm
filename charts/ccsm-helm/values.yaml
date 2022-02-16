@@ -196,7 +196,7 @@ zeebe:
 # Gateway configuration to define properties related to the standalone gateway
 zeebe-gateway:
   # Replicas defines how many standalone gateways are deployed
-  replicas: 1
+  replicas: 2
   # Image configuration to configure the zeebe-gateway image specifics
   image:
     # Image.repository defines which image repository to use
@@ -230,7 +230,13 @@ zeebe-gateway:
     maxUnavailable:
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  resources: { }
+  resources:
+    requests:
+      cpu: 400m
+      memory: 450Mi
+    limits:
+      cpu: 400m
+      memory: 450Mi
 
   # PriorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
