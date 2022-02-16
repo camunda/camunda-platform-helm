@@ -87,9 +87,9 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
-| | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
+| | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `2` |
 | | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
-| | `env` | Can be used to set extra environment variables in each Zeebe broker container | `[ ]` |
+| | `env` | Can be used to set extra environment variables in each Zeebe broker container | `- name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD </br>  value: "5m"</br>- name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED</br>  value: "true"</br>- name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK</br>  value: "0.85"</br>- name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK</br>  value: "0.87"` |
 | | `logLevel` | Defines the log level which is used by the Zeebe brokers; must be one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
 | | `log4j2` | Can be used to overwrite the Log4J 2.x XML configuration. If provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | `` |
 | | `JavaOpts` | Can be used to set the Zeebe Broker JavaOpts. This is where you should configure the jvm heap size. | `-XX:MaxRAMPercentage=25.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
@@ -106,8 +106,8 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `serviceAccount.annotations` | Can be used to set the annotations of the broker service account | `{ }` |
 | | `cpuThreadCount` | Defines how many threads can be used for the processing on each broker pod | `2` |
 | | `ioThreadCount` | Defines how many threads can be used for the exporting on each broker pod | `2` |
-| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 500m`<br> `  memory: 2Gi`<br>`limits:`<br>  ` cpu: 1000m`<br>  ` memory: 4Gi` |
-| | `pvcSize` | Defines the [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) size, which is used by each broker pod | `10Gi` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 800m`<br> `  memory: 1200Mi`<br>`limits:`<br>  ` cpu: 960m`<br>  ` memory: 1920Mi` |
+| | `pvcSize` | Defines the [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) size, which is used by each broker pod | `32Gi` |
 | | `pvcAccessModes` | Can be used to configure the [persistent volume claim access mode](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) | `[ "ReadWriteOnce" ]` |
 | | `pvcStorageClassName` | Can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD. | `` |
 | | `extraVolumes` | Can be used to define extra volumes for the broker pods, useful for additional exporters | `{ }`|
