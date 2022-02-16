@@ -3,6 +3,50 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - align default values with SaaS offering
+        - fix notes, use correct image
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.4
+    created: "2022-02-16T14:30:50.080176211Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.16
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.16
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.16
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.16
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: f91c7ef729ba3c0bc9b261fa585386f6def5ffa542ac84d1e66b760790d38ebc
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: ccsm-helm
+    sources:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm
+    - https://github.com/camunda-cloud/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.16/ccsm-helm-0.0.16.tgz
+    version: 0.0.16
+  - annotations:
+      artifacthub.io/changes: |
         - bump appVersion in Chart.yaml to 1.3.4
         - fix notes, not show service messages if disabled
       artifacthub.io/containsSecurityUpdates: "false"
@@ -2537,4 +2581,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-02-16T07:46:22.538009337Z"
+generated: "2022-02-16T14:30:50.080713131Z"
