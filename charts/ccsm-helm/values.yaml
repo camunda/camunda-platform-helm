@@ -301,10 +301,10 @@ operate:
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 600m
+      memory: 400Mi
     limits:
-      cpu: 1000m
+      cpu: 2000m
       memory: 2Gi
 
   # Env can be used to set extra environment variables in each operate container
