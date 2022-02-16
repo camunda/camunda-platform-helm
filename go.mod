@@ -6,7 +6,7 @@ require (
 	github.com/camunda-cloud/zeebe/clients/go v1.3.4
 	github.com/gruntwork-io/terratest v0.40.2
 	github.com/stretchr/testify v1.7.0
-	google.golang.org/grpc v1.43.0
+	google.golang.org/grpc v1.44.0
 	k8s.io/api v0.20.6
 )
 
