@@ -73,7 +73,7 @@ spec:
         - name: ZEEBE_LOG_LEVEL
           value: "info"
         - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-          value: "3"
+          value: "2"
         - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
           value: "3"
         - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
@@ -100,6 +100,14 @@ spec:
               fieldPath: metadata.name
         - name: JAVA_TOOL_OPTIONS
           value: "-XX:MaxRAMPercentage=25.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
+        - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
+          value: 5m
+        - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
+          value: "true"
+        - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
+          value: "0.85"
+        - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
+          value: "0.87"
         ports:
         - containerPort: 9600
           name: http
@@ -116,11 +124,11 @@ spec:
           timeoutSeconds: 1
         resources:
           limits:
-            cpu: 1000m
-            memory: 4Gi
+            cpu: 960m
+            memory: 1920Mi
           requests:
-            cpu: 500m
-            memory: 2Gi
+            cpu: 800m
+            memory: 1200Mi
         volumeMounts:
         - name: config
           mountPath: /usr/local/bin/startup.sh
@@ -146,4 +154,4 @@ spec:
       storageClassName: 
       resources:
         requests:
-          storage: "10Gi"
+          storage: "32Gi"

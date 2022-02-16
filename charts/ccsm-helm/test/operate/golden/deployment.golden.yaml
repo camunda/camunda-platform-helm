@@ -43,11 +43,11 @@ spec:
         image: "camunda/operate:1.3.4"
         resources:
           limits:
-            cpu: 1000m
+            cpu: 2000m
             memory: 2Gi
           requests:
-            cpu: 500m
-            memory: 1Gi
+            cpu: 600m
+            memory: 400Mi
         ports:
         - containerPort: 8080
           name: http
