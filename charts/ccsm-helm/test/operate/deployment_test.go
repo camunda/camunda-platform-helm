@@ -1,7 +1,6 @@
 package operate
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -257,25 +256,4 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// then
 	securityContext := deployment.Spec.Template.Spec.SecurityContext
 	s.Require().EqualValues(1000, *securityContext.RunAsUser)
-}
-
-func (s *deploymentTemplateTest) TestContainerGoldenTestDeploymentDefaults() {
-	// given
-	options := &helm.Options{
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	goldenFile := "deployment.golden.yaml"
-
-	if *update {
-		err := ioutil.WriteFile(goldenFile, []byte(output), 0644)
-		s.Require().NoError(err, "Golden file was not writable")
-	}
-
-	// when
-	expected, err := ioutil.ReadFile(goldenFile)
-
-	// then
-	s.Require().NoError(err, "Golden file doesn't exist or was not readable")
-	s.Require().Equal(string(expected), output)
 }
