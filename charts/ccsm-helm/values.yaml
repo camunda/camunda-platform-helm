@@ -431,7 +431,6 @@ elasticsearch:
       value: "false"
 
   replicas: 2
-  minimumMasterNodes: 1
 
   volumeClaimTemplate:
     accessModes: [ "ReadWriteOnce" ]
