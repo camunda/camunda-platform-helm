@@ -9,18 +9,18 @@
 ### Installed Services:
 
 - Zeebe:
-  - Docker Image used for Zeebe: {{ .Values.zeebe.global.image.repository }}:{{ .Values.global.image.tag }}
+  - Docker Image used for Zeebe: {{ .Values.zeebe.image.repository }}:{{ .Values.global.image.tag }}
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.zeebe.prometheusServiceMonitor.enabled }}
 - Operate:
   - Enabled: {{ .Values.operate.enabled }}
   {{- if .Values.operate.enabled }}
-  - Docker Image used for Operate: {{ .Values.operate.global.image.repository }}:{{ .Values.global.image.tag }}
+  - Docker Image used for Operate: {{ .Values.operate.image.repository }}:{{ .Values.global.image.tag }}
   {{- end }}
 - Tasklist:
   - Enabled: {{ .Values.tasklist.enabled }}
   {{- if .Values.tasklist.enabled }}
-  - Docker Image used for Operate: {{ .Values.tasklist.global.image.repository }}:{{ .Values.global.image.tag }}
+  - Docker Image used for Tasklist: {{ .Values.tasklist.image.repository }}:{{ .Values.global.image.tag }}
   {{- end }}
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}

@@ -74,11 +74,18 @@ zeebe:
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
-  partitionCount: "3"
+  partitionCount: "2"
   # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   # Env can be used to set extra environment variables in each zeebe broker container
-  env: [ ]
+  env:
+    - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
+      value: "5m"
+    - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
+      value: "0.85"
+    - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
+      value: "0.87"
+
   # LogLevel defines the log level which is used by the zeebe brokers
   logLevel: info
   # Log4j2 can be used to overwrite the log4j2 configuration of the zeebe brokers
@@ -129,14 +136,14 @@ zeebe:
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
-      cpu: 500m
-      memory: 2Gi
+      cpu: 800m
+      memory: 1200Mi
     limits:
-      cpu: 1000m
-      memory: 4Gi
+      cpu: 960m
+      memory: 1920Mi
 
   # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
-  pvcSize: "10Gi"
+  pvcSize: "32Gi"
   # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
   pvcAccessModes: [ "ReadWriteOnce" ]
   # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
@@ -187,7 +194,7 @@ zeebe:
 # Gateway configuration to define properties related to the standalone gateway
 zeebe-gateway:
   # Replicas defines how many standalone gateways are deployed
-  replicas: 1
+  replicas: 2
   # Image configuration to configure the zeebe-gateway image specifics
   image:
     # Image.repository defines which image repository to use
@@ -221,7 +228,13 @@ zeebe-gateway:
     maxUnavailable:
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  resources: { }
+  resources:
+    requests:
+      cpu: 400m
+      memory: 450Mi
+    limits:
+      cpu: 400m
+      memory: 450Mi
 
   # PriorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
@@ -292,10 +305,10 @@ operate:
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 600m
+      memory: 400Mi
     limits:
-      cpu: 1000m
+      cpu: 2000m
       memory: 2Gi
 
   # Env can be used to set extra environment variables in each operate container
@@ -371,7 +384,7 @@ tasklist:
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
-      cpu: 500m
+      cpu: 400m
       memory: 1Gi
     limits:
       cpu: 1000m
@@ -416,3 +429,21 @@ elasticsearch:
   extraEnvs:
     - name: "xpack.security.enabled"
       value: "false"
+
+  replicas: 2
+
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+      requests:
+        storage: 64Gi
+
+  esJavaOpts: "-Xmx1g -Xms1g"
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
