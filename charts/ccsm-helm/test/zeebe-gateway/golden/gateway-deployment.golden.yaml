@@ -15,7 +15,7 @@ metadata:
     app.kubernetes.io/component: zeebe-gateway
   annotations:
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: camunda-cloud-self-managed
@@ -87,6 +87,13 @@ spec:
               port: gateway
             initialDelaySeconds: 20
             periodSeconds: 5
+          resources:
+            limits:
+              cpu: 400m
+              memory: 450Mi
+            requests:
+              cpu: 400m
+              memory: 450Mi
       volumes:
         - name: config
           configMap:
