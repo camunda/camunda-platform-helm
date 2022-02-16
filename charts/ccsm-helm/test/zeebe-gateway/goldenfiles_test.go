@@ -17,7 +17,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
-	templateNames := []string{"service", "deployment", "configmap"}
+	templateNames := []string{"gateway-service", "gateway-serviceaccount", "gateway-deployment", "configmap"}
 
 	for _, name := range templateNames {
 		suite.Run(t, &golden.TemplateGoldenTest{
@@ -25,7 +25,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Release:        "ccsm-helm-test",
 			Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
-			Templates:      []string{"charts/operate/templates/" + name + ".yaml"},
+			Templates:      []string{"charts/zeebe-gateway/templates/" + name + ".yaml"},
 		})
 	}
 }

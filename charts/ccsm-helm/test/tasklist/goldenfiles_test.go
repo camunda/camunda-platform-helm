@@ -25,7 +25,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Release:        "ccsm-helm-test",
 			Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
-			Templates:      []string{"charts/operate/templates/" + name + ".yaml"},
+			Templates:      []string{"charts/tasklist/templates/" + name + ".yaml"},
 		})
 	}
 }
