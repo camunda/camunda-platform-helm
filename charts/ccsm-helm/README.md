@@ -119,7 +119,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
 | | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available | `` |
 | | `podDisruptionBudget.maxUnavailable` | Can be used to set how many pods should be at max. unavailable | `1` |
-| | `podSecurityContext` | Defines the security options the broker and gateway container should be run with | |
+| | `containerSecurityContext` | Defines the security options the broker container should be run with | |
 | | `nodeSelector` | Can be used to define on which nodes the broker pods should run | `{ } ` |
 | | `tolerations` | Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` | Can be used to define [pod affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
@@ -147,7 +147,7 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
 | | `log4j2` | Can be used to overwrite the log4j2 configuration of the gateway | `""` |
 | | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |
-| | `podSecurityContext` | Defines the security options the gateway container should be run with | `{ } `|
+| | `containerSecurityContext` | Defines the security options the gateway container should be run with | `{ } `|
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods | |
 | | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
 | | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available | `` |

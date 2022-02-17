@@ -169,8 +169,8 @@ zeebe:
     # podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
-  # PodSecurityContext defines the security options the broker and gateway container should be run with
-  podSecurityContext: { }
+  # ContainerSecurityContext defines the security options the broker container should be run with
+  containerSecurityContext: { }
   # NodeSelector can be used to define on which nodes the broker pods should run
   nodeSelector: { }
   # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
@@ -216,8 +216,8 @@ zeebe-gateway:
   # Env can be used to set extra environment variables in each gateway container
   env: [ ]
 
-  # PodSecurityContext defines the security options the gateway container should be run with
-  podSecurityContext: { }
+  # ContainerSecurityContext defines the security options the gateway container should be run with
+  containerSecurityContext: { }
   # PodDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
     # PodDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
