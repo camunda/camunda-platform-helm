@@ -17,7 +17,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
-	templateNames := []string{"service", "deployment", "configmap"}
+	templateNames := []string{"service", "serviceaccount", "deployment", "configmap"}
 
 	for _, name := range templateNames {
 		suite.Run(t, &golden.TemplateGoldenTest{
