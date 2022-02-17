@@ -62,7 +62,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `zeebeClusterName` | Defines the cluster name for the Zeebe cluster. All pods get this prefix in their name. | `{{ .Release.Name }}-zeebe` |
 | | `zeebePort` | Defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers. | 26500 |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Zeebe Cluster | `true` |
-| | `servicemonitor.enabled` | Deploy a `ServiceMonitor` for your Zeebe Cluster | `false` |
 
 ### CCSM
 
@@ -75,6 +74,10 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `zeebeIndexMaxSize` | Can be set to configure the maximum allowed zeebe index size in gigabytes. After reaching that size, curator will delete that corresponding index on the next run. To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes. | `` |
 | | `operateIndexTTL` | Defines after how many days an operate index can be deleted. | `30` |
 | | `tasklistIndexTTL` | Defines after how many days an tasklist index can be deleted. | `30` |
+| `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
+| | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|
+| | `labels` | Can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors | `release: metrics` |
+| | `scrapeInterval` | Can be set to configure the interval at which metrics should be scraped | `10s` |
 
 ### Zeebe
 
@@ -93,7 +96,6 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `logLevel` | Defines the log level which is used by the Zeebe brokers; must be one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
 | | `log4j2` | Can be used to overwrite the Log4J 2.x XML configuration. If provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | `` |
 | | `JavaOpts` | Can be used to set the Zeebe Broker JavaOpts. This is where you should configure the jvm heap size. | `-XX:MaxRAMPercentage=25.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
-| |`prometheusServiceMonitor.enabled`| If true, then a service monitor will be deployed, which allows an installed Prometheus controller to scrape metrics from the broker pods | `false`|
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.httpPort` | Defines the port of the HTTP endpoint, where for example metrics are provided | `9600` |
 | | `service.httpName` | Defines the name of the HTTP endpoint, where for example metrics are provided | `http` |

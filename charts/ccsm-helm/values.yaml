@@ -98,10 +98,6 @@ zeebe:
     -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
     -XX:+ExitOnOutOfMemoryError
 
-  # PrometheusServiceMonitor configuration for the prometheus service monitor
-  prometheusServiceMonitor:
-    # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows a installed prometheus controller to scrape metrics from the broker pods
-    enabled: false
 
  # Service configuration for the broker service
   service:
@@ -422,6 +418,17 @@ retentionPolicy:
   operateIndexTTL: 30
   # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
   tasklistIndexTTL: 30
+
+# PrometheusServiceMonitor configuration to configure a prometheus service monitor
+prometheusServiceMonitor:
+  # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods
+  enabled: false
+  # PromotheuServiceMonitor.labels can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors
+  labels:
+    release: metrics
+  # PromotheuServiceMonitor.scrapeInterval can be set to configure the interval at which metrics should be scraped
+  scrapeInterval: 10s
+
 
 elasticsearch:
   enabled: true
