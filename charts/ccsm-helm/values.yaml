@@ -164,7 +164,7 @@ zeebe:
   podDisruptionBudget:
     # PodDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
-    # PodDisruptionBudget.minAvailable can be used to set how many pods should be available
+    # PodDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be rendered in the resulting manifest.
     minAvailable:
     # podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
