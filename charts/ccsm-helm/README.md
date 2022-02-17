@@ -117,7 +117,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `podLabels` | Can be used to define extra broker pod labels | `{ }` |
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods | |
 | | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
-| | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available | `` |
+| | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive). | `` |
 | | `podDisruptionBudget.maxUnavailable` | Can be used to set how many pods should be at max. unavailable | `1` |
 | | `containerSecurityContext` | Defines the security options the broker container should be run with | |
 | | `nodeSelector` | Can be used to define on which nodes the broker pods should run | `{ } ` |
@@ -150,7 +150,7 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `containerSecurityContext` | Defines the security options the gateway container should be run with | `{ } `|
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods. | |
 | | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
-| | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be rendered in the resulting manifest. | `` |
+| | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive). | `` |
 | | `podDisruptionBudget.maxUnavailable` | Can be used to set how many pods should be at max. unavailable | `1` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 400m`<br> `  memory: 450Mi`<br>`limits:`<br>  ` cpu: 400m`<br>  ` memory: 450Mi` |
 | | `priorityClassName` | Can be used to define the broker [pods priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass) | `""` |
