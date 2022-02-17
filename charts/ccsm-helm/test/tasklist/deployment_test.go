@@ -81,7 +81,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag":  "x.y.z",
+			"global.image.tag":   "x.y.z",
 			"tasklist.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

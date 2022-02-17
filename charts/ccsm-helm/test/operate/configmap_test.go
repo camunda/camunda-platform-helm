@@ -23,6 +23,6 @@ func TestGoldenConfigmapWithElasticsearchUrl(t *testing.T) {
 		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-elastic-url",
 		Templates:      []string{"charts/operate/templates/configmap.yaml"},
-		SetValues:		map[string]string{"global.elasticsearch.url": "http://elasticmaster.org"},
+		SetValues:      map[string]string{"global.elasticsearch.url": "http://elasticmaster.org"},
 	})
 }

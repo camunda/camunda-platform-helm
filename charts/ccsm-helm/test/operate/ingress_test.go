@@ -24,7 +24,7 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress",
 		Templates:      []string{"charts/operate/templates/ingress.yaml"},
-		SetValues:		map[string]string{"operate.ingress.enabled" : "true"},
+		SetValues:      map[string]string{"operate.ingress.enabled": "true"},
 	})
 }
 
@@ -40,11 +40,11 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress-all-enabled",
 		Templates:      []string{"charts/operate/templates/ingress.yaml"},
-		SetValues:		map[string]string{
-			"operate.ingress.enabled" : "true",
-			"operate.ingress.host" : "local",
-			"operate.ingress.tls.enabled" : "true",
-			"operate.ingress.tls.secretName" : "my-secret",
+		SetValues: map[string]string{
+			"operate.ingress.enabled":        "true",
+			"operate.ingress.host":           "local",
+			"operate.ingress.tls.enabled":    "true",
+			"operate.ingress.tls.secretName": "my-secret",
 		},
 	})
 }
