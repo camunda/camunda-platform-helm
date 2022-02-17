@@ -18,11 +18,13 @@ type TemplateGoldenTest struct {
 	Namespace      string
 	GoldenFileName string
 	Templates      []string
+	SetValues      map[string]string
 }
 
 func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
+		SetValues: s.SetValues,
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates)
 	actual := []byte(output)
