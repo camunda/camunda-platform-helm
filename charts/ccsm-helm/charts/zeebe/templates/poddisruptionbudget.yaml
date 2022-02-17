@@ -5,8 +5,11 @@ metadata:
   name: {{ include "zeebe.names.broker" . }}
   labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
 spec:
+  {{- if .Values.podDisruptionBudget.minAvailable }}
   minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- else }}
   maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "zeebe.labels.broker" . | nindent 6 }}
