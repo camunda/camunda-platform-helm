@@ -67,5 +67,3 @@ spec:
         configMap:
           name: ccsm-helm-test-tasklist
           defaultMode: 0744
-      securityContext:
-        {}
