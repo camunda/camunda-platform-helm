@@ -8,9 +8,7 @@ metadata:
   annotations: {{ toYaml . | nindent 4 }}
 {{- end }}
 spec:
-  {{- if (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
   rules:
     - host: {{ .Values.ingress.host }}
       http:
