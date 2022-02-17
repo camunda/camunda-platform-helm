@@ -135,8 +135,6 @@ spec:
           mountPath: /usr/local/zeebe/data
         - name: exporters
           mountPath: /exporters
-        securityContext:
-          {}
       volumes:
       - name: config
         configMap:

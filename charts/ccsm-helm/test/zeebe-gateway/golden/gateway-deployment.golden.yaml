@@ -80,8 +80,6 @@ spec:
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: "9600"
           volumeMounts:
-          securityContext:
-            {}
           readinessProbe:
             tcpSocket:
               port: gateway

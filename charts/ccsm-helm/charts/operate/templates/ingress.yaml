@@ -8,12 +8,14 @@ metadata:
   annotations: {{ toYaml . | nindent 4 }}
 {{- end }}
 spec:
-  {{- if (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
   rules:
+    {{- if .Values.ingress.host }}
     - host: {{ .Values.ingress.host }}
       http:
+    {{- else }}
+    - http:
+    {{- end }}
         paths:
           - path: {{ .Values.ingress.path }}
             pathType: Prefix

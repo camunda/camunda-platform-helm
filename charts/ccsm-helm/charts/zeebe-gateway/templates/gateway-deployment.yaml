@@ -87,8 +87,9 @@ spec:
             {{- if .Values.extraVolumeMounts}}
             {{ .Values.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
-          securityContext:
-            {{ toYaml .Values.podSecurityContext | indent 12 | trim }}
+          {{- if .Values.containerSecurityContext }}
+          securityContext: {{ toYaml .Values.containerSecurityContext | nindent 12 | trim }}
+          {{- end }}
           readinessProbe:
             tcpSocket:
               port: {{ default "gateway" .Values.service.gatewayName  }}
