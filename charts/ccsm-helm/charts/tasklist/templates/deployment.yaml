@@ -41,5 +41,6 @@ spec:
         configMap:
           name: {{ include "tasklist.fullname" . }}
           defaultMode: 0744
-      securityContext:
-{{ toYaml .Values.podSecurityContext | indent 8 }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
