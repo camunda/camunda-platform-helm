@@ -1,4 +1,4 @@
-package operate
+package zeebe
 
 import (
 	"path/filepath"
