@@ -12,6 +12,12 @@ test:
 golden:
 	go test ./... -args -update-golden 
 
+# fmt: runs the gofmt in order to format all go files
+.PHONY: fmt
+fmt:
+	go fmt ./... 
+
+
 # deps: updates and downloads the dependencies for the ccsm helm chart
 .PHONY: deps
 deps:
