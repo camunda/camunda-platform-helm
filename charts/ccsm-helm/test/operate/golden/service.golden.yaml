@@ -7,7 +7,7 @@ metadata:
   labels:
     app: camunda-cloud-self-managed
     app.kubernetes.io/name: operate
-    helm.sh/chart: operate-0.0.16
+    helm.sh/chart: operate-0.0.17
     app.kubernetes.io/instance: ccsm-helm-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: 1.3.1
@@ -23,7 +23,7 @@ spec:
   selector:
     app: camunda-cloud-self-managed
     app.kubernetes.io/name: operate
-    helm.sh/chart: operate-0.0.16
+    helm.sh/chart: operate-0.0.17
     app.kubernetes.io/instance: ccsm-helm-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: 1.3.1
