@@ -145,7 +145,7 @@ spec:
         {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
         {{- if .Values.containerSecurityContext }}
-        securityContext: {{ toYaml .Values.containerSecurityContext | nindent 12 | trim }}
+        securityContext: {{ .Values.containerSecurityContext | toYaml | nindent 10 }}
         {{- end }}
       volumes:
       - name: config
