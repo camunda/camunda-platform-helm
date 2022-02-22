@@ -3,8 +3,7 @@ name: Go CI
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  pull_request: { }
 
 env:
   HELM_VERSION: 3.6.3
