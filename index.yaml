@@ -3,6 +3,49 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - Fix curator job configmap reference
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.4
+    created: "2022-02-22T09:54:01.833822663Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.18
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.18
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.18
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.18
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: 6ff7a93a733ea721457fd76605cf037756c98861458785cd49f6a3aa38e3cfd8
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: ccsm-helm
+    sources:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm
+    - https://github.com/camunda-cloud/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.18/ccsm-helm-0.0.18.tgz
+    version: 0.0.18
+  - annotations:
+      artifacthub.io/changes: |
         - Deploy service monitor for all services
         - Make minAvailability mutual exclusive
       artifacthub.io/containsSecurityUpdates: "false"
@@ -2625,4 +2668,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-02-18T18:57:57.86863012Z"
+generated: "2022-02-22T09:54:01.834246968Z"
