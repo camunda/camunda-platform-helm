@@ -39,7 +39,7 @@ func (s *statefulSetTest) TestContainerSetPodLabels() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.podLabels.foo":      "bar",
+			"zeebe.podLabels.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

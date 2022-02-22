@@ -25,7 +25,7 @@ func TestGoldenCuratorDefaults(t *testing.T) {
 			Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
 			Templates:      []string{"templates/" + name + ".yaml"},
-			SetValues: map[string]string{"retentionPolicy.enabled" : "true"},
+			SetValues:      map[string]string{"retentionPolicy.enabled": "true"},
 		})
 	}
 }
