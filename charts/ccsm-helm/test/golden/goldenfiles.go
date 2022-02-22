@@ -4,6 +4,8 @@ import (
 	"flag"
 	"io/ioutil"
 
+	"regexp"
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/stretchr/testify/suite"
@@ -27,12 +29,14 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		SetValues:      s.SetValues,
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates)
-	actual := []byte(output)
+	regex := regexp.MustCompile(`\s+helm.sh/chart:\s+.*`)
+	bytes := regex.ReplaceAll([]byte(output), []byte(""))
+	output = string(bytes)
 
 	goldenFile := "golden/" + s.GoldenFileName + ".golden.yaml"
 
 	if *update {
-		err := ioutil.WriteFile(goldenFile, actual, 0644)
+		err := ioutil.WriteFile(goldenFile, bytes, 0644)
 		s.Require().NoError(err, "Golden file was not writable")
 	}
 
