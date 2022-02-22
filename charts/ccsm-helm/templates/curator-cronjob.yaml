@@ -25,6 +25,6 @@ spec:
           volumes:
             - name: config
               configMap:
-                name: curator-config
+                name: ccsm-curator-config
           restartPolicy: OnFailure
 {{- end }}
