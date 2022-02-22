@@ -3,6 +3,49 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - fix correctly indent containerSecurityContext
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.4
+    created: "2022-02-22T17:02:10.22259317Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.19
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.19
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.19
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.19
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: 40d34af885a2a283f996aa68d2d51009f93f2f3f001d01c7adaf7e4a7376101d
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: ccsm-helm
+    sources:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm
+    - https://github.com/camunda-cloud/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.19/ccsm-helm-0.0.19.tgz
+    version: 0.0.19
+  - annotations:
+      artifacthub.io/changes: |
         - Fix curator job configmap reference
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -2668,4 +2711,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-02-22T09:54:01.834246968Z"
+generated: "2022-02-22T17:02:10.22412468Z"
