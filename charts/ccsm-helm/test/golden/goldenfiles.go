@@ -29,7 +29,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		SetValues:      s.SetValues,
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates)
-	regex := regexp.MustCompile(".+(helm.sh/chart: ).*\n")
+	regex := regexp.MustCompile(`\s+helm.sh/chart:\s+.*`)
 	bytes := regex.ReplaceAll([]byte(output), []byte(""))
 	output = string(bytes)
 
