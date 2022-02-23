@@ -218,15 +218,13 @@ func (s *statefulSetTest) TestContainerDisableExporter() {
 	s.Require().NotContains(env, v12.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
 }
 
-
-
 func (s *statefulSetTest) TestContainerShouldSetTemplateEnvVars() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.env[0].name": "RELEASE_NAME",
+			"zeebe.env[0].name":  "RELEASE_NAME",
 			"zeebe.env[0].value": "test-{{ .Release.Name }}",
-			"zeebe.env[1].name": "OTHER_ENV",
+			"zeebe.env[1].name":  "OTHER_ENV",
 			"zeebe.env[1].value": "nothingToSeeHere",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
