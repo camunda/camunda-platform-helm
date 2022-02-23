@@ -38,7 +38,7 @@ type podDisruptionBudgetTest struct {
 	templates []string
 }
 
-func TestDeploymentTemplate(t *testing.T) {
+func TestPodDisruptionBudgetTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../")

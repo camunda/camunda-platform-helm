@@ -85,6 +85,8 @@ zeebe:
       value: "0.85"
     - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
       value: "0.87"
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
 
   # LogLevel defines the log level which is used by the zeebe brokers
   logLevel: info
@@ -211,6 +213,8 @@ zeebe-gateway:
 
   # Env can be used to set extra environment variables in each gateway container
   env: [ ]
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
 
   # ContainerSecurityContext defines the security options the gateway container should be run with
   containerSecurityContext: { }
@@ -309,6 +313,8 @@ operate:
 
   # Env can be used to set extra environment variables in each operate container
   env: []
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
   # ExtraVolumes can be used to define extra volumes for the operate pods, useful for tls and self-signed certificates
   extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for tls and self-signed certificates
@@ -360,6 +366,8 @@ tasklist:
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
 
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
   # Service configuration to configure the tasklist service.
   service:
     # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
