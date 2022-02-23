@@ -78,6 +78,9 @@ spec:
             {{- if .Values.env }}
             {{ toYaml .Values.env | indent 12 | trim }}
             {{- end }}
+          {{- if .Values.command}}
+          command: {{ .Values.command }}
+          {{- end }}
           volumeMounts:
             {{- if .Values.log4j2 }}
             - name: config

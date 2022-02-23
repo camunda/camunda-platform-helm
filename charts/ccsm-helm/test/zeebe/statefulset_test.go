@@ -241,6 +241,27 @@ func (s *statefulSetTest) TestContainerShouldSetTemplateEnvVars() {
 	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 
+func (s *statefulSetTest) TestContainerSetContainerCommand() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.command": "[printenv]",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	containers := statefulSet.Spec.Template.Spec.Containers
+	s.Require().Equal(len(containers), 1)
+	s.Require().Equal(1, len(containers[0].Command))
+	s.Require().Equal("printenv", containers[0].Command[0])
+}
+
 func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{

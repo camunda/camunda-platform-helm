@@ -92,7 +92,8 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
 | | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `2` |
 | | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
-| | `env` | Can be used to set extra environment variables in each Zeebe broker container | `- name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD </br>  value: "5m"</br>- name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED</br>  value: "true"</br>- name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK</br>  value: "0.85"</br>- name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK</br>  value: "0.87"` |
+| | `env` | Can be used to set extra environment variables in each Zeebe broker container | `- name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD` </br>`  value: "5m"`</br>`- name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED`</br>`  value: "true"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK`</br>`  value: "0.85"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK`</br>`  value: "0.87"` |
+| | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` | 
 | | `logLevel` | Defines the log level which is used by the Zeebe brokers; must be one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
 | | `log4j2` | Can be used to overwrite the Log4J 2.x XML configuration. If provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | `` |
 | | `JavaOpts` | Can be used to set the Zeebe Broker JavaOpts. This is where you should configure the jvm heap size. | `-XX:MaxRAMPercentage=25.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
@@ -149,6 +150,7 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
 | | `log4j2` | Can be used to overwrite the log4j2 configuration of the gateway | `""` |
 | | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |
+| | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `containerSecurityContext` | Defines the security options the gateway container should be run with | `{ } `|
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods. | |
 | | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
@@ -191,6 +193,7 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
 | | `env` | Can be used to set extra environment variables in each operate container | `[ ]` |
+| | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `extraVolumes` | Can be used to define extra volumes for the Operate pods, useful for TLS and self-signed certificates | `[ ]` |
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for TLS and self-signed certificates | `[ ]` |
 | | `serviceAccount` | Configuration for the service account where the Operate pods are assigned to | |
@@ -219,6 +222,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `image` | Configuration to configure the tasklist image specifics. | |
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
+| | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `service` | Configuration to configure the Tasklist service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Tasklist web application will be available | `80` |

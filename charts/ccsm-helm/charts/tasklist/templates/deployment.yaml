@@ -25,7 +25,10 @@ spec:
           - name: GRAPHQL_PLAYGROUND_ENABLED
             value: {{ default "true" .Values.graphqlPlaygroundEnabled | quote }}
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
-            value: {{ default "include" .Values.graphqlPlaygroundRequestCredentials | quote }}      
+            value: {{ default "include" .Values.graphqlPlaygroundRequestCredentials | quote }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         ports:
