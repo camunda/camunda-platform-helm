@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/apps/v1"
+	v12 "k8s.io/api/core/v1"
 )
 
 type statefulSetTest struct {
@@ -180,6 +181,41 @@ func (s *statefulSetTest) TestContainerOverwriteImageTagWithChartDirectSetting()
 	containers := statefulSet.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
+}
+
+func (s *statefulSetTest) TestContainerShouldContainExporterClassPerDefault() {
+	// given
+	options := &helm.Options{
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, v12.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
+}
+
+func (s *statefulSetTest) TestContainerDisableExporter() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.disableExporter": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	s.Require().NotContains(env, v12.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
 }
 
 func (s *statefulSetTest) TestContainerSetSecurityContext() {
