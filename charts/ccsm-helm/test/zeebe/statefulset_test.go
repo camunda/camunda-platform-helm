@@ -94,12 +94,12 @@ func (s *statefulSetTest) TestContainerSetExtraInitContainers() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.extraInitContainers[0].name": "init-container-{{ .Release.Name }}",
-			"zeebe.extraInitContainers[0].image": "busybox:1.28",
-			"zeebe.extraInitContainers[0].command[0]": "sh",
-			"zeebe.extraInitContainers[0].command[1]": "-c",
-			"zeebe.extraInitContainers[0].command[2]": "top",
-			"zeebe.extraInitContainers[0].volumeMounts[0].name": "exporters",
+			"zeebe.extraInitContainers[0].name":                      "init-container-{{ .Release.Name }}",
+			"zeebe.extraInitContainers[0].image":                     "busybox:1.28",
+			"zeebe.extraInitContainers[0].command[0]":                "sh",
+			"zeebe.extraInitContainers[0].command[1]":                "-c",
+			"zeebe.extraInitContainers[0].command[2]":                "top",
+			"zeebe.extraInitContainers[0].volumeMounts[0].name":      "exporters",
 			"zeebe.extraInitContainers[0].volumeMounts[0].mountPath": "/exporters/",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -185,8 +185,8 @@ func (s *statefulSetTest) TestContainerOverwriteImageTagWithChartDirectSetting()
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag":  "x.y.z",
-			"zeebe.image.tag": "a.b.c",
+			"global.image.tag": "x.y.z",
+			"zeebe.image.tag":  "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
