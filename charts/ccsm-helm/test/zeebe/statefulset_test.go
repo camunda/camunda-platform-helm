@@ -218,6 +218,31 @@ func (s *statefulSetTest) TestContainerDisableExporter() {
 	s.Require().NotContains(env, v12.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
 }
 
+
+
+func (s *statefulSetTest) TestContainerShouldSetTemplateEnvVars() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.env[0].name": "RELEASE_NAME",
+			"zeebe.env[0].value": "test-{{ .Release.Name }}",
+			"zeebe.env[1].name": "OTHER_ENV",
+			"zeebe.env[1].value": "nothingToSeeHere",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-ccsm-helm-test"})
+	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
+}
+
 func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
