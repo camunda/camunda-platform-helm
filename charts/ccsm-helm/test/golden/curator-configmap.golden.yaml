@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: ccsm-helm
     app.kubernetes.io/instance: ccsm-helm-test
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: 1.3.4
+    app.kubernetes.io/version: "1.3.4"
     app.kubernetes.io/part-of: camunda-cloud-self-managed
 data:
   action_file.yml: |-

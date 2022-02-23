@@ -17,7 +17,15 @@ app.kubernetes.io/name: {{ template "ccsm.name" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-app.kubernetes.io/version: {{ .Chart.AppVersion }}
+{{- if .Values.image }}
+    {{- if .Values.image.tag }}
+app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+    {{- else }}
+app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+    {{- end }}
+{{- else }}
+app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+{{- end }}
 app.kubernetes.io/part-of: camunda-cloud-self-managed
 {{- end -}}
 
