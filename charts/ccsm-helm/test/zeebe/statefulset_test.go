@@ -1,7 +1,6 @@
 package zeebe
 
 import (
-	"camunda-cloud-helm/charts/ccsm-helm/test/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -119,25 +118,26 @@ func (s *statefulSetTest) TestContainerSetExtraInitContainers() {
 	s.Require().Equal("/exporters/", initContainer.VolumeMounts[0].MountPath)
 }
 
-func TestGoldenContainerSecurityContext(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &golden.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "ccsm-helm-test",
-		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "statefulset-containersecuritycontext",
-		Templates:      []string{"charts/zeebe/templates/statefulset.yaml"},
+func (s *statefulSetTest) TestContainerSetSecurityContext() {
+	// given
+	options := &helm.Options{
 		SetValues: map[string]string{
 			"zeebe.containerSecurityContext.privileged":          "true",
 			"zeebe.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
-	})
-}
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
 
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	securityContext := statefulSet.Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().True(*securityContext.Privileged)
+	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
+}
 
 func (s *statefulSetTest) TestContainerOverwriteImageTag() {
 	// given
