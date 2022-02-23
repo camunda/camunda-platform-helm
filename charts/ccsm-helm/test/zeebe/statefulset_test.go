@@ -118,27 +118,6 @@ func (s *statefulSetTest) TestContainerSetExtraInitContainers() {
 	s.Require().Equal("/exporters/", initContainer.VolumeMounts[0].MountPath)
 }
 
-func (s *statefulSetTest) TestContainerSetSecurityContext() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"zeebe.containerSecurityContext.privileged":          "true",
-			"zeebe.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	securityContext := statefulSet.Spec.Template.Spec.Containers[0].SecurityContext
-	s.Require().True(*securityContext.Privileged)
-	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
-}
-
 func (s *statefulSetTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{
@@ -201,4 +180,25 @@ func (s *statefulSetTest) TestContainerOverwriteImageTagWithChartDirectSetting()
 	containers := statefulSet.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
+}
+
+func (s *statefulSetTest) TestContainerSetSecurityContext() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.containerSecurityContext.privileged":          "true",
+			"zeebe.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	securityContext := statefulSet.Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().True(*securityContext.Privileged)
+	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
 }
