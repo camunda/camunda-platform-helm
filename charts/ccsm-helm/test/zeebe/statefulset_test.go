@@ -137,3 +137,68 @@ func TestGoldenContainerSecurityContext(t *testing.T) {
 		},
 	})
 }
+
+
+func (s *statefulSetTest) TestContainerOverwriteImageTag() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.image.tag": "a.b.c",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	expectedContainerImage := "camunda/zeebe:a.b.c"
+	containers := statefulSet.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+	s.Require().Equal(expectedContainerImage, containers[0].Image)
+}
+
+func (s *statefulSetTest) TestContainerOverwriteGlobalImageTag() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.tag": "a.b.c",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	expectedContainerImage := "camunda/zeebe:a.b.c"
+	containers := statefulSet.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+	s.Require().Equal(expectedContainerImage, containers[0].Image)
+}
+
+func (s *statefulSetTest) TestContainerOverwriteImageTagWithChartDirectSetting() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.tag":  "x.y.z",
+			"zeebe.image.tag": "a.b.c",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	expectedContainerImage := "camunda/zeebe:a.b.c"
+	containers := statefulSet.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+	s.Require().Equal(expectedContainerImage, containers[0].Image)
+}
