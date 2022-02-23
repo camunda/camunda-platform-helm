@@ -36,8 +36,8 @@ spec:
         {{ toYaml .Values.global.image.pullSecrets | indent 8 | trim }}
       {{- end }}
       initContainers:
-        {{- if .Values.extraInitContainers }}
-        {{ tpl .Values.extraInitContainers . | indent 8 | trim }}
+        {{- with .Values.extraInitContainers }}
+        {{- tpl (toYaml . ) $ | nindent 8  }}
         {{- end }}
       containers:
       - name: {{ .Chart.Name }}

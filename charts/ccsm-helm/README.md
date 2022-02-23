@@ -114,7 +114,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `pvcStorageClassName` | Can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD. | `` |
 | | `extraVolumes` | Can be used to define extra volumes for the broker pods, useful for additional exporters | `{ }`|
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for additional exporters | `{ }` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `{ }` |
+| | `extraInitContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
 | | `podAnnotations` | Can be used to define extra broker pod annotations | `{ }` |
 | | `podLabels` | Can be used to define extra broker pod labels | `{ }` |
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods | |

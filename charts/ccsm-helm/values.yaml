@@ -150,7 +150,7 @@ zeebe:
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: { }
   # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
-  extraInitContainers: { }
+  extraInitContainers: [ ]
 
   # PodAnnotations can be used to define extra broker pod annotations
   podAnnotations: { }
