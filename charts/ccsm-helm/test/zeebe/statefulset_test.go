@@ -409,3 +409,23 @@ func (s *statefulSetTest) TestContainerSetServiceAccountName() {
 	// then
 	s.Require().Equal("serviceaccount", statefulSet.Spec.Template.Spec.ServiceAccountName)
 }
+
+func (s *statefulSetTest) TestContainerSetNodeSelector() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.nodeSelector.disktype": "ssd",
+			"zeebe.nodeSelector.cputype": "arm",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	s.Require().Equal("ssd", statefulSet.Spec.Template.Spec.NodeSelector["disktype"])
+	s.Require().Equal("arm", statefulSet.Spec.Template.Spec.NodeSelector["cputype"])
+}
