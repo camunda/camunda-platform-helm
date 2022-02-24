@@ -4,7 +4,7 @@ metadata:
   name: {{ include "zeebe.names.gateway" . }}
   labels: {{- include "zeebe.labels.gateway" . | nindent 4 }}
   annotations:
-    {{- toYaml  .Values.annotations | nindent 4 }}
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   selector:

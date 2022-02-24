@@ -4,9 +4,7 @@ metadata:
   name: {{ include "zeebe.names.gateway" . }}
   labels: {{- include "zeebe.labels.gateway" . | nindent 4 }}
   annotations:
-      {{- range $key, $value := .Values.annotations }}
-      {{ $key }}: {{ $value | quote }}
-      {{- end }}
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
 spec:
   replicas: {{ .Values.replicas  }}
   selector:
@@ -20,9 +18,7 @@ spec:
         {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        {{- range $key, $value := .Values.podAnnotations }}
-        {{ $key }}: {{ $value | quote }}
-        {{- end }}
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
     spec:
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName | quote }}

@@ -13,6 +13,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-cloud-self-managed
     app.kubernetes.io/component: zeebe-gateway
   annotations:
+    foo: bar
 spec:
   replicas: 2
   selector:
@@ -35,6 +36,7 @@ spec:
         app.kubernetes.io/part-of: camunda-cloud-self-managed
         app.kubernetes.io/component: zeebe-gateway
       annotations:
+        {}
     spec:
       containers:
         - name: zeebe-gateway

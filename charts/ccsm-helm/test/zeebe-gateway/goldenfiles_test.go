@@ -26,6 +26,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
 			Templates:      []string{"charts/zeebe-gateway/templates/" + name + ".yaml"},
+			SetValues: 		map[string]string{"global.annotations.foo" : "bar"},
 		})
 	}
 }
