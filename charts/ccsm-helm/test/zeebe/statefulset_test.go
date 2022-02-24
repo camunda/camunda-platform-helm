@@ -494,3 +494,39 @@ func (s *statefulSetTest) TestContainerSetAffinity() {
 	s.Require().EqualValues("In", matchExpression.Operator)
 	s.Require().Equal([]string{"another-node-label-value"}, matchExpression.Values)
 }
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+func (s *statefulSetTest) TestContainerSetTolerations() {
+	// given
+
+	//tolerations:
+	//- key: "key1"
+	//  operator: "Equal"
+	//  value: "value1"
+	//  effect: "NoSchedule"
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.tolerations[0].key":       "key1",
+			"zeebe.tolerations[0].operator":       "Equal",
+			"zeebe.tolerations[0].value":       "Value1",
+			"zeebe.tolerations[0].effect":       "NoSchedule",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	tolerations := statefulSet.Spec.Template.Spec.Tolerations
+	s.Require().Equal(1, len(tolerations))
+
+	toleration := tolerations[0]
+	s.Require().Equal("key1", toleration.Key)
+	s.Require().EqualValues("Equal", toleration.Operator)
+	s.Require().Equal("Value1", toleration.Value)
+	s.Require().EqualValues("NoSchedule", toleration.Effect)
+}
