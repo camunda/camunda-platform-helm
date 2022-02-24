@@ -391,3 +391,21 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	s.Require().True(*securityContext.Privileged)
 	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
 }
+
+func (s *statefulSetTest) TestContainerSetServiceAccountName() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.serviceAccount.name": "serviceaccount",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	s.Require().Equal("serviceaccount", statefulSet.Spec.Template.Spec.ServiceAccountName)
+}
