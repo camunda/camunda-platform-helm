@@ -21,7 +21,7 @@ type deploymentTemplateTest struct {
 	templates []string
 }
 
-func TestDeploymentTemplate(t *testing.T) {
+func TestGatewayDeploymentTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../")
@@ -33,6 +33,24 @@ func TestDeploymentTemplate(t *testing.T) {
 		namespace: "ccsm-helm-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"charts/zeebe-gateway/templates/gateway-deployment.yaml"},
 	})
+}
+
+func (s *deploymentTemplateTest) TestContainerSetPodLabels() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.podLabels.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
 }
 
 func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
