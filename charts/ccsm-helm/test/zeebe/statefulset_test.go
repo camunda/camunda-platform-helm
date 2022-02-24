@@ -416,7 +416,7 @@ func (s *statefulSetTest) TestContainerSetNodeSelector() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"zeebe.nodeSelector.disktype": "ssd",
-			"zeebe.nodeSelector.cputype": "arm",
+			"zeebe.nodeSelector.cputype":  "arm",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -456,14 +456,14 @@ func (s *statefulSetTest) TestContainerSetAffinity() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key": "kubernetes.io/e2e-az-name",
-			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator": "In",
+			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
 			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
 			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
-			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight" : "1",
-			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key" : "another-node-label-key",
-			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator" : "In",
-			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]" : "another-node-label-value",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
