@@ -262,6 +262,28 @@ func (s *statefulSetTest) TestContainerSetContainerCommand() {
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
 
+func (s *statefulSetTest) TestContainerSetLog4j2() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.log4j2": "<xml>\n</xml>",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(4, len(volumeMounts))
+	s.Require().Equal("config", volumeMounts[3].Name)
+	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[3].MountPath)
+	s.Require().Equal("broker-log4j2.xml", volumeMounts[3].SubPath)
+}
+
 func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
