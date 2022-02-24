@@ -507,10 +507,10 @@ func (s *statefulSetTest) TestContainerSetTolerations() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.tolerations[0].key":       "key1",
-			"zeebe.tolerations[0].operator":       "Equal",
-			"zeebe.tolerations[0].value":       "Value1",
-			"zeebe.tolerations[0].effect":       "NoSchedule",
+			"zeebe.tolerations[0].key":      "key1",
+			"zeebe.tolerations[0].operator": "Equal",
+			"zeebe.tolerations[0].value":    "Value1",
+			"zeebe.tolerations[0].effect":   "NoSchedule",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
