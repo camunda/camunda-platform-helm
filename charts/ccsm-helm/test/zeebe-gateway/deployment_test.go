@@ -343,3 +343,24 @@ func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 	// then
 	s.Require().Equal("serviceaccount", deployment.Spec.Template.Spec.ServiceAccountName)
 }
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.nodeSelector.disktype": "ssd",
+			"zeebe-gateway.nodeSelector.cputype":  "arm",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("ssd", deployment.Spec.Template.Spec.NodeSelector["disktype"])
+	s.Require().Equal("arm", deployment.Spec.Template.Spec.NodeSelector["cputype"])
+}
