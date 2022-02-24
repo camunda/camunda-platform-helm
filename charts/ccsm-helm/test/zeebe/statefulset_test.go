@@ -410,6 +410,7 @@ func (s *statefulSetTest) TestContainerSetServiceAccountName() {
 	s.Require().Equal("serviceaccount", statefulSet.Spec.Template.Spec.ServiceAccountName)
 }
 
+// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 func (s *statefulSetTest) TestContainerSetNodeSelector() {
 	// given
 	options := &helm.Options{
@@ -428,4 +429,68 @@ func (s *statefulSetTest) TestContainerSetNodeSelector() {
 	// then
 	s.Require().Equal("ssd", statefulSet.Spec.Template.Spec.NodeSelector["disktype"])
 	s.Require().Equal("arm", statefulSet.Spec.Template.Spec.NodeSelector["cputype"])
+}
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+func (s *statefulSetTest) TestContainerSetAffinity() {
+	// given
+
+	//affinity:
+	//	nodeAffinity:
+	//	 requiredDuringSchedulingIgnoredDuringExecution:
+	//	   nodeSelectorTerms:
+	//	   - matchExpressions:
+	//		 - key: kubernetes.io/e2e-az-name
+	//		   operator: In
+	//		   values:
+	//		   - e2e-az1
+	//		   - e2e-az2
+	//	 preferredDuringSchedulingIgnoredDuringExecution:
+	//	 - weight: 1
+	//	   preference:
+	//		 matchExpressions:
+	//		 - key: another-node-label-key
+	//		   operator: In
+	//		   values:
+	//		   - another-node-label-value
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key": "kubernetes.io/e2e-az-name",
+			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator": "In",
+			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+			"zeebe.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight" : "1",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key" : "another-node-label-key",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator" : "In",
+			"zeebe.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]" : "another-node-label-value",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	nodeAffinity := statefulSet.Spec.Template.Spec.Affinity.NodeAffinity
+	s.Require().NotNil(nodeAffinity)
+
+	nodeSelectorTerm := nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0]
+	s.Require().NotNil(nodeSelectorTerm)
+	matchExpression := nodeSelectorTerm.MatchExpressions[0]
+	s.Require().NotNil(matchExpression)
+	s.Require().Equal("kubernetes.io/e2e-az-name", matchExpression.Key)
+	s.Require().EqualValues("In", matchExpression.Operator)
+	s.Require().Equal([]string{"e2e-a1", "e2e-a2"}, matchExpression.Values)
+
+	preferredSchedulingTerm := nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0]
+	s.Require().NotNil(preferredSchedulingTerm)
+
+	matchExpression = preferredSchedulingTerm.Preference.MatchExpressions[0]
+	s.Require().NotNil(matchExpression)
+	s.Require().Equal("another-node-label-key", matchExpression.Key)
+	s.Require().EqualValues("In", matchExpression.Operator)
+	s.Require().Equal([]string{"another-node-label-value"}, matchExpression.Values)
 }
