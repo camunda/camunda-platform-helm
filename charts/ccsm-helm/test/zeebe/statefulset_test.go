@@ -284,6 +284,94 @@ func (s *statefulSetTest) TestContainerSetLog4j2() {
 	s.Require().Equal("broker-log4j2.xml", volumeMounts[3].SubPath)
 }
 
+func (s *statefulSetTest) TestContainerSetExtraVolumes() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.extraVolumes[0].name":                  "extraVolume",
+			"zeebe.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"zeebe.extraVolumes[0].configMap.defaultMode": "744",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	volumes := statefulSet.Spec.Template.Spec.Volumes
+	s.Require().Equal(len(volumes), 3)
+
+	extraVolume := volumes[2]
+	s.Require().Equal("extraVolume", extraVolume.Name)
+	s.Require().NotNil(*extraVolume.ConfigMap)
+	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
+}
+
+func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.extraVolumeMounts[0].name":      "otherConfigMap",
+			"zeebe.extraVolumeMounts[0].mountPath": "/usr/local/config",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(len(volumeMounts), 4)
+	extraVolumeMount := volumeMounts[3]
+	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
+	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
+}
+
+func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.extraVolumeMounts[0].name":             "otherConfigMap",
+			"zeebe.extraVolumeMounts[0].mountPath":        "/usr/local/config",
+			"zeebe.extraVolumes[0].name":                  "extraVolume",
+			"zeebe.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"zeebe.extraVolumes[0].configMap.defaultMode": "744",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	volumes := statefulSet.Spec.Template.Spec.Volumes
+	s.Require().Equal(len(volumes), 3)
+
+
+	extraVolume := volumes[2]
+	s.Require().Equal("extraVolume", extraVolume.Name)
+	s.Require().NotNil(*extraVolume.ConfigMap)
+	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
+
+	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(len(volumeMounts), 4)
+	extraVolumeMount := volumeMounts[3]
+	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
+	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
+}
+
 func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
