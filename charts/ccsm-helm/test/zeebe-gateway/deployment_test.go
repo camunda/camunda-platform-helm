@@ -246,3 +246,61 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
 	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 }
+
+func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.extraVolumeMounts[0].name":      "otherConfigMap",
+			"zeebe-gateway.extraVolumeMounts[0].mountPath": "/usr/local/config",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(len(volumeMounts), 1)
+	extraVolumeMount := volumeMounts[0]
+	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
+	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
+}
+
+func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.extraVolumeMounts[0].name":             "otherConfigMap",
+			"zeebe-gateway.extraVolumeMounts[0].mountPath":        "/usr/local/config",
+			"zeebe-gateway.extraVolumes[0].name":                  "extraVolume",
+			"zeebe-gateway.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"zeebe-gateway.extraVolumes[0].configMap.defaultMode": "744",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumes := deployment.Spec.Template.Spec.Volumes
+	s.Require().Equal(len(volumes), 2)
+
+	extraVolume := volumes[1]
+	s.Require().Equal("extraVolume", extraVolume.Name)
+	s.Require().NotNil(*extraVolume.ConfigMap)
+	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
+
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(len(volumeMounts), 1)
+	extraVolumeMount := volumeMounts[0]
+	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
+	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
+}
