@@ -219,3 +219,30 @@ func (s *deploymentTemplateTest) TestContainerSetLog4j2() {
 	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[0].MountPath)
 	s.Require().Equal("gateway-log4j2.xml", volumeMounts[0].SubPath)
 }
+
+func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.extraVolumes[0].name":                  "extraVolume",
+			"zeebe-gateway.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"zeebe-gateway.extraVolumes[0].configMap.defaultMode": "744",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumes := deployment.Spec.Template.Spec.Volumes
+	s.Require().Equal(len(volumes), 2)
+
+	extraVolume := volumes[1]
+	s.Require().Equal("extraVolume", extraVolume.Name)
+	s.Require().NotNil(*extraVolume.ConfigMap)
+	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
+}

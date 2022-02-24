@@ -108,7 +108,7 @@ spec:
             name: {{ include "zeebe-gateway.fullname" . }}
             defaultMode: 0744
         {{- if .Values.extraVolumes}}
-        {{ .Values.extraVolumes | toYaml | nindent 8 }}
+        {{- .Values.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.serviceAccount.name}}
       serviceAccountName: {{ .Values.serviceAccount.name }}
