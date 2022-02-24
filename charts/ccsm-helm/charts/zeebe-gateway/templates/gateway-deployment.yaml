@@ -75,8 +75,8 @@ spec:
               value: 0.0.0.0
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: {{  .Values.service.httpPort | quote }}
-            {{- if .Values.env }}
-            {{ toYaml .Values.env | indent 12 | trim }}
+            {{- with .Values.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
           {{- if .Values.command}}
           command: {{ .Values.command }}
