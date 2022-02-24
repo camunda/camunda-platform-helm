@@ -197,3 +197,25 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	s.Require().Equal(1, len(containers[0].Command))
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
+
+func (s *deploymentTemplateTest) TestContainerSetLog4j2() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.log4j2": "<xml>\n</xml>",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(1, len(volumeMounts))
+	s.Require().Equal("config", volumeMounts[0].Name)
+	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[0].MountPath)
+	s.Require().Equal("gateway-log4j2.xml", volumeMounts[0].SubPath)
+}
