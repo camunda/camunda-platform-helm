@@ -54,6 +54,42 @@ func (s *statefulSetTest) TestContainerSetPodLabels() {
 	s.Require().Equal("bar", statefulSet.Spec.Template.Labels["foo"])
 }
 
+func (s *statefulSetTest) TestContainerSetPodAnnotations() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.podAnnotations.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	s.Require().Equal("bar", statefulSet.Spec.Template.Annotations["foo"])
+}
+
+func (s *statefulSetTest) TestContainerSetGlobalAnnotations() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.annotations.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	s.Require().Equal("bar", statefulSet.ObjectMeta.Annotations["foo"])
+}
+
 func (s *statefulSetTest) TestContainerSetPriorityClassName() {
 	// given
 	options := &helm.Options{

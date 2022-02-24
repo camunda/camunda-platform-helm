@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-cloud-self-managed
     app.kubernetes.io/component: zeebe-gateway
   annotations:
-    foo: bar
+    {}
 spec:
   type: ClusterIP
   selector:

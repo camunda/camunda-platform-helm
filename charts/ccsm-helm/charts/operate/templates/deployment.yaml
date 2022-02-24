@@ -3,10 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "operate.fullname" . }}
   labels: {{- include "operate.labels" . | nindent 4 }}
-  annotations:
-      {{- range $key, $value := .Values.global.annotations }}
-      {{ $key }}: {{ $value | quote }}
-      {{- end }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
   selector:

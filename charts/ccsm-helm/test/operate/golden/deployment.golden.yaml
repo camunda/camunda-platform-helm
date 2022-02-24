@@ -13,6 +13,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-cloud-self-managed
     app.kubernetes.io/component: operate
   annotations:
+    {}
 spec:
   replicas: 1
   selector:

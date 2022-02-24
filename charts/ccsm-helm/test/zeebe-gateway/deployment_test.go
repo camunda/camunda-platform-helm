@@ -72,6 +72,24 @@ func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
 	s.Require().Equal("bar", deployment.Spec.Template.Annotations["foo"])
 }
 
+func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.annotations.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
+}
+
 func (s *deploymentTemplateTest) TestContainerSetPriorityClassName() {
 	// given
 	options := &helm.Options{
