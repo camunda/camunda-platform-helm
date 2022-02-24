@@ -358,7 +358,6 @@ func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
 	volumes := statefulSet.Spec.Template.Spec.Volumes
 	s.Require().Equal(len(volumes), 3)
 
-
 	extraVolume := volumes[2]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
