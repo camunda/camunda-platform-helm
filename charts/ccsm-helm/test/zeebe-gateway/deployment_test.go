@@ -304,3 +304,24 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
+
+func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.containerSecurityContext.privileged":          "true",
+			"zeebe-gateway.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	securityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().True(*securityContext.Privileged)
+	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
+}
