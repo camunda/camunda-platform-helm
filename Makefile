@@ -7,6 +7,11 @@ chartPath=charts/ccsm-helm
 test:
 	go test ./...
 
+# it: runs the integration tests agains the current kube context
+.PHONY: it
+it:
+	go test -tags integration ./.../integration
+
 # golden: runs the tests with updating the golden files
 .PHONY: golden
 golden:
