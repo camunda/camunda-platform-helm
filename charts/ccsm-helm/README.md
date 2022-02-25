@@ -27,7 +27,6 @@
   * Three Kubernetes nodes to respect the default "hard" affinity settings
   * 2GB of RAM for the JVM heap
 
-
 ## Installing
 
 The first command adds the official Camunda Cloud helm charts repo and the second installs the Camunda Cloud Self Managed chart to your current kubernetes context.

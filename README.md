@@ -101,6 +101,10 @@ For a complete migration guide see [here](MIGRATION.md).
 
 Please create [new issues](https://github.com/camunda-community-hub/camunda-cloud-helm) if you find problems with these charts. This repository is hosted using GitHub Pages and the source code repository can be found here: [https://github.com/camunda-community-hub/camunda-cloud-helm](https://github.com/camunda-community-hub/camunda-cloud-helm)
 
+## Contributing
+
+Please familiar yourself with the [contribution guide](/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [CCSM-Helm Readme](charts/ccsm-helm/README.md) to find more information about configuring and developing the charts.
+
 ## Releasing the Charts
 
 In order to find out how to release the charts please see the corresponding [release guide](RELEASE.md).
