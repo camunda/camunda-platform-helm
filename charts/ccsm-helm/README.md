@@ -14,6 +14,7 @@
     + [Elasticsearch](#elasticsearch)
   * [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
   * [Development](#development)
+  * [Releasing the Charts](#releasing-the-charts)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
