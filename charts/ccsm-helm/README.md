@@ -146,6 +146,7 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `podLabels` | Can be used to define extra gateway pod labels | `{ }` |
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
 | | `log4j2` | Can be used to overwrite the log4j2 configuration of the gateway | `""` |
+| | `JavaOpts` | Can be used to set the Zeebe Gateway JavaOpts. This is where you should configure the jvm heap size. | `-XX:+ExitOnOutOfMemoryError` |
 | | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `containerSecurityContext` | Defines the security options the gateway container should be run with | `{ } `|
