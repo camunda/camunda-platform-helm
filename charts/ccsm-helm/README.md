@@ -88,7 +88,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
-| | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `2` |
+| | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
 | | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
 | | `env` | Can be used to set extra environment variables in each Zeebe broker container | `- name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD` </br>`  value: "5m"`</br>`- name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED`</br>`  value: "true"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK`</br>`  value: "0.85"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK`</br>`  value: "0.87"` |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` | 

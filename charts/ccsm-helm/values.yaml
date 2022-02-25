@@ -74,7 +74,7 @@ zeebe:
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
-  partitionCount: "2"
+  partitionCount: "3"
   # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   # Env can be used to set extra environment variables in each zeebe broker container
