@@ -103,4 +103,4 @@ Please create [new issues](https://github.com/camunda-community-hub/camunda-clou
 
 ## Releasing the Charts
 
-The charts are build and linted on every push to the main branch. If the chart version changes a new github release with the corresponding packaged helm chart is created. The charts are hosted via github pages and use the release artifacts. We use the [chart-releaser-action](https://github.com/helm/chart-releaser-action) to release the charts.
+In order to find out how to release the charts please see the corresponding [release guide](RELEASE.md).

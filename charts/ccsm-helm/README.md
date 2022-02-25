@@ -318,3 +318,7 @@ Saving 3 charts
 Downloading elasticsearch from repo https://helm.elastic.co
 Deleting outdated charts
 ```
+
+## Releasing the Charts
+
+In order to find out how to release the charts please see the corresponding [release guide](/RELEASE.md).
