@@ -146,7 +146,6 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `podAnnotations` | Can be used to define extra gateway pod annotations | `{ }` |
 | | `podLabels` | Can be used to define extra gateway pod labels | `{ }` |
-| | `annotations` | Can be used to define gateway deployment annotations | `{ } `|
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
 | | `log4j2` | Can be used to overwrite the log4j2 configuration of the gateway | `""` |
 | | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |

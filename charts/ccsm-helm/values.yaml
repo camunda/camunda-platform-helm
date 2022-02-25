@@ -203,8 +203,6 @@ zeebe-gateway:
   podAnnotations: { }
   # PodLabels can be used to define extra gateway pod labels
   podLabels: { }
-  # Annotations can be used to define gateway deployment annotations
-  annotations: { }
 
   # LogLevel defines the log level which is used by the gateway
   logLevel: info
