@@ -1,17 +1,16 @@
-## Contributing
+# Contributing
 
-- [Contributing](#contributing)
-- [Issues and PRs](#issues-and-prs)
-- [Submitting a pull request](#submitting-a-pull-request)
-  * [Best Practices](#best-practices)
-  * [Commit Guidelines](#commit-guidelines)
-  * [Tests](#tests)
-    + [Unit Tests](#unit-tests)
-      - [Golden Files](#golden-files)
-      - [Properties Test](#properties-test)
-    + [Test License Headers](#test-license-headers)
-  * [Documentation](#documentation)
-- [Resources](#resources)
+ * [Issues and PRs](#issues-and-prs)
+ * [Submitting a pull request](#submitting-a-pull-request)
+   + [Best Practices](#best-practices)
+   + [Commit Guidelines](#commit-guidelines)
+   + [Tests](#tests)
+     - [Unit Tests](#unit-tests)
+       * [Golden Files](#golden-files)
+       * [Properties Test](#properties-test)
+     - [Test License Headers](#test-license-headers)
+   + [Documentation](#documentation)
+ * [Resources](#resources)
 
 [fork]: /fork
 [pr]: /compare
