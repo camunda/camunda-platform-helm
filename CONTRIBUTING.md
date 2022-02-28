@@ -22,6 +22,7 @@ Make sure that your provided PR's works via:
 
  * `helm lint` to run the linting
  * `make fmt` to run the gofmt
+ * `make checkLicense` to run the license check
  * `make test` to run the go tests
  * `helm install <releasename> chartPath/` to install a helm release in your k8 cluster (e.g. kind)
 
@@ -120,6 +121,9 @@ _Conjunction:_
   * [can be used] for optional configuration
   * [if true] for toggles
   * [configuration] for section/group of variables
+
+
+All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/convertValuesDoc.sh).
 
 
 ## Resources
