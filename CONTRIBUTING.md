@@ -99,6 +99,10 @@ Here we directly set the specific property/variable and verify that the helm cha
 
 It is always helpful to check already existing tests to get a better understanding in how to write new tests, so do not hesitant to read and copy them.
 
+#### Test License Headers
+
+Make sure that new go tests contain the apache license headers, otherwise the CI license check will fail. For adding and checking the license we use [addlicense](https://github.com/google/addlicense). In order to install it locally, simply run `make installLicense`. Afterwards you can run `make addlicense` to add the missing license header to a new go file.
+
 ### Documentation
 
 The `values.yaml` file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
