@@ -1,0 +1,57 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request: { }
+  workflow_dispatch: { }
+
+env:
+  HELM_VERSION: 3.6.3
+  KUBECTL_VERSION: 'latest'
+  KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      KUBECONFIG: .github/config/kubeconfig
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - uses: azure/setup-kubectl@v2.0
+      with:
+        version: "${{ env.KUBECTL_VERSION }}"
+      id: install
+    - name: Set KUBECONFIG
+      run: |
+        echo "KUBECONFIG=$GITHUB_WORKSPACE/${{ env.KUBECONFIG }}" >> $GITHUB_ENV
+        # Based on 
+        # * https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
+        # * https://stackoverflow.com/questions/67586339/github-actions-get-absolute-path-to-working-directory
+        # * https://docs.github.com/en/actions/learn-github-actions/environment-variables
+        #  Necessary for terratest to have an absolute path
+    - name: Setup kube context
+      run: |
+        ls -l "${{ env.KUBECONFIG }}"
+        kubectl config set clusters.gke_zeebe-io_europe-west1-b_zeebe-cluster.certificate-authority-data "${{ secrets.K8_CERT_DATA }}"
+        kubectl config set-cluster "gke_zeebe-io_europe-west1-b_zeebe-cluster" --server="${{ secrets.K8_SERVER }}"
+        kubectl config set-credentials "${{ env.KUBECTX }}-ccsm-token-user" --token "${{ secrets.K8_TOKEN }}"
+        kubectl config set-context "${{ env.KUBECTX }}" --user "${{ env.KUBECTX }}-ccsm-token-user"
+        # verify that setup worked
+        kubectl auth can-i create deployment
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: "${{ env.HELM_VERSION }}"
+    - name: Add stable helm repo
+      run: |
+        helm repo add elastic https://helm.elastic.co
+        helm repo update
+    - name: Get Helm Deps
+      run: make deps
+    - name: Test
+      run: make it
