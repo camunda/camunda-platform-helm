@@ -61,7 +61,7 @@ spec:
             - name: ZEEBE_LOG_LEVEL
               value: "info"
             - name: JAVA_TOOL_OPTIONS
-              value: 
+              value: "-XX:+ExitOnOutOfMemoryError"
             - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
               value: ccsm-helm-test-zeebe:26502
             - name: ZEEBE_GATEWAY_NETWORK_HOST

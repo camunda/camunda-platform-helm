@@ -21,13 +21,17 @@ jobs:
 
     - name: Format
       run: |
-        go fmt ./...
+        make fmt
         diff=$(git status --porcelain)
         if [ -n "$diff" ]
         then
           echo "Some files are not following the go format ($diff), run gofmt and fix your files."
           exit 1
         fi
+    - name: Install License Tool
+      run: make installLicense
+    - name: Check License
+      run: make checkLicense
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:
