@@ -21,7 +21,7 @@ jobs:
 
     - name: Format
       run: |
-        go fmt ./...
+        make fmt
         diff=$(git status --porcelain)
         if [ -n "$diff" ]
         then
