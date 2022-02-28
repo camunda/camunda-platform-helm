@@ -103,7 +103,7 @@ Please create [new issues](https://github.com/camunda-community-hub/camunda-clou
 
 ## Contributing
 
-Please familiar yourself with the [contribution guide](/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [CCSM-Helm Readme](charts/ccsm-helm/README.md) to find more information about configuring and developing the charts.
+Please familiar yourself with the [contribution guide](https://github.com/camunda/camunda-cloud-helm/blob/main/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [CCSM-Helm Readme](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md) to find more information about configuring and developing the charts.
 
 ## Releasing the Charts
 
