@@ -40,7 +40,8 @@ jobs:
         kubectl config set-cluster "gke_zeebe-io_europe-west1-b_zeebe-cluster" --server="${{ secrets.K8_SERVER }}"
         kubectl config set-credentials "${{ env.KUBECTX }}-ccsm-token-user" --token "${{ secrets.K8_TOKEN }}"
         kubectl config set-context "${{ env.KUBECTX }}" --user "${{ env.KUBECTX }}-ccsm-token-user"
-        kubectl get namespaces # verify that setup worked
+        # verify that setup worked
+        kubectl auth can-i create deployment
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:
