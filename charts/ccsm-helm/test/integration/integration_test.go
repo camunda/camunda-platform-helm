@@ -18,6 +18,7 @@ package integration
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -49,9 +50,7 @@ func TestIntegration(t *testing.T) {
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
 
-	namespace := "ccsm-helm-" + strings.ToLower(random.UniqueId())
-
-	// currently enforce the test context to be the Zeebe team's cluster, but could be change to some CI cluster
+	namespace := createNamespaceName()
 	kubeOptions := k8s.NewKubectlOptions("gke_zeebe-io_europe-west1-b_zeebe-cluster", "", namespace)
 
 	suite.Run(t, &integrationTest{
@@ -143,4 +142,28 @@ func (s *integrationTest) waitUntilPortForwarded(tunnel *k8s.Tunnel, retries int
 		},
 	)
 	logger.Logf(s.T(), message)
+}
+
+func truncateString(str string, num int) string {
+	shortenStr := str
+	if len(str) > num {
+		shortenStr = str[0:num]
+	}
+	return shortenStr
+}
+
+func createNamespaceName() string {
+	// if triggered by a github action the environment variable is set
+	// we use it to better identify the test
+	commitSHA, exist := os.LookupEnv("GITHUB_SHA")
+	namespace := "ccsm-helm-"
+	if !exist {
+		namespace += strings.ToLower(random.UniqueId())
+	} else {
+		namespace += commitSHA
+	}
+
+	// max namespace length is 63 characters
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+	return truncateString(namespace, 63)
 }
