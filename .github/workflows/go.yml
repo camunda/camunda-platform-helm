@@ -29,9 +29,9 @@ jobs:
           exit 1
         fi
     - name: Install License Tool
-      make installLicense
+      run: make installLicense
     - name: Check License
-      make checkLicense
+      run: make checkLicense
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:
