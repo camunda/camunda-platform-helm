@@ -2,7 +2,7 @@
 
 [fork]: /fork
 [pr]: /compare
-[CODE_OF_CONDUCT]: CODE_OF_CONDUCT.MD
+[CODE_OF_CONDUCT]: CODE_OF_CONDUCT.md
 
 Hi there! We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.
 
@@ -16,13 +16,21 @@ We'd also love PRs. If you're thinking of a large PR, we advise opening up an is
 
 ## Submitting a pull request
 
-Please feel free to fork this repository and open a pull request to update this documentation.
+Please feel free to fork this repository and open a pull request to fix an issue or add a new feature.
 
 Make sure that your provided PR's works via:
 
  * `helm lint` to run the linting
- * `helm template <releasename> chartPath/` to generate the template files
+ * `make fmt` to run the gofmt
+ * `make test` to run the go tests
  * `helm install <releasename> chartPath/` to install a helm release in your k8 cluster (e.g. kind)
+
+We have the following expectation on PR's:
+
+ * They follow the [best practices](#best-practices)
+ * They contain new [tests](#tests) on a bug fix or on adding a new feature
+ * They follow the [commit guidelines](#commit-guidelines)
+ * The [documentation](#documentation) has been updated, if necessary.
 
 ### Best Practices
 
@@ -54,6 +62,41 @@ Available commit types:
 * `build` - changes to the build (e.g. to Maven's `Chart.yaml`)
 * `ci` - changes to the CI (e.g. to GitHub related configs)
 
+### Tests
+
+In order to make sure that the helm charts work properly and that further development doesn't break anything we introduced with [#125](https://github.com/camunda/camunda-cloud-helm/issues/125) tests for the helm charts. The tests are written in go, and we use the [terratest framework](https://terratest.gruntwork.io/) to write them.
+
+We separate our tests in two parts, with different targets and goals.
+
+ 1. **Template tests** (unit tests), which verify the general structure. Is it yaml conform, has it the right value/structure if set, does the default values not change or are set at all.
+ 2. **Integration tests**, which verify whether I can install the charts and use them. This means, are the manifests accepted by the K8 API and does it work (it can be valid yaml but not accepted by K8). Can the services reach each other and are they working?
+
+**For new contributions it is expected to write new unit tests, but no integration tests.** We keep the count of integration tests to a minimum, and the knowledge for writing them is not expected for contributors.
+
+Tests can be found in the `charts/ccsm-helm` directory under `test/`. For each sub-chart we have a sub-directory 
+in the `test/` directory. For example [test/zeebe](charts/ccsm-helm/test/zeebe).
+
+In order to run the tests, execute `make test` on the root repository level.
+
+#### Unit Tests
+
+As mentioned earlier we expect unit tests on new contributions. The unit tests (template tests) are divided in two parts, golden file tests and explicit property tests. In this section we want to explain when which test type should be used.
+
+##### Golden Files
+
+We write new golden file tests, for default values, where we can compare a complete manifest with his properties. Most of the golden file tests are part of the `goldenfiles_test.go` in the corresponding sub-chart testing directory. For an example see [here](charts/ccsm-helm/test/zeebe/goldenfiles_test.go).
+
+If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the prometheus [servicemonitor](charts/ccsm-helm/templates/service-monitor.yaml) can be enabled by a toggle. This means we write a golden file test in `servicemonitor_test.go`, see [here](charts/ccsm-helm/test/servicemonitor_test.go).
+
+In order to generate the golden files run `make golden` on the root level of the repository. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should also be named related to the manifest.
+
+##### Properties Test
+
+For things which are not per default enabled or set we write a property test.
+
+Here we directly set the specific property/variable and verify that the helm chart can be rendered and the property is set correctly on the object. These kind of tests should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, for the zeebe statefulset manifest we have the test `statefulset_test.go` under the `zeebe` sub-dir, see [here](charts/ccsm-helm/test/zeebe/statefulset_test.go).
+
+It is always helpful to check already existing tests to get a better understanding in how to write new tests, so do not hesitant to read and copy them.
 
 ### Documentation
 
