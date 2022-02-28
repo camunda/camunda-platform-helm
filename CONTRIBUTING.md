@@ -1,12 +1,25 @@
 ## Contributing
 
+- [Contributing](#contributing)
+- [Issues and PRs](#issues-and-prs)
+- [Submitting a pull request](#submitting-a-pull-request)
+  * [Best Practices](#best-practices)
+  * [Commit Guidelines](#commit-guidelines)
+  * [Tests](#tests)
+    + [Unit Tests](#unit-tests)
+      - [Golden Files](#golden-files)
+      - [Properties Test](#properties-test)
+    + [Test License Headers](#test-license-headers)
+  * [Documentation](#documentation)
+- [Resources](#resources)
+
 [fork]: /fork
 [pr]: /compare
 [CODE_OF_CONDUCT]: CODE_OF_CONDUCT.md
 
 Hi there! We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.
 
-Please note that this project is released with a [Contributor Code of Conduct](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+Please note that this project is released with a [Contributor Code of Conduct](https://github.com/camunda/camunda-cloud-helm/blob/main/CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
 
 ## Issues and PRs
 
@@ -129,10 +142,9 @@ _Conjunction:_
 
 All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/convertValuesDoc.sh).
 
-
 ## Resources
 
 - [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/)
 - [Using Pull Requests](https://help.github.com/articles/about-pull-requests/)
 - [GitHub Help](https://help.github.com)
-- [CODE_OF_CONDUCT](https://github.com/camunda-community-hub/community/blob/main/CODE_OF_CONDUCT.MD)
+- [CODE_OF_CONDUCT](https://github.com/camunda/camunda-cloud-helm/blob/main/CODE_OF_CONDUCT.md)
