@@ -28,6 +28,10 @@ jobs:
           echo "Some files are not following the go format ($diff), run gofmt and fix your files."
           exit 1
         fi
+    - name: Install License Tool
+      make installLicense
+    - name: Check License
+      make checkLicense
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:
