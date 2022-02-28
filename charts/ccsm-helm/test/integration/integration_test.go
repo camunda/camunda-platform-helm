@@ -78,8 +78,6 @@ func (s *integrationTest) TestGatewayConnection() {
 
 	// when
 	helm.Install(s.T(), options, s.chartPath, s.release)
-	// cannot add the delete part in the tear down since the options are per test
-	defer helm.Delete(s.T(), options, s.release, true) // tbh I don't think it is necessary since we delete the namespace
 
 	// then
 	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-cloud-self-managed"})
