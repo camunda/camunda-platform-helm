@@ -90,6 +90,10 @@ func (s *integrationTest) TestGatewayConnection() {
 	s.Require().NoError(err, "failed to create Zeebe client")
 	defer closeFn()
 
+	s.assertGatewayTopology(err, client)
+}
+
+func (s *integrationTest) assertGatewayTopology(err error, client zbc.Client) {
 	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelFn()
 	topology, err := client.NewTopologyCommand().Send(ctx)
