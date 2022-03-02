@@ -70,7 +70,7 @@ func (s *integrationTest) TearDownTest() {
 	k8s.DeleteNamespace(s.T(), s.kubeOptions, s.namespace)
 }
 
-func (s *integrationTest) TestGatewayConnection() {
+func (s *integrationTest) TestServicesEnd2End() {
 	// given
 	options := &helm.Options{
 		KubectlOptions: s.kubeOptions,
