@@ -2,6 +2,10 @@ zeebe:
   clusterSize: 1
   partitionCount: 1
   replicationFactor: 1
+  pvcSize: 10Gi
+
+zeebe-gateway:
+  replicas: 1
 
 elasticsearch:
   imageTag: 7.16.1
