@@ -26,6 +26,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -91,6 +92,25 @@ func (s *integrationTest) TestGatewayConnection() {
 	defer closeFn()
 
 	s.assertGatewayTopology(err, client)
+	deployProcessResponse := s.deployProcess(err, client)
+	time.Sleep(10 * time.Second) // make sure that the deployment is distributed to all partitions
+	s.createProcessInstance(err, client, deployProcessResponse)
+}
+
+func (s *integrationTest) createProcessInstance(err error, client zbc.Client, deployProcessResponse *pb.DeployProcessResponse) {
+	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelFn()
+	_, err = client.NewCreateInstanceCommand().ProcessDefinitionKey(deployProcessResponse.Processes[0].ProcessDefinitionKey).Send(ctx)
+	s.Require().NoError(err)
+}
+
+func (s *integrationTest) deployProcess(err error, client zbc.Client) (*pb.DeployProcessResponse) {
+	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelFn()
+	deployProcessResponse, err := client.NewDeployProcessCommand().AddResourceFile("it-test-process.bpmn").Send(ctx)
+	s.Require().NoError(err, "failed to deploy process model")
+	s.Require().Equal(1, len(deployProcessResponse.Processes))
+	return deployProcessResponse
 }
 
 func (s *integrationTest) assertGatewayTopology(err error, client zbc.Client) {
