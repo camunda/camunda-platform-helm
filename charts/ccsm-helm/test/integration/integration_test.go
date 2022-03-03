@@ -94,13 +94,13 @@ func (s *integrationTest) TestServicesEnd2End() {
 
 func (s *integrationTest) assertProcessDefinitionFromOperate() {
 	message := retry.DoWithRetry(s.T(),
-		"query and assert process definition from operate",
+		"Try to query and assert process definition from operate",
 		10,
 		10*time.Second,
 		func() (string, error) {
 			responseBuf, err := s.queryProcessDefinitionsFromOperate()
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 
 			jsonString := responseBuf.String()
@@ -108,7 +108,7 @@ func (s *integrationTest) assertProcessDefinitionFromOperate() {
 			var objectMap map[string]interface{}
 			err = json.Unmarshal(responseBuf.Bytes(), &objectMap)
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 
 			total := objectMap["total"].(float64)
@@ -132,7 +132,7 @@ func (s *integrationTest) createProcessInstance() {
 	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelFn()
 
-	message := retry.DoWithRetry(s.T(), "Create Process instance", 10, 1*time.Second, func() (string, error) {
+	message := retry.DoWithRetry(s.T(), "Try to create Process instance", 10, 1*time.Second, func() (string, error) {
 		_, err = client.NewCreateInstanceCommand().ProcessDefinitionKey(deployProcessResponse.Processes[0].ProcessDefinitionKey).Send(ctx)
 		return "Process instance created.", err
 	})
@@ -210,9 +210,6 @@ func (s *integrationTest) awaitElasticPods() {
 	for _, pod := range pods {
 		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 10, 10*time.Second)
 	}
-	// we need some more time for operate to become healthy / ready
-	// todo introduce operate readiness check
-	time.Sleep(30 * time.Second)
 }
 
 func (s *integrationTest) deployProcess(err error, client zbc.Client) *pb.DeployProcessResponse {
