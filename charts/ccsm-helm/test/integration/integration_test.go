@@ -86,21 +86,39 @@ func (s *integrationTest) TestServicesEnd2End() {
 
 	// then
 	s.awaitCCSMPods()
-	closeFn, err := s.createProcessInstance()
+	closeFn, _ := s.createProcessInstance()
 
 	s.awaitElasticPods()
-	responseBuf := s.queryProcessDefinitionsFromOperate(closeFn)
+	s.assertProcessDefinitionFromOperate(closeFn)
+}
 
-	jsonString := responseBuf.String()
-	s.T().Logf("Request successful, got as response '%s'", jsonString)
-	var objectMap map[string]interface{}
-	err = json.Unmarshal(responseBuf.Bytes(), &objectMap)
-	s.Require().NoError(err)
+func (s *integrationTest) assertProcessDefinitionFromOperate(closeFn func()) {
+	message := retry.DoWithRetry(s.T(),
+		"query and assert process definition from operate",
+		10,
+		10*time.Second,
+		func() (string, error) {
+			responseBuf, err := s.queryProcessDefinitionsFromOperate(closeFn)
+			if err != nil {
+				return "", nil
+			}
 
-	total := objectMap["total"].(float64)
-	s.Require().GreaterOrEqual(total, float64(1))
+			jsonString := responseBuf.String()
+			s.T().Logf("Request successful, got as response '%s'", jsonString)
+			var objectMap map[string]interface{}
+			err = json.Unmarshal(responseBuf.Bytes(), &objectMap)
+			if err != nil {
+				return "", nil
+			}
 
-	s.Require().Contains(jsonString, "it-test-process")
+			total := objectMap["total"].(float64)
+			s.Require().GreaterOrEqual(total, float64(1))
+
+			s.Require().Contains(jsonString, "it-test-process")
+
+			return "Process definition 'it-test-process' successful queried from operate!", nil
+		})
+	s.T().Logf(message)
 }
 
 func (s *integrationTest) createProcessInstance() (func(), error) {
