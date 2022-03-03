@@ -86,19 +86,19 @@ func (s *integrationTest) TestServicesEnd2End() {
 
 	// then
 	s.awaitCCSMPods()
-	closeFn, _ := s.createProcessInstance()
+	s.createProcessInstance()
 
 	s.awaitElasticPods()
-	s.assertProcessDefinitionFromOperate(closeFn)
+	s.assertProcessDefinitionFromOperate()
 }
 
-func (s *integrationTest) assertProcessDefinitionFromOperate(closeFn func()) {
+func (s *integrationTest) assertProcessDefinitionFromOperate() {
 	message := retry.DoWithRetry(s.T(),
 		"query and assert process definition from operate",
 		10,
 		10*time.Second,
 		func() (string, error) {
-			responseBuf, err := s.queryProcessDefinitionsFromOperate(closeFn)
+			responseBuf, err := s.queryProcessDefinitionsFromOperate()
 			if err != nil {
 				return "", nil
 			}
@@ -121,7 +121,7 @@ func (s *integrationTest) assertProcessDefinitionFromOperate(closeFn func()) {
 	s.T().Logf(message)
 }
 
-func (s *integrationTest) createProcessInstance() (func(), error) {
+func (s *integrationTest) createProcessInstance() {
 	serviceName := fmt.Sprintf("%s-zeebe-gateway", s.release)
 	client, closeFn, err := s.createPortForwardedClient(serviceName)
 	s.Require().NoError(err, "failed to create Zeebe client")
@@ -129,15 +129,17 @@ func (s *integrationTest) createProcessInstance() (func(), error) {
 
 	s.assertGatewayTopology(err, client)
 	deployProcessResponse := s.deployProcess(err, client)
-	time.Sleep(10 * time.Second) // make sure that the deployment is distributed to all partitions
 	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelFn()
-	_, err = client.NewCreateInstanceCommand().ProcessDefinitionKey(deployProcessResponse.Processes[0].ProcessDefinitionKey).Send(ctx)
-	s.Require().NoError(err)
-	return closeFn, err
+
+	message := retry.DoWithRetry(s.T(), "Create Process instance", 10, 1*time.Second, func() (string, error) {
+		_, err = client.NewCreateInstanceCommand().ProcessDefinitionKey(deployProcessResponse.Processes[0].ProcessDefinitionKey).Send(ctx)
+		return "Process instance created.", err
+	})
+	s.T().Logf(message)
 }
 
-func (s *integrationTest) queryProcessDefinitionsFromOperate(closeFn func()) (*bytes.Buffer, error) {
+func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, error) {
 	operateServiceName := fmt.Sprintf("%s-operate", s.release)
 	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
 	defer closeFn()
