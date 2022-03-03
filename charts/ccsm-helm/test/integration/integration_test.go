@@ -90,6 +90,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 
 	s.awaitElasticPods()
 	s.assertProcessDefinitionFromOperate()
+	s.assertTasksFromTasklist()
 }
 
 func (s *integrationTest) assertProcessDefinitionFromOperate() {
@@ -119,6 +120,62 @@ func (s *integrationTest) assertProcessDefinitionFromOperate() {
 			return "Process definition 'it-test-process' successful queried from operate!", nil
 		})
 	s.T().Logf(message)
+}
+
+
+func (s *integrationTest) assertTasksFromTasklist() {
+	message := retry.DoWithRetry(s.T(),
+		"Try to query and assert process definition from operate",
+		10,
+		10*time.Second,
+		func() (string, error) {
+			responseBuf, err := s.queryTasksFromTasklist()
+			if err != nil {
+				return "", err
+			}
+
+			jsonString := responseBuf.String()
+			s.T().Logf("Request successful, got as response '%s'", jsonString)
+			var objectMap map[string]interface{}
+			err = json.Unmarshal(responseBuf.Bytes(), &objectMap)
+			if err != nil {
+				return "", err
+			}
+
+			data := objectMap["data"].(map[string]interface{})
+			tasks := data["tasks"].([]interface{})
+			s.Require().GreaterOrEqual(len(tasks), 1)
+			task := tasks[0].(map[string]interface{})
+			s.Require().Equal("It Test", task["name"])
+
+			return "User Task 'It Test' successful queried from tasklist!", nil
+		})
+	s.T().Logf(message)
+}
+
+
+func (s *integrationTest) queryTasksFromTasklist() (*bytes.Buffer, error) {
+	operateServiceName := fmt.Sprintf("%s-tasklist", s.release)
+	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
+	defer closeFn()
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := http.Client{
+		Jar:     jar,
+		Timeout: 30 * time.Second,
+	}
+
+	err = s.loginOnService(endpoint, httpClient)
+	if err != nil {
+		return nil, err
+	}
+
+	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/graphql" --cookie "ope-session"  -d '{"query": "{tasks(query:{}){name}}"}'
+	return s.queryApi(httpClient, "http://"+endpoint+"/graphql", bytes.NewBufferString(`{"query": "{tasks(query:{}){name}}"}`))
 }
 
 func (s *integrationTest) createProcessInstance() {
@@ -159,11 +216,11 @@ func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, e
 		return nil, err
 	}
 
+	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
 	return s.queryApi(httpClient, "http://"+endpoint+"/v1/process-definitions/list", bytes.NewBufferString("{}"))
 }
 
 func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
-	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
 	response, err := httpClient.Post(url, "application/json", jsonData)
 	if err != nil {
 		return nil, err
