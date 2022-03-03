@@ -137,37 +137,59 @@ func (s *integrationTest) createProcessInstance() (func(), error) {
 	return closeFn, err
 }
 
-func (s *integrationTest) queryProcessDefinitionsFromOperate(closeFn func()) *bytes.Buffer {
+func (s *integrationTest) queryProcessDefinitionsFromOperate(closeFn func()) (*bytes.Buffer, error) {
 	operateServiceName := fmt.Sprintf("%s-operate", s.release)
 	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
 	defer closeFn()
 
 	jar, err := cookiejar.New(nil)
-	s.Require().NoError(err, "Error on creating cookie jar")
+	if err != nil {
+		return nil, err
+	}
 
 	httpClient := http.Client{
 		Jar:     jar,
 		Timeout: 30 * time.Second,
 	}
 
-	// curl --include --request POST --cookie-jar "ope-session" "http://localhost:8080/api/login?username=demo&password=demo"
-	request, err := http.NewRequest("POST", "http://"+endpoint+"/api/login?username=demo&password=demo", nil)
-	s.Require().NoError(err)
-	request.Close = true
+	err = s.loginOnService(endpoint, httpClient)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = httpClient.Do(request)
-	s.Require().NoError(err)
+	return s.queryApi(httpClient, "http://"+endpoint+"/v1/process-definitions/list", bytes.NewBufferString("{}"))
+}
 
+func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
 	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
-	response, err := httpClient.Post("http://"+endpoint+"/v1/process-definitions/list", "application/json", bytes.NewBufferString("{}"))
-	s.Require().NoError(err)
+	response, err := httpClient.Post(url, "application/json", jsonData)
+	if err != nil {
+		return nil, err
+	}
 	s.Require().Equal(200, response.StatusCode)
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(response.Body)
-	s.Require().NoError(err)
 	defer response.Body.Close()
-	return buf
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
+func (s *integrationTest) loginOnService(endpoint string, httpClient http.Client) error {
+	// curl --include --request POST --cookie-jar "ope-session" "http://localhost:8080/api/login?username=demo&password=demo"
+	request, err := http.NewRequest("POST", "http://"+endpoint+"/api/login?username=demo&password=demo", nil)
+	if err != nil {
+		return err
+	}
+	request.Close = true
+
+	_, err = httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *integrationTest) awaitCCSMPods() {
