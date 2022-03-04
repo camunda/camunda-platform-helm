@@ -1,6 +1,6 @@
 apiVersion: v2
 name: ccsm-helm
-version: 0.0.21
+version: 0.0.22
 appVersion: "1.3.4"
 description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
 type: application
@@ -11,16 +11,16 @@ sources:
   - https://github.com/camunda-cloud/zeebe
 dependencies:
 - name: zeebe
-  version: 0.0.21
+  version: 0.0.22
   condition: "zeebe.enabled"
 - name: zeebe-gateway
-  version: 0.0.21
+  version: 0.0.22
   condition: "zeebe.enabled"
 - name: operate
-  version: 0.0.21
+  version: 0.0.22
   condition: "operate.enabled"
 - name: tasklist
-  version: 0.0.21
+  version: 0.0.22
   condition: "tasklist.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
@@ -31,8 +31,6 @@ maintainers:
     email: christopher.zell@camunda.com
 annotations:
   artifacthub.io/changes: |
-    - migrate charts to new org - remove badges from readme
-    - support templates in zeebe-gateway env variables
-    - support global annotations on all deployments
-    - add lot of template tests for charts
+    - add ability to provide custome service annotations for zeebe-gateway
+    - change default java opts for zeebe
   artifacthub.io/containsSecurityUpdates: "false"
