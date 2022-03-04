@@ -266,6 +266,8 @@ zeebe-gateway:
     internalPort: 26502
     # Service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
+    # Service.annotations can be used to define annotations, which will be applied to the zeebe-gateway service
+    annotations: {}
 
   # ServiceAccount configuration for the service account where the gateway pods are assigned to
   serviceAccount:

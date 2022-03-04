@@ -167,6 +167,7 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `service.httpName` | Defines the name of the HTTP endpoint, where for example metrics are provided | `http` |
 | | `service.gatewayPort` | Defines the port of the gateway endpoint, where client commands (gRPC) are sent to | `26500` |
 | | `service.gatewayName` | Defines the name of the gateway endpoint, where client commands (gRPC) are sent to | `gateway` |
+| | `service.annotations` | Defines annotations for the zeebe gateway service | `{ }` | 
 | | `service.internalPort` | Defines the port of the Internal API endpoint, which is used for internal communication | `26502` |
 | | `service.internalName` | Defines the name of the Internal API endpoint, which is used for internal communication | `internal` |
 | | `serviceAccount` | Configuration for the service account where the gateway pods are assigned to | |
