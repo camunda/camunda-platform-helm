@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
 // +build integration
 
 package integration
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/cookiejar"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +31,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -69,7 +75,7 @@ func (s *integrationTest) TearDownTest() {
 	k8s.DeleteNamespace(s.T(), s.kubeOptions, s.namespace)
 }
 
-func (s *integrationTest) TestGatewayConnection() {
+func (s *integrationTest) TestServicesEnd2End() {
 	// given
 	options := &helm.Options{
 		KubectlOptions: s.kubeOptions,
@@ -79,17 +85,143 @@ func (s *integrationTest) TestGatewayConnection() {
 	helm.Install(s.T(), options, s.chartPath, s.release)
 
 	// then
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-cloud-self-managed"})
+	s.awaitCCSMPods()
+	s.createProcessInstance()
 
-	for _, pod := range pods {
-		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 10, time.Duration(10 * time.Second))
-	}
+	s.awaitElasticPods()
+	s.assertProcessDefinitionFromOperate()
+}
 
+func (s *integrationTest) assertProcessDefinitionFromOperate() {
+	message := retry.DoWithRetry(s.T(),
+		"Try to query and assert process definition from operate",
+		10,
+		10*time.Second,
+		func() (string, error) {
+			responseBuf, err := s.queryProcessDefinitionsFromOperate()
+			if err != nil {
+				return "", err
+			}
+
+			jsonString := responseBuf.String()
+			s.T().Logf("Request successful, got as response '%s'", jsonString)
+			var objectMap map[string]interface{}
+			err = json.Unmarshal(responseBuf.Bytes(), &objectMap)
+			if err != nil {
+				return "", err
+			}
+
+			total := objectMap["total"].(float64)
+			s.Require().GreaterOrEqual(total, float64(1))
+
+			s.Require().Contains(jsonString, "it-test-process")
+
+			return "Process definition 'it-test-process' successful queried from operate!", nil
+		})
+	s.T().Logf(message)
+}
+
+func (s *integrationTest) createProcessInstance() {
 	serviceName := fmt.Sprintf("%s-zeebe-gateway", s.release)
 	client, closeFn, err := s.createPortForwardedClient(serviceName)
 	s.Require().NoError(err, "failed to create Zeebe client")
 	defer closeFn()
 
+	s.assertGatewayTopology(err, client)
+	deployProcessResponse := s.deployProcess(err, client)
+	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelFn()
+
+	message := retry.DoWithRetry(s.T(), "Try to create Process instance", 10, 1*time.Second, func() (string, error) {
+		_, err = client.NewCreateInstanceCommand().ProcessDefinitionKey(deployProcessResponse.Processes[0].ProcessDefinitionKey).Send(ctx)
+		return "Process instance created.", err
+	})
+	s.T().Logf(message)
+}
+
+func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, error) {
+	operateServiceName := fmt.Sprintf("%s-operate", s.release)
+	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
+	defer closeFn()
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := http.Client{
+		Jar:     jar,
+		Timeout: 30 * time.Second,
+	}
+
+	err = s.loginOnService(endpoint, httpClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.queryApi(httpClient, "http://"+endpoint+"/v1/process-definitions/list", bytes.NewBufferString("{}"))
+}
+
+func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
+	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
+	response, err := httpClient.Post(url, "application/json", jsonData)
+	if err != nil {
+		return nil, err
+	}
+	s.Require().Equal(200, response.StatusCode)
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(response.Body)
+	defer response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
+func (s *integrationTest) loginOnService(endpoint string, httpClient http.Client) error {
+	// curl --include --request POST --cookie-jar "ope-session" "http://localhost:8080/api/login?username=demo&password=demo"
+	request, err := http.NewRequest("POST", "http://"+endpoint+"/api/login?username=demo&password=demo", nil)
+	if err != nil {
+		return err
+	}
+	request.Close = true
+
+	_, err = httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *integrationTest) awaitCCSMPods() {
+	// await that all ccsm related pods become ready
+	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-cloud-self-managed"})
+
+	for _, pod := range pods {
+		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 10, 10*time.Second)
+	}
+}
+
+func (s *integrationTest) awaitElasticPods() {
+	// await that all elastic related pods become ready, otherwise operate and tasklist can't answer requests
+	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=elasticsearch-master"})
+
+	for _, pod := range pods {
+		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 10, 10*time.Second)
+	}
+}
+
+func (s *integrationTest) deployProcess(err error, client zbc.Client) *pb.DeployProcessResponse {
+	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelFn()
+	deployProcessResponse, err := client.NewDeployProcessCommand().AddResourceFile("it-test-process.bpmn").Send(ctx)
+	s.Require().NoError(err, "failed to deploy process model")
+	s.Require().Equal(1, len(deployProcessResponse.Processes))
+	return deployProcessResponse
+}
+
+func (s *integrationTest) assertGatewayTopology(err error, client zbc.Client) {
 	ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelFn()
 	topology, err := client.NewTopologyCommand().Send(ctx)
@@ -98,7 +230,6 @@ func (s *integrationTest) TestGatewayConnection() {
 	s.Require().EqualValues(3, topology.ClusterSize)
 	s.Require().EqualValues(3, topology.PartitionsCount)
 	s.Require().EqualValues(3, topology.ReplicationFactor)
-	s.Require().EqualValues(3, len(topology.Brokers))
 }
 
 func (s *integrationTest) createPortForwardedClient(serviceName string) (zbc.Client, func(), error) {
@@ -123,6 +254,24 @@ func (s *integrationTest) createPortForwardedClient(serviceName string) (zbc.Cli
 	}
 
 	return client, func() { client.Close(); tunnel.Close() }, nil
+}
+
+func (s *integrationTest) createPortForwardedHttpClient(serviceName string) (string, func()) {
+	// NOTE: this only waits until the service is created, not until the underlying pods are ready to receive traffic
+	k8s.WaitUntilServiceAvailable(s.T(), s.kubeOptions, serviceName, 90, 1*time.Second)
+
+	// port forward the service to avoid having to set up a public endpoint that the test can access externally
+	localPort := k8s.GetAvailablePort(s.T())
+	// remote port needs to be container port - not service port!
+	tunnel := k8s.NewTunnel(s.kubeOptions, k8s.ResourceTypeService, serviceName, localPort, 8080)
+
+	// the gateway is not ready/receiving traffic until at least one leader is present
+	s.waitUntilPortForwarded(tunnel, 30, 2*time.Second)
+
+	endpoint := fmt.Sprintf("localhost:%d", localPort)
+	return endpoint, func() {
+		tunnel.Close()
+	}
 }
 
 func (s *integrationTest) waitUntilPortForwarded(tunnel *k8s.Tunnel, retries int, sleepBetweenRetries time.Duration) {
