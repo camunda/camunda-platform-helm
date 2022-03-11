@@ -132,8 +132,10 @@ spec:
         - name: config
           mountPath: /usr/local/bin/startup.sh
           subPath: startup.sh
+        {{- if .Values.persistence.enabled }}
         - name: data
           mountPath: /usr/local/zeebe/data
+        {{- end }}
         - name: exporters
           mountPath: /exporters
         {{- if .Values.log4j2 }}
@@ -172,6 +174,7 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
+{{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -181,3 +184,4 @@ spec:
       resources:
         requests:
           storage: {{ .Values.pvcSize | quote }}
+{{- end -}}
