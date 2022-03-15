@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ccsm-helm-role
+  labels:
+    app.kubernetes.io/component: remote
+    app.kubernetes.io/name: ccsm-helm
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]

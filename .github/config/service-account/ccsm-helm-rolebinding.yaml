@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ccsm-helm-rolebinding
+  labels:
+    app.kubernetes.io/component: remote
+    app.kubernetes.io/name: ccsm-helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ccsm-helm-role
+subjects:
+- kind: ServiceAccount
+  name: ccsm-helm-sa
+  namespace: ccsm-helm
