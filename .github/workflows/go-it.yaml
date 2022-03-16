@@ -12,7 +12,19 @@ env:
   KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
 
 jobs:
+  check-secret:
+    runs-on: ubuntu-latest
+    outputs:
+      secretDefined: ${{ steps.check-secret.outputs.defined }}
+    steps:
+      - id: check-secret
+        env:
+          SECRET: ${{ secrets.K8_SERVER }}
+        if: "${{ env.SECRET != '' }}"
+        run: echo "::set-output name=defined::true"      
   build:
+    needs: [check-secret]
+    if: needs.check-secret.outputs.secretDefined == 'true'
     runs-on: ubuntu-latest
     env:
       KUBECONFIG: .github/config/kubeconfig
