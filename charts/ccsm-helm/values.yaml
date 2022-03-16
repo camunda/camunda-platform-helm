@@ -303,6 +303,8 @@ operate:
     type: ClusterIP
     # Service.port defines the port of the service, where the operate web application will be available
     port: 80
+    # Service.annotations can be used to define annotations, which will be applied to the operate service
+    annotations: {}
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
