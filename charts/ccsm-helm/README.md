@@ -190,6 +190,7 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `service` | Configuration to configure the Operate service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
+| | `service.annotations` | Defines annotations for the operate service | `{ }` | 
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
 | | `env` | Can be used to set extra environment variables in each operate container | `[ ]` |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |

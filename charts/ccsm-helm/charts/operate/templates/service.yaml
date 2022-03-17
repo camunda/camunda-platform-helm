@@ -3,6 +3,13 @@ kind: Service
 metadata:
   name: {{ include "operate.fullname" . }}
   labels: {{- include "operate.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.service.annotations}}
+    {{- toYaml .Values.service.annotations | nindent 4 }}
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:
