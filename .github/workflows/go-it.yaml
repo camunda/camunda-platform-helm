@@ -29,7 +29,13 @@ jobs:
     env:
       KUBECONFIG: .github/config/kubeconfig
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/helm-identity-pool/providers/helm-identity-provider'
+        service_account: 'camunda-platform-helm@zeebe-io.iam.gserviceaccount.com'
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
