@@ -43,12 +43,14 @@ jobs:
         workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/helm-identity-pool/providers/helm-identity-provider'
         service_account: 'camunda-platform-helm@zeebe-io.iam.gserviceaccount.com'
     - id: 'get-credentials'
+      name: 'Get GKE credentials'
       uses: 'google-github-actions/get-gke-credentials@v0'
       with:
         cluster_name: 'zeebe-cluster'
         location: 'europe-west1-b'
     # The KUBECONFIG env var is automatically exported and picked up by kubectl.
     - id: 'check-credentials'
+      name: 'Check credentials'
       run: 'kubectl auth can-i create deployment'
     - name: Set up Go
       uses: actions/setup-go@v2
