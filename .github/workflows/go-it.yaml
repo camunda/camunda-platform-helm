@@ -48,33 +48,12 @@ jobs:
         cluster_name: 'zeebe-cluster'
         location: 'europe-west1-b'
     # The KUBECONFIG env var is automatically exported and picked up by kubectl.
-    - id: 'get-pods'
-      run: 'kubectl get pods'
+    - id: 'check-credentials'
+      run: 'kubectl auth can-i create deployment'
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: 1.17
-    - uses: azure/setup-kubectl@v2.0
-      with:
-        version: "${{ env.KUBECTL_VERSION }}"
-      id: install
-    - name: Set KUBECONFIG
-      run: |
-        echo "KUBECONFIG=$GITHUB_WORKSPACE/${{ env.KUBECONFIG }}" >> $GITHUB_ENV
-        # Based on 
-        # * https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
-        # * https://stackoverflow.com/questions/67586339/github-actions-get-absolute-path-to-working-directory
-        # * https://docs.github.com/en/actions/learn-github-actions/environment-variables
-        #  Necessary for terratest to have an absolute path
-    - name: Setup kube context
-      run: |
-        ls -l "${{ env.KUBECONFIG }}"
-        kubectl config set clusters.gke_zeebe-io_europe-west1-b_zeebe-cluster.certificate-authority-data "${{ secrets.K8_CERT_DATA }}"
-        kubectl config set-cluster "gke_zeebe-io_europe-west1-b_zeebe-cluster" --server="${{ secrets.K8_SERVER }}"
-        kubectl config set-credentials "${{ env.KUBECTX }}-ccsm-token-user" --token "${{ secrets.K8_TOKEN }}"
-        kubectl config set-context "${{ env.KUBECTX }}" --user "${{ env.KUBECTX }}-ccsm-token-user"
-        # verify that setup worked
-        kubectl auth can-i create deployment
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:
