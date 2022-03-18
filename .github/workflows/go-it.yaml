@@ -11,50 +11,39 @@ env:
   KUBECTL_VERSION: 'latest'
   KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
 
-jobs:
-  check-secret:
-    runs-on: ubuntu-latest
-    outputs:
-      secretDefined: ${{ steps.check-secret.outputs.defined }}
-    steps:
-      - id: check-secret
-        env:
-          SECRET: ${{ secrets.K8_SERVER }}
-        if: "${{ env.SECRET != '' }}"
-        run: echo "::set-output name=defined::true"      
+jobs:  
   build:
-    needs: [check-secret]
-    if: needs.check-secret.outputs.secretDefined == 'true'
     runs-on: ubuntu-latest
     env:
       KUBECONFIG: .github/config/kubeconfig
+
+    # Add "id-token" with the intended permissions.
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/helm-identity-pool/providers/helm-identity-provider'
+        service_account: 'camunda-platform-helm@zeebe-io.iam.gserviceaccount.com'
+    - id: 'get-credentials'
+      name: 'Get GKE credentials'
+      uses: 'google-github-actions/get-gke-credentials@v0'
+      with:
+        cluster_name: 'zeebe-cluster'
+        location: 'europe-west1-b'
+    # The KUBECONFIG env var is automatically exported and picked up by kubectl.
+    - id: 'check-credentials'
+      name: 'Check credentials'
+      run: 'kubectl auth can-i create deployment'
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: 1.17
-    - uses: azure/setup-kubectl@v2.0
-      with:
-        version: "${{ env.KUBECTL_VERSION }}"
-      id: install
-    - name: Set KUBECONFIG
-      run: |
-        echo "KUBECONFIG=$GITHUB_WORKSPACE/${{ env.KUBECONFIG }}" >> $GITHUB_ENV
-        # Based on 
-        # * https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
-        # * https://stackoverflow.com/questions/67586339/github-actions-get-absolute-path-to-working-directory
-        # * https://docs.github.com/en/actions/learn-github-actions/environment-variables
-        #  Necessary for terratest to have an absolute path
-    - name: Setup kube context
-      run: |
-        ls -l "${{ env.KUBECONFIG }}"
-        kubectl config set clusters.gke_zeebe-io_europe-west1-b_zeebe-cluster.certificate-authority-data "${{ secrets.K8_CERT_DATA }}"
-        kubectl config set-cluster "gke_zeebe-io_europe-west1-b_zeebe-cluster" --server="${{ secrets.K8_SERVER }}"
-        kubectl config set-credentials "${{ env.KUBECTX }}-ccsm-token-user" --token "${{ secrets.K8_TOKEN }}"
-        kubectl config set-context "${{ env.KUBECTX }}" --user "${{ env.KUBECTX }}-ccsm-token-user"
-        # verify that setup worked
-        kubectl auth can-i create deployment
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:
