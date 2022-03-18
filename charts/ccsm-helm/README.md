@@ -102,6 +102,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `service.commandName` | Defines the name of the Command API endpoint, where the broker commands are sent to | `command` |
 | | `service.internalPort` | Defines the port of the Internal API endpoint, which is used for internal communication | `26502` |
 | | `service.internalName` | Defines the name of the Internal API endpoint, which is used for internal communication | `internal` |
+| | `service.extraPort` |  Exposes any other [ports](https://kubernetes.io/docs/concepts/services-networking/service/#multi-port-services) which are required. Can be useful for exporters | `[]` |
 | | `serviceAccount.enabled` | If true, enables the broker service account | `true` |
 | | `serviceAccount.name` | Can be used to set the name of the broker service account | `""` |
 | | `serviceAccount.annotations` | Can be used to set the annotations of the broker service account | `{ }` |

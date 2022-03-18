@@ -116,6 +116,12 @@ zeebe:
     internalPort: 26502
     # Service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
+    # extraPorts can be used to expose any other ports which are required. Can be useful for exporters
+    extraPorts: []
+      # - name: hazelcast
+      #   protocol: TCP 
+      #   port: 5701
+      #   targetPort: 5701 
 
   # ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
