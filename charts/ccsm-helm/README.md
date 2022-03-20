@@ -124,7 +124,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `containerSecurityContext` | Defines the security options the broker container should be run with | |
 | | `nodeSelector` | Can be used to define on which nodes the broker pods should run | `{ } ` |
 | | `tolerations` | Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
-| | `affinity` | Can be used to define [pod affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
+| | `affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity). The default defined PodAntiAffinity allows constraining on which nodes the [Zeebe pods are scheduled on](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity). It uses a hard requirement for scheduling and works based on the Zeebe pod labels. | `podAntiAffinity:</br>  requiredDuringSchedulingIgnoredDuringExecution:</br>  - labelSelector: </br>    matchExpressions:</br>    - key: "app.kubernetes.io/component"</br>    operator: In</br>    values:</br>    - zeebe-broker</br>  topologyKey: "kubernetes.io/hostname"` |
 | | `priorityClassName` | Can be used to define the broker [pods priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass) | `""` |
 | | `readinessProbe` | Configuration for the Zeebe broker readiness probe | |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the Zeebe brokers | `/ready` |
