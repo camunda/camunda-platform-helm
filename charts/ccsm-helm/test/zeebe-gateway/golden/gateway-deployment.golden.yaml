@@ -96,3 +96,13 @@ spec:
           configMap:
             name: ccsm-helm-test-zeebe-gateway-gateway
             defaultMode: 0744
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - zeebe-gateway
+            topologyKey: kubernetes.io/hostname
