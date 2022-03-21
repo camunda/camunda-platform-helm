@@ -4,7 +4,8 @@ set -eo pipefail
 
 if [ -z $1 ]
 then
-  echo "Expected usage: ./release.sh majorX.minorY.patchZ"
+  version=$(cat Chart.yaml | grep -m1 "version")
+  echo "Expected usage: ./release.sh majorX.minorY.patchZ, current version $version"
   exit 1
 fi
 
