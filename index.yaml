@@ -3,6 +3,50 @@ entries:
   ccsm-helm:
   - annotations:
       artifacthub.io/changes: |
+        - Add Zeebe gateway anti-affinity
+        - Add Zeebe broker anti-affinity
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.4
+    created: "2022-03-21T09:01:23.335774085Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.24
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.24
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.24
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.24
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
+    digest: a7c8a3bb2cb70aadbb97e487992d267a633c0c1f3a9a8f0899e464eec084bf8c
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: ccsm-helm
+    sources:
+    - https://github.com/camunda-community-hub/camunda-cloud-helm
+    - https://github.com/camunda-cloud/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/ccsm-helm-0.0.24/ccsm-helm-0.0.24.tgz
+    version: 0.0.24
+  - annotations:
+      artifacthub.io/changes: |
         - IT tests for helm charts
         - Added missing annotations for zeebe operate service
         - Adds extra services to zeebe broker
@@ -2891,4 +2935,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-03-18T10:23:50.534027851Z"
+generated: "2022-03-21T09:01:23.336554893Z"
