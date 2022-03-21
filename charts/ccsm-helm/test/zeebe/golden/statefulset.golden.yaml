@@ -139,6 +139,16 @@ spec:
           defaultMode: 0744
       - name: exporters
         emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - zeebe-broker
+            topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
   - metadata:
       name: data
