@@ -7,7 +7,8 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: {{- include "operate.labels" . | nindent 6 }}
+    matchLabels:
+      app.kubernetes.io/component: operate
   template:
     metadata:
       labels: {{- include "operate.labels" . | nindent 8 }}
