@@ -12,5 +12,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "zeebe.labels.gateway" . | nindent 6 }}
+      {{- include "zeebe.matchLabels.gateway" . | nindent 6 }}
 {{ end }}

@@ -19,11 +19,27 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Defines labels for the gateway.
+Defines extra labels for Zeebe gateway.
+*/}}
+{{- define "zeebe.extraLabels.gateway" -}}
+app.kubernetes.io/component: zeebe-gateway
+{{- end -}}
+
+{{/*
+Define common labels for Zeebe gateway, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "zeebe.labels.gateway" -}}
 {{- template "ccsm.labels" . }}
-app.kubernetes.io/component: zeebe-gateway
+{{ template "zeebe.extraLabels.gateway" . }}
+{{- end -}}
+
+{{/*
+Defines match labels for Zeebe gateway, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "zeebe.matchLabels.gateway" -}}
+{{- template "ccsm.matchLabels" . }}
+{{ template "zeebe.extraLabels.gateway" . }}
 {{- end -}}
 
 {{/*
