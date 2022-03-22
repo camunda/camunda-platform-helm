@@ -19,9 +19,25 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Defines labels for tasklist.
+Defines extra labels for tasklist.
+*/}}
+{{- define "tasklist.extraLabels" -}}
+app.kubernetes.io/component: tasklist
+{{- end -}}
+
+{{/*
+Define common labels for tasklist, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "tasklist.labels" -}}
 {{- template "ccsm.labels" . }}
-app.kubernetes.io/component: tasklist
+{{ template "tasklist.extraLabels" . }}
+{{- end -}}
+
+{{/*
+Defines match labels for tasklist, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "tasklist.matchLabels" -}}
+{{- template "ccsm.matchLabels" . }}
+{{ template "tasklist.extraLabels" . }}
 {{- end -}}
