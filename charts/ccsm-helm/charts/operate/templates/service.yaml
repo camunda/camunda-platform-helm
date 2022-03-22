@@ -18,4 +18,4 @@ spec:
     targetPort: 8080
     protocol: TCP
   selector:
-    {{- include "operate.labels" . | nindent 4 }}
+    {{- include "operate.matchLabels" . | nindent 4 }}
