@@ -19,11 +19,27 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Defines labels for operate.
+Defines extra labels for operate.
+*/}}
+{{- define "operate.extraLabels" -}}
+app.kubernetes.io/component: operate
+{{- end -}}
+
+{{/*
+Define common labels for operate, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "operate.labels" -}}
 {{- template "ccsm.labels" . }}
-app.kubernetes.io/component: operate
+{{ template "operate.extraLabels" . }}
+{{- end -}}
+
+{{/*
+Defines match labels for operate, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "operate.matchLabels" -}}
+{{- template "ccsm.matchLabels" . }}
+{{ template "operate.extraLabels" . }}
 {{- end -}}
 
 {{/*

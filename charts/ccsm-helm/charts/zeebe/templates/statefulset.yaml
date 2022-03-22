@@ -11,7 +11,7 @@ spec:
   replicas: {{ .Values.clusterSize  }}
   selector:
     matchLabels:
-      {{- include "zeebe.labels.broker" . | nindent 6 }}
+      {{- include "zeebe.matchLabels.broker" . | nindent 6 }}
   serviceName: {{ include "zeebe.names.broker" . }}
   updateStrategy:
     type: RollingUpdate

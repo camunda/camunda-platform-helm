@@ -23,4 +23,4 @@ spec:
     {{ .Values.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}
   selector:
-    {{- include "zeebe.labels.broker" . | nindent 4 }}
+    {{- include "zeebe.matchLabels.broker" . | nindent 4 }}

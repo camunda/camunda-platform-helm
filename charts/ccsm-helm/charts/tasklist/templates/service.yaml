@@ -11,4 +11,4 @@ spec:
     targetPort: 8080
     protocol: TCP
   selector:
-    {{- include "tasklist.labels" . | nindent 4 }}
+    {{- include "tasklist.matchLabels" . | nindent 4 }}

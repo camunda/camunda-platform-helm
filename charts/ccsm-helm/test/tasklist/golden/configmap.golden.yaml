@@ -8,8 +8,8 @@ metadata:
     app.kubernetes.io/name: tasklist
     app.kubernetes.io/instance: ccsm-helm-test
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.3.4"
     app.kubernetes.io/part-of: camunda-cloud-self-managed
+    app.kubernetes.io/version: "1.3.4"
     app.kubernetes.io/component: tasklist
 apiVersion: v1
 data:

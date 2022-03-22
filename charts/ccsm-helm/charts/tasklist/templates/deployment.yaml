@@ -8,7 +8,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "tasklist.labels" . | nindent 6 }}
+      {{- include "tasklist.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels: {{- include "tasklist.labels" . | nindent 8 }}

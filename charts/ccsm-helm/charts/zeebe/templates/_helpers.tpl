@@ -43,11 +43,27 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Defines labels for the broker.
+Defines extra labels for Zeebe broker.
+*/}}
+{{- define "zeebe.extraLabels.broker" -}}
+app.kubernetes.io/component: zeebe-broker
+{{- end -}}
+
+{{/*
+Define common labels for Zeebe broker, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "zeebe.labels.broker" -}}
 {{- template "ccsm.labels" . }}
-app.kubernetes.io/component: zeebe-broker
+{{ template "zeebe.extraLabels.broker" . }}
+{{- end -}}
+
+{{/*
+Defines match labels for Zeebe broker, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "zeebe.matchLabels.broker" -}}
+{{- template "ccsm.matchLabels" . }}
+{{ template "zeebe.extraLabels.broker" . }}
 {{- end -}}
 
 {{/*

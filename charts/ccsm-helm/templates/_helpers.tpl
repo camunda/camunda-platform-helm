@@ -7,16 +7,12 @@ Expand the name of the chart.
 {{- end -}}
 
 {{/*
-Common labels
+Define common labels, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "ccsm.labels" -}}
-{{- if .Values.global.labels -}}
-{{ toYaml .Values.global.labels }}
-{{- end }}
-app.kubernetes.io/name: {{ template "ccsm.name" . }}
+{{- template "ccsm.matchLabels" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- if .Values.image }}
     {{- if .Values.image.tag }}
 app.kubernetes.io/version: {{ .Values.image.tag | quote }}
@@ -26,6 +22,17 @@ app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
 {{- else }}
 app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
 {{- end }}
-app.kubernetes.io/part-of: camunda-cloud-self-managed
 {{- end -}}
 
+{{/*
+Common match labels, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "ccsm.matchLabels" -}}
+{{- if .Values.global.labels -}}
+{{ toYaml .Values.global.labels }}
+{{- end }}
+app.kubernetes.io/name: {{ template "ccsm.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: camunda-cloud-self-managed
+{{- end -}}

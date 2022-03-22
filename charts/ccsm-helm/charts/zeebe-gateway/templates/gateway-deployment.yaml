@@ -9,7 +9,7 @@ spec:
   replicas: {{ .Values.replicas  }}
   selector:
     matchLabels:
-      {{- include "zeebe.labels.gateway" . | nindent 6 }}
+      {{- include "zeebe.matchLabels.gateway" . | nindent 6 }}
   template:
     metadata:
       labels:
