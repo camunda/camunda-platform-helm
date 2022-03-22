@@ -11,6 +11,7 @@ spec:
       {{- toYaml .Values.global.labels | nindent 6 }}
   endpoints:
     - honorLabels: true
+      path: /actuator/prometheus
       port: http
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

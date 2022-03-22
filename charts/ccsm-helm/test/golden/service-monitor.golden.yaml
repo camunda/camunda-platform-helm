@@ -18,5 +18,6 @@ spec:
       app: camunda-cloud-self-managed
   endpoints:
     - honorLabels: true
+      path: /actuator/prometheus
       port: http
       interval: 10s
