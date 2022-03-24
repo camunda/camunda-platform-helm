@@ -23,9 +23,31 @@ spec:
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
-            value: "http://keycloak:8080/auth"
+            value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}:{{ coalesce .Values.keycloak.service.ports.http .Values.keycloak.service.port }}/auth"
           - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
-            value: "http://keycloak:8080/auth/realms/camunda-platform"
+            value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}:{{ coalesce .Values.keycloak.service.ports.http .Values.keycloak.service.port }}/auth/realms/camunda-platform"
+          - name: KEYCLOAK_SETUP_USER
+            value: {{ .Values.keycloak.auth.adminUser }}
+          - name: KEYCLOAK_SETUP_PASSWORD
+            {{- if .Values.keycloak.auth.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.keycloak.auth.existingSecret "context" $) }}
+                key: admin-password
+            {{- else }}
+            valueFrom:
+                secretKeyRef:
+                  {{- /*
+                    https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_names.tpl
+                  */}}
+                  name: {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}
+                  key: admin-password
+            {{- end }}
         {{- if .Values.env}}
         {{ .Values.env | toYaml | nindent 10 }}
         {{- end }}
