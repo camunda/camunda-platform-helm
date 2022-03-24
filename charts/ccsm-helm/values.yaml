@@ -511,6 +511,8 @@ identity:
 
   # Keycloak configuration, for the keycloak dependency chart which is used by identity
   keycloak:
+    service:
+      type: ClusterIP
     ## Keycloak authentication parameters
     ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
     ##
