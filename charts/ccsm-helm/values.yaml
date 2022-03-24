@@ -470,6 +470,62 @@ prometheusServiceMonitor:
   # PromotheuServiceMonitor.scrapeInterval can be set to configure the interval at which metrics should be scraped
   scrapeInterval: 10s
 
+# Identity configuration for the identity sub chart.
+identity:
+  # Enabled if true, the identity deployment and its related resources are deployed via a helm release
+  enabled: true
+
+  # DefaultSecret configuration, to configure whether per default a secret for identity and keycloak should be created.
+  #
+  # If the user wants to bring their own secret, he can disable this configuration and specify the secret name on
+  # keycloak.auth.existingSecret.name and keycloak.postgresql.auth.existingSecret.
+  #
+  # Be aware that the secrets needs the following content:
+  #
+  #  admin-password: "mysecret"
+  #  password: "mysecret"
+  #  management-password: "mysecret"
+  defaultSecret:
+    # Enabled if true, the default secret is deployed for keycloak and identity
+    enabled: true
+    # Name defines the name of the secret
+    name: "keycloak-secrets"
+    # AdminPassword defines the default keycloak admin password
+    adminPassword: "admin"
+    # ManagementPassword defines the default keycloak management password
+    managementPassword: "admin"
+    # DatabasePassword defines the default postgres password, used by keycloak
+    databasePassword: "admin"
+
+  # Keycloak configuration, for the keycloak dependency chart
+  keycloak:
+    ## Keycloak authentication parameters
+    ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
+    ##
+    auth:
+      # AdminUser defines the keycloak administrator user
+      adminUser: admin
+      # ExistingSecret can be used to reuse an existing secret containing auth info
+      # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details
+      #
+      # Example:
+      #
+      # existingSecret:
+      #   name: mySecret
+      #   keyMapping:
+      #     admin-password: myPasswordKey
+      #     management-password: myManagementPasswordKey
+      #     tls-keystore-password: myTlsKeystorePasswordKey
+      #     tls-truestore-password: myTlsTruestorePasswordKey
+      existingSecret:
+        name: "keycloak-secrets"
+
+      # Postgresql configuration, for the postgres dependency chart
+      postgresql:
+        # Auth configuration to specify authentication details
+        auth:
+          # ExistingSecret can be set to reuse an existing secret, should reference a deployed secret (via name).
+          existingSecret: "keycloak-secrets"
 
 elasticsearch:
   enabled: true
