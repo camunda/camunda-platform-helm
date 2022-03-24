@@ -19,8 +19,14 @@ spec:
         {{- else }}
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
-        {{- if .Values.env}}
         env:
+          - name: SERVER_PORT
+            value: "8080"
+          - name: KEYCLOAK_URL
+            value: "http://keycloak:8080/auth"
+          - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
+            value: "http://keycloak:8080/auth/realms/camunda-platform"
+        {{- if .Values.env}}
         {{ .Values.env | toYaml | nindent 10 }}
         {{- end }}
         {{- if .Values.command}}
