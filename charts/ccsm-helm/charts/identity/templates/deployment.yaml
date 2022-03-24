@@ -32,19 +32,12 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
-        volumeMounts:
-        - name: config
-          mountPath: /usr/local/operate/config/application.yml
-          subPath: application.yml
         {{- if .Values.extraVolumeMounts}}
+        volumeMounts:
         {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
-      volumes:
-      - name: config
-        configMap:
-          name: {{ include "operate.fullname" . }}
-          defaultMode: 0744
       {{- if .Values.extraVolumes}}
+      volumes:
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.serviceAccount.name}}
