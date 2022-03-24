@@ -1,0 +1,10 @@
+apiVersion: v2
+description: Identity Helm Chart for Kubernetes
+name: identity
+version: 0.0.25
+type: application
+icon: https://raw.githubusercontent.com/camunda-cloud/camunda-cloud-documentation/master/static/img/camunda-operate-gradient.png
+annotations:
+  artifacthub.io/changes: |
+    - create identity sub chart
+  artifacthub.io/containsSecurityUpdates: "false"
