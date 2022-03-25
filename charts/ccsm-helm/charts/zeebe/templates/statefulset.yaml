@@ -132,7 +132,7 @@ spec:
         - name: config
           mountPath: /usr/local/bin/startup.sh
           subPath: startup.sh
-        {{- if .Values.persistence.enabled }}
+        {{- if .Values.pvcEnabled }}
         - name: data
           mountPath: /usr/local/zeebe/data
         {{- end }}
@@ -174,7 +174,7 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- if .Values.persistence.enabled }}
+{{- if .Values.pvcEnabled }}
   volumeClaimTemplates:
   - metadata:
       name: data
