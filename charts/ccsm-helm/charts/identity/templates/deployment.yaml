@@ -52,8 +52,8 @@ spec:
                   name: {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}
                   key: admin-password
             {{- end }}
-        {{- if .Values.env}}
-        {{ .Values.env | toYaml | nindent 10 }}
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.command}}
         command: {{ .Values.command }}

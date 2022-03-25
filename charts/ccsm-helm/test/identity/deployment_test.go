@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	v12 "k8s.io/api/core/v1"
 )
 
 type deploymentTemplateTest struct {
@@ -280,4 +281,28 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// then
 	securityContext := deployment.Spec.Template.Spec.SecurityContext
 	s.Require().EqualValues(1000, *securityContext.RunAsUser)
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.env[0].name":  "RELEASE_NAME",
+			"identity.env[0].value": "test-{{ .Release.Name }}",
+			"identity.env[1].name":  "OTHER_ENV",
+			"identity.env[1].value": "nothingToSeeHere",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-ccsm-helm-test"})
+	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
