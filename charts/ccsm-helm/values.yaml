@@ -480,7 +480,7 @@ identity:
     # Image.repository defines which image repository to use
     repository: camunda/identity
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag:
+    tag: SNAPSHOT # currently no image available
 
   # Service configuration to configure the identity service.
   service:
