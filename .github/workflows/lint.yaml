@@ -28,14 +28,17 @@ jobs:
         uses: azure/setup-helm@v1
         with:
           version: "${{ env.HELM_VERSION }}"
-      - name: Add elastic stable helm repo
+      - name: Add necessary helm repos
         run: |
           helm repo add elastic https://helm.elastic.co
+          helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
-
       - name: Get Helm Deps
         run: |
           for i in charts/*; do helm dependency build $i; done 
+      - name: Get Sub-chart Helm Deps
+        run: |
+          for i in charts/ccsm-helm/charts; do helm dependency build $i; done 
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*
