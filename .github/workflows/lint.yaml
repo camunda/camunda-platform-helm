@@ -35,10 +35,7 @@ jobs:
           helm repo update
       - name: Get Helm Deps
         run: |
-          for i in charts/*; do helm dependency build $i; done 
-      - name: Get Sub-chart Helm Deps
-        run: |
-          helm dependency build charts/ccsm-helm/charts/identity
+          make deps
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*
