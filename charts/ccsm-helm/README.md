@@ -72,6 +72,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `zeebeIndexMaxSize` | Can be set to configure the maximum allowed zeebe index size in gigabytes. After reaching that size, curator will delete that corresponding index on the next run. To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes. | `` |
 | | `operateIndexTTL` | Defines after how many days an operate index can be deleted. | `30` |
 | | `tasklistIndexTTL` | Defines after how many days an tasklist index can be deleted. | `30` |
+| | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator` |
+| | `image.tag` | Defines the tag / version which should be used in the chart. | `5.8.4` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
 | | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|
 | | `labels` | Can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors | `release: metrics` |
