@@ -114,7 +114,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag":  "x.y.z",
+			"global.image.tag":   "x.y.z",
 			"identity.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -307,12 +307,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 
-
 func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.keycloak.auth.existingSecret.name":  "ownExistingSecret",
+			"identity.keycloak.auth.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
