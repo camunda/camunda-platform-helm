@@ -306,3 +306,33 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-ccsm-helm-test"})
 	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
+
+
+func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.keycloak.auth.existingSecret.name":  "ownExistingSecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name: "KEYCLOAK_SETUP_PASSWORD",
+			ValueFrom: &v12.EnvVarSource{
+				SecretKeyRef: &v12.SecretKeySelector{
+					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+					Key:                  "admin-password",
+				},
+			},
+		})
+}
