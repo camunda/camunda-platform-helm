@@ -59,3 +59,11 @@ dry-run:
 .PHONY: template
 template:
 	helm template ccsm-helm-test $(chartPath)
+
+#########################################################
+######### Testing
+#########################################################
+
+.PHONY: topology
+topology:
+	kubectl exec svc/ccsm-helm-test-zeebe-gateway -- zbctl --insecure status
