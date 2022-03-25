@@ -39,6 +39,7 @@ jobs:
     - name: Add stable helm repo
       run: |
         helm repo add elastic https://helm.elastic.co
+        helm repo add bitnami https://charts.bitnami.com/bitnami
         helm repo update
     - name: Get Helm Deps
       run: make deps
