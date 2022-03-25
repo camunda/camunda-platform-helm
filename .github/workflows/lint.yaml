@@ -38,7 +38,7 @@ jobs:
           for i in charts/*; do helm dependency build $i; done 
       - name: Get Sub-chart Helm Deps
         run: |
-          for i in charts/ccsm-helm/charts; do helm dependency build $i; done 
+          for i in charts/ccsm-helm/charts/*; do helm dependency build $i; done 
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*
