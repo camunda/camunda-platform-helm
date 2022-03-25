@@ -22,7 +22,7 @@ If release name contains chart name it will be used as a full name.
 Defines extra labels for operate.
 */}}
 {{- define "identity.extraLabels" -}}
-app.kubernetes.io/component: operate
+app.kubernetes.io/component: identity
 {{- end -}}
 
 {{/*
