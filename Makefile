@@ -4,17 +4,17 @@ chartPath=charts/ccsm-helm
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: test
-test:
+test:	deps
 	go test ./...
 
 # it: runs the integration tests agains the current kube context
 .PHONY: it
-it:
+it:	deps
 	go test -tags integration ./.../integration
 
 # golden: runs the tests with updating the golden files
 .PHONY: golden
-golden:
+golden:	deps
 	go test ./... -args -update-golden 
 
 # fmt: runs the gofmt in order to format all go files
@@ -48,15 +48,15 @@ deps:
 
 # install: install the local ccsm-chart into the current kubernetes cluster/namespace
 .PHONY: install
-install:
+install:	deps
 	helm install ccsm-helm-test $(chartPath)
 
 # dry-run: runs an install dry-run with the local ccsm-chart
 .PHONY: dry-run
-dry-run:
+dry-run:	deps
 	helm install ccsm-helm-test $(chartPath) --dry-run
 
 # template: show all rendered templates for the local ccsm-chart
 .PHONY: template
-template:
+template:	deps
 	helm template ccsm-helm-test $(chartPath)
