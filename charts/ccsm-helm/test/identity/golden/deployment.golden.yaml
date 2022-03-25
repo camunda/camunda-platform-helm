@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: ccsm-helm-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-cloud-self-managed
-    app.kubernetes.io/version: "1.3.4"
+    app.kubernetes.io/version: "SNAPSHOT"
     app.kubernetes.io/component: identity
   annotations:
     {}
@@ -32,12 +32,12 @@ spec:
         app.kubernetes.io/instance: ccsm-helm-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-cloud-self-managed
-        app.kubernetes.io/version: "1.3.4"
+        app.kubernetes.io/version: "SNAPSHOT"
         app.kubernetes.io/component: identity
     spec:
       containers:
       - name: identity
-        image: "camunda/identity:1.3.4"
+        image: "camunda/identity:SNAPSHOT"
         env:
           - name: SERVER_PORT
             value: "8080"
