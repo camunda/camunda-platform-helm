@@ -256,7 +256,7 @@ func (s *integrationTest) awaitCCSMPods() {
 	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-cloud-self-managed"})
 
 	for _, pod := range pods {
-		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 100, 10*time.Second)
+		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)
 	}
 }
 
