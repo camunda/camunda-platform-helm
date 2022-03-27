@@ -19,7 +19,7 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Defines extra labels for operate.
+Defines extra labels for identity.
 */}}
 {{- define "identity.extraLabels" -}}
 app.kubernetes.io/component: identity
@@ -43,7 +43,7 @@ Defines match labels for operate, which are extended by sub-charts and should be
 {{- end -}}
 
 {{/*
-[operate] Create the name of the service account to use
+[identity] Create the name of the service account to use
 */}}
 {{- define "identity.serviceAccountName" -}}
 {{- if .Values.serviceAccount.enabled }}
