@@ -5,17 +5,17 @@ releaseName=ccsm-helm-test
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: test
-test:
+test:	deps
 	go test ./...
 
 # it: runs the integration tests agains the current kube context
 .PHONY: it
-it:
-	go test -tags integration ./.../integration
+it:	deps
+	go test -timeout 1h -tags integration ./.../integration
 
 # golden: runs the tests with updating the golden files
 .PHONY: golden
-golden:
+golden:	deps
 	go test ./... -args -update-golden 
 
 # fmt: runs the gofmt in order to format all go files
@@ -45,6 +45,7 @@ installLicense:
 .PHONY: deps
 deps:
 	helm dependency update $(chartPath)
+	helm dependency update $(chartPath)/charts/identity
 
 # install: install the local ccsm-chart into the current kubernetes cluster/namespace
 .PHONY: install
@@ -67,7 +68,6 @@ dry-run:	deps
 .PHONY: template
 template:	deps
 	helm template $(releaseName) $(chartPath)
-
 
 #########################################################
 ######### Testing

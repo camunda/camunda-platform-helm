@@ -306,21 +306,44 @@ If you see errors like:
 Error: found in Chart.yaml, but missing in charts/ directory: elasticsearch
 ```
 
-Then you need to download the dependencies first. You can do this via:
+Then you need to download the dependencies first.
+
+Run the following to add resolve the dependencies:
 
 ```sh
-$ helm dependency update charts/ccsm-helm/
-Getting updates for unmanaged Helm repositories...
-...Successfully got an update from the "https://helm.elastic.co" chart repository
-...Successfully got an update from the "https://helm.elastic.co" chart repository
-...Successfully got an update from the "https://prometheus-community.github.io/helm-charts" chart repository
+helm repo add elastic https://helm.elastic.co
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+```
+
+After this you can run: `make deps`, which will update and download the dependencies for all charts.
+
+The execution should look like this:
+```
+$ make deps
+helm dependency update charts/ccsm-helm
 Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "ccsm" chart repository
-...Successfully got an update from the "stable" chart repository
+...Successfully got an update from the "camunda-cloud" chart repository
+...Successfully got an update from the "elastic" chart repository
+...Successfully got an update from the "bitnami" chart repository
 Update Complete. ⎈Happy Helming!⎈
-Saving 3 charts
+Saving 6 charts
+Dependency zeebe did not declare a repository. Assuming it exists in the charts directory
+Dependency zeebe-gateway did not declare a repository. Assuming it exists in the charts directory
+Dependency operate did not declare a repository. Assuming it exists in the charts directory
+Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
+Dependency identity did not declare a repository. Assuming it exists in the charts directory
 Downloading elasticsearch from repo https://helm.elastic.co
 Deleting outdated charts
+helm dependency update charts/ccsm-helm/charts/identity
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "camunda-cloud" chart repository
+...Successfully got an update from the "elastic" chart repository
+...Successfully got an update from the "bitnami" chart repository
+Update Complete. ⎈Happy Helming!⎈
+Saving 2 charts
+Downloading keycloak from repo https://charts.bitnami.com/bitnami
+Downloading common from repo https://charts.bitnami.com/bitnami
 ```
 
 ## Releasing the Charts

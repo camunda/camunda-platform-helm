@@ -22,6 +22,9 @@ dependencies:
 - name: tasklist
   version: 0.0.26
   condition: "tasklist.enabled"
+- name: identity
+  version: 0.0.25
+  condition: "identity.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
   version: 7.16.3
