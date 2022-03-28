@@ -26,7 +26,7 @@ app.kubernetes.io/component: identity
 {{- end -}}
 
 {{/*
-Define common labels for operate, combining the match labels and transient labels, which might change on updating
+Define common labels for identity, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "identity.labels" -}}
@@ -35,7 +35,7 @@ Define common labels for operate, combining the match labels and transient label
 {{- end -}}
 
 {{/*
-Defines match labels for operate, which are extended by sub-charts and should be used in matchLabels selectors.
+Defines match labels for identity, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "identity.matchLabels" -}}
 {{- template "ccsm.matchLabels" . }}
