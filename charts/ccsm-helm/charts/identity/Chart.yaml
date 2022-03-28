@@ -12,9 +12,3 @@ dependencies:
   - name: keycloak
     repository: "https://charts.bitnami.com/bitnami"
     version: 7.1.6
-    condition: "identity.enabled"
-  - name: common
-    repository: https://charts.bitnami.com/bitnami
-    tags:
-      - bitnami-common
-    version: 1.x.x
