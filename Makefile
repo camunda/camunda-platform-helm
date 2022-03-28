@@ -1,6 +1,7 @@
 # Makefile for managing the helm charts
 
 chartPath=charts/ccsm-helm
+releaseName=ccsm-helm-test
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: test
@@ -49,14 +50,29 @@ deps:
 # install: install the local ccsm-chart into the current kubernetes cluster/namespace
 .PHONY: install
 install:	deps
-	helm install ccsm-helm-test $(chartPath)
+	helm install $(releaseName) $(chartPath)
+
+# uninstall: uninstalls the ccsm-chart and removes all related pvc's
+.PHONY: uninstall
+uninstall:
+	-helm uninstall $(releaseName)
+	-kubectl delete pvc -l app.kubernetes.io/instance=$(releaseName)
+	-kubectl delete pvc -l app=elasticsearch-master
 
 # dry-run: runs an install dry-run with the local ccsm-chart
 .PHONY: dry-run
 dry-run:	deps
-	helm install ccsm-helm-test $(chartPath) --dry-run
+	helm install $(releaseName) $(chartPath) --dry-run
 
 # template: show all rendered templates for the local ccsm-chart
 .PHONY: template
 template:	deps
-	helm template ccsm-helm-test $(chartPath)
+	helm template $(releaseName) $(chartPath)
+
+#########################################################
+######### Testing
+#########################################################
+
+.PHONY: topology
+topology:
+	kubectl exec svc/$(releaseName)-zeebe-gateway -- zbctl --insecure status

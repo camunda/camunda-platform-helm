@@ -460,6 +460,13 @@ retentionPolicy:
   # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
   tasklistIndexTTL: 30
 
+  # Image configuration for the elasticsearch curator cronjob
+  image:
+    # Image.repository defines which image repository to use
+    repository: bitnami/elasticsearch-curator
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 5.8.4
+
 # PrometheusServiceMonitor configuration to configure a prometheus service monitor
 prometheusServiceMonitor:
   # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods

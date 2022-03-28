@@ -13,7 +13,7 @@ env:
 
 jobs:  
   build:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
       KUBECONFIG: .github/config/kubeconfig

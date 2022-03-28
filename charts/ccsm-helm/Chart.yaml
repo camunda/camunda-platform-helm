@@ -1,6 +1,6 @@
 apiVersion: v2
 name: ccsm-helm
-version: 0.0.25
+version: 0.0.26
 appVersion: "1.3.4"
 description: Camunda Cloud Self-Managed Helm Chart for Kubernetes
 type: application
@@ -11,16 +11,16 @@ sources:
   - https://github.com/camunda-cloud/zeebe
 dependencies:
 - name: zeebe
-  version: 0.0.25
+  version: 0.0.26
   condition: "zeebe.enabled"
 - name: zeebe-gateway
-  version: 0.0.25
+  version: 0.0.26
   condition: "zeebe.enabled"
 - name: operate
-  version: 0.0.25
+  version: 0.0.26
   condition: "operate.enabled"
 - name: tasklist
-  version: 0.0.25
+  version: 0.0.26
   condition: "tasklist.enabled"
 - name: identity
   version: 0.0.25
@@ -34,7 +34,6 @@ maintainers:
     email: christopher.zell@camunda.com
 annotations:
   artifacthub.io/changes: |
-    - Add condition to it job
-    - define correct path for metrics
-    - Fix matchLabel selectors
+    - Allow to override repository and tag for curator image
+    - Use relative DNS for clusters with non-default clusterDomain
   artifacthub.io/containsSecurityUpdates: "false"
