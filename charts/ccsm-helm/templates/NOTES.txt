@@ -22,6 +22,16 @@
   {{- if .Values.tasklist.enabled }}
   - Docker Image used for Tasklist: {{ .Values.tasklist.image.repository }}:{{ .Values.global.image.tag }}
   {{- end }}
+- Identity:
+  - Enabled: {{ .Values.identity.enabled }}
+  {{- if .Values.identity.enabled }}
+    {{- if .Values.identity.image.tag }}
+  - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag }}
+    {{- else }}
+  - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.global.image.tag }}
+    {{- end }}
+  - Keycloak: {{ .Values.identity.keycloak.image.repository }}:{{ .Values.identity.keycloak.image.tag }}
+  {{- end }}
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
   - ElasticSearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
@@ -37,8 +47,9 @@ Now you can connect your workers and clients to `localhost:26500`
 
 ### Operate
 
-As part of the Operate HELM Chart an Ingress definition is deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
-If you don't have an Ingress Controller you can do kubectl port-forward to access Operate from outside the cluster:
+As part of the Operate HELM Chart an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
+In order to deploy the ingress manifest, set `operate.ingress.enabled` to `true`.
+If you don't have an Ingress Controller you can use kubectl port-forward to access Operate from outside the cluster:
 
 > kubectl port-forward svc/{{ .Release.Name }}-operate 8080:80
 
@@ -50,12 +61,30 @@ Default user and password: "demo/demo"
 
 ### Tasklist
 
-As part of Tasklist an Ingress definition is deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
-If you don't have an Ingress Controller you can do kubectl port-forward to access tasklist from outside the cluster:
+As part of Tasklist an ingress definition can be deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
+In order to deploy the ingress manifest, set `tasklist.ingress.enabled` to `true`.
+If you don't have an Ingress Controller you can use kubectl port-forward to access tasklist from outside the cluster:
 
 > kubectl port-forward svc/{{ .Release.Name }}-tasklist 8081:80
 
 Now you can point your browser to `http://localhost:8080`
+
+Default user and password: "demo/demo"
+{{- end }}
+
+{{- if .Values.identity.enabled }}
+
+### Identity
+
+As part of Identity an ingress definition can be deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
+In order to deploy the ingress manifest, set `identity.ingress.enabled` to `true`.
+
+If you don't have an ingress controller you can use kubectl port-forward to access identity from outside the cluster:
+
+> kubectl port-forward svc/{{ .Release.Name }}-identity 8080:80
+> kubectl port-forward svc/{{ .Release.Name }}-keycl 18080:80
+
+Now you can point your browser to `http://localhost:8080`. Identity will forward requests to keycloak (listening under `18080`).
 
 Default user and password: "demo/demo"
 {{- end }}
