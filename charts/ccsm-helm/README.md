@@ -261,7 +261,7 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `command` |  Can be used to override the default command provided by the container image. See [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | |
 | | `extraVolumes` |  Can be used to define extra volumes for the identity pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` |  Can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates | `[]` |
-| | `keycloak` |  Configuration, for the keycloak dependency chart which is used by identity | |
+| | `keycloak` |  Configuration for the keycloak dependency chart which is used by identity | |
 | | `keycloak.auth` |  Authentication parameters - see [admin-credentials](https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials) | |
 | | `keycloak.auth.adminUser` |  Defines the keycloak administrator user | 'admin' |
 | | `keycloak.auth.existingSecret` |  Can be used to reuse an existing secret containing authentication information. See [manage-passwords](https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/) for more details. | `""` |
