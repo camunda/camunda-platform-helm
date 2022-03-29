@@ -272,7 +272,7 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `ingress.enabled` | If true, an ingress resource is deployed with the Identity deployment. Only useful if an ingress controller is available, like nginx. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
-| | `ingress.path` | Defines the path and port which is associated with the Identity service https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
+| | `ingress.path` | Defines the path which is associated with the Identity service, - see [ingress-rules](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
 | | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
