@@ -49,7 +49,7 @@ jobs:
       uses: azure/setup-helm@v1
       with:
         version: "${{ env.HELM_VERSION }}"
-    - name: Add stable helm repo
+    - name: Add helm repos
       run: |
         helm repo add elastic https://helm.elastic.co
         helm repo add bitnami https://charts.bitnami.com/bitnami
