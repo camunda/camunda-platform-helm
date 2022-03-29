@@ -251,7 +251,7 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `enabled` |  If true, the identity deployment and its related resources are deployed via a helm release | `true` |
 | | `image` |  Configuration to configure the identity image specifics | |
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |
-| | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | |
+| | `image.tag` |   Can be set to overwrite the global.image.tag | |
 | | `service` |  Configuration to configure the identity service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` |  Defines the port of the service, where the identity web application will be available | `80` |
