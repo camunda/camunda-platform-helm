@@ -220,7 +220,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| | `tasklist` | Configuration for the Tasklist sub chart. | |
+| `tasklist` | | Configuration for the Tasklist sub chart. | |
 | | `enabled` | If true, the Tasklist deployment and its related resources are deployed via a helm release | `true` |
 | | `image` | Configuration to configure the tasklist image specifics. | |
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
@@ -238,8 +238,46 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `ingress.enabled` | If true, an ingress resource is deployed with the Tasklist deployment. Only useful if an ingress controller is available, like nginx. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
-| | `ingress.path` | Defines the path which is associated with the Tasklist service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
+| | `ingress.path` | Defines the path which is associated with the Tasklist [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+
+### Identity
+
+Information about Identity you can find [here](https://docs.camunda.io/docs/self-managed/identity/what-is-identity/).
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `identity`| |  Configuration for the identity sub chart. | |
+| | `enabled` |  If true, the identity deployment and its related resources are deployed via a helm release | `true` |
+| | `image` |  Configuration to configure the identity image specifics | |
+| | `image.repository` |  Defines which image repository to use | `camunda/identity` |
+| | `image.tag` |   Can be set to overwrite the global.image.tag | |
+| | `service` |  Configuration to configure the identity service. | |
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.port` |  Defines the port of the service, where the identity web application will be available | `80` |
+| | `service.annotations` |  Can be used to define annotations, which will be applied to the identity service | `{}` |
+| | `resources` |  Configuration to set request and limit configuration for the container [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
+| | `env` |  Can be used to set extra environment variables in each identity container | `[]` |
+| | `command` |  Can be used to override the default command provided by the container image. See [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | |
+| | `extraVolumes` |  Can be used to define extra volumes for the identity pods, useful for tls and self-signed certificates | `[]` |
+| | `extraVolumeMounts` |  Can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates | `[]` |
+| | `keycloak` |  Configuration for the keycloak dependency chart which is used by identity | |
+| | `keycloak.auth` |  Authentication parameters - see [admin-credentials](https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials) | |
+| | `keycloak.auth.adminUser` |  Defines the keycloak administrator user | 'admin' |
+| | `keycloak.auth.existingSecret` |  Can be used to reuse an existing secret containing authentication information. See [manage-passwords](https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/) for more details. | `""` |
+| | `serviceAccount` |  Configuration for the service account where the identity pods are assigned to | |
+| | `serviceAccount.enabled` |  If true, enables the identity service account | `true` |
+| | `serviceAccount.name` |  Can be used to set the name of the identity service account | `` |
+| | `serviceAccount.annotations` |  Can be used to set the annotations of the identity service account | `{}` |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Identity deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
+| | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
+| | `ingress.path` | Defines the path which is associated with the Identity service, - see [ingress-rules](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
+| | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+| | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
+| | `podSecurityContext` | Defines the security options the Identity container should be run with | `{ }` |
 
 ### Elasticsearch
 
