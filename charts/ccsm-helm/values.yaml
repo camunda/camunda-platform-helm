@@ -138,6 +138,8 @@ zeebe:
       cpu: 960m
       memory: 1920Mi
 
+  # RamdiskEnabled mounts a tmpfs (RAM-backed filesystem) for the data directory. Requires pvcEnabled: false. While tmpfs is very fast, be aware that unlike disks, tmpfs is cleared on node reboot and any files you write count against your container's memory limit.
+  ramdiskEnabled: false
   # PvcEnabled if true, a persistent volume claim (PVC) is created for each broker of the Zeebe StatefulSet. CAVE: disabling persistence WILL lead to data loss, but can be preferable in a testing situation.
   pvcEnabled: true
   # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims

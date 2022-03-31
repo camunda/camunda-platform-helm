@@ -132,7 +132,7 @@ spec:
         - name: config
           mountPath: /usr/local/bin/startup.sh
           subPath: startup.sh
-        {{- if .Values.pvcEnabled }}
+        {{- if or .Values.pvcEnabled .Values.ramdiskEnabled }}
         - name: data
           mountPath: /usr/local/zeebe/data
         {{- end }}
@@ -154,6 +154,11 @@ spec:
         configMap:
           name: {{ include "zeebe.fullname" . }}
           defaultMode: 0744
+      {{- if .Values.ramdiskEnabled}}
+      - name: data
+        emptyDir:
+          medium: "Memory"
+      {{- end }}
       - name: exporters
         emptyDir: {}
       {{- if .Values.extraVolumes}}
