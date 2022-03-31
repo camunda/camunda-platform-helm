@@ -281,8 +281,10 @@ func (s *integrationTest) assertLoginToIdentity() error {
 	if err != nil {
 		return err
 	}
+	s.T().Logf("Extracted following JWT token from cookie jar '%s'.", jwtToken)
 
-	getRequest, err := http.NewRequest("GET", "http://"+identityEndpoint+"/api/clients", nil)
+	verificationUrl := "http://" + identityEndpoint + "/api/clients"
+	getRequest, err := http.NewRequest("GET", verificationUrl, nil)
 	if err != nil {
 		return err
 	}
