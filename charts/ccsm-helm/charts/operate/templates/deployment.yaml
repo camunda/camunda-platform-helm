@@ -12,8 +12,8 @@ spec:
     metadata:
       labels: 
         {{- include "operate.labels" . | nindent 8 }}
-        {{- if .Values.operate.podLabels }}
-        {{- toYaml .Values.operate.podLabels | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
     spec:
       containers:
@@ -58,15 +58,15 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}
-{{- with .Values.operate.nodeSelector }}
+{{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.operate.affinity }}
+{{- with .Values.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.operate.tolerations }}
+{{- with .Values.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
