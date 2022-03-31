@@ -20,6 +20,14 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
         env:
+          - name: KEYCLOAK_USERS_0_USERNAME
+            value: "demo"
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            value: "demo"
+          - name: KEYCLOAK_USERS_0_ROLES_0
+            value: "Identity"
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: "Operate"
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
