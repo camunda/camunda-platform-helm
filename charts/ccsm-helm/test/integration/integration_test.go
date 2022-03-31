@@ -90,7 +90,9 @@ func (s *integrationTest) TestServicesEnd2End() {
 	}
 
 	// when
-	helm.Install(s.T(), options, s.chartPath, s.release)
+	if _, err := k8s.GetPodE(s.T(), s.kubeOptions, s.release+"-zeebe-0"); err != nil {
+		helm.Install(s.T(), options, s.chartPath, s.release)
+	}
 
 	// then
 	s.awaitCCSMPods()
