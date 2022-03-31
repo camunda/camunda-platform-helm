@@ -76,7 +76,9 @@ func (s *integrationTest) SetupTest() {
 }
 
 func (s *integrationTest) TearDownTest() {
-	k8s.DeleteNamespace(s.T(), s.kubeOptions, s.namespace)
+	if !s.T().Failed() {
+		k8s.DeleteNamespace(s.T(), s.kubeOptions, s.namespace)
+	}
 }
 
 func (s *integrationTest) TestServicesEnd2End() {
@@ -93,7 +95,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
-	s.assertloginToIdentity()
+	s.tryTologinToIdentity()
 	s.assertProcessDefinitionFromOperate()
 	s.assertTasksFromTasklist()
 }
@@ -209,8 +211,22 @@ func (s *integrationTest) resolveKeycloakServiceName() string {
 	return keycloakServiceName
 }
 
-func (s *integrationTest) assertloginToIdentity() {
+func (s *integrationTest) tryTologinToIdentity() {
+	message := retry.DoWithRetry(s.T(),
+		"Try to log in to Identity and verify returned JWT token",
+		10,
+		10*time.Second,
+		func() (string, error) {
+			err := s.assertLoginToIdentity()
+			if err != nil {
+				return "", err
+			}
+			return "Log in to Identity was successful, and JWT Token is valid.", nil
+		})
+	s.T().Logf(message)
+}
 
+func (s *integrationTest) assertLoginToIdentity() error {
 	// in order to login to identity we need to port-forward to identity AND keycloak
 	// identity needs to redirect (forward) requests to keycloak to enable the login
 
@@ -226,52 +242,73 @@ func (s *integrationTest) assertloginToIdentity() {
 
 	// setup http client with cookie jar - necessary to store tokens
 	jar, err := cookiejar.New(nil)
-	s.Require().NoError(err)
+	if err != nil {
+		return err
+	}
 	httpClient := http.Client{
 		Jar:     jar,
 		Timeout: 30 * time.Second,
 	}
 
-	sessionUrl := s.resolveSessionLoginUrl(err, identityEndpoint, httpClient)
+	sessionUrl, err := s.resolveSessionLoginUrl(err, identityEndpoint, httpClient)
+	if err != nil {
+		return err
+	}
 	s.T().Logf("Send log in request to %s", sessionUrl)
 
 	// log in as demo:demo
 	values := url.Values{
-		"username":     {"demo"},
-		"password":     {"demo"},
+		"username": {"demo"},
+		"password": {"demo"},
 	}
 	loginResponse, err := httpClient.PostForm(sessionUrl, values)
-	s.Require().NoError(err)
-	s.Require().Equal(200, loginResponse.StatusCode)
+	if err != nil {
+		return err
+	}
+	if loginResponse.StatusCode != 200 {
+		return errors.New(fmt.Sprintf("On log in expected an 200 status code, but got %d", loginResponse.StatusCode))
+	}
 	s.T().Logf("Log in to identity sucessful! Trying JWT token now.")
 
 	// The previous log in request caused to store a token in our cookie jar.
 	// In order to verify whether this token is valid and works with identity we have to extract the token and set
 	// the cookie value (JWT token) as authentication header.
 	jwtToken, err := s.extractJWTTokenFromCookieJar(jar)
-	s.Require().NoError(err)
+	if err != nil {
+		return err
+	}
 
 	getRequest, err := http.NewRequest("GET", "http://"+identityEndpoint+"/api/clients", nil)
-	s.Require().NoError(err)
+	if err != nil {
+		return err
+	}
 	getRequest.Header.Set("Authentication", "Bearer "+jwtToken)
 
 	// verify the token with the get request
 	getResponse, err := httpClient.Do(getRequest)
-	s.Require().NoError(err)
+	if err != nil {
+		return err
+	}
 
-	s.Require().Equal(200, getResponse.StatusCode)
-	s.T().Logf("JWT Token is valid.")
+	if getResponse.StatusCode != 200 {
+		return errors.New(fmt.Sprintf("On validating JWT token expected an 200 status code, but got %d", getResponse.StatusCode))
+	}
+	return nil
 }
 
-func (s *integrationTest) resolveSessionLoginUrl(err error, endpoint string, httpClient http.Client) string {
+func (s *integrationTest) resolveSessionLoginUrl(err error, endpoint string, httpClient http.Client) (string, error) {
 	// Send request to /auth/login, and follow redirect to keycloak to retrieve the login page.
 	// We need to read the returned login page to get the correct URL with session code, only with this session code
 	// we are able to log in correctly to keycloak / identity. Additionally, this kind of mimics the user interaction.
 
 	request, err := http.NewRequest("GET", "http://"+endpoint+"/auth/login", nil)
-	s.Require().NoError(err)
+	if err != nil {
+		return "", err
+	}
 	response, err := httpClient.Do(request)
-	s.Require().NoError(err)
+	if err != nil {
+		return "", err
+	}
 
 	// The returned login page (from keycloak) is no valid html code, which means we can't use an HTML parser,
 	// but we can extract the url via regex.
@@ -289,11 +326,13 @@ func (s *integrationTest) resolveSessionLoginUrl(err error, endpoint string, htt
 
 	regexCompiled := regexp.MustCompile("(action=\")(.*)(\"[\\s\\w]+=\")")
 	match := regexCompiled.FindStringSubmatch(string(b))
-	s.Require().GreaterOrEqual(len(match), 3)
+	if len(match) < 3 {
+		return "", errors.New(fmt.Sprintf("Expected to extract session url from response %s", string(b)))
+	}
 	sessionUrl := match[2]
 
 	// the url is encoded in the html document, which means we need to replace some characters
-	return strings.Replace(sessionUrl, "&amp;", "&", -1)
+	return strings.Replace(sessionUrl, "&amp;", "&", -1), nil
 }
 
 func (s *integrationTest) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (string, error) {
