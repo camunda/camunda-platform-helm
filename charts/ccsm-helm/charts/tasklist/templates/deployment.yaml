@@ -11,7 +11,11 @@ spec:
       {{- include "tasklist.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "tasklist.labels" . | nindent 8 }}
+      labels: 
+        {{- include "tasklist.labels" . | nindent 8 }}
+        {{- if .Values.tasklist.podLabels }}
+        {{- toYaml .Values.tasklist.podLabels | nindent 8 }}
+        {{- end }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
@@ -45,6 +49,18 @@ spec:
         configMap:
           name: {{ include "tasklist.fullname" . }}
           defaultMode: 0744
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
       {{- if .Values.podSecurityContext }}
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}

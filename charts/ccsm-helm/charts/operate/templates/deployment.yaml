@@ -10,7 +10,11 @@ spec:
     matchLabels: {{- include "operate.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "operate.labels" . | nindent 8 }}
+      labels: 
+        {{- include "operate.labels" . | nindent 8 }}
+        {{- if .Values.operate.podLabels }}
+        {{- toYaml .Values.operate.podLabels | nindent 8 }}
+        {{- end }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
@@ -50,6 +54,18 @@ spec:
       {{- if .Values.serviceAccount.name}}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
       {{- if .Values.podSecurityContext }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}

@@ -320,6 +320,9 @@ operate:
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
 
+  # PodLabels can be used to define extra operate pod labels
+  podLabels: { }
+
   # Logging configuration for the operate logging. This template will be directly included in the operate configuration yaml file
   logging:
     level:
@@ -398,6 +401,9 @@ tasklist:
     repository: camunda/tasklist
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
+  
+  # PodLabels can be used to define extra tasklist pod labels
+  podLabels: { }
 
   # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
