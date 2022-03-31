@@ -72,7 +72,9 @@ func TestIntegration(t *testing.T) {
 }
 
 func (s *integrationTest) SetupTest() {
-	k8s.CreateNamespace(s.T(), s.kubeOptions, s.namespace)
+	if _, err := k8s.GetNamespaceE(s.T(), s.kubeOptions, s.namespace); err != nil {
+		k8s.CreateNamespace(s.T(), s.kubeOptions, s.namespace)
+	}
 }
 
 func (s *integrationTest) TearDownTest() {
