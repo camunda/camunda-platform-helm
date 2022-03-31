@@ -20,11 +20,15 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -89,6 +93,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
+	s.assertloginToIdentity()
 	s.assertProcessDefinitionFromOperate()
 	s.assertTasksFromTasklist()
 }
@@ -196,6 +201,112 @@ func (s *integrationTest) createProcessInstance() {
 	s.T().Logf(message)
 }
 
+func (s *integrationTest) resolveKeycloakServiceName() string {
+	// Keycloak truncates at 20 chars since the node identifier in WildFly is limited to 23 characters.
+	// see https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/_helpers.tpl#L2
+	keycloakServiceName := fmt.Sprintf("%s-keycl", s.release)
+	keycloakServiceName = strings.TrimSuffix(keycloakServiceName[:20], "-")
+	return keycloakServiceName
+}
+
+func (s *integrationTest) assertloginToIdentity() {
+
+	// in order to login to identity we need to port-forward to identity AND keycloak
+	// identity needs to redirect (forward) requests to keycloak to enable the login
+
+	// create keycloak port-forward
+	keycloakServiceName := s.resolveKeycloakServiceName()
+	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
+	defer closeKeycloakPortForward()
+
+	// create identity port-forward
+	identityServiceName := fmt.Sprintf("%s-identity", s.release)
+	identityEndpoint, closeIdentityPortForward := s.createPortForwardedHttpClientWithPort(identityServiceName, 8080)
+	defer closeIdentityPortForward()
+
+	// setup http client with cookie jar - necessary to store tokens
+	jar, err := cookiejar.New(nil)
+	s.Require().NoError(err)
+	httpClient := http.Client{
+		Jar:     jar,
+		Timeout: 30 * time.Second,
+	}
+
+	sessionUrl := s.resolveSessionLoginUrl(err, identityEndpoint, httpClient)
+	s.T().Logf("Send log in request to %s", sessionUrl)
+
+	// log in as demo:demo
+	values := url.Values{
+		"username":     {"demo"},
+		"password":     {"demo"},
+	}
+	loginResponse, err := httpClient.PostForm(sessionUrl, values)
+	s.Require().NoError(err)
+	s.Require().Equal(200, loginResponse.StatusCode)
+	s.T().Logf("Log in to identity sucessful! Trying JWT token now.")
+
+	// The previous log in request caused to store a token in our cookie jar.
+	// In order to verify whether this token is valid and works with identity we have to extract the token and set
+	// the cookie value (JWT token) as authentication header.
+	jwtToken, err := s.extractJWTTokenFromCookieJar(jar)
+	s.Require().NoError(err)
+
+	getRequest, err := http.NewRequest("GET", "http://"+identityEndpoint+"/api/clients", nil)
+	s.Require().NoError(err)
+	getRequest.Header.Set("Authentication", "Bearer "+jwtToken)
+
+	// verify the token with the get request
+	getResponse, err := httpClient.Do(getRequest)
+	s.Require().NoError(err)
+
+	s.Require().Equal(200, getResponse.StatusCode)
+	s.T().Logf("JWT Token is valid.")
+}
+
+func (s *integrationTest) resolveSessionLoginUrl(err error, endpoint string, httpClient http.Client) string {
+	// Send request to /auth/login, and follow redirect to keycloak to retrieve the login page.
+	// We need to read the returned login page to get the correct URL with session code, only with this session code
+	// we are able to log in correctly to keycloak / identity. Additionally, this kind of mimics the user interaction.
+
+	request, err := http.NewRequest("GET", "http://"+endpoint+"/auth/login", nil)
+	s.Require().NoError(err)
+	response, err := httpClient.Do(request)
+	s.Require().NoError(err)
+
+	// The returned login page (from keycloak) is no valid html code, which means we can't use an HTML parser,
+	// but we can extract the url via regex.
+	//
+	// Example form with corresponding URL we are looking for:
+	//
+	// <form id="kc-form-login" onsubmit="login.disabled = true; return true;"
+	//		action="http://localhost:18080/auth/realms/camunda-platform/login-actions/authenticate?session_code=B0BxW2ST2DH0NYE1J-THQncuCVc2yPck5JFmgEnLWbM&amp;execution=be1c2750-2b28-4044-8cf3-22b1331efeae&amp;client_id=camunda-identity&amp;tab_id=tp2zBJnsh6o"
+	//		method="post">
+	//
+	//
+	defer response.Body.Close()
+	body := response.Body
+	b, err := io.ReadAll(body)
+
+	regexCompiled := regexp.MustCompile("(action=\")(.*)(\"[\\s\\w]+=\")")
+	match := regexCompiled.FindStringSubmatch(string(b))
+	s.Require().GreaterOrEqual(len(match), 3)
+	sessionUrl := match[2]
+
+	// the url is encoded in the html document, which means we need to replace some characters
+	return strings.Replace(sessionUrl, "&amp;", "&", -1)
+}
+
+func (s *integrationTest) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (string, error) {
+	cookies := jar.Cookies(&url.URL{Scheme: "http", Host: "localhost"})
+	identityJWT := "IDENTITY_JWT"
+	for _, cookie := range cookies {
+		if cookie.Name == identityJWT {
+			return cookie.Value, nil
+		}
+	}
+	return "", errors.New("no JWT token found in cookie jar")
+}
+
 func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, error) {
 	operateServiceName := fmt.Sprintf("%s-operate", s.release)
 	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
@@ -252,11 +363,11 @@ func (s *integrationTest) loginOnService(endpoint string, httpClient http.Client
 }
 
 func (s *integrationTest) awaitCCSMPods() {
-	// await that all ccsm related pods become ready
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-cloud-self-managed"})
+	// await that all helm release related pods become ready
+	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + s.release })
 
 	for _, pod := range pods {
-		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)
+		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1 * time.Second)
 	}
 }
 
@@ -313,22 +424,24 @@ func (s *integrationTest) createPortForwardedClient(serviceName string) (zbc.Cli
 	return client, func() { client.Close(); tunnel.Close() }, nil
 }
 
-func (s *integrationTest) createPortForwardedHttpClient(serviceName string) (string, func()) {
+func (s *integrationTest) createPortForwardedHttpClientWithPort(serviceName string, port int) (string, func()) {
 	// NOTE: this only waits until the service is created, not until the underlying pods are ready to receive traffic
 	k8s.WaitUntilServiceAvailable(s.T(), s.kubeOptions, serviceName, 90, 1*time.Second)
 
-	// port forward the service to avoid having to set up a public endpoint that the test can access externally
-	localPort := k8s.GetAvailablePort(s.T())
 	// remote port needs to be container port - not service port!
-	tunnel := k8s.NewTunnel(s.kubeOptions, k8s.ResourceTypeService, serviceName, localPort, 8080)
+	tunnel := k8s.NewTunnel(s.kubeOptions, k8s.ResourceTypeService, serviceName, port, 8080)
 
 	// the gateway is not ready/receiving traffic until at least one leader is present
 	s.waitUntilPortForwarded(tunnel, 30, 2*time.Second)
 
-	endpoint := fmt.Sprintf("localhost:%d", localPort)
+	endpoint := fmt.Sprintf("localhost:%d", port)
 	return endpoint, func() {
 		tunnel.Close()
 	}
+}
+
+func (s *integrationTest) createPortForwardedHttpClient(serviceName string) (string, func()) {
+	return s.createPortForwardedHttpClientWithPort(serviceName, k8s.GetAvailablePort(s.T()))
 }
 
 func (s *integrationTest) waitUntilPortForwarded(tunnel *k8s.Tunnel, retries int, sleepBetweenRetries time.Duration) {
