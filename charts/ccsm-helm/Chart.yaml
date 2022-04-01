@@ -7,8 +7,8 @@ type: application
 icon: https://helm.camunda.io/imgs/self-managed.png
 home: https://docs.camunda.io/docs/self-managed/overview/
 sources:
-  - https://github.com/camunda-community-hub/camunda-cloud-helm
-  - https://github.com/camunda-cloud/zeebe
+  - https://github.com/camunda/camunda-platform-helm
+  - https://github.com/camunda/zeebe
 dependencies:
 - name: zeebe
   version: 0.0.28

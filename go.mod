@@ -1,4 +1,4 @@
-module camunda-cloud-helm
+module camunda-platform-helm
 
 go 1.17
 
