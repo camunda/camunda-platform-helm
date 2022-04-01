@@ -1,8 +1,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)[![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)
 
-# Camunda Cloud Self-Managed Helm Chart
+# Camunda Platform Helm Chart
 
-- [Camunda Cloud Self-Managed Helm Chart](#camunda-platform-helm-chart)
+- [Camunda Platform Helm Chart](#camunda-platform-helm-chart)
   * [Requirements](#requirements)
   * [Installing](#installing)
   * [Configuration](#configuration)
@@ -28,7 +28,7 @@
 
 ## Installing
 
-The first command adds the official Camunda Cloud helm charts repo and the second installs the Camunda Platform self managed chart to your current kubernetes context.
+The first command adds the official Camunda Cloud helm charts repo and the second installs the Camunda Platform chart to your current kubernetes context.
 
 ```shell
   helm repo add camunda-cloud https://helm.camunda.io
