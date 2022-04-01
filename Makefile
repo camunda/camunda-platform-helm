@@ -1,6 +1,7 @@
 # Makefile for managing the helm charts
 
 chartPath=charts/camunda-platform
+oldChartPath=charts/ccsm-helm
 releaseName=ccsm-helm-test
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
@@ -44,7 +45,9 @@ installLicense:
 # deps: updates and downloads the dependencies for the ccsm helm chart
 .PHONY: deps
 deps:
-	helm dependency update $(chartPath)
+	helm dependency update $(oldChartPath)
+	helm dependency update $(oldChartPath)
+	helm dependency update $(chartPath)/charts/identity
 	helm dependency update $(chartPath)/charts/identity
 
 # install: install the local ccsm-chart into the current kubernetes cluster/namespace
