@@ -28,7 +28,7 @@
 
 ## Installing
 
-The first command adds the official Camunda Cloud helm charts repo and the second installs the Camunda Cloud Self Managed chart to your current kubernetes context.
+The first command adds the official Camunda Cloud helm charts repo and the second installs the Camunda Platform self managed chart to your current kubernetes context.
 
 ```shell
   helm repo add camunda-cloud https://helm.camunda.io
