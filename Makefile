@@ -1,6 +1,6 @@
 # Makefile for managing the helm charts
 
-chartPath=charts/ccsm-helm
+chartPath=charts/camunda-platform
 releaseName=ccsm-helm-test
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
