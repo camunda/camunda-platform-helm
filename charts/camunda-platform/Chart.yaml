@@ -1,5 +1,5 @@
 apiVersion: v2
-name: ccsm-helm
+name: camunda-platform
 version: 0.0.28
 appVersion: "1.3.4"
 description: Camunda Platform Helm Chart for Kubernetes

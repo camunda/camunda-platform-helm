@@ -1,13 +1,13 @@
 ---
-# Source: ccsm-helm/charts/identity/templates/deployment.yaml
+# Source: camunda-platform/charts/identity/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ccsm-helm-test-identity
+  name: camunda-platform-test-identity
   labels:
     app: camunda-platform
     app.kubernetes.io/name: identity
-    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "SNAPSHOT"
@@ -20,7 +20,7 @@ spec:
     matchLabels:
       app: camunda-platform
       app.kubernetes.io/name: identity
-      app.kubernetes.io/instance: ccsm-helm-test
+      app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: identity
@@ -29,7 +29,7 @@ spec:
       labels:
         app: camunda-platform
         app.kubernetes.io/name: identity
-        app.kubernetes.io/instance: ccsm-helm-test
+        app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "SNAPSHOT"
@@ -42,15 +42,15 @@ spec:
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
-            value: "http://ccsm-helm-test-keycl:80/auth"
+            value: "http://camunda-platform-test-keycl:80/auth"
           - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
-            value: "http://ccsm-helm-test-keycl:80/auth/realms/camunda-platform"
+            value: "http://camunda-platform-test-keycl:80/auth/realms/camunda-platform"
           - name: KEYCLOAK_SETUP_USER
             value: admin
           - name: KEYCLOAK_SETUP_PASSWORD
             valueFrom:
                 secretKeyRef:
-                  name: ccsm-helm-test-keycloak
+                  name: camunda-platform-test-keycloak
                   key: admin-password
         resources:
           limits:

@@ -15,7 +15,7 @@
 package operate
 
 import (
-	"camunda-platform-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -33,8 +33,8 @@ func TestGoldenConfigmapWithElasticsearchUrl(t *testing.T) {
 
 	suite.Run(t, &golden.TemplateGoldenTest{
 		ChartPath:      chartPath,
-		Release:        "ccsm-helm-test",
-		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-elastic-url",
 		Templates:      []string{"charts/operate/templates/configmap.yaml"},
 		SetValues:      map[string]string{"global.elasticsearch.url": "http://elasticmaster.org"},

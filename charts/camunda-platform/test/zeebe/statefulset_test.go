@@ -44,8 +44,8 @@ func TestStatefulSetTemplate(t *testing.T) {
 
 	suite.Run(t, &statefulSetTest{
 		chartPath: chartPath,
-		release:   "ccsm-helm-test",
-		namespace: "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"charts/zeebe/templates/statefulset.yaml"},
 	})
 }
@@ -162,7 +162,7 @@ func (s *statefulSetTest) TestContainerSetExtraInitContainers() {
 
 	// then
 	initContainer := statefulSet.Spec.Template.Spec.InitContainers[0]
-	s.Require().Equal("init-container-ccsm-helm-test", initContainer.Name)
+	s.Require().Equal("init-container-camunda-platform-test", initContainer.Name)
 	s.Require().Equal("busybox:1.28", initContainer.Image)
 	s.Require().Equal([]string{"sh", "-c", "top"}, initContainer.Command)
 	s.Require().Equal("exporters", initContainer.VolumeMounts[0].Name)
@@ -287,7 +287,7 @@ func (s *statefulSetTest) TestContainerShouldSetTemplateEnvVars() {
 
 	// then
 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-ccsm-helm-test"})
+	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
 	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 

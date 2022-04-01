@@ -327,7 +327,7 @@ This example is downloading the exporters Jar from a URL and adding the Jars to 
 For development purpose you might want to deploy and test the charts without creating a new helm chart release. In order to do this you can run the following:
 
 ```sh
- helm install <RELEASENAME> --atomic --debug charts/ccsm-helm/
+ helm install <RELEASENAME> --atomic --debug charts/camunda-platform/
 ```
 
  * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
@@ -359,7 +359,7 @@ After this you can run: `make deps`, which will update and download the dependen
 The execution should look like this:
 ```
 $ make deps
-helm dependency update charts/ccsm-helm
+helm dependency update charts/camunda-platform
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "elastic" chart repository
@@ -373,7 +373,7 @@ Dependency tasklist did not declare a repository. Assuming it exists in the char
 Dependency identity did not declare a repository. Assuming it exists in the charts directory
 Downloading elasticsearch from repo https://helm.elastic.co
 Deleting outdated charts
-helm dependency update charts/ccsm-helm/charts/identity
+helm dependency update charts/camunda-platform/charts/identity
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "elastic" chart repository

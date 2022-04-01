@@ -43,8 +43,8 @@ func TestServiceTemplate(t *testing.T) {
 
 	suite.Run(t, &serviceTest{
 		chartPath: chartPath,
-		release:   "ccsm-helm-test",
-		namespace: "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"charts/zeebe/templates/service.yaml"},
 	})
 }

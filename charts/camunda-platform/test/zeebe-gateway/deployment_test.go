@@ -44,8 +44,8 @@ func TestGatewayDeploymentTemplate(t *testing.T) {
 
 	suite.Run(t, &deploymentTemplateTest{
 		chartPath: chartPath,
-		release:   "ccsm-helm-test",
-		namespace: "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"charts/zeebe-gateway/templates/gateway-deployment.yaml"},
 	})
 }
@@ -223,7 +223,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-ccsm-helm-test"})
+	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
 	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 

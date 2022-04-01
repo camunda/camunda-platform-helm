@@ -1,7 +1,7 @@
 package zeebe
 
 import (
-	"camunda-platform-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -19,8 +19,8 @@ func TestGoldenServiceMonitorDefaults(t *testing.T) {
 
 	suite.Run(t, &golden.TemplateGoldenTest{
 		ChartPath:      chartPath,
-		Release:        "ccsm-helm-test",
-		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "service-monitor",
 		Templates:      []string{"templates/service-monitor.yaml"},
 		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},

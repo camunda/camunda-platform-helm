@@ -1,7 +1,7 @@
 package zeebe
 
 import (
-	"camunda-platform-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -21,8 +21,8 @@ func TestGoldenCuratorDefaults(t *testing.T) {
 	for _, name := range templateNames {
 		suite.Run(t, &golden.TemplateGoldenTest{
 			ChartPath:      chartPath,
-			Release:        "ccsm-helm-test",
-			Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
 			Templates:      []string{"templates/" + name + ".yaml"},
 			SetValues:      map[string]string{"retentionPolicy.enabled": "true"},

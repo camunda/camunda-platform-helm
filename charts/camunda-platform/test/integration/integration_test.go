@@ -362,7 +362,7 @@ func createNamespaceName() string {
 	// if triggered by a github action the environment variable is set
 	// we use it to better identify the test
 	commitSHA, exist := os.LookupEnv("GITHUB_SHA")
-	namespace := "ccsm-helm-"
+	namespace := "camunda-platform-"
 	if !exist {
 		namespace += strings.ToLower(random.UniqueId())
 	} else {

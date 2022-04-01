@@ -1,13 +1,13 @@
 ---
-# Source: ccsm-helm/charts/tasklist/templates/deployment.yaml
+# Source: camunda-platform/charts/tasklist/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ccsm-helm-test-tasklist
+  name: camunda-platform-test-tasklist
   labels:
     app: camunda-platform
     app.kubernetes.io/name: tasklist
-    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "1.3.4"
@@ -20,7 +20,7 @@ spec:
     matchLabels:
       app: camunda-platform
       app.kubernetes.io/name: tasklist
-      app.kubernetes.io/instance: ccsm-helm-test
+      app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: tasklist
@@ -29,7 +29,7 @@ spec:
       labels:
         app: camunda-platform
         app.kubernetes.io/name: tasklist
-        app.kubernetes.io/instance: ccsm-helm-test
+        app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "1.3.4"
@@ -63,5 +63,5 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: ccsm-helm-test-tasklist
+          name: camunda-platform-test-tasklist
           defaultMode: 0744

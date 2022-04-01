@@ -1,13 +1,13 @@
 ---
-# Source: ccsm-helm/charts/identity/templates/ingress.yaml
+# Source: camunda-platform/charts/identity/templates/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ccsm-helm-test-identity
+  name: camunda-platform-test-identity
   labels: 
     app: camunda-platform
     app.kubernetes.io/name: identity
-    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "SNAPSHOT"
@@ -25,7 +25,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: ccsm-helm-test-identity
+                name: camunda-platform-test-identity
                 port:
                   number: 80
   tls:

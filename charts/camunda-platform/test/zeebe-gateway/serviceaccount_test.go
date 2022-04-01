@@ -15,7 +15,7 @@
 package gateway
 
 import (
-	"camunda-platform-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -33,8 +33,8 @@ func TestGoldenServiceaccountWithAnnotations(t *testing.T) {
 
 	suite.Run(t, &golden.TemplateGoldenTest{
 		ChartPath:      chartPath,
-		Release:        "ccsm-helm-test",
-		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "serviceaccount-annotations",
 		Templates:      []string{"charts/zeebe-gateway/templates/gateway-serviceaccount.yaml"},
 		SetValues: map[string]string{

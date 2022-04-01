@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"camunda-platform-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/golden"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
@@ -34,8 +34,8 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 
 	suite.Run(t, &golden.TemplateGoldenTest{
 		ChartPath:      chartPath,
-		Release:        "ccsm-helm-test",
-		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress",
 		Templates:      []string{"charts/identity/templates/ingress.yaml"},
 		SetValues:      map[string]string{"identity.ingress.enabled": "true"},
@@ -50,8 +50,8 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 
 	suite.Run(t, &golden.TemplateGoldenTest{
 		ChartPath:      chartPath,
-		Release:        "ccsm-helm-test",
-		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress-all-enabled",
 		Templates:      []string{"charts/identity/templates/ingress.yaml"},
 		SetValues: map[string]string{

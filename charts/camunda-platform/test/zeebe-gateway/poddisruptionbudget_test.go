@@ -15,7 +15,7 @@
 package gateway
 
 import (
-	"camunda-platform-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -36,8 +36,8 @@ func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
 
 	suite.Run(t, &golden.TemplateGoldenTest{
 		ChartPath:      chartPath,
-		Release:        "ccsm-helm-test",
-		Namespace:      "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "poddisruptionbudget",
 		Templates:      []string{"charts/zeebe-gateway/templates/gateway-poddisruptionbudget.yaml"},
 		SetValues:      map[string]string{"zeebe-gateway.podDisruptionBudget.enabled": "true"},
@@ -60,8 +60,8 @@ func TestPodDisruptionBudgetTemplate(t *testing.T) {
 
 	suite.Run(t, &podDisruptionBudgetTest{
 		chartPath: chartPath,
-		release:   "ccsm-helm-test",
-		namespace: "ccsm-helm-" + strings.ToLower(random.UniqueId()),
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"charts/zeebe-gateway/templates/gateway-poddisruptionbudget.yaml"},
 	})
 }

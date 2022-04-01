@@ -1,13 +1,13 @@
 ---
-# Source: ccsm-helm/charts/zeebe-gateway/templates/gateway-poddisruptionbudget.yaml
+# Source: camunda-platform/charts/zeebe-gateway/templates/gateway-poddisruptionbudget.yaml
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  name: "ccsm-helm-test-zeebe-gateway"
+  name: "camunda-platform-test-zeebe-gateway"
   labels:
     app: camunda-platform
     app.kubernetes.io/name: zeebe-gateway
-    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "1.3.4"
@@ -18,7 +18,7 @@ spec:
     matchLabels:
       app: camunda-platform
       app.kubernetes.io/name: zeebe-gateway
-      app.kubernetes.io/instance: ccsm-helm-test
+      app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-gateway
