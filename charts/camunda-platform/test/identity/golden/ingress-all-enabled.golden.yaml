@@ -1,0 +1,34 @@
+---
+# Source: ccsm-helm/charts/identity/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ccsm-helm-test-identity
+  labels: 
+    app: camunda-cloud-self-managed
+    app.kubernetes.io/name: identity
+    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-cloud-self-managed
+    app.kubernetes.io/version: "SNAPSHOT"
+    app.kubernetes.io/component: identity
+  annotations: 
+    ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ccsm-helm-test-identity
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - local
+      secretName: my-secret

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "operate.fullname" . }}
+  labels: {{- include "operate.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "operate.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "operate.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        {{- if .Values.image.tag }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- else }}
+        image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
+        {{- end }}
+        {{- if .Values.env}}
+        env:
+        {{ .Values.env | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/operate/config/application.yml
+          subPath: application.yml
+        {{- if .Values.extraVolumeMounts}}
+        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "operate.fullname" . }}
+          defaultMode: 0744
+      {{- if .Values.extraVolumes}}
+      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}

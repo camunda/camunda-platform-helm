@@ -1,0 +1,29 @@
+---
+# Source: ccsm-helm/charts/identity/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ccsm-helm-test-identity
+  labels:
+    app: camunda-cloud-self-managed
+    app.kubernetes.io/name: identity
+    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-cloud-self-managed
+    app.kubernetes.io/version: "SNAPSHOT"
+    app.kubernetes.io/component: identity
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    name: http
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: camunda-cloud-self-managed
+    app.kubernetes.io/name: identity
+    app.kubernetes.io/instance: ccsm-helm-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-cloud-self-managed
+    app.kubernetes.io/component: identity
