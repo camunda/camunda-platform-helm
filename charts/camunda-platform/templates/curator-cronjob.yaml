@@ -2,7 +2,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: ccsm-curator
+  name: camunda-platform-curator
   labels:
     {{- include "camundaPlatform.labels" . | nindent 4 }}
 spec:
@@ -25,6 +25,6 @@ spec:
           volumes:
             - name: config
               configMap:
-                name: ccsm-curator-config
+                name: camunda-platform-curator-config
           restartPolicy: OnFailure
 {{- end }}

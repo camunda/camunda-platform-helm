@@ -3,7 +3,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: ccsm-curator
+  name: camunda-platform-curator
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -31,5 +31,5 @@ spec:
           volumes:
             - name: config
               configMap:
-                name: ccsm-curator-config
+                name: camunda-platform-curator-config
           restartPolicy: OnFailure

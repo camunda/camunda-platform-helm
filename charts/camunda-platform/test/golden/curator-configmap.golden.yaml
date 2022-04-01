@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ccsm-curator-config
+  name: camunda-platform-curator-config
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

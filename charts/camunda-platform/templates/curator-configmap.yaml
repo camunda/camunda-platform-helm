@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ccsm-curator-config
+  name: camunda-platform-curator-config
   labels:
     {{- include "camundaPlatform.labels" . | nindent 4 }}
 data:
