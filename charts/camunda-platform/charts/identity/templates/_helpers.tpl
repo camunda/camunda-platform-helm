@@ -30,7 +30,7 @@ Define common labels for identity, combining the match labels and transient labe
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "identity.labels" -}}
-{{- template "ccsm.labels" . }}
+{{- template "camundaPlatform.labels" . }}
 {{ template "identity.extraLabels" . }}
 {{- end -}}
 
@@ -38,7 +38,7 @@ Define common labels for identity, combining the match labels and transient labe
 Defines match labels for identity, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "identity.matchLabels" -}}
-{{- template "ccsm.matchLabels" . }}
+{{- template "camundaPlatform.matchLabels" . }}
 {{ template "identity.extraLabels" . }}
 {{- end -}}
 

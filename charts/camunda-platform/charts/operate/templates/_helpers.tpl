@@ -30,7 +30,7 @@ Define common labels for operate, combining the match labels and transient label
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "operate.labels" -}}
-{{- template "ccsm.labels" . }}
+{{- template "camundaPlatform.labels" . }}
 {{ template "operate.extraLabels" . }}
 {{- end -}}
 
@@ -38,7 +38,7 @@ Define common labels for operate, combining the match labels and transient label
 Defines match labels for operate, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "operate.matchLabels" -}}
-{{- template "ccsm.matchLabels" . }}
+{{- template "camundaPlatform.matchLabels" . }}
 {{ template "operate.extraLabels" . }}
 {{- end -}}
 

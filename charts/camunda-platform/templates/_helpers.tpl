@@ -2,7 +2,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "ccsm.name" -}}
+{{- define "camundaPlatform.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -10,8 +10,8 @@ Expand the name of the chart.
 Define common labels, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
-{{- define "ccsm.labels" -}}
-{{- template "ccsm.matchLabels" . }}
+{{- define "camundaPlatform.labels" -}}
+{{- template "camundaPlatform.matchLabels" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- if .Values.image }}
     {{- if .Values.image.tag }}
@@ -27,11 +27,11 @@ app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
 {{/*
 Common match labels, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
-{{- define "ccsm.matchLabels" -}}
+{{- define "camundaPlatform.matchLabels" -}}
 {{- if .Values.global.labels -}}
 {{ toYaml .Values.global.labels }}
 {{- end }}
-app.kubernetes.io/name: {{ template "ccsm.name" . }}
+app.kubernetes.io/name: {{ template "camundaPlatform.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: camunda-platform

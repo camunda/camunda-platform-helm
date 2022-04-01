@@ -7,6 +7,7 @@
   * [Installing](#installing)
   * [Configuration](#configuration)
     + [Global](#global)
+    + [Camunda Platform](#camunda-platform)
     + [Zeebe](#zeebe)
     + [Zeebe Gateway](#zeebe-gateway)
     + [Operate](#operate)
@@ -61,7 +62,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `zeebePort` | Defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers. | 26500 |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Zeebe Cluster | `true` |
 
-### CCSM
+### Camunda Platform
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|

@@ -30,7 +30,7 @@ Define common labels for tasklist, combining the match labels and transient labe
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "tasklist.labels" -}}
-{{- template "ccsm.labels" . }}
+{{- template "camundaPlatform.labels" . }}
 {{ template "tasklist.extraLabels" . }}
 {{- end -}}
 
@@ -38,6 +38,6 @@ Define common labels for tasklist, combining the match labels and transient labe
 Defines match labels for tasklist, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "tasklist.matchLabels" -}}
-{{- template "ccsm.matchLabels" . }}
+{{- template "camundaPlatform.matchLabels" . }}
 {{ template "tasklist.extraLabels" . }}
 {{- end -}}

@@ -30,7 +30,7 @@ Define common labels for Zeebe gateway, combining the match labels and transient
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "zeebe.labels.gateway" -}}
-{{- template "ccsm.labels" . }}
+{{- template "camundaPlatform.labels" . }}
 {{ template "zeebe.extraLabels.gateway" . }}
 {{- end -}}
 
@@ -38,7 +38,7 @@ Define common labels for Zeebe gateway, combining the match labels and transient
 Defines match labels for Zeebe gateway, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "zeebe.matchLabels.gateway" -}}
-{{- template "ccsm.matchLabels" . }}
+{{- template "camundaPlatform.matchLabels" . }}
 {{ template "zeebe.extraLabels.gateway" . }}
 {{- end -}}
 

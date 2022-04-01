@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: ccsm-curator-config
   labels:
-    {{- include "ccsm.labels" . | nindent 4 }}
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
 data:
   action_file.yml: |-
     ---
