@@ -28,11 +28,11 @@
 
 ## Installing
 
-The first command adds the official Camunda Cloud helm charts repo and the second installs the Camunda Platform chart to your current kubernetes context.
+The first command adds the official Camunda Platform Helm charts repo and the second installs the Camunda Platform chart to your current kubernetes context.
 
 ```shell
-  helm repo add camunda-cloud https://helm.camunda.io
-  helm install camunda-cloud camunda-cloud/ccsm-helm
+  helm repo add camunda https://helm.camunda.io
+  helm install camunda-platform camunda/camunda-platform
 ```
 
 ## Configuration
@@ -285,7 +285,7 @@ This chart has a dependency to the [Elasticsearch Helm Chart](https://github.com
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `elasticsearch`| `enabled` | If true, enables Elasticsearch deployment as part of the Camunda cloud self-managed helm chart | `true` |
+| `elasticsearch`| `enabled` | If true, enables Elasticsearch deployment as part of the Camunda Platform Helm chart | `true` |
 
 **Example:**
 
@@ -361,7 +361,7 @@ The execution should look like this:
 $ make deps
 helm dependency update charts/ccsm-helm
 Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "camunda-cloud" chart repository
+...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "elastic" chart repository
 ...Successfully got an update from the "bitnami" chart repository
 Update Complete. ⎈Happy Helming!⎈
@@ -375,7 +375,7 @@ Downloading elasticsearch from repo https://helm.elastic.co
 Deleting outdated charts
 helm dependency update charts/ccsm-helm/charts/identity
 Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "camunda-cloud" chart repository
+...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "elastic" chart repository
 ...Successfully got an update from the "bitnami" chart repository
 Update Complete. ⎈Happy Helming!⎈
