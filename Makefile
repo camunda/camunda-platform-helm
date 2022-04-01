@@ -46,8 +46,8 @@ installLicense:
 .PHONY: deps
 deps:
 	helm dependency update $(oldChartPath)
-	helm dependency update $(oldChartPath)
-	helm dependency update $(chartPath)/charts/identity
+	helm dependency update $(oldChartPath)/charts/identity
+	helm dependency update $(chartPath)
 	helm dependency update $(chartPath)/charts/identity
 
 # install: install the local ccsm-chart into the current kubernetes cluster/namespace
