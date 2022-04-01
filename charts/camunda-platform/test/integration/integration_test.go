@@ -252,7 +252,7 @@ func (s *integrationTest) loginOnService(endpoint string, httpClient http.Client
 }
 
 func (s *integrationTest) awaitCamundaPlatformPods() {
-	// await that all ccsm related pods become ready
+	// await that all Camunda Platform related pods become ready
 	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-platform"})
 
 	for _, pod := range pods {
