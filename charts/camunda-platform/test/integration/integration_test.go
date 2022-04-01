@@ -85,7 +85,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 	helm.Install(s.T(), options, s.chartPath, s.release)
 
 	// then
-	s.awaitCCSMPods()
+	s.awaitCamundaPlatformPods()
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
@@ -251,7 +251,7 @@ func (s *integrationTest) loginOnService(endpoint string, httpClient http.Client
 	return nil
 }
 
-func (s *integrationTest) awaitCCSMPods() {
+func (s *integrationTest) awaitCamundaPlatformPods() {
 	// await that all ccsm related pods become ready
 	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-platform"})
 
