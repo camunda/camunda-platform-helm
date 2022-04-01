@@ -18,7 +18,7 @@
 
 Hi there! We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.
 
-Please note that this project is released with a [Contributor Code of Conduct](https://github.com/camunda/camunda-cloud-helm/blob/main/CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+Please note that this project is released with a [Contributor Code of Conduct](https://github.com/camunda/camunda-platform-helm/blob/main/CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
 
 ## Issues and PRs
 
@@ -77,7 +77,7 @@ Available commit types:
 
 ### Tests
 
-In order to make sure that the helm charts work properly and that further development doesn't break anything we introduced with [#125](https://github.com/camunda/camunda-cloud-helm/issues/125) tests for the helm charts. The tests are written in go, and we use the [terratest framework](https://terratest.gruntwork.io/) to write them.
+In order to make sure that the helm charts work properly and that further development doesn't break anything we introduced with [#125](https://github.com/camunda/camunda-platform-helm/issues/125) tests for the helm charts. The tests are written in go, and we use the [terratest framework](https://terratest.gruntwork.io/) to write them.
 
 We separate our tests in two parts, with different targets and goals.
 
@@ -139,11 +139,11 @@ _Conjunction:_
   * [configuration] for section/group of variables
 
 
-All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/convertValuesDoc.sh).
+All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/convertValuesDoc.sh).
 
 ## Resources
 
 - [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/)
 - [Using Pull Requests](https://help.github.com/articles/about-pull-requests/)
 - [GitHub Help](https://help.github.com)
-- [CODE_OF_CONDUCT](https://github.com/camunda/camunda-cloud-helm/blob/main/CODE_OF_CONDUCT.md)
+- [CODE_OF_CONDUCT](https://github.com/camunda/camunda-platform-helm/blob/main/CODE_OF_CONDUCT.md)

@@ -14,7 +14,7 @@ adjust your `values.yaml` file, since the dependencies (sub-charts) have been re
 | zeebe-operate-helm | operate |
 | zeebe-tasklist-helm | tasklist |
 
-Some properties have been renamed or removed, but also better documented. Please check the [README](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md) for more details.
+Some properties have been renamed or removed, but also better documented. Please check the [README](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md) for more details.
 
 **Example:**
 
@@ -52,7 +52,7 @@ properties under the `zeebe` object.
 > **Note:** There is also a new sub-chart for the standalone gateway. This means some configurations need to be done now
 > on the gateway chart.
 
-For more details please check the [README](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md),
+For more details please check the [README](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md),
 which documents all possible values for each chart.
 
 #### Example:

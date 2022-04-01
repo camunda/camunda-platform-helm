@@ -15,7 +15,7 @@
 package zeebe
 
 import (
-	"camunda-cloud-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/ccsm-helm/test/golden"
 	"path/filepath"
 	"strings"
 	"testing"

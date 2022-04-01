@@ -1,6 +1,6 @@
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)[![Go CI](https://github.com/camunda/camunda-cloud-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-cloud-helm/actions/workflows/go.yml)[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda-cloud-helm)](https://artifacthub.io/packages/search?repo=camunda-cloud-helm)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)[![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda-platform-helm)](https://artifacthub.io/packages/search?repo=camunda-platform-helm)
 
-- [Camunda Cloud Helm](#camunda-cloud-helm)
+- [Camunda Cloud Helm](#camunda-platform-helm)
   * [Installing Charts](#installing-charts)
   * [Configure Charts](#configure-charts)
   * [Uninstalling Charts](#uninstalling-charts)
@@ -35,21 +35,21 @@ helm install <YOUR HELM RELEASE NAME> camunda-cloud/ccsm-helm
 
 Per default the following will be installed:
 
-- [ccsm-helm](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md)
-  - [Zeebe](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md#zeebe)
-  - [Zeebe Gateway](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md#zeebe-gateway)
-  - [Operate](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md#operate)
-  - [Tasklist](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md#tasklist)
+- [ccsm-helm](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md)
+  - [Zeebe](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#zeebe)
+  - [Zeebe Gateway](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#zeebe-gateway)
+  - [Operate](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#operate)
+  - [Tasklist](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#tasklist)
   - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
 
 Follow [the instructions in the Camunda Cloud documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Cloud to a K8s cluster.
 
-> ***Note**: check the [kind/ccsm-kind-values](https://github.com/camunda/camunda-cloud-helm/blob/main/kind/ccsm-kind-values.yaml) file to get ccsm-helm running with kind*
+> ***Note**: check the [kind/ccsm-kind-values](https://github.com/camunda/camunda-platform-helm/blob/main/kind/ccsm-kind-values.yaml) file to get ccsm-helm running with kind*
 
 
 ## Configure Charts
 
-Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [CCSM-HELM Readme](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md) for more information.
+Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [CCSM-HELM Readme](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md) for more information.
 
 Example to enable the prometheus servicemonitor for Zeebe:
 
@@ -95,15 +95,15 @@ The following charts are deprecated:
 The new `ccsm-helm` chart is a full replacement of `zeebe-full-helm` and replaces (contains) all other charts as sub-charts.
 All sub-charts in `ccsm-helm` are per default enabled.
 
-For a complete migration guide see [here](https://github.com/camunda/camunda-cloud-helm/blob/main/MIGRATION.md).
+For a complete migration guide see [here](https://github.com/camunda/camunda-platform-helm/blob/main/MIGRATION.md).
 
 ## Issues
 
-Please create [new issues](https://github.com/camunda-community-hub/camunda-cloud-helm) if you find problems with these charts. This repository is hosted using GitHub Pages and the source code repository can be found [here](https://github.com/camunda/camunda-cloud-helm).
+Please create [new issues](https://github.com/camunda-community-hub/camunda-platform-helm) if you find problems with these charts. This repository is hosted using GitHub Pages and the source code repository can be found [here](https://github.com/camunda/camunda-platform-helm).
 
 ## Contributing
 
-Please familiar yourself with the [contribution guide](https://github.com/camunda/camunda-cloud-helm/blob/main/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [CCSM-Helm Readme](https://github.com/camunda/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md) to find more information about configuring and developing the charts.
+Please familiar yourself with the [contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [CCSM-Helm Readme](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md) to find more information about configuring and developing the charts.
 
 ## Releasing the Charts
 

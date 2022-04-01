@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"camunda-cloud-helm/charts/ccsm-helm/test/golden"
+	"camunda-platform-helm/charts/ccsm-helm/test/golden"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
