@@ -29,7 +29,7 @@ global:
   annotations: {}
   # Labels can be used to define common labels, which should be applied to all deployments
   labels:
-    app: camunda-cloud-self-managed
+    app: camunda-platform
 
   # Image configuration to be used in each sub chart
   image:

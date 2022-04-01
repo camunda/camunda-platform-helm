@@ -5,11 +5,11 @@ kind: Ingress
 metadata:
   name: ccsm-helm-test-identity
   labels: 
-    app: camunda-cloud-self-managed
+    app: camunda-platform
     app.kubernetes.io/name: identity
     app.kubernetes.io/instance: ccsm-helm-test
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/part-of: camunda-cloud-self-managed
+    app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "SNAPSHOT"
     app.kubernetes.io/component: identity
   annotations: 

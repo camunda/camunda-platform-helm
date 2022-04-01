@@ -34,5 +34,5 @@ Common match labels, which are extended by sub-charts and should be used in matc
 app.kubernetes.io/name: {{ template "ccsm.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-app.kubernetes.io/part-of: camunda-cloud-self-managed
+app.kubernetes.io/part-of: camunda-platform
 {{- end -}}

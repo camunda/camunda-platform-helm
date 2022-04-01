@@ -2,7 +2,7 @@
 
 # Camunda Cloud Self-Managed Helm Chart
 
-- [Camunda Cloud Self-Managed Helm Chart](#camunda-cloud-self-managed-helm-chart)
+- [Camunda Cloud Self-Managed Helm Chart](#camunda-platform-helm-chart)
   * [Requirements](#requirements)
   * [Installing](#installing)
   * [Configuration](#configuration)

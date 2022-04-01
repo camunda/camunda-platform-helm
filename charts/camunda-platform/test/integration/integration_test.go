@@ -253,7 +253,7 @@ func (s *integrationTest) loginOnService(endpoint string, httpClient http.Client
 
 func (s *integrationTest) awaitCCSMPods() {
 	// await that all ccsm related pods become ready
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-cloud-self-managed"})
+	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-platform"})
 
 	for _, pod := range pods {
 		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)
