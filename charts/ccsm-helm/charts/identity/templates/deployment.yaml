@@ -20,10 +20,6 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
         env:
-          - name: KEYCLOAK_INIT_OPERATE_SECRET
-            value: "the-cake-is-alive"
-          - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
-            value: "http://localhost:8080"
           - name: KEYCLOAK_USERS_0_USERNAME
             value: "demo"
           - name: KEYCLOAK_USERS_0_PASSWORD
