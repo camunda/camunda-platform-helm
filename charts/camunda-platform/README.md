@@ -10,6 +10,7 @@
     + [Camunda Platform](#camunda-platform)
     + [Zeebe](#zeebe)
     + [Zeebe Gateway](#zeebe-gateway)
+    + [Identity](#identity)
     + [Operate](#operate)
     + [Tasklist](#tasklist)
     + [Elasticsearch](#elasticsearch)
