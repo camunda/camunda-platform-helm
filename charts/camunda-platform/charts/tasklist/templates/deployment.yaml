@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tasklist.fullname" . }}
+  labels: {{- include "tasklist.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "tasklist.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "tasklist.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        {{- if .Values.image.tag }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- else }}
+        image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
+        {{- end }}
+        env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: {{ default "auth" .Values.springProfilesActive | quote }}
+          - name: GRAPHQL_PLAYGROUND_ENABLED
+            value: {{ default "true" .Values.graphqlPlaygroundEnabled | quote }}
+          - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
+            value: {{ default "include" .Values.graphqlPlaygroundRequestCredentials | quote }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /app/resources/application.yml
+          subPath: application.yml
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "tasklist.fullname" . }}
+          defaultMode: 0744
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}

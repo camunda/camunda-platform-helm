@@ -1,0 +1,60 @@
+---
+# Source: camunda-platform/charts/operate/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-operate
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: operate
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "1.3.4"
+    app.kubernetes.io/component: operate
+  annotations:
+    {}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: operate
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: operate
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: operate
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/version: "1.3.4"
+        app.kubernetes.io/component: operate
+    spec:
+      containers:
+      - name: operate
+        image: "camunda/operate:1.3.4"
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+          requests:
+            cpu: 600m
+            memory: 400Mi
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/operate/config/application.yml
+          subPath: application.yml
+      volumes:
+      - name: config
+        configMap:
+          name: camunda-platform-test-operate
+          defaultMode: 0744

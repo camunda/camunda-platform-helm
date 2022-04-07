@@ -1,0 +1,10 @@
+apiVersion: v2
+description: Operate Helm Chart for Kubernetes
+name: operate
+version: 0.0.28
+type: application
+icon: https://raw.githubusercontent.com/camunda-cloud/camunda-cloud-documentation/master/static/img/camunda-operate-gradient.png
+annotations:
+  artifacthub.io/changes: |
+    - create operate sub chart
+  artifacthub.io/containsSecurityUpdates: "false"
