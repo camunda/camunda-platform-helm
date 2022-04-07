@@ -11,6 +11,7 @@
     + [Zeebe Gateway](#zeebe-gateway)
     + [Operate](#operate)
     + [Tasklist](#tasklist)
+    + [Identity](#identity)
     + [Elasticsearch](#elasticsearch)
   * [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
   * [Development](#development)
