@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 0.0.28
+version: 0.0.29
 appVersion: "1.3.4"
 description: Camunda Platform Helm Chart for Kubernetes
 type: application
@@ -11,19 +11,19 @@ sources:
   - https://github.com/camunda/zeebe
 dependencies:
 - name: zeebe
-  version: 0.0.28
+  version: 0.0.29
   condition: "zeebe.enabled"
 - name: zeebe-gateway
-  version: 0.0.28
+  version: 0.0.29
   condition: "zeebe.enabled"
 - name: operate
-  version: 0.0.28
+  version: 0.0.29
   condition: "operate.enabled"
 - name: tasklist
-  version: 0.0.28
+  version: 0.0.29
   condition: "tasklist.enabled"
 - name: identity
-  version: 0.0.28
+  version: 0.0.29
   condition: "identity.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
@@ -34,5 +34,5 @@ maintainers:
     email: christopher.zell@camunda.com
 annotations:
   artifacthub.io/changes: |
-    - add missing dependencies
+    - update notes file
   artifacthub.io/containsSecurityUpdates: "false"
