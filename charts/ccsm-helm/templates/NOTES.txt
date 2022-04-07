@@ -88,3 +88,17 @@ Now you can point your browser to `http://localhost:8080`. Identity will forward
 
 Default user and password: "demo/demo"
 {{- end }}
+
+
+  _____    ______   _____    _____    ______    _____              _______   ______   _____
+ |  __ \  |  ____| |  __ \  |  __ \  |  ____|  / ____|     /\     |__   __| |  ____| |  __ \
+ | |  | | | |__    | |__) | | |__) | | |__    | |         /  \       | |    | |__    | |  | |
+ | |  | | |  __|   |  ___/  |  _  /  |  __|   | |        / /\ \      | |    |  __|   | |  | |
+ | |__| | | |____  | |      | | \ \  | |____  | |____   / ____ \     | |    | |____  | |__| |
+ |_____/  |______| |_|      |_|  \_\ |______|  \_____| /_/    \_\    |_|    |______| |_____/
+
+
+Please be aware that this helm chart has been renamed to camunda-platform.
+
+This helm chart "ccsm-helm" is as of now deprecated and will no longer receive any updates.
+Please use: helm install <release> <reponame>/camunda-platform instead.
