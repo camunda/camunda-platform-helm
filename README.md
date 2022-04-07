@@ -30,32 +30,32 @@ The charts are represented in the following image:
 You can install the Helm Charts by running:
 
 ```sh
-helm install <YOUR HELM RELEASE NAME> camunda-cloud/ccsm-helm
+helm install <YOUR HELM RELEASE NAME> camunda-cloud/camunda-platform
 ```
 
 Per default the following will be installed:
 
-- [ccsm-helm](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md)
-  - [Zeebe](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#zeebe)
-  - [Zeebe Gateway](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#zeebe-gateway)
-  - [Operate](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#operate)
-  - [Tasklist](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#tasklist)
-  - [Identity](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#identity)
+- [camunda-platform](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md)
+  - [Zeebe](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#zeebe)
+  - [Zeebe Gateway](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#zeebe-gateway)
+  - [Operate](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#operate)
+  - [Tasklist](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#tasklist)
+  - [Identity](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#identity)
   - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
 
 Follow [the instructions in the Camunda Cloud documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Cloud to a K8s cluster.
 
-> ***Note**: check the [kind/ccsm-kind-values](https://github.com/camunda/camunda-platform-helm/blob/main/kind/ccsm-kind-values.yaml) file to get ccsm-helm running with kind*
+> ***Note**: check the [kind/kind-values](https://github.com/camunda/camunda-platform-helm/blob/main/kind/kind-values.yaml) file to get camunda-platform running with kind*
 
 
 ## Configure Charts
 
-Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [CCSM-HELM Readme](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md) for more information.
+Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [Camunda Platform Helm Charts Readme](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/camunda-platform/README.md) for more information.
 
 Example to enable the prometheus servicemonitor for Zeebe:
 
 ```sh
-helm install <YOUR HELM RELEASE NAME> camunda-cloud/ccsm-helm --set zeebe.prometheusServiceMonitor.enabled=true
+helm install <YOUR HELM RELEASE NAME> camunda-cloud/camunda-platform --set zeebe.prometheusServiceMonitor.enabled=true
 ```
 
 ## Uninstalling Charts
@@ -82,7 +82,7 @@ Or delete the related kubernetes namespace, which contains the resources.
 
 ## Deprecation of zeebe charts
 
-With the creation of the Camunda Cloud Self Managed (CCSM) helm charts, the old zeebe-* charts have been deprecated.
+With the creation of the Camunda Platform Helm charts (previously known as ccsm-helm), the old zeebe-* charts have been deprecated.
 This means they are no longer part of the repository and no longer maintained. The packaged charts are still available
 for download.
 
@@ -93,8 +93,8 @@ The following charts are deprecated:
  * zeebe-operate-helm
  * zeebe-tasklist-helm
 
-The new `ccsm-helm` chart is a full replacement of `zeebe-full-helm` and replaces (contains) all other charts as sub-charts.
-All sub-charts in `ccsm-helm` are per default enabled.
+The new `camunda-platform` chart is a full replacement of `zeebe-full-helm` and replaces (contains) all other charts as sub-charts.
+All sub-charts in `camunda-platform` are per default enabled.
 
 For a complete migration guide see [here](https://github.com/camunda/camunda-platform-helm/blob/main/MIGRATION.md).
 
@@ -104,7 +104,7 @@ Please create [new issues](https://github.com/camunda-community-hub/camunda-plat
 
 ## Contributing
 
-Please familiar yourself with the [contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [CCSM-Helm Readme](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md) to find more information about configuring and developing the charts.
+Please familiar yourself with the [contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [Camunda Platform Helm Charts Readme](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md) to find more information about configuring and developing the charts.
 
 ## Releasing the Charts
 
