@@ -1,8 +1,8 @@
 # Makefile for managing the helm charts
 
 chartPath=charts/camunda-platform
-oldChartPath=charts/ccsm-helm
-releaseName=ccsm-helm-test
+oldChartPath=charts/camunda-platform
+releaseName=camunda-platform-test
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: test
@@ -27,12 +27,12 @@ fmt:
 # addlicense: add license headers to go files
 .PHONY: addlicense
 addlicense:
-	addlicense -c 'Camunda Services GmbH' -l apache charts/ccsm-helm/test/**/*.go
+	addlicense -c 'Camunda Services GmbH' -l apache charts/camunda-platform/test/**/*.go
 
 # checkLicense: checks that the go files contain license header
 .PHONY: checkLicense
 checkLicense:
-	addlicense -check -l apache charts/ccsm-helm/test/**/*.go
+	addlicense -check -l apache charts/camunda-platform/test/**/*.go
 
 # installLicense: installs the addlicense tool
 .PHONY: installLicense

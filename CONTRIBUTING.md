@@ -86,8 +86,8 @@ We separate our tests in two parts, with different targets and goals.
 
 **For new contributions it is expected to write new unit tests, but no integration tests.** We keep the count of integration tests to a minimum, and the knowledge for writing them is not expected for contributors.
 
-Tests can be found in the `charts/ccsm-helm` directory under `test/`. For each sub-chart we have a sub-directory 
-in the `test/` directory. For example [test/zeebe](charts/ccsm-helm/test/zeebe).
+Tests can be found in the `charts/camunda-platform` directory under `test/`. For each sub-chart we have a sub-directory 
+in the `test/` directory. For example [test/zeebe](charts/camunda-platform/test/zeebe).
 
 In order to run the tests, execute `make test` on the root repository level.
 
@@ -97,9 +97,9 @@ As mentioned earlier we expect unit tests on new contributions. The unit tests (
 
 ##### Golden Files
 
-We write new golden file tests, for default values, where we can compare a complete manifest with his properties. Most of the golden file tests are part of the `goldenfiles_test.go` in the corresponding sub-chart testing directory. For an example see [here](charts/ccsm-helm/test/zeebe/goldenfiles_test.go).
+We write new golden file tests, for default values, where we can compare a complete manifest with his properties. Most of the golden file tests are part of the `goldenfiles_test.go` in the corresponding sub-chart testing directory. For an example see [here](charts/camunda-platform/test/zeebe/goldenfiles_test.go).
 
-If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the prometheus [servicemonitor](charts/ccsm-helm/templates/service-monitor.yaml) can be enabled by a toggle. This means we write a golden file test in `servicemonitor_test.go`, see [here](charts/ccsm-helm/test/servicemonitor_test.go).
+If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the prometheus [servicemonitor](charts/camunda-platform/templates/service-monitor.yaml) can be enabled by a toggle. This means we write a golden file test in `servicemonitor_test.go`, see [here](charts/camunda-platform/test/servicemonitor_test.go).
 
 In order to generate the golden files run `make golden` on the root level of the repository. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should also be named related to the manifest.
 
@@ -107,7 +107,7 @@ In order to generate the golden files run `make golden` on the root level of the
 
 For things which are not per default enabled or set we write a property test.
 
-Here we directly set the specific property/variable and verify that the helm chart can be rendered and the property is set correctly on the object. These kind of tests should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, for the zeebe statefulset manifest we have the test `statefulset_test.go` under the `zeebe` sub-dir, see [here](charts/ccsm-helm/test/zeebe/statefulset_test.go).
+Here we directly set the specific property/variable and verify that the helm chart can be rendered and the property is set correctly on the object. These kind of tests should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, for the zeebe statefulset manifest we have the test `statefulset_test.go` under the `zeebe` sub-dir, see [here](charts/camunda-platform/test/zeebe/statefulset_test.go).
 
 It is always helpful to check already existing tests to get a better understanding in how to write new tests, so do not hesitant to read and copy them.
 
@@ -139,7 +139,7 @@ _Conjunction:_
   * [configuration] for section/group of variables
 
 
-All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/convertValuesDoc.sh).
+All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/convertValuesDoc.sh).
 
 ## Resources
 
