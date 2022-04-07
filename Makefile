@@ -1,7 +1,6 @@
 # Makefile for managing the helm charts
 
 chartPath=charts/camunda-platform
-oldChartPath=charts/camunda-platform
 releaseName=camunda-platform-test
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
@@ -42,32 +41,30 @@ installLicense:
 #########################################################
 ######### HELM
 #########################################################
-# deps: updates and downloads the dependencies for the ccsm helm chart
+# deps: updates and downloads the dependencies for the helm chart
 .PHONY: deps
 deps:
-	helm dependency update $(oldChartPath)
-	helm dependency update $(oldChartPath)/charts/identity
 	helm dependency update $(chartPath)
 	helm dependency update $(chartPath)/charts/identity
 
-# install: install the local ccsm-chart into the current kubernetes cluster/namespace
+# install: install the local chart into the current kubernetes cluster/namespace
 .PHONY: install
 install:	deps
 	helm install $(releaseName) $(chartPath)
 
-# uninstall: uninstalls the ccsm-chart and removes all related pvc's
+# uninstall: uninstalls the chart and removes all related pvc's
 .PHONY: uninstall
 uninstall:
 	-helm uninstall $(releaseName)
 	-kubectl delete pvc -l app.kubernetes.io/instance=$(releaseName)
 	-kubectl delete pvc -l app=elasticsearch-master
 
-# dry-run: runs an install dry-run with the local ccsm-chart
+# dry-run: runs an install dry-run with the local chart
 .PHONY: dry-run
 dry-run:	deps
 	helm install $(releaseName) $(chartPath) --dry-run
 
-# template: show all rendered templates for the local ccsm-chart
+# template: show all rendered templates for the local chart
 .PHONY: template
 template:	deps
 	helm template $(releaseName) $(chartPath)
