@@ -3,6 +3,53 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - update notes file
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.4
+    created: "2022-04-07T14:10:51.579539701Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 0.0.29
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 0.0.29
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 0.0.29
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 0.0.29
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 0.0.29
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.16.3
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: c53c893ad34a949a6c281b4dde2b253852973595f019b2fdf1807a47d676f802
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-0.0.29/camunda-platform-0.0.29.tgz
+    version: 0.0.29
+  - annotations:
+      artifacthub.io/changes: |
         - add missing dependencies
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -3214,4 +3261,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-04-07T12:32:45.726326409Z"
+generated: "2022-04-07T14:10:51.580381749Z"
