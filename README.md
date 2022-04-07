@@ -40,6 +40,7 @@ Per default the following will be installed:
   - [Zeebe Gateway](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#zeebe-gateway)
   - [Operate](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#operate)
   - [Tasklist](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#tasklist)
+  - [Identity](https://github.com/camunda/camunda-platform-helm/blob/main/charts/ccsm-helm/README.md#identity)
   - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
 
 Follow [the instructions in the Camunda Cloud documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Cloud to a K8s cluster.
