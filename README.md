@@ -1,6 +1,6 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)[![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda-platform-helm)](https://artifacthub.io/packages/search?repo=camunda-platform-helm)
 
-- [Camunda Cloud Helm](#camunda-platform-helm)
+- [Camunda Platform Helm](#camunda-platform-helm)
   * [Installing Charts](#installing-charts)
   * [Configure Charts](#configure-charts)
   * [Uninstalling Charts](#uninstalling-charts)
@@ -10,14 +10,14 @@
   * [Releasing the Charts](#releasing-the-charts)
 
 
-# Camunda Cloud Helm
+# Camunda Platform Helm
  
-The Camunda Cloud Helm repo, contains and host Camunda Cloud related helm charts.
+The Camunda Platform Helm repo, contains and host Camunda Platform related helm charts.
 
 The charts can be accessed by adding the following Helm repo to your Helm setup:
 
 ```sh
-helm repo add camunda-cloud https://helm.camunda.io
+helm repo add camunda https://helm.camunda.io
 helm repo update
 ```
 
@@ -30,7 +30,7 @@ The charts are represented in the following image:
 You can install the Helm Charts by running:
 
 ```sh
-helm install <YOUR HELM RELEASE NAME> camunda-cloud/camunda-platform
+helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform
 ```
 
 Per default the following will be installed:
@@ -43,7 +43,7 @@ Per default the following will be installed:
   - [Identity](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#identity)
   - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
 
-Follow [the instructions in the Camunda Cloud documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Cloud to a K8s cluster.
+Follow [the instructions in the Camunda Platform documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Platform to a K8s cluster.
 
 > ***Note**: check the [kind/kind-values](https://github.com/camunda/camunda-platform-helm/blob/main/kind/kind-values.yaml) file to get camunda-platform running with kind*
 
@@ -55,7 +55,7 @@ Helm charts can be configured via using extra values files or directly via the `
 Example to enable the prometheus servicemonitor for Zeebe:
 
 ```sh
-helm install <YOUR HELM RELEASE NAME> camunda-cloud/camunda-platform --set zeebe.prometheusServiceMonitor.enabled=true
+helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform --set zeebe.prometheusServiceMonitor.enabled=true
 ```
 
 ## Uninstalling Charts
