@@ -60,7 +60,7 @@ func TestIntegration(t *testing.T) {
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
 
-	namespace := createNamespaceName()
+	namespace := "camunda-platform-helm-test" // createNamespaceName()
 	kubeOptions := k8s.NewKubectlOptions("gke_zeebe-io_europe-west1-b_zeebe-cluster", "", namespace)
 
 	suite.Run(t, &integrationTest{
@@ -254,7 +254,7 @@ func (s *integrationTest) assertLoginToIdentity() (string, error) {
 		Timeout: 30 * time.Second,
 	}
 
-	sessionUrl, err := s.resolveSessionLoginUrl(err, identityEndpoint, httpClient)
+	sessionUrl, err := s.resolveSessionLoginUrl(err, "http://"+identityEndpoint+"/auth/login", httpClient)
 	if err != nil {
 		return "", err
 	}
@@ -302,12 +302,12 @@ func (s *integrationTest) assertLoginToIdentity() (string, error) {
 	return jwtToken, nil
 }
 
-func (s *integrationTest) resolveSessionLoginUrl(err error, endpoint string, httpClient http.Client) (string, error) {
+func (s *integrationTest) resolveSessionLoginUrl(err error, loginUrl string, httpClient http.Client) (string, error) {
 	// Send request to /auth/login, and follow redirect to keycloak to retrieve the login page.
 	// We need to read the returned login page to get the correct URL with session code, only with this session code
 	// we are able to log in correctly to keycloak / identity. Additionally, this kind of mimics the user interaction.
 
-	request, err := http.NewRequest("GET", "http://"+endpoint+"/auth/login", nil)
+	request, err := http.NewRequest("GET", loginUrl, nil)
 	if err != nil {
 		return "", err
 	}
@@ -353,59 +353,94 @@ func (s *integrationTest) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (stri
 }
 
 func (s *integrationTest) queryProcessDefinitionsFromOperate(jwtToken string) (*bytes.Buffer, error) {
-	operateServiceName := fmt.Sprintf("%s-operate", s.release)
-	endpoint, closeFn := s.createPortForwardedHttpClientWithPort(operateServiceName, 8080)
-	defer closeFn()
 
-	// create keycloak port-forward in order to validate jwt
+	// in order to login to identity we need to port-forward to identity AND keycloak
+	// identity needs to redirect (forward) requests to keycloak to enable the login
+
+	// create keycloak port-forward
 	keycloakServiceName := s.resolveKeycloakServiceName()
 	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
 	defer closeKeycloakPortForward()
 
+	// create operate port-forward
+	operateServiceName := fmt.Sprintf("%s-operate", s.release)
+	operateEndpoint, closeFn := s.createPortForwardedHttpClientWithPort(operateServiceName, 8080)
+	defer closeFn()
+
+	// setup http client with cookie jar - necessary to store tokens
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return nil, err
 	}
-
 	httpClient := http.Client{
 		Jar:     jar,
 		Timeout: 30 * time.Second,
 	}
 
-	url := "http://"+endpoint+"/v1/process-definitions/list"
-	s.T().Logf("Sent POST Request to '%s', with JWT token '%s'.", url, jwtToken)
-	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
-	postRequest, err := http.NewRequest("POST", url, bytes.NewBufferString("{}"))
+	sessionUrl, err := s.resolveSessionLoginUrl(err, "http://"+operateEndpoint+"/api/login", httpClient)
 	if err != nil {
 		return nil, err
 	}
-	postRequest.Header.Set("Authentication", "Bearer "+jwtToken)
+	s.T().Logf("Send log in request to %s", sessionUrl)
 
-	response, err := httpClient.Do(postRequest)
+	// log in as demo:demo
+	values := url.Values{
+		"username": {"demo"},
+		"password": {"demo"},
+	}
+	loginResponse, err := httpClient.PostForm(sessionUrl, values)
 	if err != nil {
 		return nil, err
 	}
-	s.Require().Equal(200, response.StatusCode)
+	if loginResponse.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("On log in expected an 200 status code, but got %d", loginResponse.StatusCode))
+	}
+	s.T().Logf("Log in to operate sucessful!")
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	s.sendRequest(httpClient, "http://localhost:8080/v3/api-docs/v1")
+
+	return s.queryApi(httpClient, "http://" + operateEndpoint + "/v1/process-definitions/search", bytes.NewBufferString("{}"))
+}
+
+func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
+	s.T().Logf("Send POST request to '%s', with application/json data: '%s'", url, jsonData.String())
+	response, err := httpClient.Post(url, "application/json", jsonData)
+	if err != nil {
+		return nil, err
+	}
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(response.Body)
 	defer response.Body.Close()
+
+	s.T().Logf("Got response: [statusCode: '%d', data:'%s']", response.StatusCode, buf.String())
+	s.Require().Equal(200, response.StatusCode)
+
 	if err != nil {
 		return nil, err
 	}
 	return buf, nil
 }
 
-func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
-	response, err := httpClient.Post(url, "application/json", jsonData)
+
+func (s *integrationTest) sendRequest(httpClient http.Client, url string) (*bytes.Buffer, error) {
+	s.T().Logf("Send GET request to '%s'", url)
+	response, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	s.Require().Equal(200, response.StatusCode)
-
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(response.Body)
 	defer response.Body.Close()
+
+	s.T().Logf("Got response: [statusCode: '%d', data:'%s']", response.StatusCode, buf.String())
+	s.Require().Equal(200, response.StatusCode)
+
 	if err != nil {
 		return nil, err
 	}
