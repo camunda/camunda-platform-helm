@@ -20,8 +20,9 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
         env:
+          {{- if .Values.global.operate.auth.identity.enabled }}
           - name: SPRING_PROFILES_ACTIVE
-            value: {{ default "identity-auth" .Values.springProfilesActive | quote }}
+            value: "identity-auth"
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
@@ -52,6 +53,10 @@ spec:
             {{- end }}
           - name: CAMUNDA_OPERATE_IDENTITY_AUDIENCE
             value: "operate-api"
+          {{- else }}
+          - name: SPRING_PROFILES_ACTIVE
+            value: "auth"
+          {{- end }}
         {{- if .Values.env}}
         {{ .Values.env | toYaml | nindent 10 }}
         {{- end }}
