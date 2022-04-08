@@ -52,3 +52,11 @@ Defines match labels for identity, which are extended by sub-charts and should b
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+[identity] Create the name of the operate-identity secret
+*/}}
+{{- define "identity.secretNameOperateIdentity" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-operate-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
+{{- end }}

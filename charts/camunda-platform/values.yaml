@@ -59,6 +59,19 @@ global:
   # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
 
+  # Operate configuration to configure operate on global level
+  operate:
+    # Operate.auth configuration, to configure operates authentication setup
+    auth:
+      # Operate.auth.identity configuration, to configure operate with Identity authentication
+      identity:
+        # Operate.auth.identity.enabled if true, enables the Identity authentication otherwise basic-auth will be used.
+        enabled: true
+        # Operate.auth.identity.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # Secret should contain an operate-secret field
+        existingSecret:
+        initRootUrl: "http://localhost:8080"
+
 # Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
   # Enabled if true, all zeebe related resources are deployed via the helm release
