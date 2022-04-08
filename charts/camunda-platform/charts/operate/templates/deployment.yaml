@@ -19,8 +19,20 @@ spec:
         {{- else }}
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
-        {{- if .Values.env}}
         env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: {{ default "identity-auth" .Values.springProfilesActive | quote }}
+          - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
+            value: "http://localhost:18080/auth/realms/camunda-platform"
+          - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
+            value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform"
+          - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
+            value: "operate"
+          - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET
+            value: "the-cake-is-alive"
+          - name: CAMUNDA_OPERATE_IDENTITY_AUDIENCE
+            value: "operate-api"
+        {{- if .Values.env}}
         {{ .Values.env | toYaml | nindent 10 }}
         {{- end }}
         {{- if .Values.command}}

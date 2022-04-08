@@ -26,6 +26,12 @@ spec:
             value: "demo"
           - name: KEYCLOAK_USERS_0_ROLES_0
             value: "Identity"
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: "Operate"
+          - name: KEYCLOAK_INIT_OPERATE_SECRET
+            value: "the-cake-is-alive" # should be generated
+          - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
+            value: "http://localhost:8080"
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
