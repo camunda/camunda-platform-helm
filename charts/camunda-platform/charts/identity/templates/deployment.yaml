@@ -56,7 +56,7 @@ spec:
 
           {{- end }}
           - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
-            value: "http://localhost:8080"
+            value: {{ .Values.global.operate.auth.identity.initRootUrl | quote }}
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
