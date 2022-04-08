@@ -29,7 +29,27 @@ spec:
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
             value: "operate"
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET
-            value: "the-cake-is-alive"
+            {{- if .Values.global.operate.auth.identity.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.operate.auth.identity.existingSecret "context" $) }}
+                key: operate-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "identity.secretNameOperateIdentity" . }}
+                key: operate-secret
+            {{- end }}
           - name: CAMUNDA_OPERATE_IDENTITY_AUDIENCE
             value: "operate-api"
         {{- if .Values.env}}
