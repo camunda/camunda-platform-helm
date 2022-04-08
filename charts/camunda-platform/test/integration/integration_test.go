@@ -99,18 +99,18 @@ func (s *integrationTest) TestServicesEnd2End() {
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
-	s.tryTologinToIdentity()
-	s.assertProcessDefinitionFromOperate()
+	JWTToken := s.tryTologinToIdentity()
+	s.assertProcessDefinitionFromOperate(JWTToken)
 	s.assertTasksFromTasklist()
 }
 
-func (s *integrationTest) assertProcessDefinitionFromOperate() {
+func (s *integrationTest) assertProcessDefinitionFromOperate(jwtToken string) {
 	message := retry.DoWithRetry(s.T(),
 		"Try to query and assert process definition from operate",
 		10,
 		10*time.Second,
 		func() (string, error) {
-			responseBuf, err := s.queryProcessDefinitionsFromOperate()
+			responseBuf, err := s.queryProcessDefinitionsFromOperate(jwtToken)
 			if err != nil {
 				return "", err
 			}
@@ -215,22 +215,22 @@ func (s *integrationTest) resolveKeycloakServiceName() string {
 	return keycloakServiceName
 }
 
-func (s *integrationTest) tryTologinToIdentity() {
-	message := retry.DoWithRetry(s.T(),
+func (s *integrationTest) tryTologinToIdentity() string {
+	return retry.DoWithRetry(s.T(),
 		"Try to log in to Identity and verify returned JWT token",
 		10,
 		10*time.Second,
 		func() (string, error) {
-			err := s.assertLoginToIdentity()
+			jwt, err := s.assertLoginToIdentity()
 			if err != nil {
 				return "", err
 			}
-			return "Log in to Identity was successful, and JWT Token is valid.", nil
+			s.T().Logf("Log in to Identity was successful, and JWT Token is valid.")
+			return jwt, nil
 		})
-	s.T().Logf(message)
 }
 
-func (s *integrationTest) assertLoginToIdentity() error {
+func (s *integrationTest) assertLoginToIdentity() (string, error) {
 	// in order to login to identity we need to port-forward to identity AND keycloak
 	// identity needs to redirect (forward) requests to keycloak to enable the login
 
@@ -247,7 +247,7 @@ func (s *integrationTest) assertLoginToIdentity() error {
 	// setup http client with cookie jar - necessary to store tokens
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	httpClient := http.Client{
 		Jar:     jar,
@@ -256,7 +256,7 @@ func (s *integrationTest) assertLoginToIdentity() error {
 
 	sessionUrl, err := s.resolveSessionLoginUrl(err, identityEndpoint, httpClient)
 	if err != nil {
-		return err
+		return "", err
 	}
 	s.T().Logf("Send log in request to %s", sessionUrl)
 
@@ -267,10 +267,10 @@ func (s *integrationTest) assertLoginToIdentity() error {
 	}
 	loginResponse, err := httpClient.PostForm(sessionUrl, values)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if loginResponse.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("On log in expected an 200 status code, but got %d", loginResponse.StatusCode))
+		return "", errors.New(fmt.Sprintf("On log in expected an 200 status code, but got %d", loginResponse.StatusCode))
 	}
 	s.T().Logf("Log in to identity sucessful! Trying JWT token now.")
 
@@ -279,27 +279,27 @@ func (s *integrationTest) assertLoginToIdentity() error {
 	// the cookie value (JWT token) as authentication header.
 	jwtToken, err := s.extractJWTTokenFromCookieJar(jar)
 	if err != nil {
-		return err
+		return "", err
 	}
 	s.T().Logf("Extracted following JWT token from cookie jar '%s'.", jwtToken)
 
 	verificationUrl := "http://" + identityEndpoint + "/api/clients"
 	getRequest, err := http.NewRequest("GET", verificationUrl, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	getRequest.Header.Set("Authentication", "Bearer "+jwtToken)
 
 	// verify the token with the get request
 	getResponse, err := httpClient.Do(getRequest)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if getResponse.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("On validating JWT token expected an 200 status code, but got %d", getResponse.StatusCode))
+		return "", errors.New(fmt.Sprintf("On validating JWT token expected an 200 status code, but got %d", getResponse.StatusCode))
 	}
-	return nil
+	return jwtToken, nil
 }
 
 func (s *integrationTest) resolveSessionLoginUrl(err error, endpoint string, httpClient http.Client) (string, error) {
@@ -352,10 +352,15 @@ func (s *integrationTest) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (stri
 	return "", errors.New("no JWT token found in cookie jar")
 }
 
-func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, error) {
+func (s *integrationTest) queryProcessDefinitionsFromOperate(jwtToken string) (*bytes.Buffer, error) {
 	operateServiceName := fmt.Sprintf("%s-operate", s.release)
-	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
+	endpoint, closeFn := s.createPortForwardedHttpClientWithPort(operateServiceName, 8080)
 	defer closeFn()
+
+	// create keycloak port-forward in order to validate jwt
+	keycloakServiceName := s.resolveKeycloakServiceName()
+	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
+	defer closeKeycloakPortForward()
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -367,13 +372,28 @@ func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, e
 		Timeout: 30 * time.Second,
 	}
 
-	err = s.loginOnService(endpoint, httpClient)
+	url := "http://"+endpoint+"/v1/process-definitions/list"
+	s.T().Logf("Sent POST Request to '%s', with JWT token '%s'.", url, jwtToken)
+	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
+	postRequest, err := http.NewRequest("POST", url, bytes.NewBufferString("{}"))
 	if err != nil {
 		return nil, err
 	}
+	postRequest.Header.Set("Authentication", "Bearer "+jwtToken)
 
-	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
-	return s.queryApi(httpClient, "http://"+endpoint+"/v1/process-definitions/list", bytes.NewBufferString("{}"))
+	response, err := httpClient.Do(postRequest)
+	if err != nil {
+		return nil, err
+	}
+	s.Require().Equal(200, response.StatusCode)
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(response.Body)
+	defer response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
 func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
