@@ -389,3 +389,56 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecret() {
 			},
 		})
 }
+
+func (s *deploymentTemplateTest) TestContainerShouldDisableTasklistIntegration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.tasklist.auth.identity.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+
+	for _, envvar := range env {
+		s.Require().NotEqual("KEYCLOAK_INIT_TASKLIST_ROOT_URL", envvar.Name)
+		s.Require().NotEqual("KEYCLOAK_INIT_TASKLIST_SECRET", envvar.Name)
+	}
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldSetTasklistIdentitySecret() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.tasklist.auth.identity.existingSecret": "ownExistingSecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name: "KEYCLOAK_INIT_TASKLIST_SECRET",
+			ValueFrom: &v12.EnvVarSource{
+				SecretKeyRef: &v12.SecretKeySelector{
+					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+					Key:                  "tasklist-secret",
+				},
+			},
+		})
+}
