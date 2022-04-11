@@ -24,7 +24,7 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "identity-auth"
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
-            value: "http://localhost:18080/auth/realms/camunda-platform"
+            value: {{ .Values.global.operate.auth.identity.publicIssuerUrl | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
             value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform"
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
