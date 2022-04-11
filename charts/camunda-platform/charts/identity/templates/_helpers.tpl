@@ -60,3 +60,11 @@ Defines match labels for identity, which are extended by sub-charts and should b
 {{- $name := .Release.Name -}}
 {{- printf "%s-operate-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end }}
+
+{{/*
+[identity] Create the name of the tasklist-identity secret
+*/}}
+{{- define "identity.secretNameTasklistIdentity" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-tasklist-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
+{{- end }}

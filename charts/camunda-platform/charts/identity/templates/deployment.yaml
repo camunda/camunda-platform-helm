@@ -56,6 +56,30 @@ spec:
           - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
             value: {{ .Values.global.operate.auth.identity.operateRootUrl | quote }}
           {{- end }}
+
+          {{- if .Values.global.tasklist.auth.identity.enabled }}
+          - name: KEYCLOAK_USERS_0_ROLES_2
+            value: "Tasklist"
+          - name: KEYCLOAK_INIT_TASKLIST_SECRET
+            {{- if .Values.global.tasklist.auth.identity.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.tasklist.auth.identity.existingSecret "context" $) }}
+                key: tasklist-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameTasklistIdentity" . }}
+                key: tasklist-secret
+          {{- end }}
+          - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
+            value: {{ .Values.global.tasklist.auth.identity.tasklistRootUrl | quote }}
+          {{- end }}
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL

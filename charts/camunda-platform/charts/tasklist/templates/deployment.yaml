@@ -21,8 +21,38 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
         env:
+          {{- if .Values.global.tasklist.auth.identity.enabled }}
           - name: SPRING_PROFILES_ACTIVE
-            value: {{ default "auth" .Values.springProfilesActive | quote }}
+            value: "identity-auth"
+          - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL
+            value: {{ .Values.global.tasklist.auth.identity.publicIssuerUrl | quote }}
+          - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL
+            value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform"
+          - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID
+            value: "tasklist"
+          - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET
+            {{- if .Values.global.tasklist.auth.identity.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.operate.auth.identity.existingSecret "context" $) }}
+                key: tasklist-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameTasklistIdentity" . }}
+                key: tasklist-secret
+            {{- end }}
+          - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
+            value: "tasklist-api"
+          {{- else }}
+          - name: SPRING_PROFILES_ACTIVE
+            value: "auth"
+          {{- end }}
           - name: GRAPHQL_PLAYGROUND_ENABLED
             value: {{ default "true" .Values.graphqlPlaygroundEnabled | quote }}
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS

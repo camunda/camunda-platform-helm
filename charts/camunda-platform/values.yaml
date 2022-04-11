@@ -79,6 +79,26 @@ global:
         # Can be overwritten if, ingress is in use and an external IP is available.
         publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
 
+  # Tasklist configuration to configure Tasklist on global level
+  tasklist:
+    # Tasklist.auth configuration, to configure Tasklist authentication setup
+    auth:
+      # Tasklist.auth.identity configuration, to configure Tasklist with Identity authentication
+      identity:
+        # Tasklist.auth.identity.enabled if true, enables the Identity authentication otherwise basic-auth will be used.
+        enabled: true
+        # Tasklist.auth.identity.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # Secret should contain an tasklist-secret field
+        existingSecret:
+        # Tasklist.auth.identity.tasklistRootUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be public accessible, the default value works if port-forward to operate is created to 8080.
+        # Can be overwritten if, ingress is in use and an external IP is available.
+        tasklistRootUrl: "http://localhost:8080"
+        # Tasklist.auth.identity.publicIssuerUrl defines the token issuer (Keycloak) URL, where to request JWT tokens.
+        # Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
+        # Can be overwritten if, ingress is in use and an external IP is available.
+        publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+
 # Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
   # Enabled if true, all zeebe related resources are deployed via the helm release
