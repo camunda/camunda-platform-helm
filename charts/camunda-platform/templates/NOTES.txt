@@ -52,6 +52,14 @@ If you don't have an Ingress Controller you can use kubectl port-forward to acce
 
 > kubectl port-forward svc/{{ .Release.Name }}-operate 8080:80
 
+    {{- if .Values.global.operate.auth.identity.enabled }}
+
+Per default authentication via Identity/Keycloak is enabled. In order to login into Operate please port-forward to Keycloak
+as well, otherwise a login will not be possible. Make sure you use `18080` as port.
+
+> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
+    {{- end }}
+
 Now you can point your browser to `http://localhost:8080`
 
 Default user and password: "demo/demo"
@@ -78,10 +86,10 @@ Default user and password: "demo/demo"
 As part of Identity an ingress definition can be deployed, but you require to have an Ingress Contoller for that Ingress to be Exposed.
 In order to deploy the ingress manifest, set `identity.ingress.enabled` to `true`.
 
-If you don't have an ingress controller you can use kubectl port-forward to access identity from outside the cluster:
+If you don't have an ingress controller you can use kubectl port-forward to access Identity from outside the cluster:
 
 > kubectl port-forward svc/{{ .Release.Name }}-identity 8080:80
-> kubectl port-forward svc/{{ .Release.Name }}-keycl 18080:80
+> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
 
 Now you can point your browser to `http://localhost:8080`. Identity will forward requests to keycloak (listening under `18080`).
 
