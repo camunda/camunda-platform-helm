@@ -295,7 +295,7 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() 
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.operate.auth.identity.enabled":  "false",
+			"global.operate.auth.identity.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
