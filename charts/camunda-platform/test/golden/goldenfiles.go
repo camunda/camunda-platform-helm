@@ -17,7 +17,6 @@ package golden
 import (
 	"flag"
 	"io/ioutil"
-
 	"regexp"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
@@ -34,6 +33,7 @@ type TemplateGoldenTest struct {
 	Namespace      string
 	GoldenFileName string
 	Templates      []string
+	IgnoredLines   []string
 	SetValues      map[string]string
 }
 
@@ -43,8 +43,13 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		SetValues:      s.SetValues,
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates)
-	regex := regexp.MustCompile(`\s+helm.sh/chart:\s+.*`)
-	bytes := regex.ReplaceAll([]byte(output), []byte(""))
+
+	s.IgnoredLines = append(s.IgnoredLines, `\s+helm.sh/chart:\s+.*`)
+	bytes := []byte(output)
+	for _, ignoredLine := range s.IgnoredLines {
+		regex := regexp.MustCompile(ignoredLine)
+		bytes = regex.ReplaceAll(bytes, []byte(""))
+	}
 	output = string(bytes)
 
 	goldenFile := "golden/" + s.GoldenFileName + ".golden.yaml"

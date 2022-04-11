@@ -39,6 +39,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Release:        "camunda-platform-test",
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
+			IgnoredLines:   []string{`\s+operate-secret:\s+.*`}, // secrets are auto-generated and need to be ignored
 			Templates:      []string{"charts/identity/templates/" + name + ".yaml"},
 		})
 	}
