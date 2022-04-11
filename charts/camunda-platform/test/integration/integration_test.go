@@ -163,27 +163,32 @@ func (s *integrationTest) assertTasksFromTasklist() {
 
 
 func (s *integrationTest) queryTasksFromTasklist() (*bytes.Buffer, error) {
-	operateServiceName := fmt.Sprintf("%s-tasklist", s.release)
-	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
+
+	// In order to login to tasklist we need to port-forward to Keycloak.
+	// Tasklist will redirect (forward) requests to Keycloak to enable the login
+
+	// create keycloak port-forward
+	keycloakServiceName := s.resolveKeycloakServiceName()
+	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
+	defer closeKeycloakPortForward()
+
+	// create operate port-forward
+	tasklistServiceName := fmt.Sprintf("%s-tasklist", s.release)
+	tasklistEndpoint, closeFn := s.createPortForwardedHttpClientWithPort(tasklistServiceName, 8080)
 	defer closeFn()
 
-	jar, err := cookiejar.New(nil)
+	httpClient, _, err := s.createHttpClientWithJar()
 	if err != nil {
 		return nil, err
 	}
 
-	httpClient := http.Client{
-		Jar:     jar,
-		Timeout: 30 * time.Second,
-	}
-
-	err = s.loginOnService(endpoint, httpClient)
+	err = s.doSessionBasedLogin("http://"+tasklistEndpoint+"/api/login", httpClient)
 	if err != nil {
 		return nil, err
 	}
 
 	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/graphql" --cookie "ope-session"  -d '{"query": "{tasks(query:{}){name}}"}'
-	return s.queryApi(httpClient, "http://"+endpoint+"/graphql", bytes.NewBufferString(`{"query": "{tasks(query:{}){name}}"}`))
+	return s.queryApi(httpClient, "http://"+tasklistEndpoint+"/graphql", bytes.NewBufferString(`{"query": "{tasks(query:{}){name}}"}`))
 }
 
 func (s *integrationTest) createProcessInstance() {
