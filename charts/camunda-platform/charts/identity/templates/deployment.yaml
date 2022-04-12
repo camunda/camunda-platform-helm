@@ -21,9 +21,9 @@ spec:
         {{- end }}
         env:
           - name: KEYCLOAK_USERS_0_USERNAME
-            value: "demo"
+            value: {{ .Values.firstUser.username | quote }}
           - name: KEYCLOAK_USERS_0_PASSWORD
-            value: "demo"
+            value: {{ .Values.firstUser.password | quote }}
           - name: KEYCLOAK_USERS_0_ROLES_0
             value: "Identity"
 

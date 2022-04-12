@@ -514,6 +514,14 @@ identity:
   # Enabled if true, the identity deployment and its related resources are deployed via a helm release
   enabled: true
 
+  # FirstUser configuration to configure properties of the first Identity user, which can be used to access all
+  # web applications
+  firstUser:
+    # FirstUser.username defines the username of the first user, needed to log in into the web applications
+    username: demo
+    # FirstUser.name defines the password of the first user, needed to log in into the web applications
+    password: demo
+
   # Image configuration to configure the identity image specifics
   image:
     # Image.repository defines which image repository to use
