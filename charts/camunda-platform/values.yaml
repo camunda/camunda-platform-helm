@@ -519,7 +519,7 @@ identity:
   firstUser:
     # FirstUser.username defines the username of the first user, needed to log in into the web applications
     username: demo
-    # FirstUser.name defines the password of the first user, needed to log in into the web applications
+    # FirstUser.password defines the password of the first user, needed to log in into the web applications
     password: demo
 
   # Image configuration to configure the identity image specifics

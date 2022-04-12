@@ -257,6 +257,8 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 |-|-|-|-|
 | `identity`| |  Configuration for the identity sub chart. | |
 | | `enabled` |  If true, the identity deployment and its related resources are deployed via a helm release | `true` |
+| | `firstUser.username` | Defines the username of the first user, needed to log in into the web applications | `demo` |
+| | `firstUser.password` | Defines the password of the first user, needed to log in into the web applications | `demo` |
 | | `image` |  Configuration to configure the identity image specifics | |
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |
 | | `image.tag` |   Can be set to overwrite the global.image.tag | |
