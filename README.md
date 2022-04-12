@@ -41,6 +41,8 @@ Per default the following will be installed:
   - [Operate](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#operate)
   - [Tasklist](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#tasklist)
   - [Identity](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#identity)
+    - [Keycloak](https://github.com/bitnami/charts/tree/master/bitnami/keycloak)
+    - [PostgreSQL](https://github.com/bitnami/charts/tree/master/bitnami/postgresql)
   - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
 
 Follow [the instructions in the Camunda Platform documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Platform to a K8s cluster.
