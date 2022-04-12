@@ -77,9 +77,9 @@ global:
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the Identity-Operate communication.
         existingSecret:
         # Identity.auth.operate.redirectUrl defines the redirect URL, which is used by Keycloak to access Operate.
-        # Should be public accessible, the default value works if port-forward to Operate is created to 8080.
+        # Should be public accessible, the default value works if port-forward to Operate is created to 8081.
         # Can be overwritten if, ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8080"
+        redirectUrl: "http://localhost:8081"
 
       # Identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
       tasklist:
@@ -87,9 +87,9 @@ global:
         # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the Identity-Tasklist communication.
         existingSecret:
         # Tasklist.auth.identity.tasklistRootUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be public accessible, the default value works if port-forward to Tasklist is created to 8080.
+        # Should be public accessible, the default value works if port-forward to Tasklist is created to 8082.
         # Can be overwritten if, ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8080"
+        redirectUrl: "http://localhost:8082"
 
 # Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
