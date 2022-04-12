@@ -174,7 +174,7 @@ func (s *integrationTest) queryTasksFromTasklist() (*bytes.Buffer, error) {
 
 	// create operate port-forward
 	tasklistServiceName := fmt.Sprintf("%s-tasklist", s.release)
-	tasklistEndpoint, closeFn := s.createPortForwardedHttpClientWithPort(tasklistServiceName, 8080)
+	tasklistEndpoint, closeFn := s.createPortForwardedHttpClientWithPort(tasklistServiceName, 8082)
 	defer closeFn()
 
 	httpClient, _, err := s.createHttpClientWithJar()
@@ -386,7 +386,7 @@ func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, e
 
 	// create operate port-forward
 	operateServiceName := fmt.Sprintf("%s-operate", s.release)
-	operateEndpoint, closeFn := s.createPortForwardedHttpClientWithPort(operateServiceName, 8080)
+	operateEndpoint, closeFn := s.createPortForwardedHttpClientWithPort(operateServiceName, 8081)
 	defer closeFn()
 
 	httpClient, _, err := s.createHttpClientWithJar()
