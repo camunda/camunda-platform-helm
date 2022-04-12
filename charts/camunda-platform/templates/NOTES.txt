@@ -54,7 +54,7 @@ If you don't have an Ingress Controller you can use kubectl port-forward to acce
 
     {{- if .Values.global.operate.auth.identity.enabled }}
 
-Per default authentication via Identity/Keycloak is enabled. In order to login into Operate please port-forward to Keycloak
+Authentication via Identity/Keycloak is enabled. In order to login into Operate please port-forward to Keycloak
 as well, otherwise a login will not be possible. Make sure you use `18080` as port.
 
 > kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
