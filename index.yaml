@@ -11,6 +11,57 @@ entries:
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
     appVersion: 1.3.4
+    created: "2022-04-12T13:10:20.859891902Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.0.0
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.0.0
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.0.0
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.0.0
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.0.0
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: feb93be5cf87fd39e5b3a27248949bf8dab65654541b38949dcac0484c5871e5
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.0.0/camunda-platform-8.0.0.tgz
+    version: 8.0.0
+  - annotations:
+      artifacthub.io/changes: |
+        - Add Identity-operate integration
+        - Add Identity-Tasklist integration
+        - Make first user configurable
+        - Migrate to Camunda Platform 8.0.0
+        - Update elasticsearch to 7.17.1
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 1.3.4
     created: "2022-04-12T12:58:28.751515651Z"
     dependencies:
     - condition: zeebe.enabled
@@ -3312,4 +3363,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-04-12T12:58:28.752273461Z"
+generated: "2022-04-12T13:10:20.860335005Z"
