@@ -55,9 +55,7 @@ spec:
             {{- end }}
           - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
             value: {{ .Values.global.identity.auth.operate.redirectUrl | quote }}
-          {{- end }}
 
-          {{- if .Values.global.identity.auth.enabled }}
           - name: KEYCLOAK_USERS_0_ROLES_2
             value: "Tasklist"
           - name: KEYCLOAK_INIT_TASKLIST_SECRET
@@ -76,7 +74,7 @@ spec:
               secretKeyRef:
                 name: {{ include "identity.secretNameTasklistIdentity" . }}
                 key: tasklist-secret
-          {{- end }}
+            {{- end }}
           - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
             value: {{ .Values.global.identity.auth.tasklist.redirectUrl | quote }}
           {{- end }}
