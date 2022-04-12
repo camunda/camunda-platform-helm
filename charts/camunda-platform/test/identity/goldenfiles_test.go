@@ -31,7 +31,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
-	templateNames := []string{"service", "serviceaccount", "operate-secret", "deployment"}
+	templateNames := []string{"service", "serviceaccount", "operate-secret", "tasklist-secret", "deployment"}
 
 	for _, name := range templateNames {
 		suite.Run(t, &golden.TemplateGoldenTest{
@@ -39,7 +39,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Release:        "camunda-platform-test",
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
-			IgnoredLines:   []string{`\s+operate-secret:\s+.*`}, // secrets are auto-generated and need to be ignored
+			IgnoredLines:   []string{`\s+operate-secret:\s+.*`, `\s+tasklist-secret:\s+.*`}, // secrets are auto-generated and need to be ignored
 			Templates:      []string{"charts/identity/templates/" + name + ".yaml"},
 		})
 	}

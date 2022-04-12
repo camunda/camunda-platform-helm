@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	v12 "k8s.io/api/core/v1"
 )
 
 type deploymentTemplateTest struct {
@@ -169,4 +170,61 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	s.Require().Equal(len(containers), 1)
 	s.Require().Equal(1, len(containers[0].Command))
 	s.Require().Equal("printenv", containers[0].Command[0])
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+
+	for _, envvar := range env {
+		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET", envvar.Name)
+	}
+
+	s.Require().Contains(env, v12.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecret() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.tasklist.existingSecret": "ownExistingSecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name: "CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET",
+			ValueFrom: &v12.EnvVarSource{
+				SecretKeyRef: &v12.SecretKeySelector{
+					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+					Key:                  "tasklist-secret",
+				},
+			},
+		})
 }

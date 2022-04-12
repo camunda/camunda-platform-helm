@@ -29,10 +29,11 @@ import (
 
 type secretTest struct {
 	suite.Suite
-	chartPath string
-	release   string
-	namespace string
-	templates []string
+	chartPath  string
+	release    string
+	namespace  string
+	templates  []string
+	secretName []string
 }
 
 func TestSecretTemplate(t *testing.T) {
@@ -42,10 +43,11 @@ func TestSecretTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &secretTest{
-		chartPath: chartPath,
-		release:   "camunda-platform-test",
-		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/identity/templates/operate-secret.yaml"},
+		chartPath:  chartPath,
+		release:    "camunda-platform-test",
+		namespace:  "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates:  []string{"charts/identity/templates/operate-secret.yaml", "charts/identity/templates/tasklist-secret.yaml"},
+		secretName: []string{"operate-secret", "tasklist-secret"},
 	})
 }
 
@@ -56,12 +58,15 @@ func (s *secretTest) TestContainerGenerateSecret() {
 	}
 
 	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
+	s.Require().GreaterOrEqual(len(s.templates), 1)
+	for idx, template := range s.templates {
+		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
+		var secret coreV1.Secret
+		helm.UnmarshalK8SYaml(s.T(), output, &secret)
 
-	// then
-	s.Require().NotNil(secret.Data)
-	s.Require().NotNil(secret.Data["operate-secret"])
-	s.Require().NotEmpty(secret.Data["operate-secret"])
+		// then
+		s.Require().NotNil(secret.Data)
+		s.Require().NotNil(secret.Data[s.secretName[idx]])
+		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
+	}
 }

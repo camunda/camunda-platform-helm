@@ -59,25 +59,37 @@ global:
   # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
 
-  # Operate configuration to configure operate on global level
-  operate:
-    # Operate.auth configuration, to configure operates authentication setup
+  # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
+  identity:
+    # Identity.auth configuration, to configure Identity authentication setup
     auth:
-      # Operate.auth.identity configuration, to configure operate with Identity authentication
-      identity:
-        # Operate.auth.identity.enabled if true, enables the Identity authentication otherwise basic-auth will be used.
-        enabled: true
-        # Operate.auth.identity.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+      # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
+      enabled: true
+
+      # Identity.auth.publicIssuerUrl defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
+      # Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
+      # Can be overwritten if, ingress is in use and an external IP is available.
+      publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+
+      # Identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
+      operate:
+        # Identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the Identity-Operate communication.
         existingSecret:
-        # Operate.auth.identity.operateRootUrl defines the root (or redirect) URL, which is used by Keycloak to access Operate.
-        # Should be public accessible, the default value works if port-forward to operate is created to 8080.
+        # Identity.auth.operate.redirectUrl defines the redirect URL, which is used by Keycloak to access Operate.
+        # Should be public accessible, the default value works if port-forward to Operate is created to 8081.
         # Can be overwritten if, ingress is in use and an external IP is available.
-        operateRootUrl: "http://localhost:8080"
-        # Operate.auth.identity.publicIssuerUrl defines the token issuer (Keycloak) URL, where to request JWT tokens.
-        # Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
+        redirectUrl: "http://localhost:8081"
+
+      # Identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
+      tasklist:
+        # Identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the Identity-Tasklist communication.
+        existingSecret:
+        # Tasklist.auth.identity.tasklistRootUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be public accessible, the default value works if port-forward to Tasklist is created to 8082.
         # Can be overwritten if, ingress is in use and an external IP is available.
-        publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+        redirectUrl: "http://localhost:8082"
 
 # Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
