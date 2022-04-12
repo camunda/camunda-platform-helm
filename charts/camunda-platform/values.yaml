@@ -67,8 +67,8 @@ global:
       identity:
         # Operate.auth.identity.enabled if true, enables the Identity authentication otherwise basic-auth will be used.
         enabled: true
-        # Operate.auth.identity.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
-        # Secret should contain an operate-secret field
+        # Operate.auth.identity.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+        # The existing secret should contain an `operate-secret` field, which will be used as secret for the Identity-Operate communication.
         existingSecret:
         # Operate.auth.identity.operateRootUrl defines the root (or redirect) URL, which is used by Keycloak to access Operate.
         # Should be public accessible, the default value works if port-forward to operate is created to 8080.
