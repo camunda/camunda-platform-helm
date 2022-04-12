@@ -62,6 +62,10 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `zeebeClusterName` | Defines the cluster name for the Zeebe cluster. All pods get this prefix in their name. | `{{ .Release.Name }}-zeebe` |
 | | `zeebePort` | Defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers. | 26500 |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Zeebe Cluster | `true` |
+| | `operate.auth.identity.enabled` |  If true, enables the authentication on Operate with Identity, otherwise basic-auth will be used. | `true` |
+| | `operate.auth.identity.existingSecret` |  Can be used to reference an existing secret. If not set, a random secret is generated. The existing secret should contain an `operate-secret` field, which will be used as secret for the Identity-Operate communication. | `` |
+| | `operate.auth.identity.operateRootUrl` |  Defines the root (or redirect) URL, which is used by Keycloak to access Operate. Should be public accessible, the default value works if port-forward to operate is created to 8080. Can be overwritten if, ingress is in use and an external IP is available. | `"http://localhost:8080"` |
+| | `operate.auth.identity.publicIssuerUrl` | Defines the token issuer (Keycloak) URL, where to request JWT tokens. Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login. Can be overwritten if, ingress is in use and an external IP is available. | `"http://localhost:18080/auth/realms/camunda-platform"` |
 
 ### Camunda Platform
 

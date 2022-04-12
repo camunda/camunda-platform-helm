@@ -116,7 +116,6 @@ func (s *integrationTest) assertProcessDefinitionFromOperate() {
 			}
 
 			jsonString := responseBuf.String()
-			s.T().Logf("Request successful, got as response '%s'", jsonString)
 			var objectMap map[string]interface{}
 			err = json.Unmarshal(responseBuf.Bytes(), &objectMap)
 			if err != nil {
@@ -145,8 +144,6 @@ func (s *integrationTest) assertTasksFromTasklist() {
 				return "", err
 			}
 
-			jsonString := responseBuf.String()
-			s.T().Logf("Request successful, got as response '%s'", jsonString)
 			var objectMap map[string]interface{}
 			err = json.Unmarshal(responseBuf.Bytes(), &objectMap)
 			if err != nil {
@@ -216,7 +213,7 @@ func (s *integrationTest) resolveKeycloakServiceName() string {
 }
 
 func (s *integrationTest) tryTologinToIdentity() {
-	message := retry.DoWithRetry(s.T(),
+	retry.DoWithRetry(s.T(),
 		"Try to log in to Identity and verify returned JWT token",
 		10,
 		10*time.Second,
@@ -225,9 +222,9 @@ func (s *integrationTest) tryTologinToIdentity() {
 			if err != nil {
 				return "", err
 			}
-			return "Log in to Identity was successful, and JWT Token is valid.", nil
+			s.T().Logf("Log in to Identity was successful, and JWT Token is valid.")
+			return "", nil
 		})
-	s.T().Logf(message)
 }
 
 func (s *integrationTest) assertLoginToIdentity() error {
@@ -244,36 +241,20 @@ func (s *integrationTest) assertLoginToIdentity() error {
 	identityEndpoint, closeIdentityPortForward := s.createPortForwardedHttpClientWithPort(identityServiceName, 8080)
 	defer closeIdentityPortForward()
 
-	// setup http client with cookie jar - necessary to store tokens
-	jar, err := cookiejar.New(nil)
+	httpClient, jar, err := s.createHttpClientWithJar()
 	if err != nil {
 		return err
 	}
-	httpClient := http.Client{
-		Jar:     jar,
-		Timeout: 30 * time.Second,
-	}
 
-	sessionUrl, err := s.resolveSessionLoginUrl(err, identityEndpoint, httpClient)
+	err = s.doSessionBasedLogin("http://"+identityEndpoint+"/auth/login", httpClient)
 	if err != nil {
 		return err
 	}
-	s.T().Logf("Send log in request to %s", sessionUrl)
 
-	// log in as demo:demo
-	values := url.Values{
-		"username": {"demo"},
-		"password": {"demo"},
-	}
-	loginResponse, err := httpClient.PostForm(sessionUrl, values)
-	if err != nil {
-		return err
-	}
-	if loginResponse.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("On log in expected an 200 status code, but got %d", loginResponse.StatusCode))
-	}
-	s.T().Logf("Log in to identity sucessful! Trying JWT token now.")
+	return s.doJWTBasedLogin(err, jar, identityEndpoint, httpClient)
+}
 
+func (s *integrationTest) doJWTBasedLogin(err error, jar *cookiejar.Jar, identityEndpoint string, httpClient http.Client) error {
 	// The previous log in request caused to store a token in our cookie jar.
 	// In order to verify whether this token is valid and works with identity we have to extract the token and set
 	// the cookie value (JWT token) as authentication header.
@@ -302,12 +283,48 @@ func (s *integrationTest) assertLoginToIdentity() error {
 	return nil
 }
 
-func (s *integrationTest) resolveSessionLoginUrl(err error, endpoint string, httpClient http.Client) (string, error) {
+func (s *integrationTest) doSessionBasedLogin(loginUrl string, httpClient http.Client) error {
+	sessionUrl, err := s.resolveSessionLoginUrl(loginUrl, httpClient)
+	if err != nil {
+		return err
+	}
+	s.T().Logf("Send log in request to %s", sessionUrl)
+
+	// log in as demo:demo
+	values := url.Values{
+		"username": {"demo"},
+		"password": {"demo"},
+	}
+	loginResponse, err := httpClient.PostForm(sessionUrl, values)
+	if err != nil {
+		return err
+	}
+	if loginResponse.StatusCode != 200 {
+		return errors.New(fmt.Sprintf("On log in expected an 200 status code, but got %d", loginResponse.StatusCode))
+	}
+	s.T().Logf("Log in at '%s' sucessful!", loginUrl)
+	return nil
+}
+
+func (s *integrationTest) createHttpClientWithJar() (http.Client, *cookiejar.Jar, error) {
+	// setup http client with cookie jar - necessary to store tokens
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return http.Client{}, nil, err
+	}
+	httpClient := http.Client{
+		Jar:     jar,
+		Timeout: 30 * time.Second,
+	}
+	return httpClient, jar, nil
+}
+
+func (s *integrationTest) resolveSessionLoginUrl(loginUrl string, httpClient http.Client) (string, error) {
 	// Send request to /auth/login, and follow redirect to keycloak to retrieve the login page.
 	// We need to read the returned login page to get the correct URL with session code, only with this session code
 	// we are able to log in correctly to keycloak / identity. Additionally, this kind of mimics the user interaction.
 
-	request, err := http.NewRequest("GET", "http://"+endpoint+"/auth/login", nil)
+	request, err := http.NewRequest("GET", loginUrl, nil)
 	if err != nil {
 		return "", err
 	}
@@ -353,39 +370,66 @@ func (s *integrationTest) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (stri
 }
 
 func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, error) {
+
+	// in order to login to identity we need to port-forward to keycloak
+	// Operate will redirect (forward) requests to keycloak to enable the login
+
+	// create keycloak port-forward
+	keycloakServiceName := s.resolveKeycloakServiceName()
+	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
+	defer closeKeycloakPortForward()
+
+	// create operate port-forward
 	operateServiceName := fmt.Sprintf("%s-operate", s.release)
-	endpoint, closeFn := s.createPortForwardedHttpClient(operateServiceName)
+	operateEndpoint, closeFn := s.createPortForwardedHttpClientWithPort(operateServiceName, 8080)
 	defer closeFn()
 
-	jar, err := cookiejar.New(nil)
+	httpClient, _, err := s.createHttpClientWithJar()
 	if err != nil {
 		return nil, err
 	}
 
-	httpClient := http.Client{
-		Jar:     jar,
-		Timeout: 30 * time.Second,
-	}
-
-	err = s.loginOnService(endpoint, httpClient)
+	err = s.doSessionBasedLogin("http://"+operateEndpoint+"/api/login", httpClient)
 	if err != nil {
 		return nil, err
 	}
 
-	// curl -i -H "Content-Type: application/json" -XPOST "http://localhost:8080/v1/process-definitions/list" --cookie "ope-session" -d "{}"
-	return s.queryApi(httpClient, "http://"+endpoint+"/v1/process-definitions/list", bytes.NewBufferString("{}"))
+	return s.queryApi(httpClient, "http://" + operateEndpoint + "/v1/process-definitions/search", bytes.NewBufferString("{}"))
 }
 
 func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
+	s.T().Logf("Send POST request to '%s', with application/json data: '%s'", url, jsonData.String())
 	response, err := httpClient.Post(url, "application/json", jsonData)
 	if err != nil {
 		return nil, err
 	}
-	s.Require().Equal(200, response.StatusCode)
-
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(response.Body)
 	defer response.Body.Close()
+
+	s.T().Logf("Got response: [statusCode: '%d', data:'%s']", response.StatusCode, buf.String())
+	s.Require().Equal(200, response.StatusCode)
+
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
+
+func (s *integrationTest) sendRequest(httpClient http.Client, url string) (*bytes.Buffer, error) {
+	s.T().Logf("Send GET request to '%s'", url)
+	response, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(response.Body)
+	defer response.Body.Close()
+
+	s.T().Logf("Got response: [statusCode: '%d', data:'%s']", response.StatusCode, buf.String())
+	s.Require().Equal(200, response.StatusCode)
+
 	if err != nil {
 		return nil, err
 	}

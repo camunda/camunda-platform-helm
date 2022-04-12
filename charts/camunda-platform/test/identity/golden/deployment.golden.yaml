@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "SNAPSHOT"
+    app.kubernetes.io/version: "8.0.0-rc1"
     app.kubernetes.io/component: identity
   annotations:
     {}
@@ -32,12 +32,12 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "SNAPSHOT"
+        app.kubernetes.io/version: "8.0.0-rc1"
         app.kubernetes.io/component: identity
     spec:
       containers:
       - name: identity
-        image: "camunda/identity:SNAPSHOT"
+        image: "camunda/identity:8.0.0-rc1"
         env:
           - name: KEYCLOAK_USERS_0_USERNAME
             value: "demo"
@@ -45,6 +45,15 @@ spec:
             value: "demo"
           - name: KEYCLOAK_USERS_0_ROLES_0
             value: "Identity"
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: "Operate"
+          - name: KEYCLOAK_INIT_OPERATE_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-operate-identity-secret"
+                key: operate-secret
+          - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
+            value: "http://localhost:8080"
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
