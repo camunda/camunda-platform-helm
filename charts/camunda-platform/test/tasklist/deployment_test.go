@@ -176,7 +176,7 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() 
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.tasklist.auth.identity.enabled": "false",
+			"global.identity.auth.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -204,7 +204,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.tasklist.auth.identity.existingSecret": "ownExistingSecret",
+			"global.identity.auth.tasklist.existingSecret": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},

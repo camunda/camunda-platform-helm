@@ -21,17 +21,17 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
         env:
-          {{- if .Values.global.tasklist.auth.identity.enabled }}
+          {{- if .Values.global.identity.auth.enabled }}
           - name: SPRING_PROFILES_ACTIVE
             value: "identity-auth"
           - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL
-            value: {{ .Values.global.tasklist.auth.identity.publicIssuerUrl | quote }}
+            value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
           - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL
             value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform"
           - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID
             value: "tasklist"
           - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET
-            {{- if .Values.global.tasklist.auth.identity.existingSecret }}
+            {{- if .Values.global.identity.auth.tasklist.existingSecret }}
             valueFrom:
               secretKeyRef:
                 {{- /*
@@ -39,7 +39,7 @@ spec:
                     Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
                     and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                 */}}
-                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.tasklist.auth.identity.existingSecret "context" $) }}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}
                 key: tasklist-secret
             {{- else }}
             valueFrom:

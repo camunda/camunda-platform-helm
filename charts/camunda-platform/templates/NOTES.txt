@@ -52,7 +52,7 @@ If you don't have an Ingress Controller you can use kubectl port-forward to acce
 
 > kubectl port-forward svc/{{ .Release.Name }}-operate 8080:80
 
-    {{- if .Values.global.operate.auth.identity.enabled }}
+    {{- if .Values.global.identity.auth.enabled }}
 
 Authentication via Identity/Keycloak is enabled. In order to login into Operate please port-forward to Keycloak
 as well, otherwise a login will not be possible. Make sure you use `18080` as port.
@@ -74,7 +74,7 @@ If you don't have an Ingress Controller you can use kubectl port-forward to acce
 
 > kubectl port-forward svc/{{ .Release.Name }}-tasklist 8081:80
 
-    {{- if .Values.global.tasklist.auth.identity.enabled }}
+    {{- if .Values.global.identity.auth.enabled }}
 
 Authentication via Identity/Keycloak is enabled. In order to login into Tasklist please port-forward to Keycloak
 as well, otherwise a login will not be possible. Make sure you use `18080` as port.
