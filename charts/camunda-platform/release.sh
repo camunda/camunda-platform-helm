@@ -13,7 +13,6 @@ fi
 newVersion=$1
 
 # Update subchart versions
-sed -i -E "s/version: 0.0.[0-9]+/version: $newVersion/g" **/**/Chart.yaml
+sed -i -E "s/version: 8.0.[0-9]+/version: $newVersion/g" **/**/Chart.yaml
 # Update parent chart version
-sed -i -E "s/version: 0.0.[0-9]+/version: $newVersion/g" Chart.yaml 
-
+sed -i -E "s/version: 8.0.[0-9]+/version: $newVersion/g" Chart.yaml
