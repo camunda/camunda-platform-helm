@@ -310,6 +310,8 @@ zeebe-gateway:
   extraVolumeMounts: { }
   # ExtraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
   extraVolumes: { }
+  # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  extraInitContainers: [ ]
 
   # Service configuration for the gateway service
   service:

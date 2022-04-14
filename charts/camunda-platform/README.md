@@ -121,7 +121,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 800m`<br> `  memory: 1200Mi`<br>`limits:`<br>  ` cpu: 960m`<br>  ` memory: 1920Mi` |
 | | `pvcSize` | Defines the [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) size, which is used by each broker pod | `32Gi` |
 | | `pvcAccessModes` | Can be used to configure the [persistent volume claim access mode](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) | `[ "ReadWriteOnce" ]` |
-| | `pvcStorageClassName` | Can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD. | `` |
+| | `pvcStorageClassName` | Can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD. | ` ` |
 | | `extraVolumes` | Can be used to define extra volumes for the broker pods, useful for additional exporters | `{ }`|
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for additional exporters | `{ }` |
 | | `extraInitContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
@@ -172,6 +172,7 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity). The default defined PodAntiAffinity allows constraining on which nodes the [Zeebe gateway pods are scheduled on](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity). It uses a hard requirement for scheduling and works based on the Zeebe gateway pod labels. | `podAntiAffinity:</br>  requiredDuringSchedulingIgnoredDuringExecution:</br>  - labelSelector: </br>    matchExpressions:</br>    - key: "app.kubernetes.io/component"</br>    operator: In</br>    values:</br>    - zeebe-gatway</br>  topologyKey: "kubernetes.io/hostname"` |
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `{ }` |
 | | `extraVolumes` | Can be used to define extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `{ }` |
+| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
 | | `service` | Configuration for the gateway service | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.httpPort` | Defines the port of the HTTP endpoint, where for example metrics are provided | `9600` |
