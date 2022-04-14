@@ -3,6 +3,54 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - fix the app version in chart
+        - make configMap defaultMode configurable for all services
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 8.0.0
+    created: "2022-04-14T13:49:40.138008268Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.0.1
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.0.1
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.0.1
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.0.1
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.0.1
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: 8bdd7e3a8f9687eb6379a7086160e446e7850aec1e1e6d8dc729be2021b02a5b
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.0.1/camunda-platform-8.0.1.tgz
+    version: 8.0.1
+  - annotations:
+      artifacthub.io/changes: |
         - Add Identity-operate integration
         - Add Identity-Tasklist integration
         - Make first user configurable
@@ -3363,4 +3411,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-04-12T13:10:20.860335005Z"
+generated: "2022-04-14T13:49:40.138534168Z"
