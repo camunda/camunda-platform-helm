@@ -94,7 +94,7 @@ spec:
         - name: config
           configMap:
             name: camunda-platform-test-zeebe-gateway-gateway
-            defaultMode: 0744
+            defaultMode: 484
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
