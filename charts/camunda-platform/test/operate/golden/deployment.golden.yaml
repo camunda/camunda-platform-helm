@@ -73,4 +73,4 @@ spec:
       - name: config
         configMap:
           name: camunda-platform-test-operate
-          defaultMode: 0744
+          defaultMode: 484

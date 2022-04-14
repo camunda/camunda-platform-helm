@@ -151,7 +151,7 @@ spec:
       - name: config
         configMap:
           name: {{ include "zeebe.fullname" . }}
-          defaultMode: 0744
+          defaultMode: {{ .Values.configMap.defaultMode }}
       - name: exporters
         emptyDir: {}
       {{- if .Values.extraVolumes}}
