@@ -117,6 +117,11 @@ zeebe:
       value: "0.85"
     - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
       value: "0.87"
+  # ConfigMap configuration which will be applied to the mounted config map.
+  configMap:
+    # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0744
   # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
