@@ -182,6 +182,11 @@ zeebe:
       cpu: 960m
       memory: 1920Mi
 
+  # PersistenceType defines the type of persistence which is used by Zeebe. Possible values are: disk, local and ram.
+  #   disk  - means a persistence volume claim is configured and used
+  #   local - means the data is stored into the container, no volumeMount nor volume nor claim is configured
+  #   ram   - means zeebe uses a tmpfs for the data persistence, be aware that this takes the limits into account
+  persistenceType: disk
   # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
   # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
