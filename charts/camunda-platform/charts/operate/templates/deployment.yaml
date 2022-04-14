@@ -80,7 +80,7 @@ spec:
       - name: config
         configMap:
           name: {{ include "operate.fullname" . }}
-          defaultMode: 0744
+          defaultMode: {{ .Values.configMap.defaultMode }}
       {{- if .Values.extraVolumes}}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
