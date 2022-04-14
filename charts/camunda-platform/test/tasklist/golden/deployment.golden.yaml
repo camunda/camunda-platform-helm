@@ -77,4 +77,4 @@ spec:
       - name: config
         configMap:
           name: camunda-platform-test-tasklist
-          defaultMode: 0744
+          defaultMode: 484
