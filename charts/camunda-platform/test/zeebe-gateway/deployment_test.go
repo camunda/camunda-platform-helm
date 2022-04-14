@@ -519,11 +519,11 @@ func (s *deploymentTemplateTest) TestContainerSetExtraInitContainers() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.extraInitContainers[0].name":                      "init-container-{{ .Release.Name }}",
-			"zeebe-gateway.extraInitContainers[0].image":                     "busybox:1.28",
-			"zeebe-gateway.extraInitContainers[0].command[0]":                "sh",
-			"zeebe-gateway.extraInitContainers[0].command[1]":                "-c",
-			"zeebe-gateway.extraInitContainers[0].command[2]":                "top",
+			"zeebe-gateway.extraInitContainers[0].name":       "init-container-{{ .Release.Name }}",
+			"zeebe-gateway.extraInitContainers[0].image":      "busybox:1.28",
+			"zeebe-gateway.extraInitContainers[0].command[0]": "sh",
+			"zeebe-gateway.extraInitContainers[0].command[1]": "-c",
+			"zeebe-gateway.extraInitContainers[0].command[2]": "top",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
