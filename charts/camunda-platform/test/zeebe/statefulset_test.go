@@ -581,12 +581,11 @@ func (s *statefulSetTest) TestContainerSetTolerations() {
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
 
-
 func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.persistenceType":      "ram",
+			"zeebe.persistenceType": "ram",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -614,12 +613,11 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 	s.Require().Equal(0, len(statefulSet.Spec.VolumeClaimTemplates))
 }
 
-
 func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.persistenceType":      "local",
+			"zeebe.persistenceType": "local",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
