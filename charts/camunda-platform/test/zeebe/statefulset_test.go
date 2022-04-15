@@ -580,3 +580,66 @@ func (s *statefulSetTest) TestContainerSetTolerations() {
 	s.Require().Equal("Value1", toleration.Value)
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
+
+func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.persistenceType": "memory",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(3, len(volumeMounts))
+	dataVolumeMount := volumeMounts[1]
+	s.Require().Equal("data", dataVolumeMount.Name)
+	s.Require().Equal("/usr/local/zeebe/data", dataVolumeMount.MountPath)
+
+	volumes := statefulSet.Spec.Template.Spec.Volumes
+	s.Require().Equal(3, len(volumes))
+	dataVolume := volumes[0]
+	s.Require().Equal("data", dataVolume.Name)
+	s.Require().NotEmpty(dataVolume.EmptyDir)
+	s.Require().EqualValues("Memory", dataVolume.EmptyDir.Medium)
+
+	s.Require().Equal(0, len(statefulSet.Spec.VolumeClaimTemplates))
+}
+
+func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.persistenceType": "local",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(2, len(volumeMounts))
+	for _, volumeMount := range volumeMounts {
+		s.Require().NotEqual("data", volumeMount.Name)
+	}
+
+	volumes := statefulSet.Spec.Template.Spec.Volumes
+	s.Require().Equal(2, len(volumes))
+	for _, volumeMount := range volumeMounts {
+		s.Require().NotEqual("data", volumeMount.Name)
+	}
+
+	s.Require().Equal(0, len(statefulSet.Spec.VolumeClaimTemplates))
+}

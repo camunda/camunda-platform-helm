@@ -132,8 +132,10 @@ spec:
         - name: config
           mountPath: /usr/local/bin/startup.sh
           subPath: startup.sh
+        {{- if not ( eq .Values.persistenceType "local" ) }}
         - name: data
           mountPath: /usr/local/zeebe/data
+        {{- end }}
         - name: exporters
           mountPath: /exporters
         {{- if .Values.log4j2 }}
@@ -148,15 +150,20 @@ spec:
         securityContext: {{ .Values.containerSecurityContext | toYaml | nindent 10 }}
         {{- end }}
       volumes:
-      - name: config
-        configMap:
-          name: {{ include "zeebe.fullname" . }}
-          defaultMode: {{ .Values.configMap.defaultMode }}
-      - name: exporters
-        emptyDir: {}
-      {{- if .Values.extraVolumes}}
-      {{ .Values.extraVolumes | toYaml | nindent 6 }}
-      {{- end }}
+        {{- if eq .Values.persistenceType "memory" }}
+        - name: data
+          emptyDir:
+            medium: "Memory"
+        {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "zeebe.fullname" . }}
+            defaultMode: {{ .Values.configMap.defaultMode }}
+        - name: exporters
+          emptyDir: {}
+        {{- if .Values.extraVolumes}}
+          {{ .Values.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
       {{- if .Values.serviceAccount.name }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
@@ -172,6 +179,8 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
+
+  {{- if eq .Values.persistenceType "disk" }}
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -181,3 +190,4 @@ spec:
       resources:
         requests:
           storage: {{ .Values.pvcSize | quote }}
+  {{- end }}

@@ -132,12 +132,12 @@ spec:
         - name: exporters
           mountPath: /exporters
       volumes:
-      - name: config
-        configMap:
-          name: camunda-platform-test-zeebe
-          defaultMode: 484
-      - name: exporters
-        emptyDir: {}
+        - name: config
+          configMap:
+            name: camunda-platform-test-zeebe
+            defaultMode: 484
+        - name: exporters
+          emptyDir: {}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
