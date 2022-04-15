@@ -2,7 +2,7 @@ apiVersion: v2
 description: Zeebe Helm Chart for Kubernetes
 name: zeebe
 type: application
-version: 8.0.1
+version: 8.0.2
 icon: https://helm.camunda.io/imgs/zeebe-logo.png
 annotations:
   artifacthub.io/changes: |
