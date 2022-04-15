@@ -50,6 +50,24 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
+func (s *deploymentTemplateTest) TestContainerSetPodLabels() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.podLabels.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
+}
+
 func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
@@ -289,6 +307,127 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// then
 	securityContext := deployment.Spec.Template.Spec.SecurityContext
 	s.Require().EqualValues(1000, *securityContext.RunAsUser)
+}
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.nodeSelector.disktype": "ssd",
+			"operate.nodeSelector.cputype":  "arm",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("ssd", deployment.Spec.Template.Spec.NodeSelector["disktype"])
+	s.Require().Equal("arm", deployment.Spec.Template.Spec.NodeSelector["cputype"])
+}
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+func (s *deploymentTemplateTest) TestContainerSetAffinity() {
+	// given
+
+	//affinity:
+	//	nodeAffinity:
+	//	 requiredDuringSchedulingIgnoredDuringExecution:
+	//	   nodeSelectorTerms:
+	//	   - matchExpressions:
+	//		 - key: kubernetes.io/e2e-az-name
+	//		   operator: In
+	//		   values:
+	//		   - e2e-az1
+	//		   - e2e-az2
+	//	 preferredDuringSchedulingIgnoredDuringExecution:
+	//	 - weight: 1
+	//	   preference:
+	//		 matchExpressions:
+	//		 - key: another-node-label-key
+	//		   operator: In
+	//		   values:
+	//		   - another-node-label-value
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
+			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	nodeAffinity := deployment.Spec.Template.Spec.Affinity.NodeAffinity
+	s.Require().NotNil(nodeAffinity)
+
+	nodeSelectorTerm := nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0]
+	s.Require().NotNil(nodeSelectorTerm)
+	matchExpression := nodeSelectorTerm.MatchExpressions[0]
+	s.Require().NotNil(matchExpression)
+	s.Require().Equal("kubernetes.io/e2e-az-name", matchExpression.Key)
+	s.Require().EqualValues("In", matchExpression.Operator)
+	s.Require().Equal([]string{"e2e-a1", "e2e-a2"}, matchExpression.Values)
+
+	preferredSchedulingTerm := nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0]
+	s.Require().NotNil(preferredSchedulingTerm)
+
+	matchExpression = preferredSchedulingTerm.Preference.MatchExpressions[0]
+	s.Require().NotNil(matchExpression)
+	s.Require().Equal("another-node-label-key", matchExpression.Key)
+	s.Require().EqualValues("In", matchExpression.Operator)
+	s.Require().Equal([]string{"another-node-label-value"}, matchExpression.Values)
+}
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+func (s *deploymentTemplateTest) TestContainerSetTolerations() {
+	// given
+
+	//tolerations:
+	//- key: "key1"
+	//  operator: "Equal"
+	//  value: "value1"
+	//  effect: "NoSchedule"
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.tolerations[0].key":      "key1",
+			"operate.tolerations[0].operator": "Equal",
+			"operate.tolerations[0].value":    "Value1",
+			"operate.tolerations[0].effect":   "NoSchedule",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	tolerations := deployment.Spec.Template.Spec.Tolerations
+	s.Require().Equal(1, len(tolerations))
+
+	toleration := tolerations[0]
+	s.Require().Equal("key1", toleration.Key)
+	s.Require().EqualValues("Equal", toleration.Operator)
+	s.Require().Equal("Value1", toleration.Value)
+	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
 
 func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() {

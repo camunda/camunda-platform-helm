@@ -199,6 +199,7 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `image` | Configuration to configure the operate image specifics. | |
 | | `image.repository` | Defines which image repository to use. | `camunda/operate` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
+| | `podLabels` |  Can be used to define extra operate pod labels | |
 | | `logging` | Configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file | `level:` <br/> `ROOT: INFO` <br/> `org.camunda.operate: DEBUG` |
 | | `service` | Configuration to configure the Operate service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
@@ -224,6 +225,9 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 | | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
+| | `nodeSelector` |  Can be used to define on which nodes the operate pods should run | |
+| | `tolerations` |  Can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/ | |
+| | `affinity` |  Can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity | |
 
 ### Tasklist
 
@@ -236,6 +240,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `image` | Configuration to configure the tasklist image specifics. | |
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
+| | `podLabels` |  Can be used to define extra tasklist pod labels | |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `service` | Configuration to configure the Tasklist service. | |
@@ -245,6 +250,9 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `graphqlPlaygroundEnabled` | If true, enables the GraphQl playground | `""` |
 | | `graphqlPlaygroundEnabled` | Can be set to include the credentials in each request, should be set to "include" if GraphQl playground is enabled | `""` |
 | | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
+| | `nodeSelector` |  Can be used to define on which nodes the tasklist pods should run | |
+| | `tolerations` |  Can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/ | |
+| | `affinity` |  Can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity | |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 400m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` |
 | | `ingress` | Configuration to configure the ingress resource | |
 | | `ingress.enabled` | If true, an ingress resource is deployed with the Tasklist deployment. Only useful if an ingress controller is available, like nginx. | `false` |
