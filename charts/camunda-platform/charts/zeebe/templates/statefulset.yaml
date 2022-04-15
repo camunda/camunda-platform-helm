@@ -150,7 +150,7 @@ spec:
         securityContext: {{ .Values.containerSecurityContext | toYaml | nindent 10 }}
         {{- end }}
       volumes:
-        {{- if eq .Values.persistenceType "ram" }}
+        {{- if eq .Values.persistenceType "memory" }}
         - name: data
           emptyDir:
             medium: "Memory"

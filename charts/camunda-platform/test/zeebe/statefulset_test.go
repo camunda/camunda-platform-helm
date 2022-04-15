@@ -585,7 +585,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.persistenceType": "ram",
+			"zeebe.persistenceType": "memory",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
