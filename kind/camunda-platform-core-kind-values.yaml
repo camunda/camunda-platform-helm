@@ -1,4 +1,17 @@
-zeebe: 
+global:
+  identity:
+    auth:
+      # Disable the Identity authentication for local development
+      # it will fall back to basic-auth: demo/demo as default user
+      enabled: false
+
+# Disable identity as part of the camunda platform core
+identity:
+  enabled: false
+
+# Reduce for Zeebe and Gateway the configured replicas and with that the required resources
+# to get it running locally
+zeebe:
   clusterSize: 1
   partitionCount: 1
   replicationFactor: 1
@@ -7,6 +20,7 @@ zeebe:
 zeebe-gateway:
   replicas: 1
 
+# Configure elastic search to make it running for local development
 elasticsearch:
   imageTag: 7.16.1
   replicas: 1

@@ -1,0 +1,80 @@
+---
+# Source: camunda-platform/charts/tasklist/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-tasklist
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: tasklist
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.0.0"
+    app.kubernetes.io/component: tasklist
+  annotations:
+    {}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: tasklist
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: tasklist
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: tasklist
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/version: "8.0.0"
+        app.kubernetes.io/component: tasklist
+    spec:
+      containers:
+      - name: tasklist
+        image: "camunda/tasklist:8.0.0"
+        env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: "identity-auth"
+          - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL
+            value: "http://localhost:18080/auth/realms/camunda-platform"
+          - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL
+            value: "http://camunda-platform-tes:80/auth/realms/camunda-platform"
+          - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID
+            value: "tasklist"
+          - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-tasklist-identity-secret"
+                key: tasklist-secret
+          - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
+            value: "tasklist-api"
+          - name: GRAPHQL_PLAYGROUND_ENABLED
+            value: "true"
+          - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
+            value: "include"
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 400m
+            memory: 1Gi
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /app/resources/application.yml
+          subPath: application.yml
+      volumes:
+      - name: config
+        configMap:
+          name: camunda-platform-test-tasklist
+          defaultMode: 484

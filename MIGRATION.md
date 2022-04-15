@@ -5,7 +5,7 @@
 
 ## Migrating from zeebe-full-helm
 
-If you're running an earlier `zeebe-full-helm` chart release, and you want to migrate to `ccsm-helm` you need to
+If you're running an earlier `zeebe-full-helm` chart release, and you want to migrate to `camunda-platform` you need to
 adjust your `values.yaml` file, since the dependencies (sub-charts) have been renamed.
 
 | Old Chart Names | New Sub-Chart Names |
@@ -14,7 +14,7 @@ adjust your `values.yaml` file, since the dependencies (sub-charts) have been re
 | zeebe-operate-helm | operate |
 | zeebe-tasklist-helm | tasklist |
 
-Some properties have been renamed or removed, but also better documented. Please check the [README](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md) for more details.
+Some properties have been renamed or removed, but also better documented. Please check the [README](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/camunda-platform/README.md) for more details.
 
 **Example:**
 
@@ -46,13 +46,13 @@ tasklist: {}
 
 ## Migrating from zeebe-cluster-helm
 
-Be aware there is no longer a zeebe only helm chart. If you want to migrate to `ccsm-helm` you have to move most of the
+Be aware there is no longer a zeebe only helm chart. If you want to migrate to `camunda-platform` you have to move most of the
 properties under the `zeebe` object.
 
 > **Note:** There is also a new sub-chart for the standalone gateway. This means some configurations need to be done now
 > on the gateway chart.
 
-For more details please check the [README](https://github.com/camunda-community-hub/camunda-cloud-helm/blob/main/charts/ccsm-helm/README.md),
+For more details please check the [README](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/camunda-platform/README.md),
 which documents all possible values for each chart.
 
 #### Example:

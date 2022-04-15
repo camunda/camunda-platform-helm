@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "identity.fullname" . }}
+  labels: {{- include "identity.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "identity.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "identity.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        {{- if .Values.image.tag }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- else }}
+        image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
+        {{- end }}
+        env:
+          - name: KEYCLOAK_USERS_0_USERNAME
+            value: {{ .Values.firstUser.username | quote }}
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            value: {{ .Values.firstUser.password | quote }}
+          - name: KEYCLOAK_USERS_0_ROLES_0
+            value: "Identity"
+
+
+          {{- if .Values.global.identity.auth.enabled }}
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: "Operate"
+          - name: KEYCLOAK_INIT_OPERATE_SECRET
+            {{- if .Values.global.identity.auth.operate.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
+                key: operate-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "identity.secretNameOperateIdentity" . }}
+                key: operate-secret
+            {{- end }}
+          - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
+            value: {{ .Values.global.identity.auth.operate.redirectUrl | quote }}
+
+          - name: KEYCLOAK_USERS_0_ROLES_2
+            value: "Tasklist"
+          - name: KEYCLOAK_INIT_TASKLIST_SECRET
+            {{- if .Values.global.identity.auth.tasklist.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}
+                key: tasklist-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameTasklistIdentity" . }}
+                key: tasklist-secret
+            {{- end }}
+          - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
+            value: {{ .Values.global.identity.auth.tasklist.redirectUrl | quote }}
+          {{- end }}
+          - name: SERVER_PORT
+            value: "8080"
+          - name: KEYCLOAK_URL
+            {{- /*
+            We resolve the fullname of keycloak and trim it to 20, since this is the limitation by keycloak
+            https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/_helpers.tpl#L2-L5
+            */}}
+            value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) | trunc 20 | trimSuffix "-" }}:{{ coalesce .Values.keycloak.service.ports.http .Values.keycloak.service.port }}/auth"
+          - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
+            value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) | trunc 20 | trimSuffix "-" }}:{{ coalesce .Values.keycloak.service.ports.http .Values.keycloak.service.port }}/auth/realms/camunda-platform"
+          - name: KEYCLOAK_SETUP_USER
+            value: {{ .Values.keycloak.auth.adminUser }}
+          - name: KEYCLOAK_SETUP_PASSWORD
+            {{- if .Values.keycloak.auth.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.keycloak.auth.existingSecret "context" $) }}
+                key: admin-password
+            {{- else }}
+            valueFrom:
+                secretKeyRef:
+                  {{- /*
+                    https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_names.tpl
+                  */}}
+                  name: {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}
+                  key: admin-password
+            {{- end }}
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        {{- if .Values.extraVolumeMounts}}
+        volumeMounts:
+        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.extraVolumes}}
+      volumes:
+      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
