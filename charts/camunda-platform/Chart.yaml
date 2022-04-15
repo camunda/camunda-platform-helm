@@ -1,0 +1,39 @@
+apiVersion: v2
+name: camunda-platform
+version: 8.0.1
+appVersion: "8.0.0"
+description: Camunda Platform Helm Chart for Kubernetes
+type: application
+icon: https://helm.camunda.io/imgs/self-managed.png
+home: https://docs.camunda.io/docs/self-managed/overview/
+sources:
+  - https://github.com/camunda/camunda-platform-helm
+  - https://github.com/camunda/zeebe
+dependencies:
+- name: zeebe
+  version: 8.0.1
+  condition: "zeebe.enabled"
+- name: zeebe-gateway
+  version: 8.0.1
+  condition: "zeebe.enabled"
+- name: operate
+  version: 8.0.1
+  condition: "operate.enabled"
+- name: tasklist
+  version: 8.0.1
+  condition: "tasklist.enabled"
+- name: identity
+  version: 8.0.1
+  condition: "identity.enabled"
+- name: elasticsearch
+  repository: "https://helm.elastic.co"
+  version: 7.17.1
+  condition: "elasticsearch.enabled"
+maintainers:
+  - name: Zelldon
+    email: christopher.zell@camunda.com
+annotations:
+  artifacthub.io/changes: |
+    - fix the app version in chart
+    - make configMap defaultMode configurable for all services
+  artifacthub.io/containsSecurityUpdates: "false"

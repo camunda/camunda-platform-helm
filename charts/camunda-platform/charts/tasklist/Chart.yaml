@@ -1,0 +1,9 @@
+apiVersion: v2
+description: Zeebe TaskList Helm Chart for Kubernetes
+name: tasklist
+version: 8.0.1
+icon: https://helm.camunda.io/imgs/zeebe-logo.png
+annotations:
+  artifacthub.io/changes: |
+    - create tasklist sub chart
+  artifacthub.io/containsSecurityUpdates: "true"

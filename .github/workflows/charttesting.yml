@@ -27,14 +27,14 @@ jobs:
         uses: azure/setup-helm@v1
         with:
           version: "${{ env.HELM_VERSION }}"
-      - name: Add elastic helm repo
+      - name: Add helm repos
         run: |
           helm repo add elastic https://helm.elastic.co
+          helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
-
       - name: Get Helm Deps
         run: |
-          helm dependency build charts/ccsm-helm
+          make deps
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7

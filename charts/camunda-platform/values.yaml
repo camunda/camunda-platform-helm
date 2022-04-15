@@ -1,0 +1,664 @@
+# Default values for Camunda Platform helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# The values file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
+#
+# This means:
+#   * Variable names should begin with a lowercase letter, and words should be separated with camelcase.
+#   * Every defined property in values.yaml should be documented. The documentation string should begin with the name of the property that it describes, and then give at least a one-sentence description
+#
+# Furthermore, we try to apply the following pattern: # [VarName] [conjunction] [definition]
+#
+# VarName:
+#
+#  * In the documentation the variable name is started with a big letter, similar to kubernetes resource documentation.
+#  * If the variable is part of a subsection/object we use a json path expression (to make it more clear where the variable belongs to).
+#    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in helm.
+#
+# Conjunction:
+#   * [defines] for mandatory configuration
+#   * [can be used] for optional configuration
+#   * [if true] for toggles
+#   * [configuration] for section/group of variables
+
+# Global configuration for variables which can be accessed by all sub charts
+global:
+
+  # Annotations can be used to define common annotations, which should be applied to all deployments
+  annotations: {}
+  # Labels can be used to define common labels, which should be applied to all deployments
+  labels:
+    app: camunda-platform
+
+  # Image configuration to be used in each sub chart
+  image:
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 8.0.0
+    # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    pullPolicy: IfNotPresent
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: [ ]
+
+  # Elasticsearch configuration which is shared between the sub charts  
+  elasticsearch:
+    # Elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
+    disableExporter: false
+    # Elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+    url:
+    # Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
+    host: "elasticsearch-master"
+    # Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
+    port: 9200
+    # Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
+    clusterName: "elasticsearch"
+    # Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
+    prefix: zeebe-record
+  # ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
+  zeebeClusterName: "{{ .Release.Name }}-zeebe"
+  # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
+  zeebePort: 26500
+
+  # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
+  identity:
+    # Identity.auth configuration, to configure Identity authentication setup
+    auth:
+      # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
+      enabled: true
+
+      # Identity.auth.publicIssuerUrl defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
+      # Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
+      # Can be overwritten if, ingress is in use and an external IP is available.
+      publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+
+      # Identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
+      operate:
+        # Identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+        # The existing secret should contain an `operate-secret` field, which will be used as secret for the Identity-Operate communication.
+        existingSecret:
+        # Identity.auth.operate.redirectUrl defines the redirect URL, which is used by Keycloak to access Operate.
+        # Should be public accessible, the default value works if port-forward to Operate is created to 8081.
+        # Can be overwritten if, ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8081"
+
+      # Identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
+      tasklist:
+        # Identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the Identity-Tasklist communication.
+        existingSecret:
+        # Tasklist.auth.identity.tasklistRootUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be public accessible, the default value works if port-forward to Tasklist is created to 8082.
+        # Can be overwritten if, ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8082"
+
+# Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
+zeebe:
+  # Enabled if true, all zeebe related resources are deployed via the helm release
+  enabled: true
+
+  # Image configuration to configure the zeebe image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/zeebe
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
+
+  # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  clusterSize: "3"
+  # PartitionCount defines how many zeebe partitions are set up in the cluster
+  partitionCount: "3"
+  # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
+  replicationFactor: "3"
+  # Env can be used to set extra environment variables in each zeebe broker container
+  env:
+    - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
+      value: "5m"
+    - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
+      value: "0.85"
+    - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
+      value: "0.87"
+  # ConfigMap configuration which will be applied to the mounted config map.
+  configMap:
+    # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0744
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+
+  # LogLevel defines the log level which is used by the zeebe brokers
+  logLevel: info
+  # Log4j2 can be used to overwrite the log4j2 configuration of the zeebe brokers
+  log4j2: ''
+  # JavaOpts can be used to set java options for the zeebe brokers
+  javaOpts: >-
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/zeebe/data
+    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+    -XX:+ExitOnOutOfMemoryError
+
+
+ # Service configuration for the broker service
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 9600
+    # Service.httpName defines the name of the http endpoint, where for example metrics are provided
+    httpName: "http"
+    # Service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
+    commandPort: 26501
+    # Service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    commandName: "command"
+    # Service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    internalPort: 26502
+    # Service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    internalName: "internal"
+    # extraPorts can be used to expose any other ports which are required. Can be useful for exporters
+    extraPorts: []
+      # - name: hazelcast
+      #   protocol: TCP 
+      #   port: 5701
+      #   targetPort: 5701 
+
+  # ServiceAccount configuration for the service account where the broker pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the broker service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the broker service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the broker service account
+    annotations: { }
+
+  # CpuThreadCount defines how many threads can be used for the processing on each broker pod
+  cpuThreadCount: "2"
+  # IoThreadCount defines how many threads can be used for the exporting on each broker pod
+  ioThreadCount: "2"
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 800m
+      memory: 1200Mi
+    limits:
+      cpu: 960m
+      memory: 1920Mi
+
+  # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  pvcSize: "32Gi"
+  # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  pvcAccessModes: [ "ReadWriteOnce" ]
+  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
+  pvcStorageClassName: ''
+
+  # ExtraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
+  extraVolumes: { }
+  # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  extraVolumeMounts: { }
+  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  extraInitContainers: [ ]
+
+  # PodAnnotations can be used to define extra broker pod annotations
+  podAnnotations: { }
+  # PodLabels can be used to define extra broker pod labels
+  podLabels: { }
+  # PodDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    # PodDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
+    enabled: false
+    # PodDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    minAvailable:
+    # podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    maxUnavailable: 1
+
+  # ContainerSecurityContext defines the security options the broker container should be run with
+  containerSecurityContext: { }
+  # NodeSelector can be used to define on which nodes the broker pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  # It uses a hard requirement for scheduling and works based on the Zeebe pod labels
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "app.kubernetes.io/component"
+                operator: In
+                values:
+                  - zeebe-broker
+          topologyKey: "kubernetes.io/hostname"
+
+  # PriorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  priorityClassName: ""
+
+  # ReadinessProbe configuration for the zeebe broker readiness probe
+  readinessProbe:
+    # ReadinessProbe.probePath defines the readiness probe route used on the zeebe brokers
+    probePath: /ready
+    # ReadinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 10
+    # ReadinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    # ReadinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+# Gateway configuration to define properties related to the standalone gateway
+zeebe-gateway:
+  # Replicas defines how many standalone gateways are deployed
+  replicas: 2
+  # Image configuration to configure the zeebe-gateway image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/zeebe
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
+  # PodAnnotations can be used to define extra gateway pod annotations
+  podAnnotations: { }
+  # PodLabels can be used to define extra gateway pod labels
+  podLabels: { }
+
+  # LogLevel defines the log level which is used by the gateway
+  logLevel: info
+  # Log4j2 can be used to overwrite the log4j2 configuration of the gateway
+  log4j2: ''
+  # JavaOpts can be used to set java options for the zeebe gateways
+  javaOpts: >-
+    -XX:+ExitOnOutOfMemoryError
+
+  # Env can be used to set extra environment variables in each gateway container
+  env: [ ]
+  # ConfigMap configuration which will be applied to the mounted config map.
+  configMap:
+    # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0744
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+
+  # ContainerSecurityContext defines the security options the gateway container should be run with
+  containerSecurityContext: { }
+  # PodDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    # PodDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
+    enabled: false
+    # PodDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    minAvailable: 1
+    # PodDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    maxUnavailable:
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 400m
+      memory: 450Mi
+    limits:
+      cpu: 400m
+      memory: 450Mi
+
+  # PriorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  priorityClassName: ""
+  # NodeSelector can be used to define on which nodes the gateway pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe gateway pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  # It uses a hard requirement for scheduling and works based on the Zeebe gateway pod labels
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "app.kubernetes.io/component"
+                operator: In
+                values:
+                  - zeebe-gateway
+          topologyKey: "kubernetes.io/hostname"
+
+  # ExtraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+  extraVolumeMounts: { }
+  # ExtraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+  extraVolumes: { }
+
+  # Service configuration for the gateway service
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 9600
+    # Service.httpName defines the name of the http endpoint, where for example metrics are provided
+    httpName: "http"
+    # Service.gatewayPort defines the port of the gateway endpoint, where client commands (grpc) are sent to
+    gatewayPort: 26500
+    # Service.gatewayName defines the name of the gateway endpoint, where client commands (grpc) are sent to
+    gatewayName: "gateway"
+    # Service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    internalPort: 26502
+    # Service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    internalName: "internal"
+    # Service.annotations can be used to define annotations, which will be applied to the zeebe-gateway service
+    annotations: {}
+
+  # ServiceAccount configuration for the service account where the gateway pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the gateway service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the gateway service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the gateway service account
+    annotations: { }
+
+
+# Operate configuration for the operate sub chart.
+operate:
+  # Enabled if true, the operate deployment and its related resources are deployed via a helm release
+  enabled: true
+
+  # Image configuration to configure the operate image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/operate
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
+
+  # Logging configuration for the operate logging. This template will be directly included in the operate configuration yaml file
+  logging:
+    level:
+      ROOT: INFO
+      org.camunda.operate: DEBUG
+
+  # Service configuration to configure the operate service.
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.port defines the port of the service, where the operate web application will be available
+    port: 80
+    # Service.annotations can be used to define annotations, which will be applied to the operate service
+    annotations: {}
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 600m
+      memory: 400Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Env can be used to set extra environment variables in each operate container
+  env: []
+  # ConfigMap configuration which will be applied to the mounted config map.
+  configMap:
+    # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0744
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  # ExtraVolumes can be used to define extra volumes for the operate pods, useful for tls and self-signed certificates
+  extraVolumes: []
+  # ExtraVolumeMounts can be used to mount extra volumes for the operate pods, useful for tls and self-signed certificates
+  extraVolumeMounts: []
+
+  # ServiceAccount configuration for the service account where the operate pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the operate service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the operate service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the operate service account
+    annotations: { }
+
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed with the operate deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host: ""
+    # Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: ""
+
+  # PodSecurityContext defines the security options the operate container should be run with
+  podSecurityContext: {}
+
+# Tasklist configuration for the tasklist sub chart.
+tasklist:
+  # Enabled if true, the tasklist deployment and its related resources are deployed via a helm release
+  enabled: true
+
+  # Image configuration to configure the tasklist image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/tasklist
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
+
+  # ConfigMap configuration which will be applied to the mounted config map.
+  configMap:
+    # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0744
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  # Service configuration to configure the tasklist service.
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.port defines the port of the service, where the tasklist web application will be available
+    port: 80
+
+  # SpringProfilesActive can be used to set the active spring profiles used by tasklist
+  springProfilesActive: ""
+  # GraphqlPlaygroundEnabled if true, enables the graphql playground
+  graphqlPlaygroundEnabled: ""
+  # GraphqlPlaygroundEnabled can be set to include the credentials in each request, should be set to "include" if graphql playground is enabled
+  graphqlPlaygroundRequestCredentials: ""
+
+  # PodSecurityContext defines the security options the operate container should be run with
+  podSecurityContext: {}
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 400m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host:
+
+# RetentionPolicy configuration to configure the elasticsearch index retention policies
+retentionPolicy:
+  # RetentionPolicy.enabled if true, elasticsearch curator cronjob and configuration will be deployed.
+  enabled: false
+  # RetentionPolicy.schedule defines how often/when the curator should run
+  schedule: "0 0 * * *"
+  # RetentionPolicy.zeebeIndexTTL defines after how many days a zeebe index can be deleted
+  zeebeIndexTTL: 1
+  # RetentionPolicy.zeebeIndexMaxSize can be set to configure the maximum allowed zeebe index size in gigabytes.
+  # After reaching that size, curator will delete that corresponding index on the next run.
+  # To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes.
+  zeebeIndexMaxSize:
+  # RetentionPolicy.operateIndexTTL defines after how many days an operate index can be deleted
+  operateIndexTTL: 30
+  # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
+  tasklistIndexTTL: 30
+
+  # Image configuration for the elasticsearch curator cronjob
+  image:
+    # Image.repository defines which image repository to use
+    repository: bitnami/elasticsearch-curator
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 5.8.4
+
+# PrometheusServiceMonitor configuration to configure a prometheus service monitor
+prometheusServiceMonitor:
+  # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods
+  enabled: false
+  # PromotheuServiceMonitor.labels can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors
+  labels:
+    release: metrics
+  # PromotheuServiceMonitor.scrapeInterval can be set to configure the interval at which metrics should be scraped
+  scrapeInterval: 10s
+
+# Identity configuration for the identity sub chart.
+identity:
+  # Enabled if true, the identity deployment and its related resources are deployed via a helm release
+  enabled: true
+
+  # FirstUser configuration to configure properties of the first Identity user, which can be used to access all
+  # web applications
+  firstUser:
+    # FirstUser.username defines the username of the first user, needed to log in into the web applications
+    username: demo
+    # FirstUser.password defines the password of the first user, needed to log in into the web applications
+    password: demo
+
+  # Image configuration to configure the identity image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/identity
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
+
+  # Service configuration to configure the identity service.
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.port defines the port of the service, where the identity web application will be available
+    port: 80
+    # Service.annotations can be used to define annotations, which will be applied to the identity service
+    annotations: {}
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 600m
+      memory: 400Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Env can be used to set extra environment variables in each identity container
+  env: []
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  # ExtraVolumes can be used to define extra volumes for the identity pods, useful for tls and self-signed certificates
+  extraVolumes: []
+  # ExtraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
+  extraVolumeMounts: []
+
+  # Keycloak configuration, for the keycloak dependency chart which is used by identity
+  keycloak:
+    # Keycloak.service configuration, to configure the service which is deployed along with keycloak
+    service:
+      # Keycloak.service.type can be set to change the service type.
+      # We use clusterIP for keycloak service, since per default LoadBalancer is used, which is not supported on all cloud providers.
+      # This might prevent scheduling of the service.
+      type: ClusterIP
+    ## Keycloak authentication parameters
+    ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
+    ##
+    ## Identity uses the secrets generated by keycloak, to access keycloak.
+    auth:
+      # Keycloak.auth.adminUser defines the keycloak administrator user
+      adminUser: admin
+      # Keycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
+      # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
+      #
+      # Example:
+      #
+      # Keycloak.auth.existingSecret:
+      #   name: mySecret
+      #   keyMapping:
+      #     admin-password: myPasswordKey
+      #     management-password: myManagementPasswordKey
+      #     tls-keystore-password: myTlsKeystorePasswordKey
+      #     tls-truestore-password: myTlsTruestorePasswordKey
+      existingSecret: ""
+
+  # ServiceAccount configuration for the service account where the identity pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the identity service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the identity service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the identity service account
+    annotations: { }
+
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host: ""
+    # Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: ""
+
+  # PodSecurityContext defines the security options the identity container should be run with
+  podSecurityContext: {}
+
+elasticsearch:
+  enabled: true
+  extraEnvs:
+    - name: "xpack.security.enabled"
+      value: "false"
+
+  replicas: 2
+
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+      requests:
+        storage: 64Gi
+
+  esJavaOpts: "-Xmx1g -Xms1g"
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
