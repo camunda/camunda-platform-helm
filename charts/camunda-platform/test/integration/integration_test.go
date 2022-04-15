@@ -60,32 +60,60 @@ func TestIntegration(t *testing.T) {
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
 
-	namespace := createNamespaceName()
-	kubeOptions := k8s.NewKubectlOptions("gke_zeebe-io_europe-west1-b_zeebe-cluster", "", namespace)
-
 	suite.Run(t, &integrationTest{
 		chartPath:   chartPath,
 		release:     "zeebe-cluster-helm-it",
-		namespace:   namespace,
-		kubeOptions: kubeOptions,
 	})
 }
 
 func (s *integrationTest) SetupTest() {
+	s.namespace = createNamespaceName()
+	s.kubeOptions = k8s.NewKubectlOptions("gke_zeebe-io_europe-west1-b_zeebe-cluster", "", s.namespace)
+
+
 	if _, err := k8s.GetNamespaceE(s.T(), s.kubeOptions, s.namespace); err != nil {
 		k8s.CreateNamespace(s.T(), s.kubeOptions, s.namespace)
+	} else {
+		s.T().Logf("Namespace: %s already exist!", s.namespace)
 	}
 }
 
 func (s *integrationTest) TearDownTest() {
 	if !s.T().Failed() {
 		k8s.DeleteNamespace(s.T(), s.kubeOptions, s.namespace)
+	} else {
+		s.T().Logf("Test failed on namespace: %s!", s.namespace)
 	}
+
 }
 
 func (s *integrationTest) TestServicesEnd2End() {
 	// given
 	options := &helm.Options{
+		KubectlOptions: s.kubeOptions,
+	}
+
+	// when
+	if _, err := k8s.GetPodE(s.T(), s.kubeOptions, s.release+"-zeebe-0"); err != nil {
+		helm.Install(s.T(), options, s.chartPath, s.release)
+	} else {
+		s.T().Logf("Helm chart was already installed, rerun assertions.")
+	}
+
+	// then
+	s.awaitCamundaPlatformPods()
+	s.createProcessInstance()
+
+	s.awaitElasticPods()
+	s.tryTologinToIdentity()
+	s.assertProcessDefinitionFromOperate()
+	s.assertTasksFromTasklist()
+}
+
+func (s *integrationTest) TestServicesEnd2EndWithConfig() {
+	// given
+	options := &helm.Options{
+		ValuesFiles: []string{"it-values.yaml"},
 		KubectlOptions: s.kubeOptions,
 	}
 
@@ -569,11 +597,9 @@ func createNamespaceName() string {
 	// if triggered by a github action the environment variable is set
 	// we use it to better identify the test
 	commitSHA, exist := os.LookupEnv("GITHUB_SHA")
-	namespace := "camunda-platform-"
-	if !exist {
-		namespace += strings.ToLower(random.UniqueId())
-	} else {
-		namespace += commitSHA
+	namespace := "camunda-platform-" + strings.ToLower(random.UniqueId())
+	if exist {
+		namespace += "-" + commitSHA
 	}
 
 	// max namespace length is 63 characters

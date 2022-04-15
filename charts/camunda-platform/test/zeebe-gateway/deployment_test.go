@@ -514,3 +514,28 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 	s.Require().Equal("Value1", toleration.Value)
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
+
+func (s *deploymentTemplateTest) TestContainerSetExtraInitContainers() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.extraInitContainers[0].name":       "init-container-{{ .Release.Name }}",
+			"zeebe-gateway.extraInitContainers[0].image":      "busybox:1.28",
+			"zeebe-gateway.extraInitContainers[0].command[0]": "sh",
+			"zeebe-gateway.extraInitContainers[0].command[1]": "-c",
+			"zeebe-gateway.extraInitContainers[0].command[2]": "top",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	initContainer := deployment.Spec.Template.Spec.InitContainers[0]
+	s.Require().Equal("init-container-camunda-platform-test", initContainer.Name)
+	s.Require().Equal("busybox:1.28", initContainer.Image)
+	s.Require().Equal([]string{"sh", "-c", "top"}, initContainer.Command)
+}

@@ -11,7 +11,7 @@ test:	deps
 # it: runs the integration tests agains the current kube context
 .PHONY: it
 it:	deps
-	go test -timeout 1h -tags integration ./.../integration
+	go test -p 1 -timeout 1h -tags integration ./.../integration
 
 # golden: runs the tests with updating the golden files
 .PHONY: golden
