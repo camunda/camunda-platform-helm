@@ -369,6 +369,9 @@ operate:
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
 
+  # PodLabels can be used to define extra operate pod labels
+  podLabels: { }
+  
   # Logging configuration for the operate logging. This template will be directly included in the operate configuration yaml file
   logging:
     level:
@@ -441,6 +444,13 @@ operate:
   # PodSecurityContext defines the security options the operate container should be run with
   podSecurityContext: {}
 
+  # NodeSelector can be used to define on which nodes the operate pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: { }
+
 # Tasklist configuration for the tasklist sub chart.
 tasklist:
   # Enabled if true, the tasklist deployment and its related resources are deployed via a helm release
@@ -452,6 +462,9 @@ tasklist:
     repository: camunda/tasklist
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
+
+  # PodLabels can be used to define extra tasklist pod labels
+  podLabels: { }
 
   # ConfigMap configuration which will be applied to the mounted config map.
   configMap:
@@ -476,6 +489,13 @@ tasklist:
 
   # PodSecurityContext defines the security options the operate container should be run with
   podSecurityContext: {}
+
+  # NodeSelector can be used to define on which nodes the tasklist pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: { }
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
