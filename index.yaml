@@ -2,6 +2,53 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: "- support different persistenceTypes \n- fix issue
+        in notes when identity disabled\n"
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 8.0.0
+    created: "2022-04-19T08:36:47.62667303Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.0.3
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.0.3
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.0.3
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.0.3
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.0.3
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: 63a29e5914e6f1c639167f8dc71b90736d4abbe9c9cdfb354c7e93e18f678547
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.0.3/camunda-platform-8.0.3.tgz
+    version: 8.0.3
+  - annotations:
       artifacthub.io/changes: |
         - add initContainers for gateway
       artifacthub.io/containsSecurityUpdates: "false"
@@ -3458,4 +3505,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-04-15T17:00:26.86538975Z"
+generated: "2022-04-19T08:36:47.627279564Z"
