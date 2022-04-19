@@ -60,7 +60,7 @@ Operate:  kubectl port-forward svc/{{ .Release.Name }}-operate  8081:80
 Tasklist: kubectl port-forward svc/{{ .Release.Name }}-tasklist 8082:80
 {{- end }}
 
-    {{- if .Values.global.identity.auth.enabled }}
+    {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
 
 If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URL for Keycloak.
 
