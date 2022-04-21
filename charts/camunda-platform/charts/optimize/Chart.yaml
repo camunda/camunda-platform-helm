@@ -1,0 +1,9 @@
+apiVersion: v2
+description: Optimize Helm Chart for Kubernetes
+name: optimize
+version: 8.0.4
+icon: https://helm.camunda.io/imgs/zeebe-logo.png
+annotations:
+  artifacthub.io/changes: |
+    - create optimize sub chart
+  artifacthub.io/containsSecurityUpdates: "true"
