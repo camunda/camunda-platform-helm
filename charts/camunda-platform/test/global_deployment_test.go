@@ -47,7 +47,7 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIfIdentityIntegrationIsDisabled() {
+func (s *deploymentTemplateTest) TestContainerShouldDisableOptimizeIfIdentityIntegrationIsDisabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
