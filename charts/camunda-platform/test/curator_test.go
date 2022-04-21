@@ -1,4 +1,4 @@
-package zeebe
+package test
 
 import (
 	"camunda-platform-helm/charts/camunda-platform/test/golden"
