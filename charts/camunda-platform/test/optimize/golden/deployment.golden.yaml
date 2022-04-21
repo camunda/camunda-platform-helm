@@ -1,17 +1,17 @@
 ---
-# Source: camunda-platform/charts/operate/templates/deployment.yaml
+# Source: camunda-platform/charts/optimize/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: camunda-platform-test-operate
+  name: camunda-platform-test-optimize
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: operate
+    app.kubernetes.io/name: optimize
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.0.0"
-    app.kubernetes.io/component: operate
+    app.kubernetes.io/version: "3.8.0"
+    app.kubernetes.io/component: optimize
   annotations:
     {}
 spec:
@@ -19,58 +19,59 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: operate
+      app.kubernetes.io/name: optimize
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
-      app.kubernetes.io/component: operate
+      app.kubernetes.io/component: optimize
   template:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: operate
+        app.kubernetes.io/name: optimize
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.0.0"
-        app.kubernetes.io/component: operate
+        app.kubernetes.io/version: "3.8.0"
+        app.kubernetes.io/component: optimize
     spec:
       containers:
-      - name: operate
-        image: "camunda/operate:8.0.0"
+      - name: optimize
+        image: "camunda/optimize:3.8.0"
         env:
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+            value: "true"
+          - name: OPTIMIZE_ELASTICSEARCH_HOST
+            value: "elasticsearch-master"
+          - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+            value: "9200"
           - name: SPRING_PROFILES_ACTIVE
-            value: "identity-auth"
-          - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
+            value: "ccsm"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
             value: "http://localhost:18080/auth/realms/camunda-platform"
-          - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL
             value: "http://camunda-platform-tes:80/auth/realms/camunda-platform"
-          - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
-            value: "operate"
-          - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
+            value: "optimize"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
             valueFrom:
               secretKeyRef:
-                name: "camunda-platform-test-operate-identity-secret"
-                key: operate-secret
-          - name: CAMUNDA_OPERATE_IDENTITY_AUDIENCE
-            value: "operate-api"
+                name: "camunda-platform-test-optimize-identity-secret"
+                key: optimize-secret
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
+            value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
+            value: "false"
         resources:
           limits:
-            cpu: 2000m
+            cpu: 1000m
             memory: 2Gi
           requests:
-            cpu: 600m
-            memory: 400Mi
+            cpu: 400m
+            memory: 1Gi
         ports:
-        - containerPort: 8080
+        - containerPort: 8090
           name: http
           protocol: TCP
         volumeMounts:
-        - name: config
-          mountPath: /usr/local/operate/config/application.yml
-          subPath: application.yml
       volumes:
-      - name: config
-        configMap:
-          name: camunda-platform-test-operate
-          defaultMode: 484
