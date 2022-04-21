@@ -59,6 +59,9 @@ Operate:  kubectl port-forward svc/{{ .Release.Name }}-operate  8081:80
 {{ if .Values.tasklist.enabled -}}
 Tasklist: kubectl port-forward svc/{{ .Release.Name }}-tasklist 8082:80
 {{- end }}
+{{ if .Values.optimize.enabled -}}
+Optimize: kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
+{{- end }}
 
     {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
 
