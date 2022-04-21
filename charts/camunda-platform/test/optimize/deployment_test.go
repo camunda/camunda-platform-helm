@@ -460,31 +460,3 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecret() 
 			},
 		})
 }
-
-func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-
-	for _, envvar := range env {
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_ISSUER_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_CLIENT_ID", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET", envvar.Name)
-	}
-
-	s.Require().Contains(env, v12.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
-}
