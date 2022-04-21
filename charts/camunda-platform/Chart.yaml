@@ -22,6 +22,9 @@ dependencies:
 - name: tasklist
   version: 8.0.4
   condition: "tasklist.enabled"
+- name: optimize
+  version: 8.0.4
+  condition: "global.identity.auth.enabled"
 - name: identity
   version: 8.0.4
   condition: "identity.enabled"
