@@ -59,6 +59,7 @@ global:
   # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
 
+
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
     # Identity.auth configuration, to configure Identity authentication setup
@@ -86,10 +87,20 @@ global:
         # Identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the Identity-Tasklist communication.
         existingSecret:
-        # Tasklist.auth.identity.tasklistRootUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Identity.auth.tasklist.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
         # Should be public accessible, the default value works if port-forward to Tasklist is created to 8082.
         # Can be overwritten if, ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8082"
+
+      # Identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other sub-charts
+      optimize:
+        # Identity.auth.optimize.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # The existing secret should contain an `optimize-secret` field, which will be used as secret for the Identity-Optimize communication.
+        existingSecret:
+        # Identity.auth.optimize.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Optimize.
+        # Should be public accessible, the default value works if port-forward to Optimize is created to 8082.
+        # Can be overwritten if, ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8083"
 
 # Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
@@ -356,7 +367,6 @@ zeebe-gateway:
     # ServiceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: { }
 
-
 # Operate configuration for the operate sub chart.
 operate:
   # Enabled if true, the operate deployment and its related resources are deployed via a helm release
@@ -509,6 +519,83 @@ tasklist:
   # Ingress configuration to configure the ingress resource
   ingress:
     # Ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host:
+
+# Optimize configuration for the Optimize sub chart.
+optimize:
+  # Enabled if true, the Optimize deployment and its related resources are deployed via a helm release
+  enabled: true
+
+  # Image configuration to configure the Optimize image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/optimize
+    # Image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag: 3.8.0
+
+  # PodLabels can be used to define extra Optimize pod labels
+  podLabels: { }
+
+  # Env can be used to set extra environment variables in each Optimize container
+  env: []
+  # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  # ExtraVolumes can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates
+  extraVolumes: []
+  # ExtraVolumeMounts can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates
+  extraVolumeMounts: []
+
+  # ServiceAccount configuration for the service account where the Optimize pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the Optimize service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the Optimize service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the Optimize service account
+    annotations: { }
+
+  # Service configuration to configure the Optimize service.
+  service:
+    # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # Service.port defines the port of the service, where the Optimize web application will be available
+    port: 80
+    # Service.annotations can be used to define annotations, which will be applied to the Optimize service
+    annotations: {}
+
+  # PodSecurityContext defines the security options the operate container should be run with
+  podSecurityContext: {}
+
+  # NodeSelector can be used to define on which nodes the Optimize pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: { }
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 400m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     # Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
