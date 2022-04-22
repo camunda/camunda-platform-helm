@@ -109,6 +109,8 @@ spec:
             https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/_helpers.tpl#L2-L5
             */}}
             value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) | trunc 20 | trimSuffix "-" }}:{{ coalesce .Values.keycloak.service.ports.http .Values.keycloak.service.port }}/auth"
+          - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
+            value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
           - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
             value: "http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) | trunc 20 | trimSuffix "-" }}:{{ coalesce .Values.keycloak.service.ports.http .Values.keycloak.service.port }}/auth/realms/camunda-platform"
           - name: KEYCLOAK_SETUP_USER
