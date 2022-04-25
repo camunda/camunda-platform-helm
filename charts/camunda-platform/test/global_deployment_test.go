@@ -63,3 +63,58 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderOptimizeIfDisabled(
 	// then
 	s.Require().NotContains(output, "charts/optimize")
 }
+
+
+
+func (s *deploymentTemplateTest) TestContainerShouldNotRenderOperateIfDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	s.Require().NotContains(output, "charts/operate")
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldNotRenderTasklistIfDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	s.Require().NotContains(output, "charts/tasklist")
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.enabled": "false",
+			"global.identity.auth.enabled": "false",
+			"optimize.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	s.Require().NotContains(output, "charts/identity")
+}
