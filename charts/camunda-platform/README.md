@@ -270,7 +270,7 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `identity`| |  Configuration for the identity sub chart. | |
-| | `enabled` |  If true, the identity deployment and its related resources are deployed via a helm release | `true` |
+| | `enabled` |  If true, the identity deployment and its related resources are deployed via a helm release. <br/> Note: If identity is disabled it is likely that the Helm chart installation fails, if you not disable the Identity integration. Make sure to set global.identity.auth.enabled=false AND optimize.enabled=false, since Optimize is highly depending on Identity. | `true` |
 | | `firstUser.username` | Defines the username of the first user, needed to log in into the web applications | `demo` |
 | | `firstUser.password` | Defines the password of the first user, needed to log in into the web applications | `demo` |
 | | `image` |  Configuration to configure the identity image specifics | |
