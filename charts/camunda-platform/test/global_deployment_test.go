@@ -64,8 +64,6 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderOptimizeIfDisabled(
 	s.Require().NotContains(output, "charts/optimize")
 }
 
-
-
 func (s *deploymentTemplateTest) TestContainerShouldNotRenderOperateIfDisabled() {
 	// given
 	options := &helm.Options{
@@ -104,9 +102,9 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.enabled": "false",
+			"identity.enabled":             "false",
 			"global.identity.auth.enabled": "false",
-			"optimize.enabled": "false",
+			"optimize.enabled":             "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
