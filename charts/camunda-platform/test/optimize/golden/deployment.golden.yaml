@@ -41,6 +41,8 @@ spec:
         env:
           - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
             value: "true"
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+            value: "3"
           - name: OPTIMIZE_ELASTICSEARCH_HOST
             value: "elasticsearch-master"
           - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT

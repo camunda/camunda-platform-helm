@@ -547,6 +547,8 @@ optimize:
   # PodLabels can be used to define extra Optimize pod labels
   podLabels: { }
 
+  # PartitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
+  partitionCount: "3"
   # Env can be used to set extra environment variables in each Optimize container
   env: []
   # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
