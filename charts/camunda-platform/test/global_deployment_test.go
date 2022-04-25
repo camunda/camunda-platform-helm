@@ -47,11 +47,11 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldDisableOptimizeIfIdentityIntegrationIsDisabled() {
+func (s *deploymentTemplateTest) TestContainerShouldNotRenderOptimizeIfDisabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.identity.auth.enabled": "false",
+			"optimize.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -61,6 +61,5 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableOptimizeIfIdentityInt
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
 
 	// then
-	s.Require().NotContains("optimize", output)
-	s.Require().NotContains("OPTIMIZE", output)
+	s.Require().NotContains(output, "charts/optimize")
 }
