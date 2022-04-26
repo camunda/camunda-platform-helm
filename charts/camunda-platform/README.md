@@ -73,13 +73,13 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `retentionPolicy` | | Configuration to configure the elasticsearch index retention policies | |
-| | `enabled` | If true, elasticsearch curator cronjob and configuration will be deployed. | `false` |
+| `retentionPolicy` | | Configuration to configure the Elasticsearch index retention policies | |
+| | `enabled` | If true, Elasticsearch curator cronjob and configuration will be deployed. | `false` |
 | | `schedule` | Defines how often/when the curator should run. | `"0 0 * * *"` |
 | | `zeebeIndexTTL` | Defines after how many days a zeebe index can be deleted. | `1` |
 | | `zeebeIndexMaxSize` | Can be set to configure the maximum allowed zeebe index size in gigabytes. After reaching that size, curator will delete that corresponding index on the next run. To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes. | `` |
-| | `operateIndexTTL` | Defines after how many days an operate index can be deleted. | `30` |
-| | `tasklistIndexTTL` | Defines after how many days an tasklist index can be deleted. | `30` |
+| | `operateIndexTTL` | Defines after how many days an Operate index can be deleted. | `30` |
+| | `tasklistIndexTTL` | Defines after how many days an Tasklist index can be deleted. | `30` |
 | | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator` |
 | | `image.tag` | Defines the tag / version which should be used in the chart. | `5.8.4` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
@@ -198,17 +198,17 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 |-|-|-|-|
 | `operate` | | Configuration for the Operate sub chart. | |
 | | `enabled` | If true, the Operate deployment and its related resources are deployed via a helm release | `true` |
-| | `image` | Configuration to configure the operate image specifics. | |
+| | `image` | Configuration to configure the Operate image specifics. | |
 | | `image.repository` | Defines which image repository to use. | `camunda/operate` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
-| | `podLabels` |  Can be used to define extra operate pod labels | `{ }` |
+| | `podLabels` |  Can be used to define extra Operate pod labels | `{ }` |
 | | `logging` | Configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file | `level:` <br/> `ROOT: INFO` <br/> `org.camunda.operate: DEBUG` |
 | | `service` | Configuration to configure the Operate service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
-| | `service.annotations` | Defines annotations for the operate service | `{ }` | 
+| | `service.annotations` | Defines annotations for the Operate service | `{ }` | 
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
-| | `env` | Can be used to set extra environment variables in each operate container | `[ ]` |
+| | `env` | Can be used to set extra environment variables in each Operate container | `[ ]` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `extraVolumes` | Can be used to define extra volumes for the Operate pods, useful for TLS and self-signed certificates | `[ ]` |
@@ -239,7 +239,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 |-|-|-|-|
 | `tasklist` | | Configuration for the Tasklist sub chart. | |
 | | `enabled` | If true, the Tasklist deployment and its related resources are deployed via a helm release | `true` |
-| | `image` | Configuration to configure the tasklist image specifics. | |
+| | `image` | Configuration to configure the Tasklist image specifics. | |
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `podLabels` |  Can be used to define extra Tasklist pod labels | `{ }` |
@@ -269,30 +269,30 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `identity`| |  Configuration for the identity sub chart. | |
+| `identity`| |  Configuration for the Identity sub chart. | |
 | | `enabled` |  If true, the Identity deployment and its related resources are deployed via a helm release. <br/> Note: Identity is required by Optimize. If Identity is disabled, then Optimize will be unusable. If you don't need Optimize, then make sure to disable both: set global.identity.auth.enabled=false AND optimize.enabled=false. | `true` |
 | | `firstUser.username` | Defines the username of the first user, needed to log in into the web applications | `demo` |
 | | `firstUser.password` | Defines the password of the first user, needed to log in into the web applications | `demo` |
-| | `image` |  Configuration to configure the identity image specifics | |
+| | `image` |  Configuration to configure the Identity image specifics | |
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |
 | | `image.tag` |   Can be set to overwrite the global.image.tag | |
-| | `service` |  Configuration to configure the identity service. | |
+| | `service` |  Configuration to configure the Identity service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
-| | `service.port` |  Defines the port of the service, where the identity web application will be available | `80` |
-| | `service.annotations` |  Can be used to define annotations, which will be applied to the identity service | `{}` |
+| | `service.port` |  Defines the port of the service, where the Identity web application will be available | `80` |
+| | `service.annotations` |  Can be used to define annotations, which will be applied to the Identity service | `{}` |
 | | `resources` |  Configuration to set request and limit configuration for the container [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
-| | `env` |  Can be used to set extra environment variables in each identity container | `[]` |
+| | `env` |  Can be used to set extra environment variables in each Identity container | `[]` |
 | | `command` |  Can be used to override the default command provided by the container image. See [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | |
-| | `extraVolumes` |  Can be used to define extra volumes for the identity pods, useful for tls and self-signed certificates | `[]` |
-| | `extraVolumeMounts` |  Can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates | `[]` |
-| | `keycloak` |  Configuration for the keycloak dependency chart which is used by identity | |
+| | `extraVolumes` |  Can be used to define extra volumes for the Identity pods, useful for tls and self-signed certificates | `[]` |
+| | `extraVolumeMounts` |  Can be used to mount extra volumes for the Identity pods, useful for tls and self-signed certificates | `[]` |
+| | `keycloak` |  Configuration for the Keycloak dependency chart which is used by Identity | |
 | | `keycloak.auth` |  Authentication parameters - see [admin-credentials](https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials) | |
-| | `keycloak.auth.adminUser` |  Defines the keycloak administrator user | 'admin' |
+| | `keycloak.auth.adminUser` |  Defines the Keycloak administrator user | 'admin' |
 | | `keycloak.auth.existingSecret` |  Can be used to reuse an existing secret containing authentication information. See [manage-passwords](https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/) for more details. | `""` |
-| | `serviceAccount` |  Configuration for the service account where the identity pods are assigned to | |
-| | `serviceAccount.enabled` |  If true, enables the identity service account | `true` |
-| | `serviceAccount.name` |  Can be used to set the name of the identity service account | `` |
-| | `serviceAccount.annotations` |  Can be used to set the annotations of the identity service account | `{}` |
+| | `serviceAccount` |  Configuration for the service account where the Identity pods are assigned to | |
+| | `serviceAccount.enabled` |  If true, enables the Identity service account | `true` |
+| | `serviceAccount.name` |  Can be used to set the name of the Identity service account | `` |
+| | `serviceAccount.annotations` |  Can be used to set the annotations of the Identity service account | `{}` |
 | | `ingress.enabled` | If true, an ingress resource is deployed with the Identity deployment. Only useful if an ingress controller is available, like nginx. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
