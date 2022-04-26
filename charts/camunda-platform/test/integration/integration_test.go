@@ -108,6 +108,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 	s.tryTologinToIdentity()
 	s.assertProcessDefinitionFromOperate()
 	s.assertTasksFromTasklist()
+	s.tryToLoginToOptimize()
 }
 
 func (s *integrationTest) TestServicesEnd2EndWithConfig() {
@@ -187,6 +188,51 @@ func (s *integrationTest) assertTasksFromTasklist() {
 			return "User Task 'It Test' successful queried from tasklist!", nil
 		})
 	s.T().Logf(message)
+}
+
+func (s *integrationTest) tryToLoginToOptimize() {
+	message := retry.DoWithRetry(s.T(),
+		"Try to login to Optimize",
+		10,
+		10*time.Second,
+		func() (string, error) {
+			err := s.loginToOptimize()
+			if err != nil {
+				return "", err
+			}
+
+			return "Login to Optimize successful!", nil
+		})
+	s.T().Logf(message)
+}
+
+
+func (s *integrationTest) loginToOptimize() (error) {
+
+	// In order to login to Optimize we need to port-forward to Keycloak.
+	// Optimize will redirect (forward) requests to Keycloak to enable the login
+
+	// create keycloak port-forward
+	keycloakServiceName := s.resolveKeycloakServiceName()
+	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
+	defer closeKeycloakPortForward()
+
+	// create operate port-forward
+	optimizeServiceName := fmt.Sprintf("%s-optimize", s.release)
+	optimizeEndpoint, closeFn := s.createPortForwardedHttpClientWithPortAndContainerPort(optimizeServiceName, 8083, 8090)
+	defer closeFn()
+
+	httpClient, _, err := s.createHttpClientWithJar()
+	if err != nil {
+		return err
+	}
+
+	err = s.doSessionBasedLogin("http://"+optimizeEndpoint+"/api/login", httpClient)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 
@@ -547,11 +593,15 @@ func (s *integrationTest) createPortForwardedClient(serviceName string) (zbc.Cli
 }
 
 func (s *integrationTest) createPortForwardedHttpClientWithPort(serviceName string, port int) (string, func()) {
+	return s.createPortForwardedHttpClientWithPortAndContainerPort(serviceName, port, 8080)
+}
+
+func (s *integrationTest) createPortForwardedHttpClientWithPortAndContainerPort(serviceName string, port int, containerPort int) (string, func()) {
 	// NOTE: this only waits until the service is created, not until the underlying pods are ready to receive traffic
 	k8s.WaitUntilServiceAvailable(s.T(), s.kubeOptions, serviceName, 90, 1*time.Second)
 
 	// remote port needs to be container port - not service port!
-	tunnel := k8s.NewTunnel(s.kubeOptions, k8s.ResourceTypeService, serviceName, port, 8080)
+	tunnel := k8s.NewTunnel(s.kubeOptions, k8s.ResourceTypeService, serviceName, port, containerPort)
 
 	// the gateway is not ready/receiving traffic until at least one leader is present
 	s.waitUntilPortForwarded(tunnel, 30, 2*time.Second)
