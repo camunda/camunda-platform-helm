@@ -80,7 +80,6 @@ func (s *integrationTest) waitUntilPortForwarded(tunnel *k8s.Tunnel, retries int
 	logger.Logf(s.T(), message)
 }
 
-
 func (s *integrationTest) createHttpClientWithJar() (http.Client, *cookiejar.Jar, error) {
 	// setup http client with cookie jar - necessary to store tokens
 	jar, err := cookiejar.New(nil)
