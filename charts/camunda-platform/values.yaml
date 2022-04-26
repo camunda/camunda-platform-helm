@@ -647,8 +647,8 @@ prometheusServiceMonitor:
 identity:
   # Enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: If identity is disabled it is likely that the Helm chart installation fails, if you not disable the Identity integration.
-  #       Make sure to set global.identity.auth.enabled=false AND optimize.enabled=false, since Optimize is highly depending on Identity.
+  # Note: Identity is required by Optimize. If Identity is disabled, then Optimize will be unusable.
+  #       If you don't need Optimize, then make sure to disable both: set global.identity.auth.enabled=false AND optimize.enabled=false.
   enabled: true
 
   # FirstUser configuration to configure properties of the first Identity user, which can be used to access all
