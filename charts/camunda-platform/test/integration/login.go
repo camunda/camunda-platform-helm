@@ -25,6 +25,8 @@ import (
 	"strings"
 )
 
+const kKeycloakDefaultPort = 18080
+
 func (s *integrationTest) doSessionBasedLogin(loginUrl string, httpClient http.Client) error {
 	sessionUrl, err := s.resolveSessionLoginUrl(loginUrl, httpClient)
 	if err != nil {
@@ -133,7 +135,7 @@ func (s *integrationTest) doLogin(service string, localPort int, containerPort i
 
 	// create keycloak port-forward
 	keycloakServiceName := s.resolveKeycloakServiceName()
-	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
+	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, kKeycloakDefaultPort)
 
 	// create service port-forward
 	serviceName := fmt.Sprintf("%s-%s", s.release, service)
