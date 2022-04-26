@@ -10,9 +10,10 @@
     + [Camunda Platform](#camunda-platform)
     + [Zeebe](#zeebe)
     + [Zeebe Gateway](#zeebe-gateway)
-    + [Identity](#identity)
     + [Operate](#operate)
     + [Tasklist](#tasklist)
+    + [Optimize](#optimize)
+    + [Identity](#identity)
     + [Elasticsearch](#elasticsearch)
   * [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
   * [Development](#development)
@@ -67,6 +68,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `identity.auth.operate.redirectUrl` |  Defines the redirect URL, which is used by Keycloak to access Operate. Should be public accessible, the default value works if port-forward to operate is created to 8080. Can be overwritten if, ingress is in use and an external IP is available. | `"http://localhost:8080"` |
 | | `identity.auth.tasklist.existingSecret` |  Can be used to reference an existing secret. If not set, a random secret is generated. The existing secret should contain an `tasklist-secret` field, which will be used as secret for the Identity-Tasklist communication. | ` ` |
 | | `identity.auth.tasklist.redirectUrl` |  Defines the redirect URL, which is used by Keycloak to access Tasklist. Should be public accessible, the default value works if port-forward to Tasklist is created to 8080. Can be overwritten if, an Ingress is in use and an external IP is available. | `"http://localhost:8080"` |
+| | `identity.auth.optimize.existingSecret` |  Can be used to reference an existing secret. If not set, a random secret is generated. The existing secret should contain an `optimize-secret` field, which will be used as secret for the Identity-Optimize communication. | ` ` |
+| | `identity.auth.optimize.redirectUrl` |  Defines the redirect URL, which is used by Keycloak to access Tasklist. Should be public accessible, the default value works if port-forward to Tasklist is created to 8080. Can be overwritten if, an Ingress is in use and an external IP is available. | `"http://localhost:8080"` |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
 
 ### Camunda Platform
@@ -206,7 +209,7 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `service` | Configuration to configure the Operate service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
-| | `service.annotations` | Defines annotations for the operate service | `{ }` | 
+| | `service.annotations` | Defines annotations for the operate service | `{ }` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
 | | `env` | Can be used to set extra environment variables in each operate container | `[ ]` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
@@ -261,6 +264,42 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
 | | `ingress.path` | Defines the path which is associated with the Tasklist [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
+| | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+
+### Optimize
+
+Information about Optimize you can find [here](https://docs.camunda.io/docs/components/optimize/what-is-optimize/).
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `optimize` | |  Configuration for the Optimize sub chart. | |
+| | `enabled` |  If true, the Optimize deployment and its related resources are deployed via a helm release | `true` |
+| | `image` |  Configuration for the Optimize image specifics | |
+| | `image.repository` |  Defines which image repository to use | `camunda/optimize` |
+| | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `3.8.0` |
+| | `podLabels` |  Can be used to define extra Optimize pod labels | `{ }` |
+| | `partitionCount` |  Defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize | `"3"` |
+| | `env` |  Can be used to set extra environment variables in each Optimize container | `[]` |
+| | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
+| | `extraVolumes` |  Can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
+| | `extraVolumeMounts` |  Can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
+| | `serviceAccount` |  Configuration for the service account where the Optimize pods are assigned to | |
+| | `serviceAccount.enabled` |  If true, enables the Optimize service account | `true` |
+| | `serviceAccount.name` |  Can be used to set the name of the Optimize service account | `""` |
+| | `serviceAccount.annotations` |  Can be used to set the annotations of the Optimize service account | `{}` |
+| | `service` |  Configuration for the Optimize service. | |
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.port` | Defines the port of the service, where the Optimize web application will be available | `80` |
+| | `service.annotations` |  Can be used to define annotations, which will be applied to the Optimize service | `{}` |
+| | `podSecurityContext` |  Defines the security options the operate container should be run with | `{}` |
+| | `nodeSelector` |  Can be used to define on which nodes the Optimize pods should run | `{}` |
+| | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
+| | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 400m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` || | `ingress` |  Configuration to configure the ingress resource | |
+| | `ingress.enabled` |  If true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
+| | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
+| | `ingress.path` | Defines the path which is associated with the Optimize [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 
 ### Identity
