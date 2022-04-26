@@ -62,7 +62,7 @@ func TestIntegration(t *testing.T) {
 
 	suite.Run(t, &integrationTest{
 		chartPath:   chartPath,
-		release:     "zeebe-cluster-helm-it",
+		release:     "camunda-platform-it",
 	})
 }
 
