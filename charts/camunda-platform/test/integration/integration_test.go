@@ -48,14 +48,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type integrationTest struct {
-	suite.Suite
-	chartPath   string
-	release     string
-	namespace   string
-	kubeOptions *k8s.KubectlOptions
-}
-
 func TestIntegration(t *testing.T) {
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
