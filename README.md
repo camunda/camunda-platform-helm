@@ -38,6 +38,7 @@ Per default the following will be installed:
   - [Zeebe Gateway](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#zeebe-gateway)
   - [Operate](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#operate)
   - [Tasklist](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#tasklist)
+  - [Optimize](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#optimize)
   - [Identity](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#identity)
     - [Keycloak](https://github.com/bitnami/charts/tree/master/bitnami/keycloak)
     - [PostgreSQL](https://github.com/bitnami/charts/tree/master/bitnami/postgresql)
