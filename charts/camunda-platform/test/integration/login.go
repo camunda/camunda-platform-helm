@@ -1,3 +1,17 @@
+// Copyright 2022 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package integration
 
 import (
@@ -10,6 +24,8 @@ import (
 	"regexp"
 	"strings"
 )
+
+const kKeycloakDefaultPort = 18080
 
 func (s *integrationTest) doSessionBasedLogin(loginUrl string, httpClient http.Client) error {
 	sessionUrl, err := s.resolveSessionLoginUrl(loginUrl, httpClient)
@@ -119,7 +135,7 @@ func (s *integrationTest) doLogin(service string, localPort int, containerPort i
 
 	// create keycloak port-forward
 	keycloakServiceName := s.resolveKeycloakServiceName()
-	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, 18080)
+	_, closeKeycloakPortForward := s.createPortForwardedHttpClientWithPort(keycloakServiceName, kKeycloakDefaultPort)
 
 	// create service port-forward
 	serviceName := fmt.Sprintf("%s-%s", s.release, service)

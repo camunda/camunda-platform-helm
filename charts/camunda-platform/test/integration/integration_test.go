@@ -43,15 +43,14 @@ func TestIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &integrationTest{
-		chartPath:   chartPath,
-		release:     "camunda-platform-it",
+		chartPath: chartPath,
+		release:   "camunda-platform-it",
 	})
 }
 
 func (s *integrationTest) SetupTest() {
 	s.namespace = createNamespaceName()
 	s.kubeOptions = k8s.NewKubectlOptions("gke_zeebe-io_europe-west1-b_zeebe-cluster", "", s.namespace)
-
 
 	if _, err := k8s.GetNamespaceE(s.T(), s.kubeOptions, s.namespace); err != nil {
 		k8s.CreateNamespace(s.T(), s.kubeOptions, s.namespace)
@@ -96,7 +95,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 func (s *integrationTest) TestServicesEnd2EndWithConfig() {
 	// given
 	options := &helm.Options{
-		ValuesFiles: []string{"it-values.yaml"},
+		ValuesFiles:    []string{"it-values.yaml"},
 		KubectlOptions: s.kubeOptions,
 	}
 
@@ -143,7 +142,6 @@ func (s *integrationTest) assertProcessDefinitionFromOperate() {
 	s.T().Logf(message)
 }
 
-
 func (s *integrationTest) assertTasksFromTasklist() {
 	message := retry.DoWithRetry(s.T(),
 		"Try to query and assert process definition from operate",
@@ -188,8 +186,7 @@ func (s *integrationTest) tryToLoginToOptimize() {
 	s.T().Logf(message)
 }
 
-
-func (s *integrationTest) loginToOptimize() (error) {
+func (s *integrationTest) loginToOptimize() error {
 	_, _, closeFn, err := s.doLogin("optimize", 8083, 8090)
 	defer closeFn()
 	if err != nil {
@@ -286,7 +283,7 @@ func (s *integrationTest) queryProcessDefinitionsFromOperate() (*bytes.Buffer, e
 		return nil, err
 	}
 
-	return s.queryApi(httpClient, "http://" + endpoint + "/v1/process-definitions/search", bytes.NewBufferString("{}"))
+	return s.queryApi(httpClient, "http://"+endpoint+"/v1/process-definitions/search", bytes.NewBufferString("{}"))
 }
 
 func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData *bytes.Buffer) (*bytes.Buffer, error) {
@@ -313,7 +310,7 @@ func (s *integrationTest) awaitCamundaPlatformPods() {
 	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-platform"})
 
 	for _, pod := range pods {
-		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1 * time.Second)
+		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)
 	}
 }
 
