@@ -68,10 +68,10 @@ spec:
             value: "true"
         resources:
           limits:
-            cpu: 1000m
+            cpu: 2000m
             memory: 2Gi
           requests:
-            cpu: 400m
+            cpu: 600m
             memory: 1Gi
         ports:
         - containerPort: 8090
