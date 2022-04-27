@@ -295,7 +295,7 @@ Information about Optimize you can find [here](https://docs.camunda.io/docs/comp
 | | `nodeSelector` |  Can be used to define on which nodes the Optimize pods should run | `{}` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
-| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 400m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` || | `ingress` |  Configuration to configure the ingress resource | |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` || | `ingress` |  Configuration to configure the ingress resource | |
 | | `ingress.enabled` |  If true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |

@@ -589,10 +589,10 @@ optimize:
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
-      cpu: 400m
+      cpu: 600m
       memory: 1Gi
     limits:
-      cpu: 1000m
+      cpu: 2000m
       memory: 2Gi
 
   # Ingress configuration to configure the ingress resource
