@@ -14,7 +14,11 @@
 - Operate:
   - Enabled: {{ .Values.operate.enabled }}
   {{- if .Values.operate.enabled }}
+    {{- if .Values.operate.image.tag }}
+  - Docker Image used for Operate: {{ .Values.operate.image.repository }}:{{ .Values.operate.image.tag }}
+    {{- else }}
   - Docker Image used for Operate: {{ .Values.operate.image.repository }}:{{ .Values.global.image.tag }}
+    {{- end }}
   {{- end }}
 - Tasklist:
   - Enabled: {{ .Values.tasklist.enabled }}
