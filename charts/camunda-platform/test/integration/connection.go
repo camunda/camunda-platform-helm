@@ -66,9 +66,7 @@ func (s *integrationTest) createPortForwardedHttpClientWithPortAndContainerPort(
 	s.waitUntilPortForwarded(tunnel, 30, 2*time.Second)
 
 	endpoint := fmt.Sprintf("localhost:%d", port)
-	return endpoint, func() {
-		tunnel.Close()
-	}
+	return endpoint, tunnel.Close
 }
 
 func (s *integrationTest) createPortForwardedHttpClient(serviceName string) (string, func()) {
