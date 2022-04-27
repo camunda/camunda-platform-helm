@@ -21,6 +21,15 @@
   {{- if .Values.tasklist.enabled }}
   - Docker Image used for Tasklist: {{ .Values.tasklist.image.repository }}:{{ .Values.global.image.tag }}
   {{- end }}
+- Optimize:
+  - Enabled: {{ .Values.optimize.enabled }}
+  {{- if .Values.optimize.enabled }}
+    {{- if .Values.optimize.image.tag }}
+  - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.optimize.image.tag }}
+    {{- else }}
+  - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.global.image.tag }}
+    {{- end }}
+  {{- end }}
 - Identity:
   - Enabled: {{ .Values.identity.enabled }}
   {{- if .Values.identity.enabled }}
