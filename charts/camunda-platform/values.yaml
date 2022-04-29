@@ -343,6 +343,10 @@ zeebe-gateway:
   service:
     # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
+    # Service.loadBalancerIP defines public ip of the load balancer if the type is LoadBalancer
+    loadBalancerIP: ""
+    # Service.loadBalancerSourceRanges defines list of allowed source ip address ranges if the type is LoadBalancer
+    loadBalancerSourceRanges: [ ]
     # Service.httpPort defines the port of the http endpoint, where for example metrics are provided
     httpPort: 9600
     # Service.httpName defines the name of the http endpoint, where for example metrics are provided

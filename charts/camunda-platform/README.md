@@ -181,6 +181,8 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
 | | `service` | Configuration for the gateway service | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.loadBalancerIP` | Can be used to set [ip address](https://cloud.google.com/kubernetes-engine/docs/how-to/service-parameters#lb_ip) if service.type is LoadBalancer | `""` |
+| | `service.loadBalancerSourceRanges` | Can be used to set list of allowed [source ip ranges](https://cloud.google.com/kubernetes-engine/docs/how-to/service-parameters#lb_source_ranges) if service.type is LoadBalancer | `[ ]` |
 | | `service.httpPort` | Defines the port of the HTTP endpoint, where for example metrics are provided | `9600` |
 | | `service.httpName` | Defines the name of the HTTP endpoint, where for example metrics are provided | `http` |
 | | `service.gatewayPort` | Defines the port of the gateway endpoint, where client commands (gRPC) are sent to | `26500` |

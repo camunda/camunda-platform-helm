@@ -84,3 +84,40 @@ func (s *serviceTest) TestContainerServiceAnnotations() {
 	// then
 	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 }
+
+func (s *serviceTest) TestContainerShouldSetServiceLoadBalancerIp() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.service.loadBalancerIP": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var service coreV1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+	// then
+	s.Require().Equal("bar", service.Spec.LoadBalancerIP)
+}
+
+func (s *serviceTest) TestContainerShouldSetServiceLoadBalancerSourceRanges() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.service.loadBalancerSourceRanges[0]": "foo",
+			"zeebe-gateway.service.loadBalancerSourceRanges[1]": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var service coreV1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+	// then
+	s.Require().Equal([]string{"foo", "bar"}, service.Spec.LoadBalancerSourceRanges)
+}
