@@ -206,9 +206,9 @@ zeebe:
   pvcStorageClassName: ''
 
   # ExtraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
-  extraVolumes: { }
+  extraVolumes: [ ]
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
-  extraVolumeMounts: { }
+  extraVolumeMounts: [ ]
   # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: [ ]
 
@@ -333,9 +333,9 @@ zeebe-gateway:
           topologyKey: "kubernetes.io/hostname"
 
   # ExtraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
-  extraVolumeMounts: { }
+  extraVolumeMounts: [ ]
   # ExtraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
-  extraVolumes: { }
+  extraVolumes: [ ]
   # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: [ ]
 
