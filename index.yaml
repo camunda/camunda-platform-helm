@@ -2,6 +2,57 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: |
+        - fix - use correct type for extra volumnes and mounts
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 8.0.0
+    created: "2022-04-29T11:31:13.625340506Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.0.6
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.0.6
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.0.6
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.0.6
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.0.6
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.0.6
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: f2816ff97cd65ee9bb336a05a4ddbf52804e923f871f84f30502bce99fe971e6
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.0.6/camunda-platform-8.0.6.tgz
+    version: 8.0.6
+  - annotations:
       artifacthub.io/changes: "- add nodeSelector, affinity and tolerations to tasklist
         and operate deployments \n- Add optimize to helm charts\n- Add publicIssuerUrl
         to identity chart\n- Disable optimize separately\n- Set partitionCount in
@@ -3606,4 +3657,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-04-27T12:39:10.887073284Z"
+generated: "2022-04-29T11:31:13.626018806Z"
