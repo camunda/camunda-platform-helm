@@ -77,6 +77,8 @@ Available commit types:
 
 ### Tests
 
+> Note: I wrote an blog post about this topic you can read it [here](https://medium.com/@zelldon91/advanced-test-practices-for-helm-charts-587caeeb4cb).
+
 In order to make sure that the helm charts work properly and that further development doesn't break anything we introduced with [#125](https://github.com/camunda/camunda-platform-helm/issues/125) tests for the helm charts. The tests are written in go, and we use the [terratest framework](https://terratest.gruntwork.io/) to write them.
 
 We separate our tests in two parts, with different targets and goals.
