@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.0.5
+version: 8.0.6
 appVersion: "8.0.0"
 description: Camunda Platform Helm Chart for Kubernetes
 type: application
@@ -11,22 +11,22 @@ sources:
   - https://github.com/camunda/zeebe
 dependencies:
 - name: zeebe
-  version: 8.0.5
+  version: 8.0.6
   condition: "zeebe.enabled"
 - name: zeebe-gateway
-  version: 8.0.5
+  version: 8.0.6
   condition: "zeebe.enabled"
 - name: operate
-  version: 8.0.5
+  version: 8.0.6
   condition: "operate.enabled"
 - name: tasklist
-  version: 8.0.5
+  version: 8.0.6
   condition: "tasklist.enabled"
 - name: optimize
-  version: 8.0.5
+  version: 8.0.6
   condition: "optimize.enabled"
 - name: identity
-  version: 8.0.5
+  version: 8.0.6
   condition: "identity.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
@@ -37,12 +37,5 @@ maintainers:
     email: christopher.zell@camunda.com
 annotations:
   artifacthub.io/changes: |
-    - add nodeSelector, affinity and tolerations to tasklist and operate deployments 
-    - Add optimize to helm charts
-    - Add publicIssuerUrl to identity chart
-    - Disable optimize separately
-    - Set partitionCount in optimize
-    - Add optimize to readme
-    - Update notes file
-    - Update default Optimize resources
+    - fix - use correct type for extra volumnes and mounts
   artifacthub.io/containsSecurityUpdates: "false"

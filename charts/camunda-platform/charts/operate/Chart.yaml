@@ -1,7 +1,7 @@
 apiVersion: v2
 description: Operate Helm Chart for Kubernetes
 name: operate
-version: 8.0.5
+version: 8.0.6
 type: application
 icon: https://raw.githubusercontent.com/camunda-cloud/camunda-cloud-documentation/master/static/img/camunda-operate-gradient.png
 annotations:
