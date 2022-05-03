@@ -432,11 +432,40 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecret() {
+func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretValue() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.identity.auth.optimize.existingSecret": "ownExistingSecret",
+			"global.identity.auth.optimize.existingSecret": "secretValue",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name: "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET",
+			ValueFrom: &v12.EnvVarSource{
+				SecretKeyRef: &v12.SecretKeySelector{
+					LocalObjectReference: v12.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
+					Key:                  "optimize-secret",
+				},
+			},
+		})
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretViaReference() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.optimize.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
