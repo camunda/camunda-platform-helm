@@ -34,7 +34,7 @@ spec:
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
             value: "operate"
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET
-            {{- if .Values.global.identity.auth.operate.existingSecret }}
+            {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
             valueFrom:
               secretKeyRef:
                 {{- /*
