@@ -477,6 +477,9 @@ tasklist:
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
 
+  # Env can be used to set extra environment variables on each Tasklist container
+  env: [ ]
+
   # PodLabels can be used to define extra tasklist pod labels
   podLabels: { }
 
@@ -494,8 +497,6 @@ tasklist:
     # Service.port defines the port of the service, where the tasklist web application will be available
     port: 80
 
-  # SpringProfilesActive can be used to set the active spring profiles used by tasklist
-  springProfilesActive: ""
   # GraphqlPlaygroundEnabled if true, enables the graphql playground
   graphqlPlaygroundEnabled: ""
   # GraphqlPlaygroundEnabled can be set to include the credentials in each request, should be set to "include" if graphql playground is enabled
