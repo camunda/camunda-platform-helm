@@ -130,9 +130,9 @@ func (s *integrationTest) TestServicesEnd2EndWithUpgrade() {
 			"global.identity.auth.tasklist.existingSecret": tasklistSecret,
 			"global.identity.auth.optimize.existingSecret": optimizeSecret,
 			"global.identity.auth.operate.existingSecret":  operateSecret,
-			"identity.keycloak.auth.adminPassword":  keycloakAdminPassword,
-			"identity.keycloak.auth.managementPassword":  keycloakManagementPassword,
-			"identity.keycloak.postgresql.auth.password":  postgresqlPassword,
+			"identity.keycloak.auth.adminPassword":         keycloakAdminPassword,
+			"identity.keycloak.auth.managementPassword":    keycloakManagementPassword,
+			"identity.keycloak.postgresql.auth.password":   postgresqlPassword,
 		},
 	}
 	helm.Upgrade(s.T(), upgradeOptions, s.chartPath, s.release)
