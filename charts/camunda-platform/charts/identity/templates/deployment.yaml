@@ -32,7 +32,7 @@ spec:
           - name: KEYCLOAK_USERS_0_ROLES_1
             value: "Operate"
           - name: KEYCLOAK_INIT_OPERATE_SECRET
-            {{- if .Values.global.identity.auth.operate.existingSecret }}
+            {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
             valueFrom:
               secretKeyRef:
                 {{- /*
@@ -45,11 +45,6 @@ spec:
             {{- else }}
             valueFrom:
               secretKeyRef:
-                {{- /*
-                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                */}}
                 name: {{ include "identity.secretNameOperateIdentity" . }}
                 key: operate-secret
             {{- end }}
@@ -59,7 +54,7 @@ spec:
           - name: KEYCLOAK_USERS_0_ROLES_2
             value: "Tasklist"
           - name: KEYCLOAK_INIT_TASKLIST_SECRET
-            {{- if .Values.global.identity.auth.tasklist.existingSecret }}
+            {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
             valueFrom:
               secretKeyRef:
                 {{- /*
@@ -82,7 +77,7 @@ spec:
           - name: KEYCLOAK_USERS_0_ROLES_3
             value: "Optimize"
           - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
-            {{- if .Values.global.identity.auth.optimize.existingSecret }}
+            {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
             valueFrom:
               secretKeyRef:
                 {{- /*
@@ -116,7 +111,7 @@ spec:
           - name: KEYCLOAK_SETUP_USER
             value: {{ .Values.keycloak.auth.adminUser }}
           - name: KEYCLOAK_SETUP_PASSWORD
-            {{- if .Values.keycloak.auth.existingSecret }}
+            {{- if and .Values.keycloak.auth.existingSecret (not (typeIs "string" .Values.keycloak.auth.existingSecret)) }}
             valueFrom:
               secretKeyRef:
                 {{- /*

@@ -82,7 +82,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 	}
 
 	// then
-	s.awaitCamundaPlatformPods()
+	s.awaitAllPodsForThisRelease()
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
@@ -90,6 +90,68 @@ func (s *integrationTest) TestServicesEnd2End() {
 	s.assertProcessDefinitionFromOperate()
 	s.assertTasksFromTasklist()
 	s.tryToLoginToOptimize()
+}
+
+func (s *integrationTest) TestServicesEnd2EndShouldFailWithUpgrade() {
+	// given
+	options := &helm.Options{
+		KubectlOptions: s.kubeOptions,
+	}
+	if _, err := k8s.GetPodE(s.T(), s.kubeOptions, s.release+"-zeebe-0"); err != nil {
+		helm.Install(s.T(), options, s.chartPath, s.release)
+	}
+
+	// when
+	err := helm.UpgradeE(s.T(), options, s.chartPath, s.release)
+
+	// then
+	s.Require().NotNil(err)
+}
+
+func (s *integrationTest) TestServicesEnd2EndWithUpgrade() {
+	// given
+	options := &helm.Options{
+		KubectlOptions: s.kubeOptions,
+	}
+	if _, err := k8s.GetPodE(s.T(), s.kubeOptions, s.release+"-zeebe-0"); err != nil {
+		helm.Install(s.T(), options, s.chartPath, s.release)
+	}
+	tasklistSecret := s.getSecret("-tasklist-identity-secret", "tasklist-secret")
+	operateSecret := s.getSecret("-operate-identity-secret", "operate-secret")
+	optimizeSecret := s.getSecret("-optimize-identity-secret", "optimize-secret")
+	keycloakAdminPassword := s.getSecret("-keycloak", "admin-password")
+	keycloakManagementPassword := s.getSecret("-keycloak", "management-password")
+	postgresqlPassword := s.getSecret("-postgresql", "postgres-password")
+
+	// when
+	upgradeOptions := &helm.Options{
+		KubectlOptions: s.kubeOptions,
+		SetStrValues: map[string]string{
+			"global.identity.auth.tasklist.existingSecret": tasklistSecret,
+			"global.identity.auth.optimize.existingSecret": optimizeSecret,
+			"global.identity.auth.operate.existingSecret":  operateSecret,
+			"identity.keycloak.auth.adminPassword":         keycloakAdminPassword,
+			"identity.keycloak.auth.managementPassword":    keycloakManagementPassword,
+			"identity.keycloak.postgresql.auth.password":   postgresqlPassword,
+		},
+	}
+	helm.Upgrade(s.T(), upgradeOptions, s.chartPath, s.release)
+
+	// then
+	s.awaitAllPodsForThisRelease()
+	s.createProcessInstance()
+
+	s.awaitElasticPods()
+	s.tryTologinToIdentity()
+	s.assertProcessDefinitionFromOperate()
+	s.assertTasksFromTasklist()
+	s.tryToLoginToOptimize()
+}
+
+func (s *integrationTest) getSecret(secretSuffix string, secretKey string) string {
+	getSecret := k8s.GetSecret(s.T(), s.kubeOptions, s.release+secretSuffix)
+	secret := string(getSecret.Data[secretKey])
+	return secret
 }
 
 func (s *integrationTest) TestServicesEnd2EndWithConfig() {
@@ -105,7 +167,7 @@ func (s *integrationTest) TestServicesEnd2EndWithConfig() {
 	}
 
 	// then
-	s.awaitCamundaPlatformPods()
+	s.awaitAllPodsForThisRelease()
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
@@ -305,9 +367,9 @@ func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData 
 	return buf, nil
 }
 
-func (s *integrationTest) awaitCamundaPlatformPods() {
+func (s *integrationTest) awaitAllPodsForThisRelease() {
 	// await that all Camunda Platform related pods become ready
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-platform"})
+	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + s.release})
 
 	for _, pod := range pods {
 		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)

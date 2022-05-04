@@ -339,11 +339,40 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() 
 	s.Require().Contains(env, v12.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecret() {
+func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValue() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.identity.auth.tasklist.existingSecret": "ownExistingSecret",
+			"global.identity.auth.tasklist.existingSecret": "secretValue",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name: "CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET",
+			ValueFrom: &v12.EnvVarSource{
+				SecretKeyRef: &v12.SecretKeySelector{
+					LocalObjectReference: v12.LocalObjectReference{Name: "camunda-platform-test-tasklist-identity-secret"},
+					Key:                  "tasklist-secret",
+				},
+			},
+		})
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaReference() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.tasklist.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},

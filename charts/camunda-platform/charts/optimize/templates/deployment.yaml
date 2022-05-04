@@ -42,7 +42,7 @@ spec:
           - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
             value: "optimize"
           - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
-            {{- if .Values.global.identity.auth.optimize.existingSecret }}
+            {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
             valueFrom:
               secretKeyRef:
                 {{- /*
