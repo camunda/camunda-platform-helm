@@ -181,9 +181,9 @@ zeebe:
     annotations: { }
 
   # CpuThreadCount defines how many threads can be used for the processing on each broker pod
-  cpuThreadCount: "2"
+  cpuThreadCount: "3"
   # IoThreadCount defines how many threads can be used for the exporting on each broker pod
-  ioThreadCount: "2"
+  ioThreadCount: "3"
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
