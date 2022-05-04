@@ -62,7 +62,7 @@ spec:
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
             value: {{ default "include" .Values.graphqlPlaygroundRequestCredentials | quote }}
           {{- with .Values.env }}
-            {{- tpl (toYaml .) $ | nindent 8 }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
           {{- end }}
         {{- if .Values.command}}
         command: {{ .Values.command }}
