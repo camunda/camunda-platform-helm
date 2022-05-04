@@ -190,6 +190,29 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
 
+func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.env[0].name":  "RELEASE_NAME",
+			"tasklist.env[0].value": "test-{{ .Release.Name }}",
+			"tasklist.env[1].name":  "OTHER_ENV",
+			"tasklist.env[1].value": "nothingToSeeHere",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
+	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
+}
+
 // https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
 	// given
