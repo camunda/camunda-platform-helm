@@ -82,7 +82,7 @@ func (s *integrationTest) TestServicesEnd2End() {
 	}
 
 	// then
-	s.awaitCamundaPlatformPods()
+	s.awaitAllPodsForThisRelease()
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
@@ -105,7 +105,7 @@ func (s *integrationTest) TestServicesEnd2EndWithConfig() {
 	}
 
 	// then
-	s.awaitCamundaPlatformPods()
+	s.awaitAllPodsForThisRelease()
 	s.createProcessInstance()
 
 	s.awaitElasticPods()
@@ -305,9 +305,9 @@ func (s *integrationTest) queryApi(httpClient http.Client, url string, jsonData 
 	return buf, nil
 }
 
-func (s *integrationTest) awaitCamundaPlatformPods() {
+func (s *integrationTest) awaitAllPodsForThisRelease() {
 	// await that all Camunda Platform related pods become ready
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=camunda-platform"})
+	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + s.release})
 
 	for _, pod := range pods {
 		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)
