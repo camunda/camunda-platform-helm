@@ -75,9 +75,9 @@ spec:
         - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
           value: "3"
         - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
-          value: "2"
+          value: "3"
         - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
-          value: "2"
+          value: "3"
         - name: ZEEBE_BROKER_GATEWAY_ENABLE
           value: "false"
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
