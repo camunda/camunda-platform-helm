@@ -120,8 +120,8 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `serviceAccount.enabled` | If true, enables the broker service account | `true` |
 | | `serviceAccount.name` | Can be used to set the name of the broker service account | `""` |
 | | `serviceAccount.annotations` | Can be used to set the annotations of the broker service account | `{ }` |
-| | `cpuThreadCount` | Defines how many threads can be used for the processing on each broker pod | `2` |
-| | `ioThreadCount` | Defines how many threads can be used for the exporting on each broker pod | `2` |
+| | `cpuThreadCount` | Defines how many threads can be used for the processing on each broker pod | `3` |
+| | `ioThreadCount` | Defines how many threads can be used for the exporting on each broker pod | `3` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 800m`<br> `  memory: 1200Mi`<br>`limits:`<br>  ` cpu: 960m`<br>  ` memory: 1920Mi` |
 | | `persistenceType` | defines the type of persistence which is used by Zeebe. Possible values are: disk, local and memory. <br/> disk  - means a persistence volume claim is configured and used <br/> local - means the data is stored into the container, no volumeMount nor volume nor claim is configured <br/> ram   - means zeebe uses a tmpfs for the data persistence, be aware that this takes the limits into account | `disk` |
 | | `pvcSize` | Defines the [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) size, which is used by each broker pod | `32Gi` |
