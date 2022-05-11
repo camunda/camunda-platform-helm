@@ -25,7 +25,7 @@ zeebe-gateway:
 
 # Configure elastic search to make it running for local development
 elasticsearch:
-  imageTag: 7.16.1
+  imageTag: 7.17.3
   replicas: 1
   minimumMasterNodes: 1
   # Allow no backup for single node setups
