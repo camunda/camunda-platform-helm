@@ -35,6 +35,8 @@ spec:
         app.kubernetes.io/version: "3.8.0"
         app.kubernetes.io/component: optimize
     spec:
+      imagePullSecrets:
+        []
       containers:
       - name: optimize
         image: "camunda/optimize:3.8.0"

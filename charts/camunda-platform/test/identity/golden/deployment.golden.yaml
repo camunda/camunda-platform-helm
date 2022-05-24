@@ -35,6 +35,8 @@ spec:
         app.kubernetes.io/version: "8.0.0"
         app.kubernetes.io/component: identity
     spec:
+      imagePullSecrets:
+        []
       containers:
       - name: identity
         image: "camunda/identity:8.0.0"

@@ -12,6 +12,8 @@ spec:
     metadata:
       labels: {{- include "identity.labels" . | nindent 8 }}
     spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
         {{- if .Values.image.tag }}

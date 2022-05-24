@@ -35,6 +35,8 @@ spec:
         app.kubernetes.io/version: "8.0.0"
         app.kubernetes.io/component: tasklist
     spec:
+      imagePullSecrets:
+        []
       containers:
       - name: tasklist
         image: "camunda/tasklist:8.0.0"

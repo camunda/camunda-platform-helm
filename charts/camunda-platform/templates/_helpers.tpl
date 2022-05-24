@@ -36,3 +36,16 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: camunda-platform
 {{- end -}}
+
+{{/*
+Set imagePullSecrets according the values of global, subchart, or empty.
+*/}}
+{{- define "camundaPlatform.imagePullSecrets" -}}
+{{- if (.Values.image.pullSecrets) -}}
+{{ .Values.image.pullSecrets | toYaml }}
+{{- else if (.Values.global.image.pullSecrets) -}}
+{{ .Values.global.image.pullSecrets | toYaml }}
+{{- else -}}
+[]
+{{- end -}}
+{{- end -}}

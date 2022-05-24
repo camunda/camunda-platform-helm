@@ -23,10 +23,8 @@ spec:
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName | quote }}
       {{- end }}
-      {{- if .Values.global.image.pullSecrets }}
       imagePullSecrets:
-        {{ toYaml .Values.global.image.pullSecrets | indent 8 | trim }}
-      {{- end }}
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       {{- if .Values.extraInitContainers }}
       initContainers:
         {{- with .Values.extraInitContainers }}
