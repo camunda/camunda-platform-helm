@@ -2,6 +2,57 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: "- set elasticserach version 7.17.3\n- Allow configuring
+        imagePullSecrets separately for subcharts \n"
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 8.0.0
+    created: "2022-05-25T07:43:49.308769598Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.0.8
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.0.8
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.0.8
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.0.8
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.0.8
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.0.8
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: 6a0c852c794bda46081898b581cd51875b06d05964af517773899d5cb218def9
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.0.8/camunda-platform-8.0.8.tgz
+    version: 8.0.8
+  - annotations:
       artifacthub.io/changes: |
         - feat: allow more configuration of LoadBalancer
         - Align thread count with partitioncount
@@ -3711,4 +3762,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-05-04T14:12:49.628044296Z"
+generated: "2022-05-25T07:43:49.309493309Z"
