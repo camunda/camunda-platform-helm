@@ -122,7 +122,7 @@ func (s *statefulSetTest) TestContainerSetPriorityClassName() {
 	s.Require().Equal("PRIO", statefulSet.Spec.Template.Spec.PriorityClassName)
 }
 
-func (s *statefulSetTest) TestContainerSetImagePullSecrets() {
+func (s *statefulSetTest) TestContainerSetImagePullSecretsGlobal() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -138,6 +138,25 @@ func (s *statefulSetTest) TestContainerSetImagePullSecrets() {
 
 	// then
 	s.Require().Equal("SecretName", statefulSet.Spec.Template.Spec.ImagePullSecrets[0].Name)
+}
+
+func (s *statefulSetTest) TestContainerSetImagePullSecretsSubChart() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.pullSecrets[0].name": "SecretNameGlobal",
+			"zeebe.image.pullSecrets[0].name":  "SecretNameSubChart",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	s.Require().Equal("SecretNameSubChart", statefulSet.Spec.Template.Spec.ImagePullSecrets[0].Name)
 }
 
 func (s *statefulSetTest) TestContainerSetExtraInitContainers() {

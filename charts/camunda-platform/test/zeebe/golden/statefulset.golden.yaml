@@ -39,6 +39,8 @@ spec:
         app.kubernetes.io/component: zeebe-broker
       annotations:
     spec:
+      imagePullSecrets:
+        []
       initContainers:
       containers:
       - name: zeebe

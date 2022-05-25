@@ -38,7 +38,7 @@ global:
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: [ ]
+    pullSecrets: []
 
   # Elasticsearch configuration which is shared between the sub charts  
   elasticsearch:
@@ -113,6 +113,8 @@ zeebe:
     repository: camunda/zeebe
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
 
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
@@ -269,6 +271,8 @@ zeebe-gateway:
     repository: camunda/zeebe
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
   # PodAnnotations can be used to define extra gateway pod annotations
   podAnnotations: { }
   # PodLabels can be used to define extra gateway pod labels
@@ -382,6 +386,8 @@ operate:
     repository: camunda/operate
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
 
   # PodLabels can be used to define extra operate pod labels
   podLabels: { }
@@ -476,6 +482,8 @@ tasklist:
     repository: camunda/tasklist
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
 
   # Env can be used to set extra environment variables on each Tasklist container
   env: [ ]
@@ -548,6 +556,8 @@ optimize:
     repository: camunda/optimize
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 3.8.0
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
 
   # PodLabels can be used to define extra Optimize pod labels
   podLabels: { }
@@ -672,6 +682,8 @@ identity:
     repository: camunda/identity
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
+    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
 
   # Service configuration to configure the identity service.
   service:

@@ -37,6 +37,8 @@ spec:
       annotations:
         {}
     spec:
+      imagePullSecrets:
+        []
       containers:
         - name: zeebe-gateway
           image: "camunda/zeebe:8.0.0"

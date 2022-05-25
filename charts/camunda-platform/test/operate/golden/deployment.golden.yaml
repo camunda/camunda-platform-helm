@@ -35,6 +35,8 @@ spec:
         app.kubernetes.io/version: "8.0.0"
         app.kubernetes.io/component: operate
     spec:
+      imagePullSecrets:
+        []
       containers:
       - name: operate
         image: "camunda/operate:8.0.0"

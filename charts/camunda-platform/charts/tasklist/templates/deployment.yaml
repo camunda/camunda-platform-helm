@@ -17,6 +17,8 @@ spec:
         {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
     spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
         {{- if .Values.image.tag }}
