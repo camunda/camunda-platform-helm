@@ -70,6 +70,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `identity.auth.tasklist.redirectUrl` |  Defines the redirect URL, which is used by Keycloak to access Tasklist. Should be public accessible, the default value works if port-forward to Tasklist is created to 8082. Can be overwritten if, an Ingress is in use and an external IP is available. | `"http://localhost:8082"` |
 | | `identity.auth.optimize.existingSecret` |  Can be used to reference an existing secret. If not set, a random secret is generated. The existing secret should contain an `optimize-secret` field, which will be used as secret for the Identity-Optimize communication. | ` ` |
 | | `identity.auth.optimize.redirectUrl` |  Defines the redirect URL, which is used by Keycloak to access Optimize. Should be public accessible, the default value works if port-forward to Optimize is created to 8083. Can be overwritten if, an Ingress is in use and an external IP is available. | `"http://localhost:8083"` |
+| | `identity.keycloak.fullname` |  Configures the other services to use this name for the keycloak service | `"{{ .Release.Name}}-keycloak"` |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
 
 ### Camunda Platform

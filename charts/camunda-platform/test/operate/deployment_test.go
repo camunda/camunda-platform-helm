@@ -552,3 +552,27 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 			},
 		})
 }
+
+func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUrl() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.keycloak.fullname": "keycloak",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name:  "CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL",
+			Value: "http://keycloak:80/auth/realms/camunda-platform",
+		})
+}

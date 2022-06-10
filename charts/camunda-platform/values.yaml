@@ -62,6 +62,11 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
+    keycloak:
+      # this allows changing the referenced Keycloak name inside the sub-charts.
+      # Subcharts can't access values from other sub-charts or the parent, global only.
+      # This is the reason why we have a glove value to specify the Keycloak full name.
+      fullname: ""
     # Identity.auth configuration, to configure Identity authentication setup
     auth:
       # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
