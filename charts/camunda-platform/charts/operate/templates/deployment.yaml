@@ -15,6 +15,10 @@ spec:
         {{- if .Values.podLabels }}
         {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       imagePullSecrets:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}

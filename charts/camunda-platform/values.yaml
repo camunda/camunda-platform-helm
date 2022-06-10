@@ -389,6 +389,8 @@ operate:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  # PodAnnotations can be used to define extra operate pod annotations
+  podAnnotations: { }
   # PodLabels can be used to define extra operate pod labels
   podLabels: { }
   
