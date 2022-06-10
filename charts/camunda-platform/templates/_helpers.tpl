@@ -49,3 +49,17 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 []
 {{- end -}}
 {{- end -}}
+
+{{/*
+Keycloak service name should be a max of 20 char since the Keycloak Bitnami Chart is using Wildfly, the node identifier in WildFly is limited to 23 characters.
+Furthermore, this allows changing the referenced Keycloak name inside the sub-charts.
+Subcharts can't access values from other sub-charts or the parent, global only. This is the reason why we have a global value to specify the Keycloak full name.
+*/}}
+
+{{- define "camundaPlatform.issuerBackendUrl" -}}
+{{- if (.Values.global.identity.keycloak.fullname) -}}
+http://{{ .Values.global.identity.keycloak.fullname | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform
+{{- else -}}
+http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform
+{{- end -}}
+{{- end -}}
