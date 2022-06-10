@@ -691,6 +691,9 @@ identity:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  # PodAnnotations can be used to define extra operate pod annotations
+  podAnnotations: { }
+
   # Service configuration to configure the identity service.
   service:
     # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types

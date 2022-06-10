@@ -50,6 +50,26 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
+func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.podAnnotations.foo": "bar",
+			"identity.podAnnotations.foz": "baz",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("bar", deployment.Spec.Template.Annotations["foo"])
+	s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
+}
+
 func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
