@@ -380,12 +380,12 @@ zeebe-gateway:
     # ServiceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: { }
 
-# Operate configuration for the operate sub chart.
+# Operate configuration for the Operate sub chart.
 operate:
-  # Enabled if true, the operate deployment and its related resources are deployed via a helm release
+  # Enabled if true, the Operate deployment and its related resources are deployed via a helm release
   enabled: true
 
-  # Image configuration to configure the operate image specifics
+  # Image configuration to configure the Operate image specifics
   image:
     # Image.repository defines which image repository to use
     repository: camunda/operate
@@ -394,22 +394,24 @@ operate:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  # PodLabels can be used to define extra operate pod labels
+  # PodAnnotations can be used to define extra Operate pod annotations
+  podAnnotations: { }
+  # PodLabels can be used to define extra Operate pod labels
   podLabels: { }
-  
-  # Logging configuration for the operate logging. This template will be directly included in the operate configuration yaml file
+
+  # Logging configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file
   logging:
     level:
       ROOT: INFO
       org.camunda.operate: DEBUG
 
-  # Service configuration to configure the operate service.
+  # Service configuration to configure the Operate service.
   service:
     # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    # Service.port defines the port of the service, where the operate web application will be available
+    # Service.port defines the port of the service, where the Operate web application will be available
     port: 80
-    # Service.annotations can be used to define annotations, which will be applied to the operate service
+    # Service.annotations can be used to define annotations, which will be applied to the Operate service
     annotations: {}
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -421,7 +423,7 @@ operate:
       cpu: 2000m
       memory: 2Gi
 
-  # Env can be used to set extra environment variables in each operate container
+  # Env can be used to set extra environment variables in each Operate container
   env: []
   # ConfigMap configuration which will be applied to the mounted config map.
   configMap:
@@ -430,23 +432,23 @@ operate:
     defaultMode: 0744
   # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
-  # ExtraVolumes can be used to define extra volumes for the operate pods, useful for tls and self-signed certificates
+  # ExtraVolumes can be used to define extra volumes for the Operate pods, useful for tls and self-signed certificates
   extraVolumes: []
-  # ExtraVolumeMounts can be used to mount extra volumes for the operate pods, useful for tls and self-signed certificates
+  # ExtraVolumeMounts can be used to mount extra volumes for the Operate pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
 
-  # ServiceAccount configuration for the service account where the operate pods are assigned to
+  # ServiceAccount configuration for the service account where the Operate pods are assigned to
   serviceAccount:
-    # ServiceAccount.enabled if true, enables the operate service account
+    # ServiceAccount.enabled if true, enables the Operate service account
     enabled: true
-    # ServiceAccount.name can be used to set the name of the operate service account
+    # ServiceAccount.name can be used to set the name of the Operate service account
     name: ""
-    # ServiceAccount.annotations can be used to set the annotations of the operate service account
+    # ServiceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: { }
 
   # Ingress configuration to configure the ingress resource
   ingress:
-    # Ingress.enabled if true, an ingress resource is deployed with the operate deployment. Only useful if an ingress controller is available, like nginx.
+    # Ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     # Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -454,7 +456,7 @@ operate:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # Ingress.path defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
@@ -466,10 +468,10 @@ operate:
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: ""
 
-  # PodSecurityContext defines the security options the operate container should be run with
+  # PodSecurityContext defines the security options the Operate container should be run with
   podSecurityContext: {}
 
-  # NodeSelector can be used to define on which nodes the operate pods should run
+  # NodeSelector can be used to define on which nodes the Operate pods should run
   nodeSelector: { }
   # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: [ ]
@@ -493,6 +495,8 @@ tasklist:
   # Env can be used to set extra environment variables on each Tasklist container
   env: [ ]
 
+  # PodAnnotations can be used to define extra Tasklist pod annotations
+  podAnnotations: { }
   # PodLabels can be used to define extra tasklist pod labels
   podLabels: { }
 
@@ -564,6 +568,8 @@ optimize:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  # PodAnnotations can be used to define extra Optimize pod annotations
+  podAnnotations: { }
   # PodLabels can be used to define extra Optimize pod labels
   podLabels: { }
 
@@ -689,6 +695,9 @@ identity:
     tag:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  # PodAnnotations can be used to define extra Identity pod annotations
+  podAnnotations: { }
 
   # Service configuration to configure the identity service.
   service:

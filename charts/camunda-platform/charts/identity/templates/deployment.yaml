@@ -11,6 +11,10 @@ spec:
   template:
     metadata:
       labels: {{- include "identity.labels" . | nindent 8 }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       imagePullSecrets:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
