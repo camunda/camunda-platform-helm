@@ -63,9 +63,9 @@ global:
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
     keycloak:
-      # this allows changing the referenced Keycloak name inside the sub-charts.
+      # Identity.keycloak.fullname can be used to change the referenced Keycloak service name inside the sub-charts, like operate, optimize, etc.
       # Subcharts can't access values from other sub-charts or the parent, global only.
-      # This is the reason why we have a glove value to specify the Keycloak full name.
+      # This is useful if the identity.keycloak.fullnameOverride is set, and specifies a different name for the Keycloak service.
       fullname: ""
     # Identity.auth configuration, to configure Identity authentication setup
     auth:
