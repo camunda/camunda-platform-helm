@@ -490,7 +490,7 @@ tasklist:
   # Env can be used to set extra environment variables on each Tasklist container
   env: [ ]
 
-  # PodAnnotations can be used to define extra operate pod annotations
+  # PodAnnotations can be used to define extra Tasklist pod annotations
   podAnnotations: { }
   # PodLabels can be used to define extra tasklist pod labels
   podLabels: { }
@@ -563,7 +563,7 @@ optimize:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  # PodAnnotations can be used to define extra operate pod annotations
+  # PodAnnotations can be used to define extra Optimize pod annotations
   podAnnotations: { }
   # PodLabels can be used to define extra Optimize pod labels
   podLabels: { }
@@ -691,7 +691,7 @@ identity:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  # PodAnnotations can be used to define extra operate pod annotations
+  # PodAnnotations can be used to define extra Identity pod annotations
   podAnnotations: { }
 
   # Service configuration to configure the identity service.
