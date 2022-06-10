@@ -490,6 +490,8 @@ tasklist:
   # Env can be used to set extra environment variables on each Tasklist container
   env: [ ]
 
+  # PodAnnotations can be used to define extra operate pod annotations
+  podAnnotations: { }
   # PodLabels can be used to define extra tasklist pod labels
   podLabels: { }
 
