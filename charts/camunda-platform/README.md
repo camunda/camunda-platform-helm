@@ -333,6 +333,9 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `service.port` |  Defines the port of the service, where the Identity web application will be available | `80` |
 | | `service.annotations` |  Can be used to define annotations, which will be applied to the Identity service | `{}` |
 | | `resources` |  Configuration to set request and limit configuration for the container [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
+| | `nodeSelector` |  Can be used to define on which nodes the Identity pods should run | `{ }` |
+| | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ] ` |
+| | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
 | | `env` |  Can be used to set extra environment variables in each Identity container | `[]` |
 | | `command` |  Can be used to override the default command provided by the container image. See [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | |
 | | `extraVolumes` |  Can be used to define extra volumes for the Identity pods, useful for tls and self-signed certificates | `[]` |
