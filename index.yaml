@@ -3,6 +3,57 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - Add affinity configuration to identity
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 8.0.0
+    created: "2022-06-22T07:35:56.370100053Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.0.11
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.0.11
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.0.11
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.0.11
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.0.11
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.0.11
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: a742404aa07b098fac7dc2064d238faceab0c46b7f5664dfd8a49193f1c31c16
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.0.11/camunda-platform-8.0.11.tgz
+    version: 8.0.11
+  - annotations:
+      artifacthub.io/changes: |
         - Add Pod annotations to all sub charts
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
@@ -3864,4 +3915,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-06-10T14:31:43.326353743Z"
+generated: "2022-06-22T07:35:56.370694657Z"
