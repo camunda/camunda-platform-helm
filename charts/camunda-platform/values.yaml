@@ -669,6 +669,7 @@ prometheusServiceMonitor:
   labels:
     release: metrics
   # PromotheuServiceMonitor.scrapeInterval can be set to configure the interval at which metrics should be scraped
+  # Should be *less* than 60s otherwise the dashboard isn't able to show any metrics which is aggregated over 1min.
   scrapeInterval: 10s
 
 # Identity configuration for the identity sub chart.
