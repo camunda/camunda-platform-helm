@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.0.10
+version: 8.0.11
 appVersion: "8.0.0"
 description: Camunda Platform Helm Chart for Kubernetes
 type: application
@@ -11,22 +11,22 @@ sources:
   - https://github.com/camunda/zeebe
 dependencies:
 - name: zeebe
-  version: 8.0.10
+  version: 8.0.11
   condition: "zeebe.enabled"
 - name: zeebe-gateway
-  version: 8.0.10
+  version: 8.0.11
   condition: "zeebe.enabled"
 - name: operate
-  version: 8.0.10
+  version: 8.0.11
   condition: "operate.enabled"
 - name: tasklist
-  version: 8.0.10
+  version: 8.0.11
   condition: "tasklist.enabled"
 - name: optimize
-  version: 8.0.10
+  version: 8.0.11
   condition: "optimize.enabled"
 - name: identity
-  version: 8.0.10
+  version: 8.0.11
   condition: "identity.enabled"
 - name: elasticsearch
   repository: "https://helm.elastic.co"
@@ -37,5 +37,5 @@ maintainers:
     email: christopher.zell@camunda.com
 annotations:
   artifacthub.io/changes: |
-    - Add Pod annotations to all sub charts
+    - Add affinity configuration to identity
   artifacthub.io/containsSecurityUpdates: "false"
