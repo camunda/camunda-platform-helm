@@ -708,6 +708,13 @@ identity:
     # Service.annotations can be used to define annotations, which will be applied to the identity service
     annotations: {}
 
+  # NodeSelector can be used to define on which nodes the Identity pods should run
+  nodeSelector: { }
+  # Tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: [ ]
+  # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: { }
+
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
