@@ -89,7 +89,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
 | | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|
 | | `labels` | Can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors | `release: metrics` |
-| | `scrapeInterval` | Can be set to configure the interval at which metrics should be scraped | `10s` |
+| | `scrapeInterval` | Can be set to configure the interval at which metrics should be scraped. Should be *less* than 60s if the provided grafana dashboard is used, which can be found [here](https://github.com/camunda/zeebe/tree/main/monitor/grafana), otherwise it isn't able to show any metrics which is aggregated over 1 min. | `10s` |
 
 ### Zeebe
 
