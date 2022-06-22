@@ -336,11 +336,11 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `nodeSelector` |  Can be used to define on which nodes the Identity pods should run | `{ }` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ] ` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
-| | `env` |  Can be used to set extra environment variables in each Identity container | `[]` |
+| | `env` |  Can be used to set extra environment variables in each Identity container. See the [documentation](https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/) for more details. | `[]` |
 | | `command` |  Can be used to override the default command provided by the container image. See [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | |
 | | `extraVolumes` |  Can be used to define extra volumes for the Identity pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` |  Can be used to mount extra volumes for the Identity pods, useful for tls and self-signed certificates | `[]` |
-| | `keycloak` |  Configuration for the Keycloak dependency chart which is used by Identity | |
+| | `keycloak` |  Configuration for the Keycloak dependency chart which is used by Identity. See the chart [documentation](https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters) for more details. | |
 | | `keycloak.auth` |  Authentication parameters - see [admin-credentials](https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials) | |
 | | `keycloak.auth.adminUser` |  Defines the Keycloak administrator user | 'admin' |
 | | `keycloak.auth.existingSecret` |  Can be used to reuse an existing secret containing authentication information. See [manage-passwords](https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/) for more details. | `""` |
