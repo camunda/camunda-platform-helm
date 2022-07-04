@@ -110,7 +110,7 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` | 
 | | `logLevel` | Defines the log level which is used by the Zeebe brokers; must be one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
 | | `log4j2` | Can be used to overwrite the Log4J 2.x XML configuration. If provided, the contents given will be written to file and will overwrite the distribution's default `/usr/local/zeebe/config/log4j2.xml` | ` ` |
-| | `JavaOpts` | Can be used to set the Zeebe Broker JavaOpts. This is where you should configure the jvm heap size. | `-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
+| | `javaOpts` | Can be used to set the Zeebe Broker javaOpts. This is where you should configure the jvm heap size. | `-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.httpPort` | Defines the port of the HTTP endpoint, where for example metrics are provided | `9600` |
 | | `service.httpName` | Defines the name of the HTTP endpoint, where for example metrics are provided | `http` |
@@ -165,7 +165,7 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `podLabels` | Can be used to define extra gateway pod labels | `{ }` |
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
 | | `log4j2` | Can be used to overwrite the log4j2 configuration of the gateway | `""` |
-| | `javaOpts` | Can be used to set the Zeebe Gateway JavaOpts. This is where you should configure the jvm heap size. | `-XX:+ExitOnOutOfMemoryError` |
+| | `javaOpts` | Can be used to set the Zeebe Gateway javaOpts. This is where you should configure the jvm heap size. | `-XX:+ExitOnOutOfMemoryError` |
 | | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
