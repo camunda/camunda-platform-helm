@@ -197,6 +197,15 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `serviceAccount.enabled` | If true, enables the gateway service account | `true` |
 | | `serviceAccount.name` | Can be used to set the name of the gateway service account | `""` |
 | | `serviceAccount.annotations` | Can be used to set the annotations of the gateway service account | `{ }` |
+| | `ingress` | Configuration to configure the ingress resource | |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
+| | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` <br/> `nginx.ingress.kubernetes.io/backend-protocol: "GRPC"` |
+| | `ingress.path` | Defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
+| | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+| | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 
 ### Operate
 
