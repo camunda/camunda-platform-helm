@@ -380,6 +380,29 @@ zeebe-gateway:
     # ServiceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: { }
 
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host: ""
+    # Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: ""
+
 # Operate configuration for the Operate sub chart.
 operate:
   # Enabled if true, the Operate deployment and its related resources are deployed via a helm release
