@@ -32,4 +32,5 @@ spec:
             - name: config
               configMap:
                 name: camunda-platform-curator-config
+                defaultMode: 0744
           restartPolicy: OnFailure
