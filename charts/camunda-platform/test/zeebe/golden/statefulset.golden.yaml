@@ -137,7 +137,7 @@ spec:
         - name: config
           configMap:
             name: camunda-platform-test-zeebe
-            defaultMode: 484
+            defaultMode: 492
         - name: exporters
           emptyDir: {}
       affinity:
