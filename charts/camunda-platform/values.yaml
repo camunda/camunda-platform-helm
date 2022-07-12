@@ -67,6 +67,8 @@ global:
       # Subcharts can't access values from other sub-charts or the parent, global only.
       # This is useful if the identity.keycloak.fullnameOverride is set, and specifies a different name for the Keycloak service.
       fullname: ""
+
+      url: "http://localhost:18080/auth"
     # Identity.auth configuration, to configure Identity authentication setup
     auth:
       # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
@@ -76,6 +78,8 @@ global:
       # Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
       # Can be overwritten if, ingress is in use and an external IP is available.
       publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+
+      providerBackendUrl: "http://localhost:18080/auth/realms/camunda-platform"
 
       # Identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
