@@ -321,6 +321,9 @@ Information about Optimize you can find [here](https://docs.camunda.io/docs/comp
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
 | | `ingress.path` | Defines the path which is associated with the Optimize [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+| | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 
 ### Identity
 

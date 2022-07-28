@@ -28,3 +28,7 @@ spec:
                 name:  camunda-platform-test-optimize
                 port:
                   number: 80
+  tls:
+    - hosts:
+        - local
+      secretName: my-secret
