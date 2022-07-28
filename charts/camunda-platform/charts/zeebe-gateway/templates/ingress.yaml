@@ -32,4 +32,4 @@ spec:
       secretName: {{ .Values.ingress.tls.secretName }}
       {{- end }}
   {{- end }}
-  {{- end }}
+{{- end }}
