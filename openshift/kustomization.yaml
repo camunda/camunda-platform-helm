@@ -1,0 +1,67 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - manifest.yaml
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      labelSelector: "app.kubernetes.io/name=postgresql,app.kubernetes.io/component=primary"
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/securityContext/fsGroup
+      - op: remove
+        path: /spec/template/spec/securityContext/runAsUser
+      - op: remove
+        path: /spec/template/spec/containers/0/securityContext/runAsUser
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      labelSelector: "app.kubernetes.io/name=postgresql,app.kubernetes.io/component=read"
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/securityContext/fsGroup
+      - op: remove
+        path: /spec/template/spec/securityContext/runAsUser
+      - op: remove
+        path: /spec/template/spec/containers/0/securityContext/runAsUser
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      labelSelector: "app.kubernetes.io/name=postgresql,app.kubernetes.io/component=metrics"
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/securityContext/fsGroup
+      - op: remove
+        path: /spec/template/spec/securityContext/runAsUser
+      - op: remove
+        path: /spec/template/spec/containers/0/securityContext/runAsUser
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      labelSelector: "app.kubernetes.io/name=keycloak,app.kubernetes.io/component=keycloak"
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/securityContext/fsGroup
+      - op: remove
+        path: /spec/template/spec/securityContext/runAsUser
+      - op: remove
+        path: /spec/template/spec/containers/0/securityContext/runAsUser
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      labelSelector: "chart=elasticsearch,app=elasticsearch-master"
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/securityContext/fsGroup
+      - op: remove
+        path: /spec/template/spec/securityContext/runAsUser
+      - op: remove
+        path: /spec/template/spec/containers/0/securityContext/runAsUser
+
