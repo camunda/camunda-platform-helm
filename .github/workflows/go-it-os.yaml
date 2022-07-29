@@ -29,7 +29,7 @@ jobs:
         uses: redhat-actions/openshift-tools-installer@v1
         with:
           oc: ${{ matrix.version }}
-      - name: Authenticate and set context
+      - name: Authenticate to Openshift
         uses: redhat-actions/oc-login@v1
         with:
           openshift_server_url: ${{ secrets[matrix.server] }}
