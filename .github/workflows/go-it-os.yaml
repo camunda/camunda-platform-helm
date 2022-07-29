@@ -9,8 +9,8 @@ on:
 env:
   # There's a bug in Helm which does not let us unset default values from nested chart for all Helm >= 3.2.0
   HELM_VERSION: 3.1.3
-  # Later replace by a matrix job
-  OPENSHIFT_VERSION: 4.10
+  # It's not guaranteed the `oc` will come with kustomize, so in this case we install kustomize ourselves
+  # Once this issue is fixed - https://github.com/helm/helm/issues/9136 - we can drop this requirement
   KUSTOMIZE: "kustomize"
 
 jobs:
@@ -42,6 +42,8 @@ jobs:
         with:
           openshift_server_url: ${{ secrets[matrix.server] }}
           openshift_token: ${{ secrets[matrix.token] }}
+      # the tests need to be able to create a project and list nodes; node listing is to find an available pod when
+      # checking service availability (done via terratest, so we cannot change that)
       - name: 'Verify Permissions'
         run: 'oc auth can-i create projectrequests && oc auth can-i list nodes'
       - name: Set up Go
