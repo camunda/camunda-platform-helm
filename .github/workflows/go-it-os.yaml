@@ -15,19 +15,25 @@ env:
 jobs:
   build:
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      matrix:
+        include:
+          # TODO: change the secret names to match the version
+          - version: 4.10
+            server: OPENSHIFT_SERVER_URL
+            token: OPENSHIFT_TOKEN
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Install Openshift client (oc)
         uses: redhat-actions/openshift-tools-installer@v1
         with:
-          oc: ${{ env.OPENSHIFT_VERSION }}
+          oc: ${{ matrix.version }}
       - name: Authenticate and set context
         uses: redhat-actions/oc-login@v1
         with:
-          # TODO: these would need to change based on the target cluster version
-          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
-          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          openshift_server_url: ${{ secrets[matrix.server] }}
+          openshift_token: ${{ secrets[matrix.token] }}
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
