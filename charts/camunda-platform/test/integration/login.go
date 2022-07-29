@@ -27,7 +27,7 @@ import (
 
 const kKeycloakDefaultPort = 18080
 
-func (s *integrationTest) doSessionBasedLogin(loginUrl string, httpClient http.Client) error {
+func (s *integrationSuite) doSessionBasedLogin(loginUrl string, httpClient http.Client) error {
 	sessionUrl, err := s.resolveSessionLoginUrl(loginUrl, httpClient)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (s *integrationTest) doSessionBasedLogin(loginUrl string, httpClient http.C
 	return nil
 }
 
-func (s *integrationTest) resolveSessionLoginUrl(loginUrl string, httpClient http.Client) (string, error) {
+func (s *integrationSuite) resolveSessionLoginUrl(loginUrl string, httpClient http.Client) (string, error) {
 	// Send request to /auth/login, and follow redirect to keycloak to retrieve the login page.
 	// We need to read the returned login page to get the correct URL with session code, only with this session code
 	// we are able to log in correctly to keycloak / identity. Additionally, this kind of mimics the user interaction.
@@ -89,7 +89,7 @@ func (s *integrationTest) resolveSessionLoginUrl(loginUrl string, httpClient htt
 	return strings.Replace(sessionUrl, "&amp;", "&", -1), nil
 }
 
-func (s *integrationTest) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (string, error) {
+func (s *integrationSuite) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (string, error) {
 	cookies := jar.Cookies(&url.URL{Scheme: "http", Host: "localhost"})
 	identityJWT := "IDENTITY_JWT"
 	for _, cookie := range cookies {
@@ -100,7 +100,7 @@ func (s *integrationTest) extractJWTTokenFromCookieJar(jar *cookiejar.Jar) (stri
 	return "", errors.New("no JWT token found in cookie jar")
 }
 
-func (s *integrationTest) doJWTBasedLogin(err error, jar *cookiejar.Jar, identityEndpoint string, httpClient http.Client) error {
+func (s *integrationSuite) doJWTBasedLogin(err error, jar *cookiejar.Jar, identityEndpoint string, httpClient http.Client) error {
 	// The previous log in request caused to store a token in our cookie jar.
 	// In order to verify whether this token is valid and works with identity we have to extract the token and set
 	// the cookie value (JWT token) as authentication header.
@@ -129,7 +129,7 @@ func (s *integrationTest) doJWTBasedLogin(err error, jar *cookiejar.Jar, identit
 	return nil
 }
 
-func (s *integrationTest) doLogin(service string, localPort int, containerPort int) (string, http.Client, func(), error) {
+func (s *integrationSuite) doLogin(service string, localPort int, containerPort int) (string, http.Client, func(), error) {
 	// In order to login to the service we need to port-forward to Keycloak.
 	// The service will redirect (forward) requests to Keycloak to enable the login
 

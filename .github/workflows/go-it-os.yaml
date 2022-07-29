@@ -1,0 +1,46 @@
+name: Openshift Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request: { }
+  workflow_dispatch: { }
+
+env:
+  # There's a bug in Helm which does not let us unset default values from nested chart for all Helm >= 3.2.0
+  HELM_VERSION: 3.1.3
+  # Later replace by a matrix job
+  OPENSHIFT_VERSION: 4.10
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Openshift client (oc)
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: ${{ env.OPENSHIFT_VERSION }}
+      - name: Authenticate and set context
+        uses: redhat-actions/oc-login@v1
+        with:
+          # TODO: these would need to change based on the target cluster version
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: "${{ env.HELM_VERSION }}"
+      - name: Add helm repos
+        run: |
+          helm repo add elastic https://helm.elastic.co
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+      - name: Run tests
+        run: make it-os
+
