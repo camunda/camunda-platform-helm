@@ -46,7 +46,7 @@ cp "${BASH_SOURCE%/*}/kustomization.yaml" "${WORKTREE}/kustomization.yaml"
 if [ -z "${KUSTOMIZE}" ]; then
   oc kustomize "${WORKTREE}"
 else
-  "${KUSTOMIZE}" "${WORKTREE}"
+  "${KUSTOMIZE}" build "${WORKTREE}"
 fi
 
 exit 0

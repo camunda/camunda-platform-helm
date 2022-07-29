@@ -42,6 +42,8 @@ jobs:
         with:
           openshift_server_url: ${{ secrets[matrix.server] }}
           openshift_token: ${{ secrets[matrix.token] }}
+      - name: 'Verify Permissions'
+        run: 'oc auth can-i create projectrequests && oc auth can-i list nodes'
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
