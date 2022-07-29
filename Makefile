@@ -8,10 +8,15 @@ releaseName=camunda-platform-test
 test:	deps
 	go test ./...
 
-# it: runs the integration tests agains the current kube context
+# it: runs the integration tests against the current kube context
 .PHONY: it
 it:	deps
 	go test -p 1 -timeout 1h -tags integration ./.../integration
+
+# it-os: runs a subset of the integration tests against the current Openshift cluster
+.PHONY: it-os
+it-os: deps
+	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration
 
 # golden: runs the tests with updating the golden files
 .PHONY: golden
