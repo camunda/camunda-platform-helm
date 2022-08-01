@@ -405,7 +405,7 @@ extraInitContainers:
       mountPath: /exporters/
 env:
   - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_JARPATH
-    value: exporters/zeebe-hazelcast-exporter.jar
+    value: /exporters/zeebe-hazelcast-exporter.jar
   - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_CLASSNAME
     value: io.zeebe.hazelcast.exporter.HazelcastExporter
   - name: ZEEBE_HAZELCAST_REMOTE_ADDRESS
