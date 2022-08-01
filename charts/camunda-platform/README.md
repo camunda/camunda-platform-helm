@@ -399,7 +399,7 @@ extraInitContainers:
   - name: init-exporters-kafka
     image: busybox:1.35
     command: ['/bin/sh', '-c']
-    args: ['wget --no-check-certificate https://github.com/zeebe-io/zeebe-kafka-exporter/releases/download/1.1.0/zeebe-kafka-exporter-1.1.0-uber.jar -O /exporters/zeebe-kafka-exporter.jar; ls -al exporters']
+    args: ['wget --no-check-certificate https://github.com/zeebe-io/zeebe-kafka-exporter/releases/download/1.1.0/zeebe-kafka-exporter-1.1.0-uber.jar -O /exporters/zeebe-kafka-exporter.jar; ls -al /exporters']
     volumeMounts:
     - name: exporters
       mountPath: /exporters/
