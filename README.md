@@ -50,6 +50,10 @@ Follow [the instructions in the Camunda Platform documentation](https://docs.cam
 
 > ***Note**: check the [kind/camunda-platform-core-kind-values](https://github.com/camunda/camunda-platform-helm/blob/main/kind/camunda-platform-core-kind-values.yaml) file to get camunda-platform running with kind*
 
+### OpenShift
+
+See the [openshift](/openshift) sub-folder on how to get started with the charts on OpenShift. 
+
 ## Configure Charts
 
 Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [Camunda Platform Helm Charts Readme](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md) for more information.
