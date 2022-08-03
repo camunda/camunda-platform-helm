@@ -2,40 +2,58 @@ apiVersion: v2
 name: camunda-platform
 version: 8.0.11
 appVersion: "8.0.0"
-description: Camunda Platform Helm Chart for Kubernetes
+description: |
+  Camunda Platform 8 Self-Managed Helm charts.
+  Camunda's process automation platform allows developers to design, automate and improve processes.
 type: application
-icon: https://helm.camunda.io/imgs/self-managed.png
+icon: https://helm.camunda.io/imgs/camunda.svg
 home: https://docs.camunda.io/docs/self-managed/overview/
 sources:
   - https://github.com/camunda/camunda-platform-helm
-  - https://github.com/camunda/zeebe
+keywords:
+  - bpm
+  - bpmn
+  - camunda-platform
+  - dmn
+  - process-engine
+  - workflow
 dependencies:
-- name: zeebe
-  version: 8.0.11
-  condition: "zeebe.enabled"
-- name: zeebe-gateway
-  version: 8.0.11
-  condition: "zeebe.enabled"
-- name: operate
-  version: 8.0.11
-  condition: "operate.enabled"
-- name: tasklist
-  version: 8.0.11
-  condition: "tasklist.enabled"
-- name: optimize
-  version: 8.0.11
-  condition: "optimize.enabled"
-- name: identity
-  version: 8.0.11
-  condition: "identity.enabled"
-- name: elasticsearch
-  repository: "https://helm.elastic.co"
-  version: 7.17.1
-  condition: "elasticsearch.enabled"
+  - name: zeebe
+    version: 8.0.11
+    condition: "zeebe.enabled"
+  - name: zeebe-gateway
+    version: 8.0.11
+    condition: "zeebe.enabled"
+  - name: operate
+    version: 8.0.11
+    condition: "operate.enabled"
+  - name: tasklist
+    version: 8.0.11
+    condition: "tasklist.enabled"
+  - name: optimize
+    version: 8.0.11
+    condition: "optimize.enabled"
+  - name: identity
+    version: 8.0.11
+    condition: "identity.enabled"
+  - name: elasticsearch
+    repository: "https://helm.elastic.co"
+    version: 7.17.1
+    condition: "elasticsearch.enabled"
 maintainers:
   - name: Zelldon
     email: christopher.zell@camunda.com
+  - name: aabouzaid
+    email: ahmed.abouzaid@camunda.com
 annotations:
+  artifacthub.io/links: |
+    - name: Camunda Platform 8 docs
+      url: https://docs.camunda.io/
+    - name: Camunda Platform 8 Self-Managed docs
+      url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    - name: Camunda Platform 8 Self-Managed Helm charts
+      url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/changes: |
-    - Add affinity configuration to identity
+    - kind: changed
+      description: "Tidy up and updated chart details"
   artifacthub.io/containsSecurityUpdates: "false"

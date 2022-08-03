@@ -7,6 +7,6 @@ The charts are build, linted and tested on every push to the main branch. If the
 In order, to make the release easier we have created a script [release.sh](charts/camunda-platform/release.sh),
 which accepts as parameter the new version to release. This script will set in the parent and sub-charts
 the corresponding version. Please make sure to adjust the changelog in [Chart.yaml](charts/camunda-platform/Chart.yaml).
-This changelog will be shown on [artifacthub.io](https://artifacthub.io/packages/helm/camunda-platform-helm/camunda-platform).
+This changelog will be shown on [artifacthub.io](https://artifacthub.io/packages/helm/camunda/camunda-platform).
 
 After committing and pushing the changes on the `Chart.yaml` file, our [release github action](.github/workflows/release.yaml) will do the rest.

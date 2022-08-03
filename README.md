@@ -1,39 +1,30 @@
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)[![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda-platform)](https://artifacthub.io/packages/search?repo=camunda-platform)
+# Camunda Platform Helm
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
 
 - [Camunda Platform Helm](#camunda-platform-helm)
-  * [Installing Charts](#installing-charts)
-  * [Configure Charts](#configure-charts)
-  * [Uninstalling Charts](#uninstalling-charts)
-  * [Deprecation of zeebe charts](#deprecation-of-zeebe-charts)
-  * [Issues](#issues)
-  * [Contributing](#contributing)
-  * [Releasing the Charts](#releasing-the-charts)
+  - [Overview](#overview)
+  - [Installing Charts](#installing-charts)
+    - [Local Kubernetes](#local-kubernetes)
+    - [OpenShift](#openshift)
+  - [Configure Charts](#configure-charts)
+  - [Uninstalling Charts](#uninstalling-charts)
+  - [Deprecation of zeebe charts](#deprecation-of-zeebe-charts)
+  - [Issues](#issues)
+  - [Contributing](#contributing)
+  - [Releasing the Charts](#releasing-the-charts)
 
+## Overview
 
-# Camunda Platform Helm
- 
-The Camunda Platform Helm repo, contains and host Camunda Platform related helm charts.
+Camunda Platform 8 Self-Managed Helm charts repo.
 
-The charts can be accessed by adding the following Helm repo to your Helm setup:
+The Camunda Platform components are represented in the following image:
 
-```sh
-helm repo add camunda https://helm.camunda.io
-helm repo update
-```
-
-The charts are represented in the following image:
 ![HELM CHARTS](imgs/HelmChartImage.png)
 
-
-## Installing Charts
-
-You can install the Helm Charts by running:
-
-```sh
-helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform
-```
-
-Per default the following will be installed:
+Per default the following components will be installed:
 
 - [camunda-platform](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md)
   - [Zeebe](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#zeebe)
@@ -46,9 +37,32 @@ Per default the following will be installed:
     - [PostgreSQL](https://github.com/bitnami/charts/tree/master/bitnami/postgresql)
   - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
 
-Follow [the instructions in the Camunda Platform documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install Camunda Platform to a K8s cluster.
+## Installing Charts
 
-> ***Note**: check the [kind/camunda-platform-core-kind-values](https://github.com/camunda/camunda-platform-helm/blob/main/kind/camunda-platform-core-kind-values.yaml) file to get camunda-platform running with kind*
+We recommend you to use Kubernetes when deploying Camunda 8 to production self-managed. For more
+details, please follow the [installation instructions](https://docs.camunda.io/docs/self-managed/platform-deployment/kubernetes/)
+in the official Camunda Platform documentation.
+
+The charts can be accessed by adding the following Helm repo to your Helm setup:
+
+```sh
+helm repo add camunda https://helm.camunda.io
+helm repo update
+```
+
+Then, you can install the Helm charts by running:
+
+```sh
+helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform
+```
+
+### Local Kubernetes
+
+We recommend to use Helm + KIND for local environments, as the Helm configurations are battle-tested
+and much closer to production systems.
+
+For more details:
+[Installing the Camunda Helm chart locally using KIND](https://docs.camunda.io/docs/self-managed/platform-deployment/kubernetes-helm/#installing-the-camunda-helm-chart-locally-using-kind)
 
 ### OpenShift
 
@@ -58,7 +72,7 @@ See the [openshift](/openshift) sub-folder on how to get started with the charts
 
 Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [Camunda Platform Helm Charts Readme](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md) for more information.
 
-Example to enable the prometheus servicemonitor for Zeebe:
+Example to enable the prometheus ServiceMonitor for Zeebe:
 
 ```sh
 helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform --set zeebe.prometheusServiceMonitor.enabled=true
@@ -68,23 +82,28 @@ helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform --set zeebe.prome
 
 You can remove these charts by running:
 
-```
+```sh
 helm uninstall <YOUR HELM RELEASE NAME>
 ```
+> **Note**
+>
+> Notice that all the services and pods will be deleted, but not the Persistence Volume Claims which are used to hold the storage for the data generated by the cluster and Elasticsearch.
 
-> Notice that all the services and pods will be deleted, but not the Persistence Volume Claims which are used to hold the storage for the data generated by the cluster and Elasticsearch. In order to free up the storage you need to manually delete all the Persistent Volume Claims. You can do this by running:
+In order to free up the storage you need to manually delete all the Persistent Volume Claims. You can do this by running:
 
-```
-kubectl get pvc
+```sh
+kubectl get pvc -l app.kubernetes.io/instance=<YOUR HELM RELEASE NAME>
+kubectl get pvc -l app=elasticsearch-master
 ```
 
 Then delete the ones that you don't want to keep:
 
-```
-kubectl delete pvc <PVC ids here>
+```sh
+kubectl delete pvc -l app.kubernetes.io/instance=<YOUR HELM RELEASE NAME>
+kubectl delete pvc -l app=elasticsearch-master
 ```
 
-Or delete the related kubernetes namespace, which contains the resources.
+Or you can simply delete the related Kubernetes namespace, which contains the resources.
 
 ## Deprecation of zeebe charts
 
