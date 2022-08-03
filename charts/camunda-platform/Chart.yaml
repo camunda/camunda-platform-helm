@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.0.11
+version: 8.0.12
 appVersion: "8.0.0"
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -19,22 +19,22 @@ keywords:
   - workflow
 dependencies:
   - name: zeebe
-    version: 8.0.11
+    version: 8.0.12
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.0.11
+    version: 8.0.12
     condition: "zeebe.enabled"
   - name: operate
-    version: 8.0.11
+    version: 8.0.12
     condition: "operate.enabled"
   - name: tasklist
-    version: 8.0.11
+    version: 8.0.12
     condition: "tasklist.enabled"
   - name: optimize
-    version: 8.0.11
+    version: 8.0.12
     condition: "optimize.enabled"
   - name: identity
-    version: 8.0.11
+    version: 8.0.12
     condition: "identity.enabled"
   - name: elasticsearch
     repository: "https://helm.elastic.co"
