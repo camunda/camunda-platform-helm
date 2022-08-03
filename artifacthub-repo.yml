@@ -9,7 +9,9 @@
 # when the hash of the last commit in the branch you set up changes. This does
 # NOT apply to ownership claim operations, which are processed immediately.
 #
-repositoryID: c5d8f38b-977c-4f73-b49e-8997b5a751ef
+repositoryID: eeb0517e-ef36-46ad-a047-cba1637c0bb0
 owners:
   - name: zelldon
     email: zelldon91@googlemail.com
+  - name: aabouzaid
+    email: ahmed.abouzaid@camunda.com
