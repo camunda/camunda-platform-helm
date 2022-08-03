@@ -261,7 +261,7 @@ entries:
     version: 8.0.7
   - annotations:
       artifacthub.io/changes: |
-        - fix - use correct type for extra volumnes and mounts
+        - fix use correct type for extra volumnes and mounts
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
     appVersion: 8.0.0
