@@ -61,8 +61,9 @@ helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform
 We recommend to use Helm + KIND for local environments, as the Helm configurations are battle-tested
 and much closer to production systems.
 
-For more details:
-[Installing the Camunda Helm chart locally using KIND](https://docs.camunda.io/docs/self-managed/platform-deployment/kubernetes-helm/#installing-the-camunda-helm-chart-locally-using-kind)
+For more details see:
+- [Camunda 8 Greenfield Installation](https://github.com/camunda-community-hub/camunda8-greenfield-installation)
+- [Greenfield Install using KIND](https://github.com/camunda-community-hub/camunda8-greenfield-installation#kind-local-development-environment-prerequisites)
 
 ### OpenShift
 
