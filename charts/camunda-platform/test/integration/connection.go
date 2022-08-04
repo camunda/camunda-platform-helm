@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (s *integrationTest) createPortForwardedClient(serviceName string) (zbc.Client, func(), error) {
+func (s *integrationSuite) createPortForwardedClient(serviceName string) (zbc.Client, func(), error) {
 	// NOTE: this only waits until the service is created, not until the underlying pods are ready to receive traffic
 	k8s.WaitUntilServiceAvailable(s.T(), s.kubeOptions, serviceName, 90, 1*time.Second)
 
@@ -51,11 +51,11 @@ func (s *integrationTest) createPortForwardedClient(serviceName string) (zbc.Cli
 	return client, func() { client.Close(); tunnel.Close() }, nil
 }
 
-func (s *integrationTest) createPortForwardedHttpClientWithPort(serviceName string, port int) (string, func()) {
+func (s *integrationSuite) createPortForwardedHttpClientWithPort(serviceName string, port int) (string, func()) {
 	return s.createPortForwardedHttpClientWithPortAndContainerPort(serviceName, port, 8080)
 }
 
-func (s *integrationTest) createPortForwardedHttpClientWithPortAndContainerPort(serviceName string, port int, containerPort int) (string, func()) {
+func (s *integrationSuite) createPortForwardedHttpClientWithPortAndContainerPort(serviceName string, port int, containerPort int) (string, func()) {
 	// NOTE: this only waits until the service is created, not until the underlying pods are ready to receive traffic
 	k8s.WaitUntilServiceAvailable(s.T(), s.kubeOptions, serviceName, 90, 1*time.Second)
 
@@ -69,11 +69,11 @@ func (s *integrationTest) createPortForwardedHttpClientWithPortAndContainerPort(
 	return endpoint, tunnel.Close
 }
 
-func (s *integrationTest) createPortForwardedHttpClient(serviceName string) (string, func()) {
+func (s *integrationSuite) createPortForwardedHttpClient(serviceName string) (string, func()) {
 	return s.createPortForwardedHttpClientWithPort(serviceName, k8s.GetAvailablePort(s.T()))
 }
 
-func (s *integrationTest) waitUntilPortForwarded(tunnel *k8s.Tunnel, retries int, sleepBetweenRetries time.Duration) {
+func (s *integrationSuite) waitUntilPortForwarded(tunnel *k8s.Tunnel, retries int, sleepBetweenRetries time.Duration) {
 	statusMsg := fmt.Sprintf("Waiting to port forward for endpoint %s", tunnel.Endpoint())
 	message := retry.DoWithRetry(
 		s.T(),
@@ -92,7 +92,7 @@ func (s *integrationTest) waitUntilPortForwarded(tunnel *k8s.Tunnel, retries int
 	logger.Logf(s.T(), message)
 }
 
-func (s *integrationTest) createHttpClientWithJar() (http.Client, *cookiejar.Jar, error) {
+func (s *integrationSuite) createHttpClientWithJar() (http.Client, *cookiejar.Jar, error) {
 	// setup http client with cookie jar - necessary to store tokens
 	jar, err := cookiejar.New(nil)
 	if err != nil {

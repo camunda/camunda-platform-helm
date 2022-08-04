@@ -10,6 +10,7 @@
        * [Properties Test](#properties-test)
      - [Test License Headers](#test-license-headers)
    + [Documentation](#documentation)
+ * [CI](#ci)
  * [Resources](#resources)
 
 [fork]: /fork
@@ -117,6 +118,17 @@ It is always helpful to check already existing tests to get a better understandi
 
 Make sure that new go tests contain the apache license headers, otherwise the CI license check will fail. For adding and checking the license we use [addlicense](https://github.com/google/addlicense). In order to install it locally, simply run `make installLicense`. Afterwards you can run `make addlicense` to add the missing license header to a new go file.
 
+#### OpenShift
+
+There is a suite of integration tests which directly targets OpenShift in 
+[openshift_test.go](/charts/camunda-platform/test/integration/openshift_test.go). It's separate from the normal integration test suite
+as we need a specific base set of values to deploy the chart on OpenShift. This suite should only contain the following:
+
+- smoke tests which guarantee that all services can start, are minimally usable, and can communicate with each other (where applicable)
+- OpenShift specific behavior tests
+
+Everything else should be in either the normal golden file tests, or the other integration tests.
+
 ### Documentation
 
 The `values.yaml` file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
@@ -142,6 +154,22 @@ _Conjunction:_
 
 
 All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/convertValuesDoc.sh).
+
+
+## CI
+
+CI is performed via GitHub actions. You can find the workflows [here](/.github/workflows). Currently, CI consists of:
+
+- [chart linting](/.github/workflows/charttesting.yml)
+- [a suite of golden file/unit tests](/.github/workflows/go.yml)
+- [a suite of integration tests](/.github/workflows/go-it.yaml)
+- [a suite of OpenShift integration tests](/.github/workflows/go-it-os.yaml)
+
+### OpenShift
+
+One of the workflows, [Openshift Integration Tests](/.github/workflows/go-it-os.yaml), runs the integration tests
+against OpenShift. To do this, it uses a pre-provisioned cluster and service account. You can find out how to provision
+both [here](https://confluence.camunda.com/pages/viewpage.action?spaceKey=ZEEBE&title=OpenShift+Cluster).
 
 ## Resources
 

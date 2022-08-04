@@ -15,22 +15,11 @@
 package integration
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
-	"github.com/stretchr/testify/suite"
 )
-
-type integrationTest struct {
-	suite.Suite
-	chartPath   string
-	release     string
-	namespace   string
-	kubeOptions *k8s.KubectlOptions
-}
 
 func truncateString(str string, num int) string {
 	shortenStr := str
@@ -52,12 +41,4 @@ func createNamespaceName() string {
 	// max namespace length is 63 characters
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
 	return truncateString(namespace, 63)
-}
-
-func (s *integrationTest) resolveKeycloakServiceName() string {
-	// Keycloak truncates at 20 chars since the node identifier in WildFly is limited to 23 characters.
-	// see https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/_helpers.tpl#L2
-	keycloakServiceName := fmt.Sprintf("%s-keycl", s.release)
-	keycloakServiceName = strings.TrimSuffix(keycloakServiceName[:20], "-")
-	return keycloakServiceName
 }
