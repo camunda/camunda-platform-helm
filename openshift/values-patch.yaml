@@ -47,6 +47,8 @@ identity:
 
 # omit the values below if elasticsearch.enabled is false
 elasticsearch:
+  tests:
+    enabled: false
   securityContext:
     runAsUser: "@@null@@"
   podSecurityContext:
