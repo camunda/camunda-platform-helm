@@ -273,6 +273,8 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `service.port` | Defines the port of the service, where the Tasklist web application will be available | `80` |
 | | `graphqlPlaygroundEnabled` | If true, enables the GraphQl playground | `""` |
 | | `graphqlPlaygroundEnabled` | Can be set to include the credentials in each request, should be set to "include" if GraphQl playground is enabled | `""` |
+| | `extraVolumes` | Can be used to define extra volumes for the Tasklist pods, useful for tls and self-signed certificates | `[]` |
+| | `extraVolumeMounts` | Can be used to mount extra volumes for the Tasklist pods, useful for tls and self-signed certificates | `[]` |
 | | `podSecurityContext` | Defines the security options the Tasklist container should be run with | `{ }` |
 | | `nodeSelector` |  Can be used to define on which nodes the Tasklist pods should run | `{ }` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |

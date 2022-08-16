@@ -542,6 +542,11 @@ tasklist:
   # GraphqlPlaygroundEnabled can be set to include the credentials in each request, should be set to "include" if graphql playground is enabled
   graphqlPlaygroundRequestCredentials: ""
 
+  # ExtraVolumes can be used to define extra volumes for the Tasklist pods, useful for tls and self-signed certificates
+  extraVolumes: [ ]
+  # ExtraVolumeMounts can be used to mount extra volumes for the Tasklist pods, useful for tls and self-signed certificates
+  extraVolumeMounts: [ ]
+
   # PodSecurityContext defines the security options the operate container should be run with
   podSecurityContext: {}
 
