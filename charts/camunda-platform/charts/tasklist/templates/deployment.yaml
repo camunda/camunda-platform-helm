@@ -83,11 +83,17 @@ spec:
         - name: config
           mountPath: /app/resources/application.yml
           subPath: application.yml
+        {{- if .Values.extraVolumeMounts}}
+        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
       volumes:
       - name: config
         configMap:
           name: {{ include "tasklist.fullname" . }}
           defaultMode: {{ .Values.configMap.defaultMode }}
+      {{- if .Values.extraVolumes}}
+      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
       {{- if .Values.podSecurityContext }}
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}
