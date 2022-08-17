@@ -53,15 +53,7 @@ annotations:
       url: https://docs.camunda.io/docs/self-managed/about-self-managed/
     - name: Camunda Platform 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Initial support for OpenShift"
-    - kind: added
-      description: "Ingress template for Zeebe Gateway"
-    - kind: changed
-      description: "Set configMap defaultMode value in Zeebe StatefulSet"
-    - kind: changed
-      description: "Tidy up and updated chart details"
-    - kind: fixed
-      description: "Optimize TLS Ingress termination"
   artifacthub.io/containsSecurityUpdates: "false"
+  # This will be generated automatically by the release workflow.
+  # https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/release.yaml
+  artifacthub.io/changes: |

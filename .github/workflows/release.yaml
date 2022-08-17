@@ -6,10 +6,49 @@ on:
   push:
     branches:
       - main
+
 env:
   HELM_VERSION: 3.6.3
 
 jobs:
+  generate-charts-release-notes:
+    needs: find-charts-to-release
+    runs-on: ubuntu-latest
+    container: quay.io/git-chglog/git-chglog:0.15.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          apk add bash helm grep yq
+
+      - name: Generate charts release-notes
+        shell: bash
+        run: |
+          set -x
+          helm repo add camunda https://helm.camunda.io
+          for chart_file in charts/*/Chart.yaml; do
+              chart_name=$(grep -Po "(?<=^name: ).+" ${chart_file})
+              chart_version=$(grep -Po "(?<=^version: ).+" ${chart_file})
+
+              chart_version_not_released=$(helm search repo camunda/${chart_name} --version ${chart_version} | grep -q "No results found")
+
+              if $[[ ${chart_version_not_released} ]]; then
+                  bash scripts/generate-release-notes.sh "${chart_file}"
+              fi
+          done
+
+      - name: Stash generated charts release-notes files
+        uses: actions/upload-artifact@v2
+        with:
+          name: charts-generated-release-notes
+          path: |
+            charts/*/RELEASE-NOTES.md
+            charts/*/Chart.yaml
+
   release:
     runs-on: ubuntu-latest
     steps:
@@ -17,6 +56,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Unstash generated charts release-notes files
+        uses: actions/download-artifact@v2
+        with:
+          name: charts-generated-release-notes
+          path: charts
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
@@ -40,8 +84,8 @@ jobs:
         run: make test
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.3.0
-#        with:     # To configure chart releaser
-#          config: .github/cr.yaml
+        with:
+          config: .github/config/chart-releaser.yaml
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
