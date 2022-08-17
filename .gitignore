@@ -1,3 +1,6 @@
 *.tgz
 Chart.lock
 .idea
+*.tmp
+# The release notes file is generated automatically during the release.
+RELEASE-NOTES.md

@@ -43,4 +43,4 @@ jobs:
         uses: helm/chart-testing-action@v2.2.0
 
       - name: Run chart testing and lint
-        run: ct lint --config .github/chart-testing.yaml
+        run: ct lint --config .github/config/chart-testing.yaml

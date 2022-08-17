@@ -17,7 +17,7 @@
 [pr]: /compare
 [CODE_OF_CONDUCT]: CODE_OF_CONDUCT.md
 
-Hi there! We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.
+We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.
 
 Please note that this project is released with a [Contributor Code of Conduct](https://github.com/camunda/camunda-platform-helm/blob/main/CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
 
@@ -37,7 +37,7 @@ Make sure that your provided PR's works via:
  * `make fmt` to run the gofmt
  * `make checkLicense` to run the license check
  * `make test` to run the go tests
- * `helm install <releasename> chartPath/` to install a helm release in your k8 cluster (e.g. kind)
+ * `helm install <releasename> chartPath/` to install a Helm release in your K8s cluster (e.g. kind)
 
 We have the following expectation on PR's:
 
@@ -48,7 +48,7 @@ We have the following expectation on PR's:
 
 ### Best Practices
 
-Make sure you're familiar with some helm best practices like:
+Make sure you're familiar with some Helm best practices like:
 
  * https://helm.sh/docs/chart_best_practices/
  * https://codersociety.com/blog/articles/helm-best-practices
@@ -78,9 +78,12 @@ Available commit types:
 
 ### Tests
 
-> Note: I wrote an blog post about this topic you can read it [here](https://medium.com/@zelldon91/advanced-test-practices-for-helm-charts-587caeeb4cb).
+> **Note**
+>
+> For more details about Helm chart testing read the following blog post:
+> [Advanced Test Practices For Helm Charts](https://medium.com/@zelldon91/advanced-test-practices-for-helm-charts-587caeeb4cb).
 
-In order to make sure that the helm charts work properly and that further development doesn't break anything we introduced with [#125](https://github.com/camunda/camunda-platform-helm/issues/125) tests for the helm charts. The tests are written in go, and we use the [terratest framework](https://terratest.gruntwork.io/) to write them.
+In order to make sure that the Helm charts work properly and that further development doesn't break anything we introduced with [#125](https://github.com/camunda/camunda-platform-helm/issues/125) tests for the Helm charts. The tests are written in go, and we use the [terratest framework](https://terratest.gruntwork.io/) to write them.
 
 We separate our tests in two parts, with different targets and goals.
 
@@ -100,9 +103,11 @@ As mentioned earlier we expect unit tests on new contributions. The unit tests (
 
 ##### Golden Files
 
-We write new golden file tests, for default values, where we can compare a complete manifest with his properties. Most of the golden file tests are part of the `goldenfiles_test.go` in the corresponding sub-chart testing directory. For an example see [here](charts/camunda-platform/test/zeebe/goldenfiles_test.go).
+We write new golden file tests, for default values, where we can compare a complete manifest with his properties.
+Most of the golden file tests are part of the `goldenfiles_test.go` in the corresponding sub-chart testing directory.
+For an example see [zeebe/goldenfiles_test.go](charts/camunda-platform/test/zeebe/goldenfiles_test.go).
 
-If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the prometheus [servicemonitor](charts/camunda-platform/templates/service-monitor.yaml) can be enabled by a toggle. This means we write a golden file test in `servicemonitor_test.go`, see [here](charts/camunda-platform/test/servicemonitor_test.go).
+If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the prometheus [servicemonitor](charts/camunda-platform/templates/service-monitor.yaml) can be enabled by a toggle. This means we write a golden file test in [servicemonitor_test.go](charts/camunda-platform/test/servicemonitor_test.go).
 
 In order to generate the golden files run `make golden` on the root level of the repository. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should also be named related to the manifest.
 
@@ -110,7 +115,7 @@ In order to generate the golden files run `make golden` on the root level of the
 
 For things which are not per default enabled or set we write a property test.
 
-Here we directly set the specific property/variable and verify that the helm chart can be rendered and the property is set correctly on the object. These kind of tests should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, for the zeebe statefulset manifest we have the test `statefulset_test.go` under the `zeebe` sub-dir, see [here](charts/camunda-platform/test/zeebe/statefulset_test.go).
+Here we directly set the specific property/variable and verify that the Helm chart can be rendered and the property is set correctly on the object. These kind of tests should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, for the zeebe statefulset manifest we have the test [statefulset_test.go](charts/camunda-platform/test/zeebe/statefulset_test.go) under the `zeebe` sub-dir.
 
 It is always helpful to check already existing tests to get a better understanding in how to write new tests, so do not hesitant to read and copy them.
 
@@ -131,7 +136,7 @@ Everything else should be in either the normal golden file tests, or the other i
 
 ### Documentation
 
-The `values.yaml` file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
+The `values.yaml` file follows Helm best practices https://helm.sh/docs/chart_best_practices/values/
 
 This means:
   * Variable names should begin with a lowercase letter, and words should be separated with camelcase.
@@ -141,9 +146,9 @@ Furthermore, we try to apply the following pattern: `# [VarName] [conjunction] [
 
 _VarName:_
 
-  * In the documentation the variable name is started with a big letter, similar to kubernetes resource documentation.
+  * In the documentation the variable name is started with a big letter, similar to Kubernetes resource documentation.
   * If the variable is part of a subsection/object we use a json path expression (to make it more clear where the variable belongs to).
-    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in helm.
+    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in Helm.
 
 _Conjunction:_
 
@@ -153,12 +158,15 @@ _Conjunction:_
   * [configuration] for section/group of variables
 
 
-All variables and the corresponding documentation are reflected in the [README](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md). Please make sure to update the README as well, if changing or adding new variables. Their exist an helper script to generate a markdown like structure based on the `.yaml` file documentation. You can find it [here](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/convertValuesDoc.sh).
+All variables and the corresponding documentation are reflected in the
+[README](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md).
+Please make sure to update the README as well, if changing or adding new variables. Their exist an
+helper script ([convertValuesDoc.sh](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/convertValuesDoc.sh)) to generate a markdown like structure based on the `.yaml` file documentation.
 
 
 ## CI
 
-CI is performed via GitHub actions. You can find the workflows [here](/.github/workflows). Currently, CI consists of:
+CI is performed via GitHub Actions [workflow](.github/workflows). Currently, CI consists of:
 
 - [chart linting](/.github/workflows/charttesting.yml)
 - [a suite of golden file/unit tests](/.github/workflows/go.yml)
@@ -168,8 +176,8 @@ CI is performed via GitHub actions. You can find the workflows [here](/.github/w
 ### OpenShift
 
 One of the workflows, [Openshift Integration Tests](/.github/workflows/go-it-os.yaml), runs the integration tests
-against OpenShift. To do this, it uses a pre-provisioned cluster and service account. You can find out how to provision
-both [here](https://confluence.camunda.com/pages/viewpage.action?spaceKey=ZEEBE&title=OpenShift+Cluster).
+against OpenShift. To do this, it uses a pre-provisioned cluster and service account. For more
+details find out [how to provision both](https://confluence.camunda.com/display/ZEEBE/OpenShift+Cluster).
 
 ## Resources
 

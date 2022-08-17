@@ -81,3 +81,18 @@ template:	deps
 .PHONY: topology
 topology:
 	kubectl exec svc/$(releaseName)-zeebe-gateway -- zbctl --insecure status
+
+#########################################################
+######### Release
+#########################################################
+
+.PHONY: .bump-chart-version
+.bump-chart-version:
+	@bash scripts/bump-chart-version.sh
+
+.PHONY: bump-chart-version-and-commit
+bump-chart-version-and-commit: .bump-chart-version
+	chart_path="charts/camunda-platform";\
+	chart_version=`grep -Po '(?<=^version: ).+' $${chart_path}/Chart.yaml`;\
+	git add $${chart_path};\
+	git commit -m "chore: bump camunda-platform chart version to $${chart_version}"
