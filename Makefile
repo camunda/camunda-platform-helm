@@ -62,7 +62,7 @@ install:	deps
 uninstall:
 	-helm uninstall $(releaseName)
 	-kubectl delete pvc -l app.kubernetes.io/instance=$(releaseName)
-	-kubectl delete pvc -l app=elasticsearch-master
+	-kubectl delete pvc -l release=$(releaseName)
 
 # dry-run: runs an install dry-run with the local chart
 .PHONY: dry-run
