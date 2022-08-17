@@ -247,7 +247,7 @@ func (s *integrationSuite) awaitAllPodsForThisRelease() {
 
 func (s *integrationSuite) awaitElasticPods() {
 	// await that all elastic related pods become ready, otherwise operate and tasklist can't answer requests
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app=elasticsearch-master"})
+	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "release=" + s.release})
 
 	for _, pod := range pods {
 		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 10, 10*time.Second)

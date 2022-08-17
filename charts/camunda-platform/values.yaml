@@ -840,6 +840,10 @@ elasticsearch:
 
   replicas: 2
 
+  persistence:
+    labels:
+      enabled: true
+
   volumeClaimTemplate:
     accessModes: [ "ReadWriteOnce" ]
     resources:

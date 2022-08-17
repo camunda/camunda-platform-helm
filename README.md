@@ -93,14 +93,14 @@ In order to free up the storage you need to manually delete all the Persistent V
 
 ```sh
 kubectl get pvc -l app.kubernetes.io/instance=<YOUR HELM RELEASE NAME>
-kubectl get pvc -l app=elasticsearch-master
+kubectl get pvc -l release=<YOUR HELM RELEASE NAME>
 ```
 
 Then delete the ones that you don't want to keep:
 
 ```sh
 kubectl delete pvc -l app.kubernetes.io/instance=<YOUR HELM RELEASE NAME>
-kubectl delete pvc -l app=elasticsearch-master
+kubectl delete pvc -l release=<YOUR HELM RELEASE NAME>
 ```
 
 Or you can simply delete the related Kubernetes namespace, which contains the resources.
