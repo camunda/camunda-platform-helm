@@ -1,10 +1,3 @@
----
-
-name: Pull Request
-about: Create a pull request
-
----
-
 ### Related issues
 
 <!-- Which GitHub issues related to or fixed by this PR, if any. -->
