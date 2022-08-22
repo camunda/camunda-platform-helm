@@ -12,7 +12,6 @@ env:
 
 jobs:
   generate-charts-release-notes:
-    needs: find-charts-to-release
     runs-on: ubuntu-latest
     container: quay.io/git-chglog/git-chglog:0.15.1
     steps:
@@ -21,9 +20,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
       - name: Install dependencies
         run: |
-          apk add bash helm grep yq
+          apk add bash grep yq
 
       - name: Generate charts release-notes
         shell: bash
@@ -34,9 +36,9 @@ jobs:
               chart_name=$(grep -Po "(?<=^name: ).+" ${chart_file})
               chart_version=$(grep -Po "(?<=^version: ).+" ${chart_file})
 
-              chart_version_not_released=$(helm search repo camunda/${chart_name} --version ${chart_version} | grep -q "No results found")
+              chart_version_status=$(helm search repo camunda/${chart_name} --version ${chart_version})
 
-              if $[[ ${chart_version_not_released} ]]; then
+              if [[ ${chart_version_status} == 'No results found' ]]; then
                   bash scripts/generate-release-notes.sh "${chart_file}"
               fi
           done
@@ -50,6 +52,7 @@ jobs:
             charts/*/Chart.yaml
 
   release:
+    needs: generate-charts-release-notes
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

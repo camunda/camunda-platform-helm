@@ -29,7 +29,7 @@ chart_version_old=$(grep -Po "(?<=^version: ).+" charts/${chart_name}/Chart.yaml
 chart_version_new=$(echo "${chart_version_old}" | awk -F '.' -v OFS='.' '{$NF += 1; print}')
 
 # Update parent chart version
-sed -i "s/^version: ${chart_version_old}/version: ${chart_version_new}/g" charts/${chart_name}/Chart.yaml
+sed -i "s/version: ${chart_version_old}/version: ${chart_version_new}/g" charts/${chart_name}/Chart.yaml
 
 # Update subcharts version.
 sed -i "s/^version: ${chart_version_old}/version: ${chart_version_new}/g" charts/${chart_name}/charts/*/Chart.yaml
