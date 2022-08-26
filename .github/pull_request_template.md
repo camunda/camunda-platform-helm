@@ -15,18 +15,18 @@
 
 ### Checklist
 
-Please make sure to follow our [Contributing Guide](../../CONTRIBUTING.md).
+Please make sure to follow our [Contributing Guide](../blob/main/CONTRIBUTING.md).
 
 <!-- Place an '[x]' (no spaces) in all applicable fields. Please remove unrelated fields. -->
 
 **Before opening the PR:**
 
-- [ ] There is no other open [pull request](/../../pulls)
+- [ ] There is no other open [pull request](../pulls)
       for the same update/change.
-- [ ] The commits follow our [Commit Guidelines](../../CONTRIBUTING.md#commit-guidelines).
+- [ ] The commits follow our [Commit Guidelines](../blob/main/CONTRIBUTING.md#commit-guidelines).
 - [ ] Tests for charts are added.
 - [ ] The main Helm chart and sub-chart are updated (if needed).
-- [ ] In-repo [documentation](../../CONTRIBUTING.md#documentation) are updated (if needed).
+- [ ] In-repo [documentation](../blob/main/CONTRIBUTING.md#documentation) are updated (if needed).
 
 **After opening the PR:**
 
