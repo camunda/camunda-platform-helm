@@ -40,6 +40,7 @@ spec:
       containers:
       - name: identity
         image: "camunda/identity:8.0.0"
+        imagePullPolicy: IfNotPresent
         env:
           - name: KEYCLOAK_USERS_0_USERNAME
             value: "demo"
