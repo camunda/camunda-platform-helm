@@ -713,3 +713,25 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVia
 			},
 		})
 }
+
+func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImagePullPolicy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.pullPolicy": "Always",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	expectedPullPolicy := v12.PullAlways
+	containers := deployment.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+	pullPolicy := containers[0].ImagePullPolicy
+	s.Require().Equal(expectedPullPolicy, pullPolicy)
+}
