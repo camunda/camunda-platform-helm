@@ -30,6 +30,7 @@ spec:
         {{- else }}
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         env:
           - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
             value: "true"

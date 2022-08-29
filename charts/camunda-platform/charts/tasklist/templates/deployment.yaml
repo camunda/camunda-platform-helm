@@ -30,6 +30,7 @@ spec:
         {{- else }}
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         env:
           {{- if .Values.global.identity.auth.enabled }}
           - name: SPRING_PROFILES_ACTIVE

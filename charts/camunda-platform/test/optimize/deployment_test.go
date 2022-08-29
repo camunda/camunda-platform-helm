@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
 )
 
@@ -569,4 +570,26 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUr
 			Name:  "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL",
 			Value: "http://keycloak:80/auth/realms/camunda-platform",
 		})
+}
+
+func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImagePullPolicy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.pullPolicy": "Always",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment v1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	expectedPullPolicy := v12.PullAlways
+	containers := deployment.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+	pullPolicy := containers[0].ImagePullPolicy
+	s.Require().Equal(expectedPullPolicy, pullPolicy)
 }

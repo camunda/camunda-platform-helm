@@ -40,6 +40,7 @@ spec:
       containers:
       - name: optimize
         image: "camunda/optimize:3.9.0-preview-2"
+        imagePullPolicy: IfNotPresent
         env:
           - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
             value: "true"

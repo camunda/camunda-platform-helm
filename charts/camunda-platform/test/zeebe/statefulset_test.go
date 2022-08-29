@@ -662,3 +662,25 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
 
 	s.Require().Equal(0, len(statefulSet.Spec.VolumeClaimTemplates))
 }
+
+func (s *statefulSetTest) TestContainerOverwriteGlobalImagePullPolicy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.pullPolicy": "Always",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	expectedPullPolicy := v12.PullAlways
+	containers := statefulSet.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+	pullPolicy := containers[0].ImagePullPolicy
+	s.Require().Equal(expectedPullPolicy, pullPolicy)
+}
