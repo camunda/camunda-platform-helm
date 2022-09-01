@@ -15,6 +15,7 @@
   - [Issues](#issues)
   - [Contributing](#contributing)
   - [Releasing the Charts](#releasing-the-charts)
+  - [License](#license)
 
 ## Overview
 
@@ -134,3 +135,9 @@ Please familiar yourself with the [contribution guide](https://github.com/camund
 ## Releasing the Charts
 
 In order to find out how to release the charts please see the corresponding [release guide](RELEASE.md).
+
+## License
+
+Camunda Platform 8 Self-Managed Helm charts are licensed under the open source Apache License 2.0. Please see [LICENSE](LICENSE) for details.
+
+For Camunda Platform 8 components, please visit [licensing information page](https://docs.camunda.io/docs/reference/licenses).
