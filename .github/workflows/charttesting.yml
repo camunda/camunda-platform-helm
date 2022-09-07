@@ -7,7 +7,7 @@ on:
     branches:
       - main
 env:
-  HELM_VERSION: 3.6.3
+  HELM_VERSION: 3.9.3
 
 jobs:
   release:

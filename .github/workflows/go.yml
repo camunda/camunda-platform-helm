@@ -4,9 +4,10 @@ on:
   push:
     branches: [ main ]
   pull_request: { }
+  workflow_dispatch: { }
 
 env:
-  HELM_VERSION: 3.6.3
+  HELM_VERSION: 3.9.3
 
 jobs:
   build:

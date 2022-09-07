@@ -559,7 +559,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraInitContainers() {
 	s.Require().Equal([]string{"sh", "-c", "top"}, initContainer.Command)
 }
 
-func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImagePullPolicy() {
+func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{

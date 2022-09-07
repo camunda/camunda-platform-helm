@@ -7,7 +7,7 @@ on:
   workflow_dispatch: { }
 
 env:
-  HELM_VERSION: 3.6.3
+  HELM_VERSION: 3.9.3
   KUBECTL_VERSION: 'latest'
   KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
 
