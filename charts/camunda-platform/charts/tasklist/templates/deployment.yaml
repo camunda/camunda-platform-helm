@@ -32,6 +32,10 @@ spec:
         {{- end }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         env:
+          {{- if .Values.contextPath }}
+          - name: SERVER_SERVLET_CONTEXT_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
           - name: SPRING_PROFILES_ACTIVE
             value: "identity-auth"

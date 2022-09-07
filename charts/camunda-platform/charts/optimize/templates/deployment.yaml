@@ -32,6 +32,10 @@ spec:
         {{- end }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         env:
+          {{- if .Values.contextPath }}
+          - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
           - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
             value: "true"
           - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT

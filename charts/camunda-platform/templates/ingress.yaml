@@ -1,0 +1,65 @@
+{{- if .Values.global.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+{{- with .Values.global.ingress.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.global.ingress.className }}
+  rules:
+    {{- if .Values.global.ingress.host }}
+    - host: {{ .Values.global.ingress.host }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          - backend:
+              service:
+                name: {{ include "keycloak.fullname" .Subcharts.identity.Subcharts.keycloak }}
+                port:
+                  number: {{ .Values.identity.keycloak.service.ports.http }}
+            # It's complex to change the context path in Keycloak v16.x.x, so it's hard-coded.
+            path: /auth
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ template "identity.fullname" .Subcharts.identity }}
+                port:
+                  number: {{ .Values.identity.service.port }}
+            path: {{ .Values.identity.contextPath }}
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ template "operate.fullname" .Subcharts.operate }}
+                port:
+                  number: {{ .Values.operate.service.port }}
+            path: {{ .Values.operate.contextPath }}
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ template "optimize.fullname" .Subcharts.optimize }}
+                port:
+                  number: {{ .Values.optimize.service.port }}
+            path: {{ .Values.optimize.contextPath }}
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ template "tasklist.fullname" .Subcharts.tasklist }}
+                port:
+                  number: {{ .Values.tasklist.service.port }}
+            path: {{ .Values.tasklist.contextPath }}
+            pathType: Prefix
+  {{- if .Values.global.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.global.ingress.host }}
+      {{- if .Values.global.ingress.tls.secretName }}
+      secretName: {{ .Values.global.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+{{- end }}
