@@ -714,7 +714,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVia
 		})
 }
 
-func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImagePullPolicy() {
+func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -734,4 +734,36 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImagePullPolicy() {
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.fullURL":     "https://mydomain.com/identity",
+			"identity.contextPath": "/identity",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name:  "IDENTITY_URL",
+			Value: "https://mydomain.com/identity",
+		},
+	)
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name:  "IDENTITY_BASE_PATH",
+			Value: "/identity",
+		},
+	)
 }

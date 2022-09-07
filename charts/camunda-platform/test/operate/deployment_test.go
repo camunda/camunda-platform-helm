@@ -597,7 +597,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUr
 		})
 }
 
-func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImagePullPolicy() {
+func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -617,4 +617,29 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImagePullPolicy() {
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.contextPath": "/operate",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name:  "SERVER_SERVLET_CONTEXT_PATH",
+			Value: "/operate",
+		},
+	)
 }

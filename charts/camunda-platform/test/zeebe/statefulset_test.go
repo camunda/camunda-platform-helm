@@ -663,7 +663,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
 	s.Require().Equal(0, len(statefulSet.Spec.VolumeClaimTemplates))
 }
 
-func (s *statefulSetTest) TestContainerOverwriteGlobalImagePullPolicy() {
+func (s *statefulSetTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
