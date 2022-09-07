@@ -27,14 +27,20 @@ spec:
         {{- end }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         env:
+          {{- if .Values.fullURL }}
+          - name: IDENTITY_URL
+            value: {{ .Values.fullURL | quote }}
+          {{- end }}
+          {{- if .Values.contextPath }}
+          - name: IDENTITY_BASE_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
           - name: KEYCLOAK_USERS_0_USERNAME
             value: {{ .Values.firstUser.username | quote }}
           - name: KEYCLOAK_USERS_0_PASSWORD
             value: {{ .Values.firstUser.password | quote }}
           - name: KEYCLOAK_USERS_0_ROLES_0
             value: "Identity"
-
-
           {{- if .Values.global.identity.auth.enabled }}
           - name: KEYCLOAK_USERS_0_ROLES_1
             value: "Operate"
@@ -57,7 +63,6 @@ spec:
             {{- end }}
           - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
             value: {{ .Values.global.identity.auth.operate.redirectUrl | quote }}
-
           - name: KEYCLOAK_USERS_0_ROLES_2
             value: "Tasklist"
           - name: KEYCLOAK_INIT_TASKLIST_SECRET
@@ -79,8 +84,6 @@ spec:
             {{- end }}
           - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
             value: {{ .Values.global.identity.auth.tasklist.redirectUrl | quote }}
-
-
           - name: KEYCLOAK_USERS_0_ROLES_3
             value: "Optimize"
           - name: KEYCLOAK_INIT_OPTIMIZE_SECRET

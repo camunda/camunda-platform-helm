@@ -33,7 +33,7 @@
 
 ## Installing
 
-The first command adds the official Camunda Platform Helm charts repo and the second installs the Camunda Platform chart to your current kubernetes context.
+The first command adds the official Camunda Platform Helm charts repo and the second installs the Camunda Platform chart to your current Kubernetes context.
 
 ```shell
   helm repo add camunda https://helm.camunda.io
@@ -42,7 +42,8 @@ The first command adds the official Camunda Platform Helm charts repo and the se
 
 ## Configuration
 
-The following sections contain the configuration values for the chart and each sub chart. All of them can be overwritten via a separate `values.yaml` file.
+The following sections contain the configuration values for the chart and each sub-chart. All of them can be overwritten
+via a separate `values.yaml` file.
 
 Check out the default [values.yaml](values.yaml) file, which contains the same content and documentation.
 
@@ -56,6 +57,15 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `image.tag` | Defines the tag / version which should be used in the chart. | |
 | | `image.pullPolicy` | Defines the [image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) which should be used. | IfNotPresent |
 | | `image.pullSecrets` | Can be used to configure [image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod). Also it could be configured per component separately. | `[]` |
+| | `ingress` | Configuration to configure the ingress resource | |
+| | `ingress.enabled` | If true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX. | `false` |
+| | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
+| | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` <br/> `nginx.ingress.kubernetes.io/backend-protocol: "GRPC"` |
+| | `ingress.path` | Defines the path which is used as a base for all services | `/` |
+| | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+| | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
+| | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 | | `elasticsearch.disableExporter` | If true, disables the [Elasticsearch Exporter](https://github.com/camunda-cloud/zeebe/tree/develop/exporters/elasticsearch-exporter) in Zeebe | `false` |
 | | `elasticsearch.url` | Can be used to configure the URL to access Elasticsearch. When not set, services fallback to host and port configuration. | |
 | | `elasticsearch.host` | Defines the Elasticsearch host, ideally the service name inside the namespace. | `elasticsearch-master` |
@@ -200,13 +210,13 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `serviceAccount.name` | Can be used to set the name of the gateway service account | `""` |
 | | `serviceAccount.annotations` | Can be used to set the annotations of the gateway service account | `{ }` |
 | | `ingress` | Configuration to configure the ingress resource | |
-| | `ingress.enabled` | If true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like Ingress-NGINX. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` <br/> `nginx.ingress.kubernetes.io/backend-protocol: "GRPC"` |
-| | `ingress.path` | Defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
+| | `ingress.path` | Defines the path which is associated with the Zeebe Gateway [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
-| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 
 ### Operate
@@ -221,6 +231,7 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `image.repository` | Defines which image repository to use. | `camunda/operate` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `contextPath` |  Can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Operate pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Operate pod labels | `{ }` |
 | | `logging` | Configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file | `level:` <br/> `ROOT: INFO` <br/> `org.camunda.operate: DEBUG` |
@@ -239,13 +250,13 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `serviceAccount.name` | Can be used to set the name of the Operate service account | `""` |
 | | `serviceAccount.annotations` | Can be used to set the annotations of the Operate service account | `{ }` |
 | | `ingress` | Configuration to configure the ingress resource | |
-| | `ingress.enabled` | If true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like Ingress-NGINX. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
-| | `ingress.path` | Defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules | `/` |
+| | `ingress.path` | Defines the path which is associated with the Operate [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
-| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 | | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
 | | `nodeSelector` |  Can be used to define on which nodes the Operate pods should run | `{ }` |
@@ -264,6 +275,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `contextPath` |  Can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Tasklist pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Tasklist pod labels | `{ }` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
@@ -281,7 +293,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 400m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 1000m`<br> ` memory: 2Gi` |
 | | `ingress` | Configuration to configure the ingress resource | |
-| | `ingress.enabled` | If true, an ingress resource is deployed with the Tasklist deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Tasklist deployment. Only useful if an ingress controller is available, like Ingress-NGINX. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
 | | `ingress.path` | Defines the path which is associated with the Tasklist [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
@@ -300,6 +312,7 @@ Information about Optimize you can find [here](https://docs.camunda.io/docs/comp
 | | `image.repository` |  Defines which image repository to use | `camunda/optimize` |
 | | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `3.8.0` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `contextPath` |  Can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Optimize pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Optimize pod labels | `{ }` |
 | | `partitionCount` |  Defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize | `"3"` |
@@ -320,13 +333,13 @@ Information about Optimize you can find [here](https://docs.camunda.io/docs/comp
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` || | `ingress` |  Configuration to configure the ingress resource | |
-| | `ingress.enabled` |  If true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.enabled` |  If true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like Ingress-NGINX. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
 | | `ingress.path` | Defines the path which is associated with the Optimize [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
-| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 
 ### Identity
@@ -343,6 +356,8 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |
 | | `image.tag` |   Can be set to overwrite the global.image.tag | |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `fullURL` |  Can be used when Ingress is configured (for both multi and single domain setup). <br/> Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the fullURL too. | |
+| | `contextPath` |  Can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Identity pod annotations | `{ }` |
 | | `service` |  Configuration to configure the Identity service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
@@ -364,19 +379,19 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `serviceAccount.enabled` |  If true, enables the Identity service account | `true` |
 | | `serviceAccount.name` |  Can be used to set the name of the Identity service account | `` |
 | | `serviceAccount.annotations` |  Can be used to set the annotations of the Identity service account | `{}` |
-| | `ingress.enabled` | If true, an ingress resource is deployed with the Identity deployment. Only useful if an ingress controller is available, like nginx. | `false` |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Identity deployment. Only useful if an ingress controller is available, like Ingress-NGINX. | `false` |
 | | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
 | | `ingress.path` | Defines the path which is associated with the Identity service, - see [ingress-rules](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
-| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host need to be defined. | `false` |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
 | | `podSecurityContext` | Defines the security options the Identity container should be run with | `{ }` |
 
 ### Elasticsearch
 
-This chart has a dependency to the [Elasticsearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch which can be found [here](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) can be set under `elasticsearch`.
+This chart has a dependency on the [Elasticsearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch which can be found [here](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) can be set under `elasticsearch`.
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|

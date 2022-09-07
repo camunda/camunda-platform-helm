@@ -40,6 +40,26 @@ global:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host: ""
+    # Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: ""
+
   # Elasticsearch configuration which is shared between the sub charts  
   elasticsearch:
     # Elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
@@ -58,7 +78,6 @@ global:
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
   # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
-
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
@@ -153,7 +172,6 @@ zeebe:
     -XX:HeapDumpPath=/usr/local/zeebe/data
     -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
     -XX:+ExitOnOutOfMemoryError
-
 
  # Service configuration for the broker service
   service:
@@ -417,6 +435,9 @@ operate:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  # ContextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
+  # contextPath: "/operate"
+
   # PodAnnotations can be used to define extra Operate pod annotations
   podAnnotations: { }
   # PodLabels can be used to define extra Operate pod labels
@@ -515,6 +536,9 @@ tasklist:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  # ContextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
+  # contextPath: "/tasklist"
+
   # Env can be used to set extra environment variables on each Tasklist container
   env: [ ]
 
@@ -600,6 +624,9 @@ optimize:
     tag: 3.9.0-preview-2
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  # ContextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
+  # contextPath: "/optimize"
 
   # PodAnnotations can be used to define extra Optimize pod annotations
   podAnnotations: { }
@@ -736,6 +763,13 @@ identity:
     tag:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  # FullURL can be used when Ingress is configured (for both multi and single domain setup).
+  # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
+  # fullURL: "https://camunda.example.com/identity"
+
+  # ContextPath can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
+  # contextPath: "/identity"
 
   # PodAnnotations can be used to define extra Identity pod annotations
   podAnnotations: { }
