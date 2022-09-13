@@ -3,7 +3,7 @@ description: Identity Helm Chart for Kubernetes
 name: identity
 version: 8.0.13
 type: application
-icon: https://raw.githubusercontent.com/camunda-cloud/camunda-cloud-documentation/master/static/img/iam.png
+icon: https://helm.camunda.io/imgs/camunda.svg
 annotations:
   artifacthub.io/changes: |
     - create identity sub chart
