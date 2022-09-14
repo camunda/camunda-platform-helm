@@ -227,7 +227,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 
 	// then
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(len(containers), 1)
+	s.Require().Equal(1, len(containers))
 	s.Require().Equal(1, len(containers[0].Command))
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
@@ -251,7 +251,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 
 	// then
 	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(len(volumes), 2)
+	s.Require().Equal(2, len(volumes))
 
 	extraVolume := volumes[1]
 	s.Require().Equal("extraVolume", extraVolume.Name)
@@ -278,10 +278,10 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 
 	// then
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(len(containers), 1)
+	s.Require().Equal(1, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(len(volumeMounts), 2)
+	s.Require().Equal(2, len(volumeMounts))
 	extraVolumeMount := volumeMounts[1]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
@@ -308,7 +308,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 
 	// then
 	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(len(volumes), 2)
+	s.Require().Equal(2, len(volumes))
 
 	extraVolume := volumes[1]
 	s.Require().Equal("extraVolume", extraVolume.Name)
@@ -317,10 +317,10 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(len(containers), 1)
+	s.Require().Equal(1, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(len(volumeMounts), 2)
+	s.Require().Equal(2, len(volumeMounts))
 	extraVolumeMount := volumeMounts[1]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)

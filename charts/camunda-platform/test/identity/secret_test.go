@@ -58,7 +58,7 @@ func (s *secretTest) TestContainerGenerateSecret() {
 	}
 
 	// when
-	s.Require().GreaterOrEqual(len(s.templates), 1)
+	s.Require().GreaterOrEqual(2, len(s.templates))
 	for idx, template := range s.templates {
 		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
 		var secret coreV1.Secret

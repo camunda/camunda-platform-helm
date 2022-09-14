@@ -18,12 +18,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"context"
+
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -64,7 +66,7 @@ func (s *integrationSuite) assertProcessDefinitionFromOperate() {
 			}
 
 			total := objectMap["total"].(float64)
-			s.Require().GreaterOrEqual(total, float64(1))
+			s.Require().GreaterOrEqual(float64(1), total)
 
 			s.Require().Contains(jsonString, "it-test-process")
 
@@ -92,7 +94,7 @@ func (s *integrationSuite) assertTasksFromTasklist() {
 
 			data := objectMap["data"].(map[string]interface{})
 			tasks := data["tasks"].([]interface{})
-			s.Require().GreaterOrEqual(len(tasks), 1)
+			s.Require().GreaterOrEqual(1, len(tasks))
 			task := tasks[0].(map[string]interface{})
 			s.Require().Equal("It Test", task["name"])
 
