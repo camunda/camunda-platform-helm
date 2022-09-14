@@ -21,6 +21,10 @@ data:
         host: {{ .Values.global.elasticsearch.host }}
         # Transport port
         port: {{ .Values.global.elasticsearch.port }}
+        {{- if .Values.global.elasticsearch.url }}
+        # Elasticsearch full url
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
       # Zeebe instance
       zeebe:
         # Broker contact point
@@ -34,7 +38,11 @@ data:
         # Transport port
         port: {{ .Values.global.elasticsearch.port }}
         # Index prefix, configured in Zeebe Elasticsearch exporter
-        prefix: zeebe-record
+        prefix: {{ .Values.global.elasticsearch.prefix }}
+        {{- if .Values.global.elasticsearch.url }}
+        # Elasticsearch full url
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
     # Enable or disable metrics
