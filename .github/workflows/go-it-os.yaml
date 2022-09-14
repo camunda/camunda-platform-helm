@@ -6,9 +6,6 @@ on:
   pull_request: { }
   workflow_dispatch: { }
 
-env:
-  HELM_VERSION: 3.6.2
-
 jobs:
   build:
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
@@ -21,11 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install Helm
+        uses: asdf-vm/actions/install@v1
       - name: Install Openshift client (oc)
         uses: redhat-actions/openshift-tools-installer@v1
         with:
           oc: ${{ matrix.version }}
-          helm: "${{ env.HELM_VERSION }}"
       - name: Authenticate to Openshift
         uses: redhat-actions/oc-login@v1
         with:
