@@ -236,7 +236,7 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `contextPath` |  Can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Operate pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Operate pod labels | `{ }` |
-| | `logging` | Configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file | `level:` <br/> `ROOT: INFO` <br/> `org.camunda.operate: DEBUG` |
+| | `logging` | Configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file | `level:` <br/> `ROOT: INFO` <br/> `io.camunda.operate: DEBUG` |
 | | `service` | Configuration to configure the Operate service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
