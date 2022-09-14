@@ -21,8 +21,7 @@ Please make sure to follow our [Contributing Guide](../blob/main/CONTRIBUTING.md
 
 **Before opening the PR:**
 
-- [ ] There is no other open [pull request](../pulls)
-      for the same update/change.
+- [ ] There is no other open [pull request](../pulls) for the same update/change.
 - [ ] The commits follow our [Commit Guidelines](../blob/main/CONTRIBUTING.md#commit-guidelines).
 - [ ] Tests for charts are added.
 - [ ] The main Helm chart and sub-chart are updated (if needed).
