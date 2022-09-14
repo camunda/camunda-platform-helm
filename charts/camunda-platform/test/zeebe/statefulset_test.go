@@ -326,7 +326,7 @@ func (s *statefulSetTest) TestContainerSetContainerCommand() {
 
 	// then
 	containers := statefulSet.Spec.Template.Spec.Containers
-	s.Require().Equal(len(containers), 1)
+	s.Require().Equal(1, len(containers))
 	s.Require().Equal(1, len(containers[0].Command))
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
@@ -372,7 +372,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumes() {
 
 	// then
 	volumes := statefulSet.Spec.Template.Spec.Volumes
-	s.Require().Equal(len(volumes), 3)
+	s.Require().Equal(3, len(volumes))
 
 	extraVolume := volumes[2]
 	s.Require().Equal("extraVolume", extraVolume.Name)
@@ -399,7 +399,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
 
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(len(volumeMounts), 4)
+	s.Require().Equal(4, len(volumeMounts))
 	extraVolumeMount := volumeMounts[3]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
@@ -425,7 +425,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
 
 	// then
 	volumes := statefulSet.Spec.Template.Spec.Volumes
-	s.Require().Equal(len(volumes), 3)
+	s.Require().Equal(3, len(volumes))
 
 	extraVolume := volumes[2]
 	s.Require().Equal("extraVolume", extraVolume.Name)
@@ -434,7 +434,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(len(volumeMounts), 4)
+	s.Require().Equal(4, len(volumeMounts))
 	extraVolumeMount := volumeMounts[3]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)

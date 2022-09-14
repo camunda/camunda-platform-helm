@@ -243,7 +243,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 
 	// then
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(len(containers), 1)
+	s.Require().Equal(1, len(containers))
 	s.Require().Equal(1, len(containers[0].Command))
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
