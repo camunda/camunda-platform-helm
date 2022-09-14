@@ -2,6 +2,7 @@
 
  * [Issues and PRs](#issues-and-prs)
  * [Submitting a pull request](#submitting-a-pull-request)
+   + [Helm version](#helm-version)
    + [Best Practices](#best-practices)
    + [Commit Guidelines](#commit-guidelines)
    + [Tests](#tests)
@@ -45,6 +46,20 @@ We have the following expectation on PR's:
  * They contain new [tests](#tests) on a bug fix or on adding a new feature
  * They follow the [commit guidelines](#commit-guidelines)
  * The [documentation](#documentation) has been updated, if necessary.
+
+### Helm version
+
+To have a smooth contribution experience, before working on a new PR make sure to use the exact Helm version
+that's currently used in the repo.
+
+Helm version is set in the [.tool-versions](./.tool-versions) file, so you can use [asdf version manager](https://github.com/asdf-vm/asdf) to install Helm locally or just install the same version manually.
+
+To install the Helm version that's used in this repo using `asdf`, in the repo root, run:
+
+```
+asdf plugin-add helm
+asdf install helm
+```
 
 ### Best Practices
 
@@ -129,7 +144,7 @@ There is a suite of integration tests which directly targets OpenShift in
 [openshift_test.go](/charts/camunda-platform/test/integration/openshift_test.go). It's separate from the normal integration test suite
 as we need a specific base set of values to deploy the chart on OpenShift. This suite should only contain the following:
 
-- smoke tests which guarantee that all services can start, are minimally usable, and can communicate with each other (where applicable)
+- Smoke tests which guarantee that all services can start, are minimally usable, and can communicate with each other (where applicable)
 - OpenShift specific behavior tests
 
 Everything else should be in either the normal golden file tests, or the other integration tests.

@@ -7,7 +7,6 @@ on:
   workflow_dispatch: { }
 
 env:
-  HELM_VERSION: 3.9.3
   KUBECTL_VERSION: 'latest'
   KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
 
@@ -46,9 +45,7 @@ jobs:
       with:
         go-version: 1.17
     - name: Install Helm
-      uses: azure/setup-helm@v1
-      with:
-        version: "${{ env.HELM_VERSION }}"
+      uses: asdf-vm/actions/install@v1
     - name: Add helm repos
       run: |
         helm repo add elastic https://helm.elastic.co
