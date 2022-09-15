@@ -91,7 +91,7 @@ spec:
             {{ .Values.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
           {{- if .Values.containerSecurityContext }}
-          securityContext: {{ .Values.containerSecurityContext | toYaml | nindent 12  }}
+          securityContext: {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           {{- end }}
           readinessProbe:
             tcpSocket:
@@ -112,6 +112,9 @@ spec:
         {{- end }}
       {{- if .Values.serviceAccount.name}}
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}
 {{- with .Values.nodeSelector }}
       nodeSelector:
