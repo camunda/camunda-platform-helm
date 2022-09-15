@@ -440,6 +440,25 @@ func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
+func (s *statefulSetTest) TestPodSetSecurityContext() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.podSecurityContext.runAsUser": "1000",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	securityContext := statefulSet.Spec.Template.Spec.SecurityContext
+	s.Require().EqualValues(1000, *securityContext.RunAsUser)
+}
+
 func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{

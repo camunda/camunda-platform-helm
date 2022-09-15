@@ -374,6 +374,25 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
+func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe-gateway.podSecurityContext.runAsUser": "1000",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	securityContext := deployment.Spec.Template.Spec.SecurityContext
+	s.Require().EqualValues(1000, *securityContext.RunAsUser)
+}
+
 func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
