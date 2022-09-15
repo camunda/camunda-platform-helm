@@ -30,6 +30,9 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
         env:
           {{- if .Values.contextPath }}
           - name: SERVER_SERVLET_CONTEXT_PATH
@@ -103,8 +106,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
       {{- if .Values.podSecurityContext }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}
 {{- with .Values.nodeSelector }}
       nodeSelector:

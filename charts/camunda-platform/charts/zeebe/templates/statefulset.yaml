@@ -45,6 +45,9 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
         {{- end }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
         env:
         - name: LC_ALL
           value: C.UTF-8
@@ -144,9 +147,6 @@ spec:
         {{- if .Values.extraVolumeMounts}}
         {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
-        {{- if .Values.containerSecurityContext }}
-        securityContext: {{ .Values.containerSecurityContext | toYaml | nindent 10 }}
-        {{- end }}
       volumes:
         {{- if eq .Values.persistenceType "memory" }}
         - name: data
@@ -164,6 +164,9 @@ spec:
         {{- end }}
       {{- if .Values.serviceAccount.name }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}
 {{- with .Values.nodeSelector }}
       nodeSelector:

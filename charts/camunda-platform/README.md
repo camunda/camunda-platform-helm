@@ -150,7 +150,8 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 | | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
 | | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive). | `` |
 | | `podDisruptionBudget.maxUnavailable` | Can be used to set how many pods should be at max. unavailable | `1` |
-| | `containerSecurityContext` | Defines the security options the broker container should be run with | |
+| | `podSecurityContext` | Defines the security options the Zeebe broker pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Zeebe broker container should be run with | `{ }` |
 | | `nodeSelector` | Can be used to define on which nodes the broker pods should run | `{ } ` |
 | | `tolerations` | Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity). The default defined PodAntiAffinity allows constraining on which nodes the [Zeebe pods are scheduled on](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity). It uses a hard requirement for scheduling and works based on the Zeebe pod labels. To disable the default rule set `podAntiAffinity: null`. | `podAntiAffinity:`</br>`  requiredDuringSchedulingIgnoredDuringExecution:`</br>`  - labelSelector: `</br>`    matchExpressions:`</br>`    - key: "app.kubernetes.io/component"`</br>`    operator: In`</br>`    values:`</br>`    - zeebe-broker`</br>`  topologyKey: "kubernetes.io/hostname"` |
@@ -181,7 +182,8 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 | | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
-| | `containerSecurityContext` | Defines the security options the gateway container should be run with | `{ } `|
+| | `podSecurityContext` | Defines the security options the Zeebe Gateway pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Zeebe Gateway container should be run with | `{ }` |
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods. | |
 | | `podDisruptionBudget.enabled` | If true a pod disruption budget is defined for the brokers | `false` |
 | | `podDisruptionBudget.minAvailable` | Can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive). | `` |
@@ -258,7 +260,8 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
 | | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
-| | `podSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
+| | `podSecurityContext` | Defines the security options the Operate pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Operate container should be run with | `{ }` |
 | | `nodeSelector` |  Can be used to define on which nodes the Operate pods should run | `{ }` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ] ` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
@@ -287,7 +290,8 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 | | `graphqlPlaygroundEnabled` | Can be set to include the credentials in each request, should be set to "include" if GraphQl playground is enabled | `""` |
 | | `extraVolumes` | Can be used to define extra volumes for the Tasklist pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the Tasklist pods, useful for tls and self-signed certificates | `[]` |
-| | `podSecurityContext` | Defines the security options the Tasklist container should be run with | `{ }` |
+| | `podSecurityContext` | Defines the security options the Tasklist pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Tasklist container should be run with | `{ }` |
 | | `nodeSelector` |  Can be used to define on which nodes the Tasklist pods should run | `{ }` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
@@ -328,7 +332,8 @@ Information about Optimize you can find [here](https://docs.camunda.io/docs/comp
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Optimize web application will be available | `80` |
 | | `service.annotations` |  Can be used to define annotations, which will be applied to the Optimize service | `{}` |
-| | `podSecurityContext` |  Defines the security options the operate container should be run with | `{}` |
+| | `podSecurityContext` | Defines the security options the Optimize pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Optimize container should be run with | `{ }` |
 | | `nodeSelector` |  Can be used to define on which nodes the Optimize pods should run | `{}` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
@@ -387,7 +392,8 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
 | | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
-| | `podSecurityContext` | Defines the security options the Identity container should be run with | `{ }` |
+| | `podSecurityContext` | Defines the security options the Identity pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Identity container should be run with | `{ }` |
 
 ### Elasticsearch
 
