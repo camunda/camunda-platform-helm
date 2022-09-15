@@ -208,7 +208,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
+func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -225,6 +225,27 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// then
 	securityContext := deployment.Spec.Template.Spec.SecurityContext
 	s.Require().EqualValues(1000, *securityContext.RunAsUser)
+}
+
+func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.containerSecurityContext.privileged":          "true",
+			"tasklist.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	securityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().True(*securityContext.Privileged)
+	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
 }
 
 func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
