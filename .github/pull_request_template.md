@@ -1,4 +1,4 @@
-### Related issues
+### Which problem does the PR fix?
 
 <!-- Which GitHub issues related to or fixed by this PR, if any. -->
 
@@ -8,10 +8,6 @@
   Explain the contents of the PR.
   Give an overview about the implementation, which decisions were made and why.
 -->
-
-### Which problem does the PR fix?
-
-<!-- Which problem does the PR fix? Please remove this section if you linked an issue above -->
 
 ### Checklist
 
