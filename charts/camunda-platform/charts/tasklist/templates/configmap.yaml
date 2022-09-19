@@ -28,7 +28,7 @@ data:
       # Zeebe instance
       zeebe:
         # Broker contact point
-        brokerContactPoint: {{ tpl .Values.global.zeebeClusterName . }}-gateway:26500
+        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.global.zeebePort }}"
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name

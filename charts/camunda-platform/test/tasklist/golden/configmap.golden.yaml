@@ -33,7 +33,7 @@ data:
       # Zeebe instance
       zeebe:
         # Broker contact point
-        brokerContactPoint: camunda-platform-test-zeebe-gateway:26500
+        brokerContactPoint: "camunda-platform-test-zeebe-gateway:26500"
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name

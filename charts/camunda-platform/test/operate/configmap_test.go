@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// TODO: Create a property-based test like we have in Tasklist.
 func TestGoldenConfigmapWithElasticsearchUrl(t *testing.T) {
 	t.Parallel()
 
