@@ -75,6 +75,10 @@ spec:
             {{- end }}
           - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
             value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
+            value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_API_JWTSETURI
+            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
           {{- end }}
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"

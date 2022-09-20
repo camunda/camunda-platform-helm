@@ -65,6 +65,10 @@ spec:
                 key: optimize-secret
           - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
             value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
+            value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_API_JWTSETURI
+            value: "http://camunda-platform-tes:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
           - name: CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN
