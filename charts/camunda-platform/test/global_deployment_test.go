@@ -104,7 +104,6 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 		SetValues: map[string]string{
 			"identity.enabled":             "false",
 			"global.identity.auth.enabled": "false",
-			"optimize.enabled":             "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
