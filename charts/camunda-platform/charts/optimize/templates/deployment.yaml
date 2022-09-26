@@ -47,6 +47,7 @@ spec:
             value: {{ .Values.global.elasticsearch.host | quote }}
           - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
             value: {{ .Values.global.elasticsearch.port | quote }}
+          {{- if .Values.global.identity.auth.enabled }}
           - name: SPRING_PROFILES_ACTIVE
             value: "ccsm"
           - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
@@ -74,6 +75,7 @@ spec:
             {{- end }}
           - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
             value: "optimize-api"
+          {{- end }}
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
           - name: CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN
