@@ -54,6 +54,4 @@ annotations:
     - name: Camunda Platform 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  # This will be generated automatically by the release workflow.
-  # https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/release.yaml
   artifacthub.io/changes: |

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-chart_files_to_release="${1:-''}"
+chart_files_to_release="${1:-"charts/*/Chart.yaml"}"
 
 for chart_file in ${chart_files_to_release}; do
     chart_name=$(grep -Po "(?<=^name: ).+" ${chart_file})
@@ -30,14 +30,14 @@ for chart_file in ${chart_files_to_release}; do
         ["fix"]=fixed
     )
 
-    echo '|' > "${chart_path}/changes-for-artifacthub.yaml.tmp"
+    echo -e 'annotations:\n  artifacthub.io/changes: |' > "${chart_path}/changes-for-artifacthub.yaml.tmp"
 
     for change_type in ${change_types}; do
         change_type_section=$(sed -rn "/^\#+\s${change_type^}/,/^#/p" "${chart_path}/RELEASE-NOTES.md")
         if [[ -n "${change_type_section}" && "${!kac_map[@]}" =~ "${change_type}" ]]; then
             echo "${change_type_section}" | egrep '^\*' | sed 's/^* //g' | while read commit_message; do
-                echo "  - kind: ${kac_map[${change_type}]} "
-                echo "    description: \"${commit_message}\""
+                echo "    - kind: ${kac_map[${change_type}]}"
+                echo "      description: \"${commit_message}\""
             done >> "${chart_path}/changes-for-artifacthub.yaml.tmp"
         fi
     done
@@ -50,9 +50,10 @@ for chart_file in ${chart_files_to_release}; do
     fi
 
     # Merge changes back to the Chart.yaml file.
-    yq eval-all \
-        'select(fileIndex==0).annotations."artifacthub.io/changes" = select(fileIndex==1) | select(fileIndex==0)' \
+    # https://mikefarah.gitbook.io/yq/operators/reduce#merge-all-yaml-files-together
+    yq eval-all '. as $item ireduce ({}; . * $item )' \
         ${chart_path}/Chart.yaml ${chart_path}/changes-for-artifacthub.yaml.tmp > \
         ${chart_path}/Chart-with-artifacthub-changes.yaml.tmp
-    mv ${chart_path}/Chart-with-artifacthub-changes.yaml.tmp ${chart_path}/Chart.yaml
+    cat ${chart_path}/Chart-with-artifacthub-changes.yaml.tmp > ${chart_path}/Chart.yaml
+    rm ${chart_path}/changes-for-artifacthub.yaml.tmp
 done
