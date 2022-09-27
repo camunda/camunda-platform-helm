@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
       - name: Install dependencies
         run: |
-          apk add bash grep yq
+          apk add bash grep yq curl
       - name: Install Helm
         uses: asdf-vm/actions/install@v1
       - name: Generate charts release-notes
