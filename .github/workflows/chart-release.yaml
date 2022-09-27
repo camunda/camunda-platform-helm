@@ -1,12 +1,8 @@
-name: Helm Lint Charts
+name: Chart Release
 
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
-  push:
-    branches:
-      - main
-  pull_request: { }
 
 jobs:
   release:
@@ -16,20 +12,29 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Install Helm
         uses: asdf-vm/actions/install@v1
-      - name: Add necessary helm repos
+      - name: Add helm repos
         run: |
           helm repo add elastic https://helm.elastic.co
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
       - name: Get Helm Deps
-        run: |
-          make deps
-      - name: Run Helm lint 
-        run: |
-          helm lint --strict charts/*
+        run: make deps
+      - name: Run tests
+        run: make test
+      - name: Run Chart Releaser
+        uses: helm/chart-releaser-action@v1.3.0
+        with:
+          config: .github/config/chart-releaser.yaml
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          CR_SKIP_EXISTING: 'true'

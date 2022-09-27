@@ -2,6 +2,7 @@
 
 chartPath=charts/camunda-platform
 releaseName=camunda-platform-test
+gitChglog=quay.io/git-chglog/git-chglog:0.15.1
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: test
@@ -42,6 +43,23 @@ checkLicense:
 .PHONY: installLicense
 installLicense:
 	go install github.com/google/addlicense@v1.0.0
+
+#########################################################
+######### Tools
+#########################################################
+
+# Add asdf plugins.
+.asdf-plugins-add:
+	@# Add plugins from .tool-versions file within the repo.
+	@# If the plugin is already installed asdf exits with 2, so grep is used to handle that.
+	@for plugin in $$(awk '{print $$1}' .tool-versions); do \
+		echo "$${plugin}"; \
+		asdf plugin add $${plugin} 2>&1 | (grep "already added" && exit 0); \
+	done
+
+# Install tools via asdf.
+asdf-tools-install: .asdf-plugins-add
+	asdf install
 
 #########################################################
 ######### HELM
@@ -96,3 +114,19 @@ bump-chart-version-and-commit: .bump-chart-version
 	chart_version=`grep -Po '(?<=^version: ).+' $${chart_path}/Chart.yaml`;\
 	git add $${chart_path};\
 	git commit -m "chore: bump camunda-platform chart version to $${chart_version}"
+
+.PHONY: .generate-release-notes
+.generate-release-notes:
+	# bash scripts/generate-release-notes.sh
+	docker run --rm -w /data -v `pwd`:/data --entrypoint sh $(gitChglog) \
+		-c "apk add bash grep yq; bash scripts/generate-release-notes.sh"
+
+.PHONY: generate-release-notes-and-commit
+generate-release-notes-and-commit: .generate-release-notes
+	chart_path="charts/camunda-platform";\
+	chart_version=`grep -Po '(?<=^version: ).+' $${chart_path}/Chart.yaml`;\
+	git add charts/camunda-platform;\
+	git commit -m "chore: add release notes for camunda-platform $${chart_version}"
+
+.PHONY: release-chores
+release-chores: bump-chart-version-and-commit generate-release-notes-and-commit
