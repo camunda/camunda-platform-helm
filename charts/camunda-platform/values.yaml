@@ -60,7 +60,7 @@ global:
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: ""
 
-  # Elasticsearch configuration which is shared between the sub charts  
+  # Elasticsearch configuration which is shared between the sub charts
   elasticsearch:
     # Elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
@@ -86,6 +86,8 @@ global:
       # Subcharts can't access values from other sub-charts or the parent, global only.
       # This is useful if the identity.keycloak.fullnameOverride is set, and specifies a different name for the Keycloak service.
       fullname: ""
+
+      url: ""
     # Identity.auth configuration, to configure Identity authentication setup
     auth:
       # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
@@ -94,7 +96,9 @@ global:
       # Identity.auth.publicIssuerUrl defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
       # Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
       # Can be overwritten if, ingress is in use and an external IP is available.
-      publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+      publicIssuerUrl: ""
+
+      providerBackendUrl: ""
 
       # Identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
@@ -192,9 +196,9 @@ zeebe:
     # extraPorts can be used to expose any other ports which are required. Can be useful for exporters
     extraPorts: []
       # - name: hazelcast
-      #   protocol: TCP 
+      #   protocol: TCP
       #   port: 5701
-      #   targetPort: 5701 
+      #   targetPort: 5701
 
   # ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
