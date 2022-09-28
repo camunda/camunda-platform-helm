@@ -1,7 +1,6 @@
 ---
 
-name: Release
-about: Release 
+name: 'Release Template'
 title: 'Release Camunda Platform Helm Chart v8.x.x'
 
 ---

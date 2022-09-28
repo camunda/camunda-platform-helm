@@ -130,16 +130,18 @@ generate-release-notes-and-commit: .generate-release-notes
 
 .PHONY: generate-release-pr-url
 generate-release-pr-url:
+	@echo "\n\n###################################\n"
 	@echo "Open the release PR using this URL:"
 	@echo "https://github.com/camunda/camunda-platform-helm/compare/release?expand=1&template=release_template.md"
+	@echo "\n###################################\n\n"
 
 .PHONY: release-chores
 release-chores:
 	git checkout main
 	git pull
-	git branch -D release 2&> /dev/null || true
-	git checkout -b release
-	$(MAKE) bump-chart-version-and-commit
-	$(MAKE) generate-release-notes-and-commit
-	git push
-	$(MAKE) generate-release-pr-url
+	git switch -C release
+	@$(MAKE) bump-chart-version-and-commit
+	@$(MAKE) generate-release-notes-and-commit
+	git push -fu origin release
+	@$(MAKE) generate-release-pr-url
+	git checkout main
