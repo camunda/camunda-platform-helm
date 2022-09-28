@@ -3,14 +3,9 @@ name: Chart Release
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
-  workflow_run:
-    workflows: ['Chart Validate']
-    types:
-      - completed
 
 jobs:
   release:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
