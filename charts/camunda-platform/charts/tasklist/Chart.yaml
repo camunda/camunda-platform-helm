@@ -1,7 +1,7 @@
 apiVersion: v2
 description: Zeebe TaskList Helm Chart for Kubernetes
 name: tasklist
-version: 8.0.13
+version: 8.0.14
 icon: https://helm.camunda.io/imgs/camunda.svg
 annotations:
   artifacthub.io/changes: |
