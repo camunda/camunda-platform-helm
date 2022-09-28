@@ -62,6 +62,8 @@ jobs:
           fetch-depth: 0
       - name: Trigger chart release workflow
         run: |
-          gh workflow run chart-release.yaml
+          # Workaround till GHA ubuntu-latest runner has gh v2.16.1
+          wget -c https://github.com/cli/cli/releases/download/v2.16.1/gh_2.16.1_linux_amd64.tar.gz -O - | tar -xz
+          ./gh_2.16.1_linux_amd64/bin/gh workflow run chart-release.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
