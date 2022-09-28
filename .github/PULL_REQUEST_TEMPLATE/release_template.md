@@ -1,10 +1,3 @@
----
-
-name: 'Release Template'
-title: 'Release Camunda Platform Helm Chart v8.x.x'
-
----
-
 **Before opening the PR:**
 
 - [x] Run `make release-chores`
