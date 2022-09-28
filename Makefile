@@ -128,5 +128,18 @@ generate-release-notes-and-commit: .generate-release-notes
 	git add charts/camunda-platform;\
 	git commit -m "chore: add release notes for camunda-platform $${chart_version}"
 
+.PHONY: generate-release-pr-url
+generate-release-pr-url:
+	@echo "Open the release PR using this URL:"
+	@echo "https://github.com/camunda/camunda-platform-helm/compare/release?expand=1&template=release_template.md"
+
 .PHONY: release-chores
-release-chores: bump-chart-version-and-commit generate-release-notes-and-commit
+release-chores:
+	git checkout main
+	git pull
+	git branch -D release 2&> /dev/null || true
+	git checkout -b release
+	$(MAKE) bump-chart-version-and-commit
+	$(MAKE) generate-release-notes-and-commit
+	git push
+	$(MAKE) generate-release-pr-url
