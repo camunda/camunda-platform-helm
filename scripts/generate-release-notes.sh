@@ -37,7 +37,7 @@ for chart_file in ${chart_files_to_release}; do
         if [[ -n "${change_type_section}" && "${!kac_map[@]}" =~ "${change_type}" ]]; then
             echo "${change_type_section}" | egrep '^\*' | sed 's/^* //g' | while read commit_message; do
                 echo "    - kind: ${kac_map[${change_type}]}"
-                echo "      description: \"${commit_message}\""
+                echo "      description: \"$(echo ${commit_message} | sed -r "s/ \(.+\)$//")\""
             done >> "${chart_path}/changes-for-artifacthub.yaml.tmp"
         fi
     done
