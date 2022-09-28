@@ -3,9 +3,6 @@ name: Chart Validate
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
-  push:
-    branches:
-      - main
   pull_request:
     types:
       - labeled
@@ -50,20 +47,3 @@ jobs:
           echo "check-version-increment: false" >> .github/config/chart-testing.yaml
       - name: Run chart testing and lint
         run: ct lint --config .github/config/chart-testing.yaml
-
-  trigger-release-workflow:
-    needs: lint-and-test
-    if: ${{ contains(github.event.*.labels.*.name, 'release') }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Trigger chart release workflow
-        run: |
-          # Workaround till GHA ubuntu-latest runner has gh v2.16.1
-          wget -c https://github.com/cli/cli/releases/download/v2.16.1/gh_2.16.1_linux_amd64.tar.gz -O - | tar -xz
-          ./gh_2.16.1_linux_amd64/bin/gh workflow run chart-release.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
