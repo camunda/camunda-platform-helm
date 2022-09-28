@@ -1,6 +1,7 @@
 # Makefile for managing the helm charts
 
 chartPath=charts/camunda-platform
+chartVersion=$(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName=camunda-platform-test
 gitChglog=quay.io/git-chglog/git-chglog:0.15.1
 
@@ -110,10 +111,8 @@ topology:
 
 .PHONY: bump-chart-version-and-commit
 bump-chart-version-and-commit: .bump-chart-version
-	chart_path="charts/camunda-platform";\
-	chart_version=`grep -Po '(?<=^version: ).+' $${chart_path}/Chart.yaml`;\
-	git add $${chart_path};\
-	git commit -m "chore: bump camunda-platform chart version to $${chart_version}"
+	git add $(chartPath);\
+	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
 .PHONY: .generate-release-notes
 .generate-release-notes:
@@ -123,16 +122,14 @@ bump-chart-version-and-commit: .bump-chart-version
 
 .PHONY: generate-release-notes-and-commit
 generate-release-notes-and-commit: .generate-release-notes
-	chart_path="charts/camunda-platform";\
-	chart_version=`grep -Po '(?<=^version: ).+' $${chart_path}/Chart.yaml`;\
-	git add charts/camunda-platform;\
-	git commit -m "chore: add release notes for camunda-platform $${chart_version}"
+	git add $(chartPath);\
+	git commit -m "chore: add release notes for camunda-platform $(chartVersion)"
 
 .PHONY: generate-release-pr-url
 generate-release-pr-url:
 	@echo "\n\n###################################\n"
 	@echo "Open the release PR using this URL:"
-	@echo "https://github.com/camunda/camunda-platform-helm/compare/release?expand=1&template=release_template.md"
+	@echo "https://github.com/camunda/camunda-platform-helm/compare/release?expand=1&template=release_template.md&title=Release%20Camunda%20Platform%20Helm%20Chart%20v$(chartVersion)"
 	@echo "\n###################################\n\n"
 
 .PHONY: release-chores
