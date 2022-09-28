@@ -118,7 +118,7 @@ spec:
             */}}
             value: {{ .Values.global.identity.keycloak.url | default "http://camunda-platform-tes:80/auth" | quote }}
           - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
-            value: {{ .Values.global.identity.auth.publicIssuerUrl | default "http://camunda-platform-tes:80/auth/realms/camunda-platform" | quote }}
+            value: {{ .Values.global.identity.auth.publicIssuerUrl | default "http://localhost:18080/auth/realms/camunda-platform" | quote }}
           - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
             value: {{ .Values.global.identity.auth.providerBackendUrl | default "http://camunda-platform-tes:80/auth/realms/camunda-platform" | quote }}
           - name: KEYCLOAK_SETUP_USER
