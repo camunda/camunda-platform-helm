@@ -1,4 +1,4 @@
-# Makefile for managing the helm charts
+# Makefile for managing the Helm charts
 
 chartPath=charts/camunda-platform
 chartVersion=$(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
@@ -63,9 +63,35 @@ asdf-tools-install: .asdf-plugins-add
 	asdf install
 
 #########################################################
+######### Helpers
+#########################################################
+
+# This target will be mainly used in the CI to update the images tag from camunda-platform repo
+# Note:
+# The "yq" tool is not unsable because of this bug:
+# https://github.com/mikefarah/yq/issues/515
+# 	yq -i '.global.image.tag = env(GLOBAL_IMAGE_TAG)' charts/camunda-platform/values.yaml
+# 	yq -i '.optimize.image.tag = env(OPTIMIZE_IMAGE_TAG)' charts/camunda-platform/values.yaml
+.PHONY: update-values-file-image-tag
+update-values-file-image-tag:
+	@sed -ri "s/(\s+)tag:.+# (global.image.tag)/\1tag: ${GLOBAL_IMAGE_TAG} # \2/g" \
+		charts/camunda-platform/values.yaml; \
+	sed -ri "s/(\s+)tag:.+# (optimize.image.tag)/\1tag: ${OPTIMIZE_IMAGE_TAG} # \2/g" \
+		charts/camunda-platform/values.yaml; \
+	echo "Updated global.image.tag=${GLOBAL_IMAGE_TAG} and optimize.image.tag=${OPTIMIZE_IMAGE_TAG}"
+
+#########################################################
 ######### HELM
 #########################################################
-# deps: updates and downloads the dependencies for the helm chart
+
+# helm-repos-add: add Helm repos needed by the charts
+.PHONY: helm-repos-add
+helm-repos-add:
+	helm repo add elastic https://helm.elastic.co
+	helm repo add bitnami https://charts.bitnami.com/bitnami
+	helm repo update
+
+# deps: updates and downloads the dependencies for the Helm chart
 .PHONY: deps
 deps:
 	helm dependency update $(chartPath)
@@ -116,7 +142,6 @@ bump-chart-version-and-commit: .bump-chart-version
 
 .PHONY: .generate-release-notes
 .generate-release-notes:
-	# bash scripts/generate-release-notes.sh
 	docker run --rm -w /data -v `pwd`:/data --entrypoint sh $(gitChglog) \
 		-c "apk add bash grep yq; bash scripts/generate-release-notes.sh"
 
