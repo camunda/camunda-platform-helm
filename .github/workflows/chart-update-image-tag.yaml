@@ -1,0 +1,53 @@
+name: Update Image Tag
+
+on:
+  # Allow to run the workflow from GitHub UI and other workflows.
+  workflow_dispatch:
+    inputs:
+      global-image-tag:
+        description: 'Value of the "global.image.tag" in values file'
+        required: true
+        type: string
+      # Optimize doesn't follow the unified version yet.
+      optimize-image-tag:
+        description: 'Value of the "optimize.image.tag" in values file'
+        required: true
+        type: string
+
+jobs:
+  update-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install Helm
+        uses: asdf-vm/actions/install@v1
+      - name: Update values file image tag
+        run: |
+          export GLOBAL_IMAGE_TAG="${{ github.event.inputs.global-image-tag }}"
+          export OPTIMIZE_IMAGE_TAG="${{ github.event.inputs.optimize-image-tag }}"
+          make update-values-file-image-tag
+      - name: Make sure all Docker image tags are available
+        run: |
+          make helm-repos-add
+          camunda_docker_images="$(helm template charts/camunda-platform --skip-tests | awk '/image:.+camunda/ {gsub(/"/, "", $2); print $2}' | sort | uniq)"
+          for image_name in ${camunda_docker_images}; do
+              echo -e "\n\nImage: ${image_name}"
+              docker pull "${image_name}"
+          done
+      - name: Create pull request with the changes
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Update Camunda Platform image tag to ${{ github.event.inputs.global-image-tag }}'
+          delete-branch: true
+          title: '[BOT] Update Camunda Platform image tag to ${{ github.event.inputs.global-image-tag }}'
+          body: |
+            Update camunda-platform Helm chart image tag to:
+            - global.image.tag: ${{ github.event.inputs.global-image-tag }}
+            - optimize.image.tag: ${{ github.event.inputs.optimize-image-tag }}
+          labels: |
+            bot
+            chore
+            camunda-platform

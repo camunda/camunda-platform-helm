@@ -5,6 +5,14 @@ The charts are build, linted and tested on every push to the main branch. If the
 created. The charts are hosted via github pages and use the release artifacts. We use the
 [chart-releaser-action](https://github.com/helm/chart-releaser-action) to release the charts.
 
+## Update Camunda Platform image tag
+
+Before the release make sure to update the Docker image tag for all components to latest release
+available in [camunda-platform](https://github.com/camunda/camunda-platform).
+
+This could be done manually or via the workflow
+[Update Image Tag](https://github.com/camunda/camunda-platform-helm/actions/workflows/chart-update-image-tag.yaml).
+
 ## Process
 
 We are trying to automate as much as possible of the release process yet without sacrificing
