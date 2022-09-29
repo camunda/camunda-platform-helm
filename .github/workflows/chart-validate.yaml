@@ -1,4 +1,4 @@
-name: Chart Validate
+name: "Chart - Validate"
 
 on:
   # Allow to run the workflow from GitHub UI and other workflows.

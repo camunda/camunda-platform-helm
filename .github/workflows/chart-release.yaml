@@ -1,4 +1,4 @@
-name: Chart Release
+name: "Chart - Release"
 
 on:
   # Allow to run the workflow from GitHub UI and other workflows.

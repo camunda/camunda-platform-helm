@@ -1,4 +1,4 @@
-name: Update Image Tag
+name: "Chart - Update Image Tag"
 
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
@@ -40,8 +40,8 @@ jobs:
       - name: Create pull request with the changes
         uses: peter-evans/create-pull-request@v4
         with:
-          commit-message: Update Camunda Platform image tag to ${{ github.event.inputs.global-image-tag }}'
-          delete-branch: true
+          branch: chart-update-image-tag
+          commit-message: 'Update Camunda Platform image tag to ${{ github.event.inputs.global-image-tag }}'
           title: '[BOT] Update Camunda Platform image tag to ${{ github.event.inputs.global-image-tag }}'
           body: |
             Update camunda-platform Helm chart image tag to:
@@ -51,3 +51,4 @@ jobs:
             bot
             chore
             camunda-platform
+          delete-branch: true
