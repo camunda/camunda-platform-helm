@@ -22,7 +22,7 @@ jobs:
       - name: Wait for all PR checks to succeed
         uses: lewagon/wait-on-check-action@v1.1.2
         with:
-          ref: release
+          ref: ${{ github.ref }}
           running-workflow-name: 'wait-for-release-conditions'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -50,10 +50,6 @@ jobs:
           helm repo add elastic https://helm.elastic.co
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
-      - name: Get Helm Deps
-        run: make deps
-      - name: Run tests
-        run: make test
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.3.0
         with:
