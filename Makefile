@@ -74,9 +74,9 @@ asdf-tools-install: .asdf-plugins-add
 # 	yq -i '.optimize.image.tag = env(OPTIMIZE_IMAGE_TAG)' charts/camunda-platform/values.yaml
 .PHONY: update-values-file-image-tag
 update-values-file-image-tag:
-	@sed -ri "s/(\s+)tag:.+# (global.image.tag)/\1tag: ${GLOBAL_IMAGE_TAG} # \2/g" \
+	@sed -ri "s/(\s+)tag:.+# (global.image.tag)/\1tag: ${GLOBAL_IMAGE_TAG}  # \2/g" \
 		charts/camunda-platform/values.yaml; \
-	sed -ri "s/(\s+)tag:.+# (optimize.image.tag)/\1tag: ${OPTIMIZE_IMAGE_TAG} # \2/g" \
+	sed -ri "s/(\s+)tag:.+# (optimize.image.tag)/\1tag: ${OPTIMIZE_IMAGE_TAG}  # \2/g" \
 		charts/camunda-platform/values.yaml; \
 	echo "Updated global.image.tag=${GLOBAL_IMAGE_TAG} and optimize.image.tag=${OPTIMIZE_IMAGE_TAG}"
 
