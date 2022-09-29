@@ -67,18 +67,9 @@ asdf-tools-install: .asdf-plugins-add
 #########################################################
 
 # This target will be mainly used in the CI to update the images tag from camunda-platform repo
-# Note:
-# The "yq" tool is not unsable because of this bug:
-# https://github.com/mikefarah/yq/issues/515
-# 	yq -i '.global.image.tag = env(GLOBAL_IMAGE_TAG)' charts/camunda-platform/values.yaml
-# 	yq -i '.optimize.image.tag = env(OPTIMIZE_IMAGE_TAG)' charts/camunda-platform/values.yaml
 .PHONY: update-values-file-image-tag
 update-values-file-image-tag:
-	@sed -ri "s/(\s+)tag:.+# (global.image.tag)/\1tag: ${GLOBAL_IMAGE_TAG}  # \2/g" \
-		charts/camunda-platform/values.yaml; \
-	sed -ri "s/(\s+)tag:.+# (optimize.image.tag)/\1tag: ${OPTIMIZE_IMAGE_TAG}  # \2/g" \
-		charts/camunda-platform/values.yaml; \
-	echo "Updated global.image.tag=${GLOBAL_IMAGE_TAG} and optimize.image.tag=${OPTIMIZE_IMAGE_TAG}"
+	@bash scripts/update-values-file-image-tag.sh
 
 #########################################################
 ######### HELM

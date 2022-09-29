@@ -6,12 +6,12 @@ on:
     inputs:
       global-image-tag:
         description: 'Value of the "global.image.tag" in values file'
-        required: true
+        required: false
         type: string
       # Optimize doesn't follow the unified version yet.
       optimize-image-tag:
         description: 'Value of the "optimize.image.tag" in values file'
-        required: true
+        required: false
         type: string
 
 jobs:
