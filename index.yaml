@@ -434,10 +434,10 @@ entries:
     version: 8.0.8
   - annotations:
       artifacthub.io/changes: |
-        - feat: allow more configuration of LoadBalancer
+        - feat allow more configuration of LoadBalancer
         - Align thread count with partitioncount
         - Reuse secrets correctly
-        - feat: extend tasklist configuration
+        - feat extend tasklist configuration
       artifacthub.io/containsSecurityUpdates: "false"
     apiVersion: v2
     appVersion: 8.0.0
@@ -472,7 +472,7 @@ entries:
       repository: https://helm.elastic.co
       version: 7.17.1
     description: Camunda Platform Helm Chart for Kubernetes
-    digest: 8ab1e41b0439d3909187fd5eac3e5a39f7bbbf2cca3b72bb0368b4c5f6409df2
+    digest: 35d1dcf92a6d6f11c35dbf0ffe384ae697194b43088364aff29075245f0f954e
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/self-managed.png
     maintainers:
