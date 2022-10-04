@@ -29,6 +29,7 @@ jobs:
           export GLOBAL_IMAGE_TAG="${{ github.event.inputs.global-image-tag }}"
           export OPTIMIZE_IMAGE_TAG="${{ github.event.inputs.optimize-image-tag }}"
           make update-values-file-image-tag
+          make golden
       - name: Make sure all Docker image tags are available
         run: |
           make helm-repos-add
