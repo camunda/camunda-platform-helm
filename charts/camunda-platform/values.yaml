@@ -638,7 +638,7 @@ optimize:
     repository: camunda/optimize
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
     # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
-    tag: 3.9.0-RC1  # optimize.image.tag
+    tag: 3.9.0-preview-2  # optimize.image.tag
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
