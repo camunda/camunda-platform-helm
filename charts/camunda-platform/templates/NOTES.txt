@@ -69,7 +69,7 @@ Now you can connect your workers and clients to `localhost:26500`
 
 {{- if or (.Values.zeebe.enabled) (.Values.operate.enabled) (.Values.tasklist.enabled) (.Values.optimize.enabled) (.Values.identity.enabled) (.Values.elasticsearch.enabled) }}
 ### Connecting to Web apps
-{{- end }}
+
 
 As part of the Helm charts an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
 In order to deploy the ingress manifest, set `<service>.ingress.enabled` to `true`. Example: `operate.ingress.enabled=true`
@@ -102,3 +102,5 @@ as well, otherwise a login will not be possible. Make sure you use `18080` as po
 Now you can point your browser to one of the service's login page. Example: http://localhost:8081 for Operate.
 
 Default user and password: "demo/demo"
+
+{{- end }}
