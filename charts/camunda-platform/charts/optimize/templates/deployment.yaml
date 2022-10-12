@@ -96,6 +96,9 @@ spec:
         - containerPort: 8090
           name: http
           protocol: TCP
+        - containerPort: 8092
+          name: management
+          protocol: TCP
         volumeMounts:
         {{- if .Values.extraVolumeMounts}}
           {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}

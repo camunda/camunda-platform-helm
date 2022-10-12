@@ -20,6 +20,10 @@ spec:
     name: http
     targetPort: 8090
     protocol: TCP
+  - port: 8092
+    name: management
+    targetPort: 8092
+    protocol: TCP
   selector:
     app: camunda-platform
     app.kubernetes.io/name: optimize
