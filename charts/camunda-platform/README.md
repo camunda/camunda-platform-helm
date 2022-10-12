@@ -331,6 +331,7 @@ Information about Optimize you can find [here](https://docs.camunda.io/docs/comp
 | | `service` |  Configuration for the Optimize service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Optimize web application will be available | `80` |
+| | `service.managementPort` | Defines the management port, where actuator and the backupAPI will be available | `8092` |
 | | `service.annotations` |  Can be used to define annotations, which will be applied to the Optimize service | `{}` |
 | | `podSecurityContext` | Defines the security options the Optimize pod should be run with | `{ }` |
 | | `containerSecurityContext` | Defines the security options the Optimize container should be run with | `{ }` |

@@ -678,6 +678,8 @@ optimize:
     port: 80
     # Service.annotations can be used to define annotations, which will be applied to the Optimize service
     annotations: {}
+    # Service.managementPort defines the port where actuator will be available. Also required to reach backup API
+    managementPort: 8092
 
   # PodSecurityContext defines the security options the Optimize pod should be run with
   podSecurityContext: {}

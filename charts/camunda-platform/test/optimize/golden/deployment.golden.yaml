@@ -84,5 +84,8 @@ spec:
         - containerPort: 8090
           name: http
           protocol: TCP
+        - containerPort: 8092
+          name: management
+          protocol: TCP
         volumeMounts:
       volumes:

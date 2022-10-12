@@ -17,5 +17,9 @@ spec:
     name: http
     targetPort: 8090
     protocol: TCP
+  - port: {{ .Values.service.managementPort }}
+    name: management
+    targetPort: 8092
+    protocol: TCP
   selector:
     {{- include "optimize.matchLabels" . | nindent 4 }}
