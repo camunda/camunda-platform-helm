@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "3.9.0-preview-2"
+    app.kubernetes.io/version: "3.9.1"
     app.kubernetes.io/component: optimize
   annotations: 
     ingress.kubernetes.io/rewrite-target: /
