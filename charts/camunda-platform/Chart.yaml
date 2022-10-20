@@ -18,6 +18,12 @@ keywords:
   - process-engine
   - workflow
 dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    version: 2.x.x
+  - name: identity
+    version: 8.0.14
+    condition: "identity.enabled"
   - name: zeebe
     version: 8.0.14
     condition: "zeebe.enabled"
@@ -33,9 +39,6 @@ dependencies:
   - name: optimize
     version: 8.0.14
     condition: "optimize.enabled"
-  - name: identity
-    version: 8.0.14
-    condition: "identity.enabled"
   - name: elasticsearch
     repository: "https://helm.elastic.co"
     version: 7.17.1

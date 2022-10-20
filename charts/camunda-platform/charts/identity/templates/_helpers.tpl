@@ -76,3 +76,48 @@ Defines match labels for identity, which are extended by sub-charts and should b
 {{- $name := .Release.Name -}}
 {{- printf "%s-optimize-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end }}
+
+{{/*
+Keycloak helpers
+*/}}
+
+{{/*
+[identity] Fail in case Keycloak chart is disabled and external Keycloak URL is not configured.
+*/}}
+{{- define "identity.keycloakIsConfigured" -}}
+{{- $failMessage := `
+[identity] Keycloak chart is not enabled, and the external Keycloak URL is not configured.
+If you want to use your own Keycloak, please make sure to configure the following var:
+  - global.identity.keycloak.url
+` -}}
+
+{{- if not .Values.keycloak.enabled }}
+{{- if not .Values.global.identity.keycloak.url }}
+    {{ printf "\n%s" $failMessage | trimSuffix "\n" | fail }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak name based on the Keycloak subchart.
+*/}}
+{{- define "identity.keycloakName" -}}
+{{- if .Values.keycloak.enabled -}}
+{{ include "keycloak.fullname" .Subcharts.keycloak }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak URL based on global value or Keycloak subchart.
+*/}}
+{{- define "identity.keycloakURL" -}}
+{{ include "identity.keycloakIsConfigured" . }}
+{{- if (.Values.global.identity.keycloak.url) -}}
+    {{- .Values.global.identity.keycloak.url -}}
+{{- else -}}
+    {{- $keycloakChart := index $ "Subcharts" "keycloak" -}}
+    {{- $keycloakProtocol := ternary "https" "http" ($keycloakChart.Values.auth.tls.enabled) -}}
+    {{- $keycloakPort := get $keycloakChart.Values.service.ports $keycloakProtocol -}}
+    {{- $keycloakProtocol -}}://{{- include "identity.keycloakName" . -}}:{{- $keycloakPort -}}
+{{- end -}}
+{{- end -}}
