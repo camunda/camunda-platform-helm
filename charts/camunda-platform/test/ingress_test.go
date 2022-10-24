@@ -10,6 +10,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	v1 "k8s.io/api/apps/v1"
+	v12 "k8s.io/api/core/v1"
 )
 
 type ingressTemplateTest struct {
@@ -32,6 +34,37 @@ func TestIngressTemplate(t *testing.T) {
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"templates/ingress.yaml"},
 	})
+}
+
+func (s *ingressTemplateTest) TestIngressWithKeycloakChart() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.ingress.enabled":    "true",
+			"identity.keycloak.enabled": "true",
+			"identity.contextPath":      "/identity",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// NOTE: helm.Options.ExtraArgs doesn't support passing args to Helm "template" command.
+	// TODO: Remove "template" from all helm.Options.ExtraArgs since it doesn't have any effect.
+	extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
+
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
+			Value: "true",
+		})
 }
 
 func (s *ingressTemplateTest) TestIngressWithContextPath() {
