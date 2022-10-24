@@ -18,6 +18,7 @@ spec:
     - http:
     {{- end }}
         paths:
+          {{- if and .Values.identity.enabled .Values.identity.contextPath }}
           - backend:
               service:
                 name: {{ include "keycloak.fullname" .Subcharts.identity.Subcharts.keycloak }}
@@ -33,6 +34,8 @@ spec:
                   number: {{ .Values.identity.service.port }}
             path: {{ .Values.identity.contextPath }}
             pathType: Prefix
+          {{- end }}
+          {{- if and .Values.operate.enabled .Values.operate.contextPath }}
           - backend:
               service:
                 name: {{ template "operate.fullname" .Subcharts.operate }}
@@ -40,6 +43,8 @@ spec:
                   number: {{ .Values.operate.service.port }}
             path: {{ .Values.operate.contextPath }}
             pathType: Prefix
+          {{- end }}
+          {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
           - backend:
               service:
                 name: {{ template "optimize.fullname" .Subcharts.optimize }}
@@ -47,6 +52,8 @@ spec:
                   number: {{ .Values.optimize.service.port }}
             path: {{ .Values.optimize.contextPath }}
             pathType: Prefix
+          {{- end }}
+          {{- if and .Values.tasklist.enabled .Values.tasklist.contextPath }}
           - backend:
               service:
                 name: {{ template "tasklist.fullname" .Subcharts.tasklist }}
@@ -54,6 +61,7 @@ spec:
                   number: {{ .Values.tasklist.service.port }}
             path: {{ .Values.tasklist.contextPath }}
             pathType: Prefix
+          {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
   tls:
     - hosts:
