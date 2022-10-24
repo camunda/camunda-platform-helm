@@ -28,9 +28,9 @@ Please make sure to follow our [Contributing Guide](../blob/main/CONTRIBUTING.md
 - [ ] Did you sign our CLA (Contributor License Agreement)? It will show once you open the PR.
 - [ ] Did all checks/tests pass in the PR?
 
+<!--
 ### To-Do
-
-<!-- Please remove this section if you don't need it. -->
 
 - [ ] If the PR is not complete but you want to discuss the approach,
   list what remains to be done here.
+-->
