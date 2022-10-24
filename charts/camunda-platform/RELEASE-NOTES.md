@@ -7,6 +7,7 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 
 ### Feat
 
+* update Camunda Platform image tag to Global:8.1.2/Optimize:3.9.1
 * allow using external/existing keycloak ([#451](https://github.com/camunda/camunda-platform-helm/issues/451))
 * allow to exclude components in combined the ingress
-
+* add management port to reach backup API
