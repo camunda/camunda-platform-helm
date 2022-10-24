@@ -849,6 +849,16 @@ identity:
   keycloak:
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
+    # KEYCLOAK_PROXY_ADDRESS_FORWARDING is set to "true" to make it work with Ingress (if it's enabled).
+    extraEnvVars:
+    - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+      value: "true"
+    # Keycloak.ingress configuration, to setup a separated Ingress for Keycloak if needed.
+    # It's disabled by default and just added here for visibility.
+    ingress:
+      enabled: false
+      ingressClassName: ""
+      hostname: ""
     # Keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:
       # Keycloak.service.type can be set to change the service type.
