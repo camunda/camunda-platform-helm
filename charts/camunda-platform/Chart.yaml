@@ -62,6 +62,10 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
+      description: "update Camunda Platform image tag to Global:8.1.2/Optimize:3.9.1"
+    - kind: added
       description: "allow using external/existing keycloak"
     - kind: added
       description: "allow to exclude components in combined the ingress"
+    - kind: added
+      description: "add management port to reach backup API"
