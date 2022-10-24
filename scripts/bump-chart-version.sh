@@ -24,9 +24,22 @@ fi
 # but it could be customized in case we have more in the future.
 chart_name="camunda-platform"
 
+# When changing the minor version, export "is_minor_version=1",
+# that will increment the minor version and set the patch version to zero.
+is_minor_version="${is_minor_version:-0}"
+
 # Generate new version based on the old one.
 chart_version_old=$(grep -Po "(?<=^version: ).+" charts/${chart_name}/Chart.yaml)
-chart_version_new=$(echo "${chart_version_old}" | awk -F '.' -v OFS='.' '{$NF += 1; print}')
+chart_version_new=$(echo "${chart_version_old}" |
+    awk -F '.' -v OFS='.' -v is_minor_version=${is_minor_version} \
+      '{
+        if (is_minor_version) {
+          printf "%d.%d.0", $1, $2+1, $3
+        } else {
+          $NF += 1; print;
+        }
+      }'
+)
 
 # Update parent chart version
 sed -i "s/version: ${chart_version_old}/version: ${chart_version_new}/g" charts/${chart_name}/Chart.yaml
