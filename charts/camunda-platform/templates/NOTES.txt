@@ -53,6 +53,8 @@
     {{- else }}
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
+  {{- end }}
+  {{ if .Values.identity.keycloak.enabled -}}
   - Keycloak: {{ .Values.identity.keycloak.image.repository }}:{{ .Values.identity.keycloak.image.tag }}
   {{- end }}
 - Elasticsearch:
@@ -94,7 +96,9 @@ If you want to use different ports for the services, please adjust the related c
 The authentication via Identity/Keycloak is enabled. In order to login into one of the services please port-forward to Keycloak
 as well, otherwise a login will not be possible. Make sure you use `18080` as port.
 
+{{ if .Values.identity.keycloak.enabled -}}
 > kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
+{{- end }}
     {{- end }}
 
 Now you can point your browser to one of the service's login page. Example: http://localhost:8081 for Operate.
