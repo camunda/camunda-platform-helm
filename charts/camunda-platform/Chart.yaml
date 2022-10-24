@@ -18,28 +18,34 @@ keywords:
   - process-engine
   - workflow
 dependencies:
+  # Camunda Platform charts.
+  - name: identity
+    version: 8.0.14
+    condition: "identity.enabled"
+  - name: operate
+    version: 8.0.14
+    condition: "operate.enabled"
+  - name: optimize
+    version: 8.0.14
+    condition: "optimize.enabled"
+  - name: tasklist
+    version: 8.0.14
+    condition: "tasklist.enabled"
   - name: zeebe
     version: 8.0.14
     condition: "zeebe.enabled"
   - name: zeebe-gateway
     version: 8.0.14
     condition: "zeebe.enabled"
-  - name: operate
-    version: 8.0.14
-    condition: "operate.enabled"
-  - name: tasklist
-    version: 8.0.14
-    condition: "tasklist.enabled"
-  - name: optimize
-    version: 8.0.14
-    condition: "optimize.enabled"
-  - name: identity
-    version: 8.0.14
-    condition: "identity.enabled"
+  # Dependency charts.
   - name: elasticsearch
     repository: "https://helm.elastic.co"
     version: 7.17.1
     condition: "elasticsearch.enabled"
+  # Helpers charts.
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    version: 2.x.x
 maintainers:
   - name: Zelldon
     email: christopher.zell@camunda.com

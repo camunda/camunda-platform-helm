@@ -75,9 +75,13 @@ Subcharts can't access values from other sub-charts or the parent, global only. 
 */}}
 
 {{- define "camundaPlatform.issuerBackendUrl" -}}
-{{- if (.Values.global.identity.keycloak.fullname) -}}
-http://{{ .Values.global.identity.keycloak.fullname | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform
+{{- $keycloakRealmPath := "/auth/realms/camunda-platform" -}}
+
+{{- if (.Values.global.identity.keycloak.url) -}}
+    {{ .Values.global.identity.keycloak.url }}{{ $keycloakRealmPath }}
+{{- else if (.Values.global.identity.keycloak.fullname) -}}
+    http://{{ .Values.global.identity.keycloak.fullname | trunc 20 | trimSuffix "-" }}:80{{ $keycloakRealmPath }}
 {{- else -}}
-http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80/auth/realms/camunda-platform
+    http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80{{ $keycloakRealmPath }}
 {{- end -}}
 {{- end -}}

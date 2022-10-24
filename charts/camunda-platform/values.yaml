@@ -24,7 +24,6 @@
 
 # Global configuration for variables which can be accessed by all sub charts
 global:
-
   # Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   # Labels can be used to define common labels, which should be applied to all deployments
@@ -87,6 +86,16 @@ global:
       # Subcharts can't access values from other sub-charts or the parent, global only.
       # This is useful if the identity.keycloak.fullnameOverride is set, and specifies a different name for the Keycloak service.
       fullname: ""
+      # Identity.keycloak.url is used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart. Example:
+      # url: "https://keycloak.prod.svc.cluster.local:8443"
+      url: ""
+      # Identity.keycloak.auth same as "identity.keycloak.auth" but it's used for existing Keycloak.
+      auth:
+        # Identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
+        adminUser: ""
+        # Identity.keycloak.auth.existingSecret can be used to configure admin user password by using existing secret with key `admin-password` to access existing Keycloak.
+        existingSecret: ""
+
     # Identity.auth configuration, to configure Identity authentication setup
     auth:
       # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
@@ -838,6 +847,8 @@ identity:
 
   # Keycloak configuration, for the keycloak dependency chart which is used by identity. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters for more details.
   keycloak:
+    # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
+    enabled: true
     # Keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:
       # Keycloak.service.type can be set to change the service type.
