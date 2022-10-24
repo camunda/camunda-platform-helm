@@ -59,7 +59,9 @@
   {{- end }}
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
+  {{- if .Values.elasticsearch.enabled }}
   - ElasticSearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
+  {{- end }}
 
 ### Zeebe
 
@@ -69,7 +71,9 @@ The Cluster itself is not exposed as a service that means that you can use `kube
 
 Now you can connect your workers and clients to `localhost:26500`
 
+{{- if or (.Values.zeebe.enabled) (.Values.operate.enabled) (.Values.tasklist.enabled) (.Values.optimize.enabled) (.Values.identity.enabled) }}
 ### Connecting to Web apps
+
 
 As part of the Helm charts an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
 In order to deploy the ingress manifest, set `<service>.ingress.enabled` to `true`. Example: `operate.ingress.enabled=true`
@@ -104,3 +108,5 @@ as well, otherwise a login will not be possible. Make sure you use `18080` as po
 Now you can point your browser to one of the service's login page. Example: http://localhost:8081 for Operate.
 
 Default user and password: "demo/demo"
+
+{{- end }}
