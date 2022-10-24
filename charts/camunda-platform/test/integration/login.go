@@ -147,7 +147,7 @@ func (s *integrationSuite) doLogin(service string, localPort int, containerPort 
 		return "", http.Client{}, coupledCloseFn, err
 	}
 
-	err = s.doSessionBasedLogin("http://"+endpoint+"/api/login", httpClient)
+	err = s.doSessionBasedLogin("http://"+endpoint+"/", httpClient)
 	if err != nil {
 		return "", http.Client{}, coupledCloseFn, err
 	}
