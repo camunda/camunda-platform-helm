@@ -89,6 +89,13 @@ global:
       # Identity.keycloak.url is used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart. Example:
       # url: "https://keycloak.prod.svc.cluster.local:8443"
       url: ""
+      # Identity.keycloak.auth same as "identity.keycloak.auth" but it's used for existing Keycloak.
+      auth:
+        # Identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
+        adminUser: ""
+        # Identity.keycloak.auth.existingSecret can be used to configure admin user password by using existing secret with key `admin-password` to access existing Keycloak.
+        existingSecret: ""
+
     # Identity.auth configuration, to configure Identity authentication setup
     auth:
       # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.

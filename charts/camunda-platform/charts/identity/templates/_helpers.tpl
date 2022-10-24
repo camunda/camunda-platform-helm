@@ -82,42 +82,71 @@ Keycloak helpers
 */}}
 
 {{/*
-[identity] Fail in case Keycloak chart is disabled and external Keycloak URL is not configured.
+[identity] Fail in case Keycloak chart is disabled and existing Keycloak URL is not configured.
 */}}
-{{- define "identity.keycloakIsConfigured" -}}
+{{- define "identity.keycloak.isConfigured" -}}
 {{- $failMessage := `
-[identity] Keycloak chart is not enabled, and the external Keycloak URL is not configured.
-If you want to use your own Keycloak, please make sure to configure the following var:
-  - global.identity.keycloak.url
+[identity] Keycloak chart is not enabled, and the existing Keycloak URL is not configured.
+  - If you want to deploy Keycloak chart then set "keycloak.enabled: true".
+  - If you want to existing Keycloak, then set the vars under "global.identity.keycloak".
+For more details please check the documentation.
 ` -}}
 
 {{- if not .Values.keycloak.enabled }}
-{{- if not .Values.global.identity.keycloak.url }}
+{{- if not .Values.global.identity.keycloak.url}}
     {{ printf "\n%s" $failMessage | trimSuffix "\n" | fail }}
 {{- end }}
 {{- end }}
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak name based on the Keycloak subchart.
-*/}}
-{{- define "identity.keycloakName" -}}
-{{- if .Values.keycloak.enabled -}}
-{{ include "keycloak.fullname" .Subcharts.keycloak }}
-{{- end -}}
-{{- end -}}
-
-{{/*
 [identity] Get Keycloak URL based on global value or Keycloak subchart.
 */}}
-{{- define "identity.keycloakURL" -}}
-{{ include "identity.keycloakIsConfigured" . }}
+{{- define "identity.keycloak.url" -}}
+{{ include "identity.keycloak.isConfigured" . }}
 {{- if (.Values.global.identity.keycloak.url) -}}
     {{- .Values.global.identity.keycloak.url -}}
 {{- else -}}
     {{- $keycloakChart := index $ "Subcharts" "keycloak" -}}
     {{- $keycloakProtocol := ternary "https" "http" ($keycloakChart.Values.auth.tls.enabled) -}}
     {{- $keycloakPort := get $keycloakChart.Values.service.ports $keycloakProtocol -}}
-    {{- $keycloakProtocol -}}://{{- include "identity.keycloakName" . -}}:{{- $keycloakPort -}}
+    {{- $keycloakProtocol -}}://{{- include "keycloak.fullname" .Subcharts.keycloak -}}:{{- $keycloakPort -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak auth admin user. For more details:
+*/}}
+{{- define "identity.keycloak.authAdminUser" -}}
+{{- if .Values.global.identity.keycloak.auth.adminUser }}
+    {{- .Values.global.identity.keycloak.auth.adminUser -}}
+{{- else }}
+    {{- .Values.keycloak.auth.adminUser -}}
+{{- end }}
+{{- end -}}
+
+{{/*
+[identity] Get name of Keycloak auth existing secret. For more details:
+https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
+*/}}
+{{- define "identity.keycloak.authExistingSecret" -}}
+{{- if .Values.global.identity.keycloak.auth.existingSecret }}
+    {{- /*
+        Unlike the upstream Keycloak chart, in the global vars, we only support the "string" format,
+        not the "dict" format. i.e., it should refer to the actual existing secret name.
+    */ -}}
+    {{- .Values.global.identity.keycloak.auth.existingSecret -}}
+{{- else if and .Values.keycloak.auth.existingSecret (not (typeIs "string" .Values.keycloak.auth.existingSecret)) }}
+    {{- /*
+        Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+        Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+        and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+    */ -}}
+    {{ include "common.secrets.name" (dict "existingSecret" .Values.keycloak.auth.existingSecret "context" $) }}
+{{- else }}
+    {{- /*
+      https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_names.tpl
+    */ -}}
+    {{- include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}
+{{- end }}
 {{- end -}}

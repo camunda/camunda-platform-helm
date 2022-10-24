@@ -112,33 +112,18 @@ spec:
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
-            value: "{{ include "identity.keycloakURL" . }}/auth"
+            value: "{{ include "identity.keycloak.url" . }}/auth"
           - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
             value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
           - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
             value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
           - name: KEYCLOAK_SETUP_USER
-            value: {{ .Values.keycloak.auth.adminUser }}
+            value: {{ include "identity.keycloak.authAdminUser" . | quote }}
           - name: KEYCLOAK_SETUP_PASSWORD
-            {{- if and .Values.keycloak.auth.existingSecret (not (typeIs "string" .Values.keycloak.auth.existingSecret)) }}
             valueFrom:
               secretKeyRef:
-                {{- /*
-                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                */}}
-                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.keycloak.auth.existingSecret "context" $) }}
+                name: {{ include "identity.keycloak.authExistingSecret" . }}
                 key: admin-password
-            {{- else }}
-            valueFrom:
-                secretKeyRef:
-                  {{- /*
-                    https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_names.tpl
-                  */}}
-                  name: {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}
-                  key: admin-password
-            {{- end }}
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
