@@ -57,7 +57,9 @@
   {{- end }}
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
+  {{- if .Values.elasticsearch.enabled }}
   - ElasticSearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
+  {{- end }}
 
 ### Zeebe
 
@@ -67,7 +69,7 @@ The Cluster itself is not exposed as a service that means that you can use `kube
 
 Now you can connect your workers and clients to `localhost:26500`
 
-{{- if or (.Values.zeebe.enabled) (.Values.operate.enabled) (.Values.tasklist.enabled) (.Values.optimize.enabled) (.Values.identity.enabled) (.Values.elasticsearch.enabled) }}
+{{- if or (.Values.zeebe.enabled) (.Values.operate.enabled) (.Values.tasklist.enabled) (.Values.optimize.enabled) (.Values.identity.enabled) }}
 ### Connecting to Web apps
 
 
