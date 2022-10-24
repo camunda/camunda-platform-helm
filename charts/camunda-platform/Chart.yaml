@@ -62,18 +62,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "set jwt tokens source for operate, optimize, and tasklist"
+      description: "allow using external/existing keycloak"
     - kind: added
-      description: "config tasklist elasticsearch url"
-    - kind: added
-      description: "configure securityContext for pod and container"
-    - kind: added
-      description: "support single domain setup"
-    - kind: fixed
-      description: "remove identity/optimize vars when auth is disabled"
-    - kind: fixed
-      description: "operate logging level package name"
-    - kind: fixed
-      description: "unify sub-charts icon"
-    - kind: fixed
-      description: "unify imagePullPolicy across components"
+      description: "allow to exclude components in combined the ingress"
