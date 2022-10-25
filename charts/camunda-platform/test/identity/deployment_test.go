@@ -50,14 +50,16 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
-func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
+func (s *deploymentTemplateTest) TestContainerWithExistingKeycloak() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"identity.keycloak.enabled":                    "false",
-			"global.identity.keycloak.url":                 "https://keycloak.prod.svc.cluster.local:8443",
+			"global.identity.keycloak.url.protocol":        "https",
+			"global.identity.keycloak.url.host":            "keycloak.prod.svc.cluster.local",
+			"global.identity.keycloak.url.port":            "8443",
 			"global.identity.keycloak.auth.adminUser":      "testAdmin",
-			"global.identity.keycloak.auth.existingSecret": "ownExistingSecretExternal",
+			"global.identity.keycloak.auth.existingSecret": "ownExistingSecretKeycloak",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -85,7 +87,7 @@ func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 			Name: "KEYCLOAK_SETUP_PASSWORD",
 			ValueFrom: &v12.EnvVarSource{
 				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecretExternal"},
+					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecretKeycloak"},
 					Key:                  "admin-password",
 				},
 			},

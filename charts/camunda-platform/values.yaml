@@ -82,19 +82,19 @@ global:
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
     keycloak:
-      # Identity.keycloak.fullname can be used to change the referenced Keycloak service name inside the sub-charts, like operate, optimize, etc.
-      # Subcharts can't access values from other sub-charts or the parent, global only.
-      # This is useful if the identity.keycloak.fullnameOverride is set, and specifies a different name for the Keycloak service.
-      fullname: ""
-      # Identity.keycloak.url is used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart. Example:
-      # url: "https://keycloak.prod.svc.cluster.local:8443"
-      url: ""
-      # Identity.keycloak.auth same as "identity.keycloak.auth" but it's used for existing Keycloak.
-      auth:
+      # Identity.keycloak.url is can be used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
+      url: {}
+        # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
+        # url:
+        #   protocol: "https"
+        #   host: "keycloak.prod.svc.cluster.local"
+        #   port: "8443"
+        # Identity.keycloak.auth same as "identity.keycloak.auth" but it's used for existing Keycloak.
+      auth: {}
         # Identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
-        adminUser: ""
+        # adminUser: ""
         # Identity.keycloak.auth.existingSecret can be used to configure admin user password by using existing secret with key `admin-password` to access existing Keycloak.
-        existingSecret: ""
+        # existingSecret: ""
 
     # Identity.auth configuration, to configure Identity authentication setup
     auth:
