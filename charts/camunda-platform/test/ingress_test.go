@@ -36,13 +36,13 @@ func TestIngressTemplate(t *testing.T) {
 	})
 }
 
-func (s *ingressTemplateTest) TestIngressWithKeycloakChart() {
+func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartHasNecessarySettings() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.ingress.enabled":    "true",
-			"identity.keycloak.enabled": "true",
 			"identity.contextPath":      "/identity",
+			"identity.keycloak.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -65,6 +65,33 @@ func (s *ingressTemplateTest) TestIngressWithKeycloakChart() {
 			Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
 			Value: "true",
 		})
+}
+
+func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.ingress.enabled": "true",
+			"identity.contextPath":   "/identity",
+			// Disable Identity Keycloak chart.
+			"identity.keycloak.enabled": "false",
+			// Set vars to use existing Keycloak.
+			"global.identity.keycloak.url.protocol": "https",
+			"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
+			"global.identity.keycloak.url.port":     "8443",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	// TODO: Instead of using plain text search, unmarshal the output in an ingress struct and assert the values.
+	s.Require().Contains(output, "path: /auth")
+	s.Require().Contains(output, "name: keycloak.prod.svc.cluster.local")
+	s.Require().Contains(output, "number: 8443")
 }
 
 func (s *ingressTemplateTest) TestIngressWithContextPath() {

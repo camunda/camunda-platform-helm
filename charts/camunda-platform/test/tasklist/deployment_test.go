@@ -598,7 +598,9 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUr
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.identity.keycloak.fullname": "keycloak",
+			"global.identity.keycloak.url.protocol": "http",
+			"global.identity.keycloak.url.host":     "keycloak",
+			"global.identity.keycloak.url.port":     "80",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},

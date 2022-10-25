@@ -83,7 +83,11 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `identity.auth.optimize.existingSecret` |  Can be used to reference an existing secret. If not set, a random secret is generated. The existing secret should contain an `optimize-secret` field, which will be used as secret for the Identity-Optimize communication. | ` ` |
 | | `identity.auth.optimize.redirectUrl` |  Defines the redirect URL, which is used by Keycloak to access Optimize. Should be public accessible, the default value works if port-forward to Optimize is created to 8083. Can be overwritten if, an Ingress is in use and an external IP is available. | `"http://localhost:8083"` |
 | | `identity.keycloak.fullname` |    Can be used to change the referenced Keycloak service name inside the sub-charts, like operate, optimize, etc. Subcharts can't access values from other sub-charts or the parent, global only. This is useful if the `identity.keycloak.fullnameOverride` is set, and specifies a different name for the Keycloak service | `""` |
-| | `identity.keycloak.url` |    Used incorporate with "identity.keycloak.enabled: false" set exitsing Keycloak URL instead of the one comes with Camunda Platform Helm chart | `""` |
+| | `identity.keycloak.url` |    Can be used to customize the Identity Keycloak chart URL when "identity.keycloak.enabled: true", or to use already existing Keycloak instead of the one comes with Camunda Platform Helm chart when "identity.keycloak.enabled: false" | `{}` |
+| | `identity.keycloak.url.protocol` |    Can be used to set existing Keycloak URL protocol | `` |
+| | `identity.keycloak.url.host` |    Can be used to set existing Keycloak URL host | `` |
+| | `identity.keycloak.url.port` |    Can be used to set existing Keycloak URL port | `` |
+| | `identity.keycloak.auth` |   Can be used incorporate with "global.identity.keycloak.url" and "identity.keycloak.enabled: false" set existing Keycloak URL instead of the one comes with Camunda Platform Helm chart | `{}"` |
 | | `identity.keycloak.auth.adminUser` |    Can be used to configure admin user to access existing Keycloak | `""` |
 | | `identity.keycloak.auth.existingSecret` |    Can be used to configure admin user password by using existing secret with key `admin-password` to access existing Keycloak | `""` |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
