@@ -53,9 +53,9 @@
     {{- else }}
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
-  {{- end }}
-  {{ if .Values.identity.keycloak.enabled -}}
+  {{- if .Values.identity.keycloak.enabled -}}
   - Keycloak: {{ .Values.identity.keycloak.image.repository }}:{{ .Values.identity.keycloak.image.tag }}
+  {{- end }}
   {{- end }}
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
@@ -65,7 +65,7 @@
 
 ### Zeebe
 
-The Cluster itself is not exposed as a service that means that you can use `kubectl port-forward` to access the Zeebe cluster from outside Kubernetes:
+The Cluster itself is not exposed as a service which means that you can use `kubectl port-forward` to access the Zeebe cluster from outside Kubernetes:
 
 > kubectl port-forward svc/{{ tpl .Values.global.zeebeClusterName . }}-gateway 26500:26500 -n {{ .Release.Namespace }}
 
@@ -75,7 +75,7 @@ Now you can connect your workers and clients to `localhost:26500`
 ### Connecting to Web apps
 
 
-As part of the Helm charts an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
+As part of the Helm charts, an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
 In order to deploy the ingress manifest, set `<service>.ingress.enabled` to `true`. Example: `operate.ingress.enabled=true`
 
 If you don't have an ingress controller you can use `kubectl port-forward` to access the deployed web application from outside the cluster:
@@ -95,17 +95,17 @@ Optimize: kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 
     {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
 
-If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URL for Keycloak.
+If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URLs for Keycloak.
 
-The authentication via Identity/Keycloak is enabled. In order to login into one of the services please port-forward to Keycloak
-as well, otherwise a login will not be possible. Make sure you use `18080` as port.
+Authentication via Identity/Keycloak is enabled. To login into one of the services please port-forward to Keycloak
+as well, otherwise, a login will not be possible. Make sure you use `18080` as a port.
 
 {{ if .Values.identity.keycloak.enabled -}}
 > kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
 {{- end }}
     {{- end }}
 
-Now you can point your browser to one of the service's login page. Example: http://localhost:8081 for Operate.
+Now you can point your browser to one of the service's login pages. Example: http://localhost:8081 for Operate.
 
 Default user and password: "demo/demo"
 
