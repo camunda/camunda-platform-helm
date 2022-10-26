@@ -1,7 +1,7 @@
 apiVersion: v2
 name: camunda-platform
 version: 8.1.0
-appVersion: "8.0.0"
+appVersion: 8.1.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
   Camunda's process automation platform allows developers to design, automate and improve processes.

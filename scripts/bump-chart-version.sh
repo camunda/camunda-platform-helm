@@ -41,6 +41,12 @@ chart_version_new=$(echo "${chart_version_old}" |
       }'
 )
 
+# Update the appVersion in parent chart in case it's a minor release.
+if [[ ${is_minor_version} -eq 1 ]]; then
+    chart_version_new_minor=$(echo "${chart_version_new%.0}.x")
+    sed -i "s/^appVersion: 8.*/appVersion: ${chart_version_new_minor}/g" charts/${chart_name}/Chart.yaml
+fi
+
 # Update parent chart version
 sed -i "s/version: ${chart_version_old}/version: ${chart_version_new}/g" charts/${chart_name}/Chart.yaml
 
