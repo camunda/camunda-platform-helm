@@ -53,7 +53,7 @@
     {{- else }}
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
-  {{- if .Values.identity.keycloak.enabled -}}
+  {{- if .Values.identity.keycloak.enabled }}
   - Keycloak: {{ .Values.identity.keycloak.image.repository }}:{{ .Values.identity.keycloak.image.tag }}
   {{- end }}
   {{- end }}

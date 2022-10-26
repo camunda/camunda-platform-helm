@@ -886,6 +886,10 @@ identity:
       #     tls-truestore-password: myTlsTruestorePasswordKey
       existingSecret: ""
 
+      ## Keycloak.auth.tls.enabled can be used to enable TLS encryption. Required for HTTPs traffic.
+      tls:
+        enabled: false
+
   # ServiceAccount configuration for the service account where the identity pods are assigned to
   serviceAccount:
     # ServiceAccount.enabled if true, enables the identity service account

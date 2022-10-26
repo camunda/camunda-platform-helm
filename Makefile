@@ -7,22 +7,22 @@ gitChglog=quay.io/git-chglog/git-chglog:0.15.1
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: test
-test:	deps
+test:	helm-dependency-update
 	go test ./...
 
 # it: runs the integration tests against the current kube context
 .PHONY: it
-it:	deps
+it:	helm-dependency-update
 	go test -p 1 -timeout 1h -tags integration ./.../integration
 
 # it-os: runs a subset of the integration tests against the current Openshift cluster
 .PHONY: it-os
-it-os: deps
+it-os: helm-dependency-update
 	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration
 
 # golden: runs the tests with updating the golden files
 .PHONY: golden
-golden:	deps
+golden:	helm-dependency-update
 	go test ./... -args -update-golden 
 
 # fmt: runs the gofmt in order to format all go files
@@ -82,15 +82,15 @@ helm-repos-add:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 
-# deps: updates and downloads the dependencies for the Helm chart
-.PHONY: deps
-deps:
+# helm-dependency-update: updates and downloads the dependencies for the Helm chart
+.PHONY: helm-dependency-update
+helm-dependency-update:
 	helm dependency update $(chartPath)
 	helm dependency update $(chartPath)/charts/identity
 
 # install: install the local chart into the current kubernetes cluster/namespace
 .PHONY: install
-install:	deps
+install:	helm-dependency-update
 	helm install $(releaseName) $(chartPath)
 
 # uninstall: uninstalls the chart and removes all related pvc's
@@ -102,12 +102,12 @@ uninstall:
 
 # dry-run: runs an install dry-run with the local chart
 .PHONY: dry-run
-dry-run:	deps
+dry-run:	helm-dependency-update
 	helm install $(releaseName) $(chartPath) --dry-run
 
 # template: show all rendered templates for the local chart
 .PHONY: template
-template:	deps
+template:	helm-dependency-update
 	helm template $(releaseName) $(chartPath)
 
 #########################################################

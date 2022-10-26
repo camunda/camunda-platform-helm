@@ -39,9 +39,7 @@ jobs:
           go-version: 1.17
       - name: Add helm repos
         run: |
-          helm repo add elastic https://helm.elastic.co
-          helm repo add bitnami https://charts.bitnami.com/bitnami
-          helm repo update
+          make helm-repos-add
       - name: Run tests
         run: make it-os
 

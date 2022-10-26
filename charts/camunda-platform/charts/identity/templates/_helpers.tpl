@@ -128,7 +128,7 @@ For more details, please check Camunda Platform Helm chart documentation.
     {{- if .Values.global.identity.keycloak.url -}}
         {{- .Values.global.identity.keycloak.url.protocol -}}
     {{- else -}}
-        {{- ternary "https" "http" (.Subcharts.keycloak.Values.auth.tls.enabled) -}}
+        {{- ternary "https" "http" (.Values.keycloak.auth.tls.enabled) -}}
     {{- end -}}
 {{- end -}}
 
@@ -139,7 +139,7 @@ For more details, please check Camunda Platform Helm chart documentation.
     {{- if .Values.global.identity.keycloak.url -}}
         {{- .Values.global.identity.keycloak.url.host -}}
     {{- else -}}
-        {{- include "keycloak.fullname" .Subcharts.keycloak -}}
+        {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}
     {{- end -}}
 {{- end -}}
 
@@ -151,7 +151,7 @@ For more details, please check Camunda Platform Helm chart documentation.
         {{- .Values.global.identity.keycloak.url.port -}}
     {{- else -}}
         {{- $keycloakProtocol := (include "identity.keycloak.protocol" .) -}}
-        {{- get .Subcharts.keycloak.Values.service.ports $keycloakProtocol -}}
+        {{- get .Values.keycloak.service.ports $keycloakProtocol -}}
     {{- end -}}
 {{- end -}}
 

@@ -476,16 +476,14 @@ Then you need to download the dependencies first.
 Run the following to add resolve the dependencies:
 
 ```sh
-helm repo add elastic https://helm.elastic.co
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
+make helm-repos-add
 ```
 
-After this you can run: `make deps`, which will update and download the dependencies for all charts.
+After this you can run: `make helm-dependency-update`, which will update and download the dependencies for all charts.
 
 The execution should look like this:
 ```
-$ make deps
+$ make helm-dependency-update
 helm dependency update charts/camunda-platform
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
