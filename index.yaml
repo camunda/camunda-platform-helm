@@ -4,6 +4,85 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "update Camunda Platform image tag to Global:8.1.2/Optimize:3.9.1"
+        - kind: added
+          description: "allow using external/existing keycloak"
+        - kind: added
+          description: "allow to exclude components in combined the ingress"
+        - kind: added
+          description: "add management port to reach backup API"
+        - kind: fixed
+          description: "move keycloak inside identity section in NOTES.txt"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.1.x
+    created: "2022-10-26T18:09:25.181158842Z"
+    dependencies:
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.1.0
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.1.0
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.1.0
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.1.0
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.1.0
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.1.0
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: dfd720d0c53c71c8f97b8b0ede849967158c8bc62d86679188f3a85a52e8480b
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.1.0/camunda-platform-8.1.0.tgz
+    version: 8.1.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "set jwt tokens source for operate, optimize, and tasklist"
         - kind: added
           description: "config tasklist elasticsearch url"
@@ -4142,4 +4221,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-09-29T08:14:17.728058846Z"
+generated: "2022-10-26T18:09:25.181875354Z"
