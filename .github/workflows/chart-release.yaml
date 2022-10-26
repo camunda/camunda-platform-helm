@@ -45,11 +45,9 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Install Helm
         uses: asdf-vm/actions/install@v1
-      - name: Add helm repos
+      - name: Add Helm repos
         run: |
-          helm repo add elastic https://helm.elastic.co
-          helm repo add bitnami https://charts.bitnami.com/bitnami
-          helm repo update
+          make helm-repos-add
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.3.0
         with:
