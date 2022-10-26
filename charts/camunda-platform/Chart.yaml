@@ -69,3 +69,5 @@ annotations:
       description: "allow to exclude components in combined the ingress"
     - kind: added
       description: "add management port to reach backup API"
+    - kind: fixed
+      description: "move keycloak inside identity section in NOTES.txt"
