@@ -24,12 +24,10 @@ jobs:
         uses: asdf-vm/actions/install@v1
       - name: Add helm repos
         run: |
-          helm repo add elastic https://helm.elastic.co
-          helm repo add bitnami https://charts.bitnami.com/bitnami
-          helm repo update
-      - name: Get Helm Deps
+          make helm-repos-add
+      - name: Get Helm dependency
         run: |
-          make deps
+          make helm-dependency-update
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*
