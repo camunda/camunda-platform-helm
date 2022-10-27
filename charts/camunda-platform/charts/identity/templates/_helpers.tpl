@@ -125,7 +125,7 @@ For more details, please check Camunda Platform Helm chart documentation.
 [identity] Get Keycloak URL protocol based on global value or Keycloak subchart.
 */}}
 {{- define "identity.keycloak.protocol" -}}
-    {{- if .Values.global.identity.keycloak.url -}}
+    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.protocol -}}
         {{- .Values.global.identity.keycloak.url.protocol -}}
     {{- else -}}
         {{- ternary "https" "http" (.Values.keycloak.auth.tls.enabled) -}}
@@ -133,11 +133,12 @@ For more details, please check Camunda Platform Helm chart documentation.
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak URL host based on global value or Keycloak subchart.
+[identity] Get Keycloak URL service name based on global value or Keycloak subchart.
+This is mainly used for cases where the external Keycloak is used.
 */}}
-{{- define "identity.keycloak.host" -}}
-    {{- if .Values.global.identity.keycloak.url -}}
-        {{- .Values.global.identity.keycloak.url.host -}}
+{{- define "identity.keycloak.service" -}}
+    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
+        {{- printf "%s-keycloak-custom" .Release.Name | trunc 63 -}}
     {{- else -}}
         {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}
     {{- end -}}
@@ -147,7 +148,7 @@ For more details, please check Camunda Platform Helm chart documentation.
 [identity] Get Keycloak URL port based on global value or Keycloak subchart.
 */}}
 {{- define "identity.keycloak.port" -}}
-    {{- if .Values.global.identity.keycloak.url -}}
+    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.port -}}
         {{- .Values.global.identity.keycloak.url.port -}}
     {{- else -}}
         {{- $keycloakProtocol := (include "identity.keycloak.protocol" .) -}}
@@ -163,7 +164,7 @@ For more details, please check Camunda Platform Helm chart documentation.
     {{-
       printf "%s://%s:%s"
         (include "identity.keycloak.protocol" .)
-        (include "identity.keycloak.host" .)
+        (include "identity.keycloak.service" .)
         (include "identity.keycloak.port" .)
     -}}
 {{- end -}}

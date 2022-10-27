@@ -50,7 +50,7 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
-func (s *deploymentTemplateTest) TestContainerWithExistingKeycloak() {
+func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -75,7 +75,7 @@ func (s *deploymentTemplateTest) TestContainerWithExistingKeycloak() {
 	s.Require().Contains(env,
 		v12.EnvVar{
 			Name:  "KEYCLOAK_URL",
-			Value: "https://keycloak.prod.svc.cluster.local:8443/auth",
+			Value: "https://camunda-platform-test-keycloak-custom:8443/auth",
 		})
 	s.Require().Contains(env,
 		v12.EnvVar{
