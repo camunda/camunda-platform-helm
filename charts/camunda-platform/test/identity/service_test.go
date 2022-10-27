@@ -84,3 +84,24 @@ func (s *serviceTest) TestContainerServiceAnnotations() {
 	// then
 	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 }
+
+func (s *serviceTest) TestKeycloakExternalService() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.keycloak.url.protocol": "https",
+			"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
+			"global.identity.keycloak.url.port":     "8443",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"charts/identity/templates/keycloak-service.yaml"})
+	var service coreV1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+	// then
+	s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
+	s.Require().Equal("keycloak.prod.svc.cluster.local", service.Spec.ExternalName)
+}

@@ -21,7 +21,7 @@ spec:
           {{- if and .Values.identity.enabled .Values.identity.contextPath }}
           - backend:
               service:
-                name: {{ include "identity.keycloak.host" .Subcharts.identity }}
+                name: {{ include "identity.keycloak.service" .Subcharts.identity }}
                 port:
                   number: {{ include "identity.keycloak.port" .Subcharts.identity }}
             # It's complex to change the context path in Keycloak v16.x.x, so it's hard-coded.
