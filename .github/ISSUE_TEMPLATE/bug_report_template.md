@@ -33,5 +33,6 @@ If possible add a minimal reproducer code sample in a new repo/branch.
 
 **Environment:**
 - Platform: <!-- [e.g. GCP, AWS, etc] -->
+- Helm CLI version: <!-- [e.g. 3.10.0] -->
 - Chart version: <!-- [e.g. 8.x.x] -->
 - Values file: <!-- [e.g. include or link to the used values file] -->
