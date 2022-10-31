@@ -3,10 +3,11 @@ name: "Chart - Validate"
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
-  push:
-    branches:
-      - main
-  pull_request: { }
+  pull_request:
+    paths:
+      - '.github/**'
+      - '.tool-versions'
+      - 'charts/**'
 
 jobs:
   lint-and-test:

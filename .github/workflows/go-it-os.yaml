@@ -1,9 +1,12 @@
 name: Openshift Integration Tests
 
 on:
-  push:
-    branches: [ main ]
-  pull_request: { }
+  pull_request:
+    paths:
+    - '.github/**'
+    - '.tool-versions'
+    - 'charts/**'
+    - 'go.*'
   workflow_dispatch: { }
 
 jobs:
