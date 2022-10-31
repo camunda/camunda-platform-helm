@@ -2,8 +2,14 @@ name: Go CI
 
 on:
   push:
-    branches: [ main ]
-  pull_request: { }
+    branches:
+    - main
+  pull_request:
+    paths:
+    - '.github/**'
+    - '.tool-versions'
+    - 'charts/**'
+    - 'go.*'
   workflow_dispatch: { }
 
 jobs:
