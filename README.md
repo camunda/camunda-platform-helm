@@ -4,18 +4,17 @@
 [![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
 
-- [Camunda Platform Helm](#camunda-platform-helm)
-  - [Overview](#overview)
-  - [Installing Charts](#installing-charts)
-    - [Local Kubernetes](#local-kubernetes)
-    - [OpenShift](#openshift)
-  - [Configure Charts](#configure-charts)
-  - [Uninstalling Charts](#uninstalling-charts)
-  - [Deprecation of zeebe charts](#deprecation-of-zeebe-charts)
-  - [Issues](#issues)
-  - [Contributing](#contributing)
-  - [Releasing the Charts](#releasing-the-charts)
-  - [License](#license)
+- [Overview](#overview)
+- [Installing Charts](#installing-charts)
+  - [Local Kubernetes](#local-kubernetes)
+  - [OpenShift](#openshift)
+- [Configure Charts](#configure-charts)
+- [Uninstalling Charts](#uninstalling-charts)
+- [Deprecation of zeebe charts](#deprecation-of-zeebe-charts)
+- [Issues](#issues)
+- [Contributing](#contributing)
+- [Releasing the Charts](#releasing-the-charts)
+- [License](#license)
 
 ## Overview
 
@@ -23,7 +22,13 @@ Camunda Platform 8 Self-Managed Helm charts repo.
 
 The Camunda Platform components are represented in the following image:
 
-![HELM CHARTS](imgs/HelmChartImage.png)
+<p align="center">
+  <img
+    alt="Camunda Platform 8 Self-Managed Helm charts architecture diagram"
+    src="imgs/camunda-platform-8-self-managed-architecture-diagram-combined-ingress.png"
+    width="80%"
+  />
+</p>
 
 Per default the following components will be installed:
 
