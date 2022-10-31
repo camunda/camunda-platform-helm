@@ -1,4 +1,4 @@
-# Openshift Support
+# OpenShift Support
 
 The `camunda-platform` Helm chart can be deployed to Openshift with a few modifications.
 
