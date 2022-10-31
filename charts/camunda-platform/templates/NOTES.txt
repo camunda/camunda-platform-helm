@@ -60,7 +60,7 @@
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
   {{- if .Values.elasticsearch.enabled }}
-  - ElasticSearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
+  - Elasticsearch URL: http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
   {{- end }}
 
 ### Zeebe

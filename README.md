@@ -1,16 +1,18 @@
-# Camunda Platform Helm
+# Camunda Platform 8 Helm
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
 
 - [Overview](#overview)
+- [Documentation](#documentation)
 - [Installing Charts](#installing-charts)
   - [Local Kubernetes](#local-kubernetes)
   - [OpenShift](#openshift)
 - [Configure Charts](#configure-charts)
+- [Guides](#guides)
 - [Uninstalling Charts](#uninstalling-charts)
-- [Deprecation of zeebe charts](#deprecation-of-zeebe-charts)
+- [Deprecation of Zeebe charts](#deprecation-of-zeebe-charts)
 - [Issues](#issues)
 - [Contributing](#contributing)
 - [Releasing the Charts](#releasing-the-charts)
@@ -41,15 +43,16 @@ Per default the following components will be installed:
   - [Identity](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md#identity)
     - [Keycloak](https://github.com/bitnami/charts/tree/master/bitnami/keycloak)
     - [PostgreSQL](https://github.com/bitnami/charts/tree/master/bitnami/postgresql)
-  - [ElasticSearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
+  - [Elasticsearch](https://github.com/elastic/helm-charts/tree/master/elasticsearch)
+
+## Documentation
+
+This repo is mainly for Helm charts documentation. For full details, please visit the official
+[Camunda Platform 8 Self-Managed docs](https://docs.camunda.io/docs/self-managed/about-self-managed/).
 
 ## Installing Charts
 
-We recommend you to use Kubernetes when deploying Camunda 8 to production self-managed. For more
-details, please follow the [installation instructions](https://docs.camunda.io/docs/self-managed/platform-deployment/kubernetes/)
-in the official Camunda Platform documentation.
-
-The charts can be accessed by adding the following Helm repo to your Helm setup:
+The charts can be accessed by adding the Camunda Helm repo:
 
 ```sh
 helm repo add camunda https://helm.camunda.io
@@ -59,90 +62,105 @@ helm repo update
 Then, you can install the Helm charts by running:
 
 ```sh
-helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform
+helm install YOUR_RELEASE_NAME camunda/camunda-platform
 ```
+
+> **Note**
+> For more details about deploying Camunda Platform 8 on Kubernetes, please visit the
+> [Helm/Kubernetes installation instructions docs](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/overview/).
 
 ### Local Kubernetes
 
-We recommend to use Helm + KIND for local environments, as the Helm configurations are battle-tested
+We recommend using Helm on KIND for local environments, as the Helm configurations are battle-tested
 and much closer to production systems.
 
-For more details:
-[Installing the Camunda Helm chart locally using KIND](https://docs.camunda.io/docs/self-managed/platform-deployment/kubernetes-helm/#installing-the-camunda-helm-chart-locally-using-kind)
+For more details, follow the Camunda Platform 8
+[local Kubernetes cluster guide](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/guides/local-kubernetes-cluster/).
 
 ### OpenShift
 
-See the [openshift](/openshift) sub-folder on how to get started with the charts on OpenShift. 
+Check out [OpenShift Support](/openshift) to get started with deploying the charts on Red Hat OpenShift. 
 
 ## Configure Charts
 
-Helm charts can be configured via using extra values files or directly via the `--set` option. make sure to check out the [Camunda Platform Helm Charts Readme](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md) for more information.
+Helm charts can be configured by using extra `values.yaml` files or directly via the `--set` option.
+For more details, check out the [Camunda Platform 8 Helm Charts](./charts/camunda-platform/README.md).
 
-Example to enable the prometheus ServiceMonitor for Zeebe:
+## Guides
 
-```sh
-helm install <YOUR HELM RELEASE NAME> camunda/camunda-platform --set zeebe.prometheusServiceMonitor.enabled=true
-```
+<!-- TODO: add a direct link for the guides section when we have it -->
+Default values cannot cover every use case, for that reason, we have
+[Camunda Platform 8 deploy guides](https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/overview/).
+The guides have detailed examples for different use cases like Ingress setup and so on.
 
 ## Uninstalling Charts
 
 You can remove these charts by running:
 
 ```sh
-helm uninstall <YOUR HELM RELEASE NAME>
+helm uninstall YOUR_RELEASE_NAME
 ```
+
 > **Note**
 >
-> Notice that all the services and pods will be deleted, but not the Persistence Volume Claims which are used to hold the storage for the data generated by the cluster and Elasticsearch.
+> Notice that all the Services and Pods will be deleted, but not the PersistentVolumeClaims (PVC)
+> which are used to hold the storage for the data generated by the cluster and Elasticsearch.
 
-In order to free up the storage you need to manually delete all the Persistent Volume Claims. You can do this by running:
+To free up the storage you need to manually delete all the PVCs.
+
+First, view the PVCs:
 
 ```sh
-kubectl get pvc -l app.kubernetes.io/instance=<YOUR HELM RELEASE NAME>
-kubectl get pvc -l release=<YOUR HELM RELEASE NAME>
+kubectl get pvc -l app.kubernetes.io/instance=YOUR_RELEASE_NAME
+kubectl get pvc -l release=YOUR_RELEASE_NAME
 ```
 
 Then delete the ones that you don't want to keep:
 
 ```sh
-kubectl delete pvc -l app.kubernetes.io/instance=<YOUR HELM RELEASE NAME>
-kubectl delete pvc -l release=<YOUR HELM RELEASE NAME>
+kubectl delete pvc -l app.kubernetes.io/instance=YOUR_RELEASE_NAME
+kubectl delete pvc -l release=YOUR_RELEASE_NAME
 ```
 
-Or you can simply delete the related Kubernetes namespace, which contains the resources.
+Or you can simply delete the related Kubernetes namespace, which contains all PVCs.
 
-## Deprecation of zeebe charts
+## Deprecation of Zeebe charts
 
-With the creation of the Camunda Platform Helm charts (previously known as ccsm-helm), the old zeebe-* charts have been deprecated.
-This means they are no longer part of the repository and no longer maintained. The packaged charts are still available
-for download.
+With the creation of the Camunda Platform 8 Helm charts (previously known as `ccsm-helm`), the old `zeebe-*` charts
+have been deprecated. This means they are no longer part of the repository and are no longer maintained.
+However, the packaged charts are still available for download. But will be removed in the next releases.
 
 The following charts are deprecated:
+- zeebe-full-helm
+- zeebe-cluster-helm
+- zeebe-operate-helm
+- zeebe-tasklist-helm
 
- * zeebe-full-helm
- * zeebe-cluster-helm
- * zeebe-operate-helm
- * zeebe-tasklist-helm
+The new `camunda-platform` chart is a full replacement of `zeebe-full-helm` and replaces (contains) all other charts
+as sub-charts. All sub-charts in `camunda-platform` are enabled by default.
 
-The new `camunda-platform` chart is a full replacement of `zeebe-full-helm` and replaces (contains) all other charts as sub-charts.
-All sub-charts in `camunda-platform` are per default enabled.
-
-For a complete migration guide see [here](https://github.com/camunda/camunda-platform-helm/blob/main/MIGRATION.md).
+For a complete migration guide, visit [migration docs](./MIGRATION.md).
 
 ## Issues
 
-Please create [new issues](https://github.com/camunda/camunda-platform-helm/issues) if you find problems with these charts. This repository is hosted using GitHub Pages and the source code repository can be found [here](https://github.com/camunda/camunda-platform-helm).
+Please create a [new issue](https://github.com/camunda/camunda-platform-helm/issues) if you find any problem
+in the Camunda Platform 8 Helm charts.
 
 ## Contributing
 
-Please familiar yourself with the [contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/CONTRIBUTING.md) to find out how to contribute to this project. Please also make sure to check the [Camunda Platform Helm Charts Readme](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md) to find more information about configuring and developing the charts.
+To start contributing to this project, please familiarize yourself with the
+[contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/CONTRIBUTING.md).
+Also, make sure to check the [Camunda Platform Helm Charts Readme](./charts/camunda-platform/README.md)
+to find more information about configuring and developing the charts.
 
 ## Releasing the Charts
 
-In order to find out how to release the charts please see the corresponding [release guide](RELEASE.md).
+To find out how to release the charts please visit the [release guide](./RELEASE.md).
 
 ## License
 
-Camunda Platform 8 Self-Managed Helm charts are licensed under the open source Apache License 2.0. Please see [LICENSE](LICENSE) for details.
+Camunda Platform 8 Self-Managed Helm charts are licensed under the open-source Apache License 2.0.
+Please see [LICENSE](LICENSE) for details.
 
-For Camunda Platform 8 components, please visit [licensing information page](https://docs.camunda.io/docs/reference/licenses).
+For Camunda Platform 8 components, please visit
+[licensing information page](https://docs.camunda.io/docs/reference/licenses).

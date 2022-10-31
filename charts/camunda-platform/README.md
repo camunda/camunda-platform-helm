@@ -6,7 +6,7 @@
 
 - [Architecture](#architecture)
 - [Requirements](#requirements)
-- [Installing](#installing)
+- [Installation](#installation)
 - [Configuration](#configuration)
   - [Global](#global)
   - [Camunda Platform](#camunda-platform)
@@ -17,11 +17,10 @@
   - [Optimize](#optimize)
   - [Identity](#identity)
   - [Elasticsearch](#elasticsearch)
-- [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
+- [Guides](#guides)
+  - [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
-
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Architecture
 
@@ -41,7 +40,7 @@
   * Three Kubernetes nodes to respect the default "hard" affinity settings
   * 2GB of RAM for the JVM heap
 
-## Installing
+## Installation
 
 The first command adds the official Camunda Platform Helm charts repo and the second installs the Camunda Platform chart to your current Kubernetes context.
 
@@ -117,12 +116,12 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `image.tag` | Defines the tag / version which should be used in the chart. | `5.8.4` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
 | | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|
-| | `labels` | Can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors | `release: metrics` |
-| | `scrapeInterval` | Can be set to configure the interval at which metrics should be scraped. Should be *less* than 60s if the provided grafana dashboard is used, which can be found [here](https://github.com/camunda/zeebe/tree/main/monitor/grafana), otherwise it isn't able to show any metrics which is aggregated over 1 min. | `10s` |
+| | `labels` | Can be set to configure extra labels, which will be added to the ServiceMonitor and can be used on the prometheus controller for selecting the ServiceMonitors | `release: metrics` |
+| | `scrapeInterval` | Can be set to configure the interval at which metrics should be scraped. Should be *less* than 60s if the provided grafana dashboard is used, which can be found in [zeebe/monitor/grafana](https://github.com/camunda/zeebe/tree/main/monitor/grafana), otherwise it isn't able to show any metrics which is aggregated over 1 min. | `10s` |
 
 ### Zeebe
 
-Information about Zeebe you can find [here](https://docs.camunda.io/docs/components/zeebe/zeebe-overview/).
+For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io/docs/components/zeebe/zeebe-overview/).
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -181,7 +180,8 @@ Information about Zeebe you can find [here](https://docs.camunda.io/docs/compone
 
 ### Zeebe Gateway
 
-Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/docs/components/zeebe/technical-concepts/architecture/#gateway).
+For more information about Zeebe Gateway, visit
+[Zeebe Gateway Overview](https://docs.camunda.io/docs/components/zeebe/technical-concepts/architecture/#gateways).
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -240,7 +240,8 @@ Information about the Zeebe Gateway you can find [here](https://docs.camunda.io/
 
 ### Operate
 
-Information about Operate you can find [here](https://docs.camunda.io/docs/components/operate/index/).
+For more information about Operate, visit
+[Operate Introduction](https://docs.camunda.io/docs/components/operate/operate-introduction/).
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -285,7 +286,8 @@ Information about Operate you can find [here](https://docs.camunda.io/docs/compo
 
 ### Tasklist
 
-Information about Tasklist you can find [here](https://docs.camunda.io/docs/components/tasklist/introduction/).
+For more information about Tasklist, visit
+[Tasklist Introduction](https://docs.camunda.io/docs/components/tasklist/introduction-to-tasklist/).
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -323,7 +325,7 @@ Information about Tasklist you can find [here](https://docs.camunda.io/docs/comp
 
 ### Optimize
 
-Information about Optimize you can find [here](https://docs.camunda.io/docs/components/optimize/what-is-optimize/).
+For more information, visit [Optimize Introduction](https://docs.camunda.io/optimize/components/what-is-optimize/).
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -367,7 +369,7 @@ Information about Optimize you can find [here](https://docs.camunda.io/docs/comp
 
 ### Identity
 
-Information about Identity you can find [here](https://docs.camunda.io/docs/self-managed/identity/what-is-identity/).
+For more information, visit [Identity Overview](https://docs.camunda.io/docs/self-managed/identity/what-is-identity/).
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -415,7 +417,7 @@ Information about Identity you can find [here](https://docs.camunda.io/docs/self
 
 ### Elasticsearch
 
-This chart has a dependency on the [Elasticsearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch which can be found [here](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) can be set under `elasticsearch`.
+Camunda Platform 8 Helm chart has a dependency on the [Elasticsearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch can be found in [elastic/helm-charts/values.yaml](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) and can be set under `elasticsearch`.
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -429,9 +431,16 @@ elasticsearch:
   imageTag: <YOUR VERSION HERE>
 ```
 
-## Adding dynamic exporters to Zeebe Brokers
+## Guides
 
-This chart supports the addition of Zeebe Exporters by using initContainer as shown in the following example:
+> **Note**
+>
+> For full list of guides list, please visit
+> [Helm/Kubernetes Guides](https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/overview/)
+
+### Adding dynamic exporters to Zeebe Brokers
+
+This chart supports the addition of Zeebe Exporters by using `initContainer` as shown in the following example:
 
 ```
 extraInitContainers:
@@ -457,21 +466,25 @@ env:
   - name: ZEEBE_HAZELCAST_REMOTE_ADDRESS
     value: "{{ .Release.Name }}-hazelcast"
 ```
-This example is downloading the exporters Jar from a URL and adding the Jars to the `exporters` directory that will be scanned for jars and added to the zeebe broker classpath. Then with `environment variables` you can configure the exporter parameters.
+
+This example is downloading the exporters' Jar from a URL and adding the Jars to the `exporters` directory,
+which will be scanned for jars and added to the Zeebe broker classpath. Then with `environment variables`,
+you can configure the exporter parameters.
 
 ## Development
 
-For development purpose you might want to deploy and test the charts without creating a new helm chart release. In order to do this you can run the following:
+For development purposes, you might want to deploy and test the charts without creating a new helm chart release.
+To do this you can run the following:
 
 ```sh
- helm install <RELEASENAME> --atomic --debug charts/camunda-platform/
+ helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
 ```
 
  * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
 
  * `--debug enable verbose output`
 
-To generate the resources / manifests without really install them you can use: 
+To generate the resources/manifests without really installing them you can use: 
 
  * `--dry-run simulate an install`
 
@@ -521,4 +534,4 @@ Downloading common from repo https://charts.bitnami.com/bitnami
 
 ## Releasing the Charts
 
-In order to find out how to release the charts please see the corresponding [release guide](/RELEASE.md).
+To find out how to release the charts please see the corresponding [release guide](../../RELEASE.md).
