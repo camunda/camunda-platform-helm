@@ -4,24 +4,34 @@
 [![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)
 [![Camunda Platform 8](https://img.shields.io/badge/dynamic/yaml?label=Camunda%20Platform&query=version&url=https%3A%2F%2Fraw.githubusercontent.com%2Fcamunda%2Fcamunda-platform-helm%2Fmain%2Fcharts%2Fcamunda-platform%2FChart.yaml?style=plastic&logo=artifacthub&logoColor=white&labelColor=417598&color=2D4857)](https://artifacthub.io/packages/helm/camunda/camunda-platform)
 
-- [Camunda Platform 8 Helm Chart](#camunda-platform-8-helm-chart)
-  - [Requirements](#requirements)
-  - [Installing](#installing)
-  - [Configuration](#configuration)
-    - [Global](#global)
-    - [Camunda Platform](#camunda-platform)
-    - [Zeebe](#zeebe)
-    - [Zeebe Gateway](#zeebe-gateway)
-    - [Operate](#operate)
-    - [Tasklist](#tasklist)
-    - [Optimize](#optimize)
-    - [Identity](#identity)
-    - [Elasticsearch](#elasticsearch)
-  - [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
-  - [Development](#development)
-  - [Releasing the Charts](#releasing-the-charts)
+- [Architecture](#architecture)
+- [Requirements](#requirements)
+- [Installing](#installing)
+- [Configuration](#configuration)
+  - [Global](#global)
+  - [Camunda Platform](#camunda-platform)
+  - [Zeebe](#zeebe)
+  - [Zeebe Gateway](#zeebe-gateway)
+  - [Operate](#operate)
+  - [Tasklist](#tasklist)
+  - [Optimize](#optimize)
+  - [Identity](#identity)
+  - [Elasticsearch](#elasticsearch)
+- [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
+- [Development](#development)
+- [Releasing the Charts](#releasing-the-charts)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+## Architecture
+
+<p align="center">
+  <img
+    alt="Camunda Platform 8 Self-Managed Helm charts architecture diagram"
+    src="../../imgs/camunda-platform-8-self-managed-architecture-diagram-combined-ingress.png"
+    width="80%"
+  />
+</p>
 
 ## Requirements
 
