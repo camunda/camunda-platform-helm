@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 )
 
 type ingressTemplateTest struct {
@@ -36,7 +37,7 @@ func TestIngressTemplate(t *testing.T) {
 	})
 }
 
-func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartHasNecessarySettings() {
+func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingEnabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -64,6 +65,46 @@ func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartHasNecessarySett
 		v12.EnvVar{
 			Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
 			Value: "true",
+		})
+}
+
+func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.ingress.enabled":               "true",
+			"global.identity.keycloak.contextPath": "/custom",
+			"identity.contextPath":                 "/identity",
+			"identity.keycloak.enabled":            "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	ingressOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	var ingress netv1.Ingress
+	helm.UnmarshalK8SYaml(s.T(), ingressOutput, &ingress)
+
+	// then
+	path := ingress.Spec.Rules[0].HTTP.Paths[0]
+	s.Require().Equal("/custom", path.Path)
+	s.Require().Equal("camunda-platform-tes", path.Backend.Service.Name)
+
+	// when
+	extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
+	stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
+
+	var statefulSet v1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), stsOutput, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		v12.EnvVar{
+			Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
+			Value: "/custom",
 		})
 }
 

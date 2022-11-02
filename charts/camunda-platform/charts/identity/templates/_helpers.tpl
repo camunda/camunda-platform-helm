@@ -157,15 +157,23 @@ This is mainly used for cases where the external Keycloak is used.
 {{- end -}}
 
 {{/*
+[identity] Get Keycloak contextPath based on global value.
+*/}}
+{{- define "identity.keycloak.contextPath" -}}
+    {{ .Values.global.identity.keycloak.contextPath | default "/auth" }}
+{{- end -}}
+
+{{/*
 [identity] Get Keycloak full URL (protocol, host, and port).
 */}}
 {{- define "identity.keycloak.url" -}}
     {{- include "identity.keycloak.isConfigured" . -}}
     {{-
-      printf "%s://%s:%s"
+      printf "%s://%s:%s%s"
         (include "identity.keycloak.protocol" .)
         (include "identity.keycloak.service" .)
         (include "identity.keycloak.port" .)
+        (include "identity.keycloak.contextPath" .)
     -}}
 {{- end -}}
 

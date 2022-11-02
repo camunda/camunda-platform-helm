@@ -24,8 +24,7 @@ spec:
                 name: {{ include "identity.keycloak.service" .Subcharts.identity }}
                 port:
                   number: {{ include "identity.keycloak.port" .Subcharts.identity }}
-            # It's complex to change the context path in Keycloak v16.x.x, so it's hard-coded.
-            path: /auth
+            path: {{ include "identity.keycloak.contextPath" .Subcharts.identity }}
             pathType: Prefix
           - backend:
               service:

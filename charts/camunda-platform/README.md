@@ -96,7 +96,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `identity.keycloak.url.protocol` |    Can be used to set existing Keycloak URL protocol | `` |
 | | `identity.keycloak.url.host` |    Can be used to set existing Keycloak URL host | `` |
 | | `identity.keycloak.url.port` |    Can be used to set existing Keycloak URL port | `` |
-| | `identity.keycloak.auth` |   Can be used incorporate with "global.identity.keycloak.url" and "identity.keycloak.enabled: false" set existing Keycloak URL instead of the one comes with Camunda Platform Helm chart | `{}"` |
+| | `identity.keycloak.contextPath` |   Defines the endpoint of Keycloak which varies between Keycloak versions. In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/' | `"/auth"` |
+| | `identity.keycloak.auth` |   Can be used incorporate with "global.identity.keycloak.url" and "identity.keycloak.enabled: false" set existing Keycloak URL instead of the one comes with Camunda Platform Helm chart | `{}` |
 | | `identity.keycloak.auth.adminUser` |    Can be used to configure admin user to access existing Keycloak | `""` |
 | | `identity.keycloak.auth.existingSecret` |    Can be used to configure admin user password by using existing secret with key `admin-password` to access existing Keycloak | `""` |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
