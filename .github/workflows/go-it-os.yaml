@@ -9,6 +9,10 @@ on:
     - 'go.*'
   workflow_dispatch: { }
 
+env:
+  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
 jobs:
   build:
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository

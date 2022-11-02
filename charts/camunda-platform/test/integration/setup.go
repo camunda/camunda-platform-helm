@@ -32,11 +32,17 @@ func truncateString(str string, num int) string {
 func createNamespaceName() string {
 	// if triggered by a github action the environment variable is set
 	// we use it to better identify the test
-	commitSHA, exist := os.LookupEnv("GITHUB_SHA")
-	namespace := "camunda-platform-" + strings.ToLower(random.UniqueId())
-	if exist {
-		namespace += "-" + commitSHA
+
+	namespace := "camunda-platform"
+	if prNumber, exist := os.LookupEnv("GITHUB_PR_NUMBER"); exist {
+		namespace += "-pr-" + prNumber
 	}
+	// In PRs the GITHUB_SHA refers to the PR commit ID not the actual head ID.
+	// So we need to use a custom env var.
+	if commitSHA, exist := os.LookupEnv("GITHUB_PR_HEAD_SHA"); exist {
+		namespace += "-commit-" + commitSHA[0:8]
+	}
+	namespace += "-rand-" + strings.ToLower(random.UniqueId())
 
 	// max namespace length is 63 characters
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names

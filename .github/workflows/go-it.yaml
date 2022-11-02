@@ -12,6 +12,8 @@ on:
 env:
   KUBECTL_VERSION: 'latest'
   KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
+  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
 jobs:  
   build:
