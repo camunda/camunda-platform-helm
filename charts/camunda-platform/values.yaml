@@ -82,14 +82,17 @@ global:
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
     keycloak:
-      # Identity.keycloak.url is can be used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
+      # Identity.keycloak.url can be used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
       url: {}
         # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
         # url:
         #   protocol: "https"
         #   host: "keycloak.prod.svc.cluster.local"
         #   port: "8443"
-        # Identity.keycloak.auth same as "identity.keycloak.auth" but it's used for existing Keycloak.
+      # Identity.keycloak.contextPath defines the endpoint of Keycloak which varies between Keycloak versions.
+      # In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
+      contextPath: "/auth"
+      # Identity.keycloak.auth same as "identity.keycloak.auth" but it's used for existing Keycloak.
       auth: {}
         # Identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
         # adminUser: ""
@@ -849,10 +852,14 @@ identity:
   keycloak:
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
-    # KEYCLOAK_PROXY_ADDRESS_FORWARDING is set to "true" to make it work with Ingress (if it's enabled).
     extraEnvVars:
+    # KEYCLOAK_PROXY_ADDRESS_FORWARDING is set to "true" to make it work with Ingress (if it's enabled).
     - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
       value: "true"
+    # KEYCLOAK_HTTP_RELATIVE_PATH is valid for v19.x.x only and it's added for compatibility between Keycloak versions
+    # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
+    - name: KEYCLOAK_HTTP_RELATIVE_PATH
+      value: "{{ .Values.global.identity.keycloak.contextPath }}"
     # Keycloak.ingress configuration, to setup a separated Ingress for Keycloak if needed.
     # It's disabled by default and just added here for visibility.
     ingress:
