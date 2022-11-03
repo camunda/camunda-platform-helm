@@ -99,7 +99,8 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `identity.keycloak.contextPath` |   Defines the endpoint of Keycloak which varies between Keycloak versions. In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/' | `"/auth"` |
 | | `identity.keycloak.auth` |   Can be used incorporate with "global.identity.keycloak.url" and "identity.keycloak.enabled: false" set existing Keycloak URL instead of the one comes with Camunda Platform Helm chart | `{}` |
 | | `identity.keycloak.auth.adminUser` |    Can be used to configure admin user to access existing Keycloak | `""` |
-| | `identity.keycloak.auth.existingSecret` |    Can be used to configure admin user password by using existing secret with key `admin-password` to access existing Keycloak | `""` |
+| | `identity.keycloak.auth.existingSecret` |    Can be used to configure existing Secret object which has admin password to access existing Keycloak | `""` |
+| | `identity.keycloak.auth.existingSecretKey` |    Can be used to configure the key inside existing Secret object which has admin password to access existing Keycloak | `"admin-password"` |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
 
 ### Camunda Platform
