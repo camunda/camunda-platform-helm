@@ -15,11 +15,26 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 )
+
+type namespaceSection struct {
+	textVar string
+	prefix  string
+}
+
+func namespaceFormatWithEnvVars(nsBase string, nsSections []namespaceSection) string {
+	for _, nss := range nsSections {
+		if nssText, exist := os.LookupEnv(nss.textVar); exist {
+			nsBase += fmt.Sprintf("-%s-%s", nss.prefix, nssText)
+		}
+	}
+	return nsBase
+}
 
 func truncateString(str string, num int) string {
 	shortenStr := str
@@ -33,16 +48,13 @@ func createNamespaceName() string {
 	// if triggered by a github action the environment variable is set
 	// we use it to better identify the test
 
-	namespace := "camunda-platform"
-	if prNumber, exist := os.LookupEnv("GITHUB_PR_NUMBER"); exist {
-		namespace += "-pr-" + prNumber
+	namespaceSections := []namespaceSection{
+		{"GITHUB_PR_NUMBER", "pr"},
+		{"GITHUB_PR_HEAD_SHA_SHORT", "sha"},
+		{"GITHUB_WORKFLOW_RUN_ID", "run"},
 	}
-	// In PRs the GITHUB_SHA refers to the PR commit ID not the actual head ID.
-	// So we need to use a custom env var.
-	if commitSHA, exist := os.LookupEnv("GITHUB_PR_HEAD_SHA"); exist {
-		namespace += "-commit-" + commitSHA[0:8]
-	}
-	namespace += "-rand-" + strings.ToLower(random.UniqueId())
+	namespace := namespaceFormatWithEnvVars("camunda-platform", namespaceSections)
+	namespace += "-rnd-" + strings.ToLower(random.UniqueId())
 
 	// max namespace length is 63 characters
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
