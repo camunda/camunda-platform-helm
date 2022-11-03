@@ -213,3 +213,10 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
     {{- include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}
 {{- end }}
 {{- end -}}
+
+{{/*
+[identity] Get Keycloak auth existing secret key.
+*/}}
+{{- define "identity.keycloak.authExistingSecretKey" -}}
+    {{- .Values.global.identity.keycloak.auth.existingSecretKey | default "admin-password" -}}
+{{- end -}}
