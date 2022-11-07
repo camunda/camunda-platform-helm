@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.1.0
+version: 8.1.1
 appVersion: 8.1.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,22 +20,22 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.1.0
+    version: 8.1.1
     condition: "identity.enabled"
   - name: operate
-    version: 8.1.0
+    version: 8.1.1
     condition: "operate.enabled"
   - name: optimize
-    version: 8.1.0
+    version: 8.1.1
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.1.0
+    version: 8.1.1
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.1.0
+    version: 8.1.1
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.1.0
+    version: 8.1.1
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
