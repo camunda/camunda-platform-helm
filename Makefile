@@ -13,12 +13,12 @@ test:	helm-dependency-update
 # it: runs the integration tests against the current kube context
 .PHONY: it
 it:	helm-dependency-update
-	go test -p 1 -timeout 1h -tags integration ./.../integration
+	go test -p 1 -timeout 1h -tags integration ./.../integration ${GO_TEST_IT_ARGS}
 
 # it-os: runs a subset of the integration tests against the current Openshift cluster
 .PHONY: it-os
 it-os: helm-dependency-update
-	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration
+	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration ${GO_TEST_IT_OS_ARGS}
 
 # golden: runs the tests with updating the golden files
 .PHONY: golden

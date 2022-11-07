@@ -14,10 +14,24 @@ env:
   KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
   GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
 
-jobs:  
-  build:
+jobs:
+  test:
+    name: ${{ matrix.test.name }}
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - name: "End2End"
+            method: "TestServicesEnd2End"
+          - name: "End2EndShouldFailWithUpgrade"
+            method: "TestServicesEnd2EndShouldFailWithUpgrade"
+          - name: "End2EndWithUpgrade"
+            method: "TestServicesEnd2EndWithUpgrade"
+          - name: "End2EndWithConfig"
+            method: "TestServicesEnd2EndWithConfig"
     runs-on: ubuntu-latest
     env:
       KUBECONFIG: .github/config/kubeconfig
@@ -28,6 +42,8 @@ jobs:
       id-token: 'write'
       
     steps:
+    - name: Set var GITHUB_PR_HEAD_SHA_SHORT
+      run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
     - uses: actions/checkout@v3
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -52,9 +68,6 @@ jobs:
     - name: Install Helm
       uses: asdf-vm/actions/install@v1
     - name: Add helm repos
-      run: |
-        make helm-repos-add
-    - name: Get Helm dependency
-      run: make helm-dependency-update
-    - name: Test
-      run: make it
+      run: make helm-repos-add
+    - name: Test - ${{ matrix.test.name }}
+      run: make it GO_TEST_IT_ARGS="-testify.m ${{ matrix.test.method }}"
