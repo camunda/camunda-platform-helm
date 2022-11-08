@@ -857,9 +857,10 @@ identity:
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
     extraEnvVars:
-    # KEYCLOAK_PROXY_ADDRESS_FORWARDING is set to "true" to make it work with Ingress (if it's enabled).
+    # KEYCLOAK_PROXY_ADDRESS_FORWARDING can be used with Ingress that has SSL Termination. It will be "true" if the TLS
+    # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
     - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
-      value: "true"
+      value: "{{ .Values.global.ingress.tls.enabled }}"
     # KEYCLOAK_HTTP_RELATIVE_PATH is valid for v19.x.x only and it's added for compatibility between Keycloak versions
     # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
     - name: KEYCLOAK_HTTP_RELATIVE_PATH

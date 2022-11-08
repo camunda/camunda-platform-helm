@@ -19,3 +19,4 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 
 * use service for keycloak instead of host
 * put keycloak section under identity in NOTES.txt
+* set keycloak proxy to global ingress tls
