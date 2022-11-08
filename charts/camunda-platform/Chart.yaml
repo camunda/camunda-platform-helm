@@ -71,3 +71,5 @@ annotations:
       description: "use service for keycloak instead of host"
     - kind: fixed
       description: "put keycloak section under identity in NOTES.txt"
+    - kind: fixed
+      description: "set keycloak proxy to global ingress tls"
