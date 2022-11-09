@@ -107,6 +107,29 @@ func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
 	s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
 }
 
+func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.registry":     "global.custom.registry.io",
+			"global.image.tag":          "8.x.x",
+			"tasklist.image.registry":   "subchart.custom.registry.io",
+			"tasklist.image.repository": "camunda/tasklist-test",
+			"tasklist.image.tag":        "snapshot",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	container := deployment.Spec.Template.Spec.Containers[0]
+	s.Require().Equal(container.Image, "subchart.custom.registry.io/camunda/tasklist-test:snapshot")
+}
+
 func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsGlobal() {
 	// given
 	options := &helm.Options{

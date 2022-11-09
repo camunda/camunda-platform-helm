@@ -33,11 +33,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          {{- if .Values.image.tag }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          {{- else }}
-          image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
-          {{- end }}
+          image: {{ include "camundaPlatform.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           ports:
             - containerPort: {{  .Values.service.httpPort }}

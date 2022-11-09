@@ -114,6 +114,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `zeebeIndexMaxSize` | Can be set to configure the maximum allowed zeebe index size in gigabytes. After reaching that size, curator will delete that corresponding index on the next run. To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes. | `` |
 | | `operateIndexTTL` | Defines after how many days an Operate index can be deleted. | `30` |
 | | `tasklistIndexTTL` | Defines after how many days an Tasklist index can be deleted. | `30` |
+| | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator` |
 | | `image.tag` | Defines the tag / version which should be used in the chart. | `5.8.4` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
@@ -129,6 +130,7 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 |-|-|-|-|
 | `zeebe` | Configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources. | |
 | | `image` | Configuration to configure the Zeebe image specifics. | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
@@ -190,6 +192,7 @@ For more information about Zeebe Gateway, visit
 | `zeebe-gateway`| | Configuration to define properties related to the Zeebe standalone gateway | |
 | | `replicas` | Defines how many standalone gateways are deployed | `1` |
 | | `image` | Configuration to configure the zeebe-gateway image specifics. | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
@@ -250,6 +253,7 @@ For more information about Operate, visit
 | `operate` | | Configuration for the Operate sub chart. | |
 | | `enabled` | If true, the Operate deployment and its related resources are deployed via a helm release | `true` |
 | | `image` | Configuration to configure the Operate image specifics. | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `camunda/operate` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
@@ -296,6 +300,7 @@ For more information about Tasklist, visit
 | `tasklist` | | Configuration for the Tasklist sub chart. | |
 | | `enabled` | If true, the Tasklist deployment and its related resources are deployed via a helm release | `true` |
 | | `image` | Configuration to configure the Tasklist image specifics. | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
@@ -334,6 +339,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | `optimize` | |  Configuration for the Optimize sub chart. | |
 | | `enabled` |  If true, the Optimize deployment and its related resources are deployed via a helm release | `true` |
 | | `image` |  Configuration for the Optimize image specifics | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` |  Defines which image repository to use | `camunda/optimize` |
 | | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `3.8.0` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
@@ -380,6 +386,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `firstUser.username` | Defines the username of the first user, needed to log in into the web applications | `demo` |
 | | `firstUser.password` | Defines the password of the first user, needed to log in into the web applications | `demo` |
 | | `image` |  Configuration to configure the Identity image specifics | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |
 | | `image.tag` |   Can be set to overwrite the global.image.tag | |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |

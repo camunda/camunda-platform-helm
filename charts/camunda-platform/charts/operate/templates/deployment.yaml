@@ -24,11 +24,7 @@ spec:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
-        {{- if .Values.image.tag }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        {{- else }}
-        image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag }}"
-        {{- end }}
+        image: {{ include "camundaPlatform.image" . | quote }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         {{- if .Values.containerSecurityContext }}
         securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}

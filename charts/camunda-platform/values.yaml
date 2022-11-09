@@ -32,6 +32,8 @@ global:
 
   # Image configuration to be used in each sub chart
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.tag defines the tag / version which should be used in the chart
     # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
     tag: 8.1.2  # global.image.tag
@@ -150,6 +152,8 @@ zeebe:
 
   # Image configuration to configure the zeebe image specifics
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.repository defines which image repository to use
     repository: camunda/zeebe
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
@@ -311,6 +315,8 @@ zeebe-gateway:
   replicas: 2
   # Image configuration to configure the zeebe-gateway image specifics
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.repository defines which image repository to use
     repository: camunda/zeebe
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
@@ -454,6 +460,8 @@ operate:
 
   # Image configuration to configure the Operate image specifics
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.repository defines which image repository to use
     repository: camunda/operate
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
@@ -558,6 +566,8 @@ tasklist:
 
   # Image configuration to configure the tasklist image specifics
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.repository defines which image repository to use
     repository: camunda/tasklist
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
@@ -650,6 +660,8 @@ optimize:
 
   # Image configuration to configure the Optimize image specifics
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.repository defines which image repository to use
     repository: camunda/optimize
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
@@ -760,6 +772,8 @@ retentionPolicy:
 
   # Image configuration for the elasticsearch curator cronjob
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.repository defines which image repository to use
     repository: bitnami/elasticsearch-curator
     # Image.tag defines the tag / version which should be used in the chart
@@ -795,6 +809,8 @@ identity:
 
   # Image configuration to configure the identity image specifics
   image:
+    # Image.registry can be used to set container image registry.
+    registry: ""
     # Image.repository defines which image repository to use
     repository: camunda/identity
     # Image.tag can be set to overwrite the global tag, which should be used in that chart

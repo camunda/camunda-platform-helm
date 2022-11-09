@@ -16,7 +16,8 @@ spec:
       template:
         spec:
           containers:
-            - image: "{{ .Values.retentionPolicy.image.repository }}:{{ .Values.retentionPolicy.image.tag }}"
+              {{- $_ := set .Values "image" .Values.retentionPolicy.image }}
+            - image: {{ include "camundaPlatform.image" . | quote }}
               name: curator
               args: ["--config", "/etc/config/config.yml", "/etc/config/action_file.yml"]
               volumeMounts:
