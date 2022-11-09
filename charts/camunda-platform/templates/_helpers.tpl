@@ -56,6 +56,19 @@ app.kubernetes.io/part-of: camunda-platform
 {{- end -}}
 
 {{/*
+Set image according the values of global or subchart value.
+*/}}
+{{- define "camundaPlatform.image" -}}
+    {{- $imageRegistry := .Values.image.registry | default .Values.global.image.registry -}}
+    {{- printf "%s%s%s:%s"
+        $imageRegistry
+        (empty $imageRegistry | ternary "" "/")
+        (.Values.image.repository | default .Values.global.image.repository)
+        (.Values.image.tag | default .Values.global.image.tag)
+    -}}
+{{- end -}}
+
+{{/*
 Set imagePullSecrets according the values of global, subchart, or empty.
 */}}
 {{- define "camundaPlatform.imagePullSecrets" -}}

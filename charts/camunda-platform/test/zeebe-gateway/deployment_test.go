@@ -122,6 +122,29 @@ func (s *deploymentTemplateTest) TestContainerSetPriorityClassName() {
 	s.Require().Equal("PRIO", deployment.Spec.Template.Spec.PriorityClassName)
 }
 
+func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.image.registry":          "global.custom.registry.io",
+			"global.image.tag":               "8.x.x",
+			"zeebe-gateway.image.registry":   "subchart.custom.registry.io",
+			"zeebe-gateway.image.repository": "camunda/zeebe-test",
+			"zeebe-gateway.image.tag":        "snapshot",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	container := deployment.Spec.Template.Spec.Containers[0]
+	s.Require().Equal(container.Image, "subchart.custom.registry.io/camunda/zeebe-test:snapshot")
+}
+
 func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsGlobal() {
 	// given
 	options := &helm.Options{
