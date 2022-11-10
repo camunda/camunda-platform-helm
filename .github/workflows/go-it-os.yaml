@@ -55,5 +55,5 @@ jobs:
       - name: Add helm repos
         run: make helm.repos-add
       - name: Test - ${{ matrix.test.name }}
-        run: make it-os GO_TEST_IT_OS_ARGS="-testify.m ${{ matrix.test.method }}"
+        run: make go.test-it-os GO_TEST_IT_OS_ARGS="-testify.m ${{ matrix.test.method }}"
 

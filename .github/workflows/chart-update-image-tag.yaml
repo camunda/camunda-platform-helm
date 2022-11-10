@@ -34,7 +34,7 @@ jobs:
       - name: Update values file image tag
         run: |
           make update-values-file-image-tag
-          make golden
+          make go.test-golden-updated
       - name: Make sure all Docker image tags are available
         run: |
           make helm.repos-add

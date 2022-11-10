@@ -23,7 +23,7 @@ jobs:
         go-version: 1.17
     - name: Format
       run: |
-        make fmt
+        make go.fmt
         diff=$(git status --porcelain)
         if [ -n "$diff" ]
         then
@@ -31,9 +31,9 @@ jobs:
           exit 1
         fi
     - name: Install License Tool
-      run: make installLicense
+      run: make go.addlicense-install
     - name: Check License
-      run: make checkLicense
+      run: make go.addlicense-check
     - name: Install Helm
       uses: asdf-vm/actions/install@v1
     - name: Add helm repos
@@ -42,4 +42,4 @@ jobs:
     - name: Get Helm dependency
       run: make helm.dependency-update
     - name: Test
-      run: make test
+      run: make go.test

@@ -5,45 +5,55 @@ chartVersion=$(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName=camunda-platform-test
 gitChglog=quay.io/git-chglog/git-chglog:0.15.1
 
-# test: runs the tests without updating the golden files (runs checks against golden files)
-.PHONY: test
-test:	helm.dependency-update
+#########################################################
+######### Go.
+#########################################################
+
+#
+# Tests.
+
+# go.test: runs the tests without updating the golden files (runs checks against golden files)
+.PHONY: go.test
+go.test: helm.dependency-update
 	go test ./...
 
-# it: runs the integration tests against the current kube context
-.PHONY: it
-it:	helm.dependency-update
-	go test -p 1 -timeout 1h -tags integration ./.../integration ${GO_TEST_IT_ARGS}
-
-# it-os: runs a subset of the integration tests against the current Openshift cluster
-.PHONY: it-os
-it-os: helm.dependency-update
-	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration ${GO_TEST_IT_OS_ARGS}
-
-# golden: runs the tests with updating the golden files
-.PHONY: golden
-golden:	helm.dependency-update
+# go.test-golden-updated: runs the tests with updating the golden files
+.PHONY: go.test-golden-updated
+go.test-golden-updated: helm.dependency-update
 	go test ./... -args -update-golden 
 
-# fmt: runs the gofmt in order to format all go files
-.PHONY: fmt
-fmt:
+# go.test-it: runs the integration tests against the current kube context
+.PHONY: go.test-it
+go.test-it: helm.dependency-update
+	go test -p 1 -timeout 1h -tags integration ./.../integration ${GO_TEST_IT_ARGS}
+
+# go.it-os: runs a subset of the integration tests against the current Openshift cluster
+.PHONY: go.test-it-os
+go.test-it-os: helm.dependency-update
+	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration ${GO_TEST_IT_OS_ARGS}
+
+# go.fmt: runs the gofmt in order to format all go files
+.PHONY: go.fmt
+go.fmt:
 	go fmt ./... 
 
-# addlicense: add license headers to go files
-.PHONY: addlicense
-addlicense:
+#
+# Helpers.
+
+# go.addlicense-install: installs the addlicense tool
+.PHONY: go.addlicense-install
+go.addlicense-install:
+	go install github.com/google/addlicense@v1.0.0
+
+# go.addlicense-run: adds license headers to go files
+.PHONY: go.addlicense-run
+go.addlicense-run:
 	addlicense -c 'Camunda Services GmbH' -l apache charts/camunda-platform/test/**/*.go
 
-# checkLicense: checks that the go files contain license header
-.PHONY: checkLicense
-checkLicense:
+# go.addlicense-check: checks that the go files contain license header
+.PHONY: go.addlicense-check
+go.addlicense-check:
 	addlicense -check -l apache charts/camunda-platform/test/**/*.go
-
-# installLicense: installs the addlicense tool
-.PHONY: installLicense
-installLicense:
-	go install github.com/google/addlicense@v1.0.0
 
 #########################################################
 ######### Tools
@@ -90,7 +100,7 @@ helm.dependency-update:
 
 # helm.install: install the local chart into the current kubernetes cluster/namespace
 .PHONY: helm.install
-helm.install:	helm.dependency-update
+helm.install: helm.dependency-update
 	helm install $(releaseName) $(chartPath)
 
 # helm.uninstall: uninstall the chart and removes all related pvc's
@@ -107,7 +117,7 @@ helm.dry-run: helm.dependency-update
 
 # helm.template: show all rendered templates for the local chart
 .PHONY: helm.template
-helm.template:	helm.dependency-update
+helm.template: helm.dependency-update
 	helm template $(releaseName) $(chartPath)
 
 #########################################################
