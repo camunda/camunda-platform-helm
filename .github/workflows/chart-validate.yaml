@@ -25,10 +25,10 @@ jobs:
         uses: asdf-vm/actions/install@v1
       - name: Add helm repos
         run: |
-          make helm-repos-add
+          make helm.repos-add
       - name: Get Helm dependency
         run: |
-          make helm-dependency-update
+          make helm.dependency-update
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*

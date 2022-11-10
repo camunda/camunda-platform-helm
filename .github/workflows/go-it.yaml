@@ -68,6 +68,6 @@ jobs:
     - name: Install Helm
       uses: asdf-vm/actions/install@v1
     - name: Add helm repos
-      run: make helm-repos-add
+      run: make helm.repos-add
     - name: Test - ${{ matrix.test.name }}
-      run: make it GO_TEST_IT_ARGS="-testify.m ${{ matrix.test.method }}"
+      run: make go.test-it GO_TEST_IT_ARGS="-testify.m ${{ matrix.test.method }}"

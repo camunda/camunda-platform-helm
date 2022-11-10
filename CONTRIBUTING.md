@@ -35,9 +35,9 @@ Please feel free to fork this repository and open a pull request to fix an issue
 Make sure that your provided PR's works via:
 
  * `helm lint` to run the linting
- * `make fmt` to run the gofmt
- * `make checkLicense` to run the license check
- * `make test` to run the go tests
+ * `make go.fmt` to run the gofmt
+ * `make go.addlicense-check` to run the license check
+ * `make go.test` to run the go tests
  * `helm install <releasename> chartPath/` to install a Helm release in your K8s cluster (e.g. kind)
 
 We have the following expectation on PR's:
@@ -110,7 +110,7 @@ We separate our tests in two parts, with different targets and goals.
 Tests can be found in the `charts/camunda-platform` directory under `test/`. For each sub-chart we have a sub-directory 
 in the `test/` directory. For example [test/zeebe](charts/camunda-platform/test/zeebe).
 
-In order to run the tests, execute `make test` on the root repository level.
+In order to run the tests, execute `make go.test` on the root repository level.
 
 #### Unit Tests
 
@@ -124,7 +124,7 @@ For an example see [zeebe/goldenfiles_test.go](charts/camunda-platform/test/zeeb
 
 If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the prometheus [servicemonitor](charts/camunda-platform/templates/service-monitor.yaml) can be enabled by a toggle. This means we write a golden file test in [servicemonitor_test.go](charts/camunda-platform/test/servicemonitor_test.go).
 
-In order to generate the golden files run `make golden` on the root level of the repository. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should also be named related to the manifest.
+In order to generate the golden files run `go.test-with-updated-golden-files` on the root level of the repository. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should also be named related to the manifest.
 
 ##### Properties Test
 
@@ -136,7 +136,7 @@ It is always helpful to check already existing tests to get a better understandi
 
 #### Test License Headers
 
-Make sure that new go tests contain the apache license headers, otherwise the CI license check will fail. For adding and checking the license we use [addlicense](https://github.com/google/addlicense). In order to install it locally, simply run `make installLicense`. Afterwards you can run `make addlicense` to add the missing license header to a new go file.
+Make sure that new go tests contain the apache license headers, otherwise the CI license check will fail. For adding and checking the license we use [addlicense](https://github.com/google/addlicense). In order to install it locally, simply run `make go.addlicense-install`. Afterwards you can run `make go.addlicense-run` to add the missing license header to a new go file.
 
 #### OpenShift
 
