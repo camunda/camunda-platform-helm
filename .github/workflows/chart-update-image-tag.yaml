@@ -33,7 +33,7 @@ jobs:
           echo "OPTIMIZE_IMAGE_TAG=${{ github.event.inputs.optimize-image-tag }}" >> "$GITHUB_ENV"
       - name: Update values file image tag
         run: |
-          make update-values-file-image-tag
+          make tools.update-values-file-image-tag
           make go.test-golden-updated
       - name: Make sure all Docker image tags are available
         run: |

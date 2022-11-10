@@ -60,7 +60,7 @@ go.addlicense-check:
 #########################################################
 
 # Add asdf plugins.
-.asdf-plugins-add:
+.tools.asdf-plugins-add:
 	@# Add plugins from .tool-versions file within the repo.
 	@# If the plugin is already installed asdf exits with 2, so grep is used to handle that.
 	@for plugin in $$(awk '{print $$1}' .tool-versions); do \
@@ -69,17 +69,17 @@ go.addlicense-check:
 	done
 
 # Install tools via asdf.
-asdf-tools-install: .asdf-plugins-add
+tools.asdf-install: .tools.asdf-plugins-add
 	asdf install
 
-#########################################################
-######### Helpers
-#########################################################
-
 # This target will be mainly used in the CI to update the images tag from camunda-platform repo
-.PHONY: update-values-file-image-tag
-update-values-file-image-tag:
+.PHONY: tools.update-values-file-image-tag
+tools.update-values-file-image-tag:
 	@bash scripts/update-values-file-image-tag.sh
+
+.PHONY: tools.zbctl-topology
+tools.zbctl-topology:
+	kubectl exec svc/$(releaseName)-zeebe-gateway -- zbctl --insecure status
 
 #########################################################
 ######### HELM
@@ -119,14 +119,6 @@ helm.dry-run: helm.dependency-update
 .PHONY: helm.template
 helm.template: helm.dependency-update
 	helm template $(releaseName) $(chartPath)
-
-#########################################################
-######### Testing
-#########################################################
-
-.PHONY: topology
-topology:
-	kubectl exec svc/$(releaseName)-zeebe-gateway -- zbctl --insecure status
 
 #########################################################
 ######### Release
