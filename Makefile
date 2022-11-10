@@ -122,39 +122,39 @@ topology:
 ######### Release
 #########################################################
 
-.PHONY: .bump-chart-version
-.bump-chart-version:
+.PHONY: .release.bump-chart-version
+.release.bump-chart-version:
 	@bash scripts/bump-chart-version.sh
 
-.PHONY: bump-chart-version-and-commit
-bump-chart-version-and-commit: .bump-chart-version
+.PHONY: .release.bump-chart-version-and-commit
+.release.bump-chart-version-and-commit: .release.bump-chart-version
 	git add $(chartPath);\
 	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
-.PHONY: .generate-release-notes
-.generate-release-notes:
+.PHONY: .release.generate-notes
+.release.generate-notes:
 	docker run --rm -w /data -v `pwd`:/data --entrypoint sh $(gitChglog) \
 		-c "apk add bash grep yq; bash scripts/generate-release-notes.sh"
 
-.PHONY: generate-release-notes-and-commit
-generate-release-notes-and-commit: .generate-release-notes
+.PHONY: release.generate-notes-and-commit
+release.generate-notes-and-commit: .release.generate-notes
 	git add $(chartPath);\
 	git commit -m "chore: add release notes for camunda-platform $(chartVersion)"
 
-.PHONY: generate-release-pr-url
-generate-release-pr-url:
+.PHONY: release.generate-pr-url
+release.generate-pr-url:
 	@echo "\n\n###################################\n"
 	@echo "Open the release PR using this URL:"
 	@echo "https://github.com/camunda/camunda-platform-helm/compare/release?expand=1&template=release_template.md&title=Release%20Camunda%20Platform%20Helm%20Chart%20v$(chartVersion)"
 	@echo "\n###################################\n\n"
 
-.PHONY: release-chores
-release-chores:
+.PHONY: release.chores
+release.chores:
 	git checkout main
-	git pull
+	git pull --tags
 	git switch -C release
-	@$(MAKE) bump-chart-version-and-commit
-	@$(MAKE) generate-release-notes-and-commit
+	@$(MAKE) release.bump-chart-version-and-commit
+	@$(MAKE) release.generate-notes-and-commit
 	git push -fu origin release
-	@$(MAKE) generate-release-pr-url
+	@$(MAKE) release.generate-pr-url
 	git checkout main

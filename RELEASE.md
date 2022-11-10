@@ -22,7 +22,7 @@ When it's time to release, just do the following steps.
 
 Locally, run:
 ```
-make release-chores
+make release.chores
 ```
 
 This action will:
