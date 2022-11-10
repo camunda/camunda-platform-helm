@@ -38,8 +38,8 @@ jobs:
       uses: asdf-vm/actions/install@v1
     - name: Add helm repos
       run: |
-        make helm-repos-add
+        make helm.repos-add
     - name: Get Helm dependency
-      run: make helm-dependency-update
+      run: make helm.dependency-update
     - name: Test
       run: make test

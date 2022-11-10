@@ -47,10 +47,10 @@ jobs:
         uses: asdf-vm/actions/install@v1
       - name: Add Helm repos
         run: |
-          make helm-repos-add
+          make helm.repos-add
       - name: Update Helm dependency
         run: |
-          make helm-dependency-update
+          make helm.dependency-update
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.3.0
         with:

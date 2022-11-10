@@ -7,22 +7,22 @@ gitChglog=quay.io/git-chglog/git-chglog:0.15.1
 
 # test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: test
-test:	helm-dependency-update
+test:	helm.dependency-update
 	go test ./...
 
 # it: runs the integration tests against the current kube context
 .PHONY: it
-it:	helm-dependency-update
+it:	helm.dependency-update
 	go test -p 1 -timeout 1h -tags integration ./.../integration ${GO_TEST_IT_ARGS}
 
 # it-os: runs a subset of the integration tests against the current Openshift cluster
 .PHONY: it-os
-it-os: helm-dependency-update
+it-os: helm.dependency-update
 	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration ${GO_TEST_IT_OS_ARGS}
 
 # golden: runs the tests with updating the golden files
 .PHONY: golden
-golden:	helm-dependency-update
+golden:	helm.dependency-update
 	go test ./... -args -update-golden 
 
 # fmt: runs the gofmt in order to format all go files
@@ -75,39 +75,39 @@ update-values-file-image-tag:
 ######### HELM
 #########################################################
 
-# helm-repos-add: add Helm repos needed by the charts
-.PHONY: helm-repos-add
-helm-repos-add:
+# helm.repos-add: add Helm repos needed by the charts
+.PHONY: helm.repos-add
+helm.repos-add:
 	helm repo add elastic https://helm.elastic.co
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 
-# helm-dependency-update: updates and downloads the dependencies for the Helm chart
-.PHONY: helm-dependency-update
-helm-dependency-update:
+# helm.dependency-update: update and downloads the dependencies for the Helm chart
+.PHONY: helm.dependency-update
+helm.dependency-update:
 	helm dependency update $(chartPath)
 	helm dependency update $(chartPath)/charts/identity
 
-# install: install the local chart into the current kubernetes cluster/namespace
-.PHONY: install
-install:	helm-dependency-update
+# helm.install: install the local chart into the current kubernetes cluster/namespace
+.PHONY: helm.install
+helm.install:	helm.dependency-update
 	helm install $(releaseName) $(chartPath)
 
-# uninstall: uninstalls the chart and removes all related pvc's
-.PHONY: uninstall
-uninstall:
+# helm.uninstall: uninstall the chart and removes all related pvc's
+.PHONY: helm.uninstall
+helm.uninstall:
 	-helm uninstall $(releaseName)
 	-kubectl delete pvc -l app.kubernetes.io/instance=$(releaseName)
 	-kubectl delete pvc -l release=$(releaseName)
 
-# dry-run: runs an install dry-run with the local chart
-.PHONY: dry-run
-dry-run:	helm-dependency-update
+# helm.dry-run: run an install dry-run with the local chart
+.PHONY: helm.dry-run
+helm.dry-run: helm.dependency-update
 	helm install $(releaseName) $(chartPath) --dry-run
 
-# template: show all rendered templates for the local chart
-.PHONY: template
-template:	helm-dependency-update
+# helm.template: show all rendered templates for the local chart
+.PHONY: helm.template
+helm.template:	helm.dependency-update
 	helm template $(releaseName) $(chartPath)
 
 #########################################################
