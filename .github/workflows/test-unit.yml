@@ -1,4 +1,4 @@
-name: Go CI
+name: "Test - Unit"
 
 on:
   push:
@@ -13,7 +13,8 @@ on:
   workflow_dispatch: { }
 
 jobs:
-  build:
+  test:
+    name: Custom values
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -22,14 +23,7 @@ jobs:
       with:
         go-version: 1.17
     - name: Format
-      run: |
-        make go.fmt
-        diff=$(git status --porcelain)
-        if [ -n "$diff" ]
-        then
-          echo "Some files are not following the go format ($diff), run gofmt and fix your files."
-          exit 1
-        fi
+      run: make go.fmt
     - name: Install License Tool
       run: make go.addlicense-install
     - name: Check License
@@ -37,8 +31,7 @@ jobs:
     - name: Install Helm
       uses: asdf-vm/actions/install@v1
     - name: Add helm repos
-      run: |
-        make helm.repos-add
+      run: make helm.repos-add
     - name: Get Helm dependency
       run: make helm.dependency-update
     - name: Test

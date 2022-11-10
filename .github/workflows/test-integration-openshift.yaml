@@ -1,0 +1,59 @@
+name: "Test - Integration - OpenShift"
+
+on:
+  pull_request:
+    paths:
+    - '.github/**'
+    - '.tool-versions'
+    - 'charts/**'
+    - 'go.*'
+  workflow_dispatch: { }
+
+env:
+  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+
+jobs:
+  test:
+    name: v${{ matrix.openshift.version }} - ${{ matrix.test.name }}
+    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        openshift:
+        - version: "4.10"
+          server: OPENSHIFT_URL_410
+          token: OPENSHIFT_TOKEN_410
+        test:
+        - name: "End2End"
+          method: "TestServicesEnd2End"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set var GITHUB_PR_HEAD_SHA_SHORT
+      run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+    - name: Install Helm
+      uses: asdf-vm/actions/install@v1
+    - name: Install Openshift client (oc)
+      uses: redhat-actions/openshift-tools-installer@v1
+      with:
+        oc: ${{ matrix.openshift.version }}
+    - name: Authenticate to Openshift
+      uses: redhat-actions/oc-login@v1
+      with:
+        openshift_server_url: ${{ secrets[matrix.openshift.server] }}
+        openshift_token: ${{ secrets[matrix.openshift.token] }}
+    # the tests need to be able to create a project and list nodes; node listing is to find an available pod when
+    # checking service availability (done via terratest, so we cannot change that)
+    - name: 'Verify Permissions'
+      run: 'oc auth can-i create projectrequests && oc auth can-i list nodes'
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - name: Add helm repos
+      run: make helm.repos-add
+    - name: Test - ${{ matrix.test.name }}
+      run: make go.test-it-os GO_TEST_IT_OS_ARGS="-testify.m ${{ matrix.test.method }}"
+
