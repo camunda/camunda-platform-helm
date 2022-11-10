@@ -1,4 +1,4 @@
-name: Integration Tests
+name: "Test - Integration"
 
 on:
   pull_request:
@@ -24,23 +24,21 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - name: "End2End"
-            method: "TestServicesEnd2End"
-          - name: "End2EndShouldFailWithUpgrade"
-            method: "TestServicesEnd2EndShouldFailWithUpgrade"
-          - name: "End2EndWithUpgrade"
-            method: "TestServicesEnd2EndWithUpgrade"
-          - name: "End2EndWithConfig"
-            method: "TestServicesEnd2EndWithConfig"
+        - name: "End2End"
+          method: "TestServicesEnd2End"
+        - name: "End2EndShouldFailWithUpgrade"
+          method: "TestServicesEnd2EndShouldFailWithUpgrade"
+        - name: "End2EndWithUpgrade"
+          method: "TestServicesEnd2EndWithUpgrade"
+        - name: "End2EndWithConfig"
+          method: "TestServicesEnd2EndWithConfig"
     runs-on: ubuntu-latest
     env:
       KUBECONFIG: .github/config/kubeconfig
-
     # Add "id-token" with the intended permissions.
     permissions:
       contents: 'read'
       id-token: 'write'
-      
     steps:
     - name: Set var GITHUB_PR_HEAD_SHA_SHORT
       run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV

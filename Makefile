@@ -35,7 +35,12 @@ go.test-it-os: helm.dependency-update
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt
 go.fmt:
-	go fmt ./... 
+	go fmt ./...
+	@diff=$$(git status --porcelain | grep -F ".go" || true)
+	@if [ -n "$${diff}" ]; then\
+		echo "Some files are not following the go format ($${diff}), run gofmt and fix your files.";\
+		exit 1;\
+	fi
 
 #
 # Helpers.
