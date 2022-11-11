@@ -17,6 +17,7 @@
   - [Optimize](#optimize)
   - [Identity](#identity)
   - [Elasticsearch](#elasticsearch)
+  - [Keycloak](#keycloak)
 - [Guides](#guides)
   - [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
 - [Development](#development)
@@ -438,6 +439,56 @@ Camunda Platform 8 Helm chart has a dependency on the [Elasticsearch Helm Chart]
 elasticsearch:
   enabled: true
   imageTag: <YOUR VERSION HERE>
+```
+
+### Keycloak
+
+When Camunda Platform 8 Identity component is enabled by default, and it depends on
+[Bitnami Keycloak chart](https://github.com/bitnami/charts/tree/main/bitnami/keycloak).
+Since Keycloak is a dependency for Identity, all variables related to Keycloak can be found in
+[bitnami/keycloak/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/keycloak/values.yaml)
+and can be set under `identity.keycloak`.
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `identity.keycloak`| `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Platform Helm chart | `true` |
+
+**Example:**
+
+```yaml
+identity:
+  keycloak:
+    enabled: true
+```
+
+#### Keycloak Theme
+
+Camunda provides a custom theme for the login page used in all apps. The theme is copied from the Identity image.
+
+The theme is added to Keycloak by default, however, since Helm v3 (latest checked 3.10.x) doesn't merge lists
+with custom values files, then you will need to add this to your own values file if you override any of
+`extraVolumes`, `initContainers`, or `extraVolumeMounts`.
+
+```yaml
+identity:
+  keycloak:
+    extraVolumes:
+    - name: camunda-theme
+      emptyDir:
+        sizeLimit: 10Mi
+    initContainers:
+    - name: copy-camunda-theme
+      image: >-
+        {{- $identityImage := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
+        {{- include "camundaPlatform.image" $identityImage }}
+      imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
+      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
+      volumeMounts:
+      - name: camunda-theme
+        mountPath: /mnt
+    extraVolumeMounts:
+    - name: camunda-theme
+      mountPath: /opt/bitnami/keycloak/themes/identity
 ```
 
 ## Guides

@@ -56,15 +56,26 @@ app.kubernetes.io/part-of: camunda-platform
 {{- end -}}
 
 {{/*
-Set image according the values of global or subchart value.
+Set image according the values of base (global) or overlay (subchart) values.
+If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
+Usage:
+  This template has 2 syntaxes:
+  1. Top-level values: It relies on ".Values.global.image" (base) and ".Values.image" (overlay) dicts.
+     Example: {{ include "camundaPlatform.image" . }}
+  2. Parameterized values: It relies on ".base.image" and ".overlay.image" dicts.
+     Example: {{ include "camundaPlatform.image" (dict "base" .Values.global "overlay" .Values.retentionPolicy) }}
 */}}
 {{- define "camundaPlatform.image" -}}
-    {{- $imageRegistry := .Values.image.registry | default .Values.global.image.registry -}}
+    {{/* Allow the template to work with top-level and parameterized values. */}}
+    {{- $baseImage := (hasKey . "base" | ternary (.base).image (.Values).global.image) -}}
+    {{- $overlayImage := (hasKey . "overlay" | ternary (.overlay).image (.Values).image) -}}
+
+    {{- $imageRegistry := $overlayImage.registry | default $baseImage.registry -}}
     {{- printf "%s%s%s:%s"
         $imageRegistry
         (empty $imageRegistry | ternary "" "/")
-        (.Values.image.repository | default .Values.global.image.repository)
-        (.Values.image.tag | default .Values.global.image.tag)
+        ($overlayImage.repository | default $baseImage.repository)
+        ($overlayImage.tag | default $baseImage.tag)
     -}}
 {{- end -}}
 

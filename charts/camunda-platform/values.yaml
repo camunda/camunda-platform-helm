@@ -872,6 +872,29 @@ identity:
   keycloak:
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
+
+    # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
+    # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
+    extraVolumes:
+    - name: camunda-theme
+      emptyDir:
+        sizeLimit: 10Mi
+
+    initContainers:
+    - name: copy-camunda-theme
+      image: >-
+        {{- $identityImage := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
+        {{- include "camundaPlatform.image" $identityImage }}
+      imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
+      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
+      volumeMounts:
+      - name: camunda-theme
+        mountPath: /mnt
+
+    extraVolumeMounts:
+    - name: camunda-theme
+      mountPath: /opt/bitnami/keycloak/themes/identity
+
     extraEnvVars:
     # KEYCLOAK_PROXY_ADDRESS_FORWARDING can be used with Ingress that has SSL Termination. It will be "true" if the TLS
     # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.

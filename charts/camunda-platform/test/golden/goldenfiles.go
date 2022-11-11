@@ -35,6 +35,7 @@ type TemplateGoldenTest struct {
 	Templates      []string
 	IgnoredLines   []string
 	SetValues      map[string]string
+	ExtraHelmArgs  []string
 }
 
 func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
@@ -42,7 +43,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
 		SetValues:      s.SetValues,
 	}
-	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates)
+	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
 
 	s.IgnoredLines = append(s.IgnoredLines, `\s+helm.sh/chart:\s+.*`)
 	bytes := []byte(output)
