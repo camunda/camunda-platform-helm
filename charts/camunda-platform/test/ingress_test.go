@@ -21,6 +21,7 @@ type ingressTemplateTest struct {
 	release   string
 	namespace string
 	templates []string
+	extraArgs []string
 }
 
 func TestIngressTemplate(t *testing.T) {
@@ -51,10 +52,10 @@ func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingE
 
 	// NOTE: helm.Options.ExtraArgs doesn't support passing args to Helm "template" command.
 	// TODO: Remove "template" from all helm.Options.ExtraArgs since it doesn't have any effect.
-	extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
+	s.extraArgs = []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
 
 	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, s.extraArgs...)
 
 	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
