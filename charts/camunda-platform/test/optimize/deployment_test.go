@@ -25,8 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/apps/v1"
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type deploymentTemplateTest struct {
@@ -551,11 +550,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVal
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
 					Key:                  "optimize-secret",
 				},
 			},
@@ -580,11 +579,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVia
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
 					Key:                  "optimize-secret",
 				},
 			},
@@ -611,7 +610,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUr
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL",
 			Value: "http://camunda-platform-test-keycloak-custom:80/auth/realms/camunda-platform",
 		})
@@ -628,11 +627,11 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment v1.Deployment
+	var deployment appsv1.Deployment
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedPullPolicy := v12.PullAlways
+	expectedPullPolicy := corev1.PullAlways
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
@@ -657,7 +656,7 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "CAMUNDA_OPTIMIZE_CONTEXT_PATH",
 			Value: "/optimize",
 		},
