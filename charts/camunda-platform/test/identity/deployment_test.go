@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type deploymentTemplateTest struct {
@@ -74,21 +74,21 @@ func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "KEYCLOAK_URL",
 			Value: "https://camunda-platform-test-keycloak-custom:8443/auth",
 		})
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "KEYCLOAK_SETUP_USER",
 			Value: "testAdmin",
 		})
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_SETUP_PASSWORD",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecretKeycloak"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecretKeycloak"},
 					Key:                  "test-admin",
 				},
 			},
@@ -570,8 +570,8 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
-	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 
 func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
@@ -592,11 +592,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_SETUP_PASSWORD",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
 					Key:                  "admin-password",
 				},
 			},
@@ -647,11 +647,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValu
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_INIT_OPERATE_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "camunda-platform-test-operate-identity-secret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-operate-identity-secret"},
 					Key:                  "operate-secret",
 				},
 			},
@@ -676,11 +676,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_INIT_OPERATE_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
 					Key:                  "operate-secret",
 				},
 			},
@@ -705,11 +705,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTasklistIdentitySecretVal
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_INIT_TASKLIST_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "camunda-platform-test-tasklist-identity-secret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-tasklist-identity-secret"},
 					Key:                  "tasklist-secret",
 				},
 			},
@@ -734,11 +734,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTasklistIdentitySecretVia
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_INIT_TASKLIST_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
 					Key:                  "tasklist-secret",
 				},
 			},
@@ -763,11 +763,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVal
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_INIT_OPTIMIZE_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
 					Key:                  "optimize-secret",
 				},
 			},
@@ -792,11 +792,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVia
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "KEYCLOAK_INIT_OPTIMIZE_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
 					Key:                  "optimize-secret",
 				},
 			},
@@ -818,7 +818,7 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedPullPolicy := v12.PullAlways
+	expectedPullPolicy := corev1.PullAlways
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
@@ -844,13 +844,13 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "IDENTITY_URL",
 			Value: "https://mydomain.com/identity",
 		},
 	)
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "IDENTITY_BASE_PATH",
 			Value: "/identity",
 		},

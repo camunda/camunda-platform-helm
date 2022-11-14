@@ -30,7 +30,7 @@ import (
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type integrationSuite struct {
@@ -240,7 +240,7 @@ func (s *integrationSuite) queryApi(httpClient http.Client, url string, jsonData
 
 func (s *integrationSuite) awaitAllPodsForThisRelease() {
 	// await that all Camunda Platform related pods become ready
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + s.release})
+	pods := k8s.ListPods(s.T(), s.kubeOptions, metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + s.release})
 
 	for _, pod := range pods {
 		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)
@@ -249,7 +249,7 @@ func (s *integrationSuite) awaitAllPodsForThisRelease() {
 
 func (s *integrationSuite) awaitElasticPods() {
 	// await that all elastic related pods become ready, otherwise operate and tasklist can't answer requests
-	pods := k8s.ListPods(s.T(), s.kubeOptions, v1.ListOptions{LabelSelector: "release=" + s.release})
+	pods := k8s.ListPods(s.T(), s.kubeOptions, metav1.ListOptions{LabelSelector: "release=" + s.release})
 
 	for _, pod := range pods {
 		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 10, 10*time.Second)

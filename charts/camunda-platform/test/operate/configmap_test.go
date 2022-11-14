@@ -24,7 +24,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type configMapTemplateTest struct {
@@ -60,7 +60,7 @@ func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap v1.ConfigMap
+	var configmap corev1.ConfigMap
 	var configmapApplication map[string]interface{}
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yml"], &configmapApplication)

@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type deploymentTemplateTest struct {
@@ -265,8 +265,8 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
-	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 
 func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
@@ -616,7 +616,7 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedPullPolicy := v12.PullAlways
+	expectedPullPolicy := corev1.PullAlways
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy

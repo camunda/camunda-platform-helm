@@ -25,8 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/apps/v1"
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type deploymentTemplateTest struct {
@@ -405,8 +404,8 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
-	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 
 // https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
@@ -555,7 +554,7 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() 
 		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET", envvar.Name)
 	}
 
-	s.Require().Contains(env, v12.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
 }
 
 func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValue() {
@@ -576,11 +575,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValu
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "camunda-platform-test-tasklist-identity-secret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-tasklist-identity-secret"},
 					Key:                  "tasklist-secret",
 				},
 			},
@@ -605,11 +604,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name: "CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET",
-			ValueFrom: &v12.EnvVarSource{
-				SecretKeyRef: &v12.SecretKeySelector{
-					LocalObjectReference: v12.LocalObjectReference{Name: "ownExistingSecret"},
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
 					Key:                  "tasklist-secret",
 				},
 			},
@@ -637,7 +636,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUr
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL",
 			Value: "http://camunda-platform-test-keycloak-custom:80/auth/realms/camunda-platform",
 		})
@@ -654,11 +653,11 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment v1.Deployment
+	var deployment appsv1.Deployment
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedPullPolicy := v12.PullAlways
+	expectedPullPolicy := corev1.PullAlways
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
@@ -683,7 +682,7 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "SERVER_SERVLET_CONTEXT_PATH",
 			Value: "/tasklist",
 		},

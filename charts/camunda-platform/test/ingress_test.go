@@ -10,8 +10,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/apps/v1"
-	v12 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 )
 
@@ -56,13 +56,13 @@ func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingE
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
 
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
 			Value: "true",
 		})
@@ -96,13 +96,13 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 	extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
 	stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
 
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), stsOutput, &statefulSet)
 
 	// then
 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		v12.EnvVar{
+		corev1.EnvVar{
 			Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
 			Value: "/custom",
 		})

@@ -24,8 +24,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/apps/v1"
-	v12 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type statefulSetTest struct {
@@ -61,7 +61,7 @@ func (s *statefulSetTest) TestContainerSetPodLabels() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -79,7 +79,7 @@ func (s *statefulSetTest) TestContainerSetPodAnnotations() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -97,7 +97,7 @@ func (s *statefulSetTest) TestContainerSetGlobalAnnotations() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -115,7 +115,7 @@ func (s *statefulSetTest) TestContainerSetPriorityClassName() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -137,7 +137,7 @@ func (s *statefulSetTest) TestContainerSetImageNameSubChart() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -156,7 +156,7 @@ func (s *statefulSetTest) TestContainerSetImagePullSecretsGlobal() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -175,7 +175,7 @@ func (s *statefulSetTest) TestContainerSetImagePullSecretsSubChart() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -199,7 +199,7 @@ func (s *statefulSetTest) TestContainerSetExtraInitContainers() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -222,7 +222,7 @@ func (s *statefulSetTest) TestContainerOverwriteImageTag() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -243,7 +243,7 @@ func (s *statefulSetTest) TestContainerOverwriteGlobalImageTag() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -265,7 +265,7 @@ func (s *statefulSetTest) TestContainerOverwriteImageTagWithChartDirectSetting()
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -283,12 +283,12 @@ func (s *statefulSetTest) TestContainerShouldContainExporterClassPerDefault() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, v12.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
 }
 
 func (s *statefulSetTest) TestContainerDisableExporter() {
@@ -302,12 +302,12 @@ func (s *statefulSetTest) TestContainerDisableExporter() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().NotContains(env, v12.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
+	s.Require().NotContains(env, corev1.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
 }
 
 func (s *statefulSetTest) TestContainerShouldSetTemplateEnvVars() {
@@ -324,13 +324,13 @@ func (s *statefulSetTest) TestContainerShouldSetTemplateEnvVars() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, v12.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
-	s.Require().Contains(env, v12.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "RELEASE_NAME", Value: "test-camunda-platform-test"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 }
 
 func (s *statefulSetTest) TestContainerSetContainerCommand() {
@@ -344,7 +344,7 @@ func (s *statefulSetTest) TestContainerSetContainerCommand() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -365,7 +365,7 @@ func (s *statefulSetTest) TestContainerSetLog4j2() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -390,7 +390,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumes() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -417,7 +417,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -443,7 +443,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -474,7 +474,7 @@ func (s *statefulSetTest) TestPodSetSecurityContext() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -494,7 +494,7 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -514,7 +514,7 @@ func (s *statefulSetTest) TestContainerSetServiceAccountName() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -534,7 +534,7 @@ func (s *statefulSetTest) TestContainerSetNodeSelector() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -581,7 +581,7 @@ func (s *statefulSetTest) TestContainerSetAffinity() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -628,7 +628,7 @@ func (s *statefulSetTest) TestContainerSetTolerations() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -654,7 +654,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -686,7 +686,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
@@ -716,11 +716,11 @@ func (s *statefulSetTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet v1.StatefulSet
+	var statefulSet appsv1.StatefulSet
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
-	expectedPullPolicy := v12.PullAlways
+	expectedPullPolicy := corev1.PullAlways
 	containers := statefulSet.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
