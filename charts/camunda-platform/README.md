@@ -6,6 +6,7 @@
 
 - [Architecture](#architecture)
 - [Requirements](#requirements)
+- [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Configuration](#configuration)
   - [Global](#global)
@@ -40,6 +41,42 @@
 * Minimum cluster requirements include the following to run this chart with default settings. All of these settings are configurable.
   * Three Kubernetes nodes to respect the default "hard" affinity settings
   * 2GB of RAM for the JVM heap
+
+## Dependencies
+
+Camunda Platform 8 Helm chart is an umbrella chart for different components. Some of them are internal (sub-charts)
+and some are external (third-party). The dependency management is fully automated and managed by Helm itself,
+however, it's good to understand the dependency structure. This third-party dependency is reflected in the Helm chart
+as follows:
+
+```
+camunda-platform
+  |_ elasticsearch
+  |_ identity
+    |_ keycloak
+      |_ postgresql
+  |_ optimize
+  |_ operate
+  |_ tasklist
+  |_ zeebe
+```
+
+For example, Camunda Identity utilizes Keycloak and allows you to manage users, roles, and permissions
+for Camunda Platform 8 components.
+
+- Keycloak is a dependency for Camunda Identity and PostgreSQL is a dependency for Keycloak.
+- Elasticsearch is a dependency for the Camunda Platform chart which is used in Zeebe, Operate, Tasklist, and Optimize.
+
+The values for the dependencies Keycloak and PostgreSQL can be set in the same hierarchy:
+
+```yaml
+identity:
+  [identity values]
+  keycloak:
+    [keycloak values]
+    postgresql:
+      [postgresql values]
+```
 
 ## Installation
 
