@@ -3,7 +3,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: ccms-service-monitor
+  name: camunda-platform-test
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

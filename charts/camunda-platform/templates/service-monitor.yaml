@@ -2,7 +2,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: ccms-service-monitor
+  name: {{ include "camundaPlatform.fullname" . }}
   labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
     {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
 spec:
