@@ -872,7 +872,8 @@ identity:
   # ExtraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
 
-  # Keycloak configuration, for the keycloak dependency chart which is used by identity. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters for more details.
+  # Keycloak configuration, for the keycloak dependency chart which is used by identity.
+  # For more details: https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters
   keycloak:
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
@@ -908,12 +909,11 @@ identity:
     # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
     - name: KEYCLOAK_HTTP_RELATIVE_PATH
       value: "{{ .Values.global.identity.keycloak.contextPath }}"
-    # Keycloak.ingress configuration, to setup a separated Ingress for Keycloak if needed.
-    # It's disabled by default and just added here for visibility.
+    # Keycloak.ingress can be used to configure an Ingress for Keycloak. No need to enable it if the global Ingress
+    # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
+    # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
     ingress:
       enabled: false
-      ingressClassName: ""
-      hostname: ""
     # Keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:
       # Keycloak.service.type can be set to change the service type.
