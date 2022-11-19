@@ -516,8 +516,8 @@ identity:
     initContainers:
     - name: copy-camunda-theme
       image: >-
-        {{- $identityImage := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
-        {{- include "camundaPlatform.image" $identityImage }}
+        {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
+        {{- include "camundaPlatform.imageByParams" $identityImageParams }}
       imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
       command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
       volumeMounts:
