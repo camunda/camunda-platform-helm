@@ -26,7 +26,7 @@ by the DNS naming spec). If release name contains chart name it will be used as 
 
 {{/*
 Define common labels, combining the match labels and transient labels, which might change on updating
-(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+(version depending). These labels should not be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "camundaPlatform.labels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
@@ -56,27 +56,26 @@ app.kubernetes.io/part-of: camunda-platform
 {{- end -}}
 
 {{/*
-Set image according the values of base (global) or overlay (subchart) values.
+Set image according the values of "base" or "overlay" values.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
-Usage:
-  This template has 2 syntaxes:
-  1. Top-level values: It relies on ".Values.global.image" (base) and ".Values.image" (overlay) dicts.
-     Example: {{ include "camundaPlatform.image" . }}
-  2. Parameterized values: It relies on ".base.image" and ".overlay.image" dicts.
-     Example: {{ include "camundaPlatform.image" (dict "base" .Values.global "overlay" .Values.retentionPolicy) }}
+Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.retentionPolicy) }}
 */}}
-{{- define "camundaPlatform.image" -}}
-    {{/* Allow the template to work with top-level and parameterized values. */}}
-    {{- $baseImage := (hasKey . "base" | ternary (.base).image (.Values).global.image) -}}
-    {{- $overlayImage := (hasKey . "overlay" | ternary (.overlay).image (.Values).image) -}}
-
-    {{- $imageRegistry := $overlayImage.registry | default $baseImage.registry -}}
+{{- define "camundaPlatform.imageByParams" -}}
+    {{- $imageRegistry := .overlay.image.registry | default .base.image.registry -}}
     {{- printf "%s%s%s:%s"
         $imageRegistry
         (empty $imageRegistry | ternary "" "/")
-        ($overlayImage.repository | default $baseImage.repository)
-        ($overlayImage.tag | default $baseImage.tag)
+        (.overlay.image.repository | default .base.image.repository)
+        (.overlay.image.tag | default .base.image.tag)
     -}}
+{{- end -}}
+
+{{/*
+Set image according the values of "global" or "subchart" values.
+Usage: {{ include "camundaPlatform.image" . }}
+*/}}
+{{- define "camundaPlatform.image" -}}
+    {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values) }}
 {{- end -}}
 
 {{/*
@@ -95,7 +94,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 {{/*
 Keycloak service name should be a max of 20 char since the Keycloak Bitnami Chart is using Wildfly, the node identifier in WildFly is limited to 23 characters.
 Furthermore, this allows changing the referenced Keycloak name inside the sub-charts.
-Subcharts can't access values from other sub-charts or the parent, global only. This is the reason why we have a global value to specify the Keycloak full name.
+Subcharts can not access values from other sub-charts or the parent, global only. This is the reason why we have a global value to specify the Keycloak full name.
 */}}
 
 {{- define "camundaPlatform.issuerBackendUrl" -}}

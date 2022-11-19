@@ -16,7 +16,8 @@ spec:
       template:
         spec:
           containers:
-            - image: {{ include "camundaPlatform.image" (dict "base" .Values.global "overlay" .Values.retentionPolicy) | quote }}
+            {{- $curatorImageParams := (dict "base" .Values.global "overlay" .Values.retentionPolicy) }}
+            - image: {{ include "camundaPlatform.imageByParams" $curatorImageParams | quote }}
               name: curator
               args: ["--config", "/etc/config/config.yml", "/etc/config/action_file.yml"]
               volumeMounts:
