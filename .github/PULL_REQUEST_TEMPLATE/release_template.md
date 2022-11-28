@@ -1,6 +1,6 @@
 **Before opening the PR:**
 
-- [x] Run `make release-chores`
+- [x] Run `make release.chores`
 - [x] Create a PR with the printed URL
 
 **After opening the PR:**

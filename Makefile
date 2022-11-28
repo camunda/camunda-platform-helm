@@ -133,8 +133,8 @@ helm.template: helm.dependency-update
 .release.bump-chart-version:
 	@bash scripts/bump-chart-version.sh
 
-.PHONY: .release.bump-chart-version-and-commit
-.release.bump-chart-version-and-commit: .release.bump-chart-version
+.PHONY: release.bump-chart-version-and-commit
+release.bump-chart-version-and-commit: .release.bump-chart-version
 	git add $(chartPath);\
 	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
