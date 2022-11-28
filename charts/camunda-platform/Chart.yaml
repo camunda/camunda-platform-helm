@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.1.1
+version: 8.1.2
 appVersion: 8.1.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.1.1
+    version: 8.1.2
     condition: "identity.enabled"
     # NOTE: This is used to share Identity image details with its subchart Keycloak.
     #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.1.1
+    version: 8.1.2
     condition: "operate.enabled"
   - name: optimize
-    version: 8.1.1
+    version: 8.1.2
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.1.1
+    version: 8.1.2
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.1.1
+    version: 8.1.2
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.1.1
+    version: 8.1.2
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
@@ -69,14 +69,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "added camunda platform architecture diagram"
+      description: "use identity theme in keycloak login page"
     - kind: added
-      description: "support using custom key for keycloak existing secret"
-    - kind: added
-      description: "support custom keycloak context path"
-    - kind: fixed
-      description: "use service for keycloak instead of host"
-    - kind: fixed
-      description: "put keycloak section under identity in NOTES.txt"
-    - kind: fixed
-      description: "set keycloak proxy to global ingress tls"
+      description: "support customizing container image registry"
+    - kind: changed
+      description: "rename ccms-service-monitor to use the release name"
