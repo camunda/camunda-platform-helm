@@ -33,12 +33,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type integrationSuiteOptions struct {
+	deleteNamespace bool
+}
+
 type integrationSuite struct {
 	suite.Suite
-	chartPath   string
-	release     string
-	namespace   string
-	kubeOptions *k8s.KubectlOptions
+	chartPath         string
+	release           string
+	namespace         string
+	namespaceMetadata metav1.ObjectMeta
+	kubeOptions       *k8s.KubectlOptions
+	options           integrationSuiteOptions
 }
 
 func (s *integrationSuite) getSecret(secretSuffix string, secretKey string) string {

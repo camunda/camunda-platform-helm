@@ -34,27 +34,30 @@ func TestIntegration(t *testing.T) {
 	suite.Run(t, &integrationSuite{
 		chartPath: chartPath,
 		release:   "camunda-platform-it",
+		options:   getIntegrationSuiteOptions(),
 	})
 }
 
 func (s *integrationSuite) SetupTest() {
-	s.namespace = createNamespaceName()
-	s.kubeOptions = k8s.NewKubectlOptions("gke_zeebe-io_europe-west1-b_zeebe-cluster", "", s.namespace)
+	nsMetadata := createNamespaceObjectMeta()
+	s.namespace = nsMetadata.Name
+	s.kubeOptions = k8s.NewKubectlOptions("", "", s.namespace)
 
 	if _, err := k8s.GetNamespaceE(s.T(), s.kubeOptions, s.namespace); err != nil {
-		k8s.CreateNamespace(s.T(), s.kubeOptions, s.namespace)
+		k8s.CreateNamespaceWithMetadata(s.T(), s.kubeOptions, nsMetadata)
 	} else {
 		s.T().Logf("Namespace: %s already exist!", s.namespace)
 	}
 }
 
 func (s *integrationSuite) TearDownTest() {
-	if !s.T().Failed() {
-		k8s.DeleteNamespace(s.T(), s.kubeOptions, s.namespace)
-	} else {
+	if s.T().Failed() {
 		s.T().Logf("Test failed on namespace: %s!", s.namespace)
 	}
-
+	if s.options.deleteNamespace {
+		s.T().Logf("The delete namespace option is enabled ... deleting test namespace: %s", s.namespace)
+		k8s.DeleteNamespace(s.T(), s.kubeOptions, s.namespace)
+	}
 }
 
 func (s *integrationSuite) TestServicesEnd2End() {

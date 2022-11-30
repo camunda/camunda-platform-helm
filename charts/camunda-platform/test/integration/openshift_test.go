@@ -49,7 +49,8 @@ func TestOpenShift(t *testing.T) {
 }
 
 func (s *openshiftSuite) SetupTest() {
-	s.namespace = createNamespaceName()
+	nsMetadata := createNamespaceObjectMeta()
+	s.namespace = nsMetadata.Name
 	s.kubeOptions = k8s.NewKubectlOptions("", "", s.namespace)
 
 	if !s.doesProjectExist() {
