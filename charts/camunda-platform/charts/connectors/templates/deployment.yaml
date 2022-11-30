@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "connectors.fullname" . }}
+  labels: {{- include "connectors.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "connectors.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: 
+        {{- include "connectors.labels" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ include "camundaPlatform.image" . | quote }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+          {{- if .Values.contextPath }}
+          - name: SERVER_SERVLET_CONTEXT_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
+          - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
+            value: "{{ .Release.Name }}-zeebe:26500" # Put config
+          - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
+            value: {{ .Values.zeebe.client.security.plaintext | quote }}
+          {{- if eq .Values.camunda.operate.client.type "none" }}
+          - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
+            value: "false"
+          - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
+            value: "false"
+          - name: SPRING_MAIN_WEB-APPLICATION-TYPE
+            value: "none"
+          {{- end }}
+          {{- if eq .Values.camunda.operate.client.type "credentials" }}
+          - name: CAMUNDA_OPERATE_CLIENT_URL
+            value: "http://{{ .Release.Name }}-operate:80" # put config
+          - name: CAMUNDA_OPERATE_CLIENT_USERNAME
+            value: {{ .Values.camunda.operate.client.username | quote }}
+          - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
+            value: {{ .Values.camunda.operate.client.password | quote }}
+          {{- end }}
+          {{- if eq .Values.camunda.operate.client.type "oauth" }}
+          - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
+            value: "http://{{ .Release.Name }}-keycloak:18080"
+          - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
+            value: {{ .Values.camunda.operate.client.clientId | quote }}
+          - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
+            value: {{ .Values.camunda.operate.client.clientSecret | quote }}
+          - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
+            value: {{ .Values.camunda.operate.client.keycloakRealm | quote }}
+          - name: CAMUNDA_OPERATE_CLIENT_URL
+            value: "http://{{ .Release.Name }}-keycloak:18080"
+          {{- end }}
+        {{- if .Values.env}}
+        {{ .Values.env | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/connectors/config/application.yml
+          subPath: application.yml
+        {{- if .Values.extraVolumeMounts}}
+        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "connectors.fullname" . }}
+          defaultMode: {{ .Values.configMap.defaultMode }}
+      {{- if .Values.extraVolumes}}
+      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

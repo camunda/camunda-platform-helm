@@ -130,6 +130,20 @@ spec:
               secretKeyRef:
                 name: {{ include "identity.keycloak.authExistingSecret" . }}
                 key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+          - name: KEYCLOAK_CLIENTS_0_NAME
+            value: {{ .Values.global.identity.auth.connectors.clientName | quote }}
+          - name: KEYCLOAK_CLIENTS_0_ID
+            value: {{ .Values.global.identity.auth.connectors.clientId | quote }}
+          - name: KEYCLOAK_CLIENTS_0_SECRET
+            value: {{ .Values.global.identity.auth.connectors.clientSecret | quote }}
+          - name: KEYCLOAK_CLIENTS_0_ROOT_URL
+            value: {{ .Values.global.identity.auth.operate.redirectUrl | quote }}
+          - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
+            value: {{ .Values.global.identity.auth.connectors.redirectUrl | quote }}
+          - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: {{ .Values.global.identity.auth.connectors.resourceServerId | quote }}
+          - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
+            value: {{ .Values.global.identity.auth.connectors.permissionScope | quote }}
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}

@@ -12,6 +12,10 @@ identity:
 optimize:
   enabled: false
 
+connectors:
+  enabled: true
+
+
 # Reduce for Zeebe and Gateway the configured replicas and with that the required resources
 # to get it running locally
 zeebe:
