@@ -1,3 +1,5 @@
+# Based on:
+# https://docs.github.com/en/actions/deployment/deploying-to-your-cloud-provider/deploying-to-google-kubernetes-engine
 name: "Test - Integration"
 
 on:
@@ -10,15 +12,17 @@ on:
   workflow_dispatch: { }
 
 env:
-  KUBECTL_VERSION: 'latest'
-  KUBECTX: 'gke_zeebe-io_europe-west1-b_zeebe-cluster'
   GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+  # Keep the test namespace based on the input or if GHA debug mode is enabled.
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG || true }}
+  KUBECONFIG: .github/config/kubeconfig
 
 jobs:
   test:
     name: ${{ matrix.test.name }}
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
@@ -32,32 +36,36 @@ jobs:
           method: "TestServicesEnd2EndWithUpgrade"
         - name: "End2EndWithConfig"
           method: "TestServicesEnd2EndWithConfig"
-    runs-on: ubuntu-latest
-    env:
-      KUBECONFIG: .github/config/kubeconfig
-    # Add "id-token" with the intended permissions.
     permissions:
       contents: 'read'
       id-token: 'write'
     steps:
-    - name: Set var GITHUB_PR_HEAD_SHA_SHORT
-      run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
+    - name: Set test env vars
+      run: |
+        sudo apt install -y pwgen
+        echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
+        # NOTE: We should use the matrix job id var once it's available.
+        # https://github.com/orgs/community/discussions/40291
+        echo "GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)" >> $GITHUB_ENV
     - uses: actions/checkout@v3
-    - id: 'auth'
-      name: 'Authenticate to Google Cloud'
+    # NOTE: We will switch to workload identity when its resource added to Crossplane.
+    # https://github.com/upbound/provider-gcp/issues/66
+    # - name: 'Authenticate to Google Cloud'
+    #   uses: 'google-github-actions/auth@v0'
+    #   with:
+    #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
+    #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
+    - name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
       with:
-        workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/helm-identity-pool/providers/helm-identity-provider'
-        service_account: 'camunda-platform-helm@zeebe-io.iam.gserviceaccount.com'
-    - id: 'get-credentials'
-      name: 'Get GKE credentials'
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    - name: 'Get GKE credentials'
       uses: 'google-github-actions/get-gke-credentials@v0'
       with:
-        cluster_name: 'zeebe-cluster'
-        location: 'europe-west1-b'
+        cluster_name: ${{ secrets.GKE_CLUSTER }}
+        location: ${{ secrets.GKE_ZONE }}
     # The KUBECONFIG env var is automatically exported and picked up by kubectl.
-    - id: 'check-credentials'
-      name: 'Check credentials'
+    - name: 'Check credentials'
       run: 'kubectl auth can-i create deployment'
     - name: Set up Go
       uses: actions/setup-go@v2
@@ -68,4 +76,12 @@ jobs:
     - name: Add helm repos
       run: make helm.repos-add
     - name: Test - ${{ matrix.test.name }}
-      run: make go.test-it GO_TEST_IT_ARGS="-testify.m ${{ matrix.test.method }}"
+      run: make go.test-it GO_TEST_IT_ARGS="-v -testify.m ^${{ matrix.test.method }}$"
+    # This is helpful if the job is canceled and the test didn't tear down its resources.
+    - name: Cleanup test namespace
+      if: ${{ always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE }}
+      run: |
+        kubectl delete ns \
+          --ignore-not-found=true \
+          -l github-run-id=${{ env.GITHUB_WORKFLOW_RUN_ID }} \
+          -l github-job-id=${{ env.GITHUB_WORKFLOW_JOB_ID }}
