@@ -16,15 +16,34 @@ package integration
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/random"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type namespaceSection struct {
 	textVar string
 	prefix  string
+}
+
+func getEnv(key string, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvBool(key string, defaultValue bool) bool {
+	envValue := getEnv(key, strconv.FormatBool(defaultValue))
+	boolValue, err := strconv.ParseBool(envValue)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return boolValue
 }
 
 func namespaceFormatWithEnvVars(nsBase string, nsSections []namespaceSection) string {
@@ -44,7 +63,7 @@ func truncateString(str string, num int) string {
 	return shortenStr
 }
 
-func createNamespaceName() string {
+func createNamespaceObjectMeta() metav1.ObjectMeta {
 	// if triggered by a github action the environment variable is set
 	// we use it to better identify the test
 
@@ -54,9 +73,24 @@ func createNamespaceName() string {
 		{"GITHUB_WORKFLOW_RUN_ID", "run"},
 	}
 	namespace := namespaceFormatWithEnvVars("camunda-platform", namespaceSections)
-	namespace += "-rnd-" + strings.ToLower(random.UniqueId())
+	// In case the tests are running locally not in the CI.
+	namespace += "-sfx-" + getEnv("GITHUB_WORKFLOW_JOB_ID", strings.ToLower(random.UniqueId()))
 
-	// max namespace length is 63 characters
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-	return truncateString(namespace, 63)
+	return metav1.ObjectMeta{
+		// max namespace length is 63 characters
+		// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+		Name: truncateString(namespace, 63),
+		Labels: map[string]string{
+			"github-pr-id":  getEnv("GITHUB_PR_NUMBER", ""),
+			"git-sha-short": getEnv("GITHUB_PR_HEAD_SHA_SHORT", ""),
+			"github-run-id": getEnv("GITHUB_WORKFLOW_RUN_ID", ""),
+			"github-job-id": getEnv("GITHUB_WORKFLOW_JOB_ID", ""),
+		},
+	}
+}
+
+func getIntegrationSuiteOptions() integrationSuiteOptions {
+	return integrationSuiteOptions{
+		deleteNamespace: getEnvBool("CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE", true),
+	}
 }

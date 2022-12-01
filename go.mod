@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
 	k8s.io/apimachinery v0.23.0

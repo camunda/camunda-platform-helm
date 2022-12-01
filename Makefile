@@ -25,12 +25,12 @@ go.test-golden-updated: helm.dependency-update
 # go.test-it: runs the integration tests against the current kube context
 .PHONY: go.test-it
 go.test-it: helm.dependency-update
-	go test -p 1 -timeout 1h -tags integration ./.../integration ${GO_TEST_IT_ARGS}
+	go test -p 1 -timeout 1h -tags integration ./.../integration $(value GO_TEST_IT_ARGS)
 
 # go.it-os: runs a subset of the integration tests against the current Openshift cluster
 .PHONY: go.test-it-os
 go.test-it-os: helm.dependency-update
-	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration ${GO_TEST_IT_OS_ARGS}
+	go test -p 1 -timeout 1h -tags integration,openshift ./.../integration $(value GO_TEST_IT_OS_ARGS)
 
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt
