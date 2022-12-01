@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/stretchr/testify/suite"
 
 	"context"
@@ -244,22 +245,48 @@ func (s *integrationSuite) queryApi(httpClient http.Client, url string, jsonData
 	return buf, nil
 }
 
-func (s *integrationSuite) awaitAllPodsForThisRelease() {
-	// await that all Camunda Platform related pods become ready
-	pods := k8s.ListPods(s.T(), s.kubeOptions, metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + s.release})
-
-	for _, pod := range pods {
-		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 1000, 1*time.Second)
+// waitUntilPodAvailable waits for a list of Pods become ready.
+// The terratest.k8s.WaitUntilPodAvailable doesn't support backoff retires so we implement ours based on
+// the "backoff" lib and other terratest methods.
+func (s *integrationSuite) waitUntilPodAvailable(labelSelector string) {
+	exponentialBackOff := backoff.NewExponentialBackOff()
+	waitUntilPodAvailable := func() error {
+		// This should be inside the retry function to update the Pods list in case one of the pods name changed
+		// after the list retrieval.
+		pods := k8s.ListPods(s.T(), s.kubeOptions, metav1.ListOptions{LabelSelector: labelSelector})
+		for _, pod := range pods {
+			s.T().Log("Pod:", pod.Name)
+			// IsPodAvailable produces some noise in the logs like "Configuring Kubernetes client using config file ..."
+			// Check for details: https://github.com/gruntwork-io/terratest/issues/1049
+			podIsAvailable := k8s.IsPodAvailable(&pod)
+			if !podIsAvailable {
+				s.T().Log("Status: Not Ready")
+				s.T().Log("Total retry time elapsed so far", exponentialBackOff.GetElapsedTime())
+				s.T().Log("Retry again after", exponentialBackOff.NextBackOff())
+				return fmt.Errorf("")
+			}
+			s.T().Logf("Status: Ready")
+		}
+		return nil
 	}
+
+	s.T().Log("Start: Checking Pods with labels:", labelSelector)
+	err := backoff.Retry(waitUntilPodAvailable, exponentialBackOff)
+	if err != nil {
+		s.T().Fatalf("All retires have been exhausted while waiting Pod with labels %s", labelSelector)
+	}
+	s.T().Log("End: All Pods are ready")
+	s.T().Logf("All Pods with label %s were ready after %s", labelSelector, exponentialBackOff.GetElapsedTime())
+}
+
+func (s *integrationSuite) awaitAllPodsForThisRelease() {
+	// await for all Camunda Platform related pods become ready.
+	s.waitUntilPodAvailable("app.kubernetes.io/instance=" + s.release)
 }
 
 func (s *integrationSuite) awaitElasticPods() {
-	// await that all elastic related pods become ready, otherwise operate and tasklist can't answer requests
-	pods := k8s.ListPods(s.T(), s.kubeOptions, metav1.ListOptions{LabelSelector: "release=" + s.release})
-
-	for _, pod := range pods {
-		k8s.WaitUntilPodAvailable(s.T(), s.kubeOptions, pod.Name, 10, 10*time.Second)
-	}
+	// await that all Elasticsearch related pods become ready, otherwise operate and tasklist can't answer requests
+	s.waitUntilPodAvailable("release=" + s.release)
 }
 
 func (s *integrationSuite) assertGatewayTopology(err error, client zbc.Client) {
