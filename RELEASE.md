@@ -21,11 +21,13 @@ transparency so we are using PR release flow with minimal manual interactions.
 When it's time to release, just do the following steps.
 
 Locally, run:
+
 ```
 make release.chores
 ```
 
 This action will:
+
 - Locally pull latest updates to the `main` branch.
 - Locally create a new branch called `release` from `main` branch.
 - Bump chart version and make a commit.

@@ -1,15 +1,15 @@
 ---
 
-name: Bug report
-about: Create a bug report
-title: '[BUG] <issue title>'
-labels: 'kind/bug'
+name: Issue report
+about: Create a issue report
+title: '[ISSUE] <issue title>'
+labels: 'kind/issue'
 
 ---
 
-**Describe the bug:**
+**Describe the issue:**
 
-<!-- A clear and concise description of what the bug is. -->
+<!-- A clear and concise description of what the issue is. -->
 
 **Actual behavior:**
 
@@ -22,7 +22,7 @@ labels: 'kind/bug'
 **How to reproduce:**
 
 <!--
-Steps to reproduce the bug.
+Steps to reproduce the issue.
 
 If possible add a minimal reproducer code sample in a new repo/branch.
 -->
@@ -32,7 +32,10 @@ If possible add a minimal reproducer code sample in a new repo/branch.
 <!-- If possible add the full logs related to the issue. -->
 
 **Environment:**
+
+**Please note: Without the following info, it's hard to resolve the issue and probably it will be closed.**
+
 - Platform: <!-- [e.g. GCP, AWS, etc] -->
 - Helm CLI version: <!-- [e.g. 3.10.0] -->
 - Chart version: <!-- [e.g. 8.x.x] -->
-- Values file: <!-- [e.g. include or link to the used values file] -->
+- Values file: <!-- [e.g. include or link to your values file] -->

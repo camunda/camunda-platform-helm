@@ -1,18 +1,20 @@
 # Contributing
 
- * [Issues and PRs](#issues-and-prs)
- * [Submitting a pull request](#submitting-a-pull-request)
-   + [Helm version](#helm-version)
-   + [Best Practices](#best-practices)
-   + [Commit Guidelines](#commit-guidelines)
-   + [Tests](#tests)
-     - [Unit Tests](#unit-tests)
-       * [Golden Files](#golden-files)
-       * [Properties Test](#properties-test)
-     - [Test License Headers](#test-license-headers)
-   + [Documentation](#documentation)
- * [CI](#ci)
- * [Resources](#resources)
+- [Issues and PRs](#issues-and-prs)
+- [Submitting a pull request](#submitting-a-pull-request)
+  - [Helm version](#helm-version)
+  - [Best Practices](#best-practices)
+  - [Commit Guidelines](#commit-guidelines)
+  - [Tests](#tests)
+    - [Unit Tests](#unit-tests)
+      - [Golden Files](#golden-files)
+      - [Properties Test](#properties-test)
+    - [Test License Headers](#test-license-headers)
+    - [OpenShift](#openshift)
+  - [Documentation](#documentation)
+- [CI](#ci)
+  - [OpenShift](#openshift-1)
+- [Resources](#resources)
 
 [fork]: /fork
 [pr]: /compare
@@ -34,18 +36,18 @@ Please feel free to fork this repository and open a pull request to fix an issue
 
 Make sure that your provided PR's works via:
 
- * `helm lint` to run the linting
- * `make go.fmt` to run the gofmt
- * `make go.addlicense-check` to run the license check
- * `make go.test` to run the go tests
- * `helm install <releasename> chartPath/` to install a Helm release in your K8s cluster (e.g. kind)
+- `helm lint` to run the linting
+- `make go.fmt` to run the gofmt
+- `make go.addlicense-check` to run the license check
+- `make go.test` to run the go tests
+- `helm install <releasename> chartPath/` to install a Helm release in your K8s cluster (e.g. kind)
 
 We have the following expectation on PR's:
 
- * They follow the [best practices](#best-practices)
- * They contain new [tests](#tests) on a bug fix or on adding a new feature
- * They follow the [commit guidelines](#commit-guidelines)
- * The [documentation](#documentation) has been updated, if necessary.
+- They follow the [best practices](#best-practices)
+- They contain new [tests](#tests) on a bug fix or on adding a new feature
+- They follow the [commit guidelines](#commit-guidelines)
+- The [documentation](#documentation) has been updated, if necessary.
 
 ### Helm version
 
@@ -65,8 +67,8 @@ asdf install helm
 
 Make sure you're familiar with some Helm best practices like:
 
- * https://helm.sh/docs/chart_best_practices/
- * https://codersociety.com/blog/articles/helm-best-practices
+- https://helm.sh/docs/chart_best_practices/
+- https://codersociety.com/blog/articles/helm-best-practices
 
 ### Commit Guidelines
 
@@ -82,14 +84,14 @@ Previously no metrics have been exposed because the wrong port was used. This co
 
 Available commit types:
 
-* `feat` - enhancements, new features
-* `fix` - bug fixes
-* `refactor` - non-behavior changes
-* `test` - only changes in tests
-* `docs` - changes in the documentation, readme, etc.
-* `style` - apply code styles
-* `build` - changes to the build (e.g. to Maven's `Chart.yaml`)
-* `ci` - changes to the CI (e.g. to GitHub related configs)
+- `feat` - enhancements, new features
+- `fix` - bug fixes
+- `refactor` - non-behavior changes
+- `test` - only changes in tests
+- `docs` - changes in the documentation, readme, etc.
+- `style` - apply code styles
+- `build` - changes to the build (e.g. to Maven's `Chart.yaml`)
+- `ci` - changes to the CI (e.g. to GitHub related configs)
 
 ### Tests
 
@@ -102,12 +104,12 @@ In order to make sure that the Helm charts work properly and that further develo
 
 We separate our tests in two parts, with different targets and goals.
 
- 1. **Template tests** (unit tests), which verify the general structure. Is it yaml conform, has it the right value/structure if set, does the default values not change or are set at all.
- 2. **Integration tests**, which verify whether I can install the charts and use them. This means, are the manifests accepted by the K8 API and does it work (it can be valid yaml but not accepted by K8). Can the services reach each other and are they working?
+1. **Template tests** (unit tests), which verify the general structure. Is it yaml conform, has it the right value/structure if set, does the default values not change or are set at all.
+2. **Integration tests**, which verify whether I can install the charts and use them. This means, are the manifests accepted by the K8 API and does it work (it can be valid yaml but not accepted by K8). Can the services reach each other and are they working?
 
 **For new contributions it is expected to write new unit tests, but no integration tests.** We keep the count of integration tests to a minimum, and the knowledge for writing them is not expected for contributors.
 
-Tests can be found in the `charts/camunda-platform` directory under `test/`. For each sub-chart we have a sub-directory 
+Tests can be found in the `charts/camunda-platform` directory under `test/`. For each sub-chart we have a sub-directory
 in the `test/` directory. For example [test/zeebe](charts/camunda-platform/test/zeebe).
 
 In order to run the tests, execute `make go.test` on the root repository level.
@@ -140,7 +142,7 @@ Make sure that new go tests contain the apache license headers, otherwise the CI
 
 #### OpenShift
 
-There is a suite of integration tests which directly targets OpenShift in 
+There is a suite of integration tests which directly targets OpenShift in
 [openshift_test.go](/charts/camunda-platform/test/integration/openshift_test.go). It's separate from the normal integration test suite
 as we need a specific base set of values to deploy the chart on OpenShift. This suite should only contain the following:
 
@@ -154,30 +156,29 @@ Everything else should be in either the normal golden file tests, or the other i
 The `values.yaml` file follows Helm best practices https://helm.sh/docs/chart_best_practices/values/
 
 This means:
-  * Variable names should begin with a lowercase letter, and words should be separated with camelcase.
-  * Every defined property in values.yaml should be documented. The documentation string should begin with the name of the property that it describes, and then give at least a one-sentence description
+
+- Variable names should begin with a lowercase letter, and words should be separated with camelcase.
+- Every defined property in values.yaml should be documented. The documentation string should begin with the name of the property that it describes, and then give at least a one-sentence description
 
 Furthermore, we try to apply the following pattern: `# [VarName] [conjunction] [definition]`
 
 _VarName:_
 
-  * In the documentation the variable name is started with a big letter, similar to Kubernetes resource documentation.
-  * If the variable is part of a subsection/object we use a json path expression (to make it more clear where the variable belongs to).
-    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in Helm.
+- In the documentation the variable name is started with a big letter, similar to Kubernetes resource documentation.
+- If the variable is part of a subsection/object we use a json path expression (to make it more clear where the variable belongs to).
+  The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in Helm.
 
 _Conjunction:_
 
-  * [defines] for mandatory configuration
-  * [can be used] for optional configuration
-  * [if true] for toggles
-  * [configuration] for section/group of variables
-
+- [defines] for mandatory configuration
+- [can be used] for optional configuration
+- [if true] for toggles
+- [configuration] for section/group of variables
 
 All variables and the corresponding documentation are reflected in the
 [README](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/README.md).
 Please make sure to update the README as well, if changing or adding new variables. Their exist an
 helper script ([convertValuesDoc.sh](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/convertValuesDoc.sh)) to generate a markdown like structure based on the `.yaml` file documentation.
-
 
 ## CI
 
