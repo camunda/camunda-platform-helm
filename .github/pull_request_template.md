@@ -19,7 +19,7 @@ Please make sure to follow our [Contributing Guide](../blob/main/CONTRIBUTING.md
 
 - [ ] There is no other open [pull request](../pulls) for the same update/change.
 - [ ] The commits follow our [Commit Guidelines](../blob/main/CONTRIBUTING.md#commit-guidelines).
-- [ ] Tests for charts are added.
+- [ ] Tests for charts are added (if needed).
 - [ ] The main Helm chart and sub-chart are updated (if needed).
 - [ ] In-repo [documentation](../blob/main/CONTRIBUTING.md#documentation) are updated (if needed).
 

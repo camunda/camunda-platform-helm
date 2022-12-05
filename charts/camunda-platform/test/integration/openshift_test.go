@@ -73,11 +73,11 @@ func (s *openshiftSuite) TestServicesEnd2End() {
 	options := &helm.Options{
 		KubectlOptions: s.kubeOptions,
 		ValuesFiles: []string{
-			"../../../../openshift/values.yaml",
-			"../../../../openshift/values-patch.yaml",
+			"../../openshift/values.yaml",
+			"../../openshift/values-patch.yaml",
 		},
 		ExtraArgs: map[string][]string{
-			"install": {"--post-renderer", "../../../../openshift/patch.sh"},
+			"install": {"--post-renderer", "../../openshift/patch.sh"},
 		},
 	}
 

@@ -1,7 +1,8 @@
 # Migration
 
-  * [Migrating from zeebe-full-helm](#migrating-from-zeebe-full-helm)
-  * [Migrating from zeebe-cluster-helm](#migrating-from-zeebe-cluster-helm)
+- [Migrating from zeebe-full-helm](#migrating-from-zeebe-full-helm)
+- [Migrating from zeebe-cluster-helm](#migrating-from-zeebe-cluster-helm)
+  - [Example](#example)
 
 ## Migrating from zeebe-full-helm
 
@@ -18,7 +19,8 @@ Some properties have been renamed or removed, but also better documented. Please
 
 **Example:**
 
-_Old:_
+**_Old:_**
+
 ```
 global:
   zeebe: "{{ .Release.Name }}-zeebe"
@@ -32,7 +34,9 @@ zeebe-operate-helm: {}
 
 zeebe-tasklist-helm: {}
 ```
-_New:_
+
+**_New:_**
+
 ```
 global:
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
@@ -55,7 +59,7 @@ properties under the `zeebe` object.
 For more details please check the [README](https://github.com/camunda-community-hub/camunda-platform-helm/blob/main/charts/camunda-platform/README.md),
 which documents all possible values for each chart.
 
-#### Example:
+### Example
 
 **_Old:_**
 
