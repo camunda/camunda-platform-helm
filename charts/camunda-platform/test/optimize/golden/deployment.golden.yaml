@@ -67,7 +67,7 @@ spec:
             value: "optimize-api"
           - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
             value: "optimize-api"
-          - name: CAMUNDA_OPTIMIZE_API_JWTSETURI
+          - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
             value: "http://camunda-platform-tes:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
