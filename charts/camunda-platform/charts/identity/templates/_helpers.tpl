@@ -134,7 +134,7 @@ For more details, please check Camunda Platform Helm chart documentation.
 
 {{/*
 [identity] Get Keycloak URL service name based on global value or Keycloak subchart.
-This is mainly used for cases where the external Keycloak is used.
+This is mainly used to access the external Keycloak service in the global Ingress.
 */}}
 {{- define "identity.keycloak.service" -}}
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
@@ -143,6 +143,18 @@ This is mainly used for cases where the external Keycloak is used.
         {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}
     {{- end -}}
 {{- end -}}
+
+{{/*
+[identity] Get Keycloak URL host based on global value or Keycloak subchart.
+*/}}
+{{- define "identity.keycloak.host" -}}
+    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
+        {{- .Values.global.identity.keycloak.url.host -}}
+    {{- else -}}
+        {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}
+    {{- end -}}
+{{- end -}}
+
 
 {{/*
 [identity] Get Keycloak URL port based on global value or Keycloak subchart.
@@ -171,7 +183,7 @@ This is mainly used for cases where the external Keycloak is used.
     {{-
       printf "%s://%s:%s%s"
         (include "identity.keycloak.protocol" .)
-        (include "identity.keycloak.service" .)
+        (include "identity.keycloak.host" .)
         (include "identity.keycloak.port" .)
         (include "identity.keycloak.contextPath" .)
     -}}

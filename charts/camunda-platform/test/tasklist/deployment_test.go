@@ -638,7 +638,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUr
 	s.Require().Contains(env,
 		corev1.EnvVar{
 			Name:  "CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL",
-			Value: "http://camunda-platform-test-keycloak-custom:80/auth/realms/camunda-platform",
+			Value: "http://keycloak:80/auth/realms/camunda-platform",
 		})
 }
 
