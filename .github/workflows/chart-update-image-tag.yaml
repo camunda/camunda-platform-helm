@@ -38,7 +38,8 @@ jobs:
       - name: Make sure all Docker image tags are available
         run: |
           make helm.repos-add
-          camunda_docker_images="$(helm template charts/camunda-platform --skip-tests | awk '/image:.+camunda/ {gsub(/"/, "", $2); print $2}' | sort | uniq)"
+          camunda_docker_images="$(helm template charts/camunda-platform --skip-tests |
+              awk '/image:.+camunda/ {gsub(/('\''|")/, "", $2); print $2}' | sort | uniq)"
           for image_name in ${camunda_docker_images}; do
               echo -e "\n\nImage: ${image_name}"
               docker pull "${image_name}"
