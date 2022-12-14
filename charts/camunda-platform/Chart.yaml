@@ -68,9 +68,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "use identity theme in keycloak login page"
-    - kind: added
-      description: "support customizing container image registry"
+    - kind: fixed
+      description: "correct optimize spring uri env var name"
     - kind: changed
-      description: "rename ccms-service-monitor to use the release name"
+      description: "use external keycloak host directly"
