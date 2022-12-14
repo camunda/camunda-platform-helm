@@ -3,6 +3,82 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "correct optimize spring uri env var name"
+        - kind: changed
+          description: "use external keycloak host directly"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.1.x
+    created: "2022-12-14T10:59:12.484199466Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.1.3
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.1.3
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.1.3
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.1.3
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.1.3
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.1.3
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: 99c98716e0eabbaf085068075a58d2dba363707615faf7f8a44cc6425ae14ed0
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.1.3/camunda-platform-8.1.3.tgz
+    version: 8.1.3
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "use identity theme in keycloak login page"
         - kind: added
@@ -4380,4 +4456,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-11-28T13:21:56.379131423Z"
+generated: "2022-12-14T10:59:12.484854073Z"
