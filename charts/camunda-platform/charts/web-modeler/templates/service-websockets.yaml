@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "webModeler.websockets.fullname" . }}
+  labels: {{- include "webModeler.websockets.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.websockets.service.annotations}}
+    {{- toYaml .Values.websockets.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.websockets.service.type }}
+  ports:
+  - port: {{ .Values.websockets.service.port }}
+    name: http
+    targetPort: 8060
+    protocol: TCP
+  selector:
+    {{- include "webModeler.websockets.matchLabels" . | nindent 4 }}

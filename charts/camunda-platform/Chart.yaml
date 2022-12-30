@@ -38,6 +38,9 @@ dependencies:
   - name: tasklist
     version: 8.1.4
     condition: "tasklist.enabled"
+  - name: web-modeler
+    version: 8.1.4
+    condition: "web-modeler.enabled"
   - name: zeebe
     version: 8.1.4
     condition: "zeebe.enabled"

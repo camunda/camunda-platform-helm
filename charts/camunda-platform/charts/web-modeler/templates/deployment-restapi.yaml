@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webModeler.restapi.fullname" . }}
+  labels: {{- include "webModeler.restapi.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "webModeler.restapi.labels" . | nindent 8 }}
+      {{- if .Values.restapi.podLabels }}
+      {{- toYaml .Values.restapi.podLabels | nindent 8 }}
+      {{- end }}
+      {{- if .Values.restapi.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.restapi.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}-restapi
+        image: {{ include "webModeler.restapi.image" . | quote }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.restapi.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.restapi.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+          - name: JAVA_OPTIONS
+            value: "-Xmx1536m"
+          - name: RESTAPI_DB_HOST
+            value: {{ include "webModeler.restapi.databaseHost" . | quote }}
+          - name: RESTAPI_DB_PORT
+            value: {{ include "webModeler.restapi.databasePort" . | quote }}
+          - name: RESTAPI_DB_NAME
+            value: {{ include "webModeler.restapi.databaseName" . | quote }}
+          - name: RESTAPI_DB_USER
+            value: {{ include "webModeler.restapi.databaseUser" . | quote }}
+          - name: RESTAPI_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "webModeler.restapi.databaseSecretName" . }}
+                key: {{ include "webModeler.restapi.databaseSecretKey" . }}
+          - name: RESTAPI_MAIL_HOST
+            value: {{ .Values.restapi.mail.smtpHost | quote }}
+          - name: RESTAPI_MAIL_PORT
+            value: {{ .Values.restapi.mail.smtpPort | quote }}
+          {{- if .Values.restapi.mail.smtpUser }}
+          - name: RESTAPI_MAIL_USER
+            value: {{ .Values.restapi.mail.smtpUser | quote }}
+          {{- end }}
+          {{- if .Values.restapi.mail.smtpPassword }}
+          - name: RESTAPI_MAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "webModeler.restapi.fullname" . }}
+                key: smtp-password
+          {{- end }}
+          - name: RESTAPI_MAIL_ENABLE_TLS
+            value: {{ .Values.restapi.mail.smtpTlsEnabled | quote }}
+          - name: RESTAPI_MAIL_FROM_ADDRESS
+            value: {{ .Values.restapi.mail.fromAddress | quote }}
+          - name: RESTAPI_MAIL_FROM_NAME
+            value: {{ .Values.restapi.mail.fromName | quote }}
+          - name: RESTAPI_SERVER_URL
+            value: {{ .Values.global.identity.auth.webModeler.redirectUrl | quote }}
+          - name: RESTAPI_PUSHER_HOST
+            value: {{ include "webModeler.websockets.fullname" . | quote }}
+          - name: RESTAPI_PUSHER_PORT
+            value: {{ .Values.websockets.service.port | quote }}
+          - name: RESTAPI_PUSHER_APP_ID
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "webModeler.fullname" . }}
+                key: pusher-app-id
+          - name: RESTAPI_PUSHER_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "webModeler.fullname" . }}
+                key: pusher-app-key
+          - name: RESTAPI_PUSHER_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "webModeler.fullname" . }}
+                key: pusher-app-secret
+          - name: RESTAPI_OAUTH2_TOKEN_AUDIENCE
+            value: "web-modeler-api"
+          - name: RESTAPI_OAUTH2_TOKEN_ISSUER
+            value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
+          - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
+            # remove the default port 80 in the URL to avoid the following problem when the JWT decoder is created by Spring Security:
+            # > The Issuer "http://demo-keycloak/auth/realms/camunda-platform" provided in the configuration did not match the requested issuer "http://demo-keycloak:80/auth/realms/camunda-platform"
+            value: {{ include "camundaPlatform.issuerBackendUrl" . | replace ":80/" "/" | quote }}
+          - name: RESTAPI_IDENTITY_BASE_URL
+            value: {{ include "webModeler.identityBaseUrl" . | quote }}
+        {{- with .Values.restapi.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        {{- if .Values.restapi.command}}
+        command: {{ .Values.restapi.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.restapi.resources | nindent 10 }}
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        - containerPort: 8091
+          name: http-management
+          protocol: TCP
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.restapi.podSecurityContext }}
+      securityContext: {{- toYaml .Values.restapi.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .Values.restapi.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.restapi.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.restapi.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}

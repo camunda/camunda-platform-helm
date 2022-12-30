@@ -13,7 +13,7 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-  - port: {{ .Values.service.port }}
+  - port: {{ .Values.global.identity.service.port }}
     name: http
     targetPort: 8080
     protocol: TCP

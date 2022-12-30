@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webModeler.webapp.fullname" . }}
+  labels: {{- include "webModeler.webapp.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "webModeler.webapp.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "webModeler.webapp.labels" . | nindent 8 }}
+      {{- if .Values.webapp.podLabels }}
+      {{- toYaml .Values.webapp.podLabels | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webapp.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.webapp.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}-webapp
+        image: {{ include "webModeler.webapp.image" . | quote }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.webapp.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.webapp.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+          - name: NODE_ENV
+            value: "production"
+          - name: NODE_OPTIONS
+            value: "--max-old-space-size=128"
+          - name: HTTP_WORKERS
+            value: "2"
+          - name: REST_API_URL
+            value: {{ printf "http://%s:%d" (include "webModeler.restapi.fullname" .) (int .Values.restapi.service.port) | quote }}
+          - name: REST_MANAGEMENT_API_URL
+            value: {{ printf "http://%s:%d" (include "webModeler.restapi.fullname" .) (int .Values.restapi.service.managementPort) | quote }}
+          - name: SERVER_URL
+            value: {{ .Values.global.identity.auth.webModeler.redirectUrl | quote }}
+          - name: SERVER_HTTPS_ONLY
+            value: {{ hasPrefix "https://" .Values.global.identity.auth.webModeler.redirectUrl | quote }}
+          - name: OAUTH2_CLIENT_ID
+            value: "web-modeler"
+          - name: OAUTH2_TOKEN_AUDIENCE
+            value: "web-modeler"
+          - name: OAUTH2_TOKEN_ISSUER
+            value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
+          - name: KEYCLOAK_BASE_URL
+            value: {{ .Values.global.identity.auth.publicIssuerUrl | trimSuffix "/auth/realms/camunda-platform" | quote }}
+          - name: KEYCLOAK_REALM
+            value: "camunda-platform"
+          - name: KEYCLOAK_JWKS_URL
+            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+          - name: PUSHER_HOST
+            value: {{ include "webModeler.websockets.fullname" . | quote }}
+          - name: PUSHER_PORT
+            value: {{ .Values.websockets.service.port | quote }}
+          - name: PUSHER_APP_ID
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "webModeler.fullname" . }}
+                key: pusher-app-id
+          - name: PUSHER_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "webModeler.fullname" . }}
+                key: pusher-app-key
+          - name: PUSHER_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "webModeler.fullname" . }}
+                key: pusher-app-secret
+          - name: CLIENT_PUSHER_HOST
+            value: {{ .Values.ingress.enabled | ternary .Values.ingress.websockets.host .Values.websockets.publicHost | quote }}
+          - name: CLIENT_PUSHER_PORT
+            {{- if .Values.ingress.enabled }}
+            value: {{ .Values.ingress.websockets.tls.enabled | ternary "443" "80" | quote }}
+            {{- else }}
+            value: {{ .Values.websockets.publicPort | quote }}
+            {{- end }}
+          - name: CLIENT_PUSHER_FORCE_TLS
+            value: {{ (and .Values.ingress.enabled .Values.ingress.websockets.tls.enabled) | quote }}
+          - name: CLIENT_PUSHER_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "webModeler.fullname" . }}
+                key: pusher-app-key
+          - name: IDENTITY_BASE_URL
+            value: {{ include "webModeler.identityBaseUrl" . | quote }}
+        {{- with .Values.webapp.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        {{- if .Values.webapp.command}}
+        command: {{ .Values.webapp.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.webapp.resources | nindent 10 }}
+        ports:
+        - containerPort: 8070
+          name: http
+          protocol: TCP
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.webapp.podSecurityContext }}
+      securityContext: {{- toYaml .Values.webapp.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webapp.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webapp.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webapp.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}

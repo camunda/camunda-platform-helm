@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "webModeler.restapi.fullname" . }}
+  labels: {{- include "webModeler.restapi.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.restapi.service.annotations}}
+    {{- toYaml .Values.restapi.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.restapi.service.type }}
+  ports:
+  - port: {{ .Values.restapi.service.port }}
+    name: http
+    targetPort: 8081
+    protocol: TCP
+  - port: {{ .Values.restapi.service.managementPort }}
+    name: http-management
+    targetPort: 8091
+    protocol: TCP
+  selector:
+    {{- include "webModeler.restapi.matchLabels" . | nindent 4 }}

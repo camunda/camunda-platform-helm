@@ -1,0 +1,50 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "webModeler.fullname" . }}
+  labels: {{ include "webModeler.labels" . | nindent 4 }}
+{{- with .Values.ingress.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.webapp.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "webModeler.webapp.fullname" . }}
+                port:
+                  number: {{ .Values.webapp.service.port }}
+    - host: {{ .Values.ingress.websockets.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "webModeler.websockets.fullname" . }}
+                port:
+                  number: {{ .Values.websockets.service.port }}
+  {{- if or .Values.ingress.webapp.tls.enabled .Values.ingress.websockets.tls.enabled }}
+  tls:
+    {{- if .Values.ingress.webapp.tls.enabled }}
+    - hosts:
+        - {{ .Values.ingress.webapp.host }}
+      {{- if .Values.ingress.webapp.tls.secretName }}
+      secretName: {{ .Values.ingress.webapp.tls.secretName }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.ingress.websockets.tls.enabled }}
+    - hosts:
+        - {{ .Values.ingress.websockets.host }}
+      {{- if .Values.ingress.websockets.tls.secretName }}
+      secretName: {{ .Values.ingress.websockets.tls.secretName }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
