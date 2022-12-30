@@ -46,6 +46,12 @@ spec:
             value: "demo"
           - name: KEYCLOAK_USERS_0_PASSWORD
             value: "demo"
+          - name: KEYCLOAK_USERS_0_EMAIL
+            value: "demo@example.org"
+          - name: KEYCLOAK_USERS_0_FIRST_NAME
+            value: "Demo"
+          - name: KEYCLOAK_USERS_0_LAST_NAME
+            value: "User"
           - name: KEYCLOAK_USERS_0_ROLES_0
             value: "Identity"
           - name: KEYCLOAK_USERS_0_ROLES_1
@@ -75,6 +81,10 @@ spec:
                 key: optimize-secret
           - name: KEYCLOAK_INIT_OPTIMIZE_ROOT_URL
             value: "http://localhost:8083"
+          - name: KEYCLOAK_USERS_0_ROLES_4
+            value: "Web Modeler"
+          - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
+            value: "http://localhost:8084"
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
