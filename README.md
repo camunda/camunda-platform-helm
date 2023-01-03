@@ -1,5 +1,4 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go CI](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/go.yml)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
 
 # Camunda Platform Helm
