@@ -3,7 +3,3 @@ description: Optimize Helm Chart for Kubernetes
 name: optimize
 version: 8.1.3
 icon: https://helm.camunda.io/imgs/camunda.svg
-annotations:
-  artifacthub.io/changes: |
-    - create optimize sub chart
-  artifacthub.io/containsSecurityUpdates: "true"
