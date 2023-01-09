@@ -2,3 +2,4 @@
 Chart.lock
 .idea
 *.tmp
+.DS_Store
