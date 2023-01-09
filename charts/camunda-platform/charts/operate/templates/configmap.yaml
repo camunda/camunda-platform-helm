@@ -42,4 +42,4 @@ data:
 {{ . | toYaml | indent 6 }}
 {{- end }}
     #Spring Boot Actuator endpoints to be exposed
-    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backup
