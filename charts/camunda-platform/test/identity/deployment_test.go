@@ -856,3 +856,69 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 		},
 	)
 }
+
+// readinessProbe is enabled by default so it's tested by golden files.
+
+func (s *deploymentTemplateTest) TestContainerStartupProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.startupProbe.enabled":             "true",
+			"identity.startupProbe.probePath":           "/healthz",
+			"identity.startupProbe.initialDelaySeconds": "5",
+			"identity.startupProbe.periodSeconds":       "10",
+			"identity.startupProbe.successThreshold":    "1",
+			"identity.startupProbe.failureThreshold":    "5",
+			"identity.startupProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
+
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}
+
+func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.livenessProbe.enabled":             "true",
+			"identity.livenessProbe.probePath":           "/healthz",
+			"identity.livenessProbe.initialDelaySeconds": "5",
+			"identity.livenessProbe.periodSeconds":       "10",
+			"identity.livenessProbe.successThreshold":    "1",
+			"identity.livenessProbe.failureThreshold":    "5",
+			"identity.livenessProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
+
+	s.Require().EqualValues("/healthz", probe.HTTPGet.Path)
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}

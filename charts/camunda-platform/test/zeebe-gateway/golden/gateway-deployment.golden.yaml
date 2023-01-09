@@ -80,11 +80,6 @@ spec:
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: "9600"
           volumeMounts:
-          readinessProbe:
-            tcpSocket:
-              port: gateway
-            initialDelaySeconds: 20
-            periodSeconds: 5
           resources:
             limits:
               cpu: 400m
