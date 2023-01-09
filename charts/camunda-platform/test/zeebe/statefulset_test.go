@@ -726,3 +726,69 @@ func (s *statefulSetTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 	pullPolicy := containers[0].ImagePullPolicy
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
 }
+
+// readinessProbe is enabled by default so it's tested by golden files.
+
+func (s *statefulSetTest) TestContainerStartupProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.startupProbe.enabled":             "true",
+			"zeebe.startupProbe.probePath":           "/healthz",
+			"zeebe.startupProbe.initialDelaySeconds": "5",
+			"zeebe.startupProbe.periodSeconds":       "10",
+			"zeebe.startupProbe.successThreshold":    "1",
+			"zeebe.startupProbe.failureThreshold":    "5",
+			"zeebe.startupProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	probe := statefulSet.Spec.Template.Spec.Containers[0].StartupProbe
+
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}
+
+func (s *statefulSetTest) TestContainerLivenessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.livenessProbe.enabled":             "true",
+			"zeebe.livenessProbe.probePath":           "/healthz",
+			"zeebe.livenessProbe.initialDelaySeconds": "5",
+			"zeebe.livenessProbe.periodSeconds":       "10",
+			"zeebe.livenessProbe.successThreshold":    "1",
+			"zeebe.livenessProbe.failureThreshold":    "5",
+			"zeebe.livenessProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	probe := statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe
+
+	s.Require().EqualValues("/healthz", probe.HTTPGet.Path)
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}

@@ -115,8 +115,10 @@ spec:
           httpGet:
             path: /ready
             port: 9600
-          periodSeconds: 10
+          initialDelaySeconds: 30
+          periodSeconds: 30
           successThreshold: 1
+          failureThreshold: 5
           timeoutSeconds: 1
         resources:
           limits:
