@@ -16,7 +16,7 @@ env:
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
   # Keep the test namespace based on the input or if GHA debug mode is enabled.
-  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG || true }}
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
   KUBECONFIG: .github/config/kubeconfig
 
 jobs:
@@ -87,7 +87,7 @@ jobs:
       run: make go.test-it GO_TEST_IT_ARGS="-v -testify.m ^${{ matrix.test.method }}$"
     # This is helpful if the job is canceled and the test didn't tear down its resources.
     - name: Cleanup test namespace
-      if: ${{ always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE }}
+      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
       run: |
         kubectl delete ns \
           --ignore-not-found=true \
