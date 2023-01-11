@@ -144,27 +144,6 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentitySer
 		corev1.EnvVar{Name: "RESTAPI_IDENTITY_BASE_URL", Value: "http://camunda-platform-test-custom-identity:80"})
 }
 
-func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithCustomPort() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"web-modeler.enabled":          "true",
-			"global.identity.service.port": "8888",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{Name: "RESTAPI_IDENTITY_BASE_URL", Value: "http://camunda-platform-test-identity:8888"})
-}
-
 func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
 	// given
 	options := &helm.Options{

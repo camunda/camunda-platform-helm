@@ -22,13 +22,16 @@ dependencies:
   - name: identity
     version: 8.1.4
     condition: "identity.enabled"
-    # NOTE: This is used to share Identity image details with its subchart Keycloak.
-    #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
-    # TODO: Move this to Identity subchart once "export-values" is implemented.
-    #       https://github.com/helm/helm/pull/10804
     import-values:
+      # NOTE: This is used to share Identity image details with its subchart Keycloak.
+      #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
+      # TODO: Move this to Identity subchart once "export-values" is implemented.
+      #       https://github.com/helm/helm/pull/10804
       - child: image
         parent: global.identity.image
+      # NOTE: This is used to share the port of the Identity service with the web-modeler subchart
+      - child: service
+        parent: global.identity.service
   - name: operate
     version: 8.1.4
     condition: "operate.enabled"

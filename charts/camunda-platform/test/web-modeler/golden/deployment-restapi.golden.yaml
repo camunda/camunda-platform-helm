@@ -93,8 +93,9 @@ spec:
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
-            # remove the default port 80 in the URL to avoid the following problem when the JWT decoder is created by Spring Security:
+            # If the default HTTP port 80 is included in the URL, Spring Security will produce the following error when creating the JWT decoder:
             # > The Issuer "http://demo-keycloak/auth/realms/camunda-platform" provided in the configuration did not match the requested issuer "http://demo-keycloak:80/auth/realms/camunda-platform"
+            # Thus, port 80 is removed from the URL. Other port numbers work just fine and don't need to be removed.
             value: "http://camunda-platform-tes/auth/realms/camunda-platform"
           - name: RESTAPI_IDENTITY_BASE_URL
             value: "http://camunda-platform-test-identity:80"

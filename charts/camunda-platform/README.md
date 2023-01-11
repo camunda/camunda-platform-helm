@@ -691,6 +691,11 @@ You can either:
 Web Modeler requires an SMTP server to send (notification) emails to users.
 The SMTP connection can be configured with the values under `restapi.mail`.
 
+#### Ingress
+Running Web Modeler on a context path (like https://example.com/modeler) is not yet supported.
+That is why the [global](#global) Ingress resource does not contain a rule for Web Modeler.
+You can configure a separate Ingress resource for Web Modeler though using the values under `ingress` below.
+
 #### Configuration values
 | Section | Parameter | Description | Default |
 |-|-|-|-|

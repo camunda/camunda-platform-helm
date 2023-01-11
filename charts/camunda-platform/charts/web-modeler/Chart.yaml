@@ -4,10 +4,6 @@ name: web-modeler
 version: 8.1.4
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
-annotations:
-  artifacthub.io/changes: |
-    - create web-modeler sub chart
-  artifacthub.io/containsSecurityUpdates: "false"
 dependencies:
   - name: postgresql
     repository: https://charts.bitnami.com/bitnami

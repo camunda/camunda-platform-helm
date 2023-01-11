@@ -88,11 +88,6 @@ global:
     # Identity.nameOverride can be used to partly override the name of the identity resources (names will still be prefixed with the release name)
     nameOverride: ""
 
-    # Identity.service configuration of the identity service on a global level
-    service:
-      # Identity.service.port defines the port of the service on which the identity application will be available
-      port: 80
-
     keycloak:
       # Identity.keycloak.url can be used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
       url: {}
@@ -1123,6 +1118,8 @@ identity:
     type: ClusterIP
     # Service.annotations can be used to define annotations, which will be applied to the identity service
     annotations: {}
+    # Service.port defines the port of the service on which the identity application will be available
+    port: 80
 
   # PodSecurityContext defines the security options the Identity pod should be run with
   podSecurityContext: {}

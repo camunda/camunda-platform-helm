@@ -30,7 +30,7 @@ spec:
               service:
                 name: {{ template "identity.fullname" .Subcharts.identity }}
                 port:
-                  number: {{ .Values.global.identity.service.port }}
+                  number: {{ .Values.identity.service.port }}
             path: {{ .Values.identity.contextPath }}
             pathType: Prefix
           {{- end }}
