@@ -276,7 +276,7 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `readinessProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
-| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `true` |
+| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
 | | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/health` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -327,7 +327,7 @@ For more information about Zeebe Gateway, visit
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/health` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -335,7 +335,7 @@ For more information about Zeebe Gateway, visit
 | | `readinessProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
-| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `true` |
+| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
 | | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/actuator/health/liveness` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -425,7 +425,7 @@ For more information about Operate, visit
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health/readiness` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -433,7 +433,7 @@ For more information about Operate, visit
 | | `readinessProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
-| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `true` |
+| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
 | | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/ready` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -481,7 +481,7 @@ For more information about Tasklist, visit
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health/readiness` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -489,7 +489,7 @@ For more information about Tasklist, visit
 | | `readinessProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
-| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `true` |
+| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
 | | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/ready` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -549,7 +549,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/api/readyz` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -557,7 +557,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `readinessProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
-| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `true` |
+| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
 | | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/ready` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -634,7 +634,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -642,7 +642,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `readinessProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
-| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `true` |
+| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
 | | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/ready` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
