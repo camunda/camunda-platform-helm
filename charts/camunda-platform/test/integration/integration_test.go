@@ -45,6 +45,7 @@ func (s *integrationSuite) SetupTest() {
 
 	if _, err := k8s.GetNamespaceE(s.T(), s.kubeOptions, s.namespace); err != nil {
 		k8s.CreateNamespaceWithMetadata(s.T(), s.kubeOptions, nsMetadata)
+		k8s.RunKubectl(s.T(), s.kubeOptions, "create", "secret", "generic", "registry-camunda-cloud", "--from-file=.dockerconfigjson="+getEnv("DOCKER_CONFIG_FILE", ""), "--type=kubernetes.io/dockerconfigjson")
 	} else {
 		s.T().Logf("Namespace: %s already exist!", s.namespace)
 	}
