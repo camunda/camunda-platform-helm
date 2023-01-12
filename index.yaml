@@ -1,39 +1,84 @@
 apiVersion: v1
 entries:
-  keycloak:
-  - annotations:
-      category: DeveloperTools
-    apiVersion: v2
-    appVersion: 16.1.1
-    created: "2022-03-18T16:30:04.733789789Z"
-    dependencies:
-      - condition: postgresql.enabled
-        name: postgresql
-        repository: https://charts.bitnami.com/bitnami
-        version: 11.x.x
-      - name: common
-        repository: https://charts.bitnami.com/bitnami
-        tags:
-          - bitnami-common
-        version: 1.x.x
-    description: Keycloak is a high performance Java-based identity and access management solution. It lets developers add an authentication layer to their applications with minimum effort.
-    digest: 8e50bff66c98aace94cf074c6dc1dd9077ff6fe531db00ae2979d12df71d83d6
-    home: https://www.keycloak.org
-    icon: https://bitnami.com/assets/stacks/keycloak/img/keycloak-stack-220x234.png
-    keywords:
-      - keycloak
-      - access-management
-    maintainers:
-      - email: containers@bitnami.com
-        name: Bitnami
-    name: keycloak
-    sources:
-      - https://github.com/bitnami/bitnami-docker-keycloak
-      - https://github.com/keycloak/keycloak
-    urls:
-      - https://charts.bitnami.com/bitnami/keycloak-7.1.6.tgz
-    version: 7.1.6
   camunda-platform:
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: "support startupProbe, readinessProbe, and livenessProbe"
+        - kind: changed
+          description: "add operate default actuator endpoints"
+        - kind: changed
+          description: "add tasklist default actuator endpoints"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.1.x
+    created: "2023-01-12T07:24:45.447826794Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.1.4
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.1.4
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.1.4
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.1.4
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.1.4
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.1.4
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: badc6604718852a1e32077a8870b4d295ae854df30d1650e08dfbd90bc68ae61
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.1.4/camunda-platform-8.1.4.tgz
+    version: 8.1.4
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
@@ -2599,6 +2644,41 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/ccsm-helm-0.0.1/ccsm-helm-0.0.1.tgz
     version: 0.0.1
+  keycloak:
+  - annotations:
+      category: DeveloperTools
+    apiVersion: v2
+    appVersion: 16.1.1
+    created: "2022-03-18T16:30:04.733789789Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      tags:
+      - bitnami-common
+      version: 1.x.x
+    description: Keycloak is a high performance Java-based identity and access management
+      solution. It lets developers add an authentication layer to their applications
+      with minimum effort.
+    digest: 8e50bff66c98aace94cf074c6dc1dd9077ff6fe531db00ae2979d12df71d83d6
+    home: https://www.keycloak.org
+    icon: https://bitnami.com/assets/stacks/keycloak/img/keycloak-stack-220x234.png
+    keywords:
+    - keycloak
+    - access-management
+    maintainers:
+    - email: containers@bitnami.com
+      name: Bitnami
+    name: keycloak
+    sources:
+    - https://github.com/bitnami/bitnami-docker-keycloak
+    - https://github.com/keycloak/keycloak
+    urls:
+    - https://charts.bitnami.com/bitnami/keycloak-7.1.6.tgz
+    version: 7.1.6
   zeebe-cluster-helm:
   - annotations:
       artifacthub.io/changes: |
@@ -4489,4 +4569,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2022-12-14T10:59:12.484854073Z"
+generated: "2023-01-12T07:24:45.448445807Z"
