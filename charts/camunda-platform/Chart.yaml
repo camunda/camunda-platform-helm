@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.1.3
+version: 8.1.4
 appVersion: 8.1.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.1.3
+    version: 8.1.4
     condition: "identity.enabled"
     # NOTE: This is used to share Identity image details with its subchart Keycloak.
     #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.1.3
+    version: 8.1.4
     condition: "operate.enabled"
   - name: optimize
-    version: 8.1.3
+    version: 8.1.4
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.1.3
+    version: 8.1.4
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.1.3
+    version: 8.1.4
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.1.3
+    version: 8.1.4
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
@@ -68,7 +68,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "correct optimize spring uri env var name"
+    - kind: added
+      description: "support startupProbe, readinessProbe, and livenessProbe"
     - kind: changed
-      description: "use external keycloak host directly"
+      description: "add operate default actuator endpoints"
+    - kind: changed
+      description: "add tasklist default actuator endpoints"
