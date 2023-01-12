@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "0.3.0-beta"
+    app.kubernetes.io/version: "0.4.0-beta"
     app.kubernetes.io/component: webapp
   annotations:
     {}
@@ -32,14 +32,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "0.3.0-beta"
+        app.kubernetes.io/version: "0.4.0-beta"
         app.kubernetes.io/component: webapp
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-webapp
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:0.3.0-beta"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:0.4.0-beta"
         imagePullPolicy: IfNotPresent
         env:
           - name: NODE_ENV
@@ -48,10 +48,12 @@ spec:
             value: "--max-old-space-size=128"
           - name: HTTP_WORKERS
             value: "2"
-          - name: REST_API_URL
-            value: "http://camunda-platform-test-web-modeler-restapi:80"
-          - name: REST_MANAGEMENT_API_URL
-            value: "http://camunda-platform-test-web-modeler-restapi:8091"
+          - name: RESTAPI_HOST
+            value: "camunda-platform-test-web-modeler-restapi"
+          - name: RESTAPI_PORT
+            value: "80"
+          - name: RESTAPI_MANAGEMENT_PORT
+            value: "8091"
           - name: SERVER_URL
             value: "http://localhost:8084"
           - name: SERVER_HTTPS_ONLY

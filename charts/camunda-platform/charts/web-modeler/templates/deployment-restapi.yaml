@@ -86,8 +86,6 @@ spec:
               secretKeyRef:
                 name: {{ include "webModeler.fullname" . }}
                 key: pusher-app-secret
-          - name: RESTAPI_OAUTH2_TOKEN_AUDIENCE
-            value: "web-modeler-api"
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER
             value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL

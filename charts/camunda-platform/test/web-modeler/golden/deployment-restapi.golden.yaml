@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "0.3.0-beta"
+    app.kubernetes.io/version: "0.4.0-beta"
     app.kubernetes.io/component: restapi
   annotations:
     {}
@@ -32,14 +32,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "0.3.0-beta"
+        app.kubernetes.io/version: "0.4.0-beta"
         app.kubernetes.io/component: restapi
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-restapi
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:0.3.0-beta"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:0.4.0-beta"
         imagePullPolicy: IfNotPresent
         env:
           - name: JAVA_OPTIONS
@@ -88,8 +88,6 @@ spec:
               secretKeyRef:
                 name: camunda-platform-test-web-modeler
                 key: pusher-app-secret
-          - name: RESTAPI_OAUTH2_TOKEN_AUDIENCE
-            value: "web-modeler-api"
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL

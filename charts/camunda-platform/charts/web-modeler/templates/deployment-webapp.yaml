@@ -35,10 +35,12 @@ spec:
             value: "--max-old-space-size=128"
           - name: HTTP_WORKERS
             value: "2"
-          - name: REST_API_URL
-            value: {{ printf "http://%s:%d" (include "webModeler.restapi.fullname" .) (int .Values.restapi.service.port) | quote }}
-          - name: REST_MANAGEMENT_API_URL
-            value: {{ printf "http://%s:%d" (include "webModeler.restapi.fullname" .) (int .Values.restapi.service.managementPort) | quote }}
+          - name: RESTAPI_HOST
+            value: {{ include "webModeler.restapi.fullname" . | quote }}
+          - name: RESTAPI_PORT
+            value: {{ .Values.restapi.service.port | quote }}
+          - name: RESTAPI_MANAGEMENT_PORT
+            value: {{ .Values.restapi.service.managementPort | quote }}
           - name: SERVER_URL
             value: {{ .Values.global.identity.auth.webModeler.redirectUrl | quote }}
           - name: SERVER_HTTPS_ONLY
