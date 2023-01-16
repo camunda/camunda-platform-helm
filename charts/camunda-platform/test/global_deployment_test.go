@@ -116,6 +116,23 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 	s.Require().NotContains(output, "charts/identity")
 }
 
+func (s *deploymentTemplateTest) TestContainerShouldNotRenderWebModelerIfDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	s.Require().NotContains(output, "charts/web-modeler")
+}
+
 func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	// given
 	options := &helm.Options{

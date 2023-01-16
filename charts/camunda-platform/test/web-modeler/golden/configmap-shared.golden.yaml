@@ -1,0 +1,18 @@
+---
+# Source: camunda-platform/charts/web-modeler/templates/configmap-shared.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-web-modeler
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "0.4.0-beta"
+    app.kubernetes.io/component: web-modeler
+  annotations:
+    {}
+data:
+  pusher-app-id: web-modeler

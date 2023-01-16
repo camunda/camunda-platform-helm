@@ -103,6 +103,7 @@ helm.repos-add:
 helm.dependency-update:
 	helm dependency update $(chartPath)
 	helm dependency update $(chartPath)/charts/identity
+	helm dependency update $(chartPath)/charts/web-modeler
 
 # helm.install: install the local chart into the current kubernetes cluster/namespace
 .PHONY: helm.install

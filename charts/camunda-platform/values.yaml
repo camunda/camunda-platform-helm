@@ -83,6 +83,11 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
+    # Identity.fullnameOverride can be used to override the full name of the identity resources
+    fullnameOverride: ""
+    # Identity.nameOverride can be used to partly override the name of the identity resources (names will still be prefixed with the release name)
+    nameOverride: ""
+
     keycloak:
       # Identity.keycloak.url can be used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
       url: {}
@@ -111,8 +116,8 @@ global:
       enabled: true
 
       # Identity.auth.publicIssuerUrl defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
-      # Should be public accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
-      # Can be overwritten if, ingress is in use and an external IP is available.
+      # Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
+      # Can be overwritten if ingress is in use and an external IP is available.
       publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
 
       # Identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
@@ -121,8 +126,8 @@ global:
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the Identity-Operate communication.
         existingSecret:
         # Identity.auth.operate.redirectUrl defines the redirect URL, which is used by Keycloak to access Operate.
-        # Should be public accessible, the default value works if port-forward to Operate is created to 8081.
-        # Can be overwritten if, ingress is in use and an external IP is available.
+        # Should be publicly accessible, the default value works if a port-forward to Operate is created to 8081.
+        # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8081"
 
       # Identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
@@ -131,8 +136,8 @@ global:
         # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the Identity-Tasklist communication.
         existingSecret:
         # Identity.auth.tasklist.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be public accessible, the default value works if port-forward to Tasklist is created to 8082.
-        # Can be overwritten if, ingress is in use and an external IP is available.
+        # Should be publicly accessible, the default value works if a port-forward to Tasklist is created to 8082.
+        # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8082"
 
       # Identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other sub-charts
@@ -141,9 +146,16 @@ global:
         # The existing secret should contain an `optimize-secret` field, which will be used as secret for the Identity-Optimize communication.
         existingSecret:
         # Identity.auth.optimize.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Optimize.
-        # Should be public accessible, the default value works if port-forward to Optimize is created to 8082.
-        # Can be overwritten if, ingress is in use and an external IP is available.
+        # Should be publicly accessible, the default value works if a port-forward to Optimize is created to 8083.
+        # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8083"
+
+      # Identity.auth.webModeler configuration to configure Web Modeler authentication specifics on global level, which can be accessed by other sub-charts
+      webModeler:
+        # Identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
+        # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8084.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8084"
 
 # Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
@@ -1054,8 +1066,11 @@ prometheusServiceMonitor:
 identity:
   # Enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: Identity is required by Optimize. If Identity is disabled, then Optimize will be unusable.
-  #       If you don't need Optimize, then make sure to disable both: set global.identity.auth.enabled=false AND optimize.enabled=false.
+  # Note: Identity is required by Optimize and Web Modeler. If Identity is disabled, both Optimize and Web Modeler will be unusable.
+  #       If you need neither Optimize nor Web Modeler, make sure to disable both the Identity authentication and the applications by setting:
+  #         global.identity.auth.enabled=false
+  #         optimize.enabled=false
+  #         web-modeler.enabled=false
   enabled: true
 
   # FirstUser configuration to configure properties of the first Identity user, which can be used to access all
@@ -1065,6 +1080,12 @@ identity:
     username: demo
     # FirstUser.password defines the password of the first user, needed to log in into the web applications
     password: demo
+    # FirstUser.email defines the email address of the first user; a valid email address is required to use Web Modeler
+    email: demo@example.org
+    # FirstUser.firstName defines the first name of the first user; a name is required to use Web Modeler
+    firstName: Demo
+    # FirstUser.lastName defines the last name of the first user; a name is required to use Web Modeler
+    lastName: User
 
   # Image configuration to configure the identity image specifics
   image:
@@ -1095,10 +1116,10 @@ identity:
   service:
     # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    # Service.port defines the port of the service, where the identity web application will be available
-    port: 80
     # Service.annotations can be used to define annotations, which will be applied to the identity service
     annotations: {}
+    # Service.port defines the port of the service on which the identity application will be available
+    port: 80
 
   # PodSecurityContext defines the security options the Identity pod should be run with
   podSecurityContext: {}
@@ -1288,6 +1309,270 @@ identity:
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: ""
+
+# Web-Modeler configuration of the Web Modeler subchart
+web-modeler:
+  # Enabled if true, the Web Modeler deployment and its related resources are deployed via a helm release
+  enabled: false
+
+  # Image configuration of the Web Modeler Docker images
+  image:
+    # Image.registry can be used to set the Docker registry for the Web Modeler images (overwrites global.image.registry)
+    # Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry.
+    registry: registry.camunda.cloud
+    # Image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
+    tag: 0.4.0-beta
+    # Image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
+    #
+    # Example:
+    #
+    # pullSecrets:
+    #   - name: registry-secret
+    pullSecrets: []
+
+  # Restapi configuration of the Web Modeler restapi component
+  restapi:
+    # Restapi.image configuration of the restapi Docker image
+    image:
+      # Restapi.image.repository defines which image repository to use for the restapi Docker image
+      repository: web-modeler-ee/modeler-restapi
+
+    # Restapi.externalDatabase can be used to configure a connection to an external database. This will only be applied
+    # if the postgresql dependency chart is disabled (by setting postgresql.enabled to false).
+    # Note: Currently, the only supported database system is PostgreSQL.
+    externalDatabase:
+      # Restapi.externalDatabase.host defines the host name of the database instance
+      host: ""
+      # Restapi.externalDatabase.port defines the port number of the database instance
+      port: 5432
+      # Restapi.externalDatabase.database defines the database name
+      database: ""
+      # Restapi.externalDatabase.user defines the database user
+      user: ""
+      # Restapi.externalDatabase.password defines the database user's password
+      password: ""
+
+    # Restapi.mail configuration for emails sent by Web Modeler
+    mail:
+      # Restapi.mail.smtpHost defines the host name of the SMTP server to be used by Web Modeler
+      smtpHost: ""
+      # Restapi.mail.smtpPort defines the port number of the SMTP server
+      smtpPort: 587
+      # Restapi.mail.smtpUser can be used to provide a user for the SMTP server
+      smtpUser: ""
+      # Restapi.mail.smtpPassword can be used to provide a password for the SMTP server
+      smtpPassword: ""
+      # Restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
+      smtpTlsEnabled: true
+      # Restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by Web Modeler
+      fromAddress: ""
+      # Restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by Web Modeler
+      fromName: "Camunda Platform"
+
+    # Restapi.podAnnotations can be used to define extra restapi pod annotations
+    podAnnotations: {}
+    # Restapi.podLabels can be used to define extra restapi pod labels
+    podLabels: {}
+
+    # Restapi.env can be used to set extra environment variables in each restapi container
+    env: []
+    # Restapi.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+    command: []
+
+    # Restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
+    podSecurityContext: {}
+    # Restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
+    containerSecurityContext: {}
+
+    # Restapi.nodeSelector can be used to select the nodes the restapi pods should run on
+    nodeSelector: {}
+    # Restapi.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+    tolerations: []
+    # Restapi.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    affinity: {}
+
+    # Restapi.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+    # Restapi.service configuration of the Web Modeler restapi service
+    service:
+      # Restapi.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
+      # Restapi.service.port defines the default port of the service
+      port: 80
+      # Restapi.service.managementPort defines the management port of the service
+      managementPort: 8091
+      # Restapi.service.annotations can be used to define annotations which will be applied to the service
+      annotations: {}
+
+  # Webapp configuration of the Web Modeler webapp component
+  webapp:
+    # Webapp.image configuration of the webapp Docker image
+    image:
+      # Webapp.image.repository defines which image repository to use for the webapp Docker image
+      repository: web-modeler-ee/modeler-webapp
+
+    # Webapp.podAnnotations can be used to define extra webapp pod annotations
+    podAnnotations: {}
+    # Webapp.podLabels can be used to define extra webapp pod labels
+    podLabels: {}
+
+    # Webapp.env can be used to set extra environment variables in each webapp container
+    env: []
+    # Webapp.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+    command: []
+
+    # Webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
+    podSecurityContext: {}
+    # Webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
+    containerSecurityContext: {}
+
+    # Webapp.nodeSelector can be used to select the nodes the webapp pods should run on
+    nodeSelector: {}
+    # Webapp.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+    tolerations: []
+    # Webapp.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    affinity: {}
+
+    # Webapp.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+    resources:
+      requests:
+        cpu: 400m
+        memory: 256Mi
+      limits:
+        cpu: 800m
+        memory: 512Mi
+
+    # Webapp.service configuration of the Web Modeler webapp service
+    service:
+      # Webapp.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
+      # Webapp.service.port defines the port of the service
+      port: 80
+      # Webapp.service.annotations can be used to define annotations which will be applied to the service
+      annotations: {}
+
+  # Websockets configuration of the Web Modeler websockets component
+  websockets:
+    # Websockets.image configuration of the websockets Docker image
+    image:
+      # Websockets.image.repository defines which image repository to use for the websockets Docker image
+      repository: web-modeler-ee/modeler-websockets
+
+    # Websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser.
+    # The default value assumes that a port-forwarding to the websockets service has been created.
+    # Note: The host will only be used if the Ingress resource for Web Modeler is disabled.
+    publicHost: localhost
+    # Websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the Web Modeler client in the browser.
+    # The default value assumes that a port-forwarding to the websockets service on port 8085 has been created.
+    # Note: The port will only be used if the Ingress resource for Web Modeler is disabled.
+    publicPort: 8085
+
+    # Websockets.podAnnotations can be used to define extra websockets pod annotations
+    podAnnotations: {}
+    # Websockets.podLabels can be used to define extra websockets pod labels
+    podLabels: {}
+
+    # Websockets.env can be used to set extra environment variables in each websockets container
+    env: []
+    # Websockets.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+    command: []
+
+    # Websockets.podSecurityContext can be used to define the security options the websockets pod should be run with
+    podSecurityContext: {}
+    # Websockets.containerSecurityContext can be used to define the security options the websockets container should be run with
+    containerSecurityContext: {}
+
+    # Websockets.nodeSelector can be used to select the nodes the websockets pods should run on
+    nodeSelector: {}
+    # Websockets.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+    tolerations: []
+    # Websockets.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    affinity: {}
+
+    # Websockets.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+    # Websockets.service configuration of the Web Modeler websockets service
+    service:
+      # Websockets.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
+      # Websockets.service.port defines the port of the service
+      port: 80
+      # Websockets.service.annotations can be used to define annotations which will be applied to the service
+      annotations: {}
+
+  # ServiceAccount configuration for the service account the Web Modeler pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the Web Modeler service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the Web Modeler service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the Web Modeler service account
+    annotations: {}
+
+  # Ingress configuration of the Web Modeler ingress resource
+  ingress:
+    # Ingress.enabled if true, an Ingress resource will be deployed with the Web Modeler deployment. Only useful if an Ingress controller like NGINX is available.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.webapp configuration of the webapp ingress
+    webapp:
+      # Ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the Web Modeler web application will be available
+      # Note: the value must be different from ingress.websockets.host
+      host: ""
+      # Ingress.webapp.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      tls:
+        # Ingress.webapp.tls.enabled if true, TLS will be configured on the ingress resource
+        enabled: false
+        # Ingress.webapp.tls.secretName defines the secret name which contains the TLS private key and certificate
+        secretName: ""
+    # Ingress.websockets configuration of the websockets ingress
+    websockets:
+      # Ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the Web Modeler client in the browser will use to connect to the WebSockets server
+      # Note: the value must be different from ingress.webapp.host
+      host: ""
+      # Ingress.websockets.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      tls:
+        # Ingress.websockets.tls.enabled if true, TLS will be configured on the ingress resource
+        enabled: false
+        # Ingress.websockets.tls.secretName defines the secret name which contains the TLS private key and certificate
+        secretName: ""
+
+  # Postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
+  postgresql:
+    # Postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
+    # Note: if set to false, a connection to an external database must be configured instead (see Restapi.externalDatabase)
+    enabled: true
+    # Postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
+    # Note: Must be different from the default value "postgresql" which is already used for Keycloak's database
+    nameOverride: postgresql-web-modeler
+    # Postgresql.auth configuration of the database authentication
+    auth:
+      # Postgresql.auth.username defines the name of the database user to be created for Web Modeler
+      username: web-modeler
+      # Postgresql.auth.password defines the database user's password; a random password will be generated if left empty
+      password: ""
+      # Postgresql.auth.database defines the name of the database to be created for Web Modeler
+      database: web-modeler
 
 elasticsearch:
   enabled: true
