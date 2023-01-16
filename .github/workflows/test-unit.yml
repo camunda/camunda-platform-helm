@@ -18,10 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.17
+    - name: Install env dependencies
+      uses: asdf-vm/actions/install@v1
     - uses: actions/cache@v3
       with:
         path: |
@@ -33,11 +31,11 @@ jobs:
     - name: Format
       run: make go.fmt
     - name: Install License Tool
-      run: make go.addlicense-install
+      run: |
+        make go.addlicense-install
+        asdf reshim golang
     - name: Check License
       run: make go.addlicense-check
-    - name: Install Helm
-      uses: asdf-vm/actions/install@v1
     - name: Add helm repos
       run: make helm.repos-add
     - name: Get Helm dependency
