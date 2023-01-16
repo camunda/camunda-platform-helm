@@ -33,8 +33,16 @@ jobs:
     - name: Set var GITHUB_PR_HEAD_SHA_SHORT
       run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
     - uses: actions/checkout@v3
-    - name: Install Helm
+    - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
     - name: Install Openshift client (oc)
       uses: redhat-actions/openshift-tools-installer@v1
       with:
@@ -48,18 +56,6 @@ jobs:
     # checking service availability (done via terratest, so we cannot change that)
     - name: 'Verify Permissions'
       run: 'oc auth can-i create projectrequests && oc auth can-i list nodes'
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.17
-    - uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
     - name: Add helm repos
       run: make helm.repos-add
     - name: Test - ${{ matrix.test.name }}
