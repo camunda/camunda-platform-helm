@@ -21,10 +21,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          # Needed to trigger other workflows from the bot PR. More details:
-          # https://github.com/peter-evans/create-pull-request/blob/af7c021/docs/concepts-guidelines.md#triggering-further-workflow-runs
-          ssh-key: ${{ secrets.GH_WORKFLOW_SSH_KEY_PRIVATE }}
           fetch-depth: 0
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@v1
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
       - name: Install Helm
         uses: asdf-vm/actions/install@v1
       - name: Set images vars
@@ -58,6 +61,7 @@ jobs:
       - name: Create pull request with the changes
         uses: peter-evans/create-pull-request@v4
         with:
+          token: ${{ steps.generate-github-token.outputs.token }}
           branch: chart-update-image-tag
           commit-message: "Update Camunda Platform image tag to ${{ env.CHANGED_VERSIONS_TITLE }}"
           title: "[BOT] Update Camunda Platform image tag to ${{ env.CHANGED_VERSIONS_TITLE }}"
