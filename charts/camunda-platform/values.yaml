@@ -763,7 +763,8 @@ connectors:
   camunda:
     operate:
       client:
-        type: "oauth" # none, credentials, oauth
+        # none, credentials, oauth
+        type: "oauth"
         url: "http://{{ .Release.Name }}-operate:80"
         username: "demo"
         password: "demo"
