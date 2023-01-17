@@ -608,7 +608,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `image.tag` |   Can be set to overwrite the global.image.tag | |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `fullURL` |  Can be used when Ingress is configured (for both multi and single domain setup). <br/> Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the fullURL too. | |
-| | `contextPath` |  Can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. **Note:** Identity cannot be accessed over HTTP if a sub-path is configured. i.e. the value of "fullURL" should use HTTPS protocol when "contextPath" is not set to "/". However, if the combined Ingress is used without HTTPS (e.g. for test/development proposes), then set `contextPath: "/"` to access Identity over HTTP. | `` |
+| | `contextPath` |  Can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. **Note:** Identity cannot be accessed over HTTP if a "contextPath" is configured. Which means that Identity cannot be configured in combined Ingress without HTTPS. To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath". | `` |
 | | `podAnnotations` | Can be used to define extra Identity pod annotations | `{ }` |
 | | `service` |  Configuration to configure the Identity service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
