@@ -25,7 +25,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/api/policy/v1beta1"
+	"k8s.io/api/policy/v1"
 )
 
 func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
@@ -78,7 +78,7 @@ func (s *podDisruptionBudgetTest) TestContainerMinAvailableMutualExclusiveWithMa
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var podDisruptionBudget v1beta1.PodDisruptionBudget
+	var podDisruptionBudget v1.PodDisruptionBudget
 	helm.UnmarshalK8SYaml(s.T(), output, &podDisruptionBudget)
 
 	// then
