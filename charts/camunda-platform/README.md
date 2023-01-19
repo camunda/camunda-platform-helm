@@ -5,9 +5,13 @@
 [![Camunda Platform 8](https://img.shields.io/badge/dynamic/yaml?label=Camunda%20Platform&query=version&url=https%3A%2F%2Fraw.githubusercontent.com%2Fcamunda%2Fcamunda-platform-helm%2Fmain%2Fcharts%2Fcamunda-platform%2FChart.yaml?style=plastic&logo=artifacthub&logoColor=white&labelColor=417598&color=2D4857)](https://artifacthub.io/packages/helm/camunda/camunda-platform)
 
 - [Architecture](#architecture)
+- [Versioning](#versioning)
 - [Requirements](#requirements)
 - [Dependencies](#dependencies)
 - [Installation](#installation)
+  - [Local Kubernetes](#local-kubernetes)
+  - [OpenShift](#openshift)
+- [Uninstalling Charts](#uninstalling-charts)
 - [Configuration](#configuration)
   - [Global](#global)
   - [Camunda Platform](#camunda-platform)
@@ -34,6 +38,15 @@
     width="80%"
   />
 </p>
+
+## Versioning
+
+Camunda Platform 8 **Helm chart** versions are only aligned with the minor version of [Camunda Platform 8](https://github.com/camunda/camunda-platform).
+In other words, the `Camunda Platform 8 Helm chart` could have a patch version different from the `Camunda Platform 8`.
+
+For example, the Camunda Platform 8 Helm chart could be on version `8.1.1`, but Camunda Platform 8 apps are on version `8.1.0`. Additionally, the Camunda Platform 8 Helm chart could be on version `8.1.1`, but Camunda Platform 8 apps are on version `8.1.2`.
+
+We work to keep the Helm chart updated with the latest version of Camunda Platform 8, but currently this is not guaranteed. Note that the latest version of the Helm chart may not necessarily have the latest version of the Camunda Platform 8 apps. This should not be an issue unless you rely on a specific Camunda Platform 8 patch version. In that case, you can set the desired version via a custom values file.
 
 ## Requirements
 
