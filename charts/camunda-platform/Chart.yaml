@@ -75,8 +75,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "support startupProbe, readinessProbe, and livenessProbe"
+      description: "add new subchart for Web Modeler"
+    - kind: added
+      description: "add details about c8 helm chart versioning"
     - kind: changed
-      description: "add operate default actuator endpoints"
-    - kind: changed
-      description: "add tasklist default actuator endpoints"
+      description: "correct info about accessing Identity over HTTP"
