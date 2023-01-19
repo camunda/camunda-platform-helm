@@ -5,6 +5,11 @@ zeebe-gateway:
     - name: "init-container"
       image: "busybox:1.28"
       command: ["sh", "-c" , "echo", "Hello World!"]
+  podDisruptionBudget:
+    enabled: true
+
+retentionPolicy:
+  enabled: true
 
 web-modeler:
   # the Web Modeler subchart is disabled by default
