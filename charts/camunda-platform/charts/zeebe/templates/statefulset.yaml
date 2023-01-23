@@ -85,6 +85,8 @@ spec:
           value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
           value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
+          value: {{ .Values.global.elasticsearch.prefix | quote }}
         {{- end }}
         - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
           value: {{ .Values.service.commandPort  | quote }}
