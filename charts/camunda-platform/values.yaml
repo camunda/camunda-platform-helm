@@ -68,6 +68,8 @@ global:
     disableExporter: false
     # Elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
     url:
+    # Elasticsearch.protocol defines the elasticsearch access protocol, by default HTTP.
+    protocol: http
     # Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
     host: "elasticsearch-master"
     # Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed

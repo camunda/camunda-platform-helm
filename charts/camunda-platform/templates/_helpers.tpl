@@ -105,3 +105,15 @@ Subcharts can not access values from other sub-charts or the parent, global only
         http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80{{- include "identity.keycloak.contextPath" . -}}{{ $keycloakRealmPath }}
     {{- end -}}
 {{- end -}}
+
+{{/*
+Elasticsearch URL which could be external.
+*/}}
+
+{{- define "camundaPlatform.elasticsearchURL" -}}
+    {{- if .Values.global.elasticsearch.url -}}
+        {{- .Values.global.elasticsearch.url -}}
+    {{- else -}}
+        {{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
+    {{- end -}}
+{{- end -}}

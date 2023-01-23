@@ -83,13 +83,8 @@ spec:
         {{- if not .Values.global.elasticsearch.disableExporter }}
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
           value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-        {{- if .Values.global.elasticsearch.url }}
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-          value: {{ .Values.global.elasticsearch.url | quote }}
-        {{- else }}
-        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-          value: "http://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}"
-        {{- end }}
+          value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         {{- end }}
         - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
           value: {{ .Values.service.commandPort  | quote }}
