@@ -1,0 +1,4 @@
+global:
+  identity:
+    keycloak:
+      legacy: false

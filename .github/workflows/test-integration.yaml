@@ -41,6 +41,9 @@ jobs:
           method: "TestServicesEnd2EndWithUpgrade"
         - name: "End2EndWithConfig"
           method: "TestServicesEnd2EndWithConfig"
+          dockerLogin: true
+        - name: "End2EndWithKeycloakV19"
+          method: "TestServicesEnd2EndWithKeycloakV19"
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -73,7 +76,8 @@ jobs:
     - name: 'Check credentials'
       run: 'kubectl auth can-i create deployment'
     # Log in to Camunda's Docker registry to be able to pull the Web Modeler Docker images
-    - name: Log in to Camunda Docker registry
+    - name: Log into Camunda Docker registry
+      if: ${{ matrix.test.dockerLogin }}
       uses: docker/login-action@v2
       with:
         registry: registry.camunda.cloud

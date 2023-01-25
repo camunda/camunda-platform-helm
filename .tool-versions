@@ -1,4 +1,4 @@
 helm 3.9.3
 # The kubectl version depends on the K8s CI cluster version
 kubectl 1.25.5
-golang 1.17
+golang 1.19

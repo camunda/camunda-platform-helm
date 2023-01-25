@@ -32,9 +32,10 @@ func TestIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &integrationSuite{
-		chartPath: chartPath,
-		release:   "camunda-platform-it",
-		options:   getIntegrationSuiteOptions(),
+		chartPath:      chartPath,
+		release:        "camunda-platform-it",
+		options:        getIntegrationSuiteOptions(),
+		keycloakLegacy: true,
 	})
 }
 
@@ -149,6 +150,31 @@ func (s *integrationSuite) TestServicesEnd2EndWithConfig() {
 
 	// This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
 	k8s.RunKubectl(s.T(), s.kubeOptions, "create", "secret", "generic", "registry-camunda-cloud", "--from-file=.dockerconfigjson="+getEnv("DOCKER_CONFIG_FILE", ""), "--type=kubernetes.io/dockerconfigjson")
+
+	// when
+	if _, err := k8s.GetPodE(s.T(), s.kubeOptions, s.release+"-zeebe-0"); err != nil {
+		helm.Install(s.T(), options, s.chartPath, s.release)
+	}
+
+	// then
+	s.awaitAllPodsForThisRelease()
+	s.createProcessInstance()
+
+	s.awaitElasticPods()
+	s.tryTologinToIdentity()
+	s.assertProcessDefinitionFromOperate()
+	s.assertTasksFromTasklist()
+}
+
+func (s *integrationSuite) TestServicesEnd2EndWithKeycloakV19() {
+	s.keycloakLegacy = false
+	s.updateIdentityChartWithKeycloakV19()
+
+	// given
+	options := &helm.Options{
+		ValuesFiles:    []string{"values-keycloak-v19.yaml"},
+		KubectlOptions: s.kubeOptions,
+	}
 
 	// when
 	if _, err := k8s.GetPodE(s.T(), s.kubeOptions, s.release+"-zeebe-0"); err != nil {

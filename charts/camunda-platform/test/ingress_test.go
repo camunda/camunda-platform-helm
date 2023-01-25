@@ -93,20 +93,21 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 	s.Require().Equal("/custom", path.Path)
 	s.Require().Equal("camunda-platform-tes", path.Backend.Service.Name)
 
-	// when
-	extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
-	stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
+	// TODO: Enabled this when we use Keycloak v19 as default version.
+	// // when
+	// extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
+	// stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
 
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), stsOutput, &statefulSet)
+	// var statefulSet appsv1.StatefulSet
+	// helm.UnmarshalK8SYaml(s.T(), stsOutput, &statefulSet)
 
-	// then
-	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
-			Value: "/custom",
-		})
+	// // then
+	// env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	// s.Require().Contains(env,
+	// 	corev1.EnvVar{
+	// 		Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
+	// 		Value: "/custom",
+	// 	})
 }
 
 func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {

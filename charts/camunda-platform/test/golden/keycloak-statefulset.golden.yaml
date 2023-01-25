@@ -92,8 +92,6 @@ spec:
                   key: password
             - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
               value: 'false'
-            - name: KEYCLOAK_HTTP_RELATIVE_PATH
-              value: '/auth'
           envFrom:
             - configMapRef:
                 name: camunda-platform-tes-env-vars
