@@ -92,22 +92,48 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 {{- end -}}
 
 {{/*
-Keycloak service name should be a max of 20 char since the Keycloak Bitnami Chart is using Wildfly, the node identifier in WildFly is limited to 23 characters.
-Furthermore, this allows changing the referenced Keycloak name inside the sub-charts.
-Subcharts can not access values from other sub-charts or the parent, global only. This is the reason why we have a global value to specify the Keycloak full name.
+[camunda-platform] Keycloak default URL.
 */}}
 
-{{- define "camundaPlatform.issuerBackendUrl" -}}
-    {{- $keycloakRealmPath := "/realms/camunda-platform" -}}
+{{- define "camundaPlatform.keycloakDefaultHost" -}}
+    {{- $keycloakDefaultHost := include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) -}}
+
+    {{/*
+    Keycloak service name should be a max of 20 char for Keycloak <= v16 which uses Wildfly,
+    the node identifier in WildFly is limited to 23 characters.
+    Furthermore, this allows changing the referenced Keycloak name inside the sub-charts.
+    Subcharts can not access values from other sub-charts or the parent, global only.
+    This is the reason why we have a global value to specify the Keycloak full name.
+    */}}
+    {{- if .Values.global.identity.keycloak.legacy -}}
+        {{- $keycloakDefaultHost = $keycloakDefaultHost | trunc 20 | trimSuffix "-" -}}
+    {{- end -}}
+
+    {{- $keycloakDefaultHost -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Keycloak URL which could be external.
+*/}}
+
+{{- define "camundaPlatform.keycloakURL" -}}
     {{- if .Values.global.identity.keycloak.url -}}
-        {{- include "identity.keycloak.url" . -}}{{- $keycloakRealmPath -}}
+        {{- include "identity.keycloak.url" . -}}
     {{- else -}}
-        http://{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}:80{{- include "identity.keycloak.contextPath" . -}}{{ $keycloakRealmPath }}
+        http://{{- include "camundaPlatform.keycloakDefaultHost" . -}}:80{{- include "identity.keycloak.contextPath" . -}}
     {{- end -}}
 {{- end -}}
 
 {{/*
-Elasticsearch URL which could be external.
+[camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
+*/}}
+
+{{- define "camundaPlatform.issuerBackendUrl" -}}
+    {{- include "camundaPlatform.keycloakURL" . -}}{{- .Values.global.identity.keycloak.realm -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Elasticsearch URL which could be external.
 */}}
 
 {{- define "camundaPlatform.elasticsearchURL" -}}

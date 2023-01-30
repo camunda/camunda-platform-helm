@@ -43,8 +43,9 @@ func TestOpenShift(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &openshiftSuite{integrationSuite{
-		chartPath: chartPath,
-		release:   "camunda-platform-it",
+		chartPath:      chartPath,
+		release:        "camunda-platform-it",
+		keycloakLegacy: true,
 	}, oc})
 }
 
@@ -93,6 +94,36 @@ func (s *openshiftSuite) TestServicesEnd2End() {
 	s.assertProcessDefinitionFromOperate()
 	s.assertTasksFromTasklist()
 	s.tryToLoginToOptimize()
+}
+
+func (s *integrationSuite) TestServicesEnd2EndWithKeycloakV19() {
+	s.keycloakLegacy = false
+	s.updateIdentityChartWithKeycloakV19()
+
+	// given
+	options := &helm.Options{
+		KubectlOptions: s.kubeOptions,
+		ValuesFiles: []string{
+			"values-keycloak-v19.yaml",
+			"../../openshift/values.yaml",
+			"../../openshift/values-patch.yaml",
+		},
+		ExtraArgs: map[string][]string{
+			"install": {"--post-renderer", "../../openshift/patch.sh"},
+		},
+	}
+
+	// when
+	helm.Install(s.T(), options, s.chartPath, s.release)
+
+	// then
+	s.awaitAllPodsForThisRelease()
+	s.createProcessInstance()
+
+	s.awaitElasticPods()
+	s.tryTologinToIdentity()
+	s.assertProcessDefinitionFromOperate()
+	s.assertTasksFromTasklist()
 }
 
 func (s *openshiftSuite) createProject() error {

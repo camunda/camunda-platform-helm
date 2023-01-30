@@ -141,7 +141,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
         {{- printf "%s-keycloak-custom" .Release.Name | trunc 63 -}}
     {{- else -}}
-        {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}
+        {{- include "camundaPlatform.keycloakDefaultHost" . -}}
     {{- end -}}
 {{- end -}}
 
@@ -152,7 +152,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
         {{- .Values.global.identity.keycloak.url.host -}}
     {{- else -}}
-        {{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) | trunc 20 | trimSuffix "-" }}
+        {{- include "camundaPlatform.keycloakDefaultHost" . -}}
     {{- end -}}
 {{- end -}}
 

@@ -19,11 +19,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/stretchr/testify/suite"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chartutil"
 
 	"context"
 
@@ -46,6 +49,7 @@ type integrationSuite struct {
 	namespaceMetadata metav1.ObjectMeta
 	kubeOptions       *k8s.KubectlOptions
 	options           integrationSuiteOptions
+	keycloakLegacy    bool
 }
 
 func (s *integrationSuite) getSecret(secretSuffix string, secretKey string) string {
@@ -301,9 +305,36 @@ func (s *integrationSuite) assertGatewayTopology(err error, client zbc.Client) {
 }
 
 func (s *integrationSuite) resolveKeycloakServiceName() string {
+	keycloakServiceName := fmt.Sprintf("%s-keycloak", s.release)
 	// Keycloak truncates at 20 chars since the node identifier in WildFly is limited to 23 characters.
 	// see https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/_helpers.tpl#L2
-	keycloakServiceName := fmt.Sprintf("%s-keycl", s.release)
-	keycloakServiceName = strings.TrimSuffix(keycloakServiceName[:20], "-")
+	if s.keycloakLegacy {
+		keycloakServiceName = strings.TrimSuffix(keycloakServiceName[:20], "-")
+	}
+
 	return keycloakServiceName
+}
+
+func (s *integrationSuite) updateIdentityChartWithKeycloakV19() {
+	chartPath := s.chartPath + "/charts/identity"
+	chartFilePath := chartPath + "/Chart.yaml"
+
+	chartFile, err := chartutil.LoadChartfile(chartFilePath)
+	s.Require().NoError(err, "cannot load Identity chart file")
+
+	// Set Identity chart dependency to Keycloak v19.
+	chartFile.Dependencies = []*chart.Dependency{
+		{
+			Name:       "keycloak",
+			Repository: "https://charts.bitnami.com/bitnami",
+			Version:    "12.2.0",
+			Condition:  "keycloak.enabled",
+		},
+	}
+
+	err = chartutil.SaveChartfile(chartFilePath, chartFile)
+	s.Require().NoError(err, "cannot save Identity chart file")
+
+	err = exec.Command("helm", "dependency", "update", chartPath).Run()
+	s.Require().NoError(err, "cannot update Identity dependency")
 }

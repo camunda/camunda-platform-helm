@@ -32,6 +32,8 @@ jobs:
         test:
         - name: "End2End"
           method: "TestServicesEnd2End"
+        - name: "End2EndWithKeycloakV19"
+          method: "TestServicesEnd2EndWithKeycloakV19"
     runs-on: ubuntu-latest
     steps:
     - name: Set var GITHUB_PR_HEAD_SHA_SHORT
