@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: e2e-venom
+  labels:
+    app: venom
+    test: e2e
+spec:
+  template:
+    spec:
+      containers:
+      - name: venom
+        image: ovhcom/venom:latest
+        volumeMounts:
+        - name: venom-tests
+          mountPath: /workdir/tests
+      volumes:
+      - name: venom-tests
+        configMap:
+          name: venom-tests
+      restartPolicy: Never
+  backoffLimit: 1
