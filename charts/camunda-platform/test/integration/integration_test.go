@@ -144,7 +144,7 @@ func (s *integrationSuite) TestServicesEnd2EndWithUpgrade() {
 func (s *integrationSuite) TestServicesEnd2EndWithConfig() {
 	// given
 	options := &helm.Options{
-		ValuesFiles:    []string{"it-values.yaml"},
+		ValuesFiles:    []string{"it-custom-values.yaml"},
 		KubectlOptions: s.kubeOptions,
 	}
 
@@ -172,9 +172,12 @@ func (s *integrationSuite) TestServicesEnd2EndWithKeycloakV19() {
 
 	// given
 	options := &helm.Options{
-		ValuesFiles:    []string{"values-keycloak-v19.yaml"},
+		ValuesFiles:    []string{"it-keycloak-v19-values.yaml"},
 		KubectlOptions: s.kubeOptions,
 	}
+
+	// This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
+	k8s.RunKubectl(s.T(), s.kubeOptions, "create", "secret", "generic", "registry-camunda-cloud", "--from-file=.dockerconfigjson="+getEnv("DOCKER_CONFIG_FILE", ""), "--type=kubernetes.io/dockerconfigjson")
 
 	// when
 	if _, err := k8s.GetPodE(s.T(), s.kubeOptions, s.release+"-zeebe-0"); err != nil {
