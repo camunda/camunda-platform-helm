@@ -18,7 +18,7 @@ spec:
     - http:
     {{- end }}
         paths:
-          {{- if and .Values.identity.enabled .Values.identity.contextPath }}
+          {{- if and .Values.identity.enabled .Values.identity.contextPath .Values.identity.keycloak.enabled }}
           - backend:
               service:
                 name: {{ include "identity.keycloak.service" .Subcharts.identity }}
@@ -26,6 +26,8 @@ spec:
                   number: {{ include "identity.keycloak.port" .Subcharts.identity }}
             path: {{ include "identity.keycloak.contextPath" .Subcharts.identity }}
             pathType: Prefix
+          {{- end }}
+          {{- if and .Values.identity.enabled .Values.identity.contextPath }}
           - backend:
               service:
                 name: {{ template "identity.fullname" .Subcharts.identity }}
