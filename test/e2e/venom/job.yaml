@@ -11,6 +11,14 @@ spec:
       containers:
       - name: venom
         image: ovhcom/venom:latest
+        command:
+        - sh
+        - -c
+        - |
+          /usr/local/venom run ./tests/${VENOM_RUN_ARGS:-*.y*ml}
+        envFrom:
+        - configMapRef:
+            name: venom-env-vars
         volumeMounts:
         - name: venom-tests
           mountPath: /workdir/tests
@@ -19,4 +27,4 @@ spec:
         configMap:
           name: venom-tests
       restartPolicy: Never
-  backoffLimit: 1
+  backoffLimit: 0

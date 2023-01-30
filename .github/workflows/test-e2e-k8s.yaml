@@ -24,15 +24,15 @@ env:
   KUBECONFIG: .github/config/kubeconfig
 
 jobs:
-  test:
-    name: Run Test Cases
+  init:
+    name: Init
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    outputs:
+      test-e2e-namespace: ${{ steps.vars.outputs.test-e2e-namespace }}
     steps:
-    - name: Set test env vars
+    - name: Set test vars
+      id: vars
       run: |
         sudo apt install -y pwgen
         GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)
@@ -42,15 +42,19 @@ jobs:
         # Set full name for the namespace.
         TEST_E2E_NAMESPACE_PART1="c8-e2e-pr-$GITHUB_PR_NUMBER"
         TEST_E2E_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
-        echo "TEST_E2E_NAMESPACE=$TEST_E2E_NAMESPACE_PART1-$TEST_E2E_NAMESPACE_PART2" >> $GITHUB_ENV
+        echo "test-e2e-namespace=$TEST_E2E_NAMESPACE_PART1-$TEST_E2E_NAMESPACE_PART2" >> $GITHUB_OUTPUT
+
+  setup:
+    name: Setup
+    needs: init
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    env:
+      TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
+    steps:
     - uses: actions/checkout@v3
-    # NOTE: We will switch to workload identity when its resource added to Crossplane.
-    # https://github.com/upbound/provider-gcp/issues/66
-    # - name: 'Authenticate to Google Cloud'
-    #   uses: 'google-github-actions/auth@v0'
-    #   with:
-    #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
-    #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v0
       with:
@@ -79,17 +83,91 @@ jobs:
     - name: Deploy and wait Camunda Platform
       run: |
         helm install e2e ./charts/camunda-platform --namespace=$TEST_E2E_NAMESPACE --timeout 15m0s --wait
-    - name: Deploy E2E tests
+
+  test:
+    name: Test ${{ matrix.test.name }}
+    needs: [init, setup]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+        - name: Health
+          pattern: health.yaml
+          suffix: health
+    env:
+      TEST_E2E_ID: e2e-venom-${{ matrix.test.suffix }}
+      TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
+    steps:
+    - uses: actions/checkout@v3
+    # NOTE: We will switch to workload identity when its resource added to Crossplane.
+    # https://github.com/upbound/provider-gcp/issues/66
+    # - name: 'Authenticate to Google Cloud'
+    #   uses: 'google-github-actions/auth@v0'
+    #   with:
+    #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
+    #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v0
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v0
+      with:
+        cluster_name: ${{ secrets.GKE_CLUSTER }}
+        location: ${{ secrets.GKE_ZONE }}
+    - name: Fix KUBECONFIG permissions
+      run: chmod 600 $KUBECONFIG
+    # The KUBECONFIG env var is automatically exported and picked up by kubectl.
+    - name: Check credentials
+      run: kubectl auth can-i create deployment
+    - name: Install env dependencies
+      uses: asdf-vm/actions/install@v1
+    - name: Deploy E2E test
       run: |
-        kubectl kustomize test/e2e/venom | kubectl apply -n $TEST_E2E_NAMESPACE -f -
-    - name: Get E2E tests results
+        cd test/e2e/venom
+        kustomize edit add configmap venom-env-vars --from-literal=VENOM_RUN_ARGS=${{ matrix.test.pattern }}
+        kustomize edit set namesuffix -- -${{ matrix.test.suffix }}
+        kustomize build . | kubectl apply -n $TEST_E2E_NAMESPACE -f -
+    - name: Get E2E test results
       run: |
-        kubectl wait -n $TEST_E2E_NAMESPACE --for=condition=ready pod --selector=job-name=e2e-venom --timeout=5m
-        kubectl logs -n $TEST_E2E_NAMESPACE --follow job/e2e-venom
-    - name: Check E2E tests status
+        kubectl wait -n $TEST_E2E_NAMESPACE --for=condition=ready pod --selector=job-name=$TEST_E2E_ID --timeout=5m
+        kubectl logs -n $TEST_E2E_NAMESPACE --follow job/$TEST_E2E_ID
+    - name: Check E2E test status
       run: |
-        kubectl wait -n $TEST_E2E_NAMESPACE --for=condition=complete job/e2e-venom --timeout=10s || exit 1
-    # This is helpful if the job is canceled and the test didn't tear down its resources.
+        kubectl wait -n $TEST_E2E_NAMESPACE --for=condition=complete job/$TEST_E2E_ID --timeout=10s || exit 1
+
+  teardown:
+    name: Teardown
+    needs: [init, test]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    env:
+      TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v0
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v0
+      with:
+        cluster_name: ${{ secrets.GKE_CLUSTER }}
+        location: ${{ secrets.GKE_ZONE }}
+    - name: Fix KUBECONFIG permissions
+      run: chmod 600 $KUBECONFIG
+    # The KUBECONFIG env var is automatically exported and picked up by kubectl.
+    - name: Check credentials
+      run: kubectl auth can-i create deployment
+    - name: Install env dependencies
+      uses: asdf-vm/actions/install@v1
     - name: Cleanup test namespace
       if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
       run: |

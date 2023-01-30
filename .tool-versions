@@ -1,4 +1,5 @@
 helm 3.9.3
+kustomize 4.5.7
 # The kubectl version depends on the K8s CI cluster version
 kubectl 1.25.5
 golang 1.19
