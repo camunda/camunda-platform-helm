@@ -55,20 +55,11 @@ jobs:
       TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
     steps:
     - uses: actions/checkout@v3
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v0
+    - uses: ./.github/actions/gke-login
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-    - name: Get GKE credentials
-      uses: google-github-actions/get-gke-credentials@v0
-      with:
-        cluster_name: ${{ secrets.GKE_CLUSTER }}
-        location: ${{ secrets.GKE_ZONE }}
-    - name: Fix KUBECONFIG permissions
-      run: chmod 600 $KUBECONFIG
-    # The KUBECONFIG env var is automatically exported and picked up by kubectl.
-    - name: Check credentials
-      run: kubectl auth can-i create deployment
+        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
+        cluster-name: ${{ secrets.GKE_CLUSTER }}
+        cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
     - name: Add Helm repos and dependencies
@@ -103,27 +94,11 @@ jobs:
       TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
     steps:
     - uses: actions/checkout@v3
-    # NOTE: We will switch to workload identity when its resource added to Crossplane.
-    # https://github.com/upbound/provider-gcp/issues/66
-    # - name: 'Authenticate to Google Cloud'
-    #   uses: 'google-github-actions/auth@v0'
-    #   with:
-    #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
-    #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v0
+    - uses: ./.github/actions/gke-login
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-    - name: Get GKE credentials
-      uses: google-github-actions/get-gke-credentials@v0
-      with:
-        cluster_name: ${{ secrets.GKE_CLUSTER }}
-        location: ${{ secrets.GKE_ZONE }}
-    - name: Fix KUBECONFIG permissions
-      run: chmod 600 $KUBECONFIG
-    # The KUBECONFIG env var is automatically exported and picked up by kubectl.
-    - name: Check credentials
-      run: kubectl auth can-i create deployment
+        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
+        cluster-name: ${{ secrets.GKE_CLUSTER }}
+        cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
     - name: Deploy E2E test
@@ -132,7 +107,7 @@ jobs:
         kustomize edit add configmap venom-env-vars --from-literal=VENOM_RUN_ARGS=${{ matrix.test.pattern }}
         kustomize edit set namesuffix -- -${{ matrix.test.suffix }}
         kustomize build . | kubectl apply -n $TEST_E2E_NAMESPACE -f -
-    - name: Get E2E test results
+    - name: Get E2E test results - ${{ matrix.test.name }}
       run: |
         kubectl wait -n $TEST_E2E_NAMESPACE --for=condition=ready pod --selector=job-name=$TEST_E2E_ID --timeout=5m
         kubectl logs -n $TEST_E2E_NAMESPACE --follow job/$TEST_E2E_ID
@@ -152,20 +127,11 @@ jobs:
       TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
     steps:
     - uses: actions/checkout@v3
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v0
+    - uses: ./.github/actions/gke-login
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-    - name: Get GKE credentials
-      uses: google-github-actions/get-gke-credentials@v0
-      with:
-        cluster_name: ${{ secrets.GKE_CLUSTER }}
-        location: ${{ secrets.GKE_ZONE }}
-    - name: Fix KUBECONFIG permissions
-      run: chmod 600 $KUBECONFIG
-    # The KUBECONFIG env var is automatically exported and picked up by kubectl.
-    - name: Check credentials
-      run: kubectl auth can-i create deployment
+        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
+        cluster-name: ${{ secrets.GKE_CLUSTER }}
+        cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
     - name: Cleanup test namespace
