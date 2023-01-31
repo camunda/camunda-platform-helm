@@ -19,8 +19,6 @@ env:
   GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
-  # Keep the test namespace based on the input or if GHA debug mode is enabled.
-  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
   KUBECONFIG: .github/config/kubeconfig
 
 jobs:
@@ -40,9 +38,9 @@ jobs:
         # https://github.com/orgs/community/discussions/40291
         GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
         # Set full name for the namespace.
-        TEST_E2E_NAMESPACE_PART1="c8-e2e-pr-$GITHUB_PR_NUMBER"
-        TEST_E2E_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
-        echo "test-e2e-namespace=$TEST_E2E_NAMESPACE_PART1-$TEST_E2E_NAMESPACE_PART2" >> $GITHUB_OUTPUT
+        TEST_NAMESPACE_PART1="c8-e2e-pr-$GITHUB_PR_NUMBER"
+        TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
+        echo "test-e2e-namespace=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_OUTPUT
 
   setup:
     name: Setup
@@ -52,10 +50,11 @@ jobs:
       contents: 'read'
       id-token: 'write'
     env:
-      TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
+      TEST_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/gke-login
+    - name: Login to GKE
+      uses: ./.github/actions/gke-login
       with:
         credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
         cluster-name: ${{ secrets.GKE_CLUSTER }}
@@ -68,15 +67,15 @@ jobs:
         make helm.dependency-update
     - name: Create Camunda Platform namespace
       run: |
-        kubectl create ns $TEST_E2E_NAMESPACE
-        kubectl label ns $TEST_E2E_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
-        kubectl label ns $TEST_E2E_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+        kubectl create ns $TEST_NAMESPACE
+        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
     - name: Deploy and wait Camunda Platform
       run: |
-        helm install e2e ./charts/camunda-platform --namespace=$TEST_E2E_NAMESPACE --timeout 15m0s --wait
+        helm install e2e ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait
 
   test:
-    name: Test ${{ matrix.test.name }}
+    name: ⭐️ Test ${{ matrix.test.name }}
     needs: [init, setup]
     runs-on: ubuntu-latest
     permissions:
@@ -87,55 +86,56 @@ jobs:
       matrix:
         test:
         - name: Health
-          pattern: health.yaml
-          suffix: health
+          overlay: health
+        - name: Login
+          overlay: login
     env:
-      TEST_E2E_ID: e2e-venom-${{ matrix.test.suffix }}
-      TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
+      TEST_ID: e2e-venom-${{ matrix.test.overlay }}
+      TEST_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/gke-login
+    - name: Login to GKE
+      uses: ./.github/actions/gke-login
       with:
         credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
         cluster-name: ${{ secrets.GKE_CLUSTER }}
         cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
-    - name: Deploy E2E test
+    - name: Deploy test
       run: |
-        cd test/e2e/venom
-        kustomize edit add configmap venom-env-vars --from-literal=VENOM_RUN_ARGS=${{ matrix.test.pattern }}
-        kustomize edit set namesuffix -- -${{ matrix.test.suffix }}
-        kustomize build . | kubectl apply -n $TEST_E2E_NAMESPACE -f -
-    - name: Get E2E test results - ${{ matrix.test.name }}
+        kubectl kustomize test/e2e/venom/${{ matrix.test.overlay }} | kubectl apply -n $TEST_NAMESPACE -f -
+    - name: ⭐️ Get test results ⭐️
       run: |
-        kubectl wait -n $TEST_E2E_NAMESPACE --for=condition=ready pod --selector=job-name=$TEST_E2E_ID --timeout=5m
-        kubectl logs -n $TEST_E2E_NAMESPACE --follow job/$TEST_E2E_ID
-    - name: Check E2E test status
+        while [[ ! $(kubectl logs -n $TEST_NAMESPACE job/$TEST_ID 2> /dev/null) ]]; do
+            echo "Waiting for the test Pod to start ...";
+            sleep 5;
+        done
+        kubectl logs -n $TEST_NAMESPACE --follow job/$TEST_ID
+    - name: Check test status
       run: |
-        kubectl wait -n $TEST_E2E_NAMESPACE --for=condition=complete job/$TEST_E2E_ID --timeout=10s || exit 1
+        kubectl wait -n $TEST_NAMESPACE --for=condition=complete job/$TEST_ID --timeout=10s || exit 1
 
   teardown:
     name: Teardown
     needs: [init, test]
-    if: always()
+    # Keep the test namespace based on the input or if GHA debug mode is enabled.
+    if: always() && !vars.RUNNER_DEBUG
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
     env:
-      TEST_E2E_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
+      TEST_NAMESPACE: ${{ needs.init.outputs.test-e2e-namespace }}
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/gke-login
+    - name: Login to GKE
+      uses: ./.github/actions/gke-login
       with:
         credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
         cluster-name: ${{ secrets.GKE_CLUSTER }}
         cluster-location: ${{ secrets.GKE_ZONE }}
-    - name: Install env dependencies
-      uses: asdf-vm/actions/install@v1
     - name: Cleanup test namespace
-      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
       run: |
         kubectl delete ns \
           --ignore-not-found=true \

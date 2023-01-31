@@ -8,10 +8,5 @@ configMapGenerator:
 - name: venom-env-vars
   options:
     disableNameSuffixHash: true
-  # It will be set on the fly using Kustomize CLI.
-  literals: []
-- name: venom-tests
-  options:
-    disableNameSuffixHash: true
-  files:
-  - testcases/health.yaml
+  envs:
+  - config/venom-env-vars

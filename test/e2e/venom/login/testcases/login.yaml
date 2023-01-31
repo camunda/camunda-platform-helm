@@ -1,0 +1,37 @@
+name: Login to Camunda Platform components
+
+vars:
+  releaseName: e2e
+  keycloakBase: "http://{{ .releaseName }}-keycloak/auth"
+
+testcases:
+
+- name: Generating machine-to-machine token
+  # https://docs.camunda.io/docs/self-managed/identity/user-guide/generating-m2m-tokens/
+  steps:
+  - name: "{{ .value.component }}"
+    # The "clientSecret" vars are exported via Venom vars.
+    range:
+    - component: Tasklist
+      clientID: tasklist
+      clientSecret: "{{ .TASKLIST_CLIENT_SECRET }}"
+    - component: Operate
+      clientID: operate
+      clientSecret: "{{ .OPERATE_CLIENT_SECRET }}"
+    - component: Optimize
+      clientID: optimize
+      clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
+    type: http
+    method: POST
+    url: "{{ .keycloakBase }}/realms/camunda-platform/protocol/openid-connect/token"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: |-
+      client_id={{ .value.clientID }}&client_secret={{ .value.clientSecret }}&grant_type=client_credentials
+    info: |
+      - Component: {{ .value.component }}
+      - Request Body: {{ .result.request.body }}
+      - Response Body: {{ .result.body }}
+      - Response Error (if any): {{ .result.err }}
+    assertions:
+    - result.statuscode ShouldEqual 200

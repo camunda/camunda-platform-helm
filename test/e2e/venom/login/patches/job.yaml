@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: e2e-venom
+spec:
+  template:
+    spec:
+      containers:
+      - name: venom
+        # All env vars here assume that the Helm deployment is called "e2e".
+        env:
+        - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: e2e-tasklist-identity-secret
+              key: tasklist-secret
+        - name: VENOM_VAR_OPERATE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: e2e-operate-identity-secret
+              key: operate-secret
+        - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: e2e-optimize-identity-secret
+              key: optimize-secret

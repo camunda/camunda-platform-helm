@@ -1,4 +1,4 @@
-name: Preflight Checks
+name: Health of Camunda Platform components
 
 vars:
   releaseName: e2e
