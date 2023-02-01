@@ -1,35 +1,24 @@
-name: Health of Camunda Platform components
+name: Preflight checks for Camunda Platform
 
 vars:
-  releaseName: e2e
+  releaseName: '{{ .RELEASE_NAME | default "e2e" }}'
 
 testcases:
 
-- name: Readiness - Dependencies
+- name: Readiness
   steps:
   - name: "{{ .value.component }}"
     type: http
     range:
+    # Dependencies.
     - component: Keycloak
       url: http://{{ .releaseName }}-keycloak/auth/realms/master
     - component: Elasticsearch
       url: "http://elasticsearch-master:9200/_cluster/health?&timeout=1s"
-    method: GET
-    url: "{{ .value.url }}"
-    retry: 3
-    delay: 10
-    info: "{{ .value.component }} URL: {{ .value.url }}"
-    assertions:
-    - result.statuscode ShouldEqual 200
-
-- name: Readiness - Camunda
-  steps:
-  - name: "{{ .value.component }}"
-    type: http
-    range:
-    # TODO: Fix this by exposing health port in Identity service.
-    # - component: Identity
-    #   url: http://{{ .releaseName }}-identity:8082/actuator/health
+    # Camunda.
+      # TODO: Fix this by exposing health port in Identity service.
+      # - component: Identity
+      #   url: http://{{ .releaseName }}-identity:8082/actuator/health
     - component: Optimize
       url: http://{{ .releaseName }}-optimize/api/readyz
     - component: Operate
@@ -45,3 +34,6 @@ testcases:
     info: "{{ .value.component }} URL: {{ .value.url }}"
     assertions:
     - result.statuscode ShouldEqual 200
+
+# TODO: Check Liveness endpoints.
+# - name: Liveness

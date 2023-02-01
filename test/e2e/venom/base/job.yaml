@@ -15,7 +15,8 @@ spec:
         - sh
         - -c
         - |
-          /usr/local/venom run ./tests/${VENOM_RUN_ARGS:-*.y*ml}
+          /usr/local/venom run ./tests/${VENOM_RUN_ARGS:-*.y*ml} ||
+          (cat ./results/venom.log; exit 1)
         envFrom:
         - configMapRef:
             name: venom-env-vars

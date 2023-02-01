@@ -10,3 +10,8 @@ configMapGenerator:
     disableNameSuffixHash: true
   envs:
   - config/venom-env-vars
+- name: venom-tests
+  options:
+    disableNameSuffixHash: true
+  files:
+  - testsuites/00-info.yaml
