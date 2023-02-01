@@ -129,7 +129,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 */}}
 
 {{- define "camundaPlatform.issuerBackendUrl" -}}
-    {{- include "camundaPlatform.keycloakURL" . -}}{{- .Values.global.identity.keycloak.realm -}}
+    {{- include "camundaPlatform.keycloakURL" . -}}{{ .Values.global.identity.keycloak.realm }}
 {{- end -}}
 
 {{/*
