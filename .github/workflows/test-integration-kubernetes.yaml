@@ -39,6 +39,21 @@ jobs:
           preSetup: ""
           setup: "helm install integration ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait"
           postSetup: ""
+          # No need to write a full TestSuite for it since it will be removed in the next minor released
+          # when Keycloak v19 is the default version.
+        - name: ChartWithKeycloakV19
+          description: Test Camunda Platform Helm chart with next supported Keycloak version
+          preSetup: |
+            yq --inplace \
+                '.dependencies[0] |= (.version = "12.2.0", .repository = "https://charts.bitnami.com/bitnami")' \
+                charts/camunda-platform/charts/identity/Chart.yaml
+            helm dependency update charts/camunda-platform/charts/identity
+          setup: |
+            helm install integration ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait
+          postSetup: |
+            sleep 10
+            kubectl -n $TEST_NAMESPACE get pod integration-keycloak-0 -o jsonpath='{.spec.containers[0].image}' |
+              grep "docker.io/bitnami/keycloak:19"
     steps:
     - name: Set test vars
       id: vars
@@ -70,10 +85,18 @@ jobs:
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-    - name: Deploy Camunda Platform
+    - name: Pre setup
+      if: matrix.test.preSetup
+      timeout-minutes: 5
       run: |
         ${{ matrix.test.preSetup }}
+    - name: Setup Camunda Platform
+      run: |
         ${{ matrix.test.setup }}
+    - name: Post setup
+      if: matrix.test.postSetup
+      timeout-minutes: 5
+      run: |
         ${{ matrix.test.postSetup }}
     - name: ⭐️ Run Preflight TestSuite ⭐️
       uses: ./.github/actions/venom-deploy-testsuite
