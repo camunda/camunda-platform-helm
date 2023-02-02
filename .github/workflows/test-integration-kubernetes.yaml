@@ -1,0 +1,98 @@
+# TODO: Later we should move to Testkube.
+# https://github.com/kubeshop/testkube
+name: "Test - Integration - Kubernetes"
+
+on:
+  pull_request:
+    paths:
+    - '.github/**'
+    - '.tool-versions'
+    - 'charts/**'
+    - 'go.*'
+  workflow_dispatch: { }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
+  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+  KUBECONFIG: .github/config/kubeconfig
+
+jobs:
+  test:
+    name: ${{ matrix.test.name }}
+    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+        - name: ChartWithDefaultValues
+          description: Test Camunda Platform Helm chart default values
+          preSetup: ""
+          setup: "helm install integration ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait"
+          postSetup: ""
+    steps:
+    - name: Set test vars
+      id: vars
+      run: |
+        sudo apt install -y pwgen
+        GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)
+        # NOTE: We should use the matrix job id var once it's available.
+        # https://github.com/orgs/community/discussions/40291
+        GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
+        # Set full name for the namespace.
+        TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
+        TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
+        echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+    - name: Login to GKE
+      uses: ./.github/actions/gke-login
+      with:
+        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
+        cluster-name: ${{ secrets.GKE_CLUSTER }}
+        cluster-location: ${{ secrets.GKE_ZONE }}
+    - name: Install env dependencies
+      uses: asdf-vm/actions/install@v1
+    - name: Add Helm repos and dependencies
+      run: |
+        make helm.repos-add
+        make helm.dependency-update
+    - name: Create test namespace
+      run: |
+        kubectl create ns $TEST_NAMESPACE
+        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+    - name: Deploy Camunda Platform
+      run: |
+        ${{ matrix.test.preSetup }}
+        ${{ matrix.test.setup }}
+        ${{ matrix.test.postSetup }}
+    - name: ⭐️ Run Preflight TestSuite ⭐️
+      uses: ./.github/actions/venom-deploy-testsuite
+      timeout-minutes: 5
+      with:
+        testsuite-id: preflight
+        testsuite-base-path: test/integration/venom
+        kubernetes-namespace: ${{ env.TEST_NAMESPACE }}
+    - name: ⭐️ Run Core TestSuite ⭐️
+      uses: ./.github/actions/venom-deploy-testsuite
+      timeout-minutes: 5
+      with:
+        testsuite-id: core
+        testsuite-base-path: test/integration/venom
+        kubernetes-namespace: ${{ env.TEST_NAMESPACE }}
+    - name: Cleanup test namespace
+      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      run: |
+        kubectl delete ns \
+          --ignore-not-found=true \
+          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
