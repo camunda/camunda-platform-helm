@@ -1,0 +1,37 @@
+name: GKE Login
+description: Login to GKE cluster
+inputs:
+  credentials-json:
+    description: GCP IAM credentials
+    required: true
+  cluster-name:
+    description: GKE cluster name
+    required: true
+  cluster-location:
+    description: GKE cluster location
+    required: true
+runs:
+  using: "composite"
+  steps:
+  # NOTE: We will switch to workload identity when its resource added to Crossplane.
+  # https://github.com/upbound/provider-gcp/issues/66
+  # - name: 'Authenticate to Google Cloud'
+  #   uses: 'google-github-actions/auth@v0'
+  #   with:
+  #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
+  #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
+  - name: Authenticate to Google Cloud
+    uses: google-github-actions/auth@v0
+    with:
+      credentials_json: '${{ inputs.credentials-json }}'
+  - name: Get GKE credentials
+    uses: google-github-actions/get-gke-credentials@v0
+    with:
+      cluster_name: ${{ inputs.cluster-name }}
+      location: ${{ inputs.cluster-location }}
+  - name: Fix KUBECONFIG permissions
+    shell: bash
+    run: chmod 600 $KUBECONFIG
+  - name: Check credentials
+    shell: bash
+    run: kubectl auth can-i create deployment

@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- job.yaml
+
+configMapGenerator:
+- name: venom-env-vars
+  options:
+    disableNameSuffixHash: true
+  envs:
+  - config/venom-env-vars
+- name: venom-tests
+  options:
+    disableNameSuffixHash: true
+  files:
+  - testsuites/00-info.yaml

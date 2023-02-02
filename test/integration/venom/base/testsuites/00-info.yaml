@@ -1,0 +1,19 @@
+name: Print basic info
+
+testcases:
+
+- name: Info
+  steps:
+  - type: exec
+    script: |
+      cat << EOF
+        - Timestamp: {{.venom.timestamp}}
+        - Datetime: {{.venom.datetime}}
+        - Output dir: {{.venom.outputdir}}
+        - Test files:
+      $(printf "    - %s\n" $(ls))
+      EOF
+    info: |
+      ###
+      {{ .result.systemout }}
+      ###
