@@ -1,7 +1,7 @@
 name: Preflight checks for Camunda Platform
 
 vars:
-  releaseName: '{{ .RELEASE_NAME | default "e2e" }}'
+  releaseName: '{{ .RELEASE_NAME | default "integration" }}'
 
 testcases:
 

@@ -1,12 +1,12 @@
 name: "Test - Integration - OpenShift"
 
 on:
-  # pull_request:
-  #   paths:
-  #   - '.github/**'
-  #   - '.tool-versions'
-  #   - 'charts/**'
-  #   - 'go.*'
+  pull_request:
+    paths:
+    - '.github/**'
+    - '.tool-versions'
+    - 'charts/**'
+    - 'go.*'
   workflow_dispatch: { }
 
 concurrency:

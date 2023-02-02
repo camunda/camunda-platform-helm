@@ -9,7 +9,7 @@ inputs:
     required: true
   testsuite-prefix:
     description: ""
-    default: e2e-venom
+    default: integration-venom
   testsuite-id:
     description: ""
     required: true

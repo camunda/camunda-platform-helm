@@ -1,6 +1,6 @@
 # TODO: Later we should move to Testkube.
 # https://github.com/kubeshop/testkube
-name: "Test - E2E - K8s"
+name: "Test - Integration - K8s"
 
 on:
   pull_request:
@@ -37,7 +37,7 @@ jobs:
         - name: ChartWithDefaultValues
           description: Test Camunda Platform Helm chart default values
           preSetup: ""
-          setup: "helm install e2e ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait"
+          setup: "helm install integration ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait"
           postSetup: ""
     steps:
     - name: Set test vars
@@ -49,7 +49,7 @@ jobs:
         # https://github.com/orgs/community/discussions/40291
         GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
         # Set full name for the namespace.
-        TEST_NAMESPACE_PART1="c8-e2e-pr-$GITHUB_PR_NUMBER"
+        TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
         TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
         echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV
     - uses: actions/checkout@v3
@@ -80,14 +80,14 @@ jobs:
       timeout-minutes: 5
       with:
         testsuite-id: preflight
-        testsuite-base-path: test/e2e/venom
+        testsuite-base-path: test/integration/venom
         kubernetes-namespace: ${{ env.TEST_NAMESPACE }}
     - name: ⭐️ Run Core TestSuite ⭐️
       uses: ./.github/actions/venom-deploy-testsuite
       timeout-minutes: 5
       with:
         testsuite-id: core
-        testsuite-base-path: test/e2e/venom
+        testsuite-base-path: test/integration/venom
         kubernetes-namespace: ${{ env.TEST_NAMESPACE }}
     - name: Cleanup test namespace
       if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'

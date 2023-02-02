@@ -11,6 +11,7 @@ testcases:
         - Datetime: {{.venom.datetime}}
         - Output dir: {{.venom.outputdir}}
       EOF
+      ls {{ .venom.testsuite.workdir }}
     info: |
       ###
       {{ .result.systemout }}

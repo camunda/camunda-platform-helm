@@ -2,7 +2,7 @@ name: Test core functionality of Camunda Platform
 
 # Uppercase vars are provided as Venom env vars.
 vars:
-  releaseName: '{{ .RELEASE_NAME | default "e2e" }}'
+  releaseName: '{{ .RELEASE_NAME | default "integration" }}'
 
 testcases:
 
