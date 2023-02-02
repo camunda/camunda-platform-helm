@@ -104,7 +104,7 @@ func (s *integrationSuite) TestServicesEnd2EndWithKeycloakV19() {
 	options := &helm.Options{
 		KubectlOptions: s.kubeOptions,
 		ValuesFiles: []string{
-			"values-keycloak-v19.yaml",
+			"it-keycloak-v19-values.yaml",
 			"../../openshift/values.yaml",
 			"../../openshift/values-patch.yaml",
 		},
