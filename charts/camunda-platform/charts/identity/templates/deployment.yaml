@@ -142,11 +142,14 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
+        - containerPort: 8082
+          name: metrics
+          protocol: TCP
         {{- if .Values.startupProbe.enabled }}
         startupProbe:
           httpGet:
             path: {{ .Values.startupProbe.probePath }}
-            port: http
+            port: metrics
           initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.startupProbe.periodSeconds }}
           successThreshold: {{ .Values.startupProbe.successThreshold }}
@@ -157,7 +160,7 @@ spec:
         readinessProbe:
           httpGet:
             path: {{ .Values.readinessProbe.probePath }}
-            port: http
+            port: metrics
           initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
           successThreshold: {{ .Values.readinessProbe.successThreshold }}
@@ -168,7 +171,7 @@ spec:
         livenessProbe:
           httpGet:
             path: {{ .Values.livenessProbe.probePath }}
-            port: http
+            port: metrics
           initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
           successThreshold: {{ .Values.livenessProbe.successThreshold }}

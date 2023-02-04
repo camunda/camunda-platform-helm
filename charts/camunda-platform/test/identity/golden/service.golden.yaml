@@ -20,6 +20,10 @@ spec:
     name: http
     targetPort: 8080
     protocol: TCP
+  - port: 82
+    name: metrics
+    targetPort: 8082
+    protocol: TCP
   selector:
     app: camunda-platform
     app.kubernetes.io/name: identity
