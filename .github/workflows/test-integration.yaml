@@ -44,6 +44,7 @@ jobs:
           dockerLogin: true
         - name: "End2EndWithKeycloakV19"
           method: "TestServicesEnd2EndWithKeycloakV19"
+          dockerLogin: true
     permissions:
       contents: 'read'
       id-token: 'write'
