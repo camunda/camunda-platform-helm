@@ -1128,6 +1128,10 @@ identity:
     annotations: {}
     # Service.port defines the port of the service on which the identity application will be available
     port: 80
+    # Service.metricsPort defines the port of the service on which the identity metrics will be available
+    metricsPort: 82
+    # Service.metricsName defines the name of the service on which the identity metrics will be available
+    metricsName: metrics
 
   # PodSecurityContext defines the security options the Identity pod should be run with
   podSecurityContext: {}

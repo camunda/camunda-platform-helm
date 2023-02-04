@@ -17,5 +17,9 @@ spec:
     name: http
     targetPort: 8080
     protocol: TCP
+  - port: {{ .Values.service.metricsPort }}
+    name: {{ .Values.service.metricsName }}
+    targetPort: 8082
+    protocol: TCP
   selector:
     {{- include "identity.matchLabels" . | nindent 4 }}

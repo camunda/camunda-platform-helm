@@ -629,6 +629,9 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `service` |  Configuration to configure the Identity service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.annotations` |  Can be used to define annotations, which will be applied to the Identity service | `{}` |
+| | `service.port` | Defines the port of the service on which the identity application will be available | `80` |
+| | `service.metricsPort` | Defines the port of the service on which the identity metrics will be available | `82` |
+| | `service.metricsName` | Defines the name of the service on which the identity metrics will be available | `metrics` |
 | | `resources` |  Configuration to set request and limit configuration for the container [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
 | | `nodeSelector` |  Can be used to define on which nodes the Identity pods should run | `{ }` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ] ` |
