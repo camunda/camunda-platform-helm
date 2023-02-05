@@ -1,0 +1,49 @@
+version: '3'
+
+env:
+  TEST_NAMESPACE: camunda-platform
+  CHART_DIR: ../../../../charts/camunda-platform
+  FIXTURES_DIR: ../../fixtures
+
+includes:
+  test.preflight:
+    taskfile: ../lib/testsuite-deploy-taskfile.yaml
+    vars:
+      testID: preflight
+  test.core:
+    taskfile: ../lib/testsuite-deploy-taskfile.yaml
+    vars:
+      testID: core
+
+tasks:
+  setup.pre:
+    cmds:
+    - yq --inplace eval-all '. as $item ireduce ({}; . * $item)'
+        $CHART_DIR/charts/identity/Chart.yaml
+        $FIXTURES_DIR/chart-identity-keycloak-v19.yaml
+    - helm dependency update $CHART_DIR/charts/identity
+
+  setup.exec:
+    cmds:
+    - helm install integration $CHART_DIR
+        --values $FIXTURES_DIR/values-enable-readiness.yaml
+        --namespace $TEST_NAMESPACE
+        --timeout 15m0s
+        --wait
+
+  setup.post:
+    cmds:
+    - sleep 10
+    - kubectl -n $TEST_NAMESPACE get pod integration-keycloak-0
+        -o jsonpath='{.spec.containers[0].image}' |
+        grep "docker.io/bitnami/keycloak:19"
+    - git checkout $CHART_DIR/charts/identity/Chart.yaml
+
+  all:
+    cmds:
+    - task: setup.pre
+    - task: setup.exec
+    - task: setup.post
+    - task: test.preflight
+    - task: test.core
+
