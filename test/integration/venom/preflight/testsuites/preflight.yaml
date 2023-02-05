@@ -35,4 +35,4 @@ testcases:
     - result.statuscode ShouldEqual 200
 
 # TODO: Check Liveness endpoints.
-# - name: Liveness
+# TODO: Check seed config like ES indexes.
