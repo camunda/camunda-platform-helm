@@ -37,22 +37,34 @@ jobs:
         - name: ChartWithDefaultValues
           description: Test Camunda Platform Helm chart default values
           preSetup: ""
-          setup: "helm install integration ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait"
+          # The "readinessProbe" is enabled for CI pipeline stablility
+          # and it will be enabled by default in the next minor version.
+          setup: |
+            helm install integration ./charts/camunda-platform \
+                --values test/integration/fixtures/values-enable-readiness.yaml \
+                --namespace $TEST_NAMESPACE \
+                --timeout 15m0s \
+                --wait
           postSetup: ""
-          # No need to write a full TestSuite for it since it will be removed in the next minor released
-          # when Keycloak v19 is the default version.
         - name: ChartWithKeycloakV19
           description: Test Camunda Platform Helm chart with next supported Keycloak version
+          # No need to write a full TestSuite for it since it will be removed in the next minor release
+          # when Keycloak v19 is the default version.
           preSetup: |
             yq --inplace \
-                '.dependencies[0] |= (.version = "12.2.0", .repository = "https://charts.bitnami.com/bitnami")' \
+                '. *= load("test/integration/fixtures/chart-identity-keycloak-v19.yaml")' \
                 charts/camunda-platform/charts/identity/Chart.yaml
             helm dependency update charts/camunda-platform/charts/identity
           setup: |
-            helm install integration ./charts/camunda-platform --namespace=$TEST_NAMESPACE --timeout 15m0s --wait
+            helm install integration ./charts/camunda-platform \
+                --values test/integration/fixtures/values-enable-readiness.yaml \
+                --namespace $TEST_NAMESPACE \
+                --timeout 15m0s \
+                --wait
           postSetup: |
             sleep 10
-            kubectl -n $TEST_NAMESPACE get pod integration-keycloak-0 -o jsonpath='{.spec.containers[0].image}' |
+            kubectl -n $TEST_NAMESPACE get pod integration-keycloak-0 \
+              -o jsonpath='{.spec.containers[0].image}' |
               grep "docker.io/bitnami/keycloak:19"
     steps:
     - name: Set test vars
@@ -63,6 +75,7 @@ jobs:
         # NOTE: We should use the matrix job id var once it's available.
         # https://github.com/orgs/community/discussions/40291
         GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
+        echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" >> $GITHUB_ENV
         # Set full name for the namespace.
         TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
         TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
