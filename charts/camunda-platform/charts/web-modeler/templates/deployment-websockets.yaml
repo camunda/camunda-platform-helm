@@ -60,6 +60,36 @@ spec:
         - containerPort: 8060
           name: http
           protocol: TCP
+        {{- if .Values.websockets.startupProbe.enabled }}
+        startupProbe:
+          tcpSocket:
+            port: http
+          initialDelaySeconds: {{ .Values.websockets.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.websockets.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.websockets.startupProbe.successThreshold }}
+          failureThreshold: {{ .Values.websockets.startupProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.websockets.startupProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.websockets.readinessProbe.enabled }}
+        readinessProbe:
+          tcpSocket:
+            port: http
+          initialDelaySeconds: {{ .Values.websockets.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.websockets.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.websockets.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.websockets.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.websockets.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.websockets.livenessProbe.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: http
+          initialDelaySeconds: {{ .Values.websockets.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.websockets.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.websockets.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.websockets.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.websockets.livenessProbe.timeoutSeconds }}
+        {{- end }}
       {{- if .Values.serviceAccount.name}}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}

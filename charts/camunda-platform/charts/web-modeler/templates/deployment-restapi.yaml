@@ -110,6 +110,39 @@ spec:
         - containerPort: 8091
           name: http-management
           protocol: TCP
+        {{- if .Values.restapi.startupProbe.enabled }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.restapi.startupProbe.probePath }}
+            port: http-management
+          initialDelaySeconds: {{ .Values.restapi.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.restapi.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.restapi.startupProbe.successThreshold }}
+          failureThreshold: {{ .Values.restapi.startupProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.restapi.startupProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.restapi.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.restapi.readinessProbe.probePath }}
+            port: http-management
+          initialDelaySeconds: {{ .Values.restapi.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.restapi.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.restapi.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.restapi.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.restapi.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.restapi.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.restapi.livenessProbe.probePath }}
+            port: http-management
+          initialDelaySeconds: {{ .Values.restapi.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.restapi.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.restapi.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.restapi.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.restapi.livenessProbe.timeoutSeconds }}
+        {{- end }}
         {{- if .Values.restapi.extraVolumeMounts }}
         volumeMounts:
         {{- .Values.restapi.extraVolumeMounts | toYaml | nindent 8 }}
