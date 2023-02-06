@@ -746,6 +746,8 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `restapi.podLabels` | Can be used to define extra restapi pod labels | `{}` |
 | | `restapi.env` | Can be used to set extra environment variables in each restapi container | `[]` |
 | | `restapi.command` | Can be used to [override the default command](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) provided by the container image | `[]` |
+| | `restapi.extraVolumes` | Can be used to define extra volumes for the restapi pods, useful for TLS and self-signed certificates | `[]` |
+| | `restapi.extraVolumeMounts` | Can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates | `[]` |
 | | `restapi.podSecurityContext` | Can be used to define the security options the restapi pod should be run with | `{}` |
 | | `restapi.containerSecurityContext` | Can be used to define the security options the restapi container should be run with | `{}` |
 | | `restapi.nodeSelector` | Can be used to select the nodes the restapi pods should run on | `{}` |
@@ -764,6 +766,8 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `webapp.podLabels` | Can be used to define extra webapp pod labels | `{}` |
 | | `webapp.env` | Can be used to set extra environment variables in each webapp container | `[]` |
 | | `webapp.command` | Can be used to [override the default command](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) provided by the container image | `[]` |
+| | `webapp.extraVolumes` | Can be used to define extra volumes for the webapp pods, useful for TLS and self-signed certificates | `[]` |
+| | `webapp.extraVolumeMounts` | Can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates | `[]` |
 | | `webapp.podSecurityContext` | Can be used to define the security options the webapp pod should be run with | `{}` |
 | | `webapp.containerSecurityContext` | Can be used to define the security options the webapp container should be run with | `{}` |
 | | `webapp.nodeSelector` | Can be used to select the nodes the webapp pods should run on | `{}` |

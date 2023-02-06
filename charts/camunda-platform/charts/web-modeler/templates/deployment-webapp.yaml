@@ -96,7 +96,7 @@ spec:
         {{- with .Values.webapp.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
-        {{- if .Values.webapp.command}}
+        {{- if .Values.webapp.command }}
         command: {{ .Values.webapp.command }}
         {{- end }}
         resources:
@@ -105,7 +105,15 @@ spec:
         - containerPort: 8070
           name: http
           protocol: TCP
-      {{- if .Values.serviceAccount.name}}
+        {{- if .Values.webapp.extraVolumeMounts }}
+        volumeMounts:
+        {{- .Values.webapp.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.webapp.extraVolumes }}
+      volumes:
+      {{- .Values.webapp.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
       {{- if .Values.webapp.podSecurityContext }}

@@ -1396,6 +1396,10 @@ web-modeler:
     env: []
     # Restapi.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
+    # Restapi.extraVolumes can be used to define extra volumes for the restapi pods, useful for TLS and self-signed certificates
+    extraVolumes: []
+    # Restapi.extraVolumeMounts can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates
+    extraVolumeMounts: []
 
     # Restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
     podSecurityContext: {}
@@ -1445,6 +1449,10 @@ web-modeler:
     env: []
     # Webapp.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
+    # Webapp.extraVolumes can be used to define extra volumes for the webapp pods, useful for TLS and self-signed certificates
+    extraVolumes: []
+    # Webapp.extraVolumeMounts can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates
+    extraVolumeMounts: []
 
     # Webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
     podSecurityContext: {}
