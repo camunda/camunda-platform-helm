@@ -1,0 +1,26 @@
+version: '3'
+
+vars:
+  testID: PLACEHOLDER
+
+env:
+  TEST_NAMESPACE: camunda-platform
+  TEST_PREFIX: integration-venom
+  TEST_TIMEOUT: 3m
+  TEST_DIR: "../../venom/{{ .testID }}"
+  TEST_NAME: "{{ .TEST_PREFIX }}-{{ .testID }}"
+
+tasks:
+  # TODO: Simplify the steps here when we use TestKube.
+  default:
+    cmds:
+    # Deploy.
+    - kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -
+    # Get logs.
+    - while [[ ! $(kubectl logs -n $TEST_NAMESPACE job/$TEST_NAME 2> /dev/null) ]]; do
+          echo "Waiting for the test Pod to start ...";
+          sleep 5;
+      done
+    - kubectl logs -n $TEST_NAMESPACE --follow job/$TEST_NAME
+    # Check status.
+    - kubectl wait -n $TEST_NAMESPACE --for=condition=Complete job/$TEST_NAME --timeout=$TEST_TIMEOUT

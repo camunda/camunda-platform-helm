@@ -21,10 +21,11 @@ env:
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
   KUBECONFIG: .github/config/kubeconfig
+  TEST_SCENARIOS_DIR: test/integration/scenarios
 
 jobs:
   test:
-    name: ${{ matrix.test.name }}
+    name: ${{ matrix.test.title }}
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
@@ -34,38 +35,12 @@ jobs:
       fail-fast: false
       matrix:
         test:
-        - name: ChartWithDefaultValues
+        - title: ChartWithDefaultValues
+          dir: chart-with-default-values
           description: Test Camunda Platform Helm chart default values
-          preSetup: ""
-          # The "readinessProbe" is enabled for CI pipeline stablility
-          # and it will be enabled by default in the next minor version.
-          setup: |
-            helm install integration ./charts/camunda-platform \
-                --values test/integration/fixtures/values-enable-readiness.yaml \
-                --namespace $TEST_NAMESPACE \
-                --timeout 15m0s \
-                --wait
-          postSetup: ""
-        - name: ChartWithKeycloakV19
+        - title: ChartWithKeycloakV19
+          dir: chart-with-keycloak-v19
           description: Test Camunda Platform Helm chart with next supported Keycloak version
-          # No need to write a full TestSuite for it since it will be removed in the next minor release
-          # when Keycloak v19 is the default version.
-          preSetup: |
-            yq --inplace \
-                '. *= load("test/integration/fixtures/chart-identity-keycloak-v19.yaml")' \
-                charts/camunda-platform/charts/identity/Chart.yaml
-            helm dependency update charts/camunda-platform/charts/identity
-          setup: |
-            helm install integration ./charts/camunda-platform \
-                --values test/integration/fixtures/values-enable-readiness.yaml \
-                --namespace $TEST_NAMESPACE \
-                --timeout 15m0s \
-                --wait
-          postSetup: |
-            sleep 10
-            kubectl -n $TEST_NAMESPACE get pod integration-keycloak-0 \
-              -o jsonpath='{.spec.containers[0].image}' |
-              grep "docker.io/bitnami/keycloak:19"
     steps:
     - name: Set test vars
       id: vars
@@ -99,32 +74,29 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
     - name: Pre setup
-      if: matrix.test.preSetup
       timeout-minutes: 5
       run: |
-        ${{ matrix.test.preSetup }}
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} setup.pre
     - name: Setup Camunda Platform
       run: |
-        ${{ matrix.test.setup }}
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} setup.exec
     - name: Post setup
-      if: matrix.test.postSetup
       timeout-minutes: 5
       run: |
-        ${{ matrix.test.postSetup }}
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} setup.post
     - name: ⭐️ Run Preflight TestSuite ⭐️
-      uses: ./.github/actions/venom-deploy-testsuite
       timeout-minutes: 5
-      with:
-        testsuite-id: preflight
-        testsuite-base-path: test/integration/venom
-        kubernetes-namespace: ${{ env.TEST_NAMESPACE }}
+      run: |
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.preflight
     - name: ⭐️ Run Core TestSuite ⭐️
-      uses: ./.github/actions/venom-deploy-testsuite
       timeout-minutes: 5
-      with:
-        testsuite-id: core
-        testsuite-base-path: test/integration/venom
-        kubernetes-namespace: ${{ env.TEST_NAMESPACE }}
+      run: |
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.core
+    - name: Describe Pods in failure
+      if: failure()
+      # TODO: Collect logs and store them as artifacts in GitHub Actions.
+      run: |
+        kubectl describe po -n $TEST_NAMESPACE
     - name: Cleanup test namespace
       if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
       run: |
