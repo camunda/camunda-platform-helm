@@ -138,7 +138,7 @@ For more details, please check Camunda Platform Helm chart documentation.
 This is mainly used to access the external Keycloak service in the global Ingress.
 */}}
 {{- define "identity.keycloak.service" -}}
-    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
+    {{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
         {{- printf "%s-keycloak-custom" .Release.Name | trunc 63 -}}
     {{- else -}}
         {{- include "camundaPlatform.keycloakDefaultHost" . -}}

@@ -132,9 +132,9 @@ func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {
 
 	// then
 	// TODO: Instead of using plain text search, unmarshal the output in an ingress struct and assert the values.
-	s.Require().Contains(output, "path: /auth")
-	s.Require().Contains(output, "name: camunda-platform-test-keycloak-custom")
-	s.Require().Contains(output, "number: 8443")
+	s.Require().NotContains(output, "keycloak")
+	s.Require().NotContains(output, "path: /auth")
+	s.Require().NotContains(output, "number: 8443")
 }
 
 func (s *ingressTemplateTest) TestIngressWithContextPath() {
