@@ -18,7 +18,7 @@ spec:
     - http:
     {{- end }}
         paths:
-          {{- if and .Values.identity.enabled .Values.identity.contextPath }}
+          {{- if .Values.identity.enabled }}
           - backend:
               service:
                 name: {{ include "identity.keycloak.service" .Subcharts.identity }}
@@ -26,6 +26,8 @@ spec:
                   number: {{ include "identity.keycloak.port" .Subcharts.identity }}
             path: {{ include "identity.keycloak.contextPath" .Subcharts.identity }}
             pathType: Prefix
+          {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
+          {{- if and .Values.identity.contextPath (not .Values.identity.ingress.enabled) }}
           - backend:
               service:
                 name: {{ template "identity.fullname" .Subcharts.identity }}
@@ -33,6 +35,7 @@ spec:
                   number: {{ .Values.identity.service.port }}
             path: {{ .Values.identity.contextPath }}
             pathType: Prefix
+          {{- end }}
           {{- end }}
           {{- if and .Values.operate.enabled .Values.operate.contextPath }}
           - backend:
