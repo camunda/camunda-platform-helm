@@ -1,4 +1,4 @@
-{{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
+{{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
 apiVersion: v1
 kind: Service
 metadata:

@@ -89,6 +89,7 @@ func (s *serviceTest) TestKeycloakExternalService() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			"global.identity.keycloak.internal":     "true",
 			"global.identity.keycloak.url.protocol": "https",
 			"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
 			"global.identity.keycloak.url.port":     "8443",
