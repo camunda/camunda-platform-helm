@@ -113,6 +113,10 @@ func (s *integrationSuite) TestServicesEnd2EndWithKeycloakV19() {
 		},
 	}
 
+	// This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
+	k8s.RunKubectl(s.T(), s.kubeOptions, "create", "secret", "generic", "registry-camunda-cloud",
+		"--from-file=.dockerconfigjson="+getEnv("DOCKER_CONFIG_FILE", ""), "--type=kubernetes.io/dockerconfigjson")
+
 	// when
 	helm.Install(s.T(), options, s.chartPath, s.release)
 

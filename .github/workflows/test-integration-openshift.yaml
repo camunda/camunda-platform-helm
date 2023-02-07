@@ -34,6 +34,7 @@ jobs:
           method: "TestServicesEnd2End"
         - name: "End2EndWithKeycloakV19"
           method: "TestServicesEnd2EndWithKeycloakV19"
+          dockerLogin: true
     runs-on: ubuntu-latest
     steps:
     - name: Set var GITHUB_PR_HEAD_SHA_SHORT
@@ -73,5 +74,5 @@ jobs:
     - name: Add helm repos
       run: make helm.repos-add
     - name: Test - ${{ matrix.test.name }}
-      run: make go.test-it-os GO_TEST_IT_OS_ARGS="-testify.m ${{ matrix.test.method }}"
+      run: make go.test-it-os GO_TEST_IT_OS_ARGS="-testify.m ^${{ matrix.test.method }}$"
 
