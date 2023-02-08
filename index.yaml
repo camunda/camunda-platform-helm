@@ -4,6 +4,98 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "support extra volume mounts for web-modeler"
+        - kind: added
+          description: "expose identity metrics port"
+        - kind: added
+          description: "add initial support for Keycloak v19"
+        - kind: added
+          description: "set elasticsearch exporter prefix index config"
+        - kind: changed
+          description: "customize identity/keycloak combined ingress endpoint"
+        - kind: changed
+          description: "upgrade k8s api from policy/v1beta1 to policy/v1"
+        - kind: changed
+          description: "enhance elasticsearch config"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.1.x
+    created: "2023-02-08T12:42:03.427030098Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      - child: service
+        parent: global.identity.service
+      name: identity
+      repository: ""
+      version: 8.1.6
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.1.6
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.1.6
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.1.6
+    - condition: web-modeler.enabled
+      name: web-modeler
+      repository: ""
+      version: 8.1.6
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.1.6
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.1.6
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: 936d4114162a0c6c28cfd29596846fefa298941e7783ce82a56655247cf05c23
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.1.6/camunda-platform-8.1.6.tgz
+    version: 8.1.6
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "add new subchart for Web Modeler"
         - kind: added
           description: "add details about c8 helm chart versioning"
@@ -4653,4 +4745,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-01-19T12:57:54.323140595Z"
+generated: "2023-02-08T12:42:03.427816991Z"
