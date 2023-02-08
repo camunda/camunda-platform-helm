@@ -17,6 +17,7 @@ env:
   GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+  DOCKER_CONFIG_FILE: /home/runner/.docker/config.json
 
 jobs:
   test:
