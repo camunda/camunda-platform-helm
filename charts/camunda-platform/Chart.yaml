@@ -75,8 +75,16 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "add new subchart for Web Modeler"
+      description: "support extra volume mounts for web-modeler"
     - kind: added
-      description: "add details about c8 helm chart versioning"
+      description: "expose identity metrics port"
+    - kind: added
+      description: "add initial support for Keycloak v19"
+    - kind: added
+      description: "set elasticsearch exporter prefix index config"
     - kind: changed
-      description: "correct info about accessing Identity over HTTP"
+      description: "customize identity/keycloak combined ingress endpoint"
+    - kind: changed
+      description: "upgrade k8s api from policy/v1beta1 to policy/v1"
+    - kind: changed
+      description: "enhance elasticsearch config"
