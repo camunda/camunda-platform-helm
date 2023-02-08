@@ -462,7 +462,7 @@ zeebe-gateway:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: false
     # ReadinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /health
+    probePath: /actuator/health
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -831,7 +831,7 @@ tasklist:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
     # LivenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/readiness
+    probePath: /actuator/health/liveness
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -984,7 +984,7 @@ optimize:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
     # LivenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /
+    probePath: /api/readyz
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30

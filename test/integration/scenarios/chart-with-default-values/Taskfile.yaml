@@ -1,11 +1,16 @@
 version: '3'
 
-env:
-  TEST_NAMESPACE: camunda-platform
-  CHART_DIR: ../../../../charts/camunda-platform
-  FIXTURES_DIR: ../../fixtures
+vars:
+  TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
+  TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
+  HELM_EXTRA_ARGS: '{{ env "HELM_EXTRA_ARGS" }} {{ .OPENSHIFT_ARGS }}'
+
+dotenv:
+- ../vars/common.env
+- ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
+  init.seed: ../lib/init-seed-taskfile.yaml
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -21,12 +26,15 @@ tasks:
     - echo "No pre setup task for this test."
 
   setup.exec:
+    deps: [init.seed]
     cmds:
-    - helm install integration $CHART_DIR
-        --values $FIXTURES_DIR/values-enable-readiness.yaml
-        --namespace $TEST_NAMESPACE
+    - helm install integration {{ .CHART_DIR }}
+        --namespace {{ .TEST_NAMESPACE }}
+        --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --timeout 15m0s
         --wait
+        {{ .HELM_EXTRA_ARGS }}
+
 
   setup.post:
     cmds:
@@ -34,6 +42,7 @@ tasks:
 
   all:
     cmds:
+    - task: init.seed
     - task: setup.pre
     - task: setup.exec
     - task: setup.post

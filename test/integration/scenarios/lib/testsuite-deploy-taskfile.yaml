@@ -4,10 +4,10 @@ vars:
   testID: PLACEHOLDER
 
 env:
-  TEST_NAMESPACE: camunda-platform
+  TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_PREFIX: integration-venom
   TEST_TIMEOUT: 3m
-  TEST_DIR: "../../venom/{{ .testID }}"
+  TEST_DIR: "../../testsuites/{{ .testID }}"
   TEST_NAME: "{{ .TEST_PREFIX }}-{{ .testID }}"
 
 tasks:

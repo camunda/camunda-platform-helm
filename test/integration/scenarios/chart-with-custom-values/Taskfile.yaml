@@ -23,10 +23,7 @@ includes:
 tasks:
   setup.pre:
     cmds:
-    - yq --inplace eval-all '. as $item ireduce ({}; . * $item)'
-        {{ .CHART_DIR }}/charts/identity/Chart.yaml
-        ./chart-identity-keycloak-v19.yaml
-    - helm dependency update {{ .CHART_DIR }}/charts/identity
+    - echo "No pre setup task for this test."
 
   setup.exec:
     deps: [init.seed]
@@ -34,17 +31,14 @@ tasks:
     - helm install integration {{ .CHART_DIR }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
+        --values ./values-custom.yaml
         --timeout 15m0s
         --wait
         {{ .HELM_EXTRA_ARGS }}
 
   setup.post:
     cmds:
-    - sleep 10
-    - kubectl -n {{ .TEST_NAMESPACE }} get pod integration-keycloak-0
-        -o jsonpath='{.spec.containers[0].image}' |
-        grep "docker.io/bitnami/keycloak:19"
-    - git checkout {{ .CHART_DIR }}/charts/identity/Chart.yaml
+    - echo "No post task for this test."
 
   all:
     cmds:

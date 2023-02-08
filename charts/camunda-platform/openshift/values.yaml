@@ -74,3 +74,24 @@ elasticsearch:
   podSecurityContext:
     fsGroup: null
     runAsUser: null
+
+web-modeler:
+  postgresql:
+    primary:
+      containerSecurityContext:
+        runAsUser: null
+      podSecurityContext:
+        fsGroup: null
+        runAsUser: null
+    readReplicas:
+      containerSecurityContext:
+        runAsUser: null
+      podSecurityContext:
+        fsGroup: null
+        runAsUser: null
+    metrics:
+      containerSecurityContext:
+        runAsUser: null
+      podSecurityContext:
+        fsGroup: null
+        runAsUser: null
