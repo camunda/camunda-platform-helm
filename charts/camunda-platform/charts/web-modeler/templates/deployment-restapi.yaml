@@ -98,7 +98,7 @@ spec:
         {{- with .Values.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
-        {{- if .Values.restapi.command}}
+        {{- if .Values.restapi.command }}
         command: {{ .Values.restapi.command }}
         {{- end }}
         resources:
@@ -110,7 +110,15 @@ spec:
         - containerPort: 8091
           name: http-management
           protocol: TCP
-      {{- if .Values.serviceAccount.name}}
+        {{- if .Values.restapi.extraVolumeMounts }}
+        volumeMounts:
+        {{- .Values.restapi.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.restapi.extraVolumes }}
+      volumes:
+      {{- .Values.restapi.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
       {{- if .Values.restapi.podSecurityContext }}
