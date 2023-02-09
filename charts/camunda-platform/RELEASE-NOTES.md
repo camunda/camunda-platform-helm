@@ -2,15 +2,22 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-8.1.5"></a>
-## [camunda-platform-8.1.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.1.4...camunda-platform-8.1.5) (2023-01-19)
-
-### Docs
-
-* add details about c8 helm chart versioning ([#522](https://github.com/camunda/camunda-platform-helm/issues/522))
-* correct info about accessing Identity over HTTP
+<a name="camunda-platform-8.1.6"></a>
+## [camunda-platform-8.1.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.1.5...camunda-platform-8.1.6) (2023-02-08)
 
 ### Feat
 
-* add new subchart for Web Modeler ([#500](https://github.com/camunda/camunda-platform-helm/issues/500))
+* support extra volume mounts for web-modeler ([#548](https://github.com/camunda/camunda-platform-helm/issues/548))
+* expose identity metrics port ([#545](https://github.com/camunda/camunda-platform-helm/issues/545))
+* add initial support for Keycloak v19 ([#534](https://github.com/camunda/camunda-platform-helm/issues/534))
+
+### Fix
+
+* set elasticsearch exporter prefix index config ([#532](https://github.com/camunda/camunda-platform-helm/issues/532))
+
+### Refactor
+
+* customize identity/keycloak combined ingress endpoint ([#549](https://github.com/camunda/camunda-platform-helm/issues/549))
+* upgrade k8s api from policy/v1beta1 to policy/v1 ([#525](https://github.com/camunda/camunda-platform-helm/issues/525))
+* enhance elasticsearch config ([#531](https://github.com/camunda/camunda-platform-helm/issues/531))
 

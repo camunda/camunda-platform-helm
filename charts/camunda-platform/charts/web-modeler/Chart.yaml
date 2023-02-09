@@ -1,7 +1,7 @@
 apiVersion: v2
 description: Web Modeler Helm Chart for Kubernetes
 name: web-modeler
-version: 8.1.5
+version: 8.1.6
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
 dependencies:
