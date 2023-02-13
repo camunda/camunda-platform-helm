@@ -14,15 +14,84 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
   GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
-  DOCKER_CONFIG_FILE: /home/runner/.docker/config.json
+  KUBECONFIG: .github/config/kubeconfig
+  TEST_SCENARIOS_DIR: test/integration/scenarios
+  TEST_CLUSTER_TYPE: openshift
+  TEST_DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
+  TEST_DOCKER_PASSWORD: ${{ secrets.TEST_DOCKER_PASSWORD }}
+  # This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
+  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_USER }}
+  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
 
 jobs:
+  # test:
+  #   name: v${{ matrix.openshift.version }} - ${{ matrix.test.name }}
+  #   if: false
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       openshift:
+  #       - version: "4.10"
+  #         server: OPENSHIFT_URL_410
+  #         token: OPENSHIFT_TOKEN_410
+  #       test:
+  #       - name: "End2End"
+  #         method: "TestServicesEnd2End"
+  #       - name: "End2EndWithKeycloakV19"
+  #         method: "TestServicesEnd2EndWithKeycloakV19"
+  #         dockerLogin: true
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Set var GITHUB_PR_HEAD_SHA_SHORT
+  #     run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
+  #   - uses: actions/checkout@v3
+  #   - name: Install env dependencies
+  #     uses: asdf-vm/actions/install@v1
+  #   - uses: actions/cache@v3
+  #     with:
+  #       path: |
+  #         ~/.cache/go-build
+  #         ~/go/pkg/mod
+  #       key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+  #       restore-keys: |
+  #         ${{ runner.os }}-go-
+  #   - name: Install Openshift client (oc)
+  #     uses: redhat-actions/openshift-tools-installer@v1
+  #     with:
+  #       oc: ${{ matrix.openshift.version }}
+  #   - name: Authenticate to Openshift
+  #     uses: redhat-actions/oc-login@v1
+  #     with:
+  #       openshift_server_url: ${{ secrets[matrix.openshift.server] }}
+  #       openshift_token: ${{ secrets[matrix.openshift.token] }}
+  #   # the tests need to be able to create a project and list nodes; node listing is to find an available pod when
+  #   # checking service availability (done via terratest, so we cannot change that)
+  #   - name: 'Verify Permissions'
+  #     run: 'oc auth can-i create projectrequests && oc auth can-i list nodes'
+  #   # Log in to Camunda's Docker registry to be able to pull the Web Modeler Docker images
+  #   - name: Log into Camunda Docker registry
+  #     if: ${{ matrix.test.dockerLogin }}
+  #     uses: docker/login-action@v2
+  #     with:
+  #       registry: registry.camunda.cloud
+  #       username: ${{ secrets.CAMUNDA_REGISTRY_USER }}
+  #       password: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
+  #   - name: Add helm repos
+  #     run: make helm.repos-add
+  #   - name: Test - ${{ matrix.test.name }}
+  #     run: make go.test-it-os GO_TEST_IT_OS_ARGS="-testify.m ^${{ matrix.test.method }}$"
+
   test:
-    name: v${{ matrix.openshift.version }} - ${{ matrix.test.name }}
+    name: v${{ matrix.openshift.version }} - ${{ matrix.test.title }}
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     strategy:
       fail-fast: false
       matrix:
@@ -31,49 +100,79 @@ jobs:
           server: OPENSHIFT_URL_410
           token: OPENSHIFT_TOKEN_410
         test:
-        - name: "End2End"
-          method: "TestServicesEnd2End"
-        - name: "End2EndWithKeycloakV19"
-          method: "TestServicesEnd2EndWithKeycloakV19"
-          dockerLogin: true
-    runs-on: ubuntu-latest
+        - title: ChartWithDefaultValues
+          dir: chart-with-default-values
+          description: Test Camunda Platform Helm chart default values
+        - title: ChartWithKeycloakV19
+          dir: chart-with-keycloak-v19
+          description: Test Camunda Platform Helm chart with next supported Keycloak version v8.2
+        - title: ChartWithWebModeler
+          dir: chart-with-web-modeler
+          description: Test Camunda Platform Helm chart with WebModeler enabled which is still beta
     steps:
-    - name: Set var GITHUB_PR_HEAD_SHA_SHORT
-      run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
     - uses: actions/checkout@v3
-    - name: Install env dependencies
-      uses: asdf-vm/actions/install@v1
-    - uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - name: Install Openshift client (oc)
-      uses: redhat-actions/openshift-tools-installer@v1
-      with:
-        oc: ${{ matrix.openshift.version }}
     - name: Authenticate to Openshift
       uses: redhat-actions/oc-login@v1
       with:
         openshift_server_url: ${{ secrets[matrix.openshift.server] }}
         openshift_token: ${{ secrets[matrix.openshift.token] }}
-    # the tests need to be able to create a project and list nodes; node listing is to find an available pod when
-    # checking service availability (done via terratest, so we cannot change that)
-    - name: 'Verify Permissions'
-      run: 'oc auth can-i create projectrequests && oc auth can-i list nodes'
-    # Log in to Camunda's Docker registry to be able to pull the Web Modeler Docker images
-    - name: Log into Camunda Docker registry
-      if: ${{ matrix.test.dockerLogin }}
-      uses: docker/login-action@v2
-      with:
-        registry: registry.camunda.cloud
-        username: ${{ secrets.CAMUNDA_REGISTRY_USER }}
-        password: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
-    - name: Add helm repos
-      run: make helm.repos-add
-    - name: Test - ${{ matrix.test.name }}
-      run: make go.test-it-os GO_TEST_IT_OS_ARGS="-testify.m ^${{ matrix.test.method }}$"
-
+    - name: Set test vars
+      id: vars
+      run: |
+        sudo apt install -y pwgen
+        GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)
+        # NOTE: We should use the matrix job id var once it's available.
+        # https://github.com/orgs/community/discussions/40291
+        GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
+        echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" >> $GITHUB_ENV
+        # Set full name for the namespace.
+        TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
+        TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
+        echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV
+    - name: Install env dependencies
+      uses: asdf-vm/actions/install@v1
+    - name: Add Helm repos and dependencies
+      run: |
+        make helm.repos-add
+        make helm.dependency-update
+    - name: Create test namespace
+      run: |
+        kubectl create ns $TEST_NAMESPACE
+        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+    - name: Pre setup
+      timeout-minutes: 5
+      run: |
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} setup.pre
+    - name: Setup Camunda Platform
+      run: |
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} setup.exec
+    - name: Post setup
+      timeout-minutes: 5
+      run: |
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} setup.post
+    - name: ⭐️ Run Preflight TestSuite ⭐️
+      timeout-minutes: 5
+      run: |
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.preflight
+    - name: ⭐️ Run Core TestSuite ⭐️
+      timeout-minutes: 5
+      run: |
+        task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.core
+    - name: Get Pods info on failure
+      if: failure()
+      # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
+      run: |
+        kubectl -n $TEST_NAMESPACE get po
+        kubectl -n $TEST_NAMESPACE get po | grep -v "Completed" | awk '/0\//{print $1}' | while read pod_name; do
+          echo -e "\n###Failed Pod: ${pod_name}###\n";
+          kubectl -n $TEST_NAMESPACE describe po ${pod_name};
+          kubectl -n $TEST_NAMESPACE logs ${pod_name};
+        done
+    - name: Cleanup test namespace
+      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      run: |
+        kubectl delete ns \
+          --ignore-not-found=true \
+          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID

@@ -22,11 +22,16 @@ includes:
 
 tasks:
   setup.pre:
+    preconditions:
+    - test -n "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
+    - test -n "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
     cmds:
-    - yq --inplace eval-all '. as $item ireduce ({}; . * $item)'
-        {{ .CHART_DIR }}/charts/identity/Chart.yaml
-        ./chart-identity-keycloak-v19.yaml
-    - helm dependency update {{ .CHART_DIR }}/charts/identity
+    # This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
+    - kubectl create secret docker-registry registry-camunda-cloud
+        --namespace {{ .TEST_NAMESPACE }}
+        --docker-server "registry.camunda.cloud"
+        --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
+        --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
 
   setup.exec:
     deps: [init.seed]
@@ -34,21 +39,17 @@ tasks:
     - helm install integration {{ .CHART_DIR }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
+        --values ./values-web-modeler-enabled.yaml
         --timeout 15m0s
         --wait
         {{ .HELM_EXTRA_ARGS }}
 
   setup.post:
     cmds:
-    - sleep 10
-    - kubectl -n {{ .TEST_NAMESPACE }} get pod integration-keycloak-0
-        -o jsonpath='{.spec.containers[0].image}' |
-        grep "docker.io/bitnami/keycloak:19"
-    - git checkout {{ .CHART_DIR }}/charts/identity/Chart.yaml
+    - echo "No post task for this test."
 
   all:
     cmds:
-    - task: init.seed
     - task: setup.pre
     - task: setup.exec
     - task: setup.post

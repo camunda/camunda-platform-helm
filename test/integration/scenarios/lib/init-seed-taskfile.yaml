@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  default:
+    preconditions:
+    - test -n "${TEST_DOCKER_USERNAME}"
+    - test -n "${TEST_DOCKER_PASSWORD}"
+    cmds:
+    - kubectl create secret docker-registry index-docker-io
+        --namespace {{ .TEST_NAMESPACE }}
+        --docker-username "${TEST_DOCKER_USERNAME}"
+        --docker-password "${TEST_DOCKER_PASSWORD}"

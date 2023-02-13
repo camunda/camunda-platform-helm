@@ -13,6 +13,12 @@ configMapGenerator:
   behavior: merge
   files:
   - testsuites/core.yaml
+- name: venom-fixtures
+  options:
+    disableNameSuffixHash: true
+  behavior: merge
+  files:
+  - files/test-process.bpmn
 
 patches:
 - path: patches/job.yaml

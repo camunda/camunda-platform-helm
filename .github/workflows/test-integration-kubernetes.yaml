@@ -22,6 +22,13 @@ env:
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
   KUBECONFIG: .github/config/kubeconfig
   TEST_SCENARIOS_DIR: test/integration/scenarios
+  TEST_CLUSTER_TYPE: kubernetes
+  TEST_DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
+  TEST_DOCKER_PASSWORD: ${{ secrets.TEST_DOCKER_PASSWORD }}
+  # This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
+  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_USER }}
+  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
+
 
 jobs:
   test:
@@ -38,10 +45,26 @@ jobs:
         - title: ChartWithDefaultValues
           dir: chart-with-default-values
           description: Test Camunda Platform Helm chart default values
+        - title: ChartUpgrade
+          dir: chart-upgrade
+          description: Test Camunda Platform Helm chart upgrade
+        - title: ChartWithCustomValues
+          dir: chart-with-custom-values
+          description: Test Camunda Platform Helm chart custom values
         - title: ChartWithKeycloakV19
           dir: chart-with-keycloak-v19
-          description: Test Camunda Platform Helm chart with next supported Keycloak version
+          description: Test Camunda Platform Helm chart with next supported Keycloak version v8.2
+        - title: ChartWithWebModeler
+          dir: chart-with-web-modeler
+          description: Test Camunda Platform Helm chart with WebModeler enabled which is still beta
     steps:
+    - uses: actions/checkout@v3
+    - name: Login to GKE
+      uses: ./.github/actions/gke-login
+      with:
+        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
+        cluster-name: ${{ secrets.GKE_CLUSTER }}
+        cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Set test vars
       id: vars
       run: |
@@ -55,13 +78,6 @@ jobs:
         TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
         TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
         echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV
-    - uses: actions/checkout@v3
-    - name: Login to GKE
-      uses: ./.github/actions/gke-login
-      with:
-        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
-        cluster-name: ${{ secrets.GKE_CLUSTER }}
-        cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
     - name: Add Helm repos and dependencies
@@ -92,11 +108,16 @@ jobs:
       timeout-minutes: 5
       run: |
         task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.core
-    - name: Describe Pods in failure
+    - name: Get Pods info on failure
       if: failure()
-      # TODO: Collect logs and store them as artifacts in GitHub Actions.
+      # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
       run: |
-        kubectl describe po -n $TEST_NAMESPACE
+        kubectl -n $TEST_NAMESPACE get po
+        kubectl -n $TEST_NAMESPACE get po | grep -v "Completed" | awk '/0\//{print $1}' | while read pod_name; do
+          echo -e "\n###Failed Pod: ${pod_name}###\n";
+          kubectl -n $TEST_NAMESPACE describe po ${pod_name};
+          kubectl -n $TEST_NAMESPACE logs ${pod_name};
+        done
     - name: Cleanup test namespace
       if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
       run: |

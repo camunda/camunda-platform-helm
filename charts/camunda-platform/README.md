@@ -357,7 +357,7 @@ For more information about Zeebe Gateway, visit
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
 | | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
-| | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/health` |
+| | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
 | | `readinessProbe.successThreshold` | Defines how often it needs to be true to be marked as ready, after failure | `1` |
@@ -463,7 +463,7 @@ For more information about Operate, visit
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
 | | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
-| | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/ready` |
+| | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/actuator/health/liveness` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
 | | `livenessProbe.successThreshold` | Defines how often it needs to be true to be considered successful after having failed | `1` |
@@ -519,7 +519,7 @@ For more information about Tasklist, visit
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
 | | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
-| | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/ready` |
+| | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/actuator/health/liveness` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
 | | `livenessProbe.successThreshold` | Defines how often it needs to be true to be considered successful after having failed | `1` |
@@ -571,7 +571,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `containerSecurityContext` | Defines the security options the Optimize container should be run with | `{ }` |
 | | `startupProbe` | StartupProbe configuration | |
 | | `startupProbe.enabled` | If true, the startup probe is enabled in app container | `true` |
-| | `startupProbe.probePath` | Defines the startup probe route used on the app | `/ready` |
+| | `startupProbe.probePath` | Defines the startup probe route used on the app | `/api/readyz` |
 | | `startupProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `startupProbe.periodSeconds` | Defines how often the probe is executed | `30` |
 | | `startupProbe.successThreshold` | Defines how often it needs to be true to be marked as ready, after failure | `1` |
@@ -587,7 +587,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `livenessProbe` | LivenessProbe configuration | |
 | | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
-| | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/ready` |
+| | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/api/readyz` |
 | | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
 | | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
 | | `livenessProbe.successThreshold` | Defines how often it needs to be true to be considered successful after having failed | `1` |
