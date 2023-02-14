@@ -27,7 +27,7 @@ Any version not explicitly marked in the table above is not tested, and we canno
 ## Usage
 
 You will find in this repository a sample `values.yaml` file to get you start on Openshift
-[here](/openshift/values.yaml).
+[here](./values.yaml).
 
 Before proceeding, make sure you've fulfilled all the requirements as described in the [README](/README.md), namely that
 you have Helm installed, and you've added the chart's repository.
