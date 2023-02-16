@@ -26,7 +26,6 @@ zeebe-gateway:
 
 # Configure elastic search to make it running for local development
 elasticsearch:
-  namespace: camunda-platform
   imageTag: 7.17.3
   replicas: 1
   minimumMasterNodes: 1
@@ -45,7 +44,7 @@ elasticsearch:
   # Request smaller persistent volumes.
   volumeClaimTemplate:
     accessModes: [ "ReadWriteOnce" ]
-    storageClassName: "scw-bssd"
+    storageClassName: "standard"
     resources:
       requests:
         storage: 15Gi

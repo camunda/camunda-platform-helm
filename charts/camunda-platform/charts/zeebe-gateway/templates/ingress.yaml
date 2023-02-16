@@ -2,8 +2,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  {{- if .Values.global.namespace }}
-  namespace: {{ .Values.global.namespace }}
+  {{- if .Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
   {{- end }}
   name: {{ include "zeebe.names.gateway" . }}
   labels: {{- include "zeebe.labels.gateway" . | nindent 4 }}
