@@ -1,6 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  {{- if .Values.global.namespace }}
+  namespace: {{ .Values.global.namespace }}
+  {{- end }}
   name: {{ include "optimize.fullname" . }}
   labels: {{- include "optimize.labels" . | nindent 4 }}
   annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}

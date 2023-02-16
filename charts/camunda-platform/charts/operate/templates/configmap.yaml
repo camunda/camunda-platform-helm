@@ -1,5 +1,8 @@
 kind: ConfigMap
 metadata:
+  {{- if .Values.global.namespace }}
+  namespace: {{ .Values.global.namespace }}
+  {{- end }}
   name: {{ include "operate.fullname" . }}
   labels: {{- include "operate.labels" . | nindent 4 }}
 apiVersion: v1

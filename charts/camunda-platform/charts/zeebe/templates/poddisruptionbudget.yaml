@@ -2,6 +2,9 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
+  {{- if .Values.global.namespace }}
+  namespace: {{ .Values.global.namespace }}
+  {{- end }}
   name: {{ include "zeebe.names.broker" . }}
   labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
 spec:

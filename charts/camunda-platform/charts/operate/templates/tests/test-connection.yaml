@@ -1,6 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
+  {{- if .Values.global.namespace }}
+  namespace: {{ .Values.global.namespace }}
+  {{- end }}
   name: "{{ include "operate.fullname" . }}-test-connection"
   labels:
 {{ include "operate.labels" . | indent 4 }}

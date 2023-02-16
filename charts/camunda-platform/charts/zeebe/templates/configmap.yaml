@@ -1,5 +1,8 @@
 kind: ConfigMap
 metadata:
+  {{- if .Values.global.namespace }}
+  namespace: {{ .Values.global.namespace }}
+  {{- end }}
   name: {{ include "zeebe.fullname" . }}
   labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
 apiVersion: v1

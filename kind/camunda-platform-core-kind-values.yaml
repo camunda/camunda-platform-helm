@@ -1,4 +1,5 @@
 global:
+  namespace: camunda-platform
   identity:
     auth:
       # Disable the Identity authentication for local development
@@ -25,6 +26,7 @@ zeebe-gateway:
 
 # Configure elastic search to make it running for local development
 elasticsearch:
+  namespace: camunda-platform
   imageTag: 7.17.3
   replicas: 1
   minimumMasterNodes: 1
@@ -35,15 +37,15 @@ elasticsearch:
   resources:
     requests:
       cpu: "100m"
-      memory: "512M"
+      memory: "1024M"
     limits:
       cpu: "1000m"
-      memory: "512M"
+      memory: "2048M"
 
   # Request smaller persistent volumes.
   volumeClaimTemplate:
     accessModes: [ "ReadWriteOnce" ]
-    storageClassName: "standard"
+    storageClassName: "scw-bssd"
     resources:
       requests:
         storage: 15Gi
