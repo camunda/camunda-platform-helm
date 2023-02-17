@@ -1338,7 +1338,7 @@ web-modeler:
     # Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry.
     registry: registry.camunda.cloud
     # Image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
-    tag: 0.4.0-beta
+    tag: 0.5.0-beta
     # Image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
