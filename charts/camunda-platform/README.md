@@ -110,6 +110,18 @@ chart to your current Kubernetes context.
   helm install camunda-platform camunda/camunda-platform
 ```
 
+optional you can specify the namespace with --namespace
+
+```shell
+  helm install camunda-platform camunda/camunda-platform --namespace camunda
+```
+
+you can create the namespace contextually
+
+```shell
+  helm install camunda-platform camunda/camunda-platform --namespace camunda --create-namespace
+```
+
 ### Local Kubernetes
 
 We recommend using Helm on KIND for local environments, as the Helm configurations are battle-tested
