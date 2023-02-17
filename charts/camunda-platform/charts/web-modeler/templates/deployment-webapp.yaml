@@ -52,9 +52,11 @@ spec:
           - name: OAUTH2_TOKEN_ISSUER
             value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
           - name: KEYCLOAK_BASE_URL
-            value: {{ .Values.global.identity.auth.publicIssuerUrl | trimSuffix "/auth/realms/camunda-platform" | quote }}
+            value: {{ .Values.global.identity.auth.publicIssuerUrl | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
+          - name: KEYCLOAK_CONTEXT_PATH
+            value: {{ .Values.global.identity.keycloak.contextPath | quote }}
           - name: KEYCLOAK_REALM
-            value: "camunda-platform"
+            value: {{ .Values.global.identity.keycloak.realm | trimPrefix "/realms/" | quote }}
           - name: KEYCLOAK_JWKS_URL
             value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
           - name: PUSHER_HOST

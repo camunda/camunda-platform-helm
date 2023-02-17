@@ -66,6 +66,8 @@ spec:
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: KEYCLOAK_BASE_URL
             value: "http://localhost:18080"
+          - name: KEYCLOAK_CONTEXT_PATH
+            value: "/auth"
           - name: KEYCLOAK_REALM
             value: "camunda-platform"
           - name: KEYCLOAK_JWKS_URL
