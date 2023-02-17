@@ -1,3 +1,4 @@
+{{- if "connectors.enabled" -}}
 kind: ConfigMap
 metadata:
   name: {{ include "connectors.fullname" . }}
@@ -18,3 +19,5 @@ data:
 {{- end }}
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+
+{{- end}}

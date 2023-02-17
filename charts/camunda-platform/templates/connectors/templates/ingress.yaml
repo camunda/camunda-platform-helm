@@ -1,4 +1,5 @@
 {{- if .Values.ingress.enabled -}}
+{{- if "connectors.enabled" -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -31,5 +32,6 @@ spec:
       {{- if .Values.ingress.tls.secretName }}
       secretName: {{ .Values.ingress.tls.secretName }}
       {{- end }}
+  {{- end }}
   {{- end }}
 {{- end }}

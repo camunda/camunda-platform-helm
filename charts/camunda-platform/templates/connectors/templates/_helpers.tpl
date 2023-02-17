@@ -1,5 +1,7 @@
 {{/* vim: set filetype=mustache: */}}
 
+{{- if "connectors.enabled" -}}
+
 {{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
@@ -52,3 +54,5 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{- end}}

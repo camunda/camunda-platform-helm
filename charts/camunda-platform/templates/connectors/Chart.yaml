@@ -1,3 +1,4 @@
+{{- if "connectors.enabled" -}}
 apiVersion: v2
 description: Connectors Helm Chart for Kubernetes
 name: connectors
@@ -8,3 +9,4 @@ annotations:
   artifacthub.io/changes: |
     - create connectors sub chart
   artifacthub.io/containsSecurityUpdates: "false"
+{{- end }}
