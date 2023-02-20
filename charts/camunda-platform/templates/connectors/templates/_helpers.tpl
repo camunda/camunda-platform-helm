@@ -1,6 +1,6 @@
 {{/* vim: set filetype=mustache: */}}
 
-{{- if "connectors.enabled" -}}
+{{- if .Values.connectors.enabled -}}
 
 {{/*
 Create a default fully qualified app name.

@@ -1,4 +1,4 @@
-{{- if "connectors.enabled" -}}
+{{- if .Values.connectors.enabled -}}
 kind: ConfigMap
 metadata:
   name: {{ include "connectors.fullname" . }}

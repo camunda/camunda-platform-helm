@@ -1,4 +1,4 @@
-{{- if "connectors.enabled" -}}
+{{- if .Values.connectors.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
