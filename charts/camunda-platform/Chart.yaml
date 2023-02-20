@@ -19,9 +19,6 @@ keywords:
   - workflow
 dependencies:
   # Camunda Platform charts.
-  - name: connectors
-    version: 0.15.0
-    condition: "connectors.enabled"
   - name: identity
     version: 8.1.6
     condition: "identity.enabled"
