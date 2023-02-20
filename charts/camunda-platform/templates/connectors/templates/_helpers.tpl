@@ -1,6 +1,7 @@
 {{/* vim: set filetype=mustache: */}}
 
-{{- if .Values.connectors.enabled -}}
+{{/*Commenting out for now to fix error unexpected <define> in command*/}}
+{{/*{{- if .Values.connectors.enabled -}}*/}}
 
 {{/*
 Create a default fully qualified app name.
@@ -55,4 +56,4 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- end }}
 {{- end }}
 
-{{- end}}
+{{/*{{- end }}*/}}
