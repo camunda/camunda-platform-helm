@@ -49,7 +49,7 @@ spec:
           {{- end }}
           {{- if eq .Values.camunda.operate.client.type "credentials" }}
           - name: CAMUNDA_OPERATE_CLIENT_URL
-            value: "http://{{ .Release.Name }}-operate:80" # put config
+            value: "http://{{ .Release.Name }}-operate:80"
           - name: CAMUNDA_OPERATE_CLIENT_USERNAME
             value: {{ .Values.camunda.operate.client.username | quote }}
           - name: CAMUNDA_OPERATE_CLIENT_PASSWORD

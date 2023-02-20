@@ -2,7 +2,7 @@
 apiVersion: v2
 description: Connectors Helm Chart for Kubernetes
 name: connectors
-version: 0.15.0
+version: 0.16.0
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
 annotations:
