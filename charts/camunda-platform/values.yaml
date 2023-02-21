@@ -1406,6 +1406,57 @@ web-modeler:
     # Restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
     containerSecurityContext: {}
 
+    # Restapi.startupProbe configuration of the restapi startup probe
+    startupProbe:
+      # Restapi.startupProbe.enabled if true, the startup probe will be enabled for the restapi container
+      enabled: false
+      # Restapi.startupProbe.probePath defines the HTTP endpoint used for the startup probe
+      probePath: /health/liveness
+      # Restapi.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 30
+      # Restapi.startupProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Restapi.startupProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Restapi.startupProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      # Restapi.startupProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    # Restapi.readinessProbe configuration of the restapi readiness probe
+    readinessProbe:
+      # Restapi.readinessProbe.enabled if true, the readiness probe will be enabled for the restapi container
+      enabled: false
+      # Restapi.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
+      probePath: /health/readiness
+      # Restapi.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 30
+      # Restapi.readinessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Restapi.readinessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Restapi.readinessProbe.failureThreshold defines when the probe is considered failed so the Pod will be marked unready
+      failureThreshold: 5
+      # Restapi.readinessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    # Restapi.livenessProbe configuration of the restapi liveness probe
+    livenessProbe:
+      # Restapi.livenessProbe.enabled if true, the liveness probe will be enabled for the restapi container
+      enabled: false
+      # Restapi.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /health/liveness
+      # Restapi.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 30
+      # Restapi.livenessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Restapi.livenessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Restapi.livenessProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      # Restapi.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
     # Restapi.nodeSelector can be used to select the nodes the restapi pods should run on
     nodeSelector: {}
     # Restapi.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
@@ -1458,6 +1509,57 @@ web-modeler:
     podSecurityContext: {}
     # Webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
     containerSecurityContext: {}
+
+    # Webapp.startupProbe configuration of the webapp startup probe
+    startupProbe:
+      # Webapp.startupProbe.enabled if true, the startup probe will be enabled for the webapp container
+      enabled: false
+      # Webapp.startupProbe.probePath defines the HTTP endpoint used for the startup probe
+      probePath: /health/liveness
+      # Webapp.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 15
+      # Webapp.startupProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Webapp.startupProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Webapp.startupProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      # Webapp.startupProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    # Webapp.readinessProbe configuration of the webapp readiness probe
+    readinessProbe:
+      # Webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
+      enabled: false
+      # Webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
+      probePath: /health/readiness
+      # Webapp.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 15
+      # Webapp.readinessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Webapp.readinessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Webapp.readinessProbe.failureThreshold defines when the probe is considered failed so the Pod will be marked unready
+      failureThreshold: 5
+      # Webapp.readinessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    # Webapp.livenessProbe configuration of the webapp liveness probe
+    livenessProbe:
+      # Webapp.livenessProbe.enabled if true, the liveness probe will be enabled for the webapp container
+      enabled: false
+      # Webapp.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /health/liveness
+      # Webapp.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 15
+      # Webapp.livenessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Webapp.livenessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Webapp.livenessProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      # Webapp.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
 
     # Webapp.nodeSelector can be used to select the nodes the webapp pods should run on
     nodeSelector: {}
@@ -1514,6 +1616,51 @@ web-modeler:
     podSecurityContext: {}
     # Websockets.containerSecurityContext can be used to define the security options the websockets container should be run with
     containerSecurityContext: {}
+
+    # Websockets.startupProbe configuration of the websockets startup probe
+    startupProbe:
+      # Websockets.startupProbe.enabled if true, the startup probe will be enabled for the websockets container
+      enabled: false
+      # Websockets.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 10
+      # Websockets.startupProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Websockets.startupProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Websockets.startupProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      # Websockets.startupProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    # Websockets.readinessProbe configuration of the websockets readiness probe
+    readinessProbe:
+      # Websockets.readinessProbe.enabled if true, the readiness probe will be enabled for the websockets container
+      enabled: false
+      # Websockets.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 10
+      # Websockets.readinessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Websockets.readinessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Websockets.readinessProbe.failureThreshold defines when the probe is considered failed so the Pod will be marked unready
+      failureThreshold: 5
+      # Websockets.readinessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    # Websockets.livenessProbe configuration of the websockets liveness probe
+    livenessProbe:
+      # Websockets.livenessProbe.enabled if true, the liveness probe will be enabled for the websockets container
+      enabled: false
+      # Websockets.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 10
+      # Websockets.livenessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      # Websockets.livenessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      # Websockets.livenessProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      # Websockets.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
 
     # Websockets.nodeSelector can be used to select the nodes the websockets pods should run on
     nodeSelector: {}

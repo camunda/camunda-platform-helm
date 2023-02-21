@@ -750,6 +750,30 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `restapi.extraVolumeMounts` | Can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates | `[]` |
 | | `restapi.podSecurityContext` | Can be used to define the security options the restapi pod should be run with | `{}` |
 | | `restapi.containerSecurityContext` | Can be used to define the security options the restapi container should be run with | `{}` |
+| | `restapi.startupProbe` | Configuration of the restapi startup probe | |
+| | `restapi.startupProbe.enabled` | If true, the startup probe will be enabled for the restapi container | |
+| | `restapi.startupProbe.probePath` | Defines the HTTP endpoint used for the startup probe | |
+| | `restapi.startupProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `restapi.startupProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `restapi.startupProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `restapi.startupProbe.failureThreshold` | Defines when the probe is considered failed so the container will be restarted | |
+| | `restapi.startupProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
+| | `restapi.readinessProbe` | Configuration of the restapi readiness probe | |
+| | `restapi.readinessProbe.enabled` | If true, the readiness probe will be enabled for the restapi container | |
+| | `restapi.readinessProbe.probePath` | Defines the HTTP endpoint used for the readiness probe | |
+| | `restapi.readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `restapi.readinessProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `restapi.readinessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `restapi.readinessProbe.failureThreshold` | Defines when the probe is considered failed so the Pod will be marked unready | |
+| | `restapi.readinessProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
+| | `restapi.livenessProbe` | Configuration of the restapi liveness probe | |
+| | `restapi.livenessProbe.enabled` | If true, the liveness probe will be enabled for the restapi container | |
+| | `restapi.livenessProbe.probePath` | Defines the HTTP endpoint used for the liveness probe | |
+| | `restapi.livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `restapi.livenessProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `restapi.livenessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `restapi.livenessProbe.failureThreshold` | Defines when the probe is considered failed so the container will be restarted | |
+| | `restapi.livenessProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
 | | `restapi.nodeSelector` | Can be used to select the nodes the restapi pods should run on | `{}` |
 | | `restapi.tolerations` | Can be used to define [pod tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[]` |
 | | `restapi.affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{}` |
@@ -770,6 +794,30 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `webapp.extraVolumeMounts` | Can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates | `[]` |
 | | `webapp.podSecurityContext` | Can be used to define the security options the webapp pod should be run with | `{}` |
 | | `webapp.containerSecurityContext` | Can be used to define the security options the webapp container should be run with | `{}` |
+| | `webapp.startupProbe` | Configuration of the webapp startup probe | |
+| | `webapp.startupProbe.enabled` | If true, the startup probe will be enabled for the webapp container | |
+| | `webapp.startupProbe.probePath` | Defines the HTTP endpoint used for the startup probe | |
+| | `webapp.startupProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `webapp.startupProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `webapp.startupProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `webapp.startupProbe.failureThreshold` | Defines when the probe is considered failed so the container will be restarted | |
+| | `webapp.startupProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
+| | `webapp.readinessProbe` | Configuration of the webapp readiness probe | |
+| | `webapp.readinessProbe.enabled` | If true, the readiness probe will be enabled for the webapp container | |
+| | `webapp.readinessProbe.probePath` | Defines the HTTP endpoint used for the readiness probe | |
+| | `webapp.readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `webapp.readinessProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `webapp.readinessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `webapp.readinessProbe.failureThreshold` | Defines when the probe is considered failed so the Pod will be marked unready | |
+| | `webapp.readinessProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
+| | `webapp.livenessProbe` | Configuration of the webapp liveness probe | |
+| | `webapp.livenessProbe.enabled` | If true, the liveness probe will be enabled for the webapp container | |
+| | `webapp.livenessProbe.probePath` | Defines the HTTP endpoint used for the liveness probe | |
+| | `webapp.livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `webapp.livenessProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `webapp.livenessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `webapp.livenessProbe.failureThreshold` | Defines when the probe is considered failed so the container will be restarted | |
+| | `webapp.livenessProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
 | | `webapp.nodeSelector` | Can be used to select the nodes the webapp pods should run on | `{}` |
 | | `webapp.tolerations` | Can be used to define [pod tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[]` |
 | | `webapp.affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{}` |
@@ -789,6 +837,27 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `websockets.command` | Can be used to [override the default command](ttps://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) provided by the container image | `[]` |
 | | `websockets.podSecurityContext` | Can be used to define the security options the websockets pod should be run with | `{}` |
 | | `websockets.containerSecurityContext` | Can be used to define the security options the websockets container should be run with | `{}` |
+| | `websockets.startupProbe` | Configuration of the websockets startup probe | |
+| | `websockets.startupProbe.enabled` | If true, the startup probe will be enabled for the websockets container | |
+| | `websockets.startupProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `websockets.startupProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `websockets.startupProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `websockets.startupProbe.failureThreshold` | Defines when the probe is considered failed so the container will be restarted | |
+| | `websockets.startupProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
+| | `websockets.readinessProbe` | Configuration of the websockets readiness probe | |
+| | `websockets.readinessProbe.enabled` | If true, the readiness probe will be enabled for the websockets container | |
+| | `websockets.readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `websockets.readinessProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `websockets.readinessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `websockets.readinessProbe.failureThreshold` | Defines when the probe is considered failed so the Pod will be marked unready | |
+| | `websockets.readinessProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
+| | `websockets.livenessProbe` | Configuration of the websockets liveness probe | |
+| | `websockets.livenessProbe.enabled` | If true, the liveness probe will be enabled for the websockets container | |
+| | `websockets.livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
+| | `websockets.livenessProbe.periodSeconds` | Defines how often the probe is executed | |
+| | `websockets.livenessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
+| | `websockets.livenessProbe.failureThreshold` | Defines when the probe is considered failed so the container will be restarted | |
+| | `websockets.livenessProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
 | | `websockets.nodeSelector` | Can be used to select the nodes the websockets pods should run on | `{}` |
 | | `websockets.tolerations` | Can be used to define [pod tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[]` |
 | | `websockets.affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{}` |

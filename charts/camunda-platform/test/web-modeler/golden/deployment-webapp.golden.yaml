@@ -113,3 +113,6 @@ spec:
         - containerPort: 8070
           name: http
           protocol: TCP
+        - containerPort: 8071
+          name: http-management
+          protocol: TCP

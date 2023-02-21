@@ -239,3 +239,72 @@ func (s *webappDeploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
+
+func (s *webappDeploymentTemplateTest) TestContainerStartupProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled":                       "true",
+			"web-modeler.webapp.startupProbe.enabled":   "true",
+			"web-modeler.webapp.startupProbe.probePath": "/healthz",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
+
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
+}
+
+func (s *webappDeploymentTemplateTest) TestContainerReadinessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled":                       "true",
+			"web-modeler.webapp.readinessProbe.enabled":   "true",
+			"web-modeler.webapp.readinessProbe.probePath": "/healthz",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].ReadinessProbe
+
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
+}
+
+func (s *webappDeploymentTemplateTest) TestContainerLivenessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled":                        "true",
+			"web-modeler.webapp.livenessProbe.enabled":   "true",
+			"web-modeler.webapp.livenessProbe.probePath": "/healthz",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
+
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
+}

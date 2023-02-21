@@ -498,3 +498,93 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	pullPolicy := containers[0].ImagePullPolicy
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
 }
+
+func (s *deploymentTemplateTest) TestContainerStartupProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled": "true",
+			"web-modeler." + s.component + ".startupProbe.enabled":             "true",
+			"web-modeler." + s.component + ".startupProbe.initialDelaySeconds": "5",
+			"web-modeler." + s.component + ".startupProbe.periodSeconds":       "10",
+			"web-modeler." + s.component + ".startupProbe.successThreshold":    "1",
+			"web-modeler." + s.component + ".startupProbe.failureThreshold":    "5",
+			"web-modeler." + s.component + ".startupProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
+
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}
+
+func (s *deploymentTemplateTest) TestContainerReadinessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled": "true",
+			"web-modeler." + s.component + ".readinessProbe.enabled":             "true",
+			"web-modeler." + s.component + ".readinessProbe.initialDelaySeconds": "5",
+			"web-modeler." + s.component + ".readinessProbe.periodSeconds":       "10",
+			"web-modeler." + s.component + ".readinessProbe.successThreshold":    "1",
+			"web-modeler." + s.component + ".readinessProbe.failureThreshold":    "5",
+			"web-modeler." + s.component + ".readinessProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].ReadinessProbe
+
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}
+
+func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled": "true",
+			"web-modeler." + s.component + ".livenessProbe.enabled":             "true",
+			"web-modeler." + s.component + ".livenessProbe.initialDelaySeconds": "5",
+			"web-modeler." + s.component + ".livenessProbe.periodSeconds":       "10",
+			"web-modeler." + s.component + ".livenessProbe.successThreshold":    "1",
+			"web-modeler." + s.component + ".livenessProbe.failureThreshold":    "5",
+			"web-modeler." + s.component + ".livenessProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
+
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}
