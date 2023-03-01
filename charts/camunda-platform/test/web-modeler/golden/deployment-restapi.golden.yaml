@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "0.5.1-beta"
+    app.kubernetes.io/version: "0.6.0-beta"
     app.kubernetes.io/component: restapi
   annotations:
     {}
@@ -32,14 +32,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "0.5.1-beta"
+        app.kubernetes.io/version: "0.6.0-beta"
         app.kubernetes.io/component: restapi
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-restapi
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:0.5.1-beta"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:0.6.0-beta"
         imagePullPolicy: IfNotPresent
         env:
           - name: JAVA_OPTIONS
@@ -91,10 +91,7 @@ spec:
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
-            # If the default HTTP port 80 is included in the URL, Spring Security will produce the following error when creating the JWT decoder:
-            # > The Issuer "http://demo-keycloak/auth/realms/camunda-platform" provided in the configuration did not match the requested issuer "http://demo-keycloak:80/auth/realms/camunda-platform"
-            # Thus, port 80 is removed from the URL. Other port numbers work just fine and don't need to be removed.
-            value: "http://camunda-platform-tes/auth/realms/camunda-platform"
+            value: "http://camunda-platform-tes:80/auth/realms/camunda-platform"
           - name: RESTAPI_IDENTITY_BASE_URL
             value: "http://camunda-platform-test-identity:80"
         resources:
