@@ -19,6 +19,8 @@ data:
         # Elasticsearch full url
         url: {{ .Values.global.elasticsearch.url }}
         {{- end }}
+        # Index prefix, configured in Zeebe operate 
+        indexPrefix: {{ .Values.operate.elasticsearch.indexPrefix }}
       # Zeebe instance
       zeebe:
         # Broker contact point

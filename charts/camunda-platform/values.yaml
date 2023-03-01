@@ -133,6 +133,9 @@ global:
 
       # Identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
+        #Use another index-prefix for operate
+        elasticsearch:
+          indexPrefix: operate
         # Identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the Identity-Operate communication.
         existingSecret:
