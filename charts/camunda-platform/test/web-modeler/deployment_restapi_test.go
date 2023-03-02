@@ -72,7 +72,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakSer
 	s.Require().Contains(env,
 		corev1.EnvVar{
 			Name:  "RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL",
-			Value: "http://keycloak/auth/realms/camunda-platform",
+			Value: "http://keycloak:80/auth/realms/camunda-platform",
 		})
 }
 
@@ -295,7 +295,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerReadinessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                        "true",
+			"web-modeler.enabled":                          "true",
 			"web-modeler.restapi.readinessProbe.enabled":   "true",
 			"web-modeler.restapi.readinessProbe.probePath": "/healthz",
 		},
