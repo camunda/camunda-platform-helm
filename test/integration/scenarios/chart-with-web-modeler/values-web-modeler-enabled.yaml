@@ -18,3 +18,6 @@ web-modeler:
   websockets:
     readinessProbe:
       enabled: true
+
+connectors:
+  enabled: true

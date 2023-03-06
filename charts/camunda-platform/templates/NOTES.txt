@@ -45,6 +45,11 @@
   - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
   {{- end }}
+- Connectors:
+  - Enabled: {{ .Values.connectors.enabled }}
+  {{- if .Values.connectors.enabled }}
+  - Docker Image used for Connectors: {{ .Values.connectors.image.repository }}:{{ .Values.connectors.image.tag }}
+  {{- end }}
 - Identity:
   - Enabled: {{ .Values.identity.enabled }}
   {{- if .Values.identity.enabled }}

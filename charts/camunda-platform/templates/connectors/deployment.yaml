@@ -1,0 +1,95 @@
+{{- if .Values.connectors.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "connectors.fullname" . }}
+  labels: {{- include "connectors.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: {{ .Values.connectors.replicas }}
+  selector:
+    matchLabels: {{- include "connectors.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "connectors.labels" . | nindent 8 }}
+        {{- if .Values.connectors.podLabels }}
+        {{- toYaml .Values.connectors.podLabels | nindent 8 }}
+        {{- end }}
+        {{- if .Values.connectors.podAnnotations }}
+        annotations: {{- toYaml  .Values.connectors.podAnnotations | nindent 8 }}
+        {{- end }}
+    spec:
+{{/*      imagePullSecrets:*/}}
+{{/*        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}*/}}
+      containers:
+        - name: connectors
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.connectors.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.connectors.containerSecurityContext | nindent 10 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.connectors.serverPort }}
+              name: http
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              value: {{ .Values.connectors.serverPort | quote }}
+          {{- if eq .Values.connectors.inbound.mode "disabled" }}
+            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
+              value: {{ include "connectors.zeebeEndpoint" . | quote }}
+            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
+              value: "true"
+            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
+              value: "false"
+            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
+              value: "false"
+            - name: SPRING_MAIN_WEB-APPLICATION-TYPE
+              value: "NONE"
+          {{- end }}
+          {{- if eq .Values.connectors.inbound.mode "credentials" }} # Not implemented yet
+            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
+              value: {{ include "connectors.zeebeEndpoint" . | quote }}
+            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
+              value: "true"
+            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
+              value: "false"
+            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
+              value: "false"
+            - name: SPRING_MAIN_WEB-APPLICATION-TYPE
+              value: "NONE"
+          {{- end }}
+          {{- if eq .Values.connectors.inbound.mode "oauth" }} # Not implemented yet
+            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
+              value: {{ include "connectors.zeebeEndpoint" . | quote }}
+            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
+              value: "true"
+            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
+              value: "false"
+            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
+              value: "false"
+            - name: SPRING_MAIN_WEB-APPLICATION-TYPE
+              value: "NONE"
+          {{- end }}
+          {{- if .Values.connectors.env}}
+            {{ .Values.connectors.env | toYaml | nindent 12 }}
+          {{- end }}
+          command: {{ .Values.connectors.command }}
+          resources: {{- toYaml .Values.connectors.resources | nindent 12 }}
+      {{- if .Values.connectors.serviceAccount.name}}
+      serviceAccountName: {{ .Values.connectors.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.connectors.podSecurityContext }}
+      securityContext: {{- toYaml .Values.connectors.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.nodeSelector }}
+      nodeSelector: {{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.affinity }}
+      affinity: {{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.tolerations }}
+      tolerations: {{ toYaml . | indent 8 }}
+      {{- end }}
+{{- end }}
