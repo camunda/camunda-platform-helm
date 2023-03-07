@@ -14,9 +14,9 @@ metadata:
 spec:
   type: {{ .Values.connectors.service.type }}
   ports:
-    - name: http
-      port: {{ .Values.connectors.service.port }}
-      targetPort: 8080
+    - name: {{ .Values.connectors.service.serverName }}
+      port: {{ .Values.connectors.service.serverPort }}
+      targetPort: {{ .Values.connectors.service.serverPort }}
       protocol: TCP
   selector:
     {{- include "connectors.matchLabels" . | nindent 4 }}

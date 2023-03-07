@@ -30,8 +30,8 @@ spec:
           securityContext: {{- toYaml .Values.connectors.containerSecurityContext | nindent 10 }}
           {{- end }}
           ports:
-            - containerPort: {{ .Values.connectors.serverPort }}
-              name: http
+            - containerPort: {{ .Values.connectors.service.serverPort }}
+              name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
             - name: SERVER_PORT

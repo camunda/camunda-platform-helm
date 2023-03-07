@@ -917,7 +917,8 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 | | `serviceAccount.annotations` |  Can be used to set the annotations of the Connectors service account | `{}` |
 | | `service` |  Configuration for the Connectors service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
-| | `service.port` | Defines the port of the service, where the Connectors web application will be available | `8080` |
+| | `service.serverPort` | Defines the port number where the Connector web application will be available | `8080` |
+| | `service.serverName` | Defines the port name where the Connector web application will be available | `http` |
 | | `service.annotations` |  Can be used to define annotations, which will be applied to the Optimize service | `{}` |
 | | `podSecurityContext` | Defines the security options the Connectors pod should be run with | `{ }` |
 | | `containerSecurityContext` | Defines the security options the Connectors container should be run with | `{ }` |

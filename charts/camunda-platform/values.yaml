@@ -1756,8 +1756,6 @@ connectors:
     # Acceptable values: disabled, credentials, or oauth
     mode: disabled
 
-  serverPort: 8080
-
   # Image configuration to configure the Connectors image specifics
   image:
     # Image.registry can be used to set container image registry.
@@ -1787,10 +1785,12 @@ connectors:
   service:
     # Service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    # Service.port defines the port of the service, where the Connector web application will be available
-    port: 8080
     # Service.annotations can be used to define annotations, which will be applied to the Connectors service
     annotations: {}
+    # Service.serverPort defines the port number where the Connector web application will be available
+    serverPort: 8080
+    # Service.serverName defines the port name where the Connector web application will be available
+    serverName: http
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
