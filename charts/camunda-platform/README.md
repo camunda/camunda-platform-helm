@@ -22,6 +22,7 @@
   - [Optimize](#optimize)
   - [Identity](#identity)
   - [Web Modeler (Beta)](#web-modeler-beta)
+  - [Connectors](#connectors)
   - [Elasticsearch](#elasticsearch)
   - [Keycloak](#keycloak)
 - [Guides](#guides)
@@ -891,6 +892,61 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `postgresql.auth.username` | Defines the name of the database user to be created for Web Modeler | `web-modeler` |
 | | `postgresql.auth.password` | Defines the database user's password; a random password will be generated if left empty | |
 | | `postgresql.auth.database` | Defines the name of the database to be created for Web Modeler | `web-modeler` |
+
+### Connectors
+
+For more information, visit [Introduction to Connectors](https://docs.camunda.io/docs/components/connectors/introduction-to-connectors/).
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `connectors` | |  Configuration for the Connectors. | |
+| | `enabled` |  If true, the Connectors deployment and its related resources are deployed via a helm release | `false` |
+| | `inbound.mode` | (Experimental) Controls inbound mode for webhook or polling. Acceptable values are `disabled`, `credentials`, or `oauth` | `disabled` |
+| | `image` |  Configuration for the Connectors image specifics | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
+| | `image.repository` |  Defines which image repository to use | `camunda/connectors-bundle` |
+| | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `0.16.1` |
+| | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `podAnnotations` | Can be used to define extra Connectors pod annotations | `{ }` |
+| | `podLabels` |  Can be used to define extra Connectors pod labels | `{ }` |
+| | `env` |  Can be used to set extra environment variables in each Connectors container | `[]` |
+| | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
+| | `serviceAccount` |  Configuration for the service account where the Connectors pods are assigned to | |
+| | `serviceAccount.enabled` |  If true, enables the Connectors service account | `true` |
+| | `serviceAccount.name` |  Can be used to set the name of the Connectors service account | `""` |
+| | `serviceAccount.annotations` |  Can be used to set the annotations of the Connectors service account | `{}` |
+| | `service` |  Configuration for the Connectors service. | |
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.serverPort` | Defines the port number where the Connector web application will be available | `8080` |
+| | `service.serverName` | Defines the port name where the Connector web application will be available | `http` |
+| | `service.annotations` |  Can be used to define annotations, which will be applied to the Optimize service | `{}` |
+| | `podSecurityContext` | Defines the security options the Connectors pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Connectors container should be run with | `{ }` |
+| | `nodeSelector` |  Can be used to define on which nodes the Connectors pods should run | `{}` |
+| | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
+| | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 1`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 2`<br> ` memory: 2Gi` |
+
+#### Outbound Connectors
+
+To learn more about outbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#outbound-connector).
+
+#### Using Connector Secrets
+
+Connector secrets are generally configured via environment variables.
+
+You can set them via `values.yaml`, or command line. For example, if you need to set a Slack token, you should configure the following:
+
+```yaml
+connectors:
+  env:
+    - name: SLACK_TOKEN
+      value: <your actual token value>
+```
+
+After that, a Modeler user can set in their BPMN diagram a value `secrets.SLACK_TOKEN` without ever knowing the actual token.
+
+Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/self-managed/connectors-deployment/connectors-configuration/#secrets-in-manual-installations) to learn more.
 
 ### Elasticsearch
 

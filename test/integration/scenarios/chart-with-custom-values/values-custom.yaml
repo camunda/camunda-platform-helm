@@ -10,3 +10,6 @@ zeebe-gateway:
 
 retentionPolicy:
   enabled: true
+
+connectors:
+  enabled: true
