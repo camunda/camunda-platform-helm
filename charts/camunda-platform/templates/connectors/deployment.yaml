@@ -35,7 +35,7 @@ spec:
               protocol: TCP
           env:
             - name: SERVER_PORT
-              value: {{ .Values.connectors.serverPort | quote }}
+              value: {{ .Values.connectors.service.serverPort | quote }}
           {{- if eq .Values.connectors.inbound.mode "disabled" }}
             - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
               value: {{ include "connectors.zeebeEndpoint" . | quote }}
@@ -48,35 +48,72 @@ spec:
             - name: SPRING_MAIN_WEB-APPLICATION-TYPE
               value: "NONE"
           {{- end }}
-          {{- if eq .Values.connectors.inbound.mode "credentials" }} # Not implemented yet
+          {{- if eq .Values.connectors.inbound.mode "credentials" }}
             - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
               value: {{ include "connectors.zeebeEndpoint" . | quote }}
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
-            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
-              value: "false"
-            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
-              value: "false"
-            - name: SPRING_MAIN_WEB-APPLICATION-TYPE
-              value: "NONE"
+            - name: CAMUNDA_OPERATE_CLIENT_URL
+              value: {{ .Values.connectors.inbound.operateClient.endpoint | default (include "connectors.operateEndpoint" . | quote) }}
+            - name: CAMUNDA_OPERATE_CLIENT_USERNAME
+              value: {{ .Values.connectors.inbound.operateClient.username }}
+            - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
+              value: {{ .Values.connectors.inbound.operateClient.password }}
           {{- end }}
-          {{- if eq .Values.connectors.inbound.mode "oauth" }} # Not implemented yet
+          {{- if eq .Values.connectors.inbound.mode "oauth" }}
             - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
               value: {{ include "connectors.zeebeEndpoint" . | quote }}
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
-            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
-              value: "false"
-            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
-              value: "false"
-            - name: SPRING_MAIN_WEB-APPLICATION-TYPE
-              value: "NONE"
+            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
+              value: {{ .Values.connectors.inbound.operateClient.endpoint | default (include "camundaPlatform.keycloakURLBase" . | quote) }}
+            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
+              value: {{ .Values.connectors.inbound.operateClient.operateOAuthClientId }}
+            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
+              value: {{ .Values.connectors.inbound.operateClient.operateOAuthClientSecret }}
+            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
+              value: {{ .Values.connectors.inbound.keycloak.realm }}
+            - name: CAMUNDA_OPERATE_CLIENT_URL
+              value: {{ .Values.connectors.inbound.operateClient.endpoint | default (include "connectors.operateEndpoint" . | quote) }}
           {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
           command: {{ .Values.connectors.command }}
           resources: {{- toYaml .Values.connectors.resources | nindent 12 }}
+          {{- if .Values.connectors.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.connectors.startupProbe.probePath }}
+              port: {{ .Values.connectors.service.serverName }}
+            initialDelaySeconds: {{ .Values.connectors.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.connectors.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.connectors.readinessProbe.probePath }}
+              port: {{ .Values.connectors.service.serverName }}
+            initialDelaySeconds: {{ .Values.connectors.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.connectors.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.connectors.livenessProbe.probePath }}
+              port: {{ .Values.connectors.service.serverName }}
+            initialDelaySeconds: {{ .Values.connectors.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.livenessProbe.timeoutSeconds }}
+          {{- end }}
       {{- if .Values.connectors.serviceAccount.name}}
       serviceAccountName: {{ .Values.connectors.serviceAccount.name }}
       {{- end }}

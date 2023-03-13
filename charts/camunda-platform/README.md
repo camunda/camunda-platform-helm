@@ -935,10 +935,47 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 1`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 2`<br> ` memory: 2Gi` |
+| | `ingress` | Configuration to configure the ingress resource | |
+| | `ingress.enabled` | If true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like Ingress-NGINX. | `false` |
+| | `ingress.className` | Defines the class or configuration of ingress which should be used by the controller | `nginx` |
+| | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
+| | `ingress.path` | Defines the path which is associated with the Connectors [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
+| | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
+| | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
+| | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
+| | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
+| | `startupProbe` | StartupProbe configuration | |
+| | `startupProbe.enabled` | If true, the startup probe is enabled in app container | `true` |
+| | `startupProbe.probePath` | Defines the startup probe route used on the app | `/ready` |
+| | `startupProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
+| | `startupProbe.periodSeconds` | Defines how often the probe is executed | `30` |
+| | `startupProbe.successThreshold` | Defines how often it needs to be true to be marked as ready, after failure | `1` |
+| | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
+| | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
+| | `readinessProbe` | ReadinessProbe configuration | |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
+| | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health/readiness` |
+| | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
+| | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
+| | `readinessProbe.successThreshold` | Defines how often it needs to be true to be marked as ready, after failure | `1` |
+| | `readinessProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
+| | `readinessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
+| | `livenessProbe` | LivenessProbe configuration | |
+| | `livenessProbe.enabled` | If true, the liveness probe is enabled in app container | `false` |
+| | `livenessProbe.probePath` | Defines the liveness probe route used on the app | `/actuator/health/liveness` |
+| | `livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `5` |
+| | `livenessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
+| | `livenessProbe.successThreshold` | Defines how often it needs to be true to be considered successful after having failed | `1` |
+| | `livenessProbe.failureThreshold` | Defines when the probe is considered as failed so the container will be restarted | `5` |
+| | `livenessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 
 #### Outbound Connectors
 
 To learn more about outbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#outbound-connector).
+
+#### Inbound Connectors
+
+To learn more about inbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#inbound-connector).
 
 #### Using Connector Secrets
 

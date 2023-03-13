@@ -1763,7 +1763,26 @@ connectors:
   # Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     # Acceptable values: disabled, credentials, or oauth
-    mode: disabled
+    mode: oauth
+
+    # Operate client configurations
+    operateClient:
+      # Specify endpoint if required
+      endpoint:
+
+      # When inbound.mode: credentials
+      username: demo
+      password: demo
+
+      # When inbound.mode: oauth
+      operateOAuthClientId: connectors
+      operateOAuthClientSecret: c0nn3ct0rsAr3Aw3s0me
+
+    # When inbound.mode: oauth
+    keycloak:
+      # Specify when using external Keycloak
+      endpoint:
+      realm: camunda-platform
 
   # Image configuration to configure the Connectors image specifics
   image:
@@ -1815,6 +1834,60 @@ connectors:
   # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
+  # StartupProbe configuration
+  startupProbe:
+    # StartupProbe.enabled if true, the startup probe is enabled in app container
+    enabled: false
+    # StartupProbe.probePath defines the startup probe route used on the app
+    probePath: /actuator/health/readiness
+    # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    # StartupProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    # StartupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    # StartupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    # StartupProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  # ReadinessProbe configuration
+  readinessProbe:
+    # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
+    enabled: false
+    # ReadinessProbe.probePath defines the readiness probe route used on the app
+    probePath: /actuator/health/readiness
+    # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    # ReadinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    # ReadinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    # ReadinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    # ReadinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  # LivenessProbe configuration
+  livenessProbe:
+    # LivenessProbe.enabled if true, the liveness probe is enabled in app container
+    enabled: false
+    # LivenessProbe.probePath defines the liveness probe route used on the app
+    probePath: /actuator/health/liveness
+    # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    # LivenessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    # LivenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    successThreshold: 1
+    # LivenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    failureThreshold: 5
+    # LivenessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
   # ServiceAccount configuration for the service account where the Connectors pods are assigned to
   serviceAccount:
     # ServiceAccount.enabled if true, enables the Connectors service account
@@ -1826,7 +1899,7 @@ connectors:
 
   # Ingress configuration to configure the ingress resource
   ingress:
-    # Ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
+    # Ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     # Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -1834,7 +1907,7 @@ connectors:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    # Ingress.path defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # Ingress.path defines the path which is associated with the Connectors service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
