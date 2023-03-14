@@ -85,11 +85,6 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
-    # Identity.fullnameOverride can be used to override the full name of the identity resources
-    fullnameOverride: ""
-    # Identity.nameOverride can be used to partly override the name of the identity resources (names will still be prefixed with the release name)
-    nameOverride: ""
-
     keycloak:
       # Identity.keycloak.legacy if true, it will configure Keycloak service name according to Keycloak v16.
       # If false, then it will configure Keycloak service name according to Keycloak v19. This config is used
@@ -1081,8 +1076,13 @@ identity:
   #       If you need neither Optimize nor Web Modeler, make sure to disable both the Identity authentication and the applications by setting:
   #         global.identity.auth.enabled=false
   #         optimize.enabled=false
-  #         web-modeler.enabled=false
+  #         webModeler.enabled=false
   enabled: true
+
+  # FullnameOverride can be used to override the full name of the Identity resources
+  fullnameOverride: ""
+  # NameOverride can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)
+  nameOverride: ""
 
   # FirstUser configuration to configure properties of the first Identity user, which can be used to access all
   # web applications
@@ -1327,10 +1327,15 @@ identity:
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: ""
 
-# Web-Modeler configuration of the Web Modeler subchart
-web-modeler:
+# WebModeler configuration of the Web Modeler deployment
+webModeler:
   # Enabled if true, the Web Modeler deployment and its related resources are deployed via a helm release
   enabled: false
+
+  # FullnameOverride can be used to override the full name of the Web Modeler resources
+  fullnameOverride: ""
+  # NameOverride can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name)
+  nameOverride: ""
 
   # Image configuration of the Web Modeler Docker images
   image:
@@ -1729,22 +1734,22 @@ web-modeler:
         # Ingress.websockets.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: ""
 
-  # Postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
-  postgresql:
-    # Postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
-    # Note: if set to false, a connection to an external database must be configured instead (see Restapi.externalDatabase)
-    enabled: true
-    # Postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
-    # Note: Must be different from the default value "postgresql" which is already used for Keycloak's database
-    nameOverride: postgresql-web-modeler
-    # Postgresql.auth configuration of the database authentication
-    auth:
-      # Postgresql.auth.username defines the name of the database user to be created for Web Modeler
-      username: web-modeler
-      # Postgresql.auth.password defines the database user's password; a random password will be generated if left empty
-      password: ""
-      # Postgresql.auth.database defines the name of the database to be created for Web Modeler
-      database: web-modeler
+# Postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
+postgresql:
+  # Postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
+  # Note: if set to false, a connection to an external database must be configured instead (see WebModeler.restapi.externalDatabase)
+  enabled: false
+  # Postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
+  # Note: Must be different from the default value "postgresql" which is already used for Keycloak's database
+  nameOverride: postgresql-web-modeler
+  # Postgresql.auth configuration of the database authentication
+  auth:
+    # Postgresql.auth.username defines the name of the database user to be created for Web Modeler
+    username: web-modeler
+    # Postgresql.auth.password defines the database user's password; a random password will be generated if left empty
+    password: ""
+    # Postgresql.auth.database defines the name of the database to be created for Web Modeler
+    database: web-modeler
 
 # Connectors configuration for the Connectors.
 connectors:

@@ -11,14 +11,18 @@ zeebe-gateway:
 retentionPolicy:
   enabled: true
 
-web-modeler:
-  # the Web Modeler subchart is disabled by default
+webModeler:
+  # Web Modeler is disabled by default
   enabled: true
   image:
-    # the pull secret is required to pull the images from Camunda's Docker registry; it's created in the "SetupTest" function
+    # the pull secret is required to pull the images from Camunda's Docker registry; it's created as part of the integration test setup
     pullSecrets:
       - name: registry-camunda-cloud
   restapi:
     mail:
       # the value is required, otherwise the restapi pod wouldn't start
       fromAddress: noreply@example.com
+
+# database used by Web Modeler
+postgresql:
+  enabled: true

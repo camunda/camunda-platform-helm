@@ -49,7 +49,7 @@ func TestServiceTemplate(t *testing.T) {
 			release:   "camunda-platform-test",
 			namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			component: component,
-			templates: []string{"charts/web-modeler/templates/service-" + component + ".yaml"},
+			templates: []string{"templates/web-modeler/service-" + component + ".yaml"},
 		})
 	}
 
@@ -59,7 +59,7 @@ func (s *serviceTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":    "true",
+			"webModeler.enabled":     "true",
 			"global.annotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -78,8 +78,8 @@ func (s *serviceTest) TestContainerServiceAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".service.annotations.foo": "bar",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".service.annotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

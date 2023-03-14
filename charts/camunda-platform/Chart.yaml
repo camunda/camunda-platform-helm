@@ -29,9 +29,6 @@ dependencies:
       #       https://github.com/helm/helm/pull/10804
       - child: image
         parent: global.identity.image
-      # NOTE: This is used to share the port of the Identity service with the web-modeler subchart
-      - child: service
-        parent: global.identity.service
   - name: operate
     version: 8.1.6
     condition: "operate.enabled"
@@ -41,9 +38,6 @@ dependencies:
   - name: tasklist
     version: 8.1.6
     condition: "tasklist.enabled"
-  - name: web-modeler
-    version: 8.1.6
-    condition: "web-modeler.enabled"
   - name: zeebe
     version: 8.1.6
     condition: "zeebe.enabled"
@@ -55,6 +49,10 @@ dependencies:
     repository: "https://helm.elastic.co"
     version: 7.17.1
     condition: "elasticsearch.enabled"
+  - name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 11.x.x
+    condition: "postgresql.enabled"
   # Helpers charts.
   - name: common
     repository: https://charts.bitnami.com/bitnami

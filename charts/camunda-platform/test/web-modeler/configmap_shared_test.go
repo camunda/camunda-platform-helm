@@ -45,7 +45,7 @@ func TestConfigmapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/web-modeler/templates/configmap-shared.yaml"},
+		templates: []string{"templates/web-modeler/configmap-shared.yaml"},
 	})
 }
 
@@ -53,7 +53,7 @@ func (s *configmapTest) TestContainerGenerateRandomPusherAppKey() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
+			"webModeler.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

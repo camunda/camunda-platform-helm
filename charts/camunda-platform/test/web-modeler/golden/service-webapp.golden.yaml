@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/web-modeler/templates/service-webapp.yaml
+# Source: camunda-platform/templates/web-modeler/service-webapp.yaml
 apiVersion: v1
 kind: Service
 metadata:

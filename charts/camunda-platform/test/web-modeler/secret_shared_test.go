@@ -45,7 +45,7 @@ func TestSecretSharedTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/web-modeler/templates/secret-shared.yaml"},
+		templates: []string{"templates/web-modeler/secret-shared.yaml"},
 	})
 }
 
@@ -53,7 +53,7 @@ func (s *secretSharedTest) TestContainerGenerateRandomPusherAppSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
+			"webModeler.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

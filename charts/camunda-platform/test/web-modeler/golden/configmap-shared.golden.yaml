@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/web-modeler/templates/configmap-shared.yaml
+# Source: camunda-platform/templates/web-modeler/configmap-shared.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
