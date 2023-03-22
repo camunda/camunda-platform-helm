@@ -242,5 +242,49 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Create the base URL of the Identity API (using backchannel communication)
 */}}
 {{- define "webModeler.identityBaseUrl" -}}
-http://{{ include "identity.fullname" .Subcharts.identity }}:{{ .Values.identity.service.port }}
+http://{{ include "identity.fullname" .Subcharts.identity }}:{{ .Values.identity.service.port }}{{ default "" .Values.identity.contextPath }}
+{{- end -}}
+
+{{/*
+[web-modeler] Create the context path for the WebSocket app (= configured context path for the webapp + suffix "-ws").
+*/}}
+{{- define "webModeler.websocketContextPath" -}}
+{{ .Values.webModeler.contextPath }}-ws
+{{- end -}}
+
+{{/*
+[web-modeler] Get the host name on which the WebSocket server is reachable from the client.
+*/}}
+{{- define "webModeler.publicWebsocketHost" -}}
+{{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+  {{- .Values.global.ingress.host }}
+{{- else }}
+  {{- .Values.webModeler.ingress.enabled | ternary .Values.webModeler.ingress.websockets.host .Values.webModeler.websockets.publicHost }}
+{{- end }}
+{{- end -}}
+
+{{/*
+[web-modeler] Get the port number on which the WebSocket server is reachable from the client.
+*/}}
+{{- define "webModeler.publicWebsocketPort" -}}
+{{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+  {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
+{{- else }}
+  {{- if .Values.webModeler.ingress.enabled }}
+    {{- .Values.webModeler.ingress.websockets.tls.enabled | ternary "443" "80" }}
+  {{- else }}
+    {{- .Values.webModeler.websockets.publicPort }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+[web-modeler] Check if TLS must be enabled for WebSocket connections from the client.
+*/}}
+{{- define "webModeler.websocketTlsEnabled" -}}
+{{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+  {{- .Values.global.ingress.tls.enabled }}
+{{- else }}
+  {{- and .Values.webModeler.ingress.enabled .Values.webModeler.ingress.websockets.tls.enabled }}
+{{- end }}
 {{- end -}}

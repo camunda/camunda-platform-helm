@@ -80,15 +80,15 @@ spec:
                 name: {{ include "webModeler.fullname" . }}
                 key: pusher-app-secret
           - name: CLIENT_PUSHER_HOST
-            value: {{ .Values.webModeler.ingress.enabled | ternary .Values.webModeler.ingress.websockets.host .Values.webModeler.websockets.publicHost | quote }}
+            value: {{ include "webModeler.publicWebsocketHost" . | quote }}
           - name: CLIENT_PUSHER_PORT
-            {{- if .Values.webModeler.ingress.enabled }}
-            value: {{ .Values.webModeler.ingress.websockets.tls.enabled | ternary "443" "80" | quote }}
-            {{- else }}
-            value: {{ .Values.webModeler.websockets.publicPort | quote }}
-            {{- end }}
+            value: {{ include "webModeler.publicWebsocketPort" . | quote }}
+          {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+          - name: CLIENT_PUSHER_PATH
+            value: {{ include "webModeler.websocketContextPath" . | quote }}
+          {{- end }}
           - name: CLIENT_PUSHER_FORCE_TLS
-            value: {{ (and .Values.webModeler.ingress.enabled .Values.webModeler.ingress.websockets.tls.enabled) | quote }}
+            value: {{ include "webModeler.websocketTlsEnabled" . | quote }}
           - name: CLIENT_PUSHER_KEY
             valueFrom:
               configMapKeyRef:

@@ -146,6 +146,8 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 			"operate.contextPath":    "/operate",
 			"optimize.contextPath":   "/optimize",
 			"tasklist.contextPath":   "/tasklist",
+			"webModeler.enabled":     "true",
+			"webModeler.contextPath": "/modeler",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -161,6 +163,8 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 	s.Require().Contains(output, "path: /operate")
 	s.Require().Contains(output, "path: /optimize")
 	s.Require().Contains(output, "path: /tasklist")
+	s.Require().Contains(output, "path: /modeler")
+	s.Require().Contains(output, "path: /modeler-ws")
 }
 
 func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
@@ -172,6 +176,8 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 			"operate.contextPath":    "",
 			"optimize.contextPath":   "",
 			"tasklist.contextPath":   "",
+			"webModeler.enabled":     "true",
+			"webModeler.contextPath": "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -185,6 +191,8 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 	s.Require().NotContains(output, "name: camunda-platform-test-operate")
 	s.Require().NotContains(output, "name: camunda-platform-test-optimize")
 	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
+	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
+	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
 }
 
 func (s *ingressTemplateTest) TestIngressComponentDisabled() {
@@ -196,6 +204,7 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 			"operate.enabled":        "false",
 			"optimize.enabled":       "false",
 			"tasklist.enabled":       "false",
+			"webModeler.enabled":     "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -209,4 +218,6 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 	s.Require().NotContains(output, "name: camunda-platform-test-operate")
 	s.Require().NotContains(output, "name: camunda-platform-test-optimize")
 	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
+	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
+	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
 }

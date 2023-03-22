@@ -49,6 +49,10 @@ spec:
                 key: pusher-app-secret
           - name: PUSHER_APP_CLUSTER
             value: "web-modeler"
+          {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+          - name: PUSHER_APP_PATH
+            value: {{ include "webModeler.websocketContextPath" . | quote }}
+          {{- end }}
         {{- with .Values.webModeler.websockets.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}

@@ -1353,6 +1353,10 @@ webModeler:
     #   - name: registry-secret
     pullSecrets: []
 
+  # ContextPath can be used to make Web Modeler available on a custom sub-path. This is mainly used to run the Camunda Platform web applications under a single domain.
+  # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
+  # contextPath: "/modeler"
+
   # Restapi configuration of the Web Modeler restapi component
   restapi:
     # Restapi.image configuration of the restapi Docker image
