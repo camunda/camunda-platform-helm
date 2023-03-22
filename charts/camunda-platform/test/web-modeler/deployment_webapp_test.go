@@ -46,7 +46,7 @@ func TestWebappDeploymentTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/web-modeler/templates/deployment-webapp.yaml"},
+		templates: []string{"templates/web-modeler/deployment-webapp.yaml"},
 	})
 }
 
@@ -54,7 +54,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakClie
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                  "true",
+			"webModeler.enabled":                   "true",
 			"global.identity.auth.publicIssuerUrl": "http://localhost:18080/realms/test-realm",
 			"global.identity.keycloak.contextPath": "/",
 			"global.identity.keycloak.realm":       "/realms/test-realm",
@@ -89,7 +89,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakClie
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                  "true",
+			"webModeler.enabled":                   "true",
 			"global.identity.auth.publicIssuerUrl": "http://localhost:18080/test-path/realms/test-realm",
 			"global.identity.keycloak.contextPath": "/test-path",
 			"global.identity.keycloak.realm":       "/realms/test-realm",
@@ -124,7 +124,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                   "true",
+			"webModeler.enabled":                    "true",
 			"global.identity.keycloak.url.protocol": "http",
 			"global.identity.keycloak.url.host":     "keycloak",
 			"global.identity.keycloak.url.port":     "80",
@@ -150,8 +150,8 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServ
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":              "true",
-			"global.identity.fullnameOverride": "custom-identity-fullname",
+			"webModeler.enabled":        "true",
+			"identity.fullnameOverride": "custom-identity-fullname",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -170,8 +170,8 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServ
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":          "true",
-			"global.identity.nameOverride": "custom-identity",
+			"webModeler.enabled":    "true",
+			"identity.nameOverride": "custom-identity",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -191,10 +191,10 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusher
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                        "true",
-			"web-modeler.ingress.enabled":                "true",
-			"web-modeler.ingress.websockets.host":        "modeler-ws.example.com",
-			"web-modeler.ingress.websockets.tls.enabled": "true",
+			"webModeler.enabled":                        "true",
+			"webModeler.ingress.enabled":                "true",
+			"webModeler.ingress.websockets.host":        "modeler-ws.example.com",
+			"webModeler.ingress.websockets.tls.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -215,10 +215,10 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusher
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                        "true",
-			"web-modeler.ingress.enabled":                "true",
-			"web-modeler.ingress.websockets.host":        "modeler-ws.example.com",
-			"web-modeler.ingress.websockets.tls.enabled": "false",
+			"webModeler.enabled":                        "true",
+			"webModeler.ingress.enabled":                "true",
+			"webModeler.ingress.websockets.host":        "modeler-ws.example.com",
+			"webModeler.ingress.websockets.tls.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -239,7 +239,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetServerHttpsOnly() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                         "true",
+			"webModeler.enabled":                          "true",
 			"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -259,10 +259,10 @@ func (s *webappDeploymentTemplateTest) TestContainerSetExtraVolumes() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                                      "true",
-			"web-modeler.webapp.extraVolumes[0].name":                  "extraVolume",
-			"web-modeler.webapp.extraVolumes[0].configMap.name":        "otherConfigMap",
-			"web-modeler.webapp.extraVolumes[0].configMap.defaultMode": "744",
+			"webModeler.enabled":                                      "true",
+			"webModeler.webapp.extraVolumes[0].name":                  "extraVolume",
+			"webModeler.webapp.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"webModeler.webapp.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -287,9 +287,9 @@ func (s *webappDeploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                               "true",
-			"web-modeler.webapp.extraVolumeMounts[0].name":      "otherConfigMap",
-			"web-modeler.webapp.extraVolumeMounts[0].mountPath": "/usr/local/config",
+			"webModeler.enabled":                               "true",
+			"webModeler.webapp.extraVolumeMounts[0].name":      "otherConfigMap",
+			"webModeler.webapp.extraVolumeMounts[0].mountPath": "/usr/local/config",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -314,9 +314,9 @@ func (s *webappDeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                       "true",
-			"web-modeler.webapp.startupProbe.enabled":   "true",
-			"web-modeler.webapp.startupProbe.probePath": "/healthz",
+			"webModeler.enabled":                       "true",
+			"webModeler.webapp.startupProbe.enabled":   "true",
+			"webModeler.webapp.startupProbe.probePath": "/healthz",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -337,9 +337,9 @@ func (s *webappDeploymentTemplateTest) TestContainerReadinessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                         "true",
-			"web-modeler.webapp.readinessProbe.enabled":   "true",
-			"web-modeler.webapp.readinessProbe.probePath": "/healthz",
+			"webModeler.enabled":                         "true",
+			"webModeler.webapp.readinessProbe.enabled":   "true",
+			"webModeler.webapp.readinessProbe.probePath": "/healthz",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -360,9 +360,9 @@ func (s *webappDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                        "true",
-			"web-modeler.webapp.livenessProbe.enabled":   "true",
-			"web-modeler.webapp.livenessProbe.probePath": "/healthz",
+			"webModeler.enabled":                        "true",
+			"webModeler.webapp.livenessProbe.enabled":   "true",
+			"webModeler.webapp.livenessProbe.probePath": "/healthz",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

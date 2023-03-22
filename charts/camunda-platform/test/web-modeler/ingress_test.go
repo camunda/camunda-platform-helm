@@ -37,12 +37,12 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress",
-		Templates:      []string{"charts/web-modeler/templates/ingress.yaml"},
+		Templates:      []string{"templates/web-modeler/ingress.yaml"},
 		SetValues: map[string]string{
-			"web-modeler.enabled":                 "true",
-			"web-modeler.ingress.enabled":         "true",
-			"web-modeler.ingress.webapp.host":     "modeler.example.com",
-			"web-modeler.ingress.websockets.host": "modeler-ws.example.com",
+			"webModeler.enabled":                 "true",
+			"webModeler.ingress.enabled":         "true",
+			"webModeler.ingress.webapp.host":     "modeler.example.com",
+			"webModeler.ingress.websockets.host": "modeler-ws.example.com",
 		},
 	})
 }
@@ -58,16 +58,16 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress-all-enabled",
-		Templates:      []string{"charts/web-modeler/templates/ingress.yaml"},
+		Templates:      []string{"templates/web-modeler/ingress.yaml"},
 		SetValues: map[string]string{
-			"web-modeler.enabled":                           "true",
-			"web-modeler.ingress.enabled":                   "true",
-			"web-modeler.ingress.webapp.host":               "modeler.example.com",
-			"web-modeler.ingress.websockets.host":           "modeler-ws.example.com",
-			"web-modeler.ingress.webapp.tls.enabled":        "true",
-			"web-modeler.ingress.webapp.tls.secretName":     "webapp-tls-secret",
-			"web-modeler.ingress.websockets.tls.enabled":    "true",
-			"web-modeler.ingress.websockets.tls.secretName": "websockets-tls-secret",
+			"webModeler.enabled":                           "true",
+			"webModeler.ingress.enabled":                   "true",
+			"webModeler.ingress.webapp.host":               "modeler.example.com",
+			"webModeler.ingress.websockets.host":           "modeler-ws.example.com",
+			"webModeler.ingress.webapp.tls.enabled":        "true",
+			"webModeler.ingress.webapp.tls.secretName":     "webapp-tls-secret",
+			"webModeler.ingress.websockets.tls.enabled":    "true",
+			"webModeler.ingress.websockets.tls.secretName": "websockets-tls-secret",
 		},
 	})
 }

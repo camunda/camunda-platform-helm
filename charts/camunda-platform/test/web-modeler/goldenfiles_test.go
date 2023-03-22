@@ -50,9 +50,10 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
 			IgnoredLines:   []string{`\s+pusher-app-key:\s+.*`, `\s+pusher-app-secret:\s+.*`}, // secrets are auto-generated and need to be ignored
-			Templates:      []string{"charts/web-modeler/templates/" + name + ".yaml"},
+			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"web-modeler.enabled": "true",
+				"webModeler.enabled": "true",
+				"postgresql.enabled": "true",
 			},
 		})
 	}

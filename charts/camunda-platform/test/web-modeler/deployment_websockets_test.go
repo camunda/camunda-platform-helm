@@ -45,7 +45,7 @@ func TestWebsocketsDeploymentTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/web-modeler/templates/deployment-websockets.yaml"},
+		templates: []string{"templates/web-modeler/deployment-websockets.yaml"},
 	})
 }
 
@@ -53,8 +53,8 @@ func (s *websocketsDeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                         "true",
-			"web-modeler.websockets.startupProbe.enabled": "true",
+			"webModeler.enabled":                         "true",
+			"webModeler.websockets.startupProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -74,8 +74,8 @@ func (s *websocketsDeploymentTemplateTest) TestContainerReadinessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                           "true",
-			"web-modeler.websockets.readinessProbe.enabled": "true",
+			"webModeler.enabled":                           "true",
+			"webModeler.websockets.readinessProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -95,8 +95,8 @@ func (s *websocketsDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                          "true",
-			"web-modeler.websockets.livenessProbe.enabled": "true",
+			"webModeler.enabled":                          "true",
+			"webModeler.websockets.livenessProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

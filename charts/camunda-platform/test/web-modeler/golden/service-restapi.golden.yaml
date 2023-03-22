@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/web-modeler/templates/service-restapi.yaml
+# Source: camunda-platform/templates/web-modeler/service-restapi.yaml
 apiVersion: v1
 kind: Service
 metadata:

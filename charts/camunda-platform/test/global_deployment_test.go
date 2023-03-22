@@ -120,7 +120,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderWebModelerIfDisable
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "false",
+			"webModeler.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -130,7 +130,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderWebModelerIfDisable
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
 
 	// then
-	s.Require().NotContains(output, "charts/web-modeler")
+	s.Require().NotContains(output, "templates/web-modeler")
 }
 
 func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {

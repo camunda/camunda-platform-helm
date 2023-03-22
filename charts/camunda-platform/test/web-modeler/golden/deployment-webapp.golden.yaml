@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/web-modeler/templates/deployment-webapp.yaml
+# Source: camunda-platform/templates/web-modeler/deployment-webapp.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
