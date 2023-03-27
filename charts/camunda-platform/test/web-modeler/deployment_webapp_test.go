@@ -235,6 +235,60 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusher
 	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_FORCE_TLS", Value: "false"})
 }
 
+func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":         "true",
+			"webModeler.ingress.enabled": "false",
+			"webModeler.contextPath":     "/modeler",
+			"global.ingress.enabled":     "true",
+			"global.ingress.host":        "c8.example.com",
+			"global.ingress.tls.enabled": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_HOST", Value: "c8.example.com"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_PORT", Value: "443"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_PATH", Value: "/modeler-ws"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_FORCE_TLS", Value: "true"})
+}
+
+func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":         "true",
+			"webModeler.ingress.enabled": "false",
+			"webModeler.contextPath":     "/modeler",
+			"global.ingress.enabled":     "true",
+			"global.ingress.host":        "c8.example.com",
+			"global.ingress.tls.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_HOST", Value: "c8.example.com"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_PORT", Value: "80"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_PATH", Value: "/modeler-ws"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CLIENT_PUSHER_FORCE_TLS", Value: "false"})
+}
+
 func (s *webappDeploymentTemplateTest) TestContainerShouldSetServerHttpsOnly() {
 	// given
 	options := &helm.Options{

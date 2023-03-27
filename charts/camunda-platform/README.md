@@ -728,6 +728,7 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `image.registry` | Can be used to set the Docker registry for the Web Modeler images (overwrites `global.image.registry`).<br/>Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry. | `registry.camunda.cloud` |
 | | `image.tag` | Can be used to set the Docker image tag for the Web Modeler images (overwrites `global.image.tag`) | |
 | | `image.pullSecrets` | Can be used to configure [image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod).<br/>Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry. | |
+| | `contextPath` | Can be used to make Web Modeler available on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.<br/>Note: The WebSocket application will be exposed on the configured path suffixed with `-ws`, e.g. `/modeler-ws` | |
 | | `restapi` | Configuration of the Web Modeler restapi component | |
 | | `restapi.image` | Configuration of the restapi Docker image | |
 | | `restapi.image.repository` | Defines which image repository to use for the restapi Docker image | `web-modeler-ee/modeler-restapi` |

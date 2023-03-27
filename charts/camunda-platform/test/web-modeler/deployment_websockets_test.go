@@ -15,6 +15,7 @@
 package web_modeler
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -47,6 +48,30 @@ func TestWebsocketsDeploymentTemplate(t *testing.T) {
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"templates/web-modeler/deployment-websockets.yaml"},
 	})
+}
+
+func (s *websocketsDeploymentTemplateTest) TestContainerSetPusherAppPathIfGlobalIngressEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":         "true",
+			"webModeler.ingress.enabled": "false",
+			"webModeler.contextPath":     "/modeler",
+			"global.ingress.enabled":     "true",
+			"global.ingress.host":        "c8.example.com",
+			"global.ingress.tls.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{Name: "PUSHER_APP_PATH", Value: "/modeler-ws"})
 }
 
 func (s *websocketsDeploymentTemplateTest) TestContainerStartupProbe() {
