@@ -1770,6 +1770,8 @@ connectors:
       # Specify operate URL if required
       operateUrl:
       existingSecret:
+        operateClientUsername:
+        operateClientPassword:
 
     # When inbound.mode: oauth
     keycloak:
@@ -1777,6 +1779,8 @@ connectors:
       keycloakUrl:
       realm: camunda-platform
       existingSecret:
+        keycloakConnectorsClientId:
+        keycloakConnectorsClientSecret:
 
   # Image configuration to configure the Connectors image specifics
   image:
