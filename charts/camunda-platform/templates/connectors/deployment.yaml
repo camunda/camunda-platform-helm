@@ -54,11 +54,17 @@ spec:
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
             - name: CAMUNDA_OPERATE_CLIENT_URL
-              value: {{ .Values.connectors.inbound.operateClient.endpoint | default (include "connectors.operateEndpoint" . | quote) }}
+              value: {{ .Values.connectors.inbound.operateClient.operateUrl | default (include "camundaPlatform.operateURL" . | quote) }}
             - name: CAMUNDA_OPERATE_CLIENT_USERNAME
-              value: {{ .Values.connectors.inbound.operateClient.username }}
+              valueFrom:
+                secretKeyRef:
+                  key: operateClientUsername
+                  name: "{{ default "camunda-platform-connectors" .Values.connectors.inbound.operateClient.existingSecret }}"
             - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
-              value: {{ .Values.connectors.inbound.operateClient.password }}
+              valueFrom:
+                secretKeyRef:
+                  key: operateClientPassword
+                  name: "{{ default "camunda-platform-connectors" .Values.connectors.inbound.operateClient.existingSecret }}"
           {{- end }}
           {{- if eq .Values.connectors.inbound.mode "oauth" }}
             - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
@@ -66,15 +72,21 @@ spec:
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
-              value: {{ .Values.connectors.inbound.operateClient.endpoint | default (include "camundaPlatform.keycloakURLBase" . | quote) }}
+              value: {{ .Values.connectors.inbound.keycloak.keycloakUrl | default (include "camundaPlatform.keycloakURLBase" . | quote) }}
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
-              value: {{ .Values.connectors.inbound.operateClient.operateOAuthClientId }}
+              valueFrom:
+                secretKeyRef:
+                  key: keycloakConnectorsClientId
+                  name: {{ include "connectors.fullname" . }}
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
-              value: {{ .Values.connectors.inbound.operateClient.operateOAuthClientSecret }}
+              valueFrom:
+                secretKeyRef:
+                  key: keycloakConnectorsClientSecret
+                  name: {{ include "connectors.fullname" . }}
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
               value: {{ .Values.connectors.inbound.keycloak.realm }}
             - name: CAMUNDA_OPERATE_CLIENT_URL
-              value: {{ .Values.connectors.inbound.operateClient.endpoint | default (include "connectors.operateEndpoint" . | quote) }}
+              value: {{ .Values.connectors.inbound.operateClient.operateUrl | default (include "camundaPlatform.operateURL" . | quote) }}
           {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}

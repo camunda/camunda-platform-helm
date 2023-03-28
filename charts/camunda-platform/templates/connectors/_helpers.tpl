@@ -16,10 +16,6 @@ If release name contains chart name it will be used as a full name.
   {{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- index .Values "zeebe-gateway" "service" "gatewayPort" -}}
 {{- end -}}
 
-{{ define "connectors.operateEndpoint" }}
-  {{- print "http://" -}}{{- include "operate.fullname" .Subcharts.operate | replace "\"" "" -}}:{{- .Values.operate.service.port -}}
-{{- end -}}
-
 {{- define "connectors.fullname" -}}
 {{/* TODO: Refactor this when more sub-charts are flatten and moved to the main chart. */}}
     {{- $connectorsValues := deepCopy . -}}

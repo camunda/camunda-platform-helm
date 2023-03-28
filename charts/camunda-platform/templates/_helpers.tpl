@@ -147,3 +147,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
         {{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
     {{- end -}}
 {{- end -}}
+
+{{ define "camundaPlatform.operateURL" }}
+  {{- print "http://" -}}{{- include "operate.fullname" .Subcharts.operate -}}:{{- .Values.operate.service.port -}}
+{{- end -}}

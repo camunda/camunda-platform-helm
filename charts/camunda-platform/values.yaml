@@ -1767,22 +1767,16 @@ connectors:
 
     # Operate client configurations
     operateClient:
-      # Specify endpoint if required
-      endpoint:
-
-      # When inbound.mode: credentials
-      username: demo
-      password: demo
-
-      # When inbound.mode: oauth
-      operateOAuthClientId: connectors
-      operateOAuthClientSecret: c0nn3ct0rsAr3Aw3s0me
+      # Specify operate URL if required
+      operateUrl:
+      existingSecret:
 
     # When inbound.mode: oauth
     keycloak:
       # Specify when using external Keycloak
-      endpoint:
+      keycloakUrl:
       realm: camunda-platform
+      existingSecret:
 
   # Image configuration to configure the Connectors image specifics
   image:
@@ -1855,7 +1849,7 @@ connectors:
   # ReadinessProbe configuration
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: false
+    enabled: true
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
