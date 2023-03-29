@@ -1765,10 +1765,11 @@ connectors:
     # Acceptable values: disabled, credentials, or oauth
     mode: credentials
 
-    auth:
-      operate:
-        url: ""
-        existingSecret: ""
+    # auth:
+    #   operate:
+    #     url: ""
+    #     id: connectors
+    #     existingSecret: ""
 
   # Image configuration to configure the Connectors image specifics
   image:

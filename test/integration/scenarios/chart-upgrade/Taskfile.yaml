@@ -34,6 +34,8 @@ tasks:
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         {{ .HELM_EXTRA_ARGS }}
     - |
+      export TEST_SECRET=$(kubectl get secret "integration-test" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
       export TASKLIST_SECRET=$(kubectl get secret "integration-tasklist-identity-secret" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
       export OPTIMIZE_SECRET=$(kubectl get secret "integration-optimize-identity-secret" \
@@ -46,8 +48,6 @@ tasks:
         -n $TEST_NAMESPACE -o jsonpath="{.data.management-password}" | base64 --decode)
       export POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
-      export TEST_SECRET=$(kubectl get secret "integration-test" \
-        -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
 
       helm upgrade integration {{ .CHART_DIR }} \
         --namespace {{ .TEST_NAMESPACE }} \

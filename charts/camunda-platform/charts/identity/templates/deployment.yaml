@@ -112,27 +112,6 @@ spec:
             value: {{ .Values.global.identity.auth.optimize.redirectUrl | quote }}
           - name: KEYCLOAK_USERS_0_ROLES_4
             value: "Web Modeler"
-          # KEYCLOAK_CLIENTS_0_* preserved for integration tests.
-          - name: KEYCLOAK_CLIENTS_1_NAME
-            value: Connectors
-          - name: KEYCLOAK_CLIENTS_1_ID
-            valueFrom:
-              secretKeyRef:
-                key: clientId
-                name: {{ include "connectors.secretNameOperate" . }}
-          - name: KEYCLOAK_CLIENTS_1_SECRET
-            valueFrom:
-              secretKeyRef:
-                key: clientSecret
-                name: {{ include "connectors.secretNameOperate" . }}
-          - name: KEYCLOAK_CLIENTS_1_ROOT_URL
-            value: https://localhost:8080
-          - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
-            value: /
-          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
-            value: operate-api
-          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
-            value: read:*
           - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
             value: {{ .Values.global.identity.auth.webModeler.redirectUrl | quote }}
           {{- end }}
