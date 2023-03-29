@@ -10,7 +10,6 @@ dotenv:
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
-  init.seed: ../lib/init-seed-taskfile.yaml
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -27,7 +26,6 @@ tasks:
 
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
   setup.exec:
-    deps: [init.seed]
     cmds:
     - helm install integration {{ .CHART_DIR }}
         --namespace {{ .TEST_NAMESPACE }}
@@ -68,7 +66,6 @@ tasks:
 
   all:
     cmds:
-    - task: init.seed
     - task: setup.pre
     - task: setup.exec
     - task: setup.post
