@@ -1763,13 +1763,10 @@ connectors:
   # Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     # Acceptable values: disabled, credentials, or oauth
-    mode: credentials
+    mode: oauth
 
-    # auth:
-    #   operate:
-    #     url: ""
-    #     id: connectors
-    #     existingSecret: ""
+    auth:
+      existingSecret: ""
 
   # Image configuration to configure the Connectors image specifics
   image:
