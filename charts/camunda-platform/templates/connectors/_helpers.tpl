@@ -56,3 +56,11 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- end }}
 
 {{- end }}
+
+{{/*
+[connectors] Create the name of the operate-connectors secret.
+*/}}
+{{- define "connectors.secretNameOperate" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-operate-connectors-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
+{{- end }}

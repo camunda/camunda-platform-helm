@@ -1758,29 +1758,17 @@ postgresql:
 # Connectors configuration for the Connectors.
 connectors:
   # Enabled if true, the Connectors deployment and its related resources are deployed via a helm release
-  enabled: false
+  enabled: true
 
   # Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     # Acceptable values: disabled, credentials, or oauth
-    mode: oauth
+    mode: credentials
 
-    # Operate client configurations
-    operateClient:
-      # Specify operate URL if required
-      operateUrl:
-      existingSecret:
-        operateClientUsername:
-        operateClientPassword:
-
-    # When inbound.mode: oauth
-    keycloak:
-      # Specify when using external Keycloak
-      keycloakUrl:
-      realm: camunda-platform
-      existingSecret:
-        keycloakConnectorsClientId:
-        keycloakConnectorsClientSecret:
+    auth:
+      operate:
+        url: ""
+        existingSecret: ""
 
   # Image configuration to configure the Connectors image specifics
   image:

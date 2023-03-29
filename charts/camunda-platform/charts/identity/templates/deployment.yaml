@@ -112,12 +112,19 @@ spec:
             value: {{ .Values.global.identity.auth.optimize.redirectUrl | quote }}
           - name: KEYCLOAK_USERS_0_ROLES_4
             value: "Web Modeler"
+          # KEYCLOAK_CLIENTS_0_* preserved for integration tests.
           - name: KEYCLOAK_CLIENTS_1_NAME
             value: Connectors
           - name: KEYCLOAK_CLIENTS_1_ID
-            value: connectors
+            valueFrom:
+              secretKeyRef:
+                key: clientId
+                name: {{ include "connectors.secretNameOperate" . }}
           - name: KEYCLOAK_CLIENTS_1_SECRET
-            value: c0nn3ct0rsAr3Aw3s0me
+            valueFrom:
+              secretKeyRef:
+                key: clientSecret
+                name: {{ include "connectors.secretNameOperate" . }}
           - name: KEYCLOAK_CLIENTS_1_ROOT_URL
             value: https://localhost:8080
           - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
