@@ -72,17 +72,15 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "support extra volume mounts for web-modeler"
-    - kind: added
-      description: "expose identity metrics port"
-    - kind: added
-      description: "add initial support for Keycloak v19"
-    - kind: added
-      description: "set elasticsearch exporter prefix index config"
     - kind: changed
-      description: "customize identity/keycloak combined ingress endpoint"
+      description: "remove hiding of logout button in Optimize"
     - kind: changed
-      description: "upgrade k8s api from policy/v1beta1 to policy/v1"
+      description: "migrate Web Modeler subchart to parent chart"
     - kind: changed
-      description: "enhance elasticsearch config"
+      description: "update web-modeler to version 0.8.0-beta"
+    - kind: added
+      description: "add Connectors component without authentication"
+    - kind: added
+      description: "add Web Modeler to combined Ingress"
+    - kind: added
+      description: "support web-modeler startup/readiness/liveness probes"
