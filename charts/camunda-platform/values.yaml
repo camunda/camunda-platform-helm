@@ -1782,6 +1782,9 @@ connectors:
   # Number of Connectors replicas
   replicas: 1
 
+  # ContextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
+  # contextPath: "/connectors"
+
   # PodAnnotations can be used to define extra Connectors pod annotations
   podAnnotations: {}
   # PodLabels can be used to define extra Connectors pod labels
