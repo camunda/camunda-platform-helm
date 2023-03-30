@@ -21,6 +21,7 @@ env:
   KUBECONFIG: .github/config/kubeconfig
   TEST_SCENARIOS_DIR: test/integration/scenarios
   TEST_CLUSTER_TYPE: openshift
+  TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
   TEST_DOCKER_PASSWORD: ${{ secrets.TEST_DOCKER_PASSWORD }}
   # This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
