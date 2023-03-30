@@ -78,14 +78,6 @@ Defines match labels for identity, which are extended by sub-charts and should b
 {{- end }}
 
 {{/*
-[identity] Create the name of the connectors-identity secret
-*/}}
-{{- define "identity.secretNameConnectorsIdentity" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-connectors-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
 Keycloak helpers
 */}}
 

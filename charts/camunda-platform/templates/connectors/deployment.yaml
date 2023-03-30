@@ -60,7 +60,7 @@ spec:
             - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameConnectorsIdentity" . }}
+                  name: {{ include "connectors.secretNameConnectorsIdentity" . }}
                   key: connectors-secret
           {{- end }}
           {{- if eq .Values.connectors.inbound.mode "oauth" }}
@@ -75,7 +75,7 @@ spec:
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameConnectorsIdentity" . }}
+                  name: {{ include "connectors.secretNameConnectorsIdentity" . }}
                   key: connectors-secret
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
               value: {{ .Values.global.identity.keycloak.realm | replace "/realms/" "" }}

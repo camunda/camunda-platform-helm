@@ -58,9 +58,10 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- end }}
 
 {{/*
-[connectors] Create the name of the operate-connectors secret.
+[connectors] Create the name of the connectors-identity secret
+TODO: Move this to Identity once we move to flat chart structure.
 */}}
-{{- define "connectors.secretNameOperate" -}}
+{{- define "connectors.secretNameConnectorsIdentity" -}}
 {{- $name := .Release.Name -}}
-{{- printf "%s-connectors-operate" $name | trunc 63 | trimSuffix "-" | quote -}}
+{{- printf "%s-connectors-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end }}
