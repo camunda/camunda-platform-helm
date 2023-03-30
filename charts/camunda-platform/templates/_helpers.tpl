@@ -149,5 +149,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 {{- end -}}
 
 {{ define "camundaPlatform.operateURL" }}
-  {{- print "http://" -}}{{- include "operate.fullname" .Subcharts.operate -}}:{{- .Values.operate.service.port -}}
+  {{- if .Values.operate.enabled -}}
+    {{- print "http://" -}}{{- include "operate.fullname" .Subcharts.operate -}}:{{- .Values.operate.service.port -}}
+  {{- end -}}
 {{- end -}}
