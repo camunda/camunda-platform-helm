@@ -3,6 +3,94 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - kind: changed
+          description: "remove hiding of logout button in Optimize"
+        - kind: changed
+          description: "migrate Web Modeler subchart to parent chart"
+        - kind: changed
+          description: "update web-modeler to version 0.8.0-beta"
+        - kind: added
+          description: "add Connectors component without authentication"
+        - kind: added
+          description: "add Web Modeler to combined Ingress"
+        - kind: added
+          description: "support web-modeler startup/readiness/liveness probes"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.1.x
+    created: "2023-03-30T00:41:15.411659017Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.1.7
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.1.7
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.1.7
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.1.7
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.1.7
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.1.7
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: 44eee7f1777743612bbd4f79c18800ff475dc642793b82e3e6dafb55809485f3
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.1.7/camunda-platform-8.1.7.tgz
+    version: 8.1.7
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "support extra volume mounts for web-modeler"
         - kind: added
@@ -4745,4 +4833,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-02-08T12:42:03.427816991Z"
+generated: "2023-03-30T00:41:15.412422321Z"
