@@ -13,12 +13,11 @@ tasks:
     cmds:
     - |
         if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then
-          kubectl create secret docker-registry index-docker-io
-            --namespace {{ .TEST_NAMESPACE }}
-            --docker-username "${TEST_DOCKER_USERNAME}"
+          kubectl create secret docker-registry index-docker-io \
+            --namespace {{ .TEST_NAMESPACE }} \
+            --docker-username "${TEST_DOCKER_USERNAME}" \
             --docker-password "${TEST_DOCKER_PASSWORD}"
         fi
-    silent: true
 
   default:
     cmds:

@@ -12,6 +12,7 @@ spec:
         app: venom
         test: integration
     spec:
+      imagePullSecrets: []
       initContainers:
       - name: download-tools
         image: alpine
