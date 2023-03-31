@@ -25,7 +25,7 @@ testcases:
     - component: Tasklist
       url: http://{{ .releaseName }}-tasklist/actuator/health/readiness
     - component: Connectors
-      url: http://{{ .releaseName }}-connectors/actuator/health/readiness
+      url: http://{{ .releaseName }}-connectors:8080/actuator/health/readiness
     - component: Zeebe-Gateway
       url: http://{{ .releaseName }}-zeebe-gateway:9600/health
     method: GET
@@ -58,7 +58,7 @@ testcases:
     - component: Tasklist
       url: http://{{ .releaseName }}-tasklist/actuator/health/liveness
     - component: Connectors
-      url: http://{{ .releaseName }}-connectors/actuator/health/liveness
+      url: http://{{ .releaseName }}-connectors:8080/actuator/health/liveness
     - component: Zeebe-Gateway
       url: http://{{ .releaseName }}-zeebe-gateway:9600/actuator/health/liveness
     method: GET
