@@ -119,8 +119,10 @@ testcases:
   - name: Check deployed BPMN process in Operate - {{ .value.name }}
     type: http
     range:
-    - id: it-test-process
-    - id: test-inbound-process
+    - name: Basic
+      id: it-test-process
+    - name: Inbound Connector
+      id: test-inbound-process
     method: POST
     url: "http://{{ .releaseName }}-operate/v1/process-definitions/search"
     headers:
@@ -135,7 +137,7 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
     # NOTE: JSON keys are lowercased automatically, the original key is "bpmnProcessId".
-    - result.bodyjson.items.items0.bpmnprocessid ShouldEqual {{ .value.id }}
+    - result.bodyjson.items.items{{ .index }}.bpmnprocessid ShouldEqual {{ .value.id }}
 
 - name: TEST - Check Connectors webhook
   steps:
