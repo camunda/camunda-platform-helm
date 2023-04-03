@@ -55,7 +55,7 @@ func (s *secretTest) TestContainerCreateConnectorsSecret() {
 		SetValues: map[string]string{
 			"connectors.enabled":                   "true",
 			"connectors.inbound.mode":              "oauth",
-			"connectors.inbound.auth.existingSecret.connectors-secret": "MFphaG5KdjdiQQ==",
+			"connectors.inbound.auth.existingSecret.connectors-secret": "myConnectorsSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -66,9 +66,6 @@ func (s *secretTest) TestContainerCreateConnectorsSecret() {
 	helm.UnmarshalK8SYaml(s.T(), output, &secret)
 
 	// then
-	existingSecret := map[string]string{
-		"connectors-secret": "MFphaG5KdjdiQQ==",
-	}
 	s.Require().NotNil(secret.Data)
-	s.Require().Equal(existingSecret, string(secret.Data["connectors-secret"]))
+	s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["connectors-secret"]))
 }
