@@ -1878,7 +1878,7 @@ connectors:
   # ServiceAccount configuration for the service account where the Connectors pods are assigned to
   serviceAccount:
     # ServiceAccount.enabled if true, enables the Connectors service account
-    enabled: true
+    enabled: false
     # ServiceAccount.name can be used to set the name of the Connectors service account
     name: ""
     # ServiceAccount.annotations can be used to set the annotations of the Operate service account
@@ -1887,7 +1887,7 @@ connectors:
   # Ingress configuration to configure the ingress resource
   ingress:
     # Ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: false
+    enabled: true
     # Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
