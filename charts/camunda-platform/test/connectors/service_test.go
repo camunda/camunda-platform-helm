@@ -53,6 +53,7 @@ func (s *serviceTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			"connectors.enabled":     "true",
 			"global.annotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -71,6 +72,7 @@ func (s *serviceTest) TestContainerServiceAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			"connectors.enabled":                 "true",
 			"connectors.service.annotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
