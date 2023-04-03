@@ -55,7 +55,6 @@ func (s *secretTest) TestContainerCreateConnectorsSecret() {
 		SetValues: map[string]string{
 			"connectors.enabled":                   "true",
 			"connectors.inbound.mode":              "oauth",
-			"connectors.inbound.auth.existingSecret.connectors-secret": "myConnectorsSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
