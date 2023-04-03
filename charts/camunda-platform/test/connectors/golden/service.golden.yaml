@@ -1,15 +1,15 @@
+---
 # Source: camunda-platform/templates/connectors/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: release-name-connectors
+  name: camunda-platform-test-connectors
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
-    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    helm.sh/chart: camunda-platform-8.1.7
     app.kubernetes.io/version: "8.1.9"
     app.kubernetes.io/component: connectors
   annotations:
@@ -23,7 +23,7 @@ spec:
   selector:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
-    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors

@@ -31,7 +31,8 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
-	templateNames := []string{"service", "serviceaccount", "deployment", "ingress", "inbound-secret"}
+	// FIXME/TODO: the "inbound-secret" generates a random secret every time thus failing to pass on golden
+	templateNames := []string{"service", "serviceaccount", "deployment", "ingress"}
 
 	for _, name := range templateNames {
 		suite.Run(t, &golden.TemplateGoldenTest{
@@ -41,8 +42,9 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/connectors/" + name + ".yaml"},
 			SetValues:      map[string]string{
-				"connectors.enabled":"true", 
-				"connectors.ingress.enabled": "true",
+				"connectors.enabled":                "true", 
+				"connectors.ingress.enabled":        "true",
+				"connectors.serviceAccount.enabled": "true",
 			},
 		})
 	}

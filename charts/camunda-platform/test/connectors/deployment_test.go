@@ -15,7 +15,7 @@
 package connectors
 
 import (
-	//corev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -347,4 +347,241 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	securityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
 	s.Require().True(*securityContext.Privileged)
 	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
+}
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled": "true",
+			"connectors.nodeSelector.disktype": "ssd",
+			"connectors.nodeSelector.cputype":  "arm",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("ssd", deployment.Spec.Template.Spec.NodeSelector["disktype"])
+	s.Require().Equal("arm", deployment.Spec.Template.Spec.NodeSelector["cputype"])
+}
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+func (s *deploymentTemplateTest) TestContainerSetAffinity() {
+	// given
+
+	//affinity:
+	//	nodeAffinity:
+	//	 requiredDuringSchedulingIgnoredDuringExecution:
+	//	   nodeSelectorTerms:
+	//	   - matchExpressions:
+	//		 - key: kubernetes.io/e2e-az-name
+	//		   operator: In
+	//		   values:
+	//		   - e2e-az1
+	//		   - e2e-az2
+	//	 preferredDuringSchedulingIgnoredDuringExecution:
+	//	 - weight: 1
+	//	   preference:
+	//		 matchExpressions:
+	//		 - key: another-node-label-key
+	//		   operator: In
+	//		   values:
+	//		   - another-node-label-value
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled": "true",
+			"connectors.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+			"connectors.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
+			"connectors.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+			"connectors.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+			"connectors.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+			"connectors.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+			"connectors.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+			"connectors.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	nodeAffinity := deployment.Spec.Template.Spec.Affinity.NodeAffinity
+	s.Require().NotNil(nodeAffinity)
+
+	nodeSelectorTerm := nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0]
+	s.Require().NotNil(nodeSelectorTerm)
+	matchExpression := nodeSelectorTerm.MatchExpressions[0]
+	s.Require().NotNil(matchExpression)
+	s.Require().Equal("kubernetes.io/e2e-az-name", matchExpression.Key)
+	s.Require().EqualValues("In", matchExpression.Operator)
+	s.Require().Equal([]string{"e2e-a1", "e2e-a2"}, matchExpression.Values)
+
+	preferredSchedulingTerm := nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0]
+	s.Require().NotNil(preferredSchedulingTerm)
+
+	matchExpression = preferredSchedulingTerm.Preference.MatchExpressions[0]
+	s.Require().NotNil(matchExpression)
+	s.Require().Equal("another-node-label-key", matchExpression.Key)
+	s.Require().EqualValues("In", matchExpression.Operator)
+	s.Require().Equal([]string{"another-node-label-value"}, matchExpression.Values)
+}
+
+// https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+func (s *deploymentTemplateTest) TestContainerSetTolerations() {
+	// given
+
+	//tolerations:
+	//- key: "key1"
+	//  operator: "Equal"
+	//  value: "value1"
+	//  effect: "NoSchedule"
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled": "true",
+			"connectors.tolerations[0].key":      "key1",
+			"connectors.tolerations[0].operator": "Equal",
+			"connectors.tolerations[0].value":    "Value1",
+			"connectors.tolerations[0].effect":   "NoSchedule",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	tolerations := deployment.Spec.Template.Spec.Tolerations
+	s.Require().Equal(1, len(tolerations))
+
+	toleration := tolerations[0]
+	s.Require().Equal("key1", toleration.Key)
+	s.Require().EqualValues("Equal", toleration.Operator)
+	s.Require().Equal("Value1", toleration.Value)
+	s.Require().EqualValues("NoSchedule", toleration.Effect)
+}
+
+func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":      "true",
+			"global.image.pullPolicy": "Always",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	expectedPullPolicy := corev1.PullAlways
+	containers := deployment.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+	pullPolicy := containers[0].ImagePullPolicy
+	s.Require().Equal(expectedPullPolicy, pullPolicy)
+}
+
+func (s *deploymentTemplateTest) TestContainerStartupProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":                          "true",
+			"connectors.startupProbe.enabled":             "true",
+			"connectors.startupProbe.initialDelaySeconds": "5",
+			"connectors.startupProbe.periodSeconds":       "10",
+			"connectors.startupProbe.successThreshold":    "1",
+			"connectors.startupProbe.failureThreshold":    "5",
+			"connectors.startupProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
+
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}
+
+func (s *deploymentTemplateTest) TestContainerReadinessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":                            "true",
+			"connectors.readinessProbe.enabled":             "true",
+			"connectors.readinessProbe.initialDelaySeconds": "5",
+			"connectors.readinessProbe.periodSeconds":       "10",
+			"connectors.readinessProbe.successThreshold":    "1",
+			"connectors.readinessProbe.failureThreshold":    "5",
+			"connectors.readinessProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].ReadinessProbe
+
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
+}
+
+func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":                           "true",
+			"connectors.livenessProbe.enabled":             "true",
+			"connectors.livenessProbe.initialDelaySeconds": "5",
+			"connectors.livenessProbe.periodSeconds":       "10",
+			"connectors.livenessProbe.successThreshold":    "1",
+			"connectors.livenessProbe.failureThreshold":    "5",
+			"connectors.livenessProbe.timeoutSeconds":      "1",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
+
+	s.Require().EqualValues(5, probe.InitialDelaySeconds)
+	s.Require().EqualValues(10, probe.PeriodSeconds)
+	s.Require().EqualValues(1, probe.SuccessThreshold)
+	s.Require().EqualValues(5, probe.FailureThreshold)
+	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }

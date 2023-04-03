@@ -1,15 +1,15 @@
+---
 # Source: camunda-platform/templates/connectors/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: release-name-connectors
+  name: camunda-platform-test-connectors
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
-    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    helm.sh/chart: camunda-platform-8.1.7
     app.kubernetes.io/version: "8.1.9"
     app.kubernetes.io/component: connectors
   annotations:
@@ -20,7 +20,7 @@ spec:
     matchLabels:
       app: camunda-platform
       app.kubernetes.io/name: camunda-platform
-      app.kubernetes.io/instance: release-name
+      app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: connectors
@@ -29,13 +29,14 @@ spec:
       labels:
         app: camunda-platform
         app.kubernetes.io/name: camunda-platform
-        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        helm.sh/chart: camunda-platform-8.1.7
         app.kubernetes.io/version: "8.1.9"
         app.kubernetes.io/component: connectors
     spec:
+      imagePullSecrets:
+        []
       containers:
         - name: connectors
           image: camunda/connectors-bundle:0.16.1
@@ -48,29 +49,29 @@ spec:
             - name: SERVER_PORT
               value: "8080"
             - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
-              value: "release-name-zeebe-gateway:26500"
+              value: "camunda-platform-test-zeebe-gateway:26500"
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
-              value: http://release-name-keycloa:80
+              value: http://camunda-platform-tes:80
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
               value: connectors
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
               valueFrom:
                 secretKeyRef:
-                  name: "release-name-connectors-identity-secret"
+                  name: "camunda-platform-test-connectors-identity-secret"
                   key: connectors-secret
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
               value: camunda-platform
             - name: CAMUNDA_OPERATE_CLIENT_URL
-              value: "http://release-name-operate:80"
+              value: "http://camunda-platform-test-operate:80"
           command: []
           resources:
             limits:
-              cpu: "2"
+              cpu: 2
               memory: 2Gi
             requests:
-              cpu: "1"
+              cpu: 1
               memory: 1Gi
           readinessProbe:
             httpGet:
