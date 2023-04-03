@@ -3,29 +3,27 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: release-name-connectors
+  name: camunda-platform-test-connectors
   labels:
-    app: camunda-platform
     app.kubernetes.io/name: camunda-platform
-    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    helm.sh/chart: camunda-platform-8.1.7
     app.kubernetes.io/version: "8.1.9"
     app.kubernetes.io/component: connectors
   annotations:
-    ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
   rules:
-    - http:
+    - host: local
+      http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: release-name-connectors
+                name: camunda-platform-test-connectors
                 port:
                   number: 8080
   tls:
