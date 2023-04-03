@@ -108,10 +108,8 @@ testcases:
     type: exec
     range:
     - name: Basic
-      id: it-test-process
       file: test-process.bpmn
     - name: Inbound Connector
-      id: test-inbound-process
       file: test-inbound-process.bpmn
     script: |
       zbctl --insecure --address "{{ .releaseName }}-zeebe-gateway:26500" \
@@ -120,6 +118,9 @@ testcases:
     - result.code ShouldEqual 0
   - name: Check deployed BPMN process in Operate - {{ .value.name }}
     type: http
+    range:
+    - id: it-test-process
+    - id: test-inbound-process
     method: POST
     url: "http://{{ .releaseName }}-operate/v1/process-definitions/search"
     headers:
