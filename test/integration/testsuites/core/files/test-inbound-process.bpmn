@@ -6,7 +6,7 @@
         <zeebe:properties>
           <zeebe:property name="inbound.type" value="webhook" />
           <zeebe:property name="inbound.subtype" value="ConfigurableInboundWebhook" />
-          <zeebe:property name="inbound.context" value="myWebhook123" />
+          <zeebe:property name="inbound.context" value="test-mywebhook" />
           <zeebe:property name="inbound.shouldValidateHmac" value="disabled" />
           <zeebe:property name="inbound.variableMapping" value="" />
         </zeebe:properties>

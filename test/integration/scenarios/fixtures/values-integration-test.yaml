@@ -1,6 +1,9 @@
 test:
   integration: true
 
+connectors:
+  enabled: true
+
 # TODO: Remove readinessProbe once it's enabled by default (planned for v8.2).
 operate:
   readinessProbe:
@@ -75,7 +78,6 @@ identity:
   - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_6_DEFINITION
     value: "write:*"
   # TODO: Add WebModeler access when it's public.
-  # TODO: Add Connectors access when it's public.
 
 # Auth to avoid Docker download rate limit.
 # https://docs.docker.com/docker-hub/download-rate-limit/
