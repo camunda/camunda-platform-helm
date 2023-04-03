@@ -1763,7 +1763,7 @@ connectors:
   # Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     # Acceptable values: disabled, credentials, or oauth
-    mode: oauth
+    mode: disabled
 
     auth:
       existingSecret: ""
@@ -1793,8 +1793,7 @@ connectors:
   # Logging configuration for the Connectors logging. This template will be directly included in the Operate configuration yaml file
   logging:
     level:
-      ROOT: INFO
-      io.camunda.connector: DEBUG
+      io.camunda.connector: ERROR
 
   # Service configuration to configure the Connectors service.
   service:
