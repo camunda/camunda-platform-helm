@@ -1758,7 +1758,7 @@ postgresql:
 # Connectors configuration for the Connectors.
 connectors:
   # Enabled if true, the Connectors deployment and its related resources are deployed via a helm release
-  enabled: true
+  enabled: false
 
   # Switch for inbound mode (e.g., for webhook or polling)
   inbound:
