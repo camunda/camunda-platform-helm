@@ -16,18 +16,17 @@ spec:
         {{- if .Values.connectors.podLabels }}
         {{- toYaml .Values.connectors.podLabels | nindent 8 }}
         {{- end }}
-        {{- if .Values.connectors.podAnnotations }}
-        annotations: {{- toYaml  .Values.connectors.podAnnotations | nindent 8 }}
-        {{- end }}
+      {{- if .Values.connectors.podAnnotations }}
+      annotations: {{- toYaml  .Values.connectors.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
-{{/*      imagePullSecrets:*/}}
-{{/*        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}*/}}
+      imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
       containers:
         - name: connectors
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.connectors.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.connectors.containerSecurityContext | nindent 10 }}
+          securityContext: {{- toYaml .Values.connectors.containerSecurityContext | nindent 12 }}
           {{- end }}
           ports:
             - containerPort: {{ .Values.connectors.service.serverPort }}

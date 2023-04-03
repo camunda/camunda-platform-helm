@@ -65,3 +65,10 @@ TODO: Move this to Identity once we move to flat chart structure.
 {{- $name := .Release.Name -}}
 {{- printf "%s-connectors-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
 {{- end }}
+
+{{/*
+[connectors] Get the image pull secrets.
+*/}}
+{{- define "connectors.imagePullSecrets" -}}
+{{- include "camundaPlatform.imagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
+{{- end }}
