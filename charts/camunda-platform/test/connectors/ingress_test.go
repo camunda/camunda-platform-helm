@@ -38,7 +38,7 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress",
 		Templates:      []string{"templates/connectors/ingress.yaml"},
-		SetValues:      map[string]string{"connectors.ingress.enabled": "true"},
+		SetValues:      map[string]string{"connectors.enabled":"true", "connectors.ingress.enabled": "true"},
 	})
 }
 
@@ -55,6 +55,7 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 		GoldenFileName: "ingress-all-enabled",
 		Templates:      []string{"templates/connectors/ingress.yaml"},
 		SetValues: map[string]string{
+			"connectors.enabled":                "true",
 			"connectors.ingress.enabled":        "true",
 			"connectors.ingress.host":           "local",
 			"connectors.ingress.tls.enabled":    "true",
