@@ -585,3 +585,107 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().EqualValues(5, probe.FailureThreshold)
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }
+
+func (s *deploymentTemplateTest) TestContainerSetInboundModeDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":      "true",
+			"connectors.inbound.mode": "disabled",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+
+	for _, envvar := range env {
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_URL", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_USERNAME", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_PASSWORD", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-ID", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_URL", envvar.Name)
+	}
+
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CONNECTOR_POLLING_ENABLED", Value: "false"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", Value: "false"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_MAIN_WEB-APPLICATION-TYPE", Value: "NONE"})
+}
+
+func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":      "true",
+			"connectors.inbound.mode": "credentials",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+
+	for _, envvar := range env {
+		s.Require().NotEqual("CAMUNDA_CONNECTOR_POLLING_ENABLED", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", envvar.Name)
+		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-ID", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", envvar.Name)
+	}
+
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_USERNAME", Value: "connectors"})
+}
+
+func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":      "true",
+			"connectors.inbound.mode": "oauth",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+
+	for _, envvar := range env {
+		s.Require().NotEqual("CAMUNDA_CONNECTOR_POLLING_ENABLED", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", envvar.Name)
+		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_USERNAME", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_PASSWORD", envvar.Name)
+	}
+
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", Value: "http://camunda-platform-tes:80"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_CLIENT-ID", Value: "connectors"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", Value: "camunda-platform"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
+}
