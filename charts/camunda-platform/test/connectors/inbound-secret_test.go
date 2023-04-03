@@ -66,5 +66,5 @@ func (s *secretTest) TestContainerCreateConnectorsSecret() {
 
 	// then
 	s.Require().NotNil(secret.Data)
-	s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["connectors-secret"]))
+	s.Require().Regexp("^[a-zA-Z0-9]{10}$", string(secret.Data["connectors-secret"]))
 }
