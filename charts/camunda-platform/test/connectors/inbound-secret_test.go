@@ -66,6 +66,9 @@ func (s *secretTest) TestContainerCreateConnectorsSecret() {
 	helm.UnmarshalK8SYaml(s.T(), output, &secret)
 
 	// then
+	existingSecret := map[string]string{
+		"connectors-secret": "MFphaG5KdjdiQQ==",
+	}
 	s.Require().NotNil(secret.Data)
-	s.Require().Equal("MFphaG5KdjdiQQ==", string(secret.Data["connectors-secret"]))
+	s.Require().Equal(existingSecret, string(secret.Data["connectors-secret"]))
 }
