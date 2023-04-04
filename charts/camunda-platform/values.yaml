@@ -1758,12 +1758,12 @@ postgresql:
 # Connectors configuration for the Connectors.
 connectors:
   # Enabled if true, the Connectors deployment and its related resources are deployed via a helm release
-  enabled: true
+  enabled: false
 
   # Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     # Acceptable values: disabled, credentials, or oauth
-    mode: oauth
+    mode: disabled
 
     auth:
       existingSecret: ""
