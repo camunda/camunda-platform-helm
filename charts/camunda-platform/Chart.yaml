@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.1.6
+version: 8.1.7
 appVersion: 8.1.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.1.6
+    version: 8.1.7
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -29,32 +29,30 @@ dependencies:
       #       https://github.com/helm/helm/pull/10804
       - child: image
         parent: global.identity.image
-      # NOTE: This is used to share the port of the Identity service with the web-modeler subchart
-      - child: service
-        parent: global.identity.service
   - name: operate
-    version: 8.1.6
+    version: 8.1.7
     condition: "operate.enabled"
   - name: optimize
-    version: 8.1.6
+    version: 8.1.7
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.1.6
+    version: 8.1.7
     condition: "tasklist.enabled"
-  - name: web-modeler
-    version: 8.1.6
-    condition: "web-modeler.enabled"
   - name: zeebe
-    version: 8.1.6
+    version: 8.1.7
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.1.6
+    version: 8.1.7
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
     repository: "https://helm.elastic.co"
     version: 7.17.1
     condition: "elasticsearch.enabled"
+  - name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 11.x.x
+    condition: "postgresql.enabled"
   # Helpers charts.
   - name: common
     repository: https://charts.bitnami.com/bitnami
@@ -74,17 +72,15 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "support extra volume mounts for web-modeler"
-    - kind: added
-      description: "expose identity metrics port"
-    - kind: added
-      description: "add initial support for Keycloak v19"
-    - kind: added
-      description: "set elasticsearch exporter prefix index config"
     - kind: changed
-      description: "customize identity/keycloak combined ingress endpoint"
+      description: "remove hiding of logout button in Optimize"
     - kind: changed
-      description: "upgrade k8s api from policy/v1beta1 to policy/v1"
+      description: "migrate Web Modeler subchart to parent chart"
     - kind: changed
-      description: "enhance elasticsearch config"
+      description: "update web-modeler to version 0.8.0-beta"
+    - kind: added
+      description: "add Connectors component without authentication"
+    - kind: added
+      description: "add Web Modeler to combined Ingress"
+    - kind: added
+      description: "support web-modeler startup/readiness/liveness probes"

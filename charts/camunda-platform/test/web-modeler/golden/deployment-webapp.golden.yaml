@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/web-modeler/templates/deployment-webapp.yaml
+# Source: camunda-platform/templates/web-modeler/deployment-webapp.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "0.6.0-beta"
+    app.kubernetes.io/version: "0.8.0-beta"
     app.kubernetes.io/component: webapp
   annotations:
     {}
@@ -32,14 +32,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "0.6.0-beta"
+        app.kubernetes.io/version: "0.8.0-beta"
         app.kubernetes.io/component: webapp
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-webapp
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:0.6.0-beta"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:0.8.0-beta"
         imagePullPolicy: IfNotPresent
         env:
           - name: NODE_ENV

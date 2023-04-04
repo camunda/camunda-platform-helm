@@ -22,6 +22,8 @@
   - [Optimize](#optimize)
   - [Identity](#identity)
   - [Web Modeler (Beta)](#web-modeler-beta)
+  - [PostgreSQL for Web Modeler](#postgresql-for-web-modeler)
+  - [Connectors](#connectors)
   - [Elasticsearch](#elasticsearch)
   - [Keycloak](#keycloak)
 - [Guides](#guides)
@@ -73,17 +75,18 @@ camunda-platform
   |_ optimize
   |_ operate
   |_ tasklist
-  |_ web-modeler
-    |_ postgresql
   |_ zeebe
+  |_ postgresql
 ```
+
+> :bulb: Please note that the Connectors and Web Modeler components are part of the main chart and not implemented as sub-charts.
 
 For example, Camunda Identity utilizes Keycloak and allows you to manage users, roles, and permissions
 for Camunda Platform 8 components.
 
 - Keycloak is a dependency for Camunda Identity, and PostgreSQL is a dependency for Keycloak.
-- PostgreSQL is an optional dependency for Web Modeler.
 - Elasticsearch is a dependency for the Camunda Platform chart, which is used in Zeebe, Operate, Tasklist, and Optimize.
+- PostgreSQL is an optional dependency for the Camunda Platform chart and is used by Web Modeler.
 
 The values for the dependencies Keycloak and PostgreSQL can be set in the same hierarchy:
 
@@ -94,10 +97,8 @@ identity:
     [keycloak values]
     postgresql:
       [postgresql values]
-web-modeler:
-  [web-modeler values]
-  postgresql:
-    [postgresql values]
+postgresql:
+  [postgresql values]
 ```
 
 ## Installation
@@ -192,8 +193,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `elasticsearch.prefix` | Defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes | `zeebe-record` |
 | | `zeebeClusterName` | Defines the cluster name for the Zeebe cluster. All pods get this prefix in their name. | `{{ .Release.Name }}-zeebe` |
 | | `zeebePort` | Defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers. | 26500 |
-| | `identity.fullnameOverride` | can be used to override the full name of the identity resources | |
-| | `identity.nameOverride` | can be used to partly override the name of the identity resources (names will still be prefixed with the release name) | |
 | | `identity.service.port` | defines the port of the service on which the identity application will be available | `80` |
 | | `identity.auth.enabled` |  If true, enables the Identity authentication otherwise basic-auth will be used on all services. | `true` |
 | | `identity.auth.publicIssuerUrl` | Defines the token issuer (Keycloak) URL, where the services can request JWT tokens. Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login. Can be overwritten if an Ingress is in use and an external IP is available. | `"http://localhost:18080/auth/realms/camunda-platform"` |
@@ -614,7 +613,9 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `identity`| |  Configuration for the Identity sub chart. | |
-| | `enabled` |  If true, the Identity deployment and its related resources are deployed via a helm release. <br/> Note: Identity is required by Optimize and Web Modeler. If Identity is disabled, both Optimize and Web Modeler will be unusable. If you need neither Optimize nor Web Modeler, make sure to disable both the Identity authentication and the applications by setting:<br/>`global.identity.auth.enabled: false`<br/>`optimize.enabled: false`<br/>`web-modeler.enabled: false` | `true` |
+| | `enabled` |  If true, the Identity deployment and its related resources are deployed via a helm release. <br/> Note: Identity is required by Optimize and Web Modeler. If Identity is disabled, both Optimize and Web Modeler will be unusable. If you need neither Optimize nor Web Modeler, make sure to disable both the Identity authentication and the applications by setting:<br/>`global.identity.auth.enabled: false`<br/>`optimize.enabled: false`<br/>`webModeler.enabled: false` | `true` |
+| | `fullnameOverride` | Can be used to override the full name of the Identity resources | |
+| | `nameOverride` | Can be used to partly override the name of the Identity resources (names will still be prefixed with the release name) | |
 | | `firstUser.username` | Defines the username of the first user, needed to log in into the web applications | `demo` |
 | | `firstUser.password` | Defines the password of the first user, needed to log in into the web applications | `demo` |
 | | `firstUser.email` | Defines the email address of the first user; a valid email address is required to use Web Modeler | `demo@example.org` |
@@ -696,7 +697,7 @@ To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
 - [create an image pull secret](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) using the provided credentials
 - configure the Web Modeler pods to use the secret:
   ```yaml
-  web-modeler:
+  webModeler:
     image:
       pullSecrets:
         - name: <MY_SECRET_NAME>
@@ -705,27 +706,25 @@ To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
 #### Database
 Web Modeler requires a PostgreSQL database to store the data.
 You can either:
-- deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the `postgresql` chart dependency); this is the default setting
+- deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the [`postgresql` chart dependency](#postgresql-for-web-modeler))
 - configure a connection to an (existing) external database by setting `postgresql.enabled` to `false` and providing the values under `restapi.externalDatabase`
 
 #### SMTP server
 Web Modeler requires an SMTP server to send (notification) emails to users.
 The SMTP connection can be configured with the values under `restapi.mail`.
 
-#### Ingress
-Running Web Modeler on a context path (like https://example.com/modeler) is not yet supported.
-That is why the [global](#global) Ingress resource does not contain a rule for Web Modeler.
-You can configure a separate Ingress resource for Web Modeler though using the values under `ingress` below.
-
 #### Configuration values
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `web-modeler` | | Configuration of the Web Modeler subchart | |
+| `webModeler` | | Configuration of the Web Modeler deployment | |
 | | `enabled` | If `true`, the Web Modeler deployment and its related resources are deployed via a helm release | `false` |
+| | `fullnameOverride` | can be used to override the full name of the Web Modeler resources | |
+| | `nameOverride` | can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name) | |
 | | `image` | Configuration of the Web Modeler Docker images | |
 | | `image.registry` | Can be used to set the Docker registry for the Web Modeler images (overwrites `global.image.registry`).<br/>Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry. | `registry.camunda.cloud` |
 | | `image.tag` | Can be used to set the Docker image tag for the Web Modeler images (overwrites `global.image.tag`) | |
 | | `image.pullSecrets` | Can be used to configure [image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod).<br/>Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry. | |
+| | `contextPath` | Can be used to make Web Modeler available on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.<br/>Note: The WebSocket application will be exposed on the configured path suffixed with `-ws`, e.g. `/modeler-ws` | |
 | | `restapi` | Configuration of the Web Modeler restapi component | |
 | | `restapi.image` | Configuration of the restapi Docker image | |
 | | `restapi.image.repository` | Defines which image repository to use for the restapi Docker image | `web-modeler-ee/modeler-restapi` |
@@ -885,13 +884,74 @@ You can configure a separate Ingress resource for Web Modeler though using the v
 | | `ingress.websockets.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
 | | `ingress.websockets.tls.enabled` | If `true`, TLS will be configured on the ingress resource | `false` |
 | | `ingress.websockets.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | |
-| | `postgresql` | Configuration for the postgresql dependency chart used by Web Modeler. See the [chart documentation](https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters) for more details. | |
-| | `postgresql.enabled` | If `true`, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart.<br/>Note: If set to `false`, a connection to an external database must be configured instead (see `restapi.externalDatabase`). | `true` |
-| | `postgresql.nameOverride` | Defines the name of the Postgres resources (names will be [prefixed with the release name](https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters)).<br/>Note: Must be different from the default value "postgresql" which is already used for Keycloak's database. | `postgresql-web-modeler` |
-| | `postgresql.auth` | Configuration of the database authentication | |
-| | `postgresql.auth.username` | Defines the name of the database user to be created for Web Modeler | `web-modeler` |
-| | `postgresql.auth.password` | Defines the database user's password; a random password will be generated if left empty | |
-| | `postgresql.auth.database` | Defines the name of the database to be created for Web Modeler | `web-modeler` |
+
+### PostgreSQL for Web Modeler
+The Camunda Platform 8 Helm chart has a dependency on the [Bitnami PostgreSQL chart](https://github.com/bitnami/charts/tree/main/bitnami/postgresql). All variables related to PostgreSQL can be found in [bitnami/postgresql/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/postgresql/values.yaml) and can be set under `postgresql`.
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `postgresql` |  | Configuration of the postgresql dependency chart used by Web Modeler. | |
+| | `enabled` | If `true`, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart.<br/>Note: If set to `false`, a connection to an external database must be configured instead (see `webModeler.restapi.externalDatabase`). | `false` |
+| | `nameOverride` | Defines the name of the Postgres resources (names will be [prefixed with the release name](https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters)).<br/>Note: Must be different from the default value "postgresql" which is already used for Keycloak's database. | `postgresql-web-modeler` |
+| | `auth` | Configuration of the database authentication | |
+| | `auth.username` | Defines the name of the database user to be created for Web Modeler | `web-modeler` |
+| | `auth.password` | Defines the database user's password; a random password will be generated if left empty | |
+| | `auth.database` | Defines the name of the database to be created for Web Modeler | `web-modeler` |
+
+### Connectors
+
+For more information, visit [Introduction to Connectors](https://docs.camunda.io/docs/components/connectors/introduction-to-connectors/).
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `connectors` | |  Configuration for the Connectors. | |
+| | `enabled` |  If true, the Connectors deployment and its related resources are deployed via a helm release | `false` |
+| | `inbound.mode` | (Experimental) Controls inbound mode for webhook or polling. Acceptable values are `disabled`, `credentials`, or `oauth` | `disabled` |
+| | `image` |  Configuration for the Connectors image specifics | |
+| | `image.registry` | Can be used to set container image registry. | `""` |
+| | `image.repository` |  Defines which image repository to use | `camunda/connectors-bundle` |
+| | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `0.16.1` |
+| | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `podAnnotations` | Can be used to define extra Connectors pod annotations | `{ }` |
+| | `podLabels` |  Can be used to define extra Connectors pod labels | `{ }` |
+| | `env` |  Can be used to set extra environment variables in each Connectors container | `[]` |
+| | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
+| | `serviceAccount` |  Configuration for the service account where the Connectors pods are assigned to | |
+| | `serviceAccount.enabled` |  If true, enables the Connectors service account | `true` |
+| | `serviceAccount.name` |  Can be used to set the name of the Connectors service account | `""` |
+| | `serviceAccount.annotations` |  Can be used to set the annotations of the Connectors service account | `{}` |
+| | `service` |  Configuration for the Connectors service. | |
+| | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
+| | `service.serverPort` | Defines the port number where the Connector web application will be available | `8080` |
+| | `service.serverName` | Defines the port name where the Connector web application will be available | `http` |
+| | `service.annotations` |  Can be used to define annotations, which will be applied to the Optimize service | `{}` |
+| | `podSecurityContext` | Defines the security options the Connectors pod should be run with | `{ }` |
+| | `containerSecurityContext` | Defines the security options the Connectors container should be run with | `{ }` |
+| | `nodeSelector` |  Can be used to define on which nodes the Connectors pods should run | `{}` |
+| | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
+| | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
+| | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 1`<br> `  memory: 1Gi`<br>`limits:`<br> ` cpu: 2`<br> ` memory: 2Gi` |
+
+#### Outbound Connectors
+
+To learn more about outbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#outbound-connector).
+
+#### Using Connector Secrets
+
+Connector secrets are generally configured via environment variables.
+
+You can set them via `values.yaml`, or command line. For example, if you need to set a Slack token, you should configure the following:
+
+```yaml
+connectors:
+  env:
+    - name: SLACK_TOKEN
+      value: <your actual token value>
+```
+
+After that, a Modeler user can set in their BPMN diagram a value `secrets.SLACK_TOKEN` without ever knowing the actual token.
+
+Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/self-managed/connectors-deployment/connectors-configuration/#secrets-in-manual-installations) to learn more.
 
 ### Elasticsearch
 

@@ -50,17 +50,55 @@ func TestDeploymentTemplate(t *testing.T) {
 			release:   "camunda-platform-test",
 			namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			component: component,
-			templates: []string{"charts/web-modeler/templates/deployment-" + component + ".yaml"},
+			templates: []string{"templates/web-modeler/deployment-" + component + ".yaml"},
 		})
 	}
+}
+
+func (s *deploymentTemplateTest) TestContainerOverrideAppName() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":      "true",
+			"webModeler.nameOverride": "foo",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("camunda-platform-test-foo-"+s.component, deployment.ObjectMeta.Name)
+}
+
+func (s *deploymentTemplateTest) TestContainerOverrideAppFullname() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":          "true",
+			"webModeler.fullnameOverride": "foo",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("foo-"+s.component, deployment.ObjectMeta.Name)
 }
 
 func (s *deploymentTemplateTest) TestContainerSetPodLabels() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                           "true",
-			"web-modeler." + s.component + ".podLabels.foo": "bar",
+			"webModeler.enabled":                           "true",
+			"webModeler." + s.component + ".podLabels.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -78,9 +116,9 @@ func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                                "true",
-			"web-modeler." + s.component + ".podAnnotations.foo": "bar",
-			"web-modeler." + s.component + ".podAnnotations.foz": "baz",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".podAnnotations.foo": "bar",
+			"webModeler." + s.component + ".podAnnotations.foz": "baz",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -99,7 +137,7 @@ func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":    "true",
+			"webModeler.enabled":     "true",
 			"global.annotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -118,12 +156,12 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                              "true",
-			"global.image.registry":                            "global.custom.registry.io",
-			"global.image.tag":                                 "8.x.x",
-			"web-modeler.image.registry":                       "subchart.custom.registry.io",
-			"web-modeler.image.tag":                            "snapshot",
-			"web-modeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
+			"webModeler.enabled":                              "true",
+			"global.image.registry":                           "global.custom.registry.io",
+			"global.image.tag":                                "8.x.x",
+			"webModeler.image.registry":                       "subchart.custom.registry.io",
+			"webModeler.image.tag":                            "snapshot",
+			"webModeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -142,11 +180,11 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobalRegistry() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                              "true",
-			"global.image.registry":                            "global.custom.registry.io",
-			"web-modeler.image.registry":                       "",
-			"web-modeler.image.tag":                            "snapshot",
-			"web-modeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
+			"webModeler.enabled":                              "true",
+			"global.image.registry":                           "global.custom.registry.io",
+			"webModeler.image.registry":                       "",
+			"webModeler.image.tag":                            "snapshot",
+			"webModeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -165,7 +203,7 @@ func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsGlobal() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":              "true",
+			"webModeler.enabled":               "true",
 			"global.image.pullSecrets[0].name": "SecretName",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -184,9 +222,9 @@ func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                   "true",
-			"global.image.pullSecrets[0].name":      "SecretName",
-			"web-modeler.image.pullSecrets[0].name": "SecretNameSubChart",
+			"webModeler.enabled":                   "true",
+			"global.image.pullSecrets[0].name":     "SecretName",
+			"webModeler.image.pullSecrets[0].name": "SecretNameSubChart",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -204,8 +242,8 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":   "true",
-			"web-modeler.image.tag": "a.b.c",
+			"webModeler.enabled":   "true",
+			"webModeler.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -226,9 +264,9 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":   "true",
-			"web-modeler.image.tag": "",
-			"global.image.tag":      "a.b.c",
+			"webModeler.enabled":   "true",
+			"webModeler.image.tag": "",
+			"global.image.tag":     "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -249,9 +287,9 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":   "true",
-			"web-modeler.image.tag": "a.b.c",
-			"global.image.tag":      "x.y.z",
+			"webModeler.enabled":   "true",
+			"webModeler.image.tag": "a.b.c",
+			"global.image.tag":     "x.y.z",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -272,8 +310,8 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                     "true",
-			"web-modeler." + s.component + ".command": "[printenv]",
+			"webModeler.enabled":                     "true",
+			"webModeler." + s.component + ".command": "[printenv]",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -294,8 +332,8 @@ func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":             "true",
-			"web-modeler.serviceAccount.name": "accName",
+			"webModeler.enabled":             "true",
+			"webModeler.serviceAccount.name": "accName",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -314,8 +352,8 @@ func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".podSecurityContext.runAsUser": "1000",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".podSecurityContext.runAsUser": "1000",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -334,9 +372,9 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".containerSecurityContext.privileged":          "true",
-			"web-modeler." + s.component + ".containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".containerSecurityContext.privileged":          "true",
+			"webModeler." + s.component + ".containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -357,9 +395,9 @@ func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".nodeSelector.disktype": "ssd",
-			"web-modeler." + s.component + ".nodeSelector.cputype":  "arm",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".nodeSelector.disktype": "ssd",
+			"webModeler." + s.component + ".nodeSelector.cputype":  "arm",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -399,15 +437,15 @@ func (s *deploymentTemplateTest) TestContainerSetAffinity() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
-			"web-modeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+			"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
+			"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+			"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+			"webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+			"webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+			"webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+			"webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -451,11 +489,11 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                                     "true",
-			"web-modeler." + s.component + ".tolerations[0].key":      "key1",
-			"web-modeler." + s.component + ".tolerations[0].operator": "Equal",
-			"web-modeler." + s.component + ".tolerations[0].value":    "Value1",
-			"web-modeler." + s.component + ".tolerations[0].effect":   "NoSchedule",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".tolerations[0].key":      "key1",
+			"webModeler." + s.component + ".tolerations[0].operator": "Equal",
+			"webModeler." + s.component + ".tolerations[0].value":    "Value1",
+			"webModeler." + s.component + ".tolerations[0].effect":   "NoSchedule",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -480,7 +518,7 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":     "true",
+			"webModeler.enabled":      "true",
 			"global.image.pullPolicy": "Always",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -503,13 +541,13 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".startupProbe.enabled":             "true",
-			"web-modeler." + s.component + ".startupProbe.initialDelaySeconds": "5",
-			"web-modeler." + s.component + ".startupProbe.periodSeconds":       "10",
-			"web-modeler." + s.component + ".startupProbe.successThreshold":    "1",
-			"web-modeler." + s.component + ".startupProbe.failureThreshold":    "5",
-			"web-modeler." + s.component + ".startupProbe.timeoutSeconds":      "1",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".startupProbe.enabled":             "true",
+			"webModeler." + s.component + ".startupProbe.initialDelaySeconds": "5",
+			"webModeler." + s.component + ".startupProbe.periodSeconds":       "10",
+			"webModeler." + s.component + ".startupProbe.successThreshold":    "1",
+			"webModeler." + s.component + ".startupProbe.failureThreshold":    "5",
+			"webModeler." + s.component + ".startupProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -533,13 +571,13 @@ func (s *deploymentTemplateTest) TestContainerReadinessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".readinessProbe.enabled":             "true",
-			"web-modeler." + s.component + ".readinessProbe.initialDelaySeconds": "5",
-			"web-modeler." + s.component + ".readinessProbe.periodSeconds":       "10",
-			"web-modeler." + s.component + ".readinessProbe.successThreshold":    "1",
-			"web-modeler." + s.component + ".readinessProbe.failureThreshold":    "5",
-			"web-modeler." + s.component + ".readinessProbe.timeoutSeconds":      "1",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".readinessProbe.enabled":             "true",
+			"webModeler." + s.component + ".readinessProbe.initialDelaySeconds": "5",
+			"webModeler." + s.component + ".readinessProbe.periodSeconds":       "10",
+			"webModeler." + s.component + ".readinessProbe.successThreshold":    "1",
+			"webModeler." + s.component + ".readinessProbe.failureThreshold":    "5",
+			"webModeler." + s.component + ".readinessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -563,13 +601,13 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled": "true",
-			"web-modeler." + s.component + ".livenessProbe.enabled":             "true",
-			"web-modeler." + s.component + ".livenessProbe.initialDelaySeconds": "5",
-			"web-modeler." + s.component + ".livenessProbe.periodSeconds":       "10",
-			"web-modeler." + s.component + ".livenessProbe.successThreshold":    "1",
-			"web-modeler." + s.component + ".livenessProbe.failureThreshold":    "5",
-			"web-modeler." + s.component + ".livenessProbe.timeoutSeconds":      "1",
+			"webModeler.enabled": "true",
+			"webModeler." + s.component + ".livenessProbe.enabled":             "true",
+			"webModeler." + s.component + ".livenessProbe.initialDelaySeconds": "5",
+			"webModeler." + s.component + ".livenessProbe.periodSeconds":       "10",
+			"webModeler." + s.component + ".livenessProbe.successThreshold":    "1",
+			"webModeler." + s.component + ".livenessProbe.failureThreshold":    "5",
+			"webModeler." + s.component + ".livenessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

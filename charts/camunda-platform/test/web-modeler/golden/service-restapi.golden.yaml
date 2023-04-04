@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/web-modeler/templates/service-restapi.yaml
+# Source: camunda-platform/templates/web-modeler/service-restapi.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "0.6.0-beta"
+    app.kubernetes.io/version: "0.8.0-beta"
     app.kubernetes.io/component: restapi
   annotations:
 spec:

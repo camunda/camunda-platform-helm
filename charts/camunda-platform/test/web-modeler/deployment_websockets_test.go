@@ -15,6 +15,7 @@
 package web_modeler
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -45,16 +46,40 @@ func TestWebsocketsDeploymentTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/web-modeler/templates/deployment-websockets.yaml"},
+		templates: []string{"templates/web-modeler/deployment-websockets.yaml"},
 	})
+}
+
+func (s *websocketsDeploymentTemplateTest) TestContainerSetPusherAppPathIfGlobalIngressEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":         "true",
+			"webModeler.ingress.enabled": "false",
+			"webModeler.contextPath":     "/modeler",
+			"global.ingress.enabled":     "true",
+			"global.ingress.host":        "c8.example.com",
+			"global.ingress.tls.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{Name: "PUSHER_APP_PATH", Value: "/modeler-ws"})
 }
 
 func (s *websocketsDeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                         "true",
-			"web-modeler.websockets.startupProbe.enabled": "true",
+			"webModeler.enabled":                         "true",
+			"webModeler.websockets.startupProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -74,8 +99,8 @@ func (s *websocketsDeploymentTemplateTest) TestContainerReadinessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                           "true",
-			"web-modeler.websockets.readinessProbe.enabled": "true",
+			"webModeler.enabled":                           "true",
+			"webModeler.websockets.readinessProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -95,8 +120,8 @@ func (s *websocketsDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                          "true",
-			"web-modeler.websockets.livenessProbe.enabled": "true",
+			"webModeler.enabled":                          "true",
+			"webModeler.websockets.livenessProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

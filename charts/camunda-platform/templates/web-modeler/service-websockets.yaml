@@ -1,3 +1,4 @@
+{{- if .Values.webModeler.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,15 +8,16 @@ metadata:
     {{- if .Values.global.annotations}}
     {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.websockets.service.annotations}}
-    {{- toYaml .Values.websockets.service.annotations | nindent 4 }}
+    {{- if .Values.webModeler.websockets.service.annotations}}
+    {{- toYaml .Values.webModeler.websockets.service.annotations | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ .Values.websockets.service.type }}
+  type: {{ .Values.webModeler.websockets.service.type }}
   ports:
-  - port: {{ .Values.websockets.service.port }}
+  - port: {{ .Values.webModeler.websockets.service.port }}
     name: http
     targetPort: 8060
     protocol: TCP
   selector:
     {{- include "webModeler.websockets.matchLabels" . | nindent 4 }}
+{{- end }}

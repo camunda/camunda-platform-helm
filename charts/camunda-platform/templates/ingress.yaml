@@ -66,6 +66,22 @@ spec:
             path: {{ .Values.tasklist.contextPath }}
             pathType: Prefix
           {{- end }}
+          {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
+          - backend:
+              service:
+                name: {{ template "webModeler.webapp.fullname" . }}
+                port:
+                  number: {{ .Values.webModeler.webapp.service.port }}
+            path: {{ .Values.webModeler.contextPath }}
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ template "webModeler.websockets.fullname" . }}
+                port:
+                  number:  {{ .Values.webModeler.websockets.service.port }}
+            path: {{ template "webModeler.websocketContextPath" . }}
+            pathType: Prefix
+          {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
   tls:
     - hosts:

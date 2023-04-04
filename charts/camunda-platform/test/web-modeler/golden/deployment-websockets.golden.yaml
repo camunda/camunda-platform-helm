@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/web-modeler/templates/deployment-websockets.yaml
+# Source: camunda-platform/templates/web-modeler/deployment-websockets.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "0.6.0-beta"
+    app.kubernetes.io/version: "0.8.0-beta"
     app.kubernetes.io/component: websockets
   annotations:
     {}
@@ -32,14 +32,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "0.6.0-beta"
+        app.kubernetes.io/version: "0.8.0-beta"
         app.kubernetes.io/component: websockets
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-websockets
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:0.6.0-beta"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:0.8.0-beta"
         imagePullPolicy: IfNotPresent
         env:
           - name: APP_NAME

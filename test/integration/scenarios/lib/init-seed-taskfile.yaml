@@ -1,12 +1,24 @@
 version: '3'
 
 tasks:
-  default:
+  docker-login:
+    desc: 'Create Docker login secret but only if the var "TEST_CREATE_DOCKER_LOGIN_SECRET" is set.'
     preconditions:
-    - test -n "${TEST_DOCKER_USERNAME}"
-    - test -n "${TEST_DOCKER_PASSWORD}"
+    - sh: |
+        if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then
+          test -n "${TEST_DOCKER_USERNAME}" &&
+          test -n "${TEST_DOCKER_PASSWORD}"
+        fi
+      msg: 'Please set the vars "TEST_DOCKER_USERNAME" and "TEST_DOCKER_PASSWORD"'
     cmds:
-    - kubectl create secret docker-registry index-docker-io
-        --namespace {{ .TEST_NAMESPACE }}
-        --docker-username "${TEST_DOCKER_USERNAME}"
-        --docker-password "${TEST_DOCKER_PASSWORD}"
+    - |
+        if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then
+          kubectl create secret docker-registry index-docker-io \
+            --namespace {{ .TEST_NAMESPACE }} \
+            --docker-username "${TEST_DOCKER_USERNAME}" \
+            --docker-password "${TEST_DOCKER_PASSWORD}"
+        fi
+
+  default:
+    cmds:
+    - task: docker-login

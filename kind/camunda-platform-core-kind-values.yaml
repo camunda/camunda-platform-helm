@@ -23,6 +23,11 @@ zeebe:
 zeebe-gateway:
   replicas: 1
 
+connectors:
+  enabled: true
+  inbound:
+    mode: disabled
+
 # Configure elastic search to make it running for local development
 elasticsearch:
   imageTag: 7.17.3

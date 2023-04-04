@@ -45,6 +45,11 @@
   - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
   {{- end }}
+- Connectors:
+  - Enabled: {{ .Values.connectors.enabled }}
+  {{- if .Values.connectors.enabled }}
+  - Docker Image used for Connectors: {{ .Values.connectors.image.repository }}:{{ .Values.connectors.image.tag }}
+  {{- end }}
 - Identity:
   - Enabled: {{ .Values.identity.enabled }}
   {{- if .Values.identity.enabled }}
@@ -58,12 +63,12 @@
   {{- end }}
   {{- end }}
 - Web Modeler:
-  - Enabled: {{ index .Values "web-modeler" "enabled" }}
-  {{- if index .Values "web-modeler" "enabled" }}
+  - Enabled: {{ .Values.webModeler.enabled }}
+  {{- if .Values.webModeler.enabled }}
   - Docker images used for Web Modeler:
-    - {{ include "webModeler.restapi.image" (index .Subcharts "web-modeler") }}
-    - {{ include "webModeler.webapp.image" (index .Subcharts "web-modeler") }}
-    - {{ include "webModeler.websockets.image" (index .Subcharts "web-modeler") }}
+    - {{ include "webModeler.restapi.image" . }}
+    - {{ include "webModeler.webapp.image" . }}
+    - {{ include "webModeler.websockets.image" . }}
   {{- end }}
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
@@ -100,10 +105,10 @@ Tasklist: kubectl port-forward svc/{{ .Release.Name }}-tasklist 8082:80
 {{ if .Values.optimize.enabled -}}
 Optimize: kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
-{{ if index .Values "web-modeler" "enabled" }}
+{{ if .Values.webModeler.enabled }}
 Web Modeler:
-kubectl port-forward svc/{{ include "webModeler.webapp.fullname" (index .Subcharts "web-modeler") }} 8084:80
-kubectl port-forward svc/{{ include "webModeler.websockets.fullname" (index .Subcharts "web-modeler") }} 8085:80
+kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8084:80
+kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
 
     {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}

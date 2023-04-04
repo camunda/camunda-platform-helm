@@ -45,7 +45,7 @@ func TestSecretRestapiTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/web-modeler/templates/secret-restapi.yaml"},
+		templates: []string{"templates/web-modeler/secret-restapi.yaml"},
 	})
 }
 
@@ -53,9 +53,9 @@ func (s *secretTest) TestContainerCreateExternalDatabasePasswordSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                           "true",
-			"web-modeler.postgresql.enabled":                "false",
-			"web-modeler.restapi.externalDatabase.password": "secret123",
+			"webModeler.enabled":                           "true",
+			"postgresql.enabled":                           "false",
+			"webModeler.restapi.externalDatabase.password": "secret123",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -74,8 +74,8 @@ func (s *secretTest) TestContainerCreateSmtpPasswordSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"web-modeler.enabled":                   "true",
-			"web-modeler.restapi.mail.smtpPassword": "secret123",
+			"webModeler.enabled":                   "true",
+			"webModeler.restapi.mail.smtpPassword": "secret123",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
