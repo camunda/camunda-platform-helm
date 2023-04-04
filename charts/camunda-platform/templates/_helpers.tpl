@@ -116,11 +116,15 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 [camunda-platform] Keycloak URL which could be external.
 */}}
 
+{{- define "camundaPlatform.keycloakURLBase" -}}
+    http://{{- include "camundaPlatform.keycloakDefaultHost" . -}}:80
+{{- end -}}
+
 {{- define "camundaPlatform.keycloakURL" -}}
     {{- if .Values.global.identity.keycloak.url -}}
         {{- include "identity.keycloak.url" . -}}
     {{- else -}}
-        http://{{- include "camundaPlatform.keycloakDefaultHost" . -}}:80{{- include "identity.keycloak.contextPath" . -}}
+        {{- include "camundaPlatform.keycloakURLBase" . -}}{{- include "identity.keycloak.contextPath" . -}}
     {{- end -}}
 {{- end -}}
 
@@ -142,4 +146,10 @@ Set imagePullSecrets according the values of global, subchart, or empty.
     {{- else -}}
         {{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
     {{- end -}}
+{{- end -}}
+
+{{ define "camundaPlatform.operateURL" }}
+  {{- if .Values.operate.enabled -}}
+    {{- print "http://" -}}{{- include "operate.fullname" .Subcharts.operate -}}:{{- .Values.operate.service.port -}}
+  {{- end -}}
 {{- end -}}

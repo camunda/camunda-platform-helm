@@ -1,6 +1,9 @@
 test:
   integration: true
 
+connectors:
+  enabled: true
+
 # TODO: Remove readinessProbe once it's enabled by default (planned for v8.2).
 operate:
   readinessProbe:
@@ -27,52 +30,52 @@ identity:
     enabled: true
   # Keycloak client seed which is used to query Camunda Platform APIs. 
   env:
-  - name: KEYCLOAK_CLIENTS_0_ID
+  - name: KEYCLOAK_CLIENTS_1_ID
     value: venom
-  - name: KEYCLOAK_CLIENTS_0_NAME
+  - name: KEYCLOAK_CLIENTS_1_NAME
     value: Venom
-  - name: KEYCLOAK_CLIENTS_0_SECRET
+  - name: KEYCLOAK_CLIENTS_1_SECRET
     valueFrom:
       secretKeyRef:
         name: integration-test
         key: client-secret
-  - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
+  - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
     value: /dummy
-  - name: KEYCLOAK_CLIENTS_0_ROOT_URL
+  - name: KEYCLOAK_CLIENTS_1_ROOT_URL
     value: http://dummy
-  - name: KEYCLOAK_CLIENTS_0_TYPE
+  - name: KEYCLOAK_CLIENTS_1_TYPE
     value: CONFIDENTIAL
   # Identity access.
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
     value: camunda-identity-resource-server
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
     value: read
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_1_RESOURCE_SERVER_ID
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_1_RESOURCE_SERVER_ID
     value: camunda-identity-resource-server
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_1_DEFINITION
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_1_DEFINITION
     value: write
   # Operate access.
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_2_RESOURCE_SERVER_ID
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_2_RESOURCE_SERVER_ID
     value: operate-api
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_2_DEFINITION
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_2_DEFINITION
     value: "read:*"
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_3_RESOURCE_SERVER_ID
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_3_RESOURCE_SERVER_ID
     value: operate-api
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_3_DEFINITION
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_3_DEFINITION
     value: "write:*"
   # Tasklist access.
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_4_RESOURCE_SERVER_ID
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_4_RESOURCE_SERVER_ID
     value: tasklist-api
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_4_DEFINITION
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_4_DEFINITION
     value: "read:*"
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_5_RESOURCE_SERVER_ID
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_5_RESOURCE_SERVER_ID
     value: tasklist-api
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_5_DEFINITION
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_5_DEFINITION
     value: "write:*"
   # Optimize access.
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_6_RESOURCE_SERVER_ID
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_6_RESOURCE_SERVER_ID
     value: optimize-api
-  - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_6_DEFINITION
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_6_DEFINITION
     value: "write:*"
   # TODO: Add WebModeler access when it's public.
 

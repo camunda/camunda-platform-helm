@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package identity
+package connectors
 
 import (
 	"path/filepath"
@@ -29,14 +29,13 @@ import (
 
 type secretTest struct {
 	suite.Suite
-	chartPath  string
-	release    string
-	namespace  string
-	templates  []string
-	secretName []string
+	chartPath string
+	release   string
+	namespace string
+	templates []string
 }
 
-func TestSecretTemplate(t *testing.T) {
+func TestSecretRestapiTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../")
@@ -46,37 +45,26 @@ func TestSecretTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{
-			"charts/identity/templates/operate-secret.yaml",
-			"charts/identity/templates/tasklist-secret.yaml",
-			"charts/identity/templates/optimize-secret.yaml",
-			"charts/identity/templates/connectors-secret.yaml",
-		},
-		secretName: []string{
-			"operate-secret",
-			"tasklist-secret",
-			"optimize-secret",
-			"connectors-secret",
-		},
+		templates: []string{"templates/connectors/inbound-secret.yaml"},
 	})
 }
 
-func (s *secretTest) TestContainerGenerateSecret() {
+func (s *secretTest) TestContainerCreateConnectorsSecret() {
 	// given
 	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":      "true",
+			"connectors.inbound.mode": "credentials",
+		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
 	// when
-	s.Require().GreaterOrEqual(4, len(s.templates))
-	for idx, template := range s.templates {
-		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
-		var secret coreV1.Secret
-		helm.UnmarshalK8SYaml(s.T(), output, &secret)
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var secret coreV1.Secret
+	helm.UnmarshalK8SYaml(s.T(), output, &secret)
 
-		// then
-		s.Require().NotNil(secret.Data)
-		s.Require().NotNil(secret.Data[s.secretName[idx]])
-		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
-	}
+	// then
+	s.Require().NotNil(secret.Data)
+	s.Require().Regexp("^[a-zA-Z0-9]{10}$", string(secret.Data["connectors-secret"]))
 }

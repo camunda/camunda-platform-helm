@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package identity
+package connectors
 
 import (
 	"path/filepath"
@@ -27,56 +27,62 @@ import (
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type secretTest struct {
+type serviceTest struct {
 	suite.Suite
-	chartPath  string
-	release    string
-	namespace  string
-	templates  []string
-	secretName []string
+	chartPath string
+	release   string
+	namespace string
+	templates []string
 }
 
-func TestSecretTemplate(t *testing.T) {
+func TestServiceTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &secretTest{
+	suite.Run(t, &serviceTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{
-			"charts/identity/templates/operate-secret.yaml",
-			"charts/identity/templates/tasklist-secret.yaml",
-			"charts/identity/templates/optimize-secret.yaml",
-			"charts/identity/templates/connectors-secret.yaml",
-		},
-		secretName: []string{
-			"operate-secret",
-			"tasklist-secret",
-			"optimize-secret",
-			"connectors-secret",
-		},
+		templates: []string{"templates/connectors/service.yaml"},
 	})
 }
 
-func (s *secretTest) TestContainerGenerateSecret() {
+func (s *serviceTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":     "true",
+			"global.annotations.foo": "bar",
+		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
 	// when
-	s.Require().GreaterOrEqual(4, len(s.templates))
-	for idx, template := range s.templates {
-		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
-		var secret coreV1.Secret
-		helm.UnmarshalK8SYaml(s.T(), output, &secret)
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var service coreV1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
 
-		// then
-		s.Require().NotNil(secret.Data)
-		s.Require().NotNil(secret.Data[s.secretName[idx]])
-		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
+	// then
+	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+}
+
+func (s *serviceTest) TestContainerServiceAnnotations() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":                 "true",
+			"connectors.service.annotations.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var service coreV1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+	// then
+	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 }

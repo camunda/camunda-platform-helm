@@ -56,3 +56,18 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- end }}
 
 {{- end }}
+
+{{/*
+[connectors] Create the name of the auth credentials
+*/}}
+{{- define "connectors.authCredentialsSecretName" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-connectors-auth-credentials" $name | trunc 63 | trimSuffix "-" | quote -}}
+{{- end }}
+
+{{/*
+[connectors] Get the image pull secrets.
+*/}}
+{{- define "connectors.imagePullSecrets" -}}
+{{- include "camundaPlatform.imagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
+{{- end }}

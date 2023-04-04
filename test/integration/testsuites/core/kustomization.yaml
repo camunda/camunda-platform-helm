@@ -18,6 +18,7 @@ configMapGenerator:
     disableNameSuffixHash: true
   behavior: merge
   files:
+  - files/test-inbound-process.bpmn
   - files/test-process.bpmn
 
 patches:

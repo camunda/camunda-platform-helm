@@ -82,6 +82,15 @@ spec:
             path: {{ template "webModeler.websocketContextPath" . }}
             pathType: Prefix
           {{- end }}
+          {{- if and .Values.connectors.enabled .Values.connectors.contextPath }}
+          - backend:
+              service:
+                name: {{ include "connectors.fullname" . }}
+                port:
+                  number: {{ .Values.connectors.service.serverPort }}
+            path: {{ .Values.connectors.contextPath }}
+            pathType: Prefix
+          {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
   tls:
     - hosts:

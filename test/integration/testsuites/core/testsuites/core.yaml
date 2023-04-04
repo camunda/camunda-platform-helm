@@ -23,6 +23,9 @@ testcases:
     - component: Optimize
       clientID: optimize
       clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
+    - component: Connectors
+      clientID: connectors
+      clientSecret: "{{ .CONNECTORS_CLIENT_SECRET }}"
     method: POST
     url: "http://{{ .releaseName }}-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
     headers:
@@ -101,14 +104,25 @@ testcases:
 
 - name: TEST - Deploying BPMN process
   steps:
-  - name: Deploy BPMN process to Zeebe
+  - name: Deploy BPMN process to Zeebe - {{ .value.name }}
     type: exec
+    range:
+    - name: Basic
+      file: test-process.bpmn
+    - name: Inbound Connector
+      file: test-inbound-process.bpmn
     script: |
-      zbctl --insecure --address "{{ .releaseName }}-zeebe-gateway:26500" deploy /mnt/fixtures/test-process.bpmn
+      zbctl --insecure --address "{{ .releaseName }}-zeebe-gateway:26500" \
+          deploy /mnt/fixtures/{{ .value.file }}
     assertions:
     - result.code ShouldEqual 0
-  - name: Check deployed BPMN process in Operate
+  - name: Check deployed BPMN process in Operate - {{ .value.name }}
     type: http
+    range:
+    - name: Basic
+      id: it-test-process
+    - name: Inbound Connector
+      id: test-inbound-process
     method: POST
     url: "http://{{ .releaseName }}-operate/v1/process-definitions/search"
     headers:
@@ -123,4 +137,22 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
     # NOTE: JSON keys are lowercased automatically, the original key is "bpmnProcessId".
-    - result.bodyjson.items.items0.bpmnprocessid ShouldEqual it-test-process
+    - result.bodyjson.items.items{{ .index }}.bpmnprocessid ShouldEqual {{ .value.id }}
+
+- name: TEST - Check Connectors webhook
+  steps:
+  - name: Check deployed BPMN webhook
+    type: http
+    method: POST
+    url: "http://{{ .releaseName }}-connectors:8080/inbound/test-mywebhook"
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+    body: '{"webhookDataKey":"webhookDataValue"}'
+    retry: 3
+    delay: 60
+    # info: |
+    #   - Request Body: {{ .result.request.body }}
+    #   - Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
