@@ -43,11 +43,21 @@ func TestSecretTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &secretTest{
-		chartPath:  chartPath,
-		release:    "camunda-platform-test",
-		namespace:  "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates:  []string{"charts/identity/templates/operate-secret.yaml", "charts/identity/templates/tasklist-secret.yaml"},
-		secretName: []string{"operate-secret", "tasklist-secret"},
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{
+			"charts/identity/templates/operate-secret.yaml",
+			"charts/identity/templates/tasklist-secret.yaml",
+			"charts/identity/templates/optimize-secret.yaml",
+			"charts/identity/templates/connectors-secret.yaml",
+		},
+		secretName: []string{
+			"operate-secret",
+			"tasklist-secret",
+			"optimize-secret",
+			"connectors-secret",
+		},
 	})
 }
 
@@ -58,7 +68,7 @@ func (s *secretTest) TestContainerGenerateSecret() {
 	}
 
 	// when
-	s.Require().GreaterOrEqual(2, len(s.templates))
+	s.Require().GreaterOrEqual(4, len(s.templates))
 	for idx, template := range s.templates {
 		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
 		var secret coreV1.Secret

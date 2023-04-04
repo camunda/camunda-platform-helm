@@ -52,12 +52,19 @@ spec:
               value: "camunda-platform-test-zeebe-gateway:26500"
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
-            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
-              value: "false"
-            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
-              value: "false"
-            - name: SPRING_MAIN_WEB-APPLICATION-TYPE
-              value: "NONE"
+            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
+              value: http://camunda-platform-tes:80
+            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
+              value: connectors
+            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "camunda-platform-test-connectors-identity-secret"
+                  key: connectors-secret
+            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
+              value: camunda-platform
+            - name: CAMUNDA_OPERATE_CLIENT_URL
+              value: "http://camunda-platform-test-operate:80"
           command: []
           resources:
             limits:

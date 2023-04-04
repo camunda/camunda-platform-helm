@@ -126,6 +126,12 @@ global:
       # Can be overwritten if ingress is in use and an external IP is available.
       publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
 
+      # Identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other sub-charts
+      connectors:
+        # Identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # The existing secret should contain an `connectors-secret` field, which will be used as secret for the Identity-Connectors communication.
+        existingSecret: ""
+
       # Identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
         # Identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
@@ -1763,9 +1769,11 @@ connectors:
   # Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     # Acceptable values: disabled, credentials, or oauth
-    mode: disabled
-
+    mode: oauth
+    # Connectors.inbound.auth configuration of the credentials authentication.
     auth:
+      # Connectors.inbound.auth.existingSecret can be used to configure Secret name that contains
+      # inbound connectors password.
       existingSecret: ""
 
   # Image configuration to configure the Connectors image specifics

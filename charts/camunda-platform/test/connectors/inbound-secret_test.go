@@ -53,8 +53,8 @@ func (s *secretTest) TestContainerCreateConnectorsSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":                   "true",
-			"connectors.inbound.mode":              "oauth",
+			"connectors.enabled":      "true",
+			"connectors.inbound.mode": "credentials",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

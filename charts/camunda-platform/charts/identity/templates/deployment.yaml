@@ -125,7 +125,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 key: connectors-secret
-                name: {{ include "connectors.secretNameConnectorsIdentity" . }}
+                name: {{ include "identity.secretNameConnectorsIdentity" . }}
                 optional: true
           - name: KEYCLOAK_CLIENTS_0_ROOT_URL
             value: http://placeholder
