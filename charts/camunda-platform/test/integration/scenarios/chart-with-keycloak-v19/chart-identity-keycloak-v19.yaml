@@ -1,7 +1,0 @@
-apiVersion: v2
-name: identity
-dependencies:
-- name: keycloak
-  repository: https://charts.bitnami.com/bitnami
-  version: 12.2.0
-  condition: "keycloak.enabled"

@@ -1286,16 +1286,6 @@ identity:
       adminUser: admin
       # Keycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
       # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
-      #
-      # Example:
-      #
-      # Keycloak.auth.existingSecret:
-      #   name: mySecret
-      #   keyMapping:
-      #     admin-password: myPasswordKey
-      #     management-password: myManagementPasswordKey
-      #     tls-keystore-password: myTlsKeystorePasswordKey
-      #     tls-truestore-password: myTlsTruestorePasswordKey
       existingSecret: ""
 
       ## Keycloak.auth.tls.enabled can be used to enable TLS encryption. Required for HTTPs traffic.
