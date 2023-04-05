@@ -19,73 +19,16 @@ env:
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
   KUBECONFIG: .github/config/kubeconfig
-  TEST_SCENARIOS_DIR: test/integration/scenarios
+  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
   TEST_CLUSTER_TYPE: openshift
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
   TEST_DOCKER_PASSWORD: ${{ secrets.TEST_DOCKER_PASSWORD }}
-  # This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
+  # This is needed to access WebModeler Docker image.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_USER }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
 
 jobs:
-  # test:
-  #   name: v${{ matrix.openshift.version }} - ${{ matrix.test.name }}
-  #   if: false
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       openshift:
-  #       - version: "4.10"
-  #         server: OPENSHIFT_URL_410
-  #         token: OPENSHIFT_TOKEN_410
-  #       test:
-  #       - name: "End2End"
-  #         method: "TestServicesEnd2End"
-  #       - name: "End2EndWithKeycloakV19"
-  #         method: "TestServicesEnd2EndWithKeycloakV19"
-  #         dockerLogin: true
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Set var GITHUB_PR_HEAD_SHA_SHORT
-  #     run: echo "GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)" >> $GITHUB_ENV
-  #   - uses: actions/checkout@v3
-  #   - name: Install env dependencies
-  #     uses: asdf-vm/actions/install@v1
-  #   - uses: actions/cache@v3
-  #     with:
-  #       path: |
-  #         ~/.cache/go-build
-  #         ~/go/pkg/mod
-  #       key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-  #       restore-keys: |
-  #         ${{ runner.os }}-go-
-  #   - name: Install Openshift client (oc)
-  #     uses: redhat-actions/openshift-tools-installer@v1
-  #     with:
-  #       oc: ${{ matrix.openshift.version }}
-  #   - name: Authenticate to Openshift
-  #     uses: redhat-actions/oc-login@v1
-  #     with:
-  #       openshift_server_url: ${{ secrets[matrix.openshift.server] }}
-  #       openshift_token: ${{ secrets[matrix.openshift.token] }}
-  #   # the tests need to be able to create a project and list nodes; node listing is to find an available pod when
-  #   # checking service availability (done via terratest, so we cannot change that)
-  #   - name: 'Verify Permissions'
-  #     run: 'oc auth can-i create projectrequests && oc auth can-i list nodes'
-  #   # Log in to Camunda's Docker registry to be able to pull the Web Modeler Docker images
-  #   - name: Log into Camunda Docker registry
-  #     if: ${{ matrix.test.dockerLogin }}
-  #     uses: docker/login-action@v2
-  #     with:
-  #       registry: registry.camunda.cloud
-  #       username: ${{ secrets.CAMUNDA_REGISTRY_USER }}
-  #       password: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
-  #   - name: Add helm repos
-  #     run: make helm.repos-add
-  #   - name: Test - ${{ matrix.test.name }}
-  #     run: make go.test-it-os GO_TEST_IT_OS_ARGS="-testify.m ^${{ matrix.test.method }}$"
-
   test:
     name: v${{ matrix.openshift.version }} - ${{ matrix.test.title }}
     if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository

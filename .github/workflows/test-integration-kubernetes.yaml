@@ -21,7 +21,7 @@ env:
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
   KUBECONFIG: .github/config/kubeconfig
-  TEST_SCENARIOS_DIR: test/integration/scenarios
+  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
   TEST_CLUSTER_TYPE: kubernetes
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
