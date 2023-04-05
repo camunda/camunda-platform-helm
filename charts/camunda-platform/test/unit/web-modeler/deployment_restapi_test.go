@@ -15,10 +15,11 @@
 package web_modeler
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -39,7 +40,7 @@ type restapiDeploymentTemplateTest struct {
 func TestRestapiDeploymentTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	suite.Run(t, &restapiDeploymentTemplateTest{

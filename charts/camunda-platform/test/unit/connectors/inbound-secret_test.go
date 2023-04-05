@@ -38,7 +38,7 @@ type secretTest struct {
 func TestSecretRestapiTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	suite.Run(t, &secretTest{

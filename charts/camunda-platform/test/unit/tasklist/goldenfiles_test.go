@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"camunda-platform-helm/charts/camunda-platform/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ import (
 func TestGoldenDefaultsTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 	templateNames := []string{"service", "deployment", "configmap"}
 

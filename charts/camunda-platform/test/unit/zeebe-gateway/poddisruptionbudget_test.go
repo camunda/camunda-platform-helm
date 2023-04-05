@@ -15,7 +15,7 @@
 package gateway
 
 import (
-	"camunda-platform-helm/charts/camunda-platform/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -25,13 +25,13 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/api/policy/v1"
+	v1 "k8s.io/api/policy/v1"
 )
 
 func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	suite.Run(t, &golden.TemplateGoldenTest{
@@ -55,7 +55,7 @@ type podDisruptionBudgetTest struct {
 func TestPodDisruptionBudgetTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	suite.Run(t, &podDisruptionBudgetTest{

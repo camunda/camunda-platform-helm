@@ -15,7 +15,7 @@
 package test
 
 import (
-	"camunda-platform-helm/charts/camunda-platform/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -28,7 +28,7 @@ import (
 func TestGoldenCuratorDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../")
+	chartPath, err := filepath.Abs("../../")
 	require.NoError(t, err)
 	templateNames := []string{"curator-configmap", "curator-cronjob"}
 

@@ -15,10 +15,11 @@
 package connectors
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -39,7 +40,7 @@ type deploymentTemplateTest struct {
 func TestDeploymentTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	suite.Run(t, &deploymentTemplateTest{
@@ -75,7 +76,7 @@ func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled": "true",
+			"connectors.enabled":            "true",
 			"connectors.podAnnotations.foo": "bar",
 			"connectors.podAnnotations.foz": "baz",
 		},
@@ -115,11 +116,11 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":                              "true",
-			"global.image.registry":                           "global.custom.registry.io",
-			"global.image.tag":                                "999.999.1",
-			"connectors.image.registry":                       "subchart.custom.registry.io",
-			"connectors.image.tag":                            "snapshot",
+			"connectors.enabled":          "true",
+			"global.image.registry":       "global.custom.registry.io",
+			"global.image.tag":            "999.999.1",
+			"connectors.image.registry":   "subchart.custom.registry.io",
+			"connectors.image.tag":        "snapshot",
 			"connectors.image.repository": "connectors/connectors-bundle",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -139,10 +140,10 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobalRegistry() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":                              "true",
-			"global.image.registry":                           "global.custom.registry.io",
-			"connectors.image.registry":                       "",
-			"connectors.image.tag":                            "snapshot",
+			"connectors.enabled":          "true",
+			"global.image.registry":       "global.custom.registry.io",
+			"connectors.image.registry":   "",
+			"connectors.image.tag":        "snapshot",
 			"connectors.image.repository": "connectors/connectors-bundle",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -311,7 +312,7 @@ func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled": "true",
+			"connectors.enabled":                      "true",
 			"connectors.podSecurityContext.runAsUser": "1000",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -354,7 +355,7 @@ func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled": "true",
+			"connectors.enabled":               "true",
 			"connectors.nodeSelector.disktype": "ssd",
 			"connectors.nodeSelector.cputype":  "arm",
 		},
@@ -448,7 +449,7 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled": "true",
+			"connectors.enabled":                 "true",
 			"connectors.tolerations[0].key":      "key1",
 			"connectors.tolerations[0].operator": "Equal",
 			"connectors.tolerations[0].value":    "Value1",

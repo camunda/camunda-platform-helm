@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"camunda-platform-helm/charts/camunda-platform/test/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ import (
 func TestGoldenDefaultsTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 	// FIXME/TODO: the "inbound-secret" generates a random secret every time thus failing to pass on golden
 	templateNames := []string{"service", "serviceaccount", "deployment", "ingress"}
@@ -41,8 +41,8 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
 			Templates:      []string{"templates/connectors/" + name + ".yaml"},
-			SetValues:      map[string]string{
-				"connectors.enabled":                "true", 
+			SetValues: map[string]string{
+				"connectors.enabled":                "true",
 				"connectors.ingress.enabled":        "true",
 				"connectors.serviceAccount.enabled": "true",
 			},
