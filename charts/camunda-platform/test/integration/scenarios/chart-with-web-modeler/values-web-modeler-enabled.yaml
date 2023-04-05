@@ -10,14 +10,6 @@ webModeler:
     mail:
       # the value is required, otherwise the restapi pod wouldn't start
       fromAddress: noreply@example.com
-    readinessProbe:
-      enabled: true
-  webapp:
-    readinessProbe:
-      enabled: true
-  websockets:
-    readinessProbe:
-      enabled: true
 
 # database used by Web Modeler
 postgresql:

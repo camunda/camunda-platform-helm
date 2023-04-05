@@ -134,3 +134,12 @@ spec:
         - containerPort: 8082
           name: metrics
           protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+          timeoutSeconds: 1

@@ -461,7 +461,7 @@ zeebe-gateway:
   # ReadinessProbe configuration
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: false
+    enabled: true
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -694,7 +694,7 @@ operate:
   # ReadinessProbe configuration
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: false
+    enabled: true
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -812,7 +812,7 @@ tasklist:
   # ReadinessProbe configuration
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: false
+    enabled: true
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -965,7 +965,7 @@ optimize:
   # ReadinessProbe configuration
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: false
+    enabled: true
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /api/readyz
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1169,7 +1169,7 @@ identity:
   # ReadinessProbe configuration
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: false
+    enabled: true
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1441,7 +1441,7 @@ webModeler:
     # Restapi.readinessProbe configuration of the restapi readiness probe
     readinessProbe:
       # Restapi.readinessProbe.enabled if true, the readiness probe will be enabled for the restapi container
-      enabled: false
+      enabled: true
       # Restapi.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
       # Restapi.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1545,7 +1545,7 @@ webModeler:
     # Webapp.readinessProbe configuration of the webapp readiness probe
     readinessProbe:
       # Webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
-      enabled: false
+      enabled: true
       # Webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
       # Webapp.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1650,7 +1650,7 @@ webModeler:
     # Websockets.readinessProbe configuration of the websockets readiness probe
     readinessProbe:
       # Websockets.readinessProbe.enabled if true, the readiness probe will be enabled for the websockets container
-      enabled: false
+      enabled: true
       # Websockets.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       # Websockets.readinessProbe.periodSeconds defines how often the probe is executed

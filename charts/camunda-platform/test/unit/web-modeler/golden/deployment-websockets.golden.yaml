@@ -72,3 +72,11 @@ spec:
         - containerPort: 8060
           name: http
           protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+          timeoutSeconds: 1
