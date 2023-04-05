@@ -21,7 +21,7 @@
   - [Tasklist](#tasklist)
   - [Optimize](#optimize)
   - [Identity](#identity)
-  - [Web Modeler (Beta)](#web-modeler-beta)
+  - [Web Modeler](#web-modeler)
   - [PostgreSQL for Web Modeler](#postgresql-for-web-modeler)
   - [Connectors](#connectors)
   - [Elasticsearch](#elasticsearch)
@@ -685,12 +685,12 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `livenessProbe.failureThreshold` | Defines when the probe is considered as failed so the container will be restarted | `5` |
 | | `livenessProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 
-### Web Modeler (Beta)
+### Web Modeler
 
-> :warning: Web Modeler Self-Managed is currently offered as a [beta release](https://docs.camunda.io/docs/next/reference/early-access#beta) with limited availability for enterprise customers only. It is not recommended for production use, and there is no maintenance service guaranteed. Special [terms & conditions](https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/) apply. However, we encourage you to provide feedback via your designated support channel or the [Camunda Forum](https://forum.camunda.io/).
+> :information_source: Web Modeler Self-Managed is available to Camunda enterprise customers only.
 
 #### Docker registry
-The Docker images for Web Modeler Beta are available in a private registry.
+The Docker images for Web Modeler are available in a private registry.
 Enterprise customers either already have credentials to this registry, or they can request access to this registry through their CSM contact at Camunda.
 To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
 - [create an image pull secret](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) using the provided credentials
