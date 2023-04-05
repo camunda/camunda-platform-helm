@@ -149,7 +149,7 @@ testcases:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
     body: '{"webhookDataKey":"webhookDataValue"}'
-    retry: 3
+    retry: 6
     delay: 60
     # info: |
     #   - Request Body: {{ .result.request.body }}
