@@ -76,6 +76,15 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+          timeoutSeconds: 1
         volumeMounts:
         - name: config
           mountPath: /app/resources/application.yml

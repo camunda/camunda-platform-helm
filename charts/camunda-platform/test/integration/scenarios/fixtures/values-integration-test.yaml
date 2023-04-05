@@ -4,30 +4,7 @@ test:
 connectors:
   enabled: true
 
-# TODO: Remove readinessProbe once it's enabled by default (planned for v8.2).
-operate:
-  readinessProbe:
-    enabled: true
-
-tasklist:
-  readinessProbe:
-    enabled: true
-
-optimize:
-  readinessProbe:
-    enabled: true
-
-zeebe:
-  readinessProbe:
-    enabled: true
-
-zeebe-gateway:
-  readinessProbe:
-    enabled: true
-
 identity:
-  readinessProbe:
-    enabled: true
   # Keycloak client seed which is used to query Camunda Platform APIs. 
   env:
   - name: KEYCLOAK_CLIENTS_1_ID

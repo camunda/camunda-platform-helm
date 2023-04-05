@@ -118,3 +118,12 @@ spec:
         - containerPort: 8071
           name: http-management
           protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            port: http-management
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+          timeoutSeconds: 1

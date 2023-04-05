@@ -85,5 +85,14 @@ spec:
         - containerPort: 8092
           name: management
           protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /api/readyz
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+          timeoutSeconds: 1
         volumeMounts:
       volumes:
