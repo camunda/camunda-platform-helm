@@ -61,6 +61,8 @@ spec:
                 key: tasklist-secret
           - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
             value: "tasklist-api"
+          - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
+            value: "http://localhost:8082"
           - name: GRAPHQL_PLAYGROUND_ENABLED
             value: "true"
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS

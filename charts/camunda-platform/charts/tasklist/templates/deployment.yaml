@@ -67,6 +67,8 @@ spec:
             {{- end }}
           - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
             value: "tasklist-api"
+          - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
+            value: {{ .Values.global.identity.auth.tasklist.redirectUrl | quote }}
           {{- else }}
           - name: SPRING_PROFILES_ACTIVE
             value: "auth"
