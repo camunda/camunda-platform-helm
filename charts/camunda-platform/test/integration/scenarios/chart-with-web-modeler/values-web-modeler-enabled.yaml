@@ -1,0 +1,16 @@
+webModeler:
+  # Web Modeler is disabled by default
+  enabled: true
+  image:
+    # the pull secret is required to pull the images from Camunda's Docker registry; it's created as part of the integration test setup
+    pullSecrets:
+    - name: index-docker-io
+    - name: registry-camunda-cloud
+  restapi:
+    mail:
+      # the value is required, otherwise the restapi pod wouldn't start
+      fromAddress: noreply@example.com
+
+# database used by Web Modeler
+postgresql:
+  enabled: true

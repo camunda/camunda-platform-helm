@@ -357,7 +357,7 @@ For more information about Zeebe Gateway, visit
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -455,7 +455,7 @@ For more information about Operate, visit
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health/readiness` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -511,7 +511,7 @@ For more information about Tasklist, visit
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health/readiness` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -579,7 +579,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/api/readyz` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -671,7 +671,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `startupProbe.failureThreshold` | Defines when the probe is considered as failed so the Pod will be marked Unready | `5` |
 | | `startupProbe.timeoutSeconds` | Defines the seconds after the probe times out | `1` |
 | | `readinessProbe` | ReadinessProbe configuration | |
-| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `false` |
+| | `readinessProbe.enabled` | If true, the readiness probe is enabled in app container | `true` |
 | | `readinessProbe.probePath` | Defines the readiness probe route used on the app | `/actuator/health` |
 | | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | `30` |
 | | `readinessProbe.periodSeconds` | Defines how often the probe is executed | `30` |
@@ -954,7 +954,7 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `startupProbe.failureThreshold`      | Defines when the probe is considered as failed so the Pod will be marked Unready                                                                                                                                                                  | `5`                                                                                                   |
 |              | `startupProbe.timeoutSeconds`        | Defines the seconds after the probe times out                                                                                                                                                                                                     | `1`                                                                                                   |
 |              | `readinessProbe`                     | ReadinessProbe configuration                                                                                                                                                                                                                      |                                                                                                       |
-|              | `readinessProbe.enabled`             | If true, the readiness probe is enabled in app container                                                                                                                                                                                          | `false`                                                                                               |
+|              | `readinessProbe.enabled`             | If true, the readiness probe is enabled in app container                                                                                                                                                                                          | `true`                                                                                               |
 |              | `readinessProbe.probePath`           | Defines the readiness probe route used on the app                                                                                                                                                                                                 | `/actuator/health/readiness`                                                                          |
 |              | `readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated                                                                                                                                                       | `30`                                                                                                  |
 |              | `readinessProbe.periodSeconds`       | Defines how often the probe is executed                                                                                                                                                                                                           | `30`                                                                                                  |
