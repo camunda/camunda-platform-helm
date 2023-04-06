@@ -62,7 +62,7 @@ spec:
                   name: {{ include "connectors.authCredentialsSecretName" . }}
                   key: connectors-secret
           {{- end }}
-          {{- if eq .Values.connectors.inbound.mode "oauth" }}
+          {{- if and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") }}
             - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
               value: {{ include "connectors.zeebeEndpoint" . | quote }}
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT

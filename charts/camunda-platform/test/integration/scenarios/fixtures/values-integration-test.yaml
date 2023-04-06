@@ -1,9 +1,6 @@
 test:
   integration: true
 
-connectors:
-  enabled: true
-
 identity:
   # Keycloak client seed which is used to query Camunda Platform APIs. 
   env:
