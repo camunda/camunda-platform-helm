@@ -3,8 +3,8 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: camunda-platform-tes
-  namespace: camunda
+  name: camunda-platform-test-keycloak
+  namespace: "camunda"
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: camunda-platform-test
@@ -13,7 +13,7 @@ metadata:
 spec:
   replicas: 1
   podManagementPolicy: Parallel
-  serviceName: camunda-platform-tes-headless
+  serviceName: camunda-platform-test-keycloak-headless
   updateStrategy:
     rollingUpdate: {}
     type: RollingUpdate
@@ -31,7 +31,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: keycloak
     spec:
-      serviceAccountName: camunda-platform-tes
+      serviceAccountName: camunda-platform-test-keycloak
       
       affinity:
         podAffinity:
@@ -62,7 +62,7 @@ spec:
             name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:16.1.1-debian-10-r52
+          image: docker.io/bitnami/keycloak:19.0.3-debian-11-r15
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true
@@ -80,33 +80,24 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-keycloak
                   key: admin-password
-            - name: KEYCLOAK_MANAGEMENT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-keycloak
-                  key: management-password
             - name: KEYCLOAK_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-postgresql
                   key: password
+            - name: KEYCLOAK_HTTP_RELATIVE_PATH
+              value: "/auth/"
             - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
               value: 'false'
           envFrom:
             - configMapRef:
-                name: camunda-platform-tes-env-vars
+                name: camunda-platform-test-keycloak-env-vars
           resources:
             limits: {}
             requests: {}
           ports:
             - name: http
               containerPort: 8080
-              protocol: TCP
-            - name: https
-              containerPort: 8443
-              protocol: TCP
-            - name: http-management
-              containerPort: 9990
               protocol: TCP
           livenessProbe:
             failureThreshold: 3

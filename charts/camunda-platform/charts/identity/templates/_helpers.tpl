@@ -214,23 +214,11 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 */}}
 {{- define "identity.keycloak.authExistingSecret" -}}
 {{- if .Values.global.identity.keycloak.auth }}
-    {{- /*
-        Unlike the upstream Keycloak chart, in the global vars, we only support the "string" format,
-        not the "dict" format. i.e., it should refer to the actual existing secret name.
-    */ -}}
     {{- .Values.global.identity.keycloak.auth.existingSecret -}}
-{{- else if and .Values.keycloak.auth.existingSecret (not (typeIs "string" .Values.keycloak.auth.existingSecret)) }}
-    {{- /*
-        Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-        Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-        and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-    */ -}}
-    {{ include "common.secrets.name" (dict "existingSecret" .Values.keycloak.auth.existingSecret "context" $) }}
-{{- else }}
-    {{- /*
-      https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_names.tpl
-    */ -}}
-    {{- include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.keycloak "context" $) }}
+{{- else if .Values.keycloak.auth.existingSecret }}
+    {{- .Values.keycloak.auth.existingSecret }}
+{{- else -}}
+    {{ .Release.Name }}-keycloak
 {{- end }}
 {{- end -}}
 
@@ -238,5 +226,11 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 [identity] Get Keycloak auth existing secret key.
 */}}
 {{- define "identity.keycloak.authExistingSecretKey" -}}
-    {{- .Values.global.identity.keycloak.auth.existingSecretKey | default "admin-password" -}}
+{{- if .Values.global.identity.keycloak.auth }}
+    {{- .Values.global.identity.keycloak.auth.existingSecretKey -}}
+{{- else if .Values.keycloak.auth.passwordSecretKey }}
+    {{- .Values.keycloak.auth.passwordSecretKey }}
+{{- else -}}
+    admin-password
+{{- end }}
 {{- end -}}

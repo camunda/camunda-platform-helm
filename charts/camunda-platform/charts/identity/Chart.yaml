@@ -6,9 +6,6 @@ type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
 dependencies:
   - name: keycloak
-    # Keycloak v19 is also supported.
-    # repository: https://charts.bitnami.com/bitnami
-    # version: 12.2.0
-    repository: "https://helm.camunda.io"
-    version: 7.1.6
+    repository: https://charts.bitnami.com/bitnami
+    version: 12.2.0
     condition: "keycloak.enabled"

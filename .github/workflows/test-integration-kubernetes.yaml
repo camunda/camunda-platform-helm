@@ -52,9 +52,6 @@ jobs:
         - title: ChartWithCustomValues
           dir: chart-with-custom-values
           description: Test Camunda Platform Helm chart custom values
-        - title: ChartWithKeycloakV19
-          dir: chart-with-keycloak-v19
-          description: Test Camunda Platform Helm chart with next supported Keycloak version v8.2
         - title: ChartWithWebModeler
           dir: chart-with-web-modeler
           description: Test Camunda Platform Helm chart with WebModeler enabled which is still beta

@@ -578,7 +578,9 @@ func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.keycloak.auth.existingSecret.name": "ownExistingSecret",
+			"identity.keycloak.enabled":                "true",
+			"identity.keycloak.auth.existingSecret":    "ownExistingSecret",
+			"identity.keycloak.auth.passwordSecretKey": "test-admin",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -597,7 +599,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
-					Key:                  "admin-password",
+					Key:                  "test-admin",
 				},
 			},
 		})
