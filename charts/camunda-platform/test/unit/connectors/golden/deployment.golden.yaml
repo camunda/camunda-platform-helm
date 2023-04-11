@@ -39,7 +39,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:0.16.1
+          image: camunda/connectors-bundle:0.18.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -63,6 +63,8 @@ spec:
                   key: connectors-secret
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
               value: camunda-platform
+            - name: OPERATE_CLIENT_ENABLED
+              value: "true"
             - name: CAMUNDA_OPERATE_CLIENT_URL
               value: "http://camunda-platform-test-operate:80"
           command: []
