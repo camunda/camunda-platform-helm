@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.1.7
+version: 8.2.0
 appVersion: 8.1.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.1.7
+    version: 8.2.0
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.1.7
+    version: 8.2.0
     condition: "operate.enabled"
   - name: optimize
-    version: 8.1.7
+    version: 8.2.0
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.1.7
+    version: 8.2.0
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.1.7
+    version: 8.2.0
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.1.7
+    version: 8.2.0
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
@@ -72,15 +72,15 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "remove hiding of logout button in Optimize"
-    - kind: changed
-      description: "migrate Web Modeler subchart to parent chart"
-    - kind: changed
-      description: "update web-modeler to version 0.8.0-beta"
     - kind: added
-      description: "add Connectors component without authentication"
-    - kind: added
-      description: "add Web Modeler to combined Ingress"
-    - kind: added
-      description: "support web-modeler startup/readiness/liveness probes"
+      description: "introduce inbound connectors"
+    - kind: fixed
+      description: "add CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL var"
+    - kind: fixed
+      description: "add `CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL` var"
+    - kind: changed
+      description: "enable connectors by default"
+    - kind: changed
+      description: "switch keycloak from v16 to v19"
+    - kind: changed
+      description: "enable readinessProbe by default for all components"
