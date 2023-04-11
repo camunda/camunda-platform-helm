@@ -71,6 +71,8 @@ spec:
             {{- end }}
           - name: CAMUNDA_OPERATE_IDENTITY_AUDIENCE
             value: "operate-api"
+          - name: CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL
+            value: {{ .Values.global.identity.auth.operate.redirectUrl | quote }}
           {{- else }}
           - name: SPRING_PROFILES_ACTIVE
             value: "auth"
