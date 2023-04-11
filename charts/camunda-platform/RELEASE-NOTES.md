@@ -2,31 +2,44 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-8.1.7"></a>
-## [camunda-platform-8.1.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.1.6...camunda-platform-8.1.7) (2023-03-29)
+<a name="camunda-platform-8.2.0"></a>
+## [camunda-platform-8.2.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.1.7...camunda-platform-8.2.0) (2023-04-11)
 
 ### Ci
 
-* add all integration scenarios to venom ([#551](https://github.com/camunda/camunda-platform-helm/issues/551))
+* remove old integration tests ([#596](https://github.com/camunda/camunda-platform-helm/issues/596))
+
+### Docs
+
+* add official docs link for deployment ([#577](https://github.com/camunda/camunda-platform-helm/issues/577))
 
 ### Feat
 
-* remove hiding of logout button in Optimize
-* add Connectors component without authentication ([#566](https://github.com/camunda/camunda-platform-helm/issues/566))
-* support web-modeler startup/readiness/liveness probes
+* introduce inbound connectors ([#583](https://github.com/camunda/camunda-platform-helm/issues/583))
+
+### Fix
+
+* add CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL var ([#606](https://github.com/camunda/camunda-platform-helm/issues/606))
+* add `CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL` var ([#598](https://github.com/camunda/camunda-platform-helm/issues/598))
 
 ### Refactor
 
-* remove hiding of logout button in Optimize
-* migrate Web Modeler subchart to parent chart
-* update web-modeler to version 0.8.0-beta
+* enable connectors by default ([#603](https://github.com/camunda/camunda-platform-helm/issues/603))
+* switch keycloak from v16 to v19 ([#602](https://github.com/camunda/camunda-platform-helm/issues/602))
+* enable readinessProbe by default for all components ([#601](https://github.com/camunda/camunda-platform-helm/issues/601))
 
-### Pull Requests
+### Test
 
-* Merge pull request [#569](https://github.com/camunda/camunda-platform-helm/issues/569) from camunda/web-modeler-3179-context-path
-* Merge pull request [#585](https://github.com/camunda/camunda-platform-helm/issues/585) from camunda/web-modeler-0.8.0-beta
-* Merge pull request [#565](https://github.com/camunda/camunda-platform-helm/issues/565) from camunda/web-modeler-3180-probes
+* increase the retry for connecotrs check
 
 ### BREAKING CHANGE
 
-Beta component: configuration key "web-modeler" renamed to "webModeler"; postgresql chart dependency disabled by default
+Switch keycloak from v16 to v19
+even though it's been tested for some time, this change could be a breaking change due to switching the base chart.
+
+old chart with Keycloak v16:
+https://artifacthub.io/packages/helm/camunda/keycloak/7.1.6
+
+new chart with Keycloak v19:
+https://artifacthub.io/packages/helm/bitnami/keycloak/12.2.0
+
