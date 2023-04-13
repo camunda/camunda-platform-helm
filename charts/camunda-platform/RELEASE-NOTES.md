@@ -19,8 +19,8 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 
 ### Fix
 
-* add CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL var ([#606](https://github.com/camunda/camunda-platform-helm/issues/606))
-* add `CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL` var ([#598](https://github.com/camunda/camunda-platform-helm/issues/598))
+* fix redirection issue in operate ([#606](https://github.com/camunda/camunda-platform-helm/issues/606))
+* fix redirection issue in tasklist ([#598](https://github.com/camunda/camunda-platform-helm/issues/598))
 
 ### Refactor
 

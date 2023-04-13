@@ -1,7 +1,7 @@
 apiVersion: v2
 name: camunda-platform
 version: 8.2.0
-appVersion: 8.1.x
+appVersion: 8.2.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
   Camunda's process automation platform allows developers to design, automate and improve processes.
@@ -75,9 +75,9 @@ annotations:
     - kind: added
       description: "introduce inbound connectors"
     - kind: fixed
-      description: "add CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL var"
+      description: "fix redirection issue in tasklist"
     - kind: fixed
-      description: "add `CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL` var"
+      description: "fix redirection issue in operate"
     - kind: changed
       description: "enable connectors by default"
     - kind: changed
