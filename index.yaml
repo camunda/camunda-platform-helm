@@ -6,9 +6,9 @@ entries:
         - kind: added
           description: "introduce inbound connectors"
         - kind: fixed
-          description: "add CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL var"
+          description: "fix redirection issue in tasklist"
         - kind: fixed
-          description: "add `CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL` var"
+          description: "fix redirection issue in operate"
         - kind: changed
           description: "enable connectors by default"
         - kind: changed
@@ -24,7 +24,7 @@ entries:
         - name: Camunda Platform 8 Self-Managed Helm charts
           url: https://github.com/camunda/camunda-platform-helm
     apiVersion: v2
-    appVersion: 8.1.x
+    appVersion: 8.2.x
     created: "2023-04-11T22:12:54.536497184Z"
     dependencies:
     - condition: identity.enabled
@@ -67,7 +67,7 @@ entries:
       version: 2.x.x
     description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
       automation platform allows developers to design, automate and improve processes. '
-    digest: f8d953cbcce74e4c74e5db49eef377e7dcfa318a1bcde3a2e8d6171d7d0c28b2
+    digest: d2382aec5768529fd0e1e1c20ff136a965b0a32734402a3b53656908d65daed9
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
