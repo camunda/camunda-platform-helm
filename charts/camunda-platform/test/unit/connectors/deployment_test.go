@@ -587,6 +587,31 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }
 
+func (s *deploymentTemplateTest) TestContainerExtraVolumes() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":                            "true",
+			"connectors.extraVolumes[0].name":               "myExtraVolume",
+			"connectors.extraVolumes[0].emptyDir.sizeLimit": "500Mi",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumes := deployment.Spec.Template.Spec.Volumes
+	s.Require().Equal(1, len(volumes))
+
+	extraVolume := volumes[0]
+	s.Require().Equal("myExtraVolume", extraVolume.Name)
+	s.Require().EqualValues("500Mi", extraVolume.EmptyDir.SizeLimit)
+}
+
 func (s *deploymentTemplateTest) TestContainerSetInboundModeDisabled() {
 	// given
 	options := &helm.Options{
