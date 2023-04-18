@@ -26,7 +26,7 @@ env:
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
   TEST_DOCKER_PASSWORD: ${{ secrets.TEST_DOCKER_PASSWORD }}
-  # This is needed to access WebModeler Docker image. It will be removed once WebModeler is public.
+  # This is needed to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_USER }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
 
