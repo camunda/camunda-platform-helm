@@ -1,7 +1,10 @@
+# NOTE: WebModeler has its own step because Venom doesn't support skip in loops yet.
+# https://github.com/ovh/venom/issues/651
 name: Run preflight checks for Camunda Platform
 
 vars:
   releaseName: '{{ .RELEASE_NAME | default "integration" }}'
+  skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
 
 testcases:
 
@@ -38,6 +41,25 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
 
+  - name: "WebModeler - {{ .value.component }}"
+    skip:
+    - skiptestwebmodeler ShouldBeFalse
+    type: http
+    range:
+    - component: RESTAPI
+      url: http://{{ .releaseName }}-web-modeler-restapi:8091/health/readiness
+    - component: WebApp
+      url: http://{{ .releaseName }}-web-modeler-webapp:8071/health/readiness
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 10
+    # info: |
+    #   {{ .value.component }} URL: {{ .value.url }}
+    #   Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+
 - name: TEST - Liveness
   steps:
   - name: "{{ .value.component }}"
@@ -61,6 +83,24 @@ testcases:
       url: http://{{ .releaseName }}-connectors:8080/actuator/health/liveness
     - component: Zeebe-Gateway
       url: http://{{ .releaseName }}-zeebe-gateway:9600/actuator/health/liveness
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 10
+    # info: |
+    #   {{ .value.component }} URL: {{ .value.url }}
+    #   Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+  - name: "WebModeler - {{ .value.component }}"
+    skip:
+    - skiptestwebmodeler ShouldBeFalse
+    type: http
+    range:
+    - component: RESTAPI
+      url: http://{{ .releaseName }}-web-modeler-restapi:8091/health/liveness
+    - component: WebApp
+      url: http://{{ .releaseName }}-web-modeler-webapp:8071/health/liveness
     method: GET
     url: "{{ .value.url }}"
     retry: 3

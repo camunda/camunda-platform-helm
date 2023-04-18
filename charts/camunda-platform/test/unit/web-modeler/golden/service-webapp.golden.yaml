@@ -20,6 +20,10 @@ spec:
     name: http
     targetPort: 8070
     protocol: TCP
+  - port: 8071
+    name: http-management
+    targetPort: 8071
+    protocol: TCP
   selector:
     app: camunda-platform
     app.kubernetes.io/name: web-modeler

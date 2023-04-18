@@ -51,7 +51,14 @@ identity:
     value: optimize-api
   - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_6_DEFINITION
     value: "write:*"
-  # TODO: Add WebModeler access when it's public.
+  # WebModeler access.
+  # NOTE: This actually should be only in the chart-with-web-modeler scenarios,
+  # but since Helm doesn't support merge lists it's added here.
+  # It could be removed later when the env vars could be configured via ConfigMap.
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_7_RESOURCE_SERVER_ID
+    value: web-modeler-api
+  - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_7_DEFINITION
+    value: "write:*"
 
 # Auth to avoid Docker download rate limit.
 # https://docs.docker.com/docker-hub/download-rate-limit/

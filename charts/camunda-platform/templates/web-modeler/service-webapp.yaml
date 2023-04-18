@@ -18,6 +18,10 @@ spec:
     name: http
     targetPort: 8070
     protocol: TCP
+  - port: {{ .Values.webModeler.webapp.service.managementPort }}
+    name: http-management
+    targetPort: 8071
+    protocol: TCP
   selector:
     {{- include "webModeler.webapp.matchLabels" . | nindent 4 }}
 {{- end }}

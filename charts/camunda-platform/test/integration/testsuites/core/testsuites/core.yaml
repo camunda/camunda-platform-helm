@@ -1,3 +1,5 @@
+# NOTE: WebModeler has its own step because Venom doesn't support skip in loops yet.
+# https://github.com/ovh/venom/issues/651
 name: Test core functionality of Camunda Platform
 
 vars:
@@ -5,6 +7,7 @@ vars:
   venomClientID: '{{ .TEST_CLIENT_ID | default "venom" }}'
   # Passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
   venomClientSecret: "{{ .TEST_CLIENT_SECRET }}"
+  skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
 
 testcases:
 
@@ -89,6 +92,22 @@ testcases:
     #   - Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
+
+  - name: WebModeler
+    skip:
+    - skiptestwebmodeler ShouldBeFalse
+    type: http
+    method: GET
+    url: "http://{{ .releaseName }}-web-modeler-restapi/api/beta/info"
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+    # info: |
+    #   - Request Body: {{ .result.request.body }}
+    #   - Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson.version ShouldNotBeEmpty
 
 - name: TEST - Interacting with Zeebe Gateway
   steps:

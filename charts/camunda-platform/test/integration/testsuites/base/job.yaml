@@ -34,7 +34,9 @@ spec:
         command:
         - sh
         - -c
+        # TODO: Debug why envs from "envFrom" are not exported by default.
         - |
+          export $(env | grep VENOM_VAR_);
           /usr/local/venom run ./tests/${VENOM_RUN_ARGS:-*.y*ml} ||
           (cat ./results/venom.log; exit 1)
         env:
@@ -46,6 +48,9 @@ spec:
               key: client-secret
               # Making it optional for debugging Venom where is no Camunda Platform os deployed.
               optional: true
+        envFrom:
+        - configMapRef:
+            name: venom-env-vars
         volumeMounts:
         - mountPath: /usr/local/bin/zbctl
           name: tools
