@@ -587,6 +587,61 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }
 
+func (s *deploymentTemplateTest) TestContainerExtraVolumes() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":                        "true",
+			"connectors.extraVolumeMounts[0].name":      "someConfig",
+			"connectors.extraVolumeMounts[0].mountPath": "/usr/local/config",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	containers := deployment.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(1, len(volumeMounts))
+	extraVolumeMount := volumeMounts[0]
+	s.Require().Equal("someConfig", extraVolumeMount.Name)
+	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
+}
+
+func (s *deploymentTemplateTest) TestContainerExtraVolumeMounts() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":                               "true",
+			"connectors.extraVolumes[0].name":                  "myExtraVolume",
+			"connectors.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"connectors.extraVolumes[0].configMap.defaultMode": "744",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumes := deployment.Spec.Template.Spec.Volumes
+	s.Require().Equal(1, len(volumes))
+
+	extraVolume := volumes[0]
+	s.Require().Equal("myExtraVolume", extraVolume.Name)
+	s.Require().NotNil(*extraVolume.ConfigMap)
+	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
+}
+
 func (s *deploymentTemplateTest) TestContainerSetInboundModeDisabled() {
 	// given
 	options := &helm.Options{
