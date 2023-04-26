@@ -741,7 +741,7 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
 
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", Value: "http://camunda-platform-tes:80"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", Value: "http://camunda-platform-test-keycloak:80"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_CLIENT-ID", Value: "connectors"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", Value: "camunda-platform"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "OPERATE_CLIENT_ENABLED", Value: "true"})

@@ -97,18 +97,6 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 
 {{- define "camundaPlatform.keycloakDefaultHost" -}}
     {{- $keycloakDefaultHost := include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) -}}
-
-    {{/*
-    Keycloak service name should be a max of 20 char for Keycloak <= v16 which uses Wildfly,
-    the node identifier in WildFly is limited to 23 characters.
-    Furthermore, this allows changing the referenced Keycloak name inside the sub-charts.
-    Subcharts can not access values from other sub-charts or the parent, global only.
-    This is the reason why we have a global value to specify the Keycloak full name.
-    */}}
-    {{- if .Values.global.identity.keycloak.legacy -}}
-        {{- $keycloakDefaultHost = $keycloakDefaultHost | trunc 20 | trimSuffix "-" -}}
-    {{- end -}}
-
     {{- $keycloakDefaultHost -}}
 {{- end -}}
 
