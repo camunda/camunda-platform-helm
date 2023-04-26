@@ -53,7 +53,7 @@ spec:
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
-              value: http://camunda-platform-tes:80
+              value: http://camunda-platform-test-keycloak:80
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
               value: connectors
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET

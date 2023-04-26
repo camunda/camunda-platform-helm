@@ -55,7 +55,7 @@ spec:
           - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL
-            value: "http://camunda-platform-tes:80/auth/realms/camunda-platform"
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
           - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
             value: "optimize"
           - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
@@ -68,7 +68,7 @@ spec:
           - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
             value: "optimize-api"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
-            value: "http://camunda-platform-tes:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
         resources:

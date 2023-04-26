@@ -108,11 +108,11 @@ spec:
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
-            value: "http://camunda-platform-tes:80/auth"
+            value: "http://camunda-platform-test-keycloak:80/auth"
           - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
-            value: "http://camunda-platform-tes:80/auth/realms/camunda-platform"
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
           - name: KEYCLOAK_SETUP_USER
             value: "admin"
           - name: KEYCLOAK_SETUP_PASSWORD

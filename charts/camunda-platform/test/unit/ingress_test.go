@@ -89,8 +89,9 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 		SetValues: map[string]string{
 			"global.ingress.enabled":               "true",
 			"global.identity.keycloak.contextPath": "/custom",
-			"identity.contextPath":                 "/identity",
 			"identity.keycloak.enabled":            "true",
+			"identity.keycloak.httpRelativePath":   "/custom",
+			"identity.contextPath":                 "/identity",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -105,23 +106,22 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 	// then
 	path := ingress.Spec.Rules[0].HTTP.Paths[0]
 	s.Require().Equal("/custom", path.Path)
-	s.Require().Equal("camunda-platform-tes", path.Backend.Service.Name)
+	s.Require().Equal("camunda-platform-test-keycloak", path.Backend.Service.Name)
 
-	// TODO: Enabled this when we use Keycloak v19 as default version.
-	// // when
-	// extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
-	// stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
+	// when
+	extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
+	stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
 
-	// var statefulSet appsv1.StatefulSet
-	// helm.UnmarshalK8SYaml(s.T(), stsOutput, &statefulSet)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), stsOutput, &statefulSet)
 
-	// // then
-	// env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	// s.Require().Contains(env,
-	// 	corev1.EnvVar{
-	// 		Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
-	// 		Value: "/custom",
-	// 	})
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
+			Value: "/custom",
+		})
 }
 
 func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {

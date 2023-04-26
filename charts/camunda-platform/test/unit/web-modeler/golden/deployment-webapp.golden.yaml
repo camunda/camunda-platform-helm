@@ -71,7 +71,7 @@ spec:
           - name: KEYCLOAK_REALM
             value: "camunda-platform"
           - name: KEYCLOAK_JWKS_URL
-            value: "http://camunda-platform-tes:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
           - name: PUSHER_HOST
             value: "camunda-platform-test-web-modeler-websockets"
           - name: PUSHER_PORT
