@@ -120,6 +120,7 @@ spec:
           protocol: TCP
         readinessProbe:
           httpGet:
+            # NOTE: WebApp doesn't support contextPath for health endpoints.
             path: /health/readiness
             port: http-management
           initialDelaySeconds: 15

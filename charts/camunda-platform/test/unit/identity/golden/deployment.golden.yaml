@@ -136,6 +136,7 @@ spec:
           protocol: TCP
         readinessProbe:
           httpGet:
+            # NOTE: Identity doesn't support contextPath for health endpoints.
             path: /actuator/health
             port: metrics
           initialDelaySeconds: 30
