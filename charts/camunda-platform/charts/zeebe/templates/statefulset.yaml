@@ -116,7 +116,7 @@ spec:
         {{- if .Values.startupProbe.enabled }}
         startupProbe:
           httpGet:
-            path: {{ .Values.startupProbe.probePath }}
+            path: {{ .Values.contextPath }}{{ .Values.startupProbe.probePath }}
             port: {{ .Values.service.httpPort  }}
           initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.startupProbe.periodSeconds }}
@@ -127,7 +127,7 @@ spec:
         {{- if .Values.readinessProbe.enabled }}
         readinessProbe:
           httpGet:
-            path: {{ .Values.readinessProbe.probePath }}
+            path: {{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
             port: {{ .Values.service.httpPort  }}
           initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
@@ -138,7 +138,7 @@ spec:
         {{- if .Values.livenessProbe.enabled }}
         livenessProbe:
           httpGet:
-            path: {{ .Values.livenessProbe.probePath }}
+            path: {{ .Values.contextPath }}{{ .Values.livenessProbe.probePath }}
             port: {{ .Values.service.httpPort  }}
           initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.livenessProbe.periodSeconds }}

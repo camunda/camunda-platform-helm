@@ -100,7 +100,7 @@ spec:
           {{- if .Values.connectors.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.connectors.startupProbe.probePath }}
+              path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.startupProbe.probePath }}
               port: {{ .Values.connectors.service.serverName }}
             initialDelaySeconds: {{ .Values.connectors.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.startupProbe.periodSeconds }}
@@ -111,7 +111,7 @@ spec:
           {{- if .Values.connectors.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.connectors.readinessProbe.probePath }}
+              path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.readinessProbe.probePath }}
               port: {{ .Values.connectors.service.serverName }}
             initialDelaySeconds: {{ .Values.connectors.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.readinessProbe.periodSeconds }}
@@ -122,7 +122,7 @@ spec:
           {{- if .Values.connectors.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.connectors.livenessProbe.probePath }}
+              path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.livenessProbe.probePath }}
               port: {{ .Values.connectors.service.serverName }}
             initialDelaySeconds: {{ .Values.connectors.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.livenessProbe.periodSeconds }}

@@ -754,3 +754,32 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().EqualValues(5, probe.FailureThreshold)
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }
+
+func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.contextPath":              "/test",
+			"tasklist.startupProbe.enabled":     "true",
+			"tasklist.startupProbe.probePath":   "/start",
+			"tasklist.readinessProbe.enabled":   "true",
+			"tasklist.readinessProbe.probePath": "/ready",
+			"tasklist.livenessProbe.enabled":    "true",
+			"tasklist.livenessProbe.probePath":  "/live",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0]
+
+	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+}
