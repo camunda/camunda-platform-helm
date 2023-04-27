@@ -433,3 +433,33 @@ func (s *webappDeploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().Equal("/healthz", probe.HTTPGet.Path)
 	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
 }
+
+func (s *webappDeploymentTemplateTest) TestContainerProbesWithContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                         "true",
+			"webModeler.contextPath":                     "/test",
+			"webModeler.webapp.startupProbe.enabled":     "true",
+			"webModeler.webapp.startupProbe.probePath":   "/start",
+			"webModeler.webapp.readinessProbe.enabled":   "true",
+			"webModeler.webapp.readinessProbe.probePath": "/ready",
+			"webModeler.webapp.livenessProbe.enabled":    "true",
+			"webModeler.webapp.livenessProbe.probePath":  "/live",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0]
+
+	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+}

@@ -114,7 +114,7 @@ spec:
         {{- if .Values.webModeler.webapp.startupProbe.enabled }}
         startupProbe:
           httpGet:
-            path: {{ .Values.webModeler.webapp.startupProbe.probePath }}
+            path: {{ .Values.webModeler.contextPath }}{{ .Values.webModeler.webapp.startupProbe.probePath }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.webapp.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.webapp.startupProbe.periodSeconds }}
@@ -125,7 +125,7 @@ spec:
         {{- if .Values.webModeler.webapp.readinessProbe.enabled }}
         readinessProbe:
           httpGet:
-            path: {{ .Values.webModeler.webapp.readinessProbe.probePath }}
+            path: {{ .Values.webModeler.contextPath }}{{ .Values.webModeler.webapp.readinessProbe.probePath }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.webapp.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.webapp.readinessProbe.periodSeconds }}
@@ -136,7 +136,7 @@ spec:
         {{- if .Values.webModeler.webapp.livenessProbe.enabled }}
         livenessProbe:
           httpGet:
-            path: {{ .Values.webModeler.webapp.livenessProbe.probePath }}
+            path: {{ .Values.webModeler.contextPath }}{{ .Values.webModeler.webapp.livenessProbe.probePath }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.webapp.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.webapp.livenessProbe.periodSeconds }}
