@@ -135,6 +135,35 @@ spec:
             value: operate-api
           - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
             value: "read:*"
+          - name: KEYCLOAK_INIT_ZEEBE_NAME
+            value: "Zeebe"
+          - name: KEYCLOAK_CLIENTS_1_NAME
+            value: "zeebe"
+          - name: KEYCLOAK_CLIENTS_1_ID
+            value: "zeebe"
+          - name: KEYCLOAK_CLIENTS_1_SECRET
+            {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
+                key: zeebe-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameZeebeIdentity" . }}
+                key: zeebe-secret
+            {{- end }}
+          - name: KEYCLOAK_CLIENTS_1_TYPE
+            value: "M2M"
+          - name:  KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: "zeebe-api"
+          - name:  KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
+            value: "write:*"
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL

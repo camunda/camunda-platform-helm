@@ -105,6 +105,23 @@ spec:
             value: operate-api
           - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
             value: "read:*"
+          - name: KEYCLOAK_INIT_ZEEBE_NAME
+            value: "Zeebe"
+          - name: KEYCLOAK_CLIENTS_1_NAME
+            value: "zeebe"
+          - name: KEYCLOAK_CLIENTS_1_ID
+            value: "zeebe"
+          - name: KEYCLOAK_CLIENTS_1_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-zeebe-identity-secret"
+                key: zeebe-secret
+          - name: KEYCLOAK_CLIENTS_1_TYPE
+            value: "M2M"
+          - name:  KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: "zeebe-api"
+          - name:  KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
+            value: "write:*"
           - name: SERVER_PORT
             value: "8080"
           - name: KEYCLOAK_URL
