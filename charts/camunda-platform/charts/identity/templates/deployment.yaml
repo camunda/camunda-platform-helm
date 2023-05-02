@@ -168,7 +168,8 @@ spec:
         {{- if .Values.startupProbe.enabled }}
         startupProbe:
           httpGet:
-            path: {{ .Values.contextPath }}{{ .Values.startupProbe.probePath }}
+            # NOTE: Identity doesn't support contextPath for health endpoints.
+            path: {{ .Values.startupProbe.probePath }}
             port: metrics
           initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.startupProbe.periodSeconds }}
@@ -179,7 +180,8 @@ spec:
         {{- if .Values.readinessProbe.enabled }}
         readinessProbe:
           httpGet:
-            path: {{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+            # NOTE: Identity doesn't support contextPath for health endpoints.
+            path: {{ .Values.readinessProbe.probePath }}
             port: metrics
           initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
@@ -190,7 +192,8 @@ spec:
         {{- if .Values.livenessProbe.enabled }}
         livenessProbe:
           httpGet:
-            path: {{ .Values.contextPath }}{{ .Values.livenessProbe.probePath }}
+            # NOTE: Identity doesn't support contextPath for health endpoints.
+            path: {{ .Values.livenessProbe.probePath }}
             port: metrics
           initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
