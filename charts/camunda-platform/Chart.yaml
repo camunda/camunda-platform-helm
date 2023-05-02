@@ -73,14 +73,12 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "introduce inbound connectors"
+      description: "add `extraVolumes` and `extraVolumeMounts` to Connectors"
+    - kind: changed
+      description: "update elastic to 7.17.9"
     - kind: fixed
-      description: "fix redirection issue in tasklist"
+      description: "connectors secret in identity"
     - kind: fixed
-      description: "fix redirection issue in operate"
-    - kind: changed
-      description: "enable connectors by default"
-    - kind: changed
-      description: "switch keycloak from v16 to v19"
-    - kind: changed
-      description: "enable readinessProbe by default for all components"
+      description: "add contextPath to components url"
+    - kind: fixed
+      description: "remove support for old built-in keycloak v16"
