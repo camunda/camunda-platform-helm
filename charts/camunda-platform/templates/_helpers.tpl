@@ -142,10 +142,3 @@ Set imagePullSecrets according the values of global, subchart, or empty.
     {{- .Values.operate.contextPath -}}
   {{- end -}}
 {{- end -}}
-
-{{ define "camundaPlatform.connectorsURL" }}
-  {{- if .Values.connectors.enabled -}}
-    {{- print "http://" -}}{{- template "connectors.fullname" . -}}:{{- .Values.connectors.service.serverPort -}}
-    {{- .Values.connectors.contextPath -}}
-  {{- end -}}
-{{- end -}}
