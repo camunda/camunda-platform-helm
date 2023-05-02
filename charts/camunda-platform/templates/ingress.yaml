@@ -85,7 +85,7 @@ spec:
           {{- if and .Values.connectors.enabled .Values.connectors.contextPath }}
           - backend:
               service:
-                name: {{ include "connectors.fullname" . }}
+                name: {{ template "connectors.fullname" . }}
                 port:
                   number: {{ .Values.connectors.service.serverPort }}
             path: {{ .Values.connectors.contextPath }}
