@@ -64,7 +64,7 @@ spec:
           - name: RESTAPI_MAIL_ENABLE_TLS
             value: "true"
           - name: RESTAPI_MAIL_FROM_ADDRESS
-            value: ""
+            value: "example@example.com"
           - name: RESTAPI_MAIL_FROM_NAME
             value: "Camunda Platform"
           - name: RESTAPI_SERVER_URL

@@ -53,7 +53,8 @@ func (s *configmapTest) TestContainerGenerateRandomPusherAppKey() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

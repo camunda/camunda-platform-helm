@@ -63,7 +63,7 @@ spec:
           - name: RESTAPI_MAIL_ENABLE_TLS
             value: {{ .Values.webModeler.restapi.mail.smtpTlsEnabled | quote }}
           - name: RESTAPI_MAIL_FROM_ADDRESS
-            value: {{ .Values.webModeler.restapi.mail.fromAddress | quote }}
+            value: {{ required "The value 'webModeler.restapi.mail.fromAddress' is requiered" .Values.webModeler.restapi.mail.fromAddress | quote }}
           - name: RESTAPI_MAIL_FROM_NAME
             value: {{ .Values.webModeler.restapi.mail.fromName | quote }}
           - name: RESTAPI_SERVER_URL

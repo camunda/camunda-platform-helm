@@ -52,8 +52,9 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			IgnoredLines:   []string{`\s+pusher-app-key:\s+.*`, `\s+pusher-app-secret:\s+.*`}, // secrets are auto-generated and need to be ignored
 			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"webModeler.enabled": "true",
-				"postgresql.enabled": "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"postgresql.enabled":                  "true",
 			},
 		})
 	}
