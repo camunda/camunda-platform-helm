@@ -39,10 +39,11 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		GoldenFileName: "ingress",
 		Templates:      []string{"templates/web-modeler/ingress.yaml"},
 		SetValues: map[string]string{
-			"webModeler.enabled":                 "true",
-			"webModeler.ingress.enabled":         "true",
-			"webModeler.ingress.webapp.host":     "modeler.example.com",
-			"webModeler.ingress.websockets.host": "modeler-ws.example.com",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.ingress.enabled":          "true",
+			"webModeler.ingress.webapp.host":      "modeler.example.com",
+			"webModeler.ingress.websockets.host":  "modeler-ws.example.com",
 		},
 	})
 }
@@ -61,6 +62,7 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 		Templates:      []string{"templates/web-modeler/ingress.yaml"},
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
+			"webModeler.restapi.mail.fromAddress":          "example@example.com",
 			"webModeler.ingress.enabled":                   "true",
 			"webModeler.ingress.webapp.host":               "modeler.example.com",
 			"webModeler.ingress.websockets.host":           "modeler-ws.example.com",

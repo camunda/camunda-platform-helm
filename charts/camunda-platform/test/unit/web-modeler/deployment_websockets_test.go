@@ -55,12 +55,13 @@ func (s *websocketsDeploymentTemplateTest) TestContainerSetPusherAppPathIfGlobal
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":         "true",
-			"webModeler.ingress.enabled": "false",
-			"webModeler.contextPath":     "/modeler",
-			"global.ingress.enabled":     "true",
-			"global.ingress.host":        "c8.example.com",
-			"global.ingress.tls.enabled": "false",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.ingress.enabled":          "false",
+			"webModeler.contextPath":              "/modeler",
+			"global.ingress.enabled":              "true",
+			"global.ingress.host":                 "c8.example.com",
+			"global.ingress.tls.enabled":          "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -80,6 +81,7 @@ func (s *websocketsDeploymentTemplateTest) TestContainerStartupProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                         "true",
+			"webModeler.restapi.mail.fromAddress":        "example@example.com",
 			"webModeler.websockets.startupProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -101,6 +103,7 @@ func (s *websocketsDeploymentTemplateTest) TestContainerReadinessProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
+			"webModeler.restapi.mail.fromAddress":          "example@example.com",
 			"webModeler.websockets.readinessProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -122,6 +125,7 @@ func (s *websocketsDeploymentTemplateTest) TestContainerLivenessProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                          "true",
+			"webModeler.restapi.mail.fromAddress":         "example@example.com",
 			"webModeler.websockets.livenessProbe.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.2.0
+version: 8.2.1
 appVersion: 8.2.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.2.0
+    version: 8.2.1
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.2.0
+    version: 8.2.1
     condition: "operate.enabled"
   - name: optimize
-    version: 8.2.0
+    version: 8.2.1
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.2.0
+    version: 8.2.1
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.2.0
+    version: 8.2.1
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.2.0
+    version: 8.2.1
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
@@ -73,14 +73,14 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "introduce inbound connectors"
+      description: "add `extraVolumes` and `extraVolumeMounts` to Connectors"
+    - kind: changed
+      description: "update elastic to 7.17.9"
     - kind: fixed
-      description: "fix redirection issue in tasklist"
+      description: "connectors secret in identity"
     - kind: fixed
-      description: "fix redirection issue in operate"
-    - kind: changed
-      description: "enable connectors by default"
-    - kind: changed
-      description: "switch keycloak from v16 to v19"
-    - kind: changed
-      description: "enable readinessProbe by default for all components"
+      description: "add contextPath to components url"
+    - kind: fixed
+      description: "remove support for old built-in keycloak v16"
+    - kind: fixed
+      description: "explicitly require the value `webModeler.restapi.mail.fromAddress`"
