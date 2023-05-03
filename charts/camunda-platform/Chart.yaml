@@ -82,3 +82,5 @@ annotations:
       description: "add contextPath to components url"
     - kind: fixed
       description: "remove support for old built-in keycloak v16"
+    - kind: fixed
+      description: "explicitly require the value `webModeler.restapi.mail.fromAddress`"

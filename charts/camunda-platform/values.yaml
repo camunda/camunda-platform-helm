@@ -1384,6 +1384,7 @@ webModeler:
       # Restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
       # Restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by Web Modeler
+      # NOTE: This value is mandatory.
       fromAddress: ""
       # Restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by Web Modeler
       fromName: "Camunda Platform"

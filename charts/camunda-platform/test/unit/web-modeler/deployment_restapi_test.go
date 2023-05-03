@@ -56,6 +56,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakSer
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "example@example.com",
 			"global.identity.keycloak.url.protocol": "http",
 			"global.identity.keycloak.url.host":     "keycloak",
 			"global.identity.keycloak.url.port":     "80",
@@ -82,6 +83,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakSer
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "example@example.com",
 			"global.identity.keycloak.url.protocol": "http",
 			"global.identity.keycloak.url.host":     "keycloak",
 			"global.identity.keycloak.url.port":     "8888",
@@ -107,8 +109,9 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentitySer
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":        "true",
-			"identity.fullnameOverride": "custom-identity-fullname",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"identity.fullnameOverride":           "custom-identity-fullname",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -128,8 +131,9 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentitySer
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":    "true",
-			"identity.nameOverride": "custom-identity",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"identity.nameOverride":               "custom-identity",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -150,6 +154,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseCo
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
+			"webModeler.restapi.mail.fromAddress":          "example@example.com",
 			"postgresql.enabled":                           "false",
 			"webModeler.restapi.externalDatabase.host":     "postgres.example.com",
 			"webModeler.restapi.externalDatabase.port":     "65432",
@@ -188,6 +193,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetSmtpCredentials() 
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                   "true",
+			"webModeler.restapi.mail.fromAddress":  "example@example.com",
 			"webModeler.restapi.mail.smtpUser":     "modeler-user",
 			"webModeler.restapi.mail.smtpPassword": "modeler-password",
 		},
@@ -219,6 +225,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerSetExtraVolumes() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                                       "true",
+			"webModeler.restapi.mail.fromAddress":                      "example@example.com",
 			"webModeler.restapi.extraVolumes[0].name":                  "extraVolume",
 			"webModeler.restapi.extraVolumes[0].configMap.name":        "otherConfigMap",
 			"webModeler.restapi.extraVolumes[0].configMap.defaultMode": "744",
@@ -247,6 +254,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                                "true",
+			"webModeler.restapi.mail.fromAddress":               "example@example.com",
 			"webModeler.restapi.extraVolumeMounts[0].name":      "otherConfigMap",
 			"webModeler.restapi.extraVolumeMounts[0].mountPath": "/usr/local/config",
 		},
@@ -274,6 +282,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerStartupProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
 			"webModeler.restapi.startupProbe.enabled":   "true",
 			"webModeler.restapi.startupProbe.probePath": "/healthz",
 		},
@@ -297,6 +306,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerReadinessProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                          "true",
+			"webModeler.restapi.mail.fromAddress":         "example@example.com",
 			"webModeler.restapi.readinessProbe.enabled":   "true",
 			"webModeler.restapi.readinessProbe.probePath": "/healthz",
 		},
@@ -320,6 +330,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerLivenessProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                         "true",
+			"webModeler.restapi.mail.fromAddress":        "example@example.com",
 			"webModeler.restapi.livenessProbe.enabled":   "true",
 			"webModeler.restapi.livenessProbe.probePath": "/healthz",
 		},
@@ -344,6 +355,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerProbesWithContextPath() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                          "true",
+			"webModeler.restapi.mail.fromAddress":         "example@example.com",
 			"webModeler.contextPath":                      "/test",
 			"webModeler.restapi.startupProbe.enabled":     "true",
 			"webModeler.restapi.startupProbe.probePath":   "/start",

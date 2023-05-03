@@ -14,6 +14,7 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 * connectors secret in identity ([#630](https://github.com/camunda/camunda-platform-helm/issues/630))
 * add contextPath to components url ([#629](https://github.com/camunda/camunda-platform-helm/issues/629))
 * remove support for old built-in keycloak v16 ([#625](https://github.com/camunda/camunda-platform-helm/issues/625))
+* explicitly require the value `webModeler.restapi.mail.fromAddress`
 
 ### Refactor
 

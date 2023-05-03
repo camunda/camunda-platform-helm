@@ -59,8 +59,9 @@ func (s *serviceTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":     "true",
-			"global.annotations.foo": "bar",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"global.annotations.foo":              "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -78,7 +79,8 @@ func (s *serviceTest) TestContainerServiceAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                     "true",
+			"webModeler.restapi.mail.fromAddress":                    "example@example.com",
 			"webModeler." + s.component + ".service.annotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
