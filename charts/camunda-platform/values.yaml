@@ -1615,6 +1615,10 @@ webModeler:
     env: []
     # Websockets.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
+    # Websockets.extraVolumes can be used to define extra volumes for the websockets pod; useful for logging to a file
+    extraVolumes: []
+    # Websockets.extraVolumeMounts can be used to mount extra volumes for the websockets pod; useful for logging to a file
+    extraVolumeMounts: []
 
     # Websockets.podSecurityContext can be used to define the security options the websockets pod should be run with
     podSecurityContext: {}
