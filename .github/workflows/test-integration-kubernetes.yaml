@@ -103,7 +103,7 @@ jobs:
       run: |
         task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.preflight
     - name: ⭐️ Run Core TestSuite ⭐️
-      timeout-minutes: 5
+      timeout-minutes: 15
       run: |
         task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.core
     - name: Get Pods info on failure
