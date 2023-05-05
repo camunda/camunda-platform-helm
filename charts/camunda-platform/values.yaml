@@ -1335,7 +1335,8 @@ webModeler:
     # Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry.
     registry: registry.camunda.cloud
     # Image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
-    tag: 8.2.1
+    # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
+    tag: 8.2.1  # webModeler.image.tag
     # Image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
@@ -1776,7 +1777,8 @@ connectors:
     # Image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 0.18.2
+    # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
+    tag: 0.18.2  # connectors.image.tag
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
