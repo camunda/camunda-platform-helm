@@ -63,7 +63,7 @@ spec:
           - name: RESTAPI_MAIL_ENABLE_TLS
             value: {{ .Values.webModeler.restapi.mail.smtpTlsEnabled | quote }}
           - name: RESTAPI_MAIL_FROM_ADDRESS
-            value: {{ .Values.webModeler.restapi.mail.fromAddress | quote }}
+            value: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" .Values.webModeler.restapi.mail.fromAddress | quote }}
           - name: RESTAPI_MAIL_FROM_NAME
             value: {{ .Values.webModeler.restapi.mail.fromName | quote }}
           - name: RESTAPI_SERVER_URL
@@ -111,7 +111,7 @@ spec:
         {{- if .Values.webModeler.restapi.startupProbe.enabled }}
         startupProbe:
           httpGet:
-            path: {{ .Values.webModeler.contextPath }}{{ .Values.webModeler.restapi.startupProbe.probePath }}
+            path: {{ .Values.webModeler.restapi.startupProbe.probePath }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.restapi.startupProbe.periodSeconds }}
@@ -122,7 +122,7 @@ spec:
         {{- if .Values.webModeler.restapi.readinessProbe.enabled }}
         readinessProbe:
           httpGet:
-            path: {{ .Values.webModeler.contextPath }}{{ .Values.webModeler.restapi.readinessProbe.probePath }}
+            path: {{ .Values.webModeler.restapi.readinessProbe.probePath }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.restapi.readinessProbe.periodSeconds }}
@@ -133,7 +133,7 @@ spec:
         {{- if .Values.webModeler.restapi.livenessProbe.enabled }}
         livenessProbe:
           httpGet:
-            path: {{ .Values.webModeler.contextPath }}{{ .Values.webModeler.restapi.livenessProbe.probePath }}
+            path: {{ .Values.webModeler.restapi.livenessProbe.probePath }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.restapi.livenessProbe.periodSeconds }}

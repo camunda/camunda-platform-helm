@@ -56,6 +56,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakClie
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                   "true",
+			"webModeler.restapi.mail.fromAddress":  "example@example.com",
 			"global.identity.auth.publicIssuerUrl": "http://localhost:18080/realms/test-realm",
 			"global.identity.keycloak.contextPath": "/",
 			"global.identity.keycloak.realm":       "/realms/test-realm",
@@ -91,6 +92,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakClie
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                   "true",
+			"webModeler.restapi.mail.fromAddress":  "example@example.com",
 			"global.identity.auth.publicIssuerUrl": "http://localhost:18080/test-path/realms/test-realm",
 			"global.identity.keycloak.contextPath": "/test-path",
 			"global.identity.keycloak.realm":       "/realms/test-realm",
@@ -126,6 +128,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "example@example.com",
 			"global.identity.keycloak.url.protocol": "http",
 			"global.identity.keycloak.url.host":     "keycloak",
 			"global.identity.keycloak.url.port":     "80",
@@ -151,8 +154,9 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServ
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":        "true",
-			"identity.fullnameOverride": "custom-identity-fullname",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"identity.fullnameOverride":           "custom-identity-fullname",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -171,8 +175,9 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServ
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":    "true",
-			"identity.nameOverride": "custom-identity",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"identity.nameOverride":               "custom-identity",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -193,6 +198,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusher
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
 			"webModeler.ingress.enabled":                "true",
 			"webModeler.ingress.websockets.host":        "modeler-ws.example.com",
 			"webModeler.ingress.websockets.tls.enabled": "true",
@@ -217,6 +223,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusher
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
 			"webModeler.ingress.enabled":                "true",
 			"webModeler.ingress.websockets.host":        "modeler-ws.example.com",
 			"webModeler.ingress.websockets.tls.enabled": "false",
@@ -240,12 +247,13 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusher
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":         "true",
-			"webModeler.ingress.enabled": "false",
-			"webModeler.contextPath":     "/modeler",
-			"global.ingress.enabled":     "true",
-			"global.ingress.host":        "c8.example.com",
-			"global.ingress.tls.enabled": "true",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.ingress.enabled":          "false",
+			"webModeler.contextPath":              "/modeler",
+			"global.ingress.enabled":              "true",
+			"global.ingress.host":                 "c8.example.com",
+			"global.ingress.tls.enabled":          "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -267,12 +275,13 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusher
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":         "true",
-			"webModeler.ingress.enabled": "false",
-			"webModeler.contextPath":     "/modeler",
-			"global.ingress.enabled":     "true",
-			"global.ingress.host":        "c8.example.com",
-			"global.ingress.tls.enabled": "false",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.ingress.enabled":          "false",
+			"webModeler.contextPath":              "/modeler",
+			"global.ingress.enabled":              "true",
+			"global.ingress.host":                 "c8.example.com",
+			"global.ingress.tls.enabled":          "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -295,6 +304,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetServerHttpsOnly() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                          "true",
+			"webModeler.restapi.mail.fromAddress":         "example@example.com",
 			"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -310,66 +320,12 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetServerHttpsOnly() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_HTTPS_ONLY", Value: "true"})
 }
 
-func (s *webappDeploymentTemplateTest) TestContainerSetExtraVolumes() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                                      "true",
-			"webModeler.webapp.extraVolumes[0].name":                  "extraVolume",
-			"webModeler.webapp.extraVolumes[0].configMap.name":        "otherConfigMap",
-			"webModeler.webapp.extraVolumes[0].configMap.defaultMode": "744",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(1, len(volumes))
-
-	extraVolume := volumes[0]
-	s.Require().Equal("extraVolume", extraVolume.Name)
-	s.Require().NotNil(*extraVolume.ConfigMap)
-	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
-	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
-}
-
-func (s *webappDeploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                               "true",
-			"webModeler.webapp.extraVolumeMounts[0].name":      "otherConfigMap",
-			"webModeler.webapp.extraVolumeMounts[0].mountPath": "/usr/local/config",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(1, len(containers))
-
-	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(1, len(volumeMounts))
-	extraVolumeMount := volumeMounts[0]
-	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
-	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
-}
-
 func (s *webappDeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                       "true",
+			"webModeler.restapi.mail.fromAddress":      "example@example.com",
 			"webModeler.webapp.startupProbe.enabled":   "true",
 			"webModeler.webapp.startupProbe.probePath": "/healthz",
 		},
@@ -393,6 +349,7 @@ func (s *webappDeploymentTemplateTest) TestContainerReadinessProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                         "true",
+			"webModeler.restapi.mail.fromAddress":        "example@example.com",
 			"webModeler.webapp.readinessProbe.enabled":   "true",
 			"webModeler.webapp.readinessProbe.probePath": "/healthz",
 		},
@@ -416,6 +373,7 @@ func (s *webappDeploymentTemplateTest) TestContainerLivenessProbe() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
 			"webModeler.webapp.livenessProbe.enabled":   "true",
 			"webModeler.webapp.livenessProbe.probePath": "/healthz",
 		},
@@ -434,11 +392,13 @@ func (s *webappDeploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
 }
 
+// Web-Modeler WebApp doesn't support contextPath for health endpoints.
 func (s *webappDeploymentTemplateTest) TestContainerProbesWithContextPath() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                         "true",
+			"webModeler.restapi.mail.fromAddress":        "example@example.com",
 			"webModeler.contextPath":                     "/test",
 			"webModeler.webapp.startupProbe.enabled":     "true",
 			"webModeler.webapp.startupProbe.probePath":   "/start",
@@ -459,7 +419,7 @@ func (s *webappDeploymentTemplateTest) TestContainerProbesWithContextPath() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0]
 
-	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
-	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
-	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+	s.Require().Equal("/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/live", probe.LivenessProbe.HTTPGet.Path)
 }

@@ -72,7 +72,7 @@ spec:
                 name: {{ template "webModeler.webapp.fullname" . }}
                 port:
                   number: {{ .Values.webModeler.webapp.service.port }}
-            path: {{ .Values.webModeler.contextPath }}{{ .Values.webModeler.contextPath }}
+            path: {{ .Values.webModeler.contextPath }}
             pathType: Prefix
           - backend:
               service:
@@ -85,7 +85,7 @@ spec:
           {{- if and .Values.connectors.enabled .Values.connectors.contextPath }}
           - backend:
               service:
-                name: {{ include "connectors.fullname" . }}
+                name: {{ template "connectors.fullname" . }}
                 port:
                   number: {{ .Values.connectors.service.serverPort }}
             path: {{ .Values.connectors.contextPath }}

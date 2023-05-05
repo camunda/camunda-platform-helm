@@ -776,3 +776,24 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "OPERATE_CLIENT_ENABLED", Value: "true"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
 }
+
+func (s *deploymentTemplateTest) TestContainerSetContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.enabled":     "true",
+			"connectors.contextPath": "/connectors",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	
+	s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SERVLET_CONTEXT_PATH", Value: "/connectors"})
+}

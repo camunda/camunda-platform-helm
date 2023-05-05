@@ -60,8 +60,9 @@ func (s *deploymentTemplateTest) TestContainerOverrideAppName() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":      "true",
-			"webModeler.nameOverride": "foo",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.nameOverride":             "foo",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -79,8 +80,9 @@ func (s *deploymentTemplateTest) TestContainerOverrideAppFullname() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":          "true",
-			"webModeler.fullnameOverride": "foo",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.fullnameOverride":         "foo",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -99,6 +101,7 @@ func (s *deploymentTemplateTest) TestContainerSetPodLabels() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
+			"webModeler.restapi.mail.fromAddress":          "example@example.com",
 			"webModeler." + s.component + ".podLabels.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -117,7 +120,8 @@ func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                "true",
+			"webModeler.restapi.mail.fromAddress":               "example@example.com",
 			"webModeler." + s.component + ".podAnnotations.foo": "bar",
 			"webModeler." + s.component + ".podAnnotations.foz": "baz",
 		},
@@ -138,8 +142,9 @@ func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":     "true",
-			"global.annotations.foo": "bar",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"global.annotations.foo":              "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -158,6 +163,7 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                              "true",
+			"webModeler.restapi.mail.fromAddress":             "example@example.com",
 			"global.image.registry":                           "global.custom.registry.io",
 			"global.image.tag":                                "8.x.x",
 			"webModeler.image.registry":                       "subchart.custom.registry.io",
@@ -182,6 +188,7 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobalRegistry() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                              "true",
+			"webModeler.restapi.mail.fromAddress":             "example@example.com",
 			"global.image.registry":                           "global.custom.registry.io",
 			"webModeler.image.registry":                       "",
 			"webModeler.image.tag":                            "snapshot",
@@ -204,8 +211,9 @@ func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsGlobal() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":               "true",
-			"global.image.pullSecrets[0].name": "SecretName",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"global.image.pullSecrets[0].name":    "SecretName",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -224,6 +232,7 @@ func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsSubChart() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                   "true",
+			"webModeler.restapi.mail.fromAddress":  "example@example.com",
 			"global.image.pullSecrets[0].name":     "SecretName",
 			"webModeler.image.pullSecrets[0].name": "SecretNameSubChart",
 		},
@@ -243,8 +252,9 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":   "true",
-			"webModeler.image.tag": "a.b.c",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.image.tag":                "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -265,9 +275,10 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":   "true",
-			"webModeler.image.tag": "",
-			"global.image.tag":     "a.b.c",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.image.tag":                "",
+			"global.image.tag":                    "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -288,9 +299,10 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":   "true",
-			"webModeler.image.tag": "a.b.c",
-			"global.image.tag":     "x.y.z",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.image.tag":                "a.b.c",
+			"global.image.tag":                    "x.y.z",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -312,6 +324,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"webModeler.enabled":                     "true",
+			"webModeler.restapi.mail.fromAddress":    "example@example.com",
 			"webModeler." + s.component + ".command": "[printenv]",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -329,12 +342,70 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
 
+func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                                   "true",
+			"webModeler.restapi.mail.fromAddress":                                  "example@example.com",
+			"webModeler." + s.component + ".extraVolumes[0].name":                  "extraVolume",
+			"webModeler." + s.component + ".extraVolumes[0].configMap.name":        "otherConfigMap",
+			"webModeler." + s.component + ".extraVolumes[0].configMap.defaultMode": "744",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumes := deployment.Spec.Template.Spec.Volumes
+	s.Require().Equal(1, len(volumes))
+
+	extraVolume := volumes[0]
+	s.Require().Equal("extraVolume", extraVolume.Name)
+	s.Require().NotNil(*extraVolume.ConfigMap)
+	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
+	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
+}
+
+func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                            "true",
+			"webModeler.restapi.mail.fromAddress":                           "example@example.com",
+			"webModeler." + s.component + ".extraVolumeMounts[0].name":      "otherConfigMap",
+			"webModeler." + s.component + ".extraVolumeMounts[0].mountPath": "/usr/local/config",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	containers := deployment.Spec.Template.Spec.Containers
+	s.Require().Equal(1, len(containers))
+
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	s.Require().Equal(1, len(volumeMounts))
+	extraVolumeMount := volumeMounts[0]
+	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
+	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
+}
+
 func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":             "true",
-			"webModeler.serviceAccount.name": "accName",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.serviceAccount.name":      "accName",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -353,7 +424,8 @@ func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                          "true",
+			"webModeler.restapi.mail.fromAddress":                         "example@example.com",
 			"webModeler." + s.component + ".podSecurityContext.runAsUser": "1000",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -373,7 +445,8 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                                          "true",
+			"webModeler.restapi.mail.fromAddress":                                         "example@example.com",
 			"webModeler." + s.component + ".containerSecurityContext.privileged":          "true",
 			"webModeler." + s.component + ".containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
@@ -396,7 +469,8 @@ func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                   "true",
+			"webModeler.restapi.mail.fromAddress":                  "example@example.com",
 			"webModeler." + s.component + ".nodeSelector.disktype": "ssd",
 			"webModeler." + s.component + ".nodeSelector.cputype":  "arm",
 		},
@@ -438,7 +512,8 @@ func (s *deploymentTemplateTest) TestContainerSetAffinity() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
 			"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
 			"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
 			"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
@@ -490,7 +565,8 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                     "true",
+			"webModeler.restapi.mail.fromAddress":                    "example@example.com",
 			"webModeler." + s.component + ".tolerations[0].key":      "key1",
 			"webModeler." + s.component + ".tolerations[0].operator": "Equal",
 			"webModeler." + s.component + ".tolerations[0].value":    "Value1",
@@ -519,8 +595,9 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":      "true",
-			"global.image.pullPolicy": "Always",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"global.image.pullPolicy":             "Always",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -542,7 +619,8 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                              "true",
+			"webModeler.restapi.mail.fromAddress":                             "example@example.com",
 			"webModeler." + s.component + ".startupProbe.enabled":             "true",
 			"webModeler." + s.component + ".startupProbe.initialDelaySeconds": "5",
 			"webModeler." + s.component + ".startupProbe.periodSeconds":       "10",
@@ -572,7 +650,8 @@ func (s *deploymentTemplateTest) TestContainerReadinessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                                "true",
+			"webModeler.restapi.mail.fromAddress":                               "example@example.com",
 			"webModeler." + s.component + ".readinessProbe.enabled":             "true",
 			"webModeler." + s.component + ".readinessProbe.initialDelaySeconds": "5",
 			"webModeler." + s.component + ".readinessProbe.periodSeconds":       "10",
@@ -602,7 +681,8 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled": "true",
+			"webModeler.enabled":                                               "true",
+			"webModeler.restapi.mail.fromAddress":                              "example@example.com",
 			"webModeler." + s.component + ".livenessProbe.enabled":             "true",
 			"webModeler." + s.component + ".livenessProbe.initialDelaySeconds": "5",
 			"webModeler." + s.component + ".livenessProbe.periodSeconds":       "10",
@@ -626,39 +706,4 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().EqualValues(1, probe.SuccessThreshold)
 	s.Require().EqualValues(5, probe.FailureThreshold)
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
-}
-
-func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
-
-	// WebModeler websockets uses tcpSocket, hence, it doesn't use any path in the probs.
-	if s.component == "websockets" {
-		return
-	}
-
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                                      "true",
-			"webModeler.contextPath":                                  "/test",
-			"webModeler." + s.component + ".startupProbe.enabled":     "true",
-			"webModeler." + s.component + ".startupProbe.probePath":   "/start",
-			"webModeler." + s.component + ".readinessProbe.enabled":   "true",
-			"webModeler." + s.component + ".readinessProbe.probePath": "/ready",
-			"webModeler." + s.component + ".livenessProbe.enabled":    "true",
-			"webModeler." + s.component + ".livenessProbe.probePath":  "/live",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	probe := deployment.Spec.Template.Spec.Containers[0]
-
-	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
-	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
-	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 }

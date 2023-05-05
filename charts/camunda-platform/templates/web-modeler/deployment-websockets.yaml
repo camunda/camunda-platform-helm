@@ -95,6 +95,14 @@ spec:
           failureThreshold: {{ .Values.webModeler.websockets.livenessProbe.failureThreshold }}
           timeoutSeconds: {{ .Values.webModeler.websockets.livenessProbe.timeoutSeconds }}
         {{- end }}
+        {{- if .Values.webModeler.websockets.extraVolumeMounts }}
+        volumeMounts:
+        {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.webModeler.websockets.extraVolumes }}
+      volumes:
+      {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
       {{- if .Values.webModeler.serviceAccount.name}}
       serviceAccountName: {{ .Values.webModeler.serviceAccount.name }}
       {{- end }}

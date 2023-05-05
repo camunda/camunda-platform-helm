@@ -835,6 +835,8 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets.podLabels` | Can be used to define extra websockets pod labels | `{}` |
 | | `websockets.env` | Can be used to set extra environment variables in each websockets container | `[]` |
 | | `websockets.command` | Can be used to [override the default command](ttps://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) provided by the container image | `[]` |
+| | `websockets.extraVolumes` | Can be used to define extra volumes for the websockets pod; useful for logging to a file | `[]` |
+| | `websockets.extraVolumeMounts` | Can be used to mount extra volumes for the websockets pod; useful for logging to a file | `[]` |
 | | `websockets.podSecurityContext` | Can be used to define the security options the websockets pod should be run with | `{}` |
 | | `websockets.containerSecurityContext` | Can be used to define the security options the websockets container should be run with | `{}` |
 | | `websockets.startupProbe` | Configuration of the websockets startup probe | |

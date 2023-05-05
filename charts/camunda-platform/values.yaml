@@ -1341,7 +1341,7 @@ webModeler:
     # Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry.
     registry: registry.camunda.cloud
     # Image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
-    tag: 8.2.0
+    tag: 8.2.1
     # Image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
@@ -1390,6 +1390,7 @@ webModeler:
       # Restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
       # Restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by Web Modeler
+      # NOTE: This value is mandatory.
       fromAddress: ""
       # Restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by Web Modeler
       fromName: "Camunda Platform"
@@ -1620,6 +1621,10 @@ webModeler:
     env: []
     # Websockets.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
+    # Websockets.extraVolumes can be used to define extra volumes for the websockets pod; useful for logging to a file
+    extraVolumes: []
+    # Websockets.extraVolumeMounts can be used to mount extra volumes for the websockets pod; useful for logging to a file
+    extraVolumeMounts: []
 
     # Websockets.podSecurityContext can be used to define the security options the websockets pod should be run with
     podSecurityContext: {}
@@ -1925,6 +1930,7 @@ connectors:
   affinity: {}
 
 elasticsearch:
+  imageTag: 7.17.9
   enabled: true
   extraEnvs:
     - name: "xpack.security.enabled"
@@ -1947,7 +1953,7 @@ elasticsearch:
   resources:
     requests:
       cpu: 1
-      memory: 1Gi
+      memory: 2Gi
     limits:
       cpu: 2
       memory: 2Gi

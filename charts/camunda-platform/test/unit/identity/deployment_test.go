@@ -925,6 +925,7 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }
 
+// Identity doesn't support contextPath for health endpoints.
 func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 	// given
 	options := &helm.Options{
@@ -949,7 +950,7 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0]
 
-	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
-	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
-	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+	s.Require().Equal("/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/live", probe.LivenessProbe.HTTPGet.Path)
 }

@@ -35,6 +35,10 @@ spec:
           env:
             - name: SERVER_PORT
               value: {{ .Values.connectors.service.serverPort | quote }}
+            {{- if .Values.connectors.contextPath }}
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.connectors.contextPath | quote }}
+            {{- end }}
           {{- if eq .Values.connectors.inbound.mode "disabled" }}
             - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
               value: "false"

@@ -155,13 +155,14 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.ingress.enabled": "true",
-			"identity.contextPath":   "/identity",
-			"operate.contextPath":    "/operate",
-			"optimize.contextPath":   "/optimize",
-			"tasklist.contextPath":   "/tasklist",
-			"webModeler.enabled":     "true",
-			"webModeler.contextPath": "/modeler",
+			"global.ingress.enabled":              "true",
+			"identity.contextPath":                "/identity",
+			"operate.contextPath":                 "/operate",
+			"optimize.contextPath":                "/optimize",
+			"tasklist.contextPath":                "/tasklist",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.contextPath":              "/modeler",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
@@ -185,13 +186,14 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.ingress.enabled": "true",
-			"identity.contextPath":   "",
-			"operate.contextPath":    "",
-			"optimize.contextPath":   "",
-			"tasklist.contextPath":   "",
-			"webModeler.enabled":     "true",
-			"webModeler.contextPath": "",
+			"global.ingress.enabled":              "true",
+			"identity.contextPath":                "",
+			"operate.contextPath":                 "",
+			"optimize.contextPath":                "",
+			"tasklist.contextPath":                "",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.contextPath":              "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
