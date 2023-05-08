@@ -96,7 +96,6 @@ spec:
               secretKeyRef:
                 key: connectors-secret
                 name: "camunda-platform-test-connectors-identity-secret"
-                optional: true
           - name: KEYCLOAK_CLIENTS_0_ROOT_URL
             value: http://placeholder
           - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
