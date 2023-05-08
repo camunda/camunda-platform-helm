@@ -72,15 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "add `extraVolumes` and `extraVolumeMounts` to Connectors"
-    - kind: changed
-      description: "update elastic to 7.17.9"
     - kind: fixed
-      description: "connectors secret in identity"
-    - kind: fixed
-      description: "add contextPath to components url"
-    - kind: fixed
-      description: "remove support for old built-in keycloak v16"
-    - kind: fixed
-      description: "explicitly require the value `webModeler.restapi.mail.fromAddress`"
+      description: "identity connectors secret key"
