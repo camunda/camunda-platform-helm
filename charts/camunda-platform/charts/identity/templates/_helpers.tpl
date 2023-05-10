@@ -86,6 +86,14 @@ Defines match labels for identity, which are extended by sub-charts and should b
 {{- end }}
 
 {{/*
+[identity] Create the name of the zeebe-identity secret
+*/}}
+{{- define "identity.secretNameZeebeIdentity" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-zeebe-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
+{{- end }}
+
+{{/*
 Keycloak helpers
 */}}
 

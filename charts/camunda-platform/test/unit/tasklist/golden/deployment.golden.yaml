@@ -63,6 +63,17 @@ spec:
             value: "tasklist-api"
           - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
             value: "http://localhost:8082"
+          - name: ZEEBE_CLIENT_ID
+            value: zeebe
+          - name: ZEEBE_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-zeebe-identity-secret"
+                key: zeebe-secret
+          - name: ZEEBE_AUTHORIZATION_SERVER_URL
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+          - name: ZEEBE_TOKEN_AUDIENCE
+            value: zeebe-api
           - name: GRAPHQL_PLAYGROUND_ENABLED
             value: "true"
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS

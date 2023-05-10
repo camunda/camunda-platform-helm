@@ -165,6 +165,12 @@ global:
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8084"
 
+      # Identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
+      zeebe:
+        # Identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
+        existingSecret: ""
+
 # Zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
   # Enabled if true, all zeebe related resources are deployed via the helm release

@@ -36,6 +36,8 @@ tasks:
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
+      export ZEEBE_SECRET=$(kubectl get secret "integration-zeebe-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
       export TASKLIST_SECRET=$(kubectl get secret "integration-tasklist-identity-secret" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
       export OPTIMIZE_SECRET=$(kubectl get secret "integration-optimize-identity-secret" \
@@ -53,6 +55,7 @@ tasks:
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml \
         --set test.existingSecret=$TEST_SECRET \
+        --set global.identity.auth.zeebe.existingSecret=$ZEEBE_SECRET \
         --set global.identity.auth.tasklist.existingSecret=$TASKLIST_SECRET \
         --set global.identity.auth.optimize.existingSecret=$OPTIMIZE_SECRET \
         --set global.identity.auth.operate.existingSecret=$OPERATE_SECRET \

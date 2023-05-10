@@ -4,6 +4,7 @@ name: Test core functionality of Camunda Platform
 
 vars:
   releaseName: '{{ .RELEASE_NAME | default "integration" }}'
+  authURL: 'http://{{ .RELEASE_NAME | default "integration" }}-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token'
   venomClientID: '{{ .TEST_CLIENT_ID | default "venom" }}'
   # Passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
   venomClientSecret: "{{ .TEST_CLIENT_SECRET }}"
@@ -30,7 +31,7 @@ testcases:
       clientID: connectors
       clientSecret: "{{ .CONNECTORS_CLIENT_SECRET }}"
     method: POST
-    url: "http://{{ .releaseName }}-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+    url: "{{ .authURL }}"
     headers:
       Content-Type: application/x-www-form-urlencoded
     body: |-
@@ -47,7 +48,7 @@ testcases:
   - name: Get Venom token
     type: http
     method: POST
-    url: "http://{{ .releaseName }}-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+    url: "{{ .authURL }}"
     headers:
       Content-Type: application/x-www-form-urlencoded
     body: "client_id={{ .venomClientID }}&client_secret={{ .venomClientSecret }}&grant_type=client_credentials"
@@ -114,7 +115,10 @@ testcases:
   - name: Check Zeebe Gateway status
     type: exec
     script: |
-      zbctl --insecure --address "{{ .releaseName }}-zeebe-gateway:26500" status
+      zbctl --insecure --clientCache=/tmp/zeebe \
+          --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
+          --authzUrl "{{ .authURL }}" --address "{{ .releaseName }}-zeebe-gateway:26500" \
+          status
     assertions:
     - result.code ShouldEqual 0
     - result.systemout ShouldContainSubstring "Leader, Healthy"
@@ -131,7 +135,9 @@ testcases:
     - name: Inbound Connector
       file: test-inbound-process.bpmn
     script: |
-      zbctl --insecure --address "{{ .releaseName }}-zeebe-gateway:26500" \
+      zbctl --insecure --clientCache=/tmp/zeebe \
+          --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
+          --authzUrl "{{ .authURL }}" --address "{{ .releaseName }}-zeebe-gateway:26500" \
           deploy /mnt/fixtures/{{ .value.file }}
     assertions:
     - result.code ShouldEqual 0
@@ -148,8 +154,8 @@ testcases:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
     body: '{}'
-    retry: 3
-    delay: 15
+    retry: 6
+    delay: 20
     # info: |
     #   - Request Body: {{ .result.request.body }}
     #   - Response Body: {{ .result.body }}

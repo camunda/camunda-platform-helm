@@ -125,6 +125,14 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 {{- end -}}
 
 {{/*
+[camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
+*/}}
+
+{{- define "camundaPlatform.authTokenUrl" -}}
+    {{- include "camundaPlatform.issuerBackendUrl" . -}}/protocol/openid-connect/token
+{{- end -}}
+
+{{/*
 [camunda-platform] Elasticsearch URL which could be external.
 */}}
 
