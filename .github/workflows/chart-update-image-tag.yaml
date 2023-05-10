@@ -1,3 +1,4 @@
+# NOTE: The whole pipeline will be removed once we have RenovateBot setup in place.
 name: "Chart - Update Image Tag"
 
 on:
@@ -8,9 +9,19 @@ on:
         description: 'Value of the "global.image.tag" in values file'
         required: false
         type: string
-      # Optimize doesn't follow the unified version yet.
+      # Optimize doesn't follow the unified version.
       optimize-image-tag:
         description: 'Value of the "optimize.image.tag" in values file'
+        required: false
+        type: string
+      # WebModeler doesn't follow the unified version.
+      webModeler-image-tag:
+        description: 'Value of the "webModeler.image.tag" in values file'
+        required: false
+        type: string
+      # Connectors doesn't follow the unified version.
+      connectors-image-tag:
+        description: 'Value of the "connectors.image.tag" in values file'
         required: false
         type: string
 
@@ -32,8 +43,10 @@ jobs:
         uses: asdf-vm/actions/install@v1
       - name: Set images vars
         run: |
-          echo "GLOBAL_IMAGE_TAG=${{ github.event.inputs.global-image-tag }}" >> "$GITHUB_ENV"
-          echo "OPTIMIZE_IMAGE_TAG=${{ github.event.inputs.optimize-image-tag }}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG_GLOBAL=${{ github.event.inputs.global-image-tag }}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG_OPTIMIZE=${{ github.event.inputs.optimize-image-tag }}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG_WEBMODELER=${{ github.event.inputs.webModeler-image-tag }}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG_CONNECTORS=${{ github.event.inputs.connectors-image-tag }}" >> "$GITHUB_ENV"
       - name: Update values file image tag
         run: |
           make tools.update-values-file-image-tag
@@ -49,13 +62,7 @@ jobs:
           done
       - name: Set PR title var
         run: |
-          if [[ -n "${GLOBAL_IMAGE_TAG}" && -n "${OPTIMIZE_IMAGE_TAG}" ]]; then
-              CHANGED_VERSIONS_TITLE="Global:$GLOBAL_IMAGE_TAG/Optimize:$OPTIMIZE_IMAGE_TAG"
-          elif [[ -n "${GLOBAL_IMAGE_TAG}" ]]; then
-              CHANGED_VERSIONS_TITLE="Global:$GLOBAL_IMAGE_TAG"
-          elif [[ -n "${OPTIMIZE_IMAGE_TAG}" ]]; then
-              CHANGED_VERSIONS_TITLE="Optimize:$OPTIMIZE_IMAGE_TAG"
-          fi
+          CHANGED_VERSIONS_TITLE="Global:${IMAGE_TAG_GLOBAL:-N/A}|Optimize:${IMAGE_TAG_OPTIMIZE:-N/A}|WebModeler:${IMAGE_TAG_WEBMODELER:-N/A}|Connectors:${IMAGE_TAG_CONNECTORS:-N/A}"
           echo "CHANGED_VERSIONS_TITLE=$CHANGED_VERSIONS_TITLE" >> "$GITHUB_ENV"
           echo $CHANGED_VERSIONS_TITLE
       - name: Create pull request with the changes
@@ -67,8 +74,10 @@ jobs:
           title: "[BOT] Update Camunda Platform image tag to ${{ env.CHANGED_VERSIONS_TITLE }}"
           body: |
             Update camunda-platform Helm chart image tag to:
-            - global.image.tag: `${{ env.GLOBAL_IMAGE_TAG }}`
-            - optimize.image.tag: `${{ env.OPTIMIZE_IMAGE_TAG }}`
+            - global.image.tag: `${{ env.IMAGE_TAG_GLOBAL }}`
+            - optimize.image.tag: `${{ env.IMAGE_TAG_OPTIMIZE }}`
+            - webModeler.image.tag: `${{ env.IMAGE_TAG_WEBMODELER }}`
+            - connectors.image.tag: `${{ env.IMAGE_TAG_CONNECTORS }}`
           labels: |
             bot
             chore
