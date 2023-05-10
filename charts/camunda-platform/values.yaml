@@ -1229,11 +1229,47 @@ identity:
   # ExtraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
 
+  # ServiceAccount configuration for the service account where the identity pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the identity service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the identity service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the identity service account
+    annotations: {}
+
+  # Ingress configuration to configure the ingress resource
+  ingress:
+    # Ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    # Ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host: ""
+    # Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: ""
+
+  # Identity.keycloak
   # Keycloak configuration, for the keycloak dependency chart which is used by identity.
   # For more details: https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters
   keycloak:
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
+
+    ## Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
+    tls:
+      enabled: false
 
     # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
     # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
@@ -1268,11 +1304,18 @@ identity:
     # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
     - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
       value: "{{ .Values.global.ingress.tls.enabled }}"
+
     # Keycloak.ingress can be used to configure an Ingress for Keycloak. No need to enable it if the global Ingress
     # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
     # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
     ingress:
+      # Keycloak.ingress.enabled can be used enable ingress record generation for Keycloak.
       enabled: false
+      # Keycloak.ingress.tls can be used to enable TLS configuration for the host defined at ingress.hostname parameter.
+      tls: false
+      # Keycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
+      extraTls: []
+
     # Keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:
       # Keycloak.service.type can be set to change the service type.
@@ -1289,41 +1332,6 @@ identity:
       # Keycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
       # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
       existingSecret: ""
-
-      ## Keycloak.auth.tls.enabled can be used to enable TLS encryption. Required for HTTPs traffic.
-      tls:
-        enabled: false
-
-  # ServiceAccount configuration for the service account where the identity pods are assigned to
-  serviceAccount:
-    # ServiceAccount.enabled if true, enables the identity service account
-    enabled: true
-    # ServiceAccount.name can be used to set the name of the identity service account
-    name: ""
-    # ServiceAccount.annotations can be used to set the annotations of the identity service account
-    annotations: {}
-
-  # Ingress configuration to configure the ingress resource
-  ingress:
-    # Ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: false
-    # Ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
-    annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    # Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
 
 # WebModeler configuration of the Web Modeler deployment
 webModeler:

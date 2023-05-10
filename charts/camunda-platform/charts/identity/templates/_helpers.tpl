@@ -144,7 +144,7 @@ For more details, please check Camunda Platform Helm chart documentation.
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.protocol -}}
         {{- .Values.global.identity.keycloak.url.protocol -}}
     {{- else -}}
-        {{- ternary "https" "http" (.Values.keycloak.auth.tls.enabled) -}}
+        {{- ternary "https" "http" (.Values.keycloak.tls.enabled) -}}
     {{- end -}}
 {{- end -}}
 
