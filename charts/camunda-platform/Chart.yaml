@@ -72,5 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "identity connectors secret key"
+    - kind: added
+      description: "zeebe gateway authentication"
