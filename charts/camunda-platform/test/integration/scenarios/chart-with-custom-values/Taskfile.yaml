@@ -32,7 +32,7 @@ tasks:
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-custom.yaml
-        --timeout 15m0s
+        --timeout 20m0s
         --wait
         {{ .HELM_EXTRA_ARGS }}
 

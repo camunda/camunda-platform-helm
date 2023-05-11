@@ -41,7 +41,7 @@ tasks:
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-web-modeler-enabled.yaml
-        --timeout 15m0s
+        --timeout 20m0s
         --wait
         {{ .HELM_EXTRA_ARGS }}
 

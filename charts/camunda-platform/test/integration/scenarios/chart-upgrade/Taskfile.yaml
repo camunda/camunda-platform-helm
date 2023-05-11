@@ -62,7 +62,7 @@ tasks:
         --set global.identity.auth.connectors.existingSecret=$CONNECTORS_SECRET \
         --set identity.keycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
         --set identity.keycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
-        --timeout 15m0s \
+        --timeout 20m0s \
         --wait {{ .HELM_EXTRA_ARGS }}
 
   setup.post:

@@ -31,7 +31,7 @@ tasks:
     - helm install integration {{ .CHART_DIR }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
-        --timeout 15m0s
+        --timeout 20m0s
         --wait
         {{ .HELM_EXTRA_ARGS }}
 

@@ -141,6 +141,16 @@ testcases:
           deploy /mnt/fixtures/{{ .value.file }}
     assertions:
     - result.code ShouldEqual 0
+  - name: Ensure Operate availability
+    type: http
+    method: GET
+    url: http://{{ .releaseName }}-operate/actuator/health/readiness
+    retry: 6
+    delay: 20
+    info: |
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
   - name: Check deployed BPMN process in Operate - {{ .value.name }}
     type: http
     range:
