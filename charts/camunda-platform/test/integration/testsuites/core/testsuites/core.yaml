@@ -146,7 +146,7 @@ testcases:
     method: GET
     url: http://{{ .releaseName }}-operate/actuator/health/readiness
     retry: 6
-    delay: 20
+    delay: 15
     info: |
       Response Body: {{ .result.body }}
     assertions:
@@ -165,7 +165,7 @@ testcases:
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
     body: '{}'
     retry: 6
-    delay: 20
+    delay: 15
     # info: |
     #   - Request Body: {{ .result.request.body }}
     #   - Response Body: {{ .result.body }}
@@ -185,7 +185,7 @@ testcases:
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
     body: '{"webhookDataKey":"webhookDataValue"}'
     retry: 6
-    delay: 60
+    delay: 15
     # info: |
     #   - Request Body: {{ .result.request.body }}
     #   - Response Body: {{ .result.body }}
