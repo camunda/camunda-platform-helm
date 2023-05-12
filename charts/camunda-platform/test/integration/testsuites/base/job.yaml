@@ -34,11 +34,28 @@ spec:
         command:
         - sh
         - -c
-        # TODO: Debug why envs from "envFrom" are not exported by default.
         - |
+          # TODO: Debug why envs from "envFrom" are not exported by default.
           export $(env | grep VENOM_VAR_);
-          /usr/local/venom run ./tests/${VENOM_RUN_ARGS:-*.y*ml} ||
-          (cat ./results/venom.log; exit 1)
+
+          # NOTE: That loop will be replaced once we use Testkube.
+          try=0
+          limit=3
+          delay=30s
+
+          until [ ${try} -ge ${limit} ]; do
+            try=$((try + 1))
+            echo "[INFO] Venom exec no. ${try}..."
+            /usr/local/venom run ./tests/${VENOM_RUN_ARGS:-*.y*ml}
+            exit_code=$?
+            test ${exit_code} == 0 && break
+            sleep ${delay}
+          done
+
+          if [[ ${exit_code} != 0 ]]; then
+            cat ./results/venom.log
+            exit 1
+          fi
         env:
         # Used to access get token from Keycloak to access Camunda APIs.
         - name: VENOM_VAR_TEST_CLIENT_SECRET

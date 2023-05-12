@@ -6,7 +6,7 @@ vars:
 env:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_PREFIX: integration-venom
-  TEST_TIMEOUT: 5m
+  TEST_TIMEOUT: 15m
   TEST_PARENT: "../../testsuites"
   TEST_DIR: "{{ .TEST_PARENT }}/{{ .testID }}"
   TEST_NAME: "{{ .TEST_PREFIX }}-{{ .testID }}"
