@@ -47,7 +47,7 @@ dependencies:
   # Dependency charts.
   - name: elasticsearch
     repository: "https://helm.elastic.co"
-    version: 7.17.1
+    version: 7.17.3
     condition: "elasticsearch.enabled"
   - name: postgresql
     repository: https://charts.bitnami.com/bitnami
