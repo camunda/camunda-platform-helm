@@ -1,0 +1,26 @@
+# Camunda.
+global:
+  # https://hub.docker.com/u/camunda
+  image:
+    tag: 8.0.14
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
+  image:
+    tag: 3.9.4
+
+# Keycloak.
+identity:
+  keycloak:
+    # https://hub.docker.com/r/bitnami/keycloak/tags
+    image:
+      tag: 16.1.1
+    postgresql:
+      # https://hub.docker.com/r/bitnami/postgresql/tags
+      image:
+        tag: 14.2.0
+
+# Elasticsearch.
+elasticsearch:
+  # https://hub.docker.com/r/elastic/elasticsearch/tags
+  imageTag: 7.17.10
