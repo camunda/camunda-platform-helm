@@ -31,6 +31,7 @@ global:
     app: camunda-platform
 
   # Image configuration to be used in each sub chart
+  # https://hub.docker.com/u/camunda
   image:
     # Image.registry can be used to set container image registry.
     registry: ""
@@ -890,6 +891,7 @@ optimize:
   enabled: true
 
   # Image configuration to configure the Optimize image specifics
+  # https://hub.docker.com/r/camunda/optimize/tags
   image:
     # Image.registry can be used to set container image registry.
     registry: ""
@@ -1056,6 +1058,7 @@ retentionPolicy:
   tasklistIndexTTL: 30
 
   # Image configuration for the elasticsearch curator cronjob
+  # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags
   image:
     # Image.registry can be used to set container image registry.
     registry: ""
@@ -1264,10 +1267,21 @@ identity:
   # Keycloak configuration, for the keycloak dependency chart which is used by identity.
   # For more details: https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters
   keycloak:
+    # Keycloak.postgresql configuration.
+    postgresql:
+      # https://hub.docker.com/r/bitnami/postgresql/tags
+      image:
+        tag: 15.1.0
+
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
 
-    ## Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
+    # Keycloak.image configuration.
+    # https://hub.docker.com/r/bitnami/keycloak/tags
+    image:
+      tag: 19.0.3
+
+    # Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
     tls:
       enabled: false
 
@@ -1344,6 +1358,8 @@ webModeler:
   nameOverride: ""
 
   # Image configuration of the Web Modeler Docker images
+  # Camunda Enterprise repository.
+  # registry.camunda.cloud/web-modeler-ee
   image:
     # Image.registry can be used to set the Docker registry for the Web Modeler images (overwrites global.image.registry)
     # Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry.
@@ -1785,6 +1801,7 @@ connectors:
       existingSecret: ""
 
   # Image configuration to configure the Connectors image specifics
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     # Image.registry can be used to set container image registry.
     registry: ""
@@ -1940,8 +1957,11 @@ connectors:
   affinity: {}
 
 elasticsearch:
-  imageTag: 7.17.9
   enabled: true
+
+  # https://hub.docker.com/r/elastic/elasticsearch/tags
+  imageTag: 7.17.10
+
   extraEnvs:
     - name: "xpack.security.enabled"
       value: "false"

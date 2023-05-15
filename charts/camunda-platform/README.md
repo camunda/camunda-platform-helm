@@ -32,6 +32,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
+- [Backporting](#backporting)
 
 ## Architecture
 
@@ -109,8 +110,16 @@ The first command adds the official Camunda Platform Helm charts repo, and the s
 chart to your current Kubernetes context.
 
 ```shell
-  helm repo add camunda https://helm.camunda.io
-  helm install camunda-platform camunda/camunda-platform
+helm repo add camunda https://helm.camunda.io
+helm install camunda-platform camunda/camunda-platform
+```
+
+To install a previous chart version with the latest apps patch image tags for that version,
+use the values file for the minor release. For example (the values file could also be downloaded):
+
+```shell
+helm install camunda-platform camunda/camunda-platform --version 8.1 \
+    --values https://raw.githubusercontent.com/camunda/camunda-platform-helm/main/charts/camunda-platform/values/values-v8.1.yaml
 ```
 
 ### Local Kubernetes
@@ -1168,3 +1177,10 @@ Downloading common from repo https://charts.bitnami.com/bitnami
 ## Releasing the Charts
 
 Please see the corresponding [release guide](../../RELEASE.md) to find out how to release the chart.
+
+## Backporting
+
+Our Helm chart is highly customizable and constantly evolving.
+Hence, currently, we backport the older charts by providing extra values file per version.
+That covers most backporting cases, like updating the application's image tags to the latest patch
+version, setting env var, etc.
