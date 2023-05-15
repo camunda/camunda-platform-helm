@@ -37,6 +37,7 @@ global:
     registry: ""
     # Image.tag defines the tag / version which should be used in the chart
     # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
+    # renovate: datasource=github-releases depName=camunda/camunda-platform versioning=semver
     tag: 8.2.4  # global.image.tag
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
@@ -1366,6 +1367,7 @@ webModeler:
     registry: registry.camunda.cloud
     # Image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
     # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
+    # renovate: datasource=github-releases depName=camunda/web-modeler versioning=semver
     tag: 8.2.2  # webModeler.image.tag
     # Image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
