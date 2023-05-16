@@ -8,6 +8,9 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     tag: 3.9.4
+  env:
+  - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+    value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
