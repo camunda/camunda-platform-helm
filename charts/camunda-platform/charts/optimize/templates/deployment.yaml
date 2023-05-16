@@ -78,9 +78,9 @@ spec:
           {{- end }}
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
-          {{- if .Values.env}}
-          {{ .Values.env | toYaml | nindent 10 }}
-          {{- end }}
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
         {{- if .Values.command}}
         command: {{ .Values.command }}
         {{- end }}

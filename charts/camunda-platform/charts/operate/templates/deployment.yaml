@@ -75,8 +75,8 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "auth"
           {{- end }}
-        {{- if .Values.env}}
-        {{ .Values.env | toYaml | nindent 10 }}
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.command}}
         command: {{ .Values.command }}
