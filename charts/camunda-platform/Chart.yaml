@@ -72,15 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "remove hiding of logout button in Optimize"
-    - kind: changed
-      description: "migrate Web Modeler subchart to parent chart"
-    - kind: changed
-      description: "update web-modeler to version 0.8.0-beta"
-    - kind: added
-      description: "add Connectors component without authentication"
-    - kind: added
-      description: "add Web Modeler to combined Ingress"
-    - kind: added
-      description: "support web-modeler startup/readiness/liveness probes"
+    - kind: fixed
+      description: "template env vars for operat and optimize"
