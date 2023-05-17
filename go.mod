@@ -3,7 +3,7 @@ module camunda-platform-helm
 go 1.19
 
 require (
-	github.com/camunda-cloud/zeebe/clients/go v1.3.4
+	github.com/camunda-cloud/zeebe/clients/go v1.3.14
 	github.com/gruntwork-io/terratest v0.40.3
 	github.com/stretchr/testify v1.8.2
 	google.golang.org/grpc v1.49.0

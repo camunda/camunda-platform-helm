@@ -137,6 +137,7 @@ github.com/bugsnag/panicwrap v0.0.0-20151223152923-e2c28503fcd0 h1:nvj0OLI3YqYXe
 github.com/bugsnag/panicwrap v0.0.0-20151223152923-e2c28503fcd0/go.mod h1:D/8v3kj0zr8ZAKg1AQ6crr+5VwKN5eIywRkfhyM/+dE=
 github.com/camunda-cloud/zeebe/clients/go v1.3.4 h1:P7GJybyH2wI9LbU4F7vXTocRCaFNOYQrD8TOc0MDBvQ=
 github.com/camunda-cloud/zeebe/clients/go v1.3.4/go.mod h1:Drngktd7fr05tWcPjOx6g6F8gRZVBx9T+pQWgTZUyIs=
+github.com/camunda-cloud/zeebe/clients/go v1.3.14/go.mod h1:xNSwb0qhq72BUitO/567NZx6yBP9e/0vI00t1+Iqn4Y=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
