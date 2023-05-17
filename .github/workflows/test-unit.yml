@@ -17,7 +17,7 @@ jobs:
     name: Custom values
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
     - uses: actions/cache@v3
