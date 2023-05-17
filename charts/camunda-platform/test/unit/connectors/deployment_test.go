@@ -794,6 +794,6 @@ func (s *deploymentTemplateTest) TestContainerSetContextPath() {
 
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
-	
+
 	s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SERVLET_CONTEXT_PATH", Value: "/connectors"})
 }

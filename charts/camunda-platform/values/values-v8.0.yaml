@@ -9,7 +9,6 @@ global:
     # renovate: datasource=github-releases depName=camunda/camunda-platform versioning=semver
     tag: 8.0.14
 
-# Keycloak.
 identity:
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
