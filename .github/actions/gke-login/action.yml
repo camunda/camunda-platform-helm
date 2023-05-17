@@ -21,7 +21,7 @@ runs:
   #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
   #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
   - name: Authenticate to Google Cloud
-    uses: google-github-actions/auth@v0
+    uses: google-github-actions/auth@v1
     with:
       credentials_json: '${{ inputs.credentials-json }}'
   - name: Get GKE credentials
