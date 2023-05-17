@@ -1,0 +1,63 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "labels": ["dependencies"],
+  "dependencyDashboard": true,
+  "separateMinorPatch": true,
+  "minor": {
+    "enabled": true
+  },
+  "patch": {
+    "enabled": true
+  },
+  "helm-values": {
+    "fileMatch": ["(^|/).*?values.*?\\.yaml$"]
+  },
+  "packageRules": [
+    {
+      "enabled": false,
+      "matchManagers": ["helmv3"],
+      "matchUpdateTypes": ["major"]
+    },
+    {
+      "enabled": false,
+      "matchManagers": ["helm-values", "regex"],
+      "matchUpdateTypes": ["major"]
+    },
+    {
+      "enabled": false,
+      "matchManagers": ["helm-values", "regex"],
+      "matchPaths": ["**/values/values-v8.*.yaml"],
+      "matchUpdateTypes": ["minor"]
+    },
+    {
+      "enabled": true,
+      "matchDatasources": ["github-releases"],
+      "matchPaths": ["**/values/values-v8.*.yaml"],
+      "matchUpdateTypes": ["patch"]
+    },
+    {
+      "enabled": true,
+      "matchDatasources": ["github-releases"],
+      "matchPaths": ["**/values.yaml"],
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "enabled": true,
+      "matchManagers": ["regex"],
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["camunda/web-modeler"],
+      "extractVersion": "^v(?<version>.*)$"
+    }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["\\.yaml$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s*?tag: (?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ]
+}
