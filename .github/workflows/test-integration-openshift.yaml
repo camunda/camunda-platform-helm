@@ -3,7 +3,7 @@ name: "Test - Integration - OpenShift"
 on:
   pull_request:
     paths:
-    - '.github/**'
+    - '.github/workflows/*integration*.yaml'
     - '.tool-versions'
     - 'charts/**'
   workflow_dispatch: { }
