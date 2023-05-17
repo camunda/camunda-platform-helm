@@ -17,7 +17,7 @@ require (
 	k8s.io/apimachinery v0.26.4
 )
 
-require helm.sh/helm/v3 v3.11.0
+require helm.sh/helm/v3 v3.11.1
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
