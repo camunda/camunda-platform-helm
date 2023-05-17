@@ -75,7 +75,7 @@ jobs:
         TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
         echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV
     - name: Install env dependencies
-      uses: asdf-vm/actions/install@v1
+      uses: asdf-vm/actions/install@v2
     - name: Add Helm repos and dependencies
       run: |
         make helm.repos-add

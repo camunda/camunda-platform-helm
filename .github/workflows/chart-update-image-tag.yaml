@@ -40,7 +40,7 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
       - name: Install Helm
-        uses: asdf-vm/actions/install@v1
+        uses: asdf-vm/actions/install@v2
       - name: Set images vars
         run: |
           echo "IMAGE_TAG_GLOBAL=${{ github.event.inputs.global-image-tag }}" >> "$GITHUB_ENV"
