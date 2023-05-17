@@ -34,4 +34,4 @@ jobs:
       with:
         author_name: "renovate[bot]"
         author_email: "29139614+renovate[bot]@users.noreply.github.com"
-        commit: "--amend --no-edit"
+        message: "chore(deps: post upgrade tasks - update golden files"
