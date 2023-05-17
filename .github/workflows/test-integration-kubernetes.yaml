@@ -5,7 +5,7 @@ name: "Test - Integration - Kubernetes"
 on:
   pull_request:
     paths:
-    - '.github/**'
+    - '.github/workflows/*integration*.yaml'
     - '.tool-versions'
     - 'charts/**'
   workflow_dispatch: { }
