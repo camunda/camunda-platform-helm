@@ -7,14 +7,14 @@ require (
 	github.com/gruntwork-io/terratest v0.40.3
 	github.com/stretchr/testify v1.8.2
 	google.golang.org/grpc v1.49.0
-	k8s.io/api v0.26.4
+	k8s.io/api v0.27.2
 )
 
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
-	k8s.io/apimachinery v0.26.4
+	k8s.io/apimachinery v0.27.2
 )
 
 require helm.sh/helm/v3 v3.11.1
