@@ -1368,7 +1368,7 @@ webModeler:
     # Image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
     # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
     # renovate: datasource=github-releases depName=camunda/web-modeler versioning=semver
-    tag: 8.2.2  # webModeler.image.tag
+    tag: 8.2.14  # webModeler.image.tag
     # Image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
