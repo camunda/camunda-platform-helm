@@ -32,23 +32,26 @@
       "matchUpdateTypes": ["minor"]
     },
     {
-      "enabled": true,
       "matchDatasources": ["github-releases"],
       "matchPaths": ["**/values/values-v8.*.yaml"],
       "matchUpdateTypes": ["patch"]
     },
     {
-      "enabled": true,
       "matchDatasources": ["github-releases"],
       "matchPaths": ["**/values.yaml"],
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      "enabled": true,
       "matchManagers": ["regex"],
       "matchDatasources": ["github-releases"],
       "matchPackageNames": ["camunda/web-modeler"],
       "extractVersion": "^v(?<version>.*)$"
+    },
+    {
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["camunda/web-modeler"],
+      "matchPaths": ["**/values/values-v8.1.yaml"],
+      "allowedVersions": "~0.8.0"
     }
   ],
   "regexManagers": [
@@ -58,6 +61,15 @@
         "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s*?tag: (?<currentValue>\\S+)"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ],
+  "hostRules": [
+    {
+      "hostType": "github-releases",
+      "matchHost": "https://api.github.com/repos/camunda/web-modeler",
+      "encrypted": {
+        "token": "wcFMA/xDdHCJBTolAQ/+Ov8DCfRPqjJpk2RCxIhY1zYGD5+iYlbMy7Dbvopimim31XZKm+bHbw/ojjJ4jlmUAsqB+feFWeZDLyYbs2tbyI/3ozjzW3u4UyR8G+NpE2fxI3cfj2MW+i8XQ7hJsD8HXHpwJtVBdh08n7MqVWBgWZ0byLKj1uyYqk9pNOPKi5lsI/eGHmx5Qzly0eukHj0dLcjxukx206sDECtgzZN8Mx0RU0m5mvLhZeAYKd6EkTAuMdfkOPXmLr/4NmvjLppVjMDKh+1H0DBex1+hHagqkGfyG/XSMi0P6kltkItDc0J0pMqEPaJRWuypnss7UqCT7QAHB6kRgsOVXF0wQubSbb2e3rqMNPNnA4byMwHxDCxUbgBaZbsZ9gMR8sHjzuDZKssY3orGG2jyov4FPKnz8A9gpBEVegIf7CyLrjd8YJtYj05tpZpLUWdlWLn03rJdT8U1f06S6QvmDsB/7QQ8d+osTG8m0lybqjzkIy7ZcY4TJjM+ADe4cJYyoB76wcSpFb/bZFP11RNCikTy8TKUTsRg+9maf4S+gcyiyEsjwiLwXBQdQPOXHlst9O5dSlzJM+7QO+xE4vfZN/KWfVcHVflL1LhUrmSyynkXQlRnc9hD8QcSHLxheYKy3okDypdFUTxJp+kF95ILVgRWLAmsvXUjolD+UwSl9MNAlKHHc6/SiwFx8EMb+jvtzJH3Owjv3BAtAPcACNeeWv0Txki/xUYaq1PZ2PBP/I5nqB29Yg9SbbGiPHr0JEtCE1P2VpKtTfMG4yQkWT3TzEVsqiTwKl+a1qHtYeV6ACUvW5bVNj1SQt26ZkZkD5HB4EIhV0wR2UJlCkVaoKXAhZOcjSCZNjty2KTmvTPW+Jo+MD0"
+      }
     }
   ]
 }
