@@ -7,14 +7,14 @@ require (
 	github.com/gruntwork-io/terratest v0.40.3
 	github.com/stretchr/testify v1.8.2
 	google.golang.org/grpc v1.49.0
-	k8s.io/api v0.26.4
+	k8s.io/api v0.26.5
 )
 
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
-	k8s.io/apimachinery v0.26.4
+	k8s.io/apimachinery v0.26.5
 )
 
 require helm.sh/helm/v3 v3.11.1
@@ -104,12 +104,12 @@ require (
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/term v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21 // indirect
