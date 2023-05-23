@@ -73,4 +73,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "zeebe gateway authentication"
+      description: "values file level backporting per minor version"
+    - kind: fixed
+      description: "add optimize mapping for redirect url env var"
