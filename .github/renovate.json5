@@ -30,8 +30,8 @@
     },
     {
       // Enable non-major version update for current Camunda Platform version.
-      "matchDatasources": ["github-releases"],
-      "matchPaths": ["**/values.yaml"],
+      "matchDatasources": ["github-releases", "docker"],
+      "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
       "matchUpdateTypes": ["minor", "patch"]
     },
     {

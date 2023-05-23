@@ -13,6 +13,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 - [Installation](#installation)
   - [Local Kubernetes](#local-kubernetes)
   - [OpenShift](#openshift)
+- [Backporting](#backporting)
 - [Uninstalling Charts](#uninstalling-charts)
 - [Configuration](#configuration)
   - [Global](#global)
@@ -32,7 +33,6 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
-- [Backporting](#backporting)
 
 ## Architecture
 
@@ -114,12 +114,15 @@ helm repo add camunda https://helm.camunda.io
 helm install camunda-platform camunda/camunda-platform
 ```
 
-To install a previous chart version with the latest apps patch image tags for that version,
-use the values file for the minor release. For example (the values file could also be downloaded):
+Although the Camunda Platform 8 Helm chart gets the latest version of Camunda Platform 8 applications,
+the version is still possible to diverge slightly between the chart and the apps
+(more details about that can be found in [versioning](../../README.md#versioning)).
+
+To have the latest version of the chart and apps at any time, install the chart as follows:
 
 ```shell
-helm install camunda-platform camunda/camunda-platform --version 8.1 \
-    --values https://raw.githubusercontent.com/camunda/camunda-platform-helm/main/charts/camunda-platform/values/values-v8.1.yaml
+helm install camunda-platform camunda/camunda-platform \
+    --values https://raw.githubusercontent.com/camunda/camunda-platform-helm/main/charts/camunda-platform/values/values-latest.yaml
 ```
 
 ### Local Kubernetes
@@ -133,6 +136,21 @@ For more details, follow the Camunda Platform 8
 ### OpenShift
 
 Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift. 
+
+## Backporting
+
+Our Helm chart is highly customizable and constantly evolving.
+Hence, currently, we backport the older charts by providing extra values file per version.
+That covers most backporting cases, like updating the application's image tags to the latest patch
+version, setting env var, etc.
+
+To install a previous chart version with the latest apps patch image tags for that version,
+use the values file for the minor release. For example (the values file could also be downloaded):
+
+```shell
+helm install camunda-platform camunda/camunda-platform --version 8.1 \
+    --values https://raw.githubusercontent.com/camunda/camunda-platform-helm/main/charts/camunda-platform/values/values-v8.1.yaml
+```
 
 ## Uninstalling Charts
 
@@ -1178,9 +1196,3 @@ Downloading common from repo https://charts.bitnami.com/bitnami
 
 Please see the corresponding [release guide](../../RELEASE.md) to find out how to release the chart.
 
-## Backporting
-
-Our Helm chart is highly customizable and constantly evolving.
-Hence, currently, we backport the older charts by providing extra values file per version.
-That covers most backporting cases, like updating the application's image tags to the latest patch
-version, setting env var, etc.

@@ -1,12 +1,12 @@
 #
-# Camunda Platform
+# Camunda Platform - v8.0
 #
 
 global:
   # https://github.com/camunda/camunda-platform/releases
   # https://hub.docker.com/u/camunda
   image:
-    # renovate: datasource=github-releases depName=camunda/camunda-platform versioning=semver
+    # renovate: datasource=github-releases depName=camunda/camunda-platform
     tag: 8.0.14
 
 identity:
