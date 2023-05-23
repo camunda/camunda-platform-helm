@@ -26,3 +26,6 @@
 
 # Tests
 test/
+
+# Values for previous versions
+values/
