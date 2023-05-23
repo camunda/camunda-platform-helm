@@ -1,5 +1,5 @@
 #
-# Camunda Platform - v8.1
+# Camunda Platform - Latest
 #
 
 global:
@@ -7,41 +7,38 @@ global:
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.1.12
+    tag: 8.2.5
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 0.16.1
+    tag: 0.19.2
 
 identity:
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
       repository: bitnami/keycloak
-      tag: 16.1.1
+      tag: 19.0.3
     postgresql:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
         repository: bitnami/postgresql
-        tag: 14.5.0
+        tag: 15.1.0
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 3.9.4
-  env:
-  - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
-    value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}"
+    tag: 3.10.1
 
 webModeler:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 0.8.0-beta
+    tag: 8.2.3
 
 #
 # Elasticsearch
