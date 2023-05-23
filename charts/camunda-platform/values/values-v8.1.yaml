@@ -40,7 +40,7 @@ webModeler:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
   image:
-    # renovate: datasource=github-releases depName=camunda/web-modeler versioning=npm
+    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
     tag: 0.8.0-beta
 
 #
