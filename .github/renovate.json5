@@ -16,59 +16,68 @@
   },
   "packageRules": [
     {
+      // Disable major version update for all Helm components.
       "enabled": false,
-      "matchManagers": ["helmv3"],
+      "matchManagers": ["helmv3", "helm-values", "regex"],
       "matchUpdateTypes": ["major"]
     },
     {
-      "enabled": false,
-      "matchManagers": ["helm-values", "regex"],
-      "matchUpdateTypes": ["major"]
-    },
-    {
+      // Disable minor version update for previous Camunda Platform releases which will only get patch updates.
       "enabled": false,
       "matchManagers": ["helm-values", "regex"],
       "matchPaths": ["**/values/values-v8.*.yaml"],
       "matchUpdateTypes": ["minor"]
     },
     {
-      "matchDatasources": ["github-releases"],
-      "matchPaths": ["**/values/values-v8.*.yaml"],
-      "matchUpdateTypes": ["patch"]
-    },
-    {
+      // Enable non-major version update for current Camunda Platform version.
       "matchDatasources": ["github-releases"],
       "matchPaths": ["**/values.yaml"],
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      "matchManagers": ["regex"],
-      "matchDatasources": ["github-releases"],
-      "matchPackageNames": ["camunda/web-modeler"],
-      "extractVersion": "^v(?<version>.*)$"
+      // Enable patch version update for previous Camunda Platform version.
+      "matchDatasources": ["github-releases", "docker"],
+      "matchPaths": ["**/values/values-v8.*.yaml"],
+      "matchUpdateTypes": ["patch"]
     },
     {
-      "matchDatasources": ["github-releases"],
-      "matchPackageNames": ["camunda/web-modeler"],
+      // Limit Web-Modeler version to 0.8.x for Camunda Platform v8.1.
+      "matchManagers": ["regex"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["web-modeler-ee/modeler-restapi"],
       "matchPaths": ["**/values/values-v8.1.yaml"],
       "allowedVersions": "~0.8.0"
     }
   ],
   "regexManagers": [
     {
+      // This is mainly used to update Camunda Platform unified image tag.
       "fileMatch": ["\\.yaml$"],
+      "datasourceTemplate":"github-releases",
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s*?tag: (?<currentValue>\\S+)"
+        "# renovate: datasource=github-releases depName=(?<depName>.+?)( versioning=(?<versioning>.+?))?\\s+?tag: (?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      // This is mainly used to update Web-Modeler image tag.
+      // Web-Modeler Self-Managed version is different from SaaS version, hence, we use Web-Modeler API image tag
+      // as a source of truth for rest of WM components.
+      "fileMatch": ["\\.yaml$"],
+      "datasourceTemplate":"docker",
+      "matchStrings": [
+        "# renovate: datasource=docker depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s*?tag: (?<currentValue>\\S+)"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
   ],
   "hostRules": [
     {
-      "hostType": "github-releases",
-      "matchHost": "https://api.github.com/repos/camunda/web-modeler",
+      "hostType": "docker",
+      "matchHost": "https://registry.camunda.cloud",
+      "username": "ci-distribution",
       "encrypted": {
-        "token": "wcFMA/xDdHCJBTolAQ/+Ov8DCfRPqjJpk2RCxIhY1zYGD5+iYlbMy7Dbvopimim31XZKm+bHbw/ojjJ4jlmUAsqB+feFWeZDLyYbs2tbyI/3ozjzW3u4UyR8G+NpE2fxI3cfj2MW+i8XQ7hJsD8HXHpwJtVBdh08n7MqVWBgWZ0byLKj1uyYqk9pNOPKi5lsI/eGHmx5Qzly0eukHj0dLcjxukx206sDECtgzZN8Mx0RU0m5mvLhZeAYKd6EkTAuMdfkOPXmLr/4NmvjLppVjMDKh+1H0DBex1+hHagqkGfyG/XSMi0P6kltkItDc0J0pMqEPaJRWuypnss7UqCT7QAHB6kRgsOVXF0wQubSbb2e3rqMNPNnA4byMwHxDCxUbgBaZbsZ9gMR8sHjzuDZKssY3orGG2jyov4FPKnz8A9gpBEVegIf7CyLrjd8YJtYj05tpZpLUWdlWLn03rJdT8U1f06S6QvmDsB/7QQ8d+osTG8m0lybqjzkIy7ZcY4TJjM+ADe4cJYyoB76wcSpFb/bZFP11RNCikTy8TKUTsRg+9maf4S+gcyiyEsjwiLwXBQdQPOXHlst9O5dSlzJM+7QO+xE4vfZN/KWfVcHVflL1LhUrmSyynkXQlRnc9hD8QcSHLxheYKy3okDypdFUTxJp+kF95ILVgRWLAmsvXUjolD+UwSl9MNAlKHHc6/SiwFx8EMb+jvtzJH3Owjv3BAtAPcACNeeWv0Txki/xUYaq1PZ2PBP/I5nqB29Yg9SbbGiPHr0JEtCE1P2VpKtTfMG4yQkWT3TzEVsqiTwKl+a1qHtYeV6ACUvW5bVNj1SQt26ZkZkD5HB4EIhV0wR2UJlCkVaoKXAhZOcjSCZNjty2KTmvTPW+Jo+MD0"
+        "password": "wcFMA/xDdHCJBTolAQ/7BSbgiur4KfMX0vgTM9T8Rt1pTqby5bR/RW6n/Iq5+bNU8pQne1W6zxaFEagkMMMTx/JtdWl88sDlGFqdG80Oik7Wbb7UDYl39Wdvax0DhmfkT1yqXYToyYz0rXpB9BIllAkfCy9ll8SbZqVBa/NoMPo2Fb8Hj/PiT4xG1U+YoWdsyXFLXz+jKEsRIKXC28ApxqJ7TN4iO5FEWrZIB4Bgtkg+x4FOpCTaS6fwui7FRxfFSGWTFkepr6R/lhPTDCHH7u65Mroff4IjUqfJ5dkGY+49QUGW45toaHXdXV9ZaBIMm+v6cNOOw92P+bidMdhIBLurOBqig24Jj02+wb5J9eKPBP1tvXW0vz1jwhOQIqRmV95zt5JCiQ7s/DByQnUsWfsJ3Vz9rbsUPLwspAhK3ayTl0ltrSj+LaejZei6Ny0Qq4LWTW14RjgLnABRhcK9iefCqVmLbRN+NQDcP0IxjHkFdGgxNaGPkb+jTC7CYJj9TKRHBabauXxvNGrggliUKAlOh8VmpQ1ZFoxryMDQK/HEP/qUU/TmzyAuAtSfrUdOlgYVBEQ7xGH1AfC7fhFUFohAcs4OGCKjbPTCM/LwH9o9zx4hEHh1bCjdgv98Ug4UgYpXBJPJ7Jc2Xng9nCUrkEPPX85kXTlT7T96a5p6CqKBkRNPES88Nj1adP7uANjSYgFIB59DO0tlvxUgBGo+NhjSNQl4wigI0Uc6JGysDb3qXH66nlymaZFzR5jrvqXU+iCMTf/yVyOdAcYQqh1wRHOmuuy0/AK/N0m4fFE3ldsmyV61oCUPxj1sjlNYd1Bte5fy"
       }
     }
   ]
