@@ -178,6 +178,9 @@ zeebe:
   # Enabled if true, all zeebe related resources are deployed via the helm release
   enabled: true
 
+  # Debug if true, extra info is printed.
+  debug: false
+
   # Image configuration to configure the zeebe image specifics
   image:
     # Image.registry can be used to set container image registry.

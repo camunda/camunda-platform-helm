@@ -26,7 +26,6 @@ data:
       echo "No exporters available."
     fi
 
-    env
     exec /usr/local/zeebe/bin/broker
 
   broker-log4j2.xml: |
