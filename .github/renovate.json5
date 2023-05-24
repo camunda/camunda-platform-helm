@@ -48,9 +48,13 @@
       "matchPaths": ["**/values/values-v8.1.yaml"],
       "allowedVersions": "~0.8.0"
     },
+    // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
-      // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
-      "matchPackagePatterns": ["kubectl", "k8s.io/.*"],
+      "matchPackagePatterns": ["kubectl"],
+      "allowedVersions": "<1.26.0"
+    },
+    {
+      "matchPackagePatterns": ["k8s.io/.*"],
       "allowedVersions": "<0.26.0"
     }
   ],
