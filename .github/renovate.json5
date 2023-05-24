@@ -51,7 +51,6 @@
     {
       // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
       "matchPackagePatterns": ["kubectl", "k8s.io/.*"],
-      "matchUpdateTypes": ["patch"],
       "allowedVersions": "<0.26.0"
     }
   ],
