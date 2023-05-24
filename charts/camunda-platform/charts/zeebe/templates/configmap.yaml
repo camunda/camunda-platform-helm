@@ -17,7 +17,11 @@ data:
       echo "No exporters available."
     fi
 
+    {{- if .Values.debug }}
+
     env
+    {{- end }}
+
     exec /usr/local/zeebe/bin/broker
 
   broker-log4j2.xml: |

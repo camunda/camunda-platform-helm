@@ -272,6 +272,7 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `zeebe` | Configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources. | |
+| | `debug` | If true, extra info is printed. | |
 | | `image` | Configuration to configure the Zeebe image specifics. | |
 | | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
