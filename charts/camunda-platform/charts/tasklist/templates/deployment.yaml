@@ -67,8 +67,12 @@ spec:
             {{- end }}
           - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
             value: "tasklist-api"
+          {{- /*
+            TODO: Remove the trimSuffix when it's fixed in Tasklist.
+            https://github.com/camunda/camunda-platform-helm/issues/714
+          */}}
           - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
-            value: {{ .Values.global.identity.auth.tasklist.redirectUrl | quote }}
+            value: {{ .Values.global.identity.auth.tasklist.redirectUrl | trimSuffix "/tasklist" | quote }}
           - name: ZEEBE_CLIENT_ID
             value: zeebe
           - name: ZEEBE_CLIENT_SECRET
