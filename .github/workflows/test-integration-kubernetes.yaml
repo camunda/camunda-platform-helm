@@ -58,9 +58,10 @@ jobs:
     - name: Login to GKE
       uses: ./.github/actions/gke-login
       with:
-        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
         cluster-name: ${{ secrets.GKE_CLUSTER }}
         cluster-location: ${{ secrets.GKE_ZONE }}
+        workload-identity-provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
+        service-account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
     - name: Set test vars
       id: vars
       run: |
