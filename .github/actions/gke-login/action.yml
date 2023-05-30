@@ -1,26 +1,34 @@
 name: GKE Login
 description: Login to GKE cluster
 inputs:
-  credentials-json:
-    description: GCP IAM credentials
-    required: true
   cluster-name:
     description: GKE cluster name
     required: true
   cluster-location:
     description: GKE cluster location
     required: true
+  auth-method:
+    description: GCP auth method. Available options are workload-identity and credentials-json
+    default: workload-identity
+  credentials-json:
+    description: GCP IAM credentials
+  workload-identity-provider:
+    description: GKE Workload Identity provider full ID (project number, pool name, and provider name)
+  service-account:
+    description: GKE Service Account used in the Workload Identity auth
+
 runs:
-  using: "composite"
+  using: composite
   steps:
-  # NOTE: We will switch to workload identity when its resource added to Crossplane.
-  # https://github.com/upbound/provider-gcp/issues/66
-  # - name: 'Authenticate to Google Cloud'
-  #   uses: 'google-github-actions/auth@v0'
-  #   with:
-  #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
-  #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
-  - name: Authenticate to Google Cloud
+  - name: Authenticate to Google Cloud - Workload Identity
+    if: ${{ inputs.auth-method == 'workload-identity' }}
+    uses: google-github-actions/auth@v1
+    with:
+      token_format: 'access_token'
+      workload_identity_provider: ${{ inputs.workload-identity-provider }}
+      service_account: ${{ inputs.service-account }}
+  - name: Authenticate to Google Cloud - Service Account Key
+    if: ${{ inputs.auth-method == 'credentials-json' }}
     uses: google-github-actions/auth@v1
     with:
       credentials_json: '${{ inputs.credentials-json }}'
