@@ -360,6 +360,7 @@ For more information about Zeebe Gateway, visit
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 | | `podAnnotations` | Can be used to define extra gateway pod annotations | `{ }` |
 | | `podLabels` | Can be used to define extra gateway pod labels | `{ }` |
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
@@ -517,6 +518,7 @@ For more information about Tasklist, visit
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 | | `contextPath` |  Can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Tasklist pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Tasklist pod labels | `{ }` |
