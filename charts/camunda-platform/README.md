@@ -762,6 +762,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `restapi` | Configuration of the Web Modeler restapi component | |
 | | `restapi.image` | Configuration of the restapi Docker image | |
 | | `restapi.image.repository` | Defines which image repository to use for the restapi Docker image | `web-modeler-ee/modeler-restapi` |
+| | `restapi.sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 | | `restapi.externalDatabase` | Can be used to configure a connection to an external database. This will only be applied if the postgresql dependency chart is disabled (by setting `postgresql.enabled` to `false`).<br/>Note: Currently, the only supported database system is PostgreSQL.| |
 | | `restapi.externalDatabase.host` | Defines the host name of the database instance | |
 | | `restapi.externalDatabase.port` | Defines the port number of the database instance | `5432` |

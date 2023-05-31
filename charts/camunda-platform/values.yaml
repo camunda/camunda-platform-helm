@@ -1449,6 +1449,9 @@ webModeler:
       # Restapi.image.repository defines which image repository to use for the restapi Docker image
       repository: web-modeler-ee/modeler-restapi
 
+    # Attach extra containers to the restapi deployment
+    sidecars: []
+
     # Restapi.externalDatabase can be used to configure a connection to an external database. This will only be applied
     # if the postgresql dependency chart is disabled (by setting postgresql.enabled to false).
     # Note: Currently, the only supported database system is PostgreSQL.
