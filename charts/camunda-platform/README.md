@@ -278,6 +278,7 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
 | | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
 | | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
