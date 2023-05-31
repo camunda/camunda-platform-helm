@@ -1330,6 +1330,9 @@ identity:
       image:
         repository: bitnami/postgresql
         tag: 15.3.0
+      primary:
+        # Attach extra containers to the identity postgresql deployment
+        sidecars: []
 
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
@@ -1867,6 +1870,10 @@ postgresql:
     password: ""
     # Postgresql.auth.database defines the name of the database to be created for Web Modeler
     database: web-modeler
+
+  primary:
+  # Attach extra containers to the web modeler postgresql deployment
+    sidecars: []
 
 # Connectors configuration for the Connectors.
 connectors:
