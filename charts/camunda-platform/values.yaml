@@ -61,7 +61,7 @@ global:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
+      secretName: camunda-platform
 
   # Elasticsearch configuration which is shared between the sub charts
   elasticsearch:
@@ -590,7 +590,7 @@ zeebe-gateway:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
+      secretName: camunda-platform-zeebe-gateway
 
 # Operate configuration for the Operate sub chart.
 operate:
@@ -683,7 +683,7 @@ operate:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
+      secretName: camunda-platform-operate
 
   # PodSecurityContext defines the security options the Operate pod should be run with
   podSecurityContext: {}
@@ -910,7 +910,7 @@ tasklist:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
+      secretName: camunda-platform-tasklist
 
 # Optimize configuration for the Optimize sub chart.
 optimize:
@@ -1070,7 +1070,7 @@ optimize:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
+      secretName: camunda-platform-optimize
 
 # RetentionPolicy configuration to configure the elasticsearch index retention policies
 retentionPolicy:
@@ -1299,7 +1299,7 @@ identity:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
+      secretName: camunda-platform-identity
 
   # Identity.keycloak
   # Keycloak configuration, for the keycloak dependency chart which is used by identity.
@@ -1807,7 +1807,7 @@ webModeler:
         # Ingress.webapp.tls.enabled if true, TLS will be configured on the ingress resource
         enabled: false
         # Ingress.webapp.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: ""
+        secretName: camunda-platform-webmodeler-webapp
     # Ingress.websockets configuration of the websockets ingress
     websockets:
       # Ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the Web Modeler client in the browser will use to connect to the WebSockets server
@@ -1818,7 +1818,7 @@ webModeler:
         # Ingress.websockets.tls.enabled if true, TLS will be configured on the ingress resource
         enabled: false
         # Ingress.websockets.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: ""
+        secretName: camunda-platform-webmodeler-websockets
 
 # Postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
 postgresql:
@@ -1998,7 +1998,7 @@ connectors:
       # Ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: ""
+      secretName: camunda-platform-connectors
 
   # PodSecurityContext defines the security options the Connectors pod should be run with
   podSecurityContext: {}
