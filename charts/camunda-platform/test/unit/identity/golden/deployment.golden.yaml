@@ -154,6 +154,7 @@ spec:
           httpGet:
             # NOTE: Identity doesn't support contextPath for health endpoints.
             path: /actuator/health
+            scheme: HTTP
             port: metrics
           initialDelaySeconds: 30
           periodSeconds: 30

@@ -116,6 +116,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /ready
+            scheme: HTTP
             port: 9600
           initialDelaySeconds: 30
           periodSeconds: 30
