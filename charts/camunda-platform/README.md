@@ -580,6 +580,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `image.repository` |  Defines which image repository to use | `camunda/optimize` |
 | | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `3.8.0` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
+| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 | | `contextPath` |  Can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Optimize pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Optimize pod labels | `{ }` |
