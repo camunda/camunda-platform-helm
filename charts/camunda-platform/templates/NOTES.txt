@@ -94,27 +94,32 @@ In order to deploy the ingress manifest, set `<service>.ingress.enabled` to `tru
 If you don't have an ingress controller you can use `kubectl port-forward` to access the deployed web application from outside the cluster:
 
 {{ if .Values.identity.enabled -}}
-Identity: kubectl port-forward svc/{{ .Release.Name }}-identity 8080:80
+Identity:
+> kubectl port-forward svc/{{ .Release.Name }}-identity 8080:80
 {{- end }}
 {{ if .Values.operate.enabled -}}
-Operate:  kubectl port-forward svc/{{ .Release.Name }}-operate  8081:80
+Operate:
+> kubectl port-forward svc/{{ .Release.Name }}-operate  8081:80
 {{- end }}
 {{ if .Values.tasklist.enabled -}}
-Tasklist: kubectl port-forward svc/{{ .Release.Name }}-tasklist 8082:80
+Tasklist:
+> kubectl port-forward svc/{{ .Release.Name }}-tasklist 8082:80
 {{- end }}
 {{ if .Values.optimize.enabled -}}
-Optimize: kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
-{{- end }}
-{{ if .Values.webModeler.enabled }}
-Web Modeler:
-kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8084:80
-kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
+Optimize:
+> kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
 {{ if .Values.connectors.enabled -}}
-Connectors: kubectl port-forward svc/{{ .Release.Name }}-connectors 8088:8080
+Connectors:
+> kubectl port-forward svc/{{ .Release.Name }}-connectors 8088:8080
+{{- end }}
+{{ if .Values.webModeler.enabled -}}
+Web Modeler:
+> kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8084:80
+> kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
 
-    {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
+{{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
 
 If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URLs for Keycloak.
 
@@ -124,10 +129,16 @@ as well, otherwise, a login will not be possible. Make sure you use `18080` as a
 {{ if .Values.identity.keycloak.enabled -}}
 > kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
 {{- end }}
-    {{- end }}
+{{- end }}
 
 Now you can point your browser to one of the service's login pages. Example: http://localhost:8081 for Operate.
-
-Default user and password: "demo/demo"
+{{ if .Values.identity.firstUser.enabled }}
+{{- if .Values.identity.firstUser.existingSecret }}
+Default user: "{{ .Values.identity.firstUser.username }}", and for password, run:
+> kubectl get secret {{ .Values.identity.firstUser.existingSecret }} -o jsonpath='{.data.identity-firstuser-password}' | base64 -d
+{{- else }}
+Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Values.identity.firstUser.password }}"
+{{- end }}
+{{ end }}
 
 {{- end }}

@@ -1146,6 +1146,8 @@ identity:
   # FirstUser configuration to configure properties of the first Identity user, which can be used to access all
   # web applications
   firstUser:
+    # FirstUser.enabled if true, Identity will seed the first user in Keycloak.
+    enabled: true
     # FirstUser.username defines the username of the first user, needed to log in into the web applications
     username: demo
     # FirstUser.password defines the password of the first user, needed to log in into the web applications
@@ -1156,6 +1158,9 @@ identity:
     firstName: Demo
     # FirstUser.lastName defines the last name of the first user; a name is required to use Web Modeler
     lastName: User
+    # FirstUser.existingSecret can be used to use an own existing secret for Identity first user.
+    # Currently, only password field is supported via "identity-firstuser-password" key in the secret resource.
+    existingSecret: ""
 
   # Image configuration to configure the identity image specifics
   image:

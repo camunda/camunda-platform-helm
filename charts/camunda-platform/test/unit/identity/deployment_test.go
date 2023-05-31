@@ -985,3 +985,32 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+
+func (s *deploymentTemplateTest) TestContainerShouldSetFirstUserExistingSecretValue() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.firstUser.existingSecret": "identityFirstUserSecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "KEYCLOAK_USERS_0_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "identityFirstUserSecret"},
+					Key:                  "identity-firstuser-password",
+				},
+			},
+		})
+}
