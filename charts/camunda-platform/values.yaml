@@ -1895,6 +1895,9 @@ connectors:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  # Attach extra containers to the connectors deployment
+  sidecars: []
+
   # Number of Connectors replicas
   replicas: 1
 
