@@ -43,17 +43,17 @@ spec:
           - name: RESTAPI_MANAGEMENT_PORT
             value: {{ .Values.webModeler.restapi.service.managementPort | quote }}
           - name: SERVER_URL
-            value: {{ .Values.global.identity.auth.webModeler.redirectUrl | quote }}
+            value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
           - name: SERVER_HTTPS_ONLY
-            value: {{ hasPrefix "https://" .Values.global.identity.auth.webModeler.redirectUrl | quote }}
+            value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
           - name: OAUTH2_CLIENT_ID
             value: "web-modeler"
           - name: OAUTH2_TOKEN_AUDIENCE
             value: "web-modeler"
           - name: OAUTH2_TOKEN_ISSUER
-            value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
           - name: KEYCLOAK_BASE_URL
-            value: {{ .Values.global.identity.auth.publicIssuerUrl | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
           - name: KEYCLOAK_CONTEXT_PATH
             value: {{ .Values.global.identity.keycloak.contextPath | quote }}
           - name: KEYCLOAK_REALM

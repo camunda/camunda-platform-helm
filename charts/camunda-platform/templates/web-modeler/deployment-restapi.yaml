@@ -67,7 +67,7 @@ spec:
           - name: RESTAPI_MAIL_FROM_NAME
             value: {{ .Values.webModeler.restapi.mail.fromName | quote }}
           - name: RESTAPI_SERVER_URL
-            value: {{ .Values.global.identity.auth.webModeler.redirectUrl | quote }}
+            value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
           - name: RESTAPI_PUSHER_HOST
             value: {{ include "webModeler.websockets.fullname" . | quote }}
           - name: RESTAPI_PUSHER_PORT
@@ -88,7 +88,7 @@ spec:
                 name: {{ include "webModeler.fullname" . }}
                 key: pusher-app-secret
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER
-            value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
             value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
           - name: RESTAPI_IDENTITY_BASE_URL

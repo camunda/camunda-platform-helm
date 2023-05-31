@@ -6,7 +6,7 @@ metadata:
   name: {{ include "connectors.fullname" . }}
   labels: {{ include "connectors.labels" . | nindent 4 }}
 {{- with .Values.connectors.ingress.annotations }}
-  annotations: {{ toYaml . | nindent 4 }}
+  annotations: {{ tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
 spec:
   ingressClassName: {{ .Values.connectors.ingress.className }}

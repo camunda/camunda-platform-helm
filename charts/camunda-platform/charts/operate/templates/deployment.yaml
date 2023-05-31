@@ -42,7 +42,7 @@ spec:
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
             value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
-            value: {{ .Values.global.identity.auth.publicIssuerUrl | quote }}
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
             value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
@@ -76,7 +76,7 @@ spec:
             https://github.com/camunda/camunda-platform-helm/issues/714
           */}}
           - name: CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL
-            value: {{ .Values.global.identity.auth.operate.redirectUrl | trimSuffix "/operate" | quote }}
+            value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | trimSuffix "/operate" | quote }}
           - name: ZEEBE_CLIENT_ID
             value: zeebe
           - name: ZEEBE_CLIENT_SECRET
@@ -99,8 +99,8 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "auth"
           {{- end }}
-        {{- if .Values.env}}
-        {{ .Values.env | toYaml | nindent 10 }}
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.command}}
         command: {{ .Values.command }}
