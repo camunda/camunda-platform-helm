@@ -311,6 +311,8 @@ zeebe:
   startupProbe:
     # StartupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    # StartupProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # StartupProbe.probePath defines the startup probe route used on the app
     probePath: /ready
     # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -329,6 +331,8 @@ zeebe:
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
+    # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /ready
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -347,6 +351,8 @@ zeebe:
   livenessProbe:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
+    # LivenessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # LivenessProbe.probePath defines the liveness probe route used on the app
     probePath: /health
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -450,6 +456,8 @@ zeebe-gateway:
   startupProbe:
     # StartupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    # StartupProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # StartupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/startup
     # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -468,6 +476,8 @@ zeebe-gateway:
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
+    # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -486,6 +496,8 @@ zeebe-gateway:
   livenessProbe:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
+    # LivenessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # LivenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health/liveness
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -683,6 +695,8 @@ operate:
   startupProbe:
     # StartupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    # StartupProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # StartupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/readiness
     # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -701,6 +715,8 @@ operate:
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
+    # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -719,6 +735,8 @@ operate:
   livenessProbe:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
+    # LivenessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # LivenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health/liveness
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -801,6 +819,8 @@ tasklist:
   startupProbe:
     # StartupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    # StartupProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # StartupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/readiness
     # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -819,6 +839,8 @@ tasklist:
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
+    # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -837,6 +859,8 @@ tasklist:
   livenessProbe:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
+    # LivenessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # LivenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health/liveness
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -954,6 +978,8 @@ optimize:
   startupProbe:
     # StartupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    # StartupProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # StartupProbe.probePath defines the startup probe route used on the app
     probePath: /api/readyz
     # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -972,6 +998,8 @@ optimize:
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
+    # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /api/readyz
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -990,6 +1018,8 @@ optimize:
   livenessProbe:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
+    # LivenessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # LivenessProbe.probePath defines the liveness probe route used on the app
     probePath: /api/readyz
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1159,6 +1189,8 @@ identity:
   startupProbe:
     # StartupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    # StartupProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # StartupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health
     # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1177,6 +1209,8 @@ identity:
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
+    # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1195,6 +1229,8 @@ identity:
   livenessProbe:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
+    # LivenessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # LivenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1447,6 +1483,8 @@ webModeler:
     startupProbe:
       # Restapi.startupProbe.enabled if true, the startup probe will be enabled for the restapi container
       enabled: false
+      # Restapi.startupProbe.schema defines the startup probe schema used on calling the probePath
+      scheme: HTTP
       # Restapi.startupProbe.probePath defines the HTTP endpoint used for the startup probe
       probePath: /health/liveness
       # Restapi.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1464,6 +1502,8 @@ webModeler:
     readinessProbe:
       # Restapi.readinessProbe.enabled if true, the readiness probe will be enabled for the restapi container
       enabled: true
+      # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+      scheme: HTTP
       # Restapi.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
       # Restapi.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1481,6 +1521,8 @@ webModeler:
     livenessProbe:
       # Restapi.livenessProbe.enabled if true, the liveness probe will be enabled for the restapi container
       enabled: false
+      # Restapi.livenessProbe.schema defines the startup probe schema used on calling the probePath
+      scheme: HTTP
       # Restapi.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
       # Restapi.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1551,6 +1593,8 @@ webModeler:
     startupProbe:
       # Webapp.startupProbe.enabled if true, the startup probe will be enabled for the webapp container
       enabled: false
+      # StartupProbe.schema defines the startup probe schema used on calling the probePath
+      scheme: HTTP
       # Webapp.startupProbe.probePath defines the HTTP endpoint used for the startup probe
       probePath: /health/liveness
       # Webapp.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1568,6 +1612,8 @@ webModeler:
     readinessProbe:
       # Webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
       enabled: true
+      # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+      scheme: HTTP
       # Webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
       # Webapp.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1585,6 +1631,8 @@ webModeler:
     livenessProbe:
       # Webapp.livenessProbe.enabled if true, the liveness probe will be enabled for the webapp container
       enabled: false
+      # Webapp.livenessProbe.schema defines the startup probe schema used on calling the probePath
+      scheme: HTTP
       # Webapp.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
       # Webapp.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
@@ -1865,6 +1913,8 @@ connectors:
   startupProbe:
     # StartupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    # StartupProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # StartupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/readiness
     # StartupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1883,6 +1933,8 @@ connectors:
   readinessProbe:
     # ReadinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
+    # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1901,6 +1953,8 @@ connectors:
   livenessProbe:
     # LivenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
+    # LivenessProbe.schema defines the startup probe schema used on calling the probePath
+    scheme: HTTP
     # LivenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health/liveness
     # LivenessProbe.initialDelaySeconds defines the number of seconds after the container has started before

@@ -92,6 +92,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /actuator/health/readiness
+            scheme: HTTP
             port: http
           initialDelaySeconds: 30
           periodSeconds: 30

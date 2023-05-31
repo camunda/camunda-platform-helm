@@ -210,6 +210,7 @@ spec:
           httpGet:
             # NOTE: Identity doesn't support contextPath for health endpoints.
             path: {{ .Values.startupProbe.probePath }}
+            scheme: {{ .Values.startupProbe.scheme }}
             port: metrics
           initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.startupProbe.periodSeconds }}
@@ -222,6 +223,7 @@ spec:
           httpGet:
             # NOTE: Identity doesn't support contextPath for health endpoints.
             path: {{ .Values.readinessProbe.probePath }}
+            scheme: {{ .Values.readinessProbe.scheme }}
             port: metrics
           initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
@@ -234,6 +236,7 @@ spec:
           httpGet:
             # NOTE: Identity doesn't support contextPath for health endpoints.
             path: {{ .Values.livenessProbe.probePath }}
+            scheme: {{ .Values.livenessProbe.scheme }}
             port: metrics
           initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
