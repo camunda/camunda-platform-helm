@@ -1595,6 +1595,9 @@ webModeler:
       # Webapp.image.repository defines which image repository to use for the webapp Docker image
       repository: web-modeler-ee/modeler-webapp
 
+    # Attach extra containers to the modeler webapp deployment
+    sidecars: []
+
     # Webapp.podAnnotations can be used to define extra webapp pod annotations
     podAnnotations: {}
     # Webapp.podLabels can be used to define extra webapp pod labels

@@ -821,6 +821,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `webapp` | Configuration of the Web Modeler webapp component | |
 | | `webapp.image` | Configuration of the webapp Docker image | |
 | | `webapp.image.repository` | Defines which image repository to use for the webapp Docker image | `web-modeler-ee/modeler-webapp` |
+| | `webapp.sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 | | `webapp.podAnnotations` | Can be used to define extra webapp pod annotations | `{}` |
 | | `webapp.podLabels` | Can be used to define extra webapp pod labels | `{}` |
 | | `webapp.env` | Can be used to set extra environment variables in each webapp container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
