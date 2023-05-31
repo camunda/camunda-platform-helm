@@ -5,7 +5,7 @@ metadata:
   name: {{ include "operate.fullname" . }}
   labels: {{ include "operate.labels" . | nindent 4 }}
 {{- with .Values.ingress.annotations }}
-  annotations: {{ toYaml . | nindent 4 }}
+  annotations: {{ tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
