@@ -1708,6 +1708,9 @@ webModeler:
       # Websockets.image.repository defines which image repository to use for the websockets Docker image
       repository: web-modeler-ee/modeler-websockets
 
+    # Attach extra containers to the modeler websockets deployment
+    sidecars: []
+
     # Websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser.
     # The default value assumes that a port-forwarding to the websockets service has been created.
     # Note: The host will only be used if the Ingress resource for Web Modeler is disabled.

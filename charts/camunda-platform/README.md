@@ -865,6 +865,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets` | Configuration of the Web Modeler websockets component | |
 | | `websockets.image` | Configuration of the websockets Docker image | |
 | | `websockets.image.repository` | Defines which image repository to use for the websockets Docker image | `web-modeler-ee/modeler-websockets` |
+| | `websockets.sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 | | `websockets.publicHost` | Can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service has been created.<br/>Note: The host will only be used if the Ingress resource for Web Modeler is disabled. | `localhost` |
 | | `websockets.publicPort` | Can be used to define the port number on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service on port `8085` has been created.<br/>Note: The port will only be used if the Ingress resource for Web Modeler is disabled. | `8085` |
 | | `websockets.podAnnotations` | Can be used to define extra websockets pod annotations | `{}` |
