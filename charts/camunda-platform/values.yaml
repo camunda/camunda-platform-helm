@@ -1330,6 +1330,9 @@ identity:
       repository: bitnami/keycloak
       tag: 19.0.3
 
+    # Attach extra containers to the zeebe deployment
+    sidecars: []
+
     # Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
     tls:
       enabled: false
