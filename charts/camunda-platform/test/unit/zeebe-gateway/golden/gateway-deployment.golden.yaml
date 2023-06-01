@@ -82,7 +82,7 @@ spec:
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE
               value: "keycloak"
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
-              value: "identity"
+              value: "none"
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE
