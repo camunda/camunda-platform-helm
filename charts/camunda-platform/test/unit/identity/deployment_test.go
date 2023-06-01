@@ -95,6 +95,24 @@ func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 		})
 }
 
+func (s *deploymentTemplateTest) TestContainerSetPodLabels() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.podLabels.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
+}
+
 func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
 	// given
 	options := &helm.Options{

@@ -10,7 +10,11 @@ spec:
     matchLabels: {{- include "identity.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "identity.labels" . | nindent 8 }}
+      labels:
+        {{- include "identity.labels" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
       {{- if .Values.podAnnotations }}
       annotations:
         {{- toYaml  .Values.podAnnotations | nindent 8 }}
