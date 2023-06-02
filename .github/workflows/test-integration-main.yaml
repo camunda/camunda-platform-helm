@@ -1,0 +1,163 @@
+name: "Test - Integration - Main"
+
+on:
+  pull_request:
+    paths:
+    - '.github/workflows/test-integration-main.yaml'
+    - '.tool-versions'
+    - 'charts/**'
+  workflow_dispatch: { }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
+  KUBECONFIG: .github/config/kubeconfig
+  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
+  # Docker Hub auth to avoid image pull rate limit.
+  TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
+  TEST_DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
+  TEST_DOCKER_PASSWORD: ${{ secrets.TEST_DOCKER_PASSWORD }}
+  # Camunda registry auth to access WebModeler Docker image since it's not public.
+  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_USER }}
+  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
+
+jobs:
+  test:
+    name: Chart full setup - ${{ matrix.test.name }}
+    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+        - name: Kubernetes 1.24
+          type: kubernetes
+          platform: gke
+          secret:
+            cluster-name: GKE_CLUSTER
+            cluster-location: GKE_ZONE
+            workload-identity-provider: GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER
+            service-account: GCP_AUTH_SERVICE_ACCOUNT
+        - name: OpenShift 4.10
+          type: openshift
+          platform: rosa
+          secret:
+            server: OPENSHIFT_URL_410
+            token: OPENSHIFT_TOKEN_410
+    env:
+      TEST_CLUSTER_TYPE: "${{ matrix.test.type }}"
+    steps:
+    - uses: actions/checkout@v3
+    # TODO: Later, find a way to abstract the auth to different platforms.
+    - name: Authenticate to GKE
+      if: matrix.test.platform == 'gke'
+      uses: ./.github/actions/gke-login
+      with:
+        cluster-name: ${{ secrets[matrix.test.secret.cluster-name] }}
+        cluster-location: ${{ secrets[matrix.test.secret.cluster-location] }}
+        workload-identity-provider: ${{ secrets[matrix.test.secret.workload-identity-provider] }}
+        service-account: ${{ secrets[matrix.test.secret.service-account] }}
+    - name: Authenticate to OpenShift
+      if: matrix.test.platform == 'rosa'
+      uses: redhat-actions/oc-login@v1
+      with:
+        openshift_server_url: ${{ secrets[matrix.test.secret.server] }}
+        openshift_token: ${{ secrets[matrix.test.secret.token] }}
+    - name: Set PR vars
+      uses: ./.github/actions/pr-vars
+    - name: Install env dependencies
+      uses: asdf-vm/actions/install@v2
+    - name: Add Helm repos and dependencies
+      run: |
+        make helm.repos-add
+        make helm.dependency-update
+    - name: Create test namespace
+      run: |
+        echo $TEST_NAMESPACE
+        kubectl create ns $TEST_NAMESPACE
+        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+    - name: Copy PRs wildcard certificate
+      # TODO: Use a declarative approach to copy/replicate PRs wildcard certificate.
+      run: |
+        kubectl get secret -n distribution-team pr-distro-ultrawombat-com -o yaml |
+          yq '.metadata.name = "camunda-platform", .metadata.namespace = strenv(TEST_NAMESPACE)' |
+          kubectl apply -f -
+        kubectl get secret -n distribution-team pr-distro-ultrawombat-com -o yaml |
+          yq '.metadata.name = "camunda-platform-zeebe-gateway", .metadata.namespace = strenv(TEST_NAMESPACE)' |
+          kubectl apply -f -
+    - name: Export Ingress hostname
+      env:
+        GITHUB_DEPLOYMENT_HOST_BASE: "${{ matrix.test.platform }}-${{ github.event.pull_request.number }}.pr.distro.ultrawombat.com"
+      id: ingress
+      run: |
+        echo "host=${{ env.GITHUB_PR_HEAD_SHA_SHORT }}-${{ env.GITHUB_DEPLOYMENT_HOST_BASE }}" >> $GITHUB_OUTPUT
+    - name: Start GitHub deployment
+      uses: bobheadxi/deployments@v1
+      id: deployment
+      with:
+        step: start
+        token: ${{ secrets.GITHUB_TOKEN }}
+        env: "pr-${{ github.event.pull_request.number }}-${{ matrix.test.platform }}"
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Pre setup
+      timeout-minutes: 5
+      env:
+        TEST_INGRESS_HOST: ${{ steps.ingress.outputs.host }}
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
+    - name: Setup Camunda Platform
+      env:
+        TEST_HELM_EXTRA_ARGS: "--set global.ingress.host=${{ steps.ingress.outputs.host }}"
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
+    - name: Post setup
+      timeout-minutes: 5
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+    - name: Update GitHub deployment status
+      uses: bobheadxi/deployments@v1
+      with:
+        step: finish
+        token: ${{ secrets.GITHUB_TOKEN }}
+        status: ${{ job.status }}
+        env_url: https://${{ steps.ingress.outputs.host }}
+        deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+        env: ${{ steps.deployment.outputs.env }}
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: ⭐️ Run Preflight TestSuite ⭐️
+      timeout-minutes: 10
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup test.preflight
+    - name: ⭐️ Run Core TestSuite ⭐️
+      timeout-minutes: 20
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
+    - name: Get failed Pods info
+      if: failure()
+      uses: ./.github/actions/failed-pods-info
+    # TODO: Use "step: delete-env" to delete the env when the permission issue is fixed.
+    # Even using GH app token with deployment write access doesn't work.
+    # https://github.com/bobheadxi/deployments/issues/145
+    - name: Cleanup GitHub deployment
+      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      uses: bobheadxi/deployments@v1
+      with:
+        step: deactivate-env
+        token: ${{ secrets.GITHUB_TOKEN }}
+        env: ${{ steps.deployment.outputs.env }}
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Cleanup test namespace
+      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      run: |
+        kubectl delete ns \
+          --ignore-not-found=true \
+          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID

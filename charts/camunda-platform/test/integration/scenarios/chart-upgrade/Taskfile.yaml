@@ -3,7 +3,7 @@ version: '3'
 vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
-  HELM_EXTRA_ARGS: '{{ env "HELM_EXTRA_ARGS" }} {{ .OPENSHIFT_ARGS }}'
+  TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
 
 dotenv:
 - ../vars/common.env
@@ -32,7 +32,7 @@ tasks:
     - helm install integration {{ .CHART_DIR }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
-        {{ .HELM_EXTRA_ARGS }}
+        {{ .TEST_HELM_EXTRA_ARGS }}
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
@@ -63,7 +63,7 @@ tasks:
         --set identity.keycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
         --set identity.keycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
         --timeout 20m0s \
-        --wait {{ .HELM_EXTRA_ARGS }}
+        --wait {{ .TEST_HELM_EXTRA_ARGS }}
 
   setup.post:
     cmds:

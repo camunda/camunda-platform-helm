@@ -4,11 +4,15 @@ name: "Test - Integration - Kubernetes"
 
 on:
   pull_request:
-    paths:
-    - '.github/workflows/*integration*.yaml'
-    - '.tool-versions'
-    - 'charts/**'
-  workflow_dispatch: { }
+    types:
+    - labeled
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Trigger release manually'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -32,7 +36,7 @@ env:
 jobs:
   test:
     name: ${{ matrix.test.title }}
-    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    if: ${{ contains(github.event.*.labels.*.name, 'test-integration-extra') || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -62,19 +66,8 @@ jobs:
         cluster-location: ${{ secrets.GKE_ZONE }}
         workload-identity-provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
         service-account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
-    - name: Set test vars
-      id: vars
-      run: |
-        sudo apt install -y pwgen
-        GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)
-        # NOTE: We should use the matrix job id var once it's available.
-        # https://github.com/orgs/community/discussions/40291
-        GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
-        echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" >> $GITHUB_ENV
-        # Set full name for the namespace.
-        TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
-        TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
-        echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV
+    - name: Set PR vars
+      uses: ./.github/actions/pr-vars
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v2
     - name: Add Helm repos and dependencies
@@ -105,16 +98,9 @@ jobs:
       timeout-minutes: 20
       run: |
         task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.core
-    - name: Get Pods info on failure
+    - name: Get failed Pods info
       if: failure()
-      # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
-      run: |
-        kubectl -n $TEST_NAMESPACE get po
-        kubectl -n $TEST_NAMESPACE get po | grep -v "Completed" | awk '/0\//{print $1}' | while read pod_name; do
-          echo -e "\n###Failed Pod: ${pod_name}###\n";
-          kubectl -n $TEST_NAMESPACE describe po ${pod_name};
-          kubectl -n $TEST_NAMESPACE logs ${pod_name};
-        done
+      uses: ./.github/actions/failed-pods-info
     - name: Cleanup test namespace
       if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
       run: |

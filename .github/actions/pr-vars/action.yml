@@ -1,0 +1,21 @@
+name: PR vars
+description: Set common vars for PRs 
+
+runs:
+  using: composite
+  steps:
+  - name: Set PR vars
+    shell: bash
+    run: |
+      sudo apt -qq install -y pwgen
+      GITHUB_PR_HEAD_SHA_SHORT=$(echo ${{ github.event.pull_request.head.sha }} | cut -c 1-7)
+      # NOTE: We should use the matrix job id var once it's available.
+      # https://github.com/orgs/community/discussions/40291
+      GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
+      echo "GITHUB_PR_HEAD_SHA_SHORT=$GITHUB_PR_HEAD_SHA_SHORT" >> $GITHUB_ENV
+      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" >> $GITHUB_ENV
+      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+      # Set full name for the namespace.
+      TEST_NAMESPACE_PART1="camunda-platform-pr-${{ github.event.pull_request.number }}"
+      TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-${{ github.run_id }}-sfx-$GITHUB_WORKFLOW_JOB_ID"
+      echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV

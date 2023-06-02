@@ -10,11 +10,17 @@ configMapGenerator:
     disableNameSuffixHash: true
   files:
   - testsuites/00-info.yaml
-- name: venom-env-vars
+- name: venom-vars
   options:
     disableNameSuffixHash: true
   files:
-  - files/vars.env
+  - files/variables-default.yaml
+  - files/variables-ingress-combined.yaml
+- name: venom-env-vars
+  options:
+    disableNameSuffixHash: true
+  envs:
+  - files/variables.env
 - name: venom-fixtures
   options:
     disableNameSuffixHash: true
