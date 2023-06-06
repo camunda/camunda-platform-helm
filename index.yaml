@@ -295,7 +295,7 @@ entries:
       version: 2.x.x
     description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
       automation platform allows developers to design, automate and improve processes. '
-    digest: 422ad3e1579a7aea5944c615cc1cea773b72cec0de02563384d8ccb3a859c9f6
+    digest: 4a46f70be94fd3b651b057be8bc7c38ebd80923f89cb61490969c6de0490285b
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
