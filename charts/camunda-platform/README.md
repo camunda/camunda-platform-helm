@@ -281,7 +281,7 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
 | | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
 | | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
-| | `env` | Can be used to set extra environment variables in each Zeebe broker container | `- name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD` </br>`  value: "5m"`</br>`- name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED`</br>`  value: "true"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK`</br>`  value: "0.85"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK`</br>`  value: "0.87"` |
+| | `env` | Can be used to set extra environment variables in each Zeebe broker container | `- name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD` </br>`  value: "5m"`</br>`- name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED`</br>`  value: "true"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK`</br>`  value: "0.85"`</br>`- name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK`</br>`  value: "0.87"`. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0754`](https://chmodcommand.com/chmod-0754/) |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` | 
 | | `logLevel` | Defines the log level which is used by the Zeebe brokers; must be one of: ERROR, WARN, INFO, DEBUG, TRACE | `info` |
@@ -364,7 +364,7 @@ For more information about Zeebe Gateway, visit
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
 | | `log4j2` | Can be used to overwrite the log4j2 configuration of the gateway | `""` |
 | | `javaOpts` | Can be used to set the Zeebe Gateway javaOpts. This is where you should configure the jvm heap size. | `-XX:+ExitOnOutOfMemoryError` |
-| | `env` | Can be used to set extra environment variables in each gateway container | `[ ]` |
+| | `env` | Can be used to set extra environment variables in each gateway container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[ ]` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods. | |
@@ -453,7 +453,7 @@ For more information about Operate, visit
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
 | | `service.annotations` | Defines annotations for the Operate service | `{ }` | 
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
-| | `env` | Can be used to set extra environment variables in each Operate container | `[ ]` |
+| | `env` | Can be used to set extra environment variables in each Operate container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[ ]` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `extraVolumes` | Can be used to define extra volumes for the Operate pods, useful for TLS and self-signed certificates | `[ ]` |
@@ -563,7 +563,7 @@ For more information about Tasklist, visit
 | | `ingress.annotations` | Defines the ingress related annotations, consumed mostly by the ingress controller | `ingress.kubernetes.io/rewrite-target: "/"` <br/> `nginx.ingress.kubernetes.io/ssl-redirect: "false"` |
 | | `ingress.path` | Defines the path which is associated with the Tasklist [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
-| | `env` | Can be used to set extra environment variables on each Tasklist container | `[ ]` |
+| | `env` | Can be used to set extra environment variables on each Tasklist container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[ ]` |
 
 ### Optimize
 
@@ -582,7 +582,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `podAnnotations` | Can be used to define extra Optimize pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Optimize pod labels | `{ }` |
 | | `partitionCount` |  Defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize | `"3"` |
-| | `env` |  Can be used to set extra environment variables in each Optimize container | `[]` |
+| | `env` |  Can be used to set extra environment variables in each Optimize container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `extraVolumes` |  Can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` |  Can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
@@ -667,7 +667,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `nodeSelector` |  Can be used to define on which nodes the Identity pods should run | `{ }` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ] ` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
-| | `env` |  Can be used to set extra environment variables in each Identity container. See the [documentation](https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/) for more details. | `[]` |
+| | `env` |  Can be used to set extra environment variables in each Identity container. See the [documentation](https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/) for more details. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
 | | `command` |  Can be used to override the default command provided by the container image. See [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | |
 | | `extraVolumes` |  Can be used to define extra volumes for the Identity pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` |  Can be used to mount extra volumes for the Identity pods, useful for tls and self-signed certificates | `[]` |
@@ -772,7 +772,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `restapi.mail.fromName` | Defines the name that will be displayed as the sender of emails sent by Web Modeler | Camunda Platform |
 | | `restapi.podAnnotations` | Can be used to define extra restapi pod annotations | `{}` |
 | | `restapi.podLabels` | Can be used to define extra restapi pod labels | `{}` |
-| | `restapi.env` | Can be used to set extra environment variables in each restapi container | `[]` |
+| | `restapi.env` | Can be used to set extra environment variables in each restapi container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
 | | `restapi.command` | Can be used to [override the default command](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) provided by the container image | `[]` |
 | | `restapi.extraVolumes` | Can be used to define extra volumes for the restapi pods, useful for TLS and self-signed certificates | `[]` |
 | | `restapi.extraVolumeMounts` | Can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates | `[]` |
@@ -816,7 +816,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `webapp.image.repository` | Defines which image repository to use for the webapp Docker image | `web-modeler-ee/modeler-webapp` |
 | | `webapp.podAnnotations` | Can be used to define extra webapp pod annotations | `{}` |
 | | `webapp.podLabels` | Can be used to define extra webapp pod labels | `{}` |
-| | `webapp.env` | Can be used to set extra environment variables in each webapp container | `[]` |
+| | `webapp.env` | Can be used to set extra environment variables in each webapp container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
 | | `webapp.command` | Can be used to [override the default command](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) provided by the container image | `[]` |
 | | `webapp.extraVolumes` | Can be used to define extra volumes for the webapp pods, useful for TLS and self-signed certificates | `[]` |
 | | `webapp.extraVolumeMounts` | Can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates | `[]` |
@@ -861,7 +861,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets.publicPort` | Can be used to define the port number on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service on port `8085` has been created.<br/>Note: The port will only be used if the Ingress resource for Web Modeler is disabled. | `8085` |
 | | `websockets.podAnnotations` | Can be used to define extra websockets pod annotations | `{}` |
 | | `websockets.podLabels` | Can be used to define extra websockets pod labels | `{}` |
-| | `websockets.env` | Can be used to set extra environment variables in each websockets container | `[]` |
+| | `websockets.env` | Can be used to set extra environment variables in each websockets container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
 | | `websockets.command` | Can be used to [override the default command](ttps://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) provided by the container image | `[]` |
 | | `websockets.extraVolumes` | Can be used to define extra volumes for the websockets pod; useful for logging to a file | `[]` |
 | | `websockets.extraVolumeMounts` | Can be used to mount extra volumes for the websockets pod; useful for logging to a file | `[]` |
@@ -948,7 +948,7 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `podAnnotations`                     | Can be used to define extra Connectors pod annotations                                                                                                                                                                                            | `{ }`                                                                                                 |
 |              | `podLabels`                          | Can be used to define extra Connectors pod labels                                                                                                                                                                                                 | `{ }`                                                                                                 |
 |              | `logging.level`                      | Allows to fine tune logging output for Connectors                                                                                                                                                                                                 | `io.camunda.connector: ERROR`                                                                         |
-|              | `env`                                | Can be used to set extra environment variables in each Connectors container                                                                                                                                                                       | `[]`                                                                                                  |
+|              | `env`                                | Can be used to set extra environment variables in each Connectors container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence.                                                                                                                                                      | `[]`                                                                                                  |
 |              | `extraVolumes`                       | Can be used to define extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                          | `[]`                                                                                                  |
 |              | `extraVolumeMounts`                  | Can be used to mount extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                           | `[]`                                                                                                  |
 |              | `command`                            | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/)                                                                        | `[]`                                                                                                  |
@@ -1000,6 +1000,13 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `livenessProbe.successThreshold`     | Defines how often it needs to be true to be considered successful after having failed                                                                                                                                                             | `1`                                                                                                   |
 |              | `livenessProbe.failureThreshold`     | Defines when the probe is considered as failed so the container will be restarted                                                                                                                                                                 | `5`                                                                                                   |
 |              | `livenessProbe.timeoutSeconds`       | Defines the seconds after the probe times out                                                                                                                                                                                                     | `1`                                                                                                   |
+
+#### Updating Environment Variables
+When configuring the `env` options in the settings listed above, the environment variables you specify in values.yaml may show up twice when running `kubectl describe deployment <deployment>`. However, the environment variable specified in values.yaml will have precedence when the pod actually runs. To verify this, you can check the output from the following command:
+
+```bash
+kubectl exec pod/<podName> -- env
+```
 
 #### Outbound Connectors
 
