@@ -145,7 +145,7 @@ spec:
         volumeMounts:
         {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.webModeler.restapi.sidecars}}
+      {{- if .Values.webModeler.restapi.sidecars }}
       {{- .Values.webModeler.restapi.sidecars | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.webModeler.restapi.extraVolumes }}

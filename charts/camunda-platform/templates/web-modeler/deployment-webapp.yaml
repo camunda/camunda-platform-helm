@@ -151,7 +151,7 @@ spec:
         volumeMounts:
         {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.webModeler.webapp.sidecars}}
+      {{- if .Values.webModeler.webapp.sidecars }}
       {{- .Values.webModeler.webapp.sidecars | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.webModeler.webapp.extraVolumes }}

@@ -99,7 +99,7 @@ spec:
         volumeMounts:
         {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.webModeler.websockets.sidecars}}
+      {{- if .Values.webModeler.websockets.sidecars }}
       {{- .Values.webModeler.websockets.sidecars | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.webModeler.websockets.extraVolumes }}
