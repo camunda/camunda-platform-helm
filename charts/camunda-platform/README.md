@@ -278,7 +278,7 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
-| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
 | | `partitionCount` | Defines how many Zeebe partitions are set up in the cluster | `3` |
 | | `replicationFactor` | Defines how each partition is replicated, the value defines the number of nodes | `3` |
@@ -360,7 +360,7 @@ For more information about Zeebe Gateway, visit
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
-| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `podAnnotations` | Can be used to define extra gateway pod annotations | `{ }` |
 | | `podLabels` | Can be used to define extra gateway pod labels | `{ }` |
 | | `logLevel` | Defines the log level which is used by the gateway | `info` |
@@ -446,7 +446,7 @@ For more information about Operate, visit
 | | `image.repository` | Defines which image repository to use. | `camunda/operate` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
-| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `contextPath` |  Can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Operate pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Operate pod labels | `{ }` |
@@ -518,7 +518,7 @@ For more information about Tasklist, visit
 | | `image.repository` | Defines which image repository to use. | `camunda/tasklist` |
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
-| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `contextPath` |  Can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Tasklist pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Tasklist pod labels | `{ }` |
@@ -582,7 +582,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `image.repository` |  Defines which image repository to use | `camunda/optimize` |
 | | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `3.8.0` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
-| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `contextPath` |  Can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Optimize pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Optimize pod labels | `{ }` |
@@ -659,7 +659,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |
 | | `image.tag` |   Can be set to overwrite the global.image.tag | |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
-| | `sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `fullURL` |  Can be used when Ingress is configured (for both multi and single domain setup). <br/> Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the fullURL too. | |
 | | `contextPath` |  Can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. **Note:** Identity cannot be accessed over HTTP if a "contextPath" is configured. Which means that Identity cannot be configured in combined Ingress without HTTPS. To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath". | `` |
 | | `podAnnotations` | Can be used to define extra Identity pod annotations | `{ }` |
@@ -762,7 +762,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `restapi` | Configuration of the Web Modeler restapi component | |
 | | `restapi.image` | Configuration of the restapi Docker image | |
 | | `restapi.image.repository` | Defines which image repository to use for the restapi Docker image | `web-modeler-ee/modeler-restapi` |
-| | `restapi.sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `restapi.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `restapi.externalDatabase` | Can be used to configure a connection to an external database. This will only be applied if the postgresql dependency chart is disabled (by setting `postgresql.enabled` to `false`).<br/>Note: Currently, the only supported database system is PostgreSQL.| |
 | | `restapi.externalDatabase.host` | Defines the host name of the database instance | |
 | | `restapi.externalDatabase.port` | Defines the port number of the database instance | `5432` |
@@ -821,7 +821,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `webapp` | Configuration of the Web Modeler webapp component | |
 | | `webapp.image` | Configuration of the webapp Docker image | |
 | | `webapp.image.repository` | Defines which image repository to use for the webapp Docker image | `web-modeler-ee/modeler-webapp` |
-| | `webapp.sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `webapp.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `webapp.podAnnotations` | Can be used to define extra webapp pod annotations | `{}` |
 | | `webapp.podLabels` | Can be used to define extra webapp pod labels | `{}` |
 | | `webapp.env` | Can be used to set extra environment variables in each webapp container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
@@ -865,7 +865,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets` | Configuration of the Web Modeler websockets component | |
 | | `websockets.image` | Configuration of the websockets Docker image | |
 | | `websockets.image.repository` | Defines which image repository to use for the websockets Docker image | `web-modeler-ee/modeler-websockets` |
-| | `websockets.sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
+| | `websockets.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `websockets.publicHost` | Can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service has been created.<br/>Note: The host will only be used if the Ingress resource for Web Modeler is disabled. | `localhost` |
 | | `websockets.publicPort` | Can be used to define the port number on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service on port `8085` has been created.<br/>Note: The port will only be used if the Ingress resource for Web Modeler is disabled. | `8085` |
 | | `websockets.podAnnotations` | Can be used to define extra websockets pod annotations | `{}` |
@@ -953,7 +953,7 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `image.repository`                   | Defines which image repository to use                                                                                                                                                                                                             | `camunda/connectors-bundle`                                                                           |
 |              | `image.tag`                          | Can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                        | `0.18.2`                                                                                              |
 |              | `image.pullSecrets`                  | Can be set to overwrite the global.image.pullSecrets                                                                                                                                                                                              | `{{ global.image.pullSecrets }}`                                                                      |
-|              | `sidecars`                           | Can be set to deploy extra containers in the same pod                                                                                                                                                                                             | `[]`                                                                                                  |
+|              | `sidecars`                           | Can be used to deploy extra containers in the same pod                                                                                                                                                                                             | `[]`                                                                                                  |
 |              | `replicas`                           | Number of replicas                                                                                                                                                                                                                                | `1`                                                                                                   |
 |              | `podAnnotations`                     | Can be used to define extra Connectors pod annotations                                                                                                                                                                                            | `{ }`                                                                                                 |
 |              | `podLabels`                          | Can be used to define extra Connectors pod labels                                                                                                                                                                                                 | `{ }`                                                                                                 |
