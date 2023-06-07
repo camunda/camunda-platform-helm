@@ -797,3 +797,34 @@ func (s *deploymentTemplateTest) TestContainerSetContextPath() {
 
 	s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SERVLET_CONTEXT_PATH", Value: "/connectors"})
 }
+
+func (s *deploymentTemplateTest) TestContainerSetSidecar() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.sidecars[0].name":                   "nginx",
+			"connectors.sidecars[0].image":                  "nginx:latest",
+			"connectors.sidecars[0].ports[0].containerPort": "80",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	containersList := deployment.Spec.Template.Spec.Containers
+	expectedContainer := corev1.Container{
+		Name:  "nginx",
+		Image: "nginx:latest",
+		Ports: []corev1.ContainerPort{
+			{
+				ContainerPort: 80,
+			},
+		},
+	}
+
+	s.Require().Contains(containersList, expectedContainer)
+}
