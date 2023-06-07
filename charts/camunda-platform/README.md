@@ -244,7 +244,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `identity.keycloak.auth.adminUser` |    Can be used to configure admin user to access existing Keycloak | `""` |
 | | `identity.keycloak.auth.existingSecret` |    Can be used to configure existing Secret object which has admin password to access existing Keycloak | `""` |
 | | `identity.keycloak.auth.existingSecretKey` |    Can be used to configure the key inside existing Secret object which has admin password to access existing Keycloak | `"admin-password"` |
-| | `identity.keycloak.postgresql.primary.sidecars` | Can be set to deploy extra containers in the same postgresql pod | `[]` |
 | `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
 
 ### Camunda Platform
