@@ -936,7 +936,6 @@ The Camunda Platform 8 Helm chart has a dependency on the [Bitnami PostgreSQL ch
 | | `auth.username` | Defines the name of the database user to be created for Web Modeler | `web-modeler` |
 | | `auth.password` | Defines the database user's password; a random password will be generated if left empty | |
 | | `auth.database` | Defines the name of the database to be created for Web Modeler | `web-modeler` |
-| | `primary.sidecars` | Can be set to deploy extra containers in the same pod | `[]` |
 
 ### Connectors
 
