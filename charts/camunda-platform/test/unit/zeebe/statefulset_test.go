@@ -835,11 +835,11 @@ func (s *statefulSetTest) TestContainerSetSidecar() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
-	containersList := deployment.Spec.Template.Spec.Containers
+	podContainers := statefulSet.Spec.Template.Spec.Containers
 	expectedContainer := corev1.Container{
 		Name:  "nginx",
 		Image: "nginx:latest",
@@ -850,5 +850,5 @@ func (s *statefulSetTest) TestContainerSetSidecar() {
 		},
 	}
 
-	s.Require().Contains(containersList, expectedContainer)
+	s.Require().Contains(podContainers, expectedContainer)
 }

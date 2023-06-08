@@ -735,7 +735,7 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	containersList := deployment.Spec.Template.Spec.Containers
+	podContainers := deployment.Spec.Template.Spec.Containers
 	expectedContainer := corev1.Container{
 		Name:  "nginx",
 		Image: "nginx:latest",
@@ -746,5 +746,5 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 		},
 	}
 
-	s.Require().Contains(containersList, expectedContainer)
+	s.Require().Contains(podContainers, expectedContainer)
 }
