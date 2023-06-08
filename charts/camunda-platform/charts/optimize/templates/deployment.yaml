@@ -139,6 +139,9 @@ spec:
         {{- if .Values.extraVolumeMounts}}
           {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- end }}
       volumes:
       {{- if .Values.extraVolumes}}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}

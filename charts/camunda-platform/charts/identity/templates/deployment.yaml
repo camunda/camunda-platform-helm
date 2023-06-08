@@ -248,6 +248,10 @@ spec:
         volumeMounts:
         {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- end }}
+
       {{- if .Values.extraVolumes}}
       volumes:
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
