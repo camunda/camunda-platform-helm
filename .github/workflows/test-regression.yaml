@@ -4,10 +4,10 @@ name: "Test - Regression"
 on:
   push:
     paths:
-    - 'charts/camunda-platform/values'
+    - 'charts/camunda-platform/values/*'
   pull_request:
     paths:
-    - 'charts/camunda-platform/values'
+    - 'charts/camunda-platform/values/*'
   workflow_dispatch: { }
 
 concurrency:
