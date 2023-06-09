@@ -1189,6 +1189,8 @@ identity:
 
   # PodAnnotations can be used to define extra Identity pod annotations
   podAnnotations: {}
+  # PodLabels can be used to define extra Identity pod labels
+  podLabels: {}
 
   # Service configuration to configure the identity service.
   service:
