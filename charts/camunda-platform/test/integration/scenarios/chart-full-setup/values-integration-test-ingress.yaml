@@ -27,6 +27,8 @@ global:
 identity:
   contextPath: "/identity"
   fullURL: "https://{{ .Values.global.ingress.host }}/identity"
+  firstUser:
+    existingSecret: "integration-test"
 
 operate:
   contextPath: "/operate"

@@ -25,6 +25,7 @@ tasks:
     preconditions:
     - test -n "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
     - test -n "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+    - test -n "${TEST_INGRESS_HOST}"
     cmds:
     # This is needed to access WebModeler Docker image since it's not public.
     - kubectl create secret docker-registry registry-camunda-cloud
@@ -33,7 +34,7 @@ tasks:
         --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
         --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
     - echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> ../../testsuites/base/files/variables.env
-    - echo "VENOM_VAR_TEST_INGRESS_HOST={{ env "TEST_INGRESS_HOST" }}" >> ../../testsuites/base/files/variables.env
+    - echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
       ../../testsuites/base/files/variables.env
@@ -52,6 +53,11 @@ tasks:
   setup.post:
     cmds:
     - echo "No post task for this test."
+
+  setup.clean:
+    cmds:
+    - kubectl delete secret registry-camunda-cloud --ignore-not-found=true
+    - git checkout ../../testsuites/base/files/variables.env
 
   all:
     cmds:
