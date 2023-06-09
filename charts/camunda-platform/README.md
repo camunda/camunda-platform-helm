@@ -649,11 +649,13 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `enabled` |  If true, the Identity deployment and its related resources are deployed via a helm release. <br/> Note: Identity is required by Optimize and Web Modeler. If Identity is disabled, both Optimize and Web Modeler will be unusable. If you need neither Optimize nor Web Modeler, make sure to disable both the Identity authentication and the applications by setting:<br/>`global.identity.auth.enabled: false`<br/>`optimize.enabled: false`<br/>`webModeler.enabled: false` | `true` |
 | | `fullnameOverride` | Can be used to override the full name of the Identity resources | |
 | | `nameOverride` | Can be used to partly override the name of the Identity resources (names will still be prefixed with the release name) | |
+| | `firstUser.enabled` | If true, Identity will seed the first user in Keycloak | `true` |
 | | `firstUser.username` | Defines the username of the first user, needed to log in into the web applications | `demo` |
 | | `firstUser.password` | Defines the password of the first user, needed to log in into the web applications | `demo` |
 | | `firstUser.email` | Defines the email address of the first user; a valid email address is required to use Web Modeler | `demo@example.org` |
 | | `firstUser.firstName` | Defines the first name of the first user; a name is required to use Web Modeler | `Demo` |
 | | `firstUser.lastName` | Defines the last name of the first user; a name is required to use Web Modeler | `User` |
+| | `firstUser.existingSecret` | Can be used to use an own existing secret for Identity first user. Currently, only password field is supported via "identity-firstuser-password" key in the secret resource | `""` |
 | | `image` |  Configuration to configure the Identity image specifics | |
 | | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |

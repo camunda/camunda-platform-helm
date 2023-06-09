@@ -34,21 +34,7 @@ spec:
           - name: IDENTITY_BASE_PATH
             value: {{ .Values.contextPath | quote }}
           {{- end }}
-          - name: KEYCLOAK_USERS_0_USERNAME
-            value: {{ .Values.firstUser.username | quote }}
-          - name: KEYCLOAK_USERS_0_PASSWORD
-            value: {{ .Values.firstUser.password | quote }}
-          - name: KEYCLOAK_USERS_0_EMAIL
-            value: {{ .Values.firstUser.email | quote }}
-          - name: KEYCLOAK_USERS_0_FIRST_NAME
-            value: {{ .Values.firstUser.firstName | quote }}
-          - name: KEYCLOAK_USERS_0_LAST_NAME
-            value: {{ .Values.firstUser.lastName | quote }}
-          - name: KEYCLOAK_USERS_0_ROLES_0
-            value: "Identity"
           {{- if .Values.global.identity.auth.enabled }}
-          - name: KEYCLOAK_USERS_0_ROLES_1
-            value: "Operate"
           - name: KEYCLOAK_INIT_OPERATE_SECRET
             {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
             valueFrom:
@@ -68,8 +54,6 @@ spec:
             {{- end }}
           - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
             value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
-          - name: KEYCLOAK_USERS_0_ROLES_2
-            value: "Tasklist"
           - name: KEYCLOAK_INIT_TASKLIST_SECRET
             {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
             valueFrom:
@@ -89,8 +73,6 @@ spec:
             {{- end }}
           - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
             value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
-          - name: KEYCLOAK_USERS_0_ROLES_3
-            value: "Optimize"
           - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
             {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
             valueFrom:
@@ -110,8 +92,6 @@ spec:
             {{- end }}
           - name: KEYCLOAK_INIT_OPTIMIZE_ROOT_URL
             value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
-          - name: KEYCLOAK_USERS_0_ROLES_4
-            value: "Web Modeler"
           - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
             value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
           - name: KEYCLOAK_INIT_ZEEBE_NAME
@@ -190,6 +170,38 @@ spec:
               secretKeyRef:
                 name: {{ include "identity.keycloak.authExistingSecret" . }}
                 key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+        {{- if .Values.firstUser.enabled }}
+          - name: KEYCLOAK_USERS_0_USERNAME
+            value: {{ .Values.firstUser.username | quote }}
+        {{- if .Values.firstUser.existingSecret }}
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.firstUser.existingSecret }}
+                key: "identity-firstuser-password"
+        {{- else }}
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            value: {{ .Values.firstUser.password | quote }}
+        {{- end }}
+          - name: KEYCLOAK_USERS_0_EMAIL
+            value: {{ .Values.firstUser.email | quote }}
+          - name: KEYCLOAK_USERS_0_FIRST_NAME
+            value: {{ .Values.firstUser.firstName | quote }}
+          - name: KEYCLOAK_USERS_0_LAST_NAME
+            value: {{ .Values.firstUser.lastName | quote }}
+          - name: KEYCLOAK_USERS_0_ROLES_0
+            value: "Identity"
+        {{- if .Values.global.identity.auth.enabled }}
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: "Operate"
+          - name: KEYCLOAK_USERS_0_ROLES_2
+            value: "Tasklist"
+          - name: KEYCLOAK_USERS_0_ROLES_3
+            value: "Optimize"
+          - name: KEYCLOAK_USERS_0_ROLES_4
+            value: "Web Modeler"
+        {{- end }}
+        {{- end }}
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
