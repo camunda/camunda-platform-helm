@@ -3,7 +3,7 @@ version: '3'
 vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
-  HELM_EXTRA_ARGS: '{{ env "HELM_EXTRA_ARGS" }} {{ .OPENSHIFT_ARGS }}'
+  TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
 
 dotenv:
 - ../vars/common.env
@@ -34,7 +34,7 @@ tasks:
         --values ./values-custom.yaml
         --timeout 20m0s
         --wait
-        {{ .HELM_EXTRA_ARGS }}
+        {{ .TEST_HELM_EXTRA_ARGS }}
 
   setup.post:
     cmds:

@@ -32,7 +32,11 @@ tasks:
         --docker-server "registry.camunda.cloud"
         --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
         --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+    - echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> ../../testsuites/base/files/variables.env
+    - echo "VENOM_VAR_TEST_INGRESS_HOST={{ env "TEST_INGRESS_HOST" }}" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
+    - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
+      ../../testsuites/base/files/variables.env
 
   setup.exec:
     deps: [init.seed]
@@ -40,7 +44,7 @@ tasks:
     - helm install integration {{ .CHART_DIR }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
-        --values ./values-web-modeler-enabled.yaml
+        --values ./values-integration-test-ingress.yaml
         --timeout 20m0s
         --wait
         {{ .TEST_HELM_EXTRA_ARGS }}
@@ -51,6 +55,7 @@ tasks:
 
   all:
     cmds:
+    - task: init.seed
     - task: setup.pre
     - task: setup.exec
     - task: setup.post

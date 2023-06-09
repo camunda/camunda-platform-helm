@@ -2,8 +2,9 @@
 # https://github.com/ovh/venom/issues/651
 name: Run preflight checks for Camunda Platform
 
+# Vars without defaults are passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
 vars:
-  releaseName: '{{ .RELEASE_NAME | default "integration" }}'
+  releaseName: integration
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
 
 testcases:
@@ -14,23 +15,23 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Keycloak
-      url: http://{{ .releaseName }}-keycloak/auth/realms/master
     - component: Elasticsearch
-      url: "http://elasticsearch-master:9200/_cluster/health?&timeout=1s"
+      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+    - component: Keycloak
+      url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
     # Camunda.
     - component: Identity
-      url: http://{{ .releaseName }}-identity:82/actuator/health
+      url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
     - component: Optimize
-      url: http://{{ .releaseName }}-optimize/api/readyz
+      url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
     - component: Operate
-      url: http://{{ .releaseName }}-operate/actuator/health/readiness
+      url: "{{ .preflightVars.baseURLs.operate }}/actuator/health/readiness"
     - component: Tasklist
-      url: http://{{ .releaseName }}-tasklist/actuator/health/readiness
+      url: "{{ .preflightVars.baseURLs.tasklist }}/actuator/health/readiness"
     - component: Connectors
-      url: http://{{ .releaseName }}-connectors:8080/actuator/health/readiness
+      url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
     - component: Zeebe-Gateway
-      url: http://{{ .releaseName }}-zeebe-gateway:9600/health
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/health"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
@@ -47,9 +48,9 @@ testcases:
     type: http
     range:
     - component: RESTAPI
-      url: http://{{ .releaseName }}-web-modeler-restapi:8091/health/readiness
+      url: "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/readiness"
     - component: WebApp
-      url: http://{{ .releaseName }}-web-modeler-webapp:8071/health/readiness
+      url: "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/readiness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
@@ -66,23 +67,23 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Keycloak
-      url: http://{{ .releaseName }}-keycloak/auth/realms/camunda-platform
     - component: Elasticsearch
-      url: "http://elasticsearch-master:9200/_cluster/health?wait_for_status=green&timeout=1s"
+      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+    - component: Keycloak
+      url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
     # Camunda.
     - component: Identity
-      url: http://{{ .releaseName }}-identity:82/actuator/health
+      url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
     - component: Optimize
-      url: http://{{ .releaseName }}-optimize/api/readyz
+      url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
     - component: Operate
-      url: http://{{ .releaseName }}-operate/actuator/health/liveness
+      url: "{{ .preflightVars.baseURLs.operate }}/actuator/health/liveness"
     - component: Tasklist
-      url: http://{{ .releaseName }}-tasklist/actuator/health/liveness
+      url: "{{ .preflightVars.baseURLs.tasklist }}/actuator/health/liveness"
     - component: Connectors
-      url: http://{{ .releaseName }}-connectors:8080/actuator/health/liveness
+      url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/liveness"
     - component: Zeebe-Gateway
-      url: http://{{ .releaseName }}-zeebe-gateway:9600/actuator/health/liveness
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/liveness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
@@ -98,9 +99,9 @@ testcases:
     type: http
     range:
     - component: RESTAPI
-      url: http://{{ .releaseName }}-web-modeler-restapi:8091/health/liveness
+      url:  "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/liveness"
     - component: WebApp
-      url: http://{{ .releaseName }}-web-modeler-webapp:8071/health/liveness
+      url:  "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/liveness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
