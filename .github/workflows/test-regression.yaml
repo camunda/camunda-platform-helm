@@ -26,6 +26,8 @@ jobs:
     name: Previous chart v${{ matrix.camundaChart }}.x
     if: ${{ contains(github.event.*.labels.*.name, 'test-regression') || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
