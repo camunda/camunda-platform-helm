@@ -24,6 +24,12 @@
 
 # Global configuration for variables which can be accessed by all sub charts
 global:
+  # For test purposes.
+  test:
+    connection:
+      enabled: false
+    integration:
+      enabled: false
   # Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   # Labels can be used to define common labels, which should be applied to all deployments

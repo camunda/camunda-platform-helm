@@ -1,4 +1,4 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if .Values.global.test.connection.enabled }}
 apiVersion: v1
 kind: Pod
 metadata:
