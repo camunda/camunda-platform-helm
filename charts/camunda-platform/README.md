@@ -259,7 +259,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `tasklistIndexTTL` | Defines after how many days an Tasklist index can be deleted. | `30` |
 | | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator` |
-| | `image.tag` | Defines the tag / version which should be used in the chart. | `5.8.4` |
+| | `image.tag` | Defines the tag / version which should be used in the chart. | `Check the values file` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
 | | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|
 | | `labels` | Can be set to configure extra labels, which will be added to the ServiceMonitor and can be used on the prometheus controller for selecting the ServiceMonitors | `release: metrics` |
@@ -276,7 +276,7 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `image` | Configuration to configure the Zeebe image specifics. | |
 | | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
-| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
+| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `clusterSize` | Defines the amount of brokers (=replicas), which are deployed via helm | `3` |
@@ -358,7 +358,7 @@ For more information about Zeebe Gateway, visit
 | | `image` | Configuration to configure the zeebe-gateway image specifics. | |
 | | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` | Defines which image repository to use. | `camunda/zeebe` |
-| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | ` ` |
+| | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `podAnnotations` | Can be used to define extra gateway pod annotations | `{ }` |
@@ -580,7 +580,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `image` |  Configuration for the Optimize image specifics | |
 | | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` |  Defines which image repository to use | `camunda/optimize` |
-| | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `3.8.0` |
+| | `image.tag` |  Can be set to overwrite the global tag, which should be used in that chart | `Check the values file` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `contextPath` |  Can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
@@ -659,7 +659,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `image` |  Configuration to configure the Identity image specifics | |
 | | `image.registry` | Can be used to set container image registry. | `""` |
 | | `image.repository` |  Defines which image repository to use | `camunda/identity` |
-| | `image.tag` |   Can be set to overwrite the global.image.tag | |
+| | `image.tag` |   Can be set to overwrite the global.image.tag | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `fullURL` |  Can be used when Ingress is configured (for both multi and single domain setup). <br/> Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the fullURL too. | |
@@ -759,7 +759,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `nameOverride` | can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name) | |
 | | `image` | Configuration of the Web Modeler Docker images | |
 | | `image.registry` | Can be used to set the Docker registry for the Web Modeler images (overwrites `global.image.registry`).<br/>Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry. | `registry.camunda.cloud` |
-| | `image.tag` | Can be used to set the Docker image tag for the Web Modeler images (overwrites `global.image.tag`) | |
+| | `image.tag` | Can be used to set the Docker image tag for the Web Modeler images (overwrites `global.image.tag`) | `Check the values file` |
 | | `image.pullSecrets` | Can be used to configure [image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod).<br/>Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry. | |
 | | `contextPath` | Can be used to make Web Modeler available on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.<br/>Note: The WebSocket application will be exposed on the configured path suffixed with `-ws`, e.g. `/modeler-ws` | |
 | | `restapi` | Configuration of the Web Modeler restapi component | |
@@ -954,7 +954,7 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `image`                              | Configuration for the Connectors image specifics                                                                                                                                                                                                  |                                                                                                       |
 |              | `image.registry`                     | Can be used to set container image registry.                                                                                                                                                                                                      | `""`                                                                                                  |
 |              | `image.repository`                   | Defines which image repository to use                                                                                                                                                                                                             | `camunda/connectors-bundle`                                                                           |
-|              | `image.tag`                          | Can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                        | `0.18.2`                                                                                              |
+|              | `image.tag`                          | Can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                        | `Check the values file`                                                                                              |
 |              | `image.pullSecrets`                  | Can be set to overwrite the global.image.pullSecrets                                                                                                                                                                                              | `{{ global.image.pullSecrets }}`                                                                      |
 |              | `sidecars`                           | Can be used to deploy extra containers in the same pod                                                                                                                                                                                             | `[]`                                                                                                  |
 |              | `replicas`                           | Number of replicas                                                                                                                                                                                                                                | `1`                                                                                                   |
