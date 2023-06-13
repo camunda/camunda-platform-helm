@@ -2,18 +2,22 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-8.2.5"></a>
-## [camunda-platform-8.2.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.2.4...camunda-platform-8.2.5) (2023-05-25)
+<a name="camunda-platform-8.2.6"></a>
+## [camunda-platform-8.2.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.2.5...camunda-platform-8.2.6) (2023-06-13)
 
 ### Ci
 
-* remove old mechanism to update image tags ([#713](https://github.com/camunda/camunda-platform-helm/issues/713))
+* test chart in full setup with Ingress and TLS ([#728](https://github.com/camunda/camunda-platform-helm/issues/728))
 
-### Fix
+### Docs
 
-* invalid redirect uri in the apps ([#715](https://github.com/camunda/camunda-platform-helm/issues/715))
+* includes note about adding environment variables using env option ([#731](https://github.com/camunda/camunda-platform-helm/issues/731))
 
-### Refactor
+### Feat
 
-* print zeebe env vars in debug mode only ([#712](https://github.com/camunda/camunda-platform-helm/issues/712))
+* add podLabels to Identity ([#729](https://github.com/camunda/camunda-platform-helm/issues/729))
+* customize Identity firstUser creation ([#737](https://github.com/camunda/camunda-platform-helm/issues/737))
+* adds sidecar option to all components ([#723](https://github.com/camunda/camunda-platform-helm/issues/723))
+* support external url templating based on global ingress host ([#722](https://github.com/camunda/camunda-platform-helm/issues/722))
+* add check scheme to all probes ([#720](https://github.com/camunda/camunda-platform-helm/issues/720))
 
