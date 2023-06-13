@@ -39,7 +39,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:0.20.1
+          image: camunda/connectors-bundle:0.20.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
