@@ -3,6 +3,92 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "add podLabels to Identity"
+        - kind: added
+          description: "customize Identity firstUser creation"
+        - kind: added
+          description: "adds sidecar option to all components"
+        - kind: added
+          description: "support external url templating based on global ingress host"
+        - kind: added
+          description: "add check scheme to all probes"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.2.x
+    created: "2023-06-13T19:33:46.003926305Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.2.6
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.2.6
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.2.6
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.2.6
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.2.6
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.2.6
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.3
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: f52cbc462c05537ef62496d6f80eaa9c48beadfc31999724362f50dfc0bcd1ef
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.2.6/camunda-platform-8.2.6.tgz
+    version: 8.2.6
+  - annotations:
+      artifacthub.io/changes: |
         - kind: fixed
           description: "invalid redirect uri in the apps"
         - kind: changed
@@ -5403,4 +5489,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-05-25T21:06:02.557988592Z"
+generated: "2023-06-13T19:33:46.004711715Z"
