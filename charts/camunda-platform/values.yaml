@@ -1895,7 +1895,7 @@ connectors:
     # Image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 0.20.1
+    tag: 0.20.2
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
