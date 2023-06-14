@@ -190,24 +190,10 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end }}
 
 {{/*
-[web-modeler] Get the database host, depending on whether the postgresql dependency chart is enabled.
+[web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
-{{- define "webModeler.restapi.databaseHost" -}}
-{{- .Values.postgresql.enabled | ternary (include "webModeler.postgresql.fullname" .) .Values.webModeler.restapi.externalDatabase.host -}}
-{{- end -}}
-
-{{/*
-[web-modeler] Get the database port, depending on whether the postgresql dependency chart is enabled.
-*/}}
-{{- define "webModeler.restapi.databasePort" -}}
-{{- .Values.postgresql.enabled | ternary 5432 .Values.webModeler.restapi.externalDatabase.port -}}
-{{- end -}}
-
-{{/*
-[web-modeler] Get the database name, depending on whether the postgresql dependency chart is enabled.
-*/}}
-{{- define "webModeler.restapi.databaseName" -}}
-{{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.database .Values.webModeler.restapi.externalDatabase.database -}}
+{{- define "webModeler.restapi.databaseUrl" -}}
+{{- .Values.postgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
 {{- end -}}
 
 {{/*

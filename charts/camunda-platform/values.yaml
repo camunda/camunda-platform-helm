@@ -1548,12 +1548,8 @@ webModeler:
     # if the postgresql dependency chart is disabled (by setting postgresql.enabled to false).
     # Note: Currently, the only supported database system is PostgreSQL.
     externalDatabase:
-      # Restapi.externalDatabase.host defines the host name of the database instance
-      host: ""
-      # Restapi.externalDatabase.port defines the port number of the database instance
-      port: 5432
-      # Restapi.externalDatabase.database defines the database name
-      database: ""
+      # Restapi.externalDatabase.url defines the JDBC url of the database instance
+      url: ""
       # Restapi.externalDatabase.user defines the database user
       user: ""
       # Restapi.externalDatabase.password defines the database user's password
