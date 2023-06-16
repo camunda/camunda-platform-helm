@@ -7,9 +7,9 @@
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/deploy/) on how to use Helm charts.
 
 - [Architecture](#architecture)
-- [Versioning](#versioning)
 - [Requirements](#requirements)
 - [Dependencies](#dependencies)
+- [Versioning](#versioning)
 - [Installation](#installation)
   - [Local Kubernetes](#local-kubernetes)
   - [OpenShift](#openshift)
@@ -38,20 +38,11 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 
 <p align="center">
   <img
-    alt="Camunda Platform 8 Self-Managed Helm charts architecture diagram"
+    alt="Camunda Platform 8 Self-Managed Helm charts architecture diagram."
     src="../../imgs/camunda-platform-8-self-managed-architecture-diagram-combined-ingress.png"
     width="80%"
   />
 </p>
-
-## Versioning
-
-Camunda Platform 8 **Helm chart** versions are only aligned with the minor version of [Camunda Platform 8](https://github.com/camunda/camunda-platform).
-In other words, the `Camunda Platform 8 Helm chart` could have a patch version different from the `Camunda Platform 8`.
-
-For example, the Camunda Platform 8 Helm chart could be on version `8.1.1`, but Camunda Platform 8 apps are on version `8.1.0`. Additionally, the Camunda Platform 8 Helm chart could be on version `8.1.1`, but Camunda Platform 8 apps are on version `8.1.2`.
-
-We work to keep the Helm chart updated with the latest version of Camunda Platform 8, but currently this is not guaranteed. Note that the latest version of the Helm chart may not necessarily have the latest version of the Camunda Platform 8 apps. This should not be an issue unless you rely on a specific Camunda Platform 8 patch version. In that case, you can set the desired version via a custom values file.
 
 ## Requirements
 
@@ -103,6 +94,31 @@ identity:
 postgresql:
   [postgresql values]
 ```
+
+## Versioning
+
+Camunda Platform 8 **Helm chart** versions are only aligned with the minor version of
+[Camunda Platform 8](https://github.com/camunda/camunda-platform). In other words, the `Camunda Platform 8 Helm chart`
+could have a different patch version than the `Camunda` Platform 8 Applications`.
+
+For example, the Camunda Platform 8 **Helm chart** could be on version `8.1.1`, but Camunda Platform 8 **applications**
+are on version `8.1.0`. Additionally, the Camunda Platform 8 **Helm chart** could be on version `8.1.1`,
+but Camunda Platform 8 **applications** are on version `8.1.2`.
+
+Since we have a fixed monthly release schedule, the latest version of the Helm chart may not necessarily
+have the newest version of the Camunda Platform 8 applications. That should not be an issue unless you rely
+on a specific Camunda Platform 8 patch version. In that case, you can set the desired version via a custom values file.
+
+The following is the compatibility matrix of the Camunda Platform 8 **Helm chart**
+and Camunda Platform 8 **applications**.
+
+| Release Cycle | Helm chart | Zeebe, Operate, Tasklist | Optimize | Web Modeler  | Connectors |
+| ---           | ---        | ---                      | ---      | ---          | ---        |
+| Apr 2023      | 8.2.x      | 8.2.x                    | 3.10.x   | 8.2.x        | >= 0.18.0  |
+| Oct 2022      | 8.1.x      | 8.1.x                    | 3.9.x    | N/A          | N/A        |
+| Apr 2022      | 8.0.x      | 8.0.x                    | 3.9.x    | N/A          | N/A        |
+
+You can get the latest applications patch version for previous releases using our [backporting mechanism](#backporting).
 
 ## Installation
 
