@@ -46,6 +46,8 @@ spec:
               value: "false"
             - name: SPRING_MAIN_WEB-APPLICATION-TYPE
               value: "NONE"
+            - name: OPERATE_CLIENT_ENABLED
+              value: "false"
           {{- end }}
           {{- if eq .Values.connectors.inbound.mode "credentials" }}
             - name: OPERATE_CLIENT_ENABLED
