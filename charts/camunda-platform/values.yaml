@@ -1106,12 +1106,12 @@ retentionPolicy:
   tasklistIndexTTL: 30
 
   # Image configuration for the elasticsearch curator cronjob
-  # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags
+  # https://hub.docker.com/r/bitnami/elasticsearch-curator-archived/tags
   image:
     # Image.registry can be used to set container image registry.
     registry: ""
     # Image.repository defines which image repository to use
-    repository: bitnami/elasticsearch-curator
+    repository: bitnami/elasticsearch-curator-archived
     # Image.tag defines the tag / version which should be used in the chart
     tag: 5.8.4
 
