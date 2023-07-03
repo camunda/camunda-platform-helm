@@ -62,7 +62,7 @@ spec:
           {{- end }}
           {{- if and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") }}
             - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
-              value: {{ include "camundaPlatform.keycloakURLBase" . }}
+              value: {{ include "camundaPlatform.keycloakURL" . }}
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
               value: connectors
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
