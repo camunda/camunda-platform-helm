@@ -44,8 +44,6 @@ spec:
               value: "false"
             - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
               value: "false"
-            - name: SPRING_MAIN_WEB-APPLICATION-TYPE
-              value: "NONE"
             - name: OPERATE_CLIENT_ENABLED
               value: "false"
           {{- end }}
