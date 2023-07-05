@@ -774,6 +774,7 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", Value: "camunda-platform"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "OPERATE_CLIENT_ENABLED", Value: "true"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
+	
 }
 
 func (s *deploymentTemplateTest) TestContainerSetContextPath() {
