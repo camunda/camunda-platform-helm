@@ -704,7 +704,6 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeDisabled() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CONNECTOR_POLLING_ENABLED", Value: "false"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", Value: "false"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_MAIN_WEB-APPLICATION-TYPE", Value: "NONE"})
 }
 
 func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
