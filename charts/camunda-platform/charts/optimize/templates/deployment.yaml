@@ -66,6 +66,8 @@ spec:
             value: "false"
           - name: CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN
             value: "true"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+            value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}/api/authentication/callback"
           {{- if .Values.env}}
           {{ .Values.env | toYaml | nindent 10 }}
           {{- end }}
