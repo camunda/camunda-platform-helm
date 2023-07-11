@@ -5,16 +5,16 @@
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
 
 
-  - [Overview](#overview)
-  - [Installation](#installation)
-  - [Documentation](#documentation)
-  - [Guides](#guides)
-  - [Issues](#issues)
-  - [Contributing](#contributing)
-  - [Versioning](#versioning)
-  - [Releasing](#releasing)
-  - [Deprecation](#deprecation)
-  - [License](#license)
+- [Overview](#overview)
+- [Installation](#installation)
+- [Documentation](#documentation)
+- [Guides](#guides)
+- [Issues](#issues)
+- [Contributing](#contributing)
+- [Versioning](#versioning)
+- [Releasing](#releasing)
+- [Deprecation](#deprecation)
+- [License](#license)
 
 ## Overview
 
@@ -66,12 +66,7 @@ We value all feedback and contributions. To start contributing to this project, 
 
 ## Versioning
 
-Camunda Platform 8 **Helm chart** versions are only aligned with the minor version of [Camunda Platform 8](https://github.com/camunda/camunda-platform).
-In other words, the `Camunda Platform 8 Helm chart` could have a patch version different from the `Camunda Platform 8`.
-
-For example, the Camunda Platform 8 Helm chart could be on version `8.1.1`, but Camunda Platform 8 apps are on version `8.1.0`. Additionally, the Camunda Platform 8 Helm chart could be on version `8.1.1`, but Camunda Platform 8 apps are on version `8.1.2`.
-
-We work to keep the Helm chart updated with the latest version of Camunda Platform 8, but currently this is not guaranteed. Note that the latest version of the Helm chart may not necessarily have the latest version of the Camunda Platform 8 apps. This should not be an issue unless you rely on a specific Camunda Platform 8 patch version. In that case, you can set the desired version via a custom values file.
+Camunda Platform 8 Helm chart versions are only aligned with the **minor version** of [Camunda Platform 8](https://github.com/camunda/camunda-platform). For more details, please read the [Camunda Platform 8 Helm chart versioning](./charts/camunda-platform/README.md).
 
 ## Releasing
 
