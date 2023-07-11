@@ -72,5 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "This is a transit version to match the apps unified version. Starting from the next version, the chart version will be the same as the Camunda Platform unified version"
+    - kind: fixed
+      description: "use new curator image"
