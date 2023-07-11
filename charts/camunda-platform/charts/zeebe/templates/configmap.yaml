@@ -8,7 +8,7 @@ data:
     #!/usr/bin/env bash
     set -eux -o pipefail
 
-    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-${K8S_NAME##*-}}
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.regions}} + {{.Values.global.regionId}}]}
 
     if [ "$(ls -A /exporters/)" ]; then
       mkdir /usr/local/zeebe/exporters/

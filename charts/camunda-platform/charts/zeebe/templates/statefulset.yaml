@@ -8,7 +8,7 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
-  replicas: {{ .Values.clusterSize  }}
+  replicas: {{ div .Values.clusterSize .Values.global.regions }}
   selector:
     matchLabels:
       {{- include "zeebe.matchLabels.broker" . | nindent 6 }}
@@ -60,7 +60,7 @@ spec:
         - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
           value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
         - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
-          value:
+          value: 
           {{- range (untilStep 0 (int .Values.clusterSize) 1) }}
             $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:{{$.Values.service.internalPort}},
           {{- end }}

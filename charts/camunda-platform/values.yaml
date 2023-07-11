@@ -24,6 +24,10 @@
 
 # Global configuration for variables which can be accessed by all sub charts
 global:
+  # number of regions that support the zeebe platform (2 for minimal multi-region setup)
+  regions: 2
+  # id of the region should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+  regionId: 0
   # Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   # Labels can be used to define common labels, which should be applied to all deployments
@@ -208,6 +212,8 @@ zeebe:
       value: "0.85"
     - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
       value: "0.87"
+    - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+      value: "camunda-zeebe-0.camunda-zeebe.region0.svc:26502, camunda-zeebe-1.camunda-zeebe.region0.svc:26502, camunda-zeebe-0.camunda-zeebe.region1.svc:26502, camunda-zeebe-1.camunda-zeebe.region1.svc:26502"
   # ConfigMap configuration which will be applied to the mounted config map.
   configMap:
     # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
