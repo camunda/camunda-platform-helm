@@ -3,9 +3,9 @@ name: Release Charts
 on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
-      - main
+      - 'camunda-platform-8.0'
 env:
   HELM_VERSION: 3.6.3
 
@@ -32,7 +32,7 @@ jobs:
       - name: Add helm repos
         run: |
           helm repo add elastic https://helm.elastic.co
-          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add camunda https://helm.camunda.io
           helm repo update
       - name: Get Helm Deps
         run: make deps
