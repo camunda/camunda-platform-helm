@@ -13,7 +13,7 @@ for chart_file in ${chart_files_to_release}; do
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
     git-chglog                                    \
         --output "${chart_path}/RELEASE-NOTES.md" \
-        --tag-filter-pattern "${chart_name}"      \
+        --tag-filter-pattern "${chart_tag%.*}"    \
         --next-tag "${chart_tag}"                 \
         --path "${chart_path}" "${chart_tag}"
 
