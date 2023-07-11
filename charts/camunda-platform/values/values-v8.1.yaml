@@ -57,5 +57,5 @@ elasticsearch:
 retentionPolicy:
   # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags
   image:
-    repository: bitnami/elasticsearch-curator
+    repository: bitnami/elasticsearch-curator-archived
     tag: 5.8.4
