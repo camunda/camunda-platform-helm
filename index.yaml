@@ -1471,6 +1471,57 @@ entries:
     version: 8.1.0
   - annotations:
       artifacthub.io/changes: |
+        - Add the possibility to override the referenced Keycloak service name
+      artifacthub.io/containsSecurityUpdates: "false"
+    apiVersion: v2
+    appVersion: 8.0.0
+    created: "2023-07-11T21:22:58.379389676Z"
+    dependencies:
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.0.18
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.0.18
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.0.18
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.0.18
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.0.18
+    - condition: identity.enabled
+      name: identity
+      repository: ""
+      version: 8.0.18
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    description: Camunda Platform Helm Chart for Kubernetes
+    digest: 845a291cdf45378d3a9bb83ea11dc7b35d30aa1e5e3839a0f8f48ed64925b1cd
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/self-managed.png
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    - https://github.com/camunda/zeebe
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.0.18/camunda-platform-8.0.18.tgz
+    version: 8.0.18
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "set jwt tokens source for operate, optimize, and tasklist"
         - kind: added
@@ -5645,4 +5696,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-07-11T18:48:00.284086076Z"
+generated: "2023-07-11T21:22:58.380176501Z"
