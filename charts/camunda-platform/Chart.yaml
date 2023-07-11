@@ -72,13 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "add podLabels to Identity"
-    - kind: added
-      description: "customize Identity firstUser creation"
-    - kind: added
-      description: "adds sidecar option to all components"
-    - kind: added
-      description: "support external url templating based on global ingress host"
-    - kind: added
-      description: "add check scheme to all probes"
+    - kind: changed
+      description: "This is a transit version to match the apps unified version. Starting from the next version, the chart version will be the same as the Camunda Platform unified version"
