@@ -230,7 +230,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `operateIndexTTL` | Defines after how many days an Operate index can be deleted. | `30` |
 | | `tasklistIndexTTL` | Defines after how many days an Tasklist index can be deleted. | `30` |
 | | `image.registry` | Can be used to set container image registry. | `""` |
-| | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator` |
+| | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator-archived` |
 | | `image.tag` | Defines the tag / version which should be used in the chart. | `5.8.4` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
 | | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|

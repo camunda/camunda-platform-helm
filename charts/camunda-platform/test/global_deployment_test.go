@@ -155,5 +155,5 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/optimize:3.x.x\"")
 	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/tasklist:8.x.x\"")
 	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/zeebe:8.x.x\"")
-	s.Require().Contains(output, "image: \"global.custom.registry.io/bitnami/elasticsearch-curator:5.x.x\"")
+	s.Require().Contains(output, "image: \"global.custom.registry.io/bitnami/elasticsearch-curator-archived:5.x.x\"")
 }

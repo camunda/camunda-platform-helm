@@ -36,7 +36,7 @@ global:
     registry: ""
     # Image.tag defines the tag / version which should be used in the chart
     # Don't change the comment after the value, it's needed due to a bug yq. Check Makefile for more details.
-    tag: 8.1.9  # global.image.tag
+    tag: 8.1.14  # global.image.tag
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1052,7 +1052,7 @@ retentionPolicy:
     # Image.registry can be used to set container image registry.
     registry: ""
     # Image.repository defines which image repository to use
-    repository: bitnami/elasticsearch-curator
+    repository: bitnami/elasticsearch-curator-archived
     # Image.tag defines the tag / version which should be used in the chart
     tag: 5.8.4
 

@@ -71,6 +71,8 @@ spec:
             value: "http://camunda-platform-tes:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+            value: "http://localhost:8083/api/authentication/callback"
         resources:
           limits:
             cpu: 2000m
