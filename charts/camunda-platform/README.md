@@ -148,7 +148,7 @@ To have the latest version of the chart and apps at any time, install the chart 
 
 ```shell
 helm install camunda-platform camunda/camunda-platform \
-    --values https://raw.githubusercontent.com/camunda/camunda-platform-helm/main/charts/camunda-platform/values/values-latest.yaml
+    --values https://helm.camunda.io/camunda-platform/values/values-latest.yaml
 ```
 
 For previous version, you can get the latest applications patch version using our [backporting mechanism](#backporting).
@@ -177,7 +177,7 @@ use the values file for the minor release. For example (the values file could al
 
 ```shell
 helm install camunda-platform camunda/camunda-platform --version 8.1 \
-    --values https://raw.githubusercontent.com/camunda/camunda-platform-helm/main/charts/camunda-platform/values/values-v8.1.yaml
+    --values https://helm.camunda.io/camunda-platform/values/values-v8.1.yaml
 ```
 
 ## Uninstalling Charts
