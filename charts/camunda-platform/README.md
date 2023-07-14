@@ -10,6 +10,9 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 - [Requirements](#requirements)
 - [Dependencies](#dependencies)
 - [Versioning](#versioning)
+  - [After July 2023](#after-july-2023)
+  - [Before July 2023](#before-july-2023)
+  - [Compatibility Matrix](#compatibility-matrix)
 - [Installation](#installation)
   - [Local Kubernetes](#local-kubernetes)
   - [OpenShift](#openshift)
@@ -97,6 +100,16 @@ postgresql:
 
 ## Versioning
 
+### After July 2023
+
+Starting from July 2023 (v8.2.8), the Camunda Platform 8 **Helm chart** version follows the same unified schema
+and schedule as [Camunda Platform 8 applications](https://github.com/camunda/camunda-platform).
+
+Hence, if the Camunda Platform 8 unified **applications** version is `8.2.8`, the Camunda Platform 8 **Helm chart**
+will also be `8.2.8`.
+
+### Before July 2023
+
 Camunda Platform 8 **Helm chart** versions are only aligned with the minor version of
 [Camunda Platform 8](https://github.com/camunda/camunda-platform). In other words, the `Camunda Platform 8 Helm chart`
 could have a different patch version than the `Camunda` Platform 8 Applications`.
@@ -105,20 +118,17 @@ For example, the Camunda Platform 8 **Helm chart** could be on version `8.1.1`, 
 are on version `8.1.0`. Additionally, the Camunda Platform 8 **Helm chart** could be on version `8.1.1`,
 but Camunda Platform 8 **applications** are on version `8.1.2`.
 
-Since we have a fixed monthly release schedule, the latest version of the Helm chart may not necessarily
-have the newest version of the Camunda Platform 8 applications. That should not be an issue unless you rely
-on a specific Camunda Platform 8 patch version. In that case, you can set the desired version via a custom values file.
+### Compatibility Matrix
 
-The following is the compatibility matrix of the Camunda Platform 8 **Helm chart**
-and Camunda Platform 8 **applications**.
+The core Camunda applications have a unified fixed release schedule (minor release twice a year and patch release
+every month). However, some of the applications have their own schedule. The following compatibility matrix gives
+an overview of the different versions.
 
 | Release Cycle | Helm chart | Zeebe, Operate, Tasklist | Optimize | Web Modeler  | Connectors |
 | ---           | ---        | ---                      | ---      | ---          | ---        |
 | Apr 2023      | 8.2.x      | 8.2.x                    | 3.10.x   | 8.2.x        | >= 0.18.0  |
 | Oct 2022      | 8.1.x      | 8.1.x                    | 3.9.x    | N/A          | N/A        |
 | Apr 2022      | 8.0.x      | 8.0.x                    | 3.9.x    | N/A          | N/A        |
-
-You can get the latest applications patch version for previous releases using our [backporting mechanism](#backporting).
 
 ## Installation
 
@@ -140,6 +150,8 @@ To have the latest version of the chart and apps at any time, install the chart 
 helm install camunda-platform camunda/camunda-platform \
     --values https://raw.githubusercontent.com/camunda/camunda-platform-helm/main/charts/camunda-platform/values/values-latest.yaml
 ```
+
+For previous version, you can get the latest applications patch version using our [backporting mechanism](#backporting).
 
 ### Local Kubernetes
 

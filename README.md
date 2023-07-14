@@ -66,7 +66,7 @@ We value all feedback and contributions. To start contributing to this project, 
 
 ## Versioning
 
-Camunda Platform 8 Helm chart versions are only aligned with the **minor version** of [Camunda Platform 8](https://github.com/camunda/camunda-platform). For more details, please read the [Camunda Platform 8 Helm chart versioning](./charts/camunda-platform/README.md).
+The Camunda Platform 8 Helm chart version follows the same schema and schedule as the [Camunda Platform 8 apps](https://github.com/camunda/camunda-platform). For more details, please read the [Camunda Platform 8 Helm chart versioning](./charts/camunda-platform/README.md).
 
 ## Releasing
 
