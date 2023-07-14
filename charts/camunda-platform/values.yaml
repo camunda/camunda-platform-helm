@@ -28,6 +28,9 @@ global:
   regions: 2
   # id of the region should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
   regionId: 0
+  # use that variables in case of disaster : normal, failOver, failBack
+  installationType: failBack
+
   # Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   # Labels can be used to define common labels, which should be applied to all deployments

@@ -8,7 +8,12 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
-  replicas: {{ div .Values.clusterSize .Values.global.regions }}
+
+  replicas: {{- if eq .Values.global.installationType "failOver" }}
+                {{ div (div .Values.clusterSize .Values.global.regions) 2 }}
+            {{- else }}
+                {{ div .Values.clusterSize .Values.global.regions }}
+            {{- end }}
   selector:
     matchLabels:
       {{- include "zeebe.matchLabels.broker" . | nindent 6 }}

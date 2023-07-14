@@ -7,8 +7,11 @@ data:
   startup.sh: |
     #!/usr/bin/env bash
     set -eux -o pipefail
-
+{{- if eq .Values.global.installationType "failOver" }}
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 2 * {{.Values.global.regions}} + {{.Values.global.regionId}}]}
+{{- else }}
     export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.regions}} + {{.Values.global.regionId}}]}
+{{- end }}
 
     if [ "$(ls -A /exporters/)" ]; then
       mkdir /usr/local/zeebe/exporters/
@@ -18,11 +21,21 @@ data:
     fi
 
     {{- if .Values.debug }}
-
     env
     {{- end }}
-
+    
+{{- if eq .Values.global.installationType "failBack" }}
+    if [$[${K8S_NAME##*-} % 2] == 0]
+    then
+      export ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT=26555
+      export ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS=""
+      trap : TERM INT; sleep infinity & wait
+    else
+      exec /usr/local/zeebe/bin/broker
+    fi
+{{- else }}
     exec /usr/local/zeebe/bin/broker
+{{- end }}
 
   broker-log4j2.xml: |
 {{- if .Values.log4j2 }}
