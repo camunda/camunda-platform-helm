@@ -31,7 +31,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 3.9.4
+    tag: 3.9.5
   env:
   - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
     value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}"
