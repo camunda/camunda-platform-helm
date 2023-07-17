@@ -25,7 +25,7 @@ data:
     {{- end }}
     
 {{- if eq .Values.global.installationType "failBack" }}
-    if [$[${K8S_NAME##*-} % 2] == 0]
+    if [ $[${K8S_NAME##*-} % 2] -eq 0 ]
     then
       export ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT=26555
       export ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS=""
