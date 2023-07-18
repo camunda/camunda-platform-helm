@@ -152,15 +152,12 @@ spec:
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
-        - name: config
-          mountPath: /usr/local/bin/startup.sh
-          subPath: startup.sh
         {{- if not ( eq .Values.persistenceType "local" ) }}
         - name: data
           mountPath: /usr/local/zeebe/data
         {{- end }}
         - name: exporters
-          mountPath: /exporters
+          mountPath: /usr/local/zeebe/exporters
         {{- if .Values.log4j2 }}
         - name: config
           mountPath: /usr/local/zeebe/config/log4j2.xml
@@ -178,10 +175,6 @@ spec:
           emptyDir:
             medium: "Memory"
         {{- end }}
-        - name: config
-          configMap:
-            name: {{ include "zeebe.fullname" . }}
-            defaultMode: {{ .Values.configMap.defaultMode }}
         - name: exporters
           emptyDir: {}
         {{- if .Values.extraVolumes}}
