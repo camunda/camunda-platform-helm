@@ -131,18 +131,11 @@ spec:
             cpu: 800m
             memory: 1200Mi
         volumeMounts:
-        - name: config
-          mountPath: /usr/local/bin/startup.sh
-          subPath: startup.sh
         - name: data
           mountPath: /usr/local/zeebe/data
         - name: exporters
-          mountPath: /exporters
+          mountPath: /usr/local/zeebe/exporters
       volumes:
-        - name: config
-          configMap:
-            name: camunda-platform-test-zeebe
-            defaultMode: 492
         - name: exporters
           emptyDir: {}
       affinity:

@@ -371,9 +371,9 @@ func (s *statefulSetTest) TestContainerSetLog4j2() {
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
 	s.Require().Equal(3, len(volumeMounts))
-	s.Require().Equal("config", volumeMounts[3].Name)
-	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[3].MountPath)
-	s.Require().Equal("broker-log4j2.xml", volumeMounts[3].SubPath)
+	s.Require().Equal("config", volumeMounts[2].Name)
+	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[2].MountPath)
+	s.Require().Equal("broker-log4j2.xml", volumeMounts[2].SubPath)
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumes() {
@@ -397,7 +397,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumes() {
 	volumes := statefulSet.Spec.Template.Spec.Volumes
 	s.Require().Equal(2, len(volumes))
 
-	extraVolume := volumes[2]
+	extraVolume := volumes[1]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
@@ -423,7 +423,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
 	s.Require().Equal(3, len(volumeMounts))
-	extraVolumeMount := volumeMounts[3]
+	extraVolumeMount := volumeMounts[2]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
@@ -450,15 +450,15 @@ func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
 	volumes := statefulSet.Spec.Template.Spec.Volumes
 	s.Require().Equal(2, len(volumes))
 
-	extraVolume := volumes[2]
+	extraVolume := volumes[1]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
 	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(4, len(volumeMounts))
-	extraVolumeMount := volumeMounts[3]
+	s.Require().Equal(3, len(volumeMounts))
+	extraVolumeMount := volumeMounts[2]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
@@ -660,7 +660,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
 	s.Require().Equal(2, len(volumeMounts))
-	dataVolumeMount := volumeMounts[1]
+	dataVolumeMount := volumeMounts[0]
 	s.Require().Equal("data", dataVolumeMount.Name)
 	s.Require().Equal("/usr/local/zeebe/data", dataVolumeMount.MountPath)
 
@@ -697,7 +697,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
 	}
 
 	volumes := statefulSet.Spec.Template.Spec.Volumes
-	s.Require().Equal(2, len(volumes))
+	s.Require().Equal(1, len(volumes))
 	for _, volumeMount := range volumeMounts {
 		s.Require().NotEqual("data", volumeMount.Name)
 	}

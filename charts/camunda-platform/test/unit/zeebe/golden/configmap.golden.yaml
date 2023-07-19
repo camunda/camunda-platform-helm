@@ -13,19 +13,4 @@ metadata:
     app.kubernetes.io/component: zeebe-broker
 apiVersion: v1
 data:
-  startup.sh: |
-    #!/usr/bin/env bash
-    set -eux -o pipefail
-
-    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-${K8S_NAME##*-}}
-
-    if [ "$(ls -A /exporters/)" ]; then
-      mkdir /usr/local/zeebe/exporters/
-      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
-    else
-      echo "No exporters available."
-    fi
-
-    exec /usr/local/zeebe/bin/broker
-
   broker-log4j2.xml: |
