@@ -45,6 +45,10 @@ identity:
           fsGroup: "@@null@@"
           runAsUser: "@@null@@"
 
+zeebe:
+  podSecurityContext:
+    fsGroup: "@@null@@"
+
 # omit the values below if elasticsearch.enabled is false
 elasticsearch:
   # test resources are disabled as they aren't pass on to the post-renderer, meaning they will not be deploy-able. this
