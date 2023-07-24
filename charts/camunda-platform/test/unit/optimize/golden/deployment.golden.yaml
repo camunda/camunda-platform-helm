@@ -98,4 +98,13 @@ spec:
           failureThreshold: 5
           timeoutSeconds: 1
         volumeMounts:
+        - name: config
+          mountPath: /optimize/config/environment-config.yaml
+          subPath: environment-config.yaml
       volumes:
+      - name: config
+        configMap:
+          name: camunda-platform-test-optimize
+          defaultMode: 256
+      securityContext:
+        fsGroup: 101

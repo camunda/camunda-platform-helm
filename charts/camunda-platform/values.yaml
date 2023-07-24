@@ -957,6 +957,13 @@ optimize:
   partitionCount: "3"
   # Env can be used to set extra environment variables in each Optimize container
   env: []
+  # EnvironmentConfig can be used to set options in optimize's environment-config.yaml file
+  environmentConfig: {}
+  # ConfigMap configuration which will be applied to the mounted config map.
+  configMap:
+    # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0400
   # Command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
   # ExtraVolumes can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates
@@ -985,7 +992,8 @@ optimize:
     managementPort: 8092
 
   # PodSecurityContext defines the security options the Optimize pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    fsGroup: 101
 
   # ContainerSecurityContext defines the security options the Optimize container should be run with
   containerSecurityContext: {}

@@ -616,6 +616,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `podLabels` |  Can be used to define extra Optimize pod labels | `{ }` |
 | | `partitionCount` |  Defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize | `"3"` |
 | | `env` |  Can be used to set extra environment variables in each Optimize container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
+| | `environmentConfig` |  can be used to set options in optimize's environment-config.yaml file | `{}` |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
 | | `extraVolumes` |  Can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` |  Can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |

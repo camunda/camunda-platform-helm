@@ -132,6 +132,9 @@ spec:
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
         {{- end }}
         volumeMounts:
+        - name: config
+          mountPath: /optimize/config/environment-config.yaml
+          subPath: environment-config.yaml
         {{- if .Values.extraVolumeMounts}}
           {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
@@ -139,6 +142,10 @@ spec:
       {{- .Values.sidecars | toYaml | nindent 6 }}
       {{- end }}
       volumes:
+      - name: config
+        configMap:
+          name: {{ include "optimize.fullname" . }}
+          defaultMode: {{ .Values.configMap.defaultMode }}
       {{- if .Values.extraVolumes}}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}

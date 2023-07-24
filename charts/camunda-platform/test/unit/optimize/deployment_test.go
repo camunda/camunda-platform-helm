@@ -276,9 +276,9 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 
 	// then
 	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(1, len(volumes))
+	s.Require().Equal(2, len(volumes))
 
-	extraVolume := volumes[0]
+	extraVolume := volumes[1]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
@@ -306,8 +306,8 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	s.Require().Equal(1, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(1, len(volumeMounts))
-	extraVolumeMount := volumeMounts[0]
+	s.Require().Equal(2, len(volumeMounts))
+	extraVolumeMount := volumeMounts[1]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
@@ -333,9 +333,9 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 
 	// then
 	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(1, len(volumes))
+	s.Require().Equal(2, len(volumes))
 
-	extraVolume := volumes[0]
+	extraVolume := volumes[1]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
@@ -345,8 +345,8 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal(1, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(1, len(volumeMounts))
-	extraVolumeMount := volumeMounts[0]
+	s.Require().Equal(2, len(volumeMounts))
+	extraVolumeMount := volumeMounts[1]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
