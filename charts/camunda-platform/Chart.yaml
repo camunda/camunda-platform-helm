@@ -73,4 +73,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "use new curator image"
+      description: "remove callback url suffix from optimize root redirect url"
+    - kind: changed
+      description: "disable operate client in connectors if inbound is disabled"
