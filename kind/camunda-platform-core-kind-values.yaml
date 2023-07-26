@@ -26,7 +26,13 @@ zeebe-gateway:
 connectors:
   enabled: true
   inbound:
-    mode: disabled
+    mode: "disabled"
+  # Remove the following env vars after the next release (current 8.2.8)
+  env:
+  - name: SPRING_MAIN_WEB-APPLICATION-TYPE
+    value: ""
+  - name: OPERATE_CLIENT_ENABLED
+    value: "false"
 
 # Configure elastic search to make it running for local development
 elasticsearch:
