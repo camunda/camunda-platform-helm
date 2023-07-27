@@ -1,7 +1,3 @@
----
-labels: camunda-platform, chore
----
-
 **Before opening the PR:**
 
 - [x] Run `make release.chores`
