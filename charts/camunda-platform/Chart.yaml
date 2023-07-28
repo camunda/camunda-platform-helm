@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.2.9
+version: 8.2.10
 appVersion: 8.2.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.2.9
+    version: 8.2.10
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.2.9
+    version: 8.2.10
     condition: "operate.enabled"
   - name: optimize
-    version: 8.2.9
+    version: 8.2.10
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.2.9
+    version: 8.2.10
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.2.9
+    version: 8.2.10
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.2.9
+    version: 8.2.10
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
@@ -71,8 +71,4 @@ annotations:
     - name: Camunda Platform 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "remove callback url suffix from optimize root redirect url"
-    - kind: changed
-      description: "disable operate client in connectors if inbound is disabled"
+  artifacthub.io/changes: ""
