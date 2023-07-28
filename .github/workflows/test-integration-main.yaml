@@ -45,17 +45,30 @@ jobs:
             cluster-location: GKE_ZONE
             workload-identity-provider: GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER
             service-account: GCP_AUTH_SERVICE_ACCOUNT
-        - name: OpenShift 4.10
+          if: true
+        - name: OpenShift 4.13
           type: openshift
+          version: 4.13
           platform: rosa
-          secret:
-            server: OPENSHIFT_URL_410
-            token: OPENSHIFT_TOKEN_410
+          if: true
+        - name: OpenShift 4.12
+          type: openshift
+          version: 4.12
+          platform: rosa
+          if: ${{ contains(github.event.*.labels.*.name, 'test-release') }}
+        - name: OpenShift 4.11
+          type: openshift
+          version: 4.11
+          platform: rosa
+          if: ${{ contains(github.event.*.labels.*.name, 'test-release') }}
+        exclude:
+        - test:
+            if: false
     env:
       TEST_CLUSTER_TYPE: "${{ matrix.test.type }}"
     steps:
     - uses: actions/checkout@v3
-    # TODO: Later, find a way to abstract the auth to different platforms.
+    # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.test.platform == 'gke'
       uses: ./.github/actions/gke-login
@@ -64,12 +77,20 @@ jobs:
         cluster-location: ${{ secrets[matrix.test.secret.cluster-location] }}
         workload-identity-provider: ${{ secrets[matrix.test.secret.workload-identity-provider] }}
         service-account: ${{ secrets[matrix.test.secret.service-account] }}
+    - name: Set OpenShift authentication vars
+      if: matrix.test.type == 'openshift'
+      run: |
+        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.test.version }} | tr -d '.')"
+        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_CLUSTER_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
+        echo "OPENSHIFT_CLUSTER_USERNAME=OPENSHIFT_CLUSTER_USERNAME_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
+        echo "OPENSHIFT_CLUSTER_PASSWORD=OPENSHIFT_CLUSTER_PASSWORD_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
     - name: Authenticate to OpenShift
       if: matrix.test.platform == 'rosa'
       uses: redhat-actions/oc-login@v1
       with:
-        openshift_server_url: ${{ secrets[matrix.test.secret.server] }}
-        openshift_token: ${{ secrets[matrix.test.secret.token] }}
+        openshift_server_url: ${{ secrets[env.OPENSHIFT_CLUSTER_URL] }}
+        openshift_username: ${{ secrets[env.OPENSHIFT_CLUSTER_USERNAME] }}
+        openshift_password: ${{ secrets[env.OPENSHIFT_CLUSTER_PASSWORD] }}
     - name: Set PR vars
       uses: ./.github/actions/pr-vars
     - name: Install env dependencies
