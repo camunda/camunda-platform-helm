@@ -71,8 +71,4 @@ annotations:
     - name: Camunda Platform 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "remove callback url suffix from optimize root redirect url"
-    - kind: changed
-      description: "disable operate client in connectors if inbound is disabled"
+  artifacthub.io/changes: ""
