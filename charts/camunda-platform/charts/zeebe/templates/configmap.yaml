@@ -20,10 +20,6 @@ data:
       echo "No exporters available."
     fi
 
-    export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH2_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
-    export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH2_ARGS_URL=http://elasticsearch-master.europe-west1-b.svc.cluster.local:9200
-    export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH2_ARGS_BULK_SIZE=1
-
     {{- if .Values.debug }}
     env
     {{- end }}
