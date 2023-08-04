@@ -31,7 +31,6 @@ connectors:
 # Configure elastic search to make it running for local development
 elasticsearch:
   replicas: 1
-  minimumMasterNodes: 1
   # Allow no backup for single node setups
   clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
 
