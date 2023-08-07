@@ -305,7 +305,8 @@ zeebe:
     maxUnavailable: 1
 
   # PodSecurityContext defines the security options the Zeebe broker pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    fsGroup: 1000
 
   # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
   containerSecurityContext: {}

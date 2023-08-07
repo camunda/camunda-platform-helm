@@ -145,6 +145,8 @@ spec:
             defaultMode: 492
         - name: exporters
           emptyDir: {}
+      securityContext:
+        fsGroup: 1000
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
