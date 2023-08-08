@@ -65,3 +65,8 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
+      - name: Simple smoke test
+        # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
+        run: |
+          sleep 10
+          make release.verify-components-version

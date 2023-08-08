@@ -8,4 +8,4 @@
 - [ ] Take a final look at the release commits (version bump and release notes)
 - [ ] Make sure that all checks in the PR passed
 - [ ] If everything in place, add `release` label to the PR
-- [ ] Follow up the release workflow and make sure it succeeded
+- [ ] Follow up the release workflow and make sure it succeeded (double-check the [releases page](https://github.com/camunda/camunda-platform-helm/releases))

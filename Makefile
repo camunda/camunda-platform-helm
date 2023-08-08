@@ -166,3 +166,7 @@ release.chores:
 	git push -fu origin release
 	@$(MAKE) release.generate-pr-url
 	git checkout main
+
+.PHONY: release.verify-components-version
+release.verify-components-version:
+	@bash scripts/verify-components-version.sh
