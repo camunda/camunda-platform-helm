@@ -72,3 +72,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "added ingress urls to the chart notes"
+    - kind: fixed
+      description: "correct backups endpoint in operate"
+    - kind: changed
+      description: "support non-root user by default in zeebe"
