@@ -25,7 +25,7 @@ identity:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
         repository: bitnami/postgresql
-        tag: 15.3.0
+        tag: 15.4.0
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
