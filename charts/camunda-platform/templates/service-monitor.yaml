@@ -14,10 +14,16 @@ spec:
       path: /actuator/prometheus
       port: http
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
-    {{- if .Values.identity.enabled -}}
+    {{- if .Values.global.identity.auth.enabled }}
     - honorLabels: true
       path: /actuator/prometheus
       port: metrics
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+    {{- end }}
+    {{- if .Values.optimize.enabled }}
+    - honorLabels: true
+      path: /actuator/prometheus
+      port: management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
     {{- end }}
 {{- end }}
