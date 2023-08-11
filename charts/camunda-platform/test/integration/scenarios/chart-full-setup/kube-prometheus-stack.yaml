@@ -2,8 +2,8 @@ prometheus:
   ingress:
     enabled: true
     hosts:
-      - grafana.local.distro.ultrawombat.com
+      - prometheus-{{ .Values.host }}
     tls:
-      - secretName: local-distro-ultrawombat-com
+      - secretName: integration-test
         hosts:
-          - grafana.local.distro.ultrawombat.com
+          - prometheus-{{ .Values.host }}
