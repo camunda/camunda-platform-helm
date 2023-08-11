@@ -26,4 +26,10 @@ spec:
       port: management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
     {{- end }}
+    {{- if .Values.webModeler.enabled }}
+    - honorLabels: true
+      path: /metrics
+      port: http-management
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+    {{- end }}
 {{- end }}
