@@ -1,0 +1,9 @@
+prometheus:
+  ingress:
+    enabled: true
+    hosts:
+      - grafana.local.distro.ultrawombat.com
+    tls:
+      - secretName: local-distro-ultrawombat-com
+        hosts:
+          - grafana.local.distro.ultrawombat.com
