@@ -7,3 +7,6 @@ prometheus:
       - secretName: integration-test
         hosts:
           - prometheus-{{ .Values.host }}
+prometheusOperator:
+  admissionsWebhooks:
+    enabled: false
