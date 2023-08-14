@@ -199,7 +199,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
   {{- if .Values.webModeler.ingress.enabled }}
   {{- $proto := ternary "https" "http" .Values.webModeler.ingress.webapp.tls.enabled -}}
   - WebModeler WebApp: {{ $proto }}://{{ .Values.webModeler.ingress.webapp.host }}
-  {{- $proto := ternary "https" "http" .Values.webModeler.ingress.websockets.tls.enabled -}}
+  {{- $proto := ternary "wss" "ws" .Values.webModeler.ingress.websockets.tls.enabled -}}
   - WebModeler WebSockets: {{ $proto }}://{{ .Values.webModeler.ingress.websockets.host }}
   {{- end }}
 {{- end }}
