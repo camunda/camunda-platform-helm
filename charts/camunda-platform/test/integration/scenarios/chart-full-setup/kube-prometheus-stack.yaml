@@ -10,6 +10,3 @@ prometheus:
 prometheusOperator:
   admissionsWebhooks:
     enabled: false
-global:
-  rbac:
-    create: false
