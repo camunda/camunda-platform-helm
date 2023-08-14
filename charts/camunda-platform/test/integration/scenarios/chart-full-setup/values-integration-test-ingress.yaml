@@ -70,3 +70,14 @@ zeebe-gateway:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
+
+console:
+  enabled: true
+  contextPath: "/"
+  image:
+    pullSecrets:
+    - name: index-docker-io
+    - name: registry-camunda-cloud
+  env:
+  - name: NODE_ENV
+    value: test

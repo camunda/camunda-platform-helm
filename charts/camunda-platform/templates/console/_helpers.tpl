@@ -5,23 +5,12 @@ Expand the name of the chart.
 {{- default .Chart.Name .Values.console.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
 {{- define "console.fullname" -}}
-{{- if .Values.console.fullnameOverride }}
-{{- .Values.console.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.console.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-{{- end }}
-{{- end }}
+{{/* TODO: Refactor this when more sub-charts are flatten and moved to the main chart. */}}
+    {{- $consoleValues := deepCopy . -}}
+    {{- $_ := set $consoleValues.Values "nameOverride" "console" -}}
+    {{- include "camundaPlatform.fullname" $consoleValues -}}
+{{- end -}}
 
 {{/*
 Create chart name and version as used by the chart label.
@@ -31,24 +20,27 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
+Defines extra labels for console.
+*/}}
+{{- define "console.extraLabels" -}}
+app.kubernetes.io/component: console
+{{- end -}}
+
+{{/*
 Common labels
 */}}
 {{- define "console.labels" -}}
-helm.sh/chart: {{ include "console.chart" . }}
-{{ include "console.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
+{{- template "camundaPlatform.labels" . }}
+{{ template "console.extraLabels" . }}
+{{- end -}}
 
 {{/*
 Selector labels
 */}}
-{{- define "console.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "console.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
+{{- define "console.matchLabels" -}}
+{{- template "camundaPlatform.matchLabels" . }}
+{{ template "console.extraLabels" . }}
+{{- end -}}
 
 {{/*
 Create the name of the service account to use

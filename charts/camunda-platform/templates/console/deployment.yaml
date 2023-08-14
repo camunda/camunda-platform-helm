@@ -9,7 +9,7 @@ spec:
   replicas: {{ .Values.console.replicaCount }}
   selector:
     matchLabels:
-      {{- include "console.selectorLabels" . | nindent 6 }}
+      {{- include "console.matchLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.console.podAnnotations }}
@@ -17,9 +17,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "console.selectorLabels" . | nindent 8 }}
+        {{- include "console.matchLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.console.imagePullSecrets }}
+      {{- with .Values.console.image.pullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -32,6 +32,12 @@ spec:
             {{- toYaml .Values.console.securityContext | nindent 12 }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
           imagePullPolicy: {{ .Values.console.image.pullPolicy }}
+          env:
+            - name: NODE_ENV
+              value: production
+          {{- if .Values.console.env}}
+            {{ .Values.console.env | toYaml | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.console.service.port }}

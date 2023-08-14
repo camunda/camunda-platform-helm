@@ -13,5 +13,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "console.selectorLabels" . | nindent 4 }}
+    {{- include "console.matchLabels" . | nindent 4 }}
 {{- end }}
