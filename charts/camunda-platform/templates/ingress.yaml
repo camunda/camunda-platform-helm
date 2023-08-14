@@ -18,6 +18,15 @@ spec:
     - http:
     {{- end }}
         paths:
+          {{- if and .Values.console.enabled .Values.console.contextPath }}
+          - backend:
+              service:
+                name: {{ template "console.fullname" . }}
+                port:
+                  number: {{ .Values.console.service.port }}
+            path: {{ .Values.console.contextPath }}
+            pathType: Prefix
+          {{- end }}
           {{- if .Values.identity.enabled }}
           {{- if or .Values.identity.keycloak.enabled .Values.global.identity.keycloak.internal }}
           - backend:
