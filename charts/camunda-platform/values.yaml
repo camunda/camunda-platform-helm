@@ -2060,6 +2060,7 @@ console:
   enabled: false
 
   # Example for managed Camunda Platform releases/deployments.
+  managed: {}
 
   # Method 01: Plain
   # The full config is passed to Console as a ConfigMap.

@@ -52,6 +52,19 @@ spec:
           #     port: http
           resources:
             {{- toYaml .Values.console.resources | nindent 12 }}
+          volumeMounts:
+            - name: console-admin-config
+              mountPath: /var/run/config
+          {{- if .Values.console.extraVolumeMounts }}
+            {{- .Values.console.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: console-admin-config
+          configMap:
+            name: {{ include "console.fullname" . }}-admin
+      {{- if .Values.console.extraVolumes }}
+        {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
       {{- with .Values.console.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
