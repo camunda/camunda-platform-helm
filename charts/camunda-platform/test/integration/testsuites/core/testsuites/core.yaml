@@ -258,7 +258,7 @@ testcases:
   - name: Check prometheus could query containers
     type: http
     method: GET
-    url: "http://{{ .coreVars.baseURLs.prometheus }}/api/v1/query?query=system_cpu_count"
+    url: "http://{{ .coreVars.baseURLs.prometheus }}/api/v1/query?query=system_cpu_count%7Bnamespace%3D%22{{ .TEST_NAMESPACE }}%22%7D"
     retry: 4
     delay: 15
     # info: |
