@@ -23,6 +23,6 @@ coreVars:
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
     zeebeGateway: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
-    prometheus: "prometheus-{{ .TEST_INGRESS_HOST }}"
+    prometheus: "kube-prometheus-stack-prometheus.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""

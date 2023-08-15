@@ -1,9 +1,0 @@
-prometheus:
-  ingress:
-    enabled: true
-    hosts:
-      - prometheus-{{ .Values.host }}
-    tls:
-      - secretName: integration-test
-        hosts:
-          - prometheus-{{ .Values.host }}
