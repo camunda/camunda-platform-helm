@@ -6,6 +6,8 @@ on:
     - '.github/workflows/test-integration-main.yaml'
     - '.tool-versions'
     - 'charts/**'
+  pull_request_target:
+    types: [opened, closed, reopened]
   workflow_dispatch: { }
 
 concurrency:
@@ -13,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
+  CAMUNDA_DISTRO_TEST_PERSISTENT: ${{ contains(github.event.*.labels.*.name, 'test-persistent') }}
   KUBECONFIG: .github/config/kubeconfig
   TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
   # Docker Hub auth to avoid image pull rate limit.
@@ -93,6 +95,8 @@ jobs:
         openshift_password: ${{ secrets[env.OPENSHIFT_CLUSTER_PASSWORD] }}
     - name: Set PR vars
       uses: ./.github/actions/pr-vars
+      with:
+        persistent: ${{ env.CAMUNDA_DISTRO_TEST_PERSISTENT }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v2
     - name: Add Helm repos and dependencies
@@ -102,6 +106,9 @@ jobs:
     - name: Create test namespace
       run: |
         echo $TEST_NAMESPACE
+        kubectl delete ns --ignore-not-found=true \
+          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
@@ -119,7 +126,11 @@ jobs:
         GITHUB_DEPLOYMENT_HOST_BASE: "${{ matrix.test.platform }}-${{ github.event.pull_request.number }}.pr.distro.ultrawombat.com"
       id: ingress
       run: |
-        echo "host=${{ env.GITHUB_PR_HEAD_SHA_SHORT }}-${{ env.GITHUB_DEPLOYMENT_HOST_BASE }}" >> $GITHUB_OUTPUT
+        INGRESS_HOST="${{ env.GITHUB_DEPLOYMENT_HOST_BASE }}"
+        if [[ "${{ env.CAMUNDA_DISTRO_TEST_PERSISTENT }}" == "false" ]]; then
+          INGRESS_HOST="${{ env.GITHUB_PR_HEAD_SHA_SHORT }}-${INGRESS_HOST}"
+        fi
+        echo "host=${INGRESS_HOST}" >> $GITHUB_OUTPUT
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@v1
       id: deployment
@@ -168,7 +179,7 @@ jobs:
     # Even using GH app token with deployment write access doesn't work.
     # https://github.com/bobheadxi/deployments/issues/145
     - name: Cleanup GitHub deployment
-      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      if: always() && (env.CAMUNDA_DISTRO_TEST_PERSISTENT == 'false' || matrix.test.type != 'kubernetes')
       uses: bobheadxi/deployments@v1
       with:
         step: deactivate-env
@@ -176,9 +187,32 @@ jobs:
         env: ${{ steps.deployment.outputs.env }}
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Cleanup test namespace
-      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      if: always() && (env.CAMUNDA_DISTRO_TEST_PERSISTENT == 'false' || matrix.test.type != 'kubernetes')
       run: |
-        kubectl delete ns \
-          --ignore-not-found=true \
+        kubectl delete ns --ignore-not-found=true \
+          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+
+  clean:
+    name: Clean up persistent resources
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    steps:
+    - name: Cleanup GitHub deployment
+      if: always()
+      uses: bobheadxi/deployments@v1
+      with:
+        step: deactivate-env
+        token: ${{ secrets.GITHUB_TOKEN }}
+        env: ${{ steps.deployment.outputs.env }}
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Cleanup test namespace
+      if: always()
+      run: |
+        kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
           -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
