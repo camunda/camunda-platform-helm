@@ -47,6 +47,7 @@ tasks:
         --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
     - echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> ../../testsuites/base/files/variables.env
+    - echo "VENOM_VAR_TEST_NAMESPACE=${TEST_NAMESPACE}" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
       ../../testsuites/base/files/variables.env
