@@ -70,3 +70,6 @@ zeebe-gateway:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
+
+elasticsearch:
+  maxUnavailable: 0
