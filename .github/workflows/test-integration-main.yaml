@@ -29,7 +29,7 @@ env:
 jobs:
   test:
     name: Chart full setup - ${{ matrix.test.name }}
-    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.action != 'closed' && github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -196,13 +196,22 @@ jobs:
       id-token: write
       deployments: write
     steps:
+    - uses: actions/checkout@v3
+    # Persistent resources are only on GKE.
+    - name: Authenticate to GKE
+      if: matrix.test.platform == 'gke'
+      uses: ./.github/actions/gke-login
+      with:
+        cluster-name: GKE_CLUSTER
+        cluster-location: GKE_ZONE
+        workload-identity-provider: GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER
+        service-account: GCP_AUTH_SERVICE_ACCOUNT
     - name: Cleanup GitHub deployment
       if: always()
       uses: bobheadxi/deployments@v1
       with:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
-        env: ${{ steps.deployment.outputs.env }}
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Cleanup test namespace
       if: always()
