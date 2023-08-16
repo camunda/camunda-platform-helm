@@ -13,6 +13,7 @@ preflightVars:
 
 coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
+  testNamespace: "{{ .TEST_NAMESPACE }}"
   baseURLs:
     keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth"
     identity: "https://{{ .TEST_INGRESS_HOST }}/identity"

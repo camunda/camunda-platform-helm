@@ -17,6 +17,7 @@ tasks:
     cmds:
     # Add imagePullSecrets if needed.
     - cmd: |
+        echo "Jesse: TEST_NAMESPACE in testsuite-deploy-taskfile.yaml is : $TEST_NAMESPACE"
         if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then
             cp -a $TEST_PARENT/base/patches/job-image-pull-secrets.yaml $TEST_DIR
             # Kustomize doesn't support dir with edit/patch.
