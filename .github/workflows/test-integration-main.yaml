@@ -6,6 +6,8 @@ on:
     - '.github/workflows/test-integration-main.yaml'
     - '.tool-versions'
     - 'charts/**'
+  pull_request_target:
+    types: [opened, closed, reopened]
   workflow_dispatch: { }
 
 concurrency:
@@ -13,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
+  CAMUNDA_DISTRO_TEST_PERSISTENT: ${{ contains(github.event.*.labels.*.name, 'test-persistent') }}
   KUBECONFIG: .github/config/kubeconfig
   TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
   # Docker Hub auth to avoid image pull rate limit.
@@ -27,7 +29,7 @@ env:
 jobs:
   test:
     name: Chart full setup - ${{ matrix.test.name }}
-    if: github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.action != 'closed' && github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -92,7 +94,11 @@ jobs:
         openshift_username: ${{ secrets[env.OPENSHIFT_CLUSTER_USERNAME] }}
         openshift_password: ${{ secrets[env.OPENSHIFT_CLUSTER_PASSWORD] }}
     - name: Set PR vars
+      id: vars
       uses: ./.github/actions/pr-vars
+      with:
+        persistent: ${{ env.CAMUNDA_DISTRO_TEST_PERSISTENT }}
+        ingress-hostname-base: ${{ matrix.test.platform }}-${{ github.event.pull_request.number }}.pr.distro.ultrawombat.com
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v2
     - name: Add Helm repos and dependencies
@@ -102,9 +108,14 @@ jobs:
     - name: Create test namespace
       run: |
         echo $TEST_NAMESPACE
+        kubectl delete ns --ignore-not-found=true \
+          -l github-pr-id=${{ github.event.pull_request.number }} \
+          -l test-persistent=true
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+        kubectl label ns $TEST_NAMESPACE github-pr-id=${{ github.event.pull_request.number }}
+        kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.CAMUNDA_DISTRO_TEST_PERSISTENT }}
     - name: Copy PRs wildcard certificate
       # TODO: Use a declarative approach to copy/replicate PRs wildcard certificate.
       run: |
@@ -114,12 +125,6 @@ jobs:
         kubectl get secret -n distribution-team pr-distro-ultrawombat-com -o yaml |
           yq '.metadata.name = "camunda-platform-zeebe-gateway", .metadata.namespace = strenv(TEST_NAMESPACE)' |
           kubectl apply -f -
-    - name: Export Ingress hostname
-      env:
-        GITHUB_DEPLOYMENT_HOST_BASE: "${{ matrix.test.platform }}-${{ github.event.pull_request.number }}.pr.distro.ultrawombat.com"
-      id: ingress
-      run: |
-        echo "host=${{ env.GITHUB_PR_HEAD_SHA_SHORT }}-${{ env.GITHUB_DEPLOYMENT_HOST_BASE }}" >> $GITHUB_OUTPUT
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@v1
       id: deployment
@@ -131,12 +136,12 @@ jobs:
     - name: Pre setup
       timeout-minutes: 5
       env:
-        TEST_INGRESS_HOST: ${{ steps.ingress.outputs.host }}
+        TEST_INGRESS_HOST: ${{ steps.vars.outputs.test-ingress-host }}
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
     - name: Setup Camunda Platform
       env:
-        TEST_HELM_EXTRA_ARGS: "--set global.ingress.host=${{ steps.ingress.outputs.host }}"
+        TEST_HELM_EXTRA_ARGS: "--set global.ingress.host=${{ steps.vars.outputs.test-ingress-host }}"
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
     - name: Post setup
@@ -149,7 +154,7 @@ jobs:
         step: finish
         token: ${{ secrets.GITHUB_TOKEN }}
         status: ${{ job.status }}
-        env_url: https://${{ steps.ingress.outputs.host }}
+        env_url: https://${{ steps.vars.outputs.test-ingress-host }}
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env: ${{ steps.deployment.outputs.env }}
         ref: ${{ github.event.pull_request.head.sha }}
@@ -168,7 +173,7 @@ jobs:
     # Even using GH app token with deployment write access doesn't work.
     # https://github.com/bobheadxi/deployments/issues/145
     - name: Cleanup GitHub deployment
-      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      if: always() && (env.CAMUNDA_DISTRO_TEST_PERSISTENT == 'false' || matrix.test.type != 'kubernetes')
       uses: bobheadxi/deployments@v1
       with:
         step: deactivate-env
@@ -176,9 +181,41 @@ jobs:
         env: ${{ steps.deployment.outputs.env }}
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Cleanup test namespace
-      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
+      if: always() && (env.CAMUNDA_DISTRO_TEST_PERSISTENT == 'false' || matrix.test.type != 'kubernetes')
       run: |
-        kubectl delete ns \
-          --ignore-not-found=true \
+        kubectl delete ns --ignore-not-found=true \
+          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+
+  clean:
+    name: Clean up persistent resources
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    steps:
+    - uses: actions/checkout@v3
+    # Persistent resources are only on GKE.
+    - name: Authenticate to GKE
+      if: matrix.test.platform == 'gke'
+      uses: ./.github/actions/gke-login
+      with:
+        cluster-name: GKE_CLUSTER
+        cluster-location: GKE_ZONE
+        workload-identity-provider: GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER
+        service-account: GCP_AUTH_SERVICE_ACCOUNT
+    - name: Cleanup GitHub deployment
+      if: always()
+      uses: bobheadxi/deployments@v1
+      with:
+        step: deactivate-env
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Cleanup test namespace
+      if: always()
+      run: |
+        kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
           -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
