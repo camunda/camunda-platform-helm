@@ -5,14 +5,22 @@ inputs:
     description: Don't use changing vars like SHA commit
     # TODO: Change that to real bool when it's supported in GHA.
     default: "false"
+  ingress-hostname-base:
+    description: The base of the Ingress hostname.
+# NOTE: This is not an exclusive list, some vars are exported as env var not an output.
+outputs:
+  test-ingress-host:
+    description: "Ingress hostname that will be used in the test"
+    value: ${{ steps.pr-vars.outputs.test-ingress-host }}
 
 runs:
   using: composite
   steps:
   - name: Set PR vars
+    id: pr-vars
     shell: bash
     run: |
-      sudo apt -qq install -y pwgen
+      sudo apt -qq install -o=Dpkg::Use-Pty=0 -y pwgen
       GITHUB_PR_HEAD_SHA_SHORT=$(echo ${{ github.event.pull_request.head.sha }} | cut -c 1-7)
       # NOTE: We should use the matrix job id var once it's available.
       # https://github.com/orgs/community/discussions/40291
@@ -26,4 +34,14 @@ runs:
       if [[ "${{ inputs.persistent }}" == 'false' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-sha-$GITHUB_PR_HEAD_SHA_SHORT-run-${{ github.run_id }}-sfx-$GITHUB_WORKFLOW_JOB_ID"
       fi
-      echo "TEST_NAMESPACE=$TEST_NAMESPACE" >> $GITHUB_ENV
+      echo "${TEST_NAMESPACE}"
+      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" >> $GITHUB_ENV
+
+      # Set Ingress hostname
+      TEST_INGRESS_HOST="${{ inputs.ingress-hostname-base }}"
+      if [[ "${{ inputs.persistent }}" == "false" ]]; then
+        TEST_INGRESS_HOST="${GITHUB_PR_HEAD_SHA_SHORT}-${TEST_INGRESS_HOST}"
+      fi
+      # The var is needed in some non-shell steps.
+      echo "${TEST_INGRESS_HOST}"
+      echo "test-ingress-host=${TEST_INGRESS_HOST}" >> $GITHUB_OUTPUT
