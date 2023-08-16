@@ -30,7 +30,7 @@ includes:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
       testID: core
-      testNamespace: {{ .TEST_NAMESPACE }}
+      testNamespace: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
 
 tasks:
   setup.pre:
