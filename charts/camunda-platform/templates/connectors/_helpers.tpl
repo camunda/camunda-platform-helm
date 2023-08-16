@@ -45,7 +45,6 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- template "camundaPlatform.matchLabels" . }}
 {{ template "connectors.extraLabels" . }}
 {{- end -}}
-
 {{/*
 [connectors] Create the name of the service account to use
 */}}

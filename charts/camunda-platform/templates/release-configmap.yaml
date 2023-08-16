@@ -6,50 +6,6 @@ metadata:
     {{- include "camundaPlatform.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
+  {{/* NOTE: the "info" config will be simplified when we fully moved to a flat-chart structure */}}
   info: |
-    - name: {{ .Release.Name }}
-      namespace: {{ .Release.Namespace }}
-      version: {{ .Chart.Version }}
-      components:
-      {{ if .Values.global.ingress.enabled }}
-      {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-      {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host -}}
-
-      {{- if .Values.console.enabled -}}
-      - name: Console
-        url: {{ $baseURL }}{{ .Values.console.contextPath }}
-      {{- end }}
-      {{ if .Values.identity.keycloak.enabled -}}
-      - name: Keycloak
-        url: {{ $baseURL }}{{ .Values.global.identity.keycloak.contextPath }}
-      {{- end }}
-      {{ if .Values.identity.enabled -}}
-      - name: Identity
-        url: {{ $baseURL }}{{ .Values.identity.contextPath }}
-      {{- end }}
-      {{ if .Values.operate.enabled -}}
-      - name: Operate
-        url: {{ $baseURL }}{{ .Values.operate.contextPath }}
-      {{- end }}
-      {{ if .Values.optimize.enabled -}}
-      - name: Optimize
-        url: {{ $baseURL }}{{ .Values.optimize.contextPath }}
-      {{- end }}
-      {{ if .Values.tasklist.enabled -}}
-      - name: Tasklist
-        url: {{ $baseURL }}{{ .Values.tasklist.contextPath }}
-      {{- end }}
-      {{ if .Values.webModeler.enabled -}}
-      - name: WebModeler WebApp
-        url: {{ $baseURL }}{{ .Values.webModeler.contextPath }}
-      {{ $proto := ternary "wss" "ws" .Values.global.ingress.tls.enabled -}}
-      {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host -}}
-      - name: WebModeler WebSockets
-        url: {{ $baseURL }}{{ include "webModeler.websocketContextPath" . }}
-      {{- end }}
-      {{- if index .Values "zeebe-gateway" "ingress" "enabled" }}
-      - name: Zeebe Gateway
-        url: grpc://{{ tpl (index .Values "zeebe-gateway" "ingress" "host") $ }}
-      {{- end }}
-
-      {{- end }}
+    {{- include "camundaPlatform.releaseInfo" . | nindent 4 }}
