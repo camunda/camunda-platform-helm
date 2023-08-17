@@ -41,3 +41,14 @@ Defines match labels for tasklist, which are extended by sub-charts and should b
 {{- template "camundaPlatform.matchLabels" . }}
 {{ template "tasklist.extraLabels" . }}
 {{- end -}}
+
+{{/*
+[tasklist] Create the name of the service account to use
+*/}}
+{{- define "tasklist.serviceAccountName" -}}
+{{- if .Values.serviceAccount.enabled }}
+{{- default (include "tasklist.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
