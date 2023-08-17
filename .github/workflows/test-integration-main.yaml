@@ -29,7 +29,7 @@ env:
 jobs:
   test:
     name: Chart full setup - ${{ matrix.test.name }}
-    if: github.event.action != 'closed' && github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.action != 'closed') && github.ref == 'refs/heads/main' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -70,7 +70,7 @@ jobs:
       TEST_CLUSTER_TYPE: "${{ matrix.test.type }}"
     steps:
     - run: |
-        echo "${{ github.event.action }}"
+        echo "action: ${{ github.event.action }}"
     - uses: actions/checkout@v3
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
@@ -198,7 +198,7 @@ jobs:
       deployments: write
     steps:
     - run: |
-        echo "${{ github.event.action }}"
+        echo "action: ${{ github.event.action }}"
     - uses: actions/checkout@v3
     # Persistent resources are only on GKE.
     - name: Authenticate to GKE
@@ -214,6 +214,7 @@ jobs:
       with:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
+        env: "pr-${{ github.event.pull_request.number }}-gke"
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Cleanup test namespace
       if: always()
