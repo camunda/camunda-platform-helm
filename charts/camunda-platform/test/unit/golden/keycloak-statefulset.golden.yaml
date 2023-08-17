@@ -54,7 +54,7 @@ spec:
           - sh
           - -c
           - cp -a /app/keycloak-theme/* /mnt
-          image: 'camunda/identity:8.2.11'
+          image: 'camunda/identity:8.2.12'
           imagePullPolicy: 'IfNotPresent'
           name: copy-camunda-theme
           volumeMounts:
