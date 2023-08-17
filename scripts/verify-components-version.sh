@@ -1,7 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+#
 # Check if latest chart version matches the latest release.
+#
+
+helm repo add camunda https://helm.camunda.io
 helm repo update
 chart_main_version="$(yq '.version' charts/camunda-platform/Chart.yaml)"
 components_versions="$(helm template camunda/camunda-platform | grep -Po '(?<=helm.sh/chart: ).+' | sort | uniq)"
