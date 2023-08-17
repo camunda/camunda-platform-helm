@@ -77,4 +77,6 @@ jobs:
         # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
         run: |
           sleep 10
+          helm repo add camunda https://helm.camunda.io
+          helm repo update
           make release.verify-components-version
