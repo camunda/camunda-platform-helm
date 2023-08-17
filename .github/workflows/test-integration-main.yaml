@@ -69,7 +69,7 @@ jobs:
     env:
       TEST_CLUSTER_TYPE: "${{ matrix.test.type }}"
     steps:
-    - run |
+    - run: |
         echo "${{ github.event.action }}"
     - uses: actions/checkout@v3
     # TODO: Later, find a way to abstract the auth for different platforms.
@@ -197,7 +197,7 @@ jobs:
       id-token: write
       deployments: write
     steps:
-    - run |
+    - run: |
         echo "${{ github.event.action }}"
     - uses: actions/checkout@v3
     # Persistent resources are only on GKE.
