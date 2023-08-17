@@ -4,6 +4,86 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "add console self-managed initial support"
+        - kind: fixed
+          description: "set missing tasklist service account"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.2.x
+    created: "2023-08-17T20:38:50.509860787Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.2.12
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.2.12
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.2.12
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.2.12
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.2.12
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.2.12
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.3
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: 08da5f9ba9dcffa30eff4cdca08c56403e0cfa176e4f521735c392632d8d3985
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.2.12/camunda-platform-8.2.12.tgz
+    version: 8.2.12
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "added ingress urls to the chart notes"
         - kind: fixed
           description: "correct backups endpoint in operate"
@@ -6137,4 +6217,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-08-09T16:50:37.298940139Z"
+generated: "2023-08-17T20:38:50.510742002Z"
