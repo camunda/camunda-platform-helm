@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.2.11
+version: 8.2.12
 appVersion: 8.2.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.2.11
+    version: 8.2.12
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.2.11
+    version: 8.2.12
     condition: "operate.enabled"
   - name: optimize
-    version: 8.2.11
+    version: 8.2.12
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.2.11
+    version: 8.2.12
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.2.11
+    version: 8.2.12
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.2.11
+    version: 8.2.12
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
@@ -73,8 +73,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "added ingress urls to the chart notes"
+      description: "add console self-managed initial support"
     - kind: fixed
-      description: "correct backups endpoint in operate"
-    - kind: changed
-      description: "support non-root user by default in zeebe"
+      description: "set missing tasklist service account"
