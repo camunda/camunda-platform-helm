@@ -823,6 +823,15 @@ tasklist:
   # ExtraVolumeMounts can be used to mount extra volumes for the Tasklist pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
 
+  # ServiceAccount configuration for the service account where the Tasklist pods are assigned to
+  serviceAccount:
+    # ServiceAccount.enabled if true, enables the Tasklist service account
+    enabled: true
+    # ServiceAccount.name can be used to set the name of the Tasklist service account
+    name: ""
+    # ServiceAccount.annotations can be used to set the annotations of the Tasklist service account
+    annotations: {}
+
   # PodSecurityContext defines the security options the Tasklist pod should be run with
   podSecurityContext: {}
 

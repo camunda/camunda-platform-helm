@@ -559,6 +559,10 @@ For more information about Tasklist, visit
 | | `graphqlPlaygroundEnabled` | Can be set to include the credentials in each request, should be set to "include" if GraphQl playground is enabled | `""` |
 | | `extraVolumes` | Can be used to define extra volumes for the Tasklist pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the Tasklist pods, useful for tls and self-signed certificates | `[]` |
+| | `serviceAccount` | Configuration for the service account where the Tasklist pods are assigned to | |
+| | `serviceAccount.enabled` | If true, enables the Tasklist service account | `true` |
+| | `serviceAccount.name` | Can be used to set the name of the Tasklist service account | `""` |
+| | `serviceAccount.annotations` | Can be used to set the annotations of the Tasklist service account | `{ }` |
 | | `podSecurityContext` | Defines the security options the Tasklist pod should be run with | `{ }` |
 | | `containerSecurityContext` | Defines the security options the Tasklist container should be run with | `{ }` |
 | | `startupProbe` | StartupProbe configuration | |

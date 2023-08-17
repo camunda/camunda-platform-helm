@@ -165,6 +165,9 @@ spec:
       {{- if .Values.extraVolumes}}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
       {{- if .Values.podSecurityContext }}
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- end }}
