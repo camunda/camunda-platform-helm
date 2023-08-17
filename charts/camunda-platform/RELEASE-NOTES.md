@@ -2,18 +2,18 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-8.2.11"></a>
-## [camunda-platform-8.2.11](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.2.10...camunda-platform-8.2.11) (2023-08-08)
+<a name="camunda-platform-8.2.12"></a>
+## [camunda-platform-8.2.12](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.2.11...camunda-platform-8.2.12) (2023-08-17)
+
+### Ci
+
+* support persistent with pr labels ([#837](https://github.com/camunda/camunda-platform-helm/issues/837))
 
 ### Feat
 
-* added ingress urls to the chart notes ([#749](https://github.com/camunda/camunda-platform-helm/issues/749))
+* add console self-managed initial support ([#835](https://github.com/camunda/camunda-platform-helm/issues/835))
 
 ### Fix
 
-* correct backups endpoint in operate ([#814](https://github.com/camunda/camunda-platform-helm/issues/814))
-
-### Refactor
-
-* support non-root user by default in zeebe ([#778](https://github.com/camunda/camunda-platform-helm/issues/778))
+* set missing tasklist service account ([#842](https://github.com/camunda/camunda-platform-helm/issues/842))
 

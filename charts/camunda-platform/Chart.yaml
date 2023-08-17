@@ -73,8 +73,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "added ingress urls to the chart notes"
+      description: "add console self-managed initial support"
     - kind: fixed
-      description: "correct backups endpoint in operate"
-    - kind: changed
-      description: "support non-root user by default in zeebe"
+      description: "set missing tasklist service account"
