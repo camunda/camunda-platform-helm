@@ -69,6 +69,8 @@ jobs:
     env:
       TEST_CLUSTER_TYPE: "${{ matrix.test.type }}"
     steps:
+    - run |
+        echo "${{ github.event.action }}"
     - uses: actions/checkout@v3
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
@@ -109,8 +111,7 @@ jobs:
       run: |
         echo $TEST_NAMESPACE
         kubectl delete ns --ignore-not-found=true \
-          -l github-pr-id=${{ github.event.pull_request.number }} \
-          -l test-persistent=true
+          -l "github-pr-id=${{ github.event.pull_request.number }},test-persistent=true"
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
@@ -196,15 +197,17 @@ jobs:
       id-token: write
       deployments: write
     steps:
+    - run |
+        echo "${{ github.event.action }}"
     - uses: actions/checkout@v3
     # Persistent resources are only on GKE.
     - name: Authenticate to GKE
       uses: ./.github/actions/gke-login
       with:
-        cluster-name: GKE_CLUSTER
-        cluster-location: GKE_ZONE
-        workload-identity-provider: GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER
-        service-account: GCP_AUTH_SERVICE_ACCOUNT
+        cluster-name: ${{ secrets.GKE_CLUSTER }}
+        cluster-location: ${{ secrets.GKE_ZONE }}
+        workload-identity-provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
+        service-account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
     - name: Cleanup GitHub deployment
       if: always()
       uses: bobheadxi/deployments@v1
@@ -216,5 +219,4 @@ jobs:
       if: always()
       run: |
         kubectl delete ns --ignore-not-found=true \
-          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
-          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+          -l "github-pr-id=${{ github.event.pull_request.number }},test-persistent=true"
