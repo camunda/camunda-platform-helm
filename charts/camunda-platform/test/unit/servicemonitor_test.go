@@ -85,7 +85,10 @@ func TestGoldenServiceMonitorModelerDefaults(t *testing.T) {
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "web-modeler-service-monitor",
 		Templates:      []string{"templates/service-monitor/web-modeler-service-monitor.yaml"},
-		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true",
+			"webModeler.enabled": "true",
+			"webModeler.restapi.mail.fromAddress": "test@test.com",
+		},
 	})
 }
 
