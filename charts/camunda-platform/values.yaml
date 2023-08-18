@@ -2066,7 +2066,7 @@ connectors:
 # TODO: Update Console template to match the values when the 1st dev iteration is done.
 console:
   # Enabled if true, the Console deployment and its related resources are deployed via a helm release
-  enabled: false
+  enabled: true
 
   # Example for managed Camunda Platform releases/deployments.
   managed: {}
