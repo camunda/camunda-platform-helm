@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: tasklist
   endpoints:
     - honorLabels: true
-      {{- if .Values.tasklist.ingress.enabled -}}
+      {{- if .Values.tasklist.ingress.enabled }}
       path: /actuator/prometheus
       {{- else }}
       path: {{ .Values.tasklist.contextPath }}/actuator/prometheus
