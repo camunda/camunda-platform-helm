@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestGoldenServiceMonitorDefaults(t *testing.T) {
+func TestGoldenServiceMonitorOperateDefaults(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../")
@@ -35,8 +35,120 @@ func TestGoldenServiceMonitorDefaults(t *testing.T) {
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "service-monitor",
-		Templates:      []string{"templates/service-monitor.yaml"},
+		GoldenFileName: "operate-service-monitor",
+		Templates:      []string{"templates/service-monitor/operate-service-monitor.yaml"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestGoldenServiceMonitorOptimizeDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &golden.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "optimize-service-monitor",
+		Templates:      []string{"templates/service-monitor/optimize-service-monitor.yaml"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestGoldenServiceMonitorTasklistDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &golden.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "tasklist-service-monitor",
+		Templates:      []string{"templates/service-monitor/tasklist-service-monitor.yaml"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestGoldenServiceMonitorModelerDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &golden.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "web-modeler-service-monitor",
+		Templates:      []string{"templates/service-monitor/web-modeler-service-monitor.yaml"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestGoldenServiceMonitorConnectorsDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &golden.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "connectors-service-monitor",
+		Templates:      []string{"templates/service-monitor/connectors-service-monitor.yaml"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestGoldenServiceMonitorIdentityDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &golden.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "identity-service-monitor",
+		Templates:      []string{"templates/service-monitor/identity-service-monitor.yaml"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestGoldenServiceMonitorZeebeDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &golden.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "zeebe-service-monitor",
+		Templates:      []string{"templates/service-monitor/zeebe-service-monitor.yaml"},
+		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestGoldenServiceMonitorZeebeGatewayDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &golden.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "zeebe-gateway-service-monitor",
+		Templates:      []string{"templates/service-monitor/zeebe-gateway-service-monitor.yaml"},
 		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
 	})
 }
