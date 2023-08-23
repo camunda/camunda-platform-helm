@@ -41,8 +41,8 @@ spec:
             - podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app.kubernetes.io/name: keycloak
                     app.kubernetes.io/instance: camunda-platform-test
+                    app.kubernetes.io/name: keycloak
                 topologyKey: kubernetes.io/hostname
               weight: 1
         nodeAffinity:
