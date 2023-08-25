@@ -4,6 +4,11 @@ on:
   push:
     branches:
     - main
+    paths:
+    - '.github/**'
+    - '.tool-versions'
+    - 'charts/**'
+    - 'go.*'
   pull_request:
     paths:
     - '.github/**'
