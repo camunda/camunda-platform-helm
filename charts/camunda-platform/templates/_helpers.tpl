@@ -171,7 +171,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
     url: {{ $baseURL }}{{ .Values.global.identity.keycloak.contextPath }}
   - name: Identity
     url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness:  http://{{ include "identity.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.readinessProbe.probePath }}
+    readiness: http://{{ include "identity.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.readinessProbe.probePath }}
   {{- end }}
   {{- end }}
 
@@ -179,7 +179,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
   {{ if .Values.enabled -}}
   - name: Operate
     url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness:  http://{{ include "operate.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+    readiness: http://{{ include "operate.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
   {{- end }}
   {{- end }}
 
@@ -187,7 +187,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
   {{ if .Values.enabled -}}
   - name: Optimize
     url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness:  http://{{ include "optimize.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+    readiness: http://{{ include "optimize.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
   {{- end }}
   {{- end }}
 
@@ -195,21 +195,21 @@ Set imagePullSecrets according the values of global, subchart, or empty.
   {{ if .Values.enabled -}}
   - name: Tasklist
     url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness:  http://{{ include "tasklist.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+    readiness: http://{{ include "tasklist.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
   {{- end }}
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
   - name: WebModeler WebApp
     url: {{ $baseURL }}{{ .Values.webModeler.contextPath }}
-    readiness:  http://{{ include "webModeler.webapp.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.webModeler.webapp.service.port }}{{ .Values.webModeler.webapp.readinessProbe.probePath }}
+    readiness: http://{{ include "webModeler.webapp.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.webModeler.webapp.service.port }}{{ .Values.webModeler.webapp.readinessProbe.probePath }}
   {{- end }}
 
   {{- with dict "Template" .Template "Release" .Release "Chart" (dict "Name" "zeebe-gateway") "Values" (index .Values "zeebe-gateway") "zeebe" .Values.zeebe }}
   {{ if .zeebe.enabled -}}
   - name: Zeebe Gateway
     url: grpc://{{ tpl .Values.ingress.host $ }}
-    readiness:  http://{{ include "zeebe.names.gateway" . | trimAll "\"" }}.{{ .Release.Namespace }}:{{ .Values.service.httpPort }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+    readiness: http://{{ include "zeebe.names.gateway" . | trimAll "\"" }}.{{ .Release.Namespace }}:{{ .Values.service.httpPort }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
   {{- end }}
   {{- end }}
 {{- end -}}
