@@ -2068,6 +2068,10 @@ console:
   # Enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
+  # Create config that will be used in console controller deployment.
+  # NOTE: This should be under global but we keep it here till console is ready for alpha.
+  createReleaseInfo: true
+
   # Example for managed Camunda Platform releases/deployments.
   managed: {}
 
