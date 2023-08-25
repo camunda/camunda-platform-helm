@@ -30,7 +30,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || inputs.identifier }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.identifier || github.ref }}
   cancel-in-progress: true
 
 env:
