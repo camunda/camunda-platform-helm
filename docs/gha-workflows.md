@@ -19,6 +19,13 @@ deploy:
   secrets: inherit
   with:
     identifier: dev-console-sm
+    extra-values: |
+      global:
+        image:
+          tag: 8.2.10
+      console:
+        image:
+          tag: xyz
 ```
 
 Adding that will run Camunda Platform Helm chart integration tests and add the deployment URL
