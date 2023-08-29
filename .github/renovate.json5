@@ -16,6 +16,11 @@
   },
   "packageRules": [
     {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+      "addLabels": ["automerge"],
+    },
+    {
       // Disable major version update for all Helm components.
       "enabled": false,
       "matchManagers": ["helmv3", "helm-values", "regex"],
@@ -32,17 +37,13 @@
       // Enable non-major version update for current Camunda Platform version.
       "matchDatasources": ["github-releases", "docker"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "addLabels": ["automerge"],
-      "automerge": true
+      "matchUpdateTypes": ["minor", "patch"]
     },
     {
       // Enable patch version update for previous Camunda Platform version.
       "matchDatasources": ["github-releases", "docker"],
       "matchPaths": ["**/values/values-v8.*.yaml"],
-      "matchUpdateTypes": ["patch"],
-      "addLabels": ["automerge"],
-      "automerge": true
+      "matchUpdateTypes": ["patch"]
     },
     {
       // Limit Web-Modeler version to 0.8.x for Camunda Platform v8.1.
@@ -55,15 +56,11 @@
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
       "matchPackagePatterns": ["kubectl"],
-      "allowedVersions": "<=1.28.0",
-      "addLabels": ["automerge"],
-      "automerge": true
+      "allowedVersions": "<=1.28.0"
     },
     {
       "matchPackagePatterns": ["k8s.io/.*"],
-      "allowedVersions": "<0.28.0",
-      "addLabels": ["automerge"],
-      "automerge": true
+      "allowedVersions": "<0.28.0"
     }
   ],
   "regexManagers": [
