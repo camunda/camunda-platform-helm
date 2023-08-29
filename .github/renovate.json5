@@ -32,13 +32,17 @@
       // Enable non-major version update for current Camunda Platform version.
       "matchDatasources": ["github-releases", "docker"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": ["minor", "patch"],
+      "addLabels": ["automerge"],
+      "automerge": true
     },
     {
       // Enable patch version update for previous Camunda Platform version.
       "matchDatasources": ["github-releases", "docker"],
       "matchPaths": ["**/values/values-v8.*.yaml"],
-      "matchUpdateTypes": ["patch"]
+      "matchUpdateTypes": ["patch"],
+      "addLabels": ["automerge"],
+      "automerge": true
     },
     {
       // Limit Web-Modeler version to 0.8.x for Camunda Platform v8.1.
@@ -51,11 +55,15 @@
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
       "matchPackagePatterns": ["kubectl"],
-      "allowedVersions": "<1.26.0"
+      "allowedVersions": "<1.26.0",
+      "addLabels": ["automerge"],
+      "automerge": true
     },
     {
       "matchPackagePatterns": ["k8s.io/.*"],
-      "allowedVersions": "<0.26.0"
+      "allowedVersions": "<0.26.0",
+      "addLabels": ["automerge"],
+      "automerge": true
     }
   ],
   "regexManagers": [
