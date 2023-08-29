@@ -55,13 +55,13 @@
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
       "matchPackagePatterns": ["kubectl"],
-      "allowedVersions": "<1.26.0",
+      "allowedVersions": "<=1.28.0",
       "addLabels": ["automerge"],
       "automerge": true
     },
     {
       "matchPackagePatterns": ["k8s.io/.*"],
-      "allowedVersions": "<0.26.0",
+      "allowedVersions": "<0.28.0",
       "addLabels": ["automerge"],
       "automerge": true
     }
