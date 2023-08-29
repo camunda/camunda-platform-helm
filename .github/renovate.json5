@@ -17,8 +17,8 @@
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true
       "addLabels": ["automerge"],
+      "automerge": true
     },
     {
       // Disable major version update for all Helm components.
