@@ -218,7 +218,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Set PR vars
       id: vars
-      uses: ./.github/actions/pr-vars
+      uses: ./.github/actions/workflow-vars
       with:
         persistent: ${{ env.TEST_PERSISTENT }}
         platform: gke
