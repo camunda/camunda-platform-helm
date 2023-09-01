@@ -91,6 +91,8 @@ spec:
             value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
           - name: RESTAPI_IDENTITY_BASE_URL
             value: {{ include "webModeler.identityBaseUrl" . | quote }}
+          - name: ZEEBE_CLIENT_CONFIG_PATH
+            value: /tmp/zeebe_client_cache.txt
         {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
@@ -141,6 +143,8 @@ spec:
         {{- end }}
         {{- if .Values.webModeler.restapi.extraVolumeMounts }}
         volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.webModeler.restapi.sidecars }}
@@ -148,6 +152,8 @@ spec:
       {{- end }}
       {{- if .Values.webModeler.restapi.extraVolumes }}
       volumes:
+      - name: tmp
+        emptyDir: {}
       {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.webModeler.serviceAccount.name }}

@@ -171,6 +171,8 @@ spec:
         - name: config
           mountPath: /usr/local/zeebe/config/log4j2.xml
           subPath: broker-log4j2.xml
+        - mountPath: /tmp
+          name: tmp
         {{- end }}
         {{- if .Values.extraVolumeMounts}}
         {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
@@ -189,6 +191,8 @@ spec:
             name: {{ include "zeebe.fullname" . }}
             defaultMode: {{ .Values.configMap.defaultMode }}
         - name: exporters
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
         {{- if .Values.extraVolumes}}
           {{ .Values.extraVolumes | toYaml | nindent 8 }}

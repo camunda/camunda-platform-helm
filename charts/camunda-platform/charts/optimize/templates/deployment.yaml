@@ -158,6 +158,10 @@ spec:
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
         {{- end }}
         volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
         {{- if .Values.extraVolumeMounts}}
           {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
@@ -165,6 +169,10 @@ spec:
       {{- .Values.sidecars | toYaml | nindent 6 }}
       {{- end }}
       volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: camunda
+        emptyDir: {}
       {{- if .Values.extraVolumes}}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}

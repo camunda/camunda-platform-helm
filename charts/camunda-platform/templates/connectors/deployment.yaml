@@ -143,13 +143,18 @@ spec:
             timeoutSeconds: {{ .Values.connectors.livenessProbe.timeoutSeconds }}
           {{- end }}
           {{- if .Values.connectors.extraVolumeMounts }}
-          volumeMounts: {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
+          volumeMounts: 
+            - mountPath: /tmp
+              name: tmp
+            {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
         {{- if .Values.connectors.sidecars }}
         {{- .Values.connectors.sidecars | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.connectors.extraVolumes }}
       volumes:
+        - name: tmp
+          emptyDir: {}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       {{- if .Values.connectors.serviceAccount.name}}
