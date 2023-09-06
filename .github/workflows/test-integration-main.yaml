@@ -130,14 +130,8 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
     - name: Copy PRs wildcard certificate
-      # TODO: Use a declarative approach to copy/replicate wildcard certificate.
       run: |
-        kubectl get secret -n distribution-team ci-distro-ultrawombat-com -o yaml |
-          yq '.metadata.name = "camunda-platform", .metadata.namespace = strenv(TEST_NAMESPACE)' |
-          kubectl apply -f -
-        kubectl get secret -n distribution-team ci-distro-ultrawombat-com -o yaml |
-          yq '.metadata.name = "camunda-platform-zeebe-gateway", .metadata.namespace = strenv(TEST_NAMESPACE)' |
-          kubectl apply -f -
+        kubectl apply -f '.github/external-secret.yaml' -n strenv(TEST_NAMESPACE) 
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@v1
       id: deployment
