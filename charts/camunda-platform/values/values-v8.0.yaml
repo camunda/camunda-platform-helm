@@ -36,5 +36,6 @@ optimize:
 
 elasticsearch:
   # https://hub.docker.com/r/elastic/elasticsearch/tags
+  # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
   image: docker.elastic.co/elasticsearch/elasticsearch
   imageTag: 7.17.10
