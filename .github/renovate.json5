@@ -35,13 +35,13 @@
     },
     {
       // Enable non-major version update for current Camunda Platform version.
-      "matchDatasources": ["github-releases", "docker"],
+      "matchDatasources": ["github-releases", "docker", "regex"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
       // Enable patch version update for previous Camunda Platform version.
-      "matchDatasources": ["github-releases", "docker"],
+      "matchDatasources": ["github-releases", "docker", "regex"],
       "matchPaths": ["**/values/values-v8.*.yaml"],
       "matchUpdateTypes": ["patch"]
     },
@@ -77,10 +77,11 @@
       // This is mainly used to update Web-Modeler image tag.
       // Web-Modeler Self-Managed version is different from SaaS version, hence, we use Web-Modeler API image tag
       // as a source of truth for rest of WM components.
+      // Another use case is Elasticsearch public Docker registry.
       "fileMatch": ["\\.yaml$"],
       "datasourceTemplate":"docker",
       "matchStrings": [
-        "# renovate: datasource=docker depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s*?tag: (?<currentValue>\\S+)"
+        "# renovate: datasource=docker depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s*?(tag|imageTag): (?<currentValue>\\S+)"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
