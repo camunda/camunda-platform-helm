@@ -1222,7 +1222,8 @@ identity:
 
   # Sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
-
+  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  extraInitContainers: []
   # FullURL can be used when Ingress is configured (for both multi and single domain setup).
   # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
   # fullURL: "https://camunda.example.com/identity"

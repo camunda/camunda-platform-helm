@@ -696,6 +696,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `image.tag` |   Can be set to overwrite the global.image.tag | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
 | | `fullURL` |  Can be used when Ingress is configured (for both multi and single domain setup). <br/> Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the fullURL too. | |
 | | `contextPath` |  Can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. **Note:** Identity cannot be accessed over HTTP if a "contextPath" is configured. Which means that Identity cannot be configured in combined Ingress without HTTPS. To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath". | `` |
 | | `podAnnotations` | Can be used to define extra Identity pod annotations | `{ }` |
