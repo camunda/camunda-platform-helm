@@ -25,7 +25,7 @@ spec:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- with .Values.extraInitContainers }}
-        {{- tpl (toYaml . ) $ | nindent 6  }}
+        {{- tpl (toYaml . ) $ | nindent 8  }}
         {{- end }}
       containers:
       - name: {{ .Chart.Name }}
