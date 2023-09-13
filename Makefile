@@ -158,11 +158,11 @@ release.generate-pr-url:
 
 .PHONY: release.chores
 release.chores:
-	git checkout main
+	git checkout camunda-platform-8.1
 	git pull --tags
 	git switch -C release
 	@$(MAKE) release.bump-chart-version-and-commit
 	@$(MAKE) release.generate-notes-and-commit
 	git push -fu origin release
 	@$(MAKE) release.generate-pr-url
-	git checkout main
+	git checkout camunda-platform-8.1
