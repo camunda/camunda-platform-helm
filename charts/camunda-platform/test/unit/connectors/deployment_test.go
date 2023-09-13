@@ -826,3 +826,36 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+
+func (s *deploymentTemplateTest) TestContainerInitContainers() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"connectors.initContainers[0].name":                      "install",
+			"connectors.initContainers[0].image":                     "busybox:1.28",
+			"connectors.initContainers[0].command[0]":                "wget",
+			"connectors.initContainers[0].command[1]":                "-O",
+			"connectors.initContainers[0].command[2]":                "/work-dir/index.html",
+			"connectors.initContainers[0].command[3]":                "http://camunda.io",
+			"connectors.initContainers[0].volumeMounts[0].name":      "additionalConnectors",
+			"connectors.initContainers[0].volumeMounts[0].mountPath": "/app/additionalConnectors",
+
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	initContainerSpec := deployment.Spec.Template.Spec.InitContainers
+	s.Require().Equal(1, len(initContainerSpec))
+
+	spec := initContainerSpec[0]
+	s.Require().Equal("install", spec.Name)
+	s.Require().Equal("busybox:1.28", spec.Image)
+	s.Require().Equal("additionalConnectors", spec.VolumeMounts[0].Name)
+	s.Require().Equal("/app/additionalConnectors", spec.VolumeMounts[0].MountPath)
+}

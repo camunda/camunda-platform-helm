@@ -2000,6 +2000,10 @@ connectors:
   # Sidecars can be used to attach extra containers to the connectors deployment
   sidecars: []
 
+  # Use this to initialize a Pod before an application Container runs.
+  # See more at https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-initialization/
+  initContainers: []
+
   # Number of Connectors replicas
   replicas: 1
 
