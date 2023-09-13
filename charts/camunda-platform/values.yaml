@@ -1037,7 +1037,8 @@ optimize:
   extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
-
+  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  extraInitContainers: []
   # ServiceAccount configuration for the service account where the Optimize pods are assigned to
   serviceAccount:
     # ServiceAccount.enabled if true, enables the Optimize service account
