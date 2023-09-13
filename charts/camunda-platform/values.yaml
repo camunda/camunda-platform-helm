@@ -840,7 +840,8 @@ tasklist:
 
   # Sidecars can be used to attach extra containers to the tasklist deployment
   sidecars: []
-
+  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  extraInitContainers: []
   # ContextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
   # contextPath: "/tasklist"
 

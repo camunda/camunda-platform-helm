@@ -548,6 +548,7 @@ For more information about Tasklist, visit
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
 | | `contextPath` |  Can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Tasklist pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Tasklist pod labels | `{ }` |
