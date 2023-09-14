@@ -15,6 +15,7 @@
 package optimize
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -776,6 +777,38 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 
 	// then
 	podContainers := deployment.Spec.Template.Spec.Containers
+	expectedContainer := corev1.Container{
+		Name:  "nginx",
+		Image: "nginx:latest",
+		Ports: []corev1.ContainerPort{
+			{
+				ContainerPort: 80,
+			},
+		},
+	}
+
+	s.Require().Contains(podContainers, expectedContainer)
+}
+
+func (s *deploymentTemplateTest) TestExtraInitContainers() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"optimize.extraInitContainers[0].name":                   "nginx",
+			"optimize.extraInitContainers[0].image":                  "nginx:latest",
+			"optimize.extraInitContainers[0].ports[0].containerPort": "80",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	podContainers := deployment.Spec.Template.Spec.InitContainers
+	fmt.Println(podContainers)
 	expectedContainer := corev1.Container{
 		Name:  "nginx",
 		Image: "nginx:latest",
