@@ -1417,7 +1417,8 @@ identity:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
       repository: bitnami/keycloak
-      tag: 19.0.3
+      tag: 22.0.1
+    proxy: edge
 
     # Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
     tls:
