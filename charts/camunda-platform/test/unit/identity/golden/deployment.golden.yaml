@@ -37,6 +37,7 @@ spec:
     spec:
       imagePullSecrets:
         []
+      initContainers:
       containers:
       - name: identity
         image: "camunda/identity:8.2.13"
