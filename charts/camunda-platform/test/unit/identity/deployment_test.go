@@ -15,7 +15,6 @@
 package identity
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -1023,7 +1022,6 @@ func (s *deploymentTemplateTest) TestExtraInitContainers() {
 
 	// then
 	podContainers := deployment.Spec.Template.Spec.InitContainers
-	fmt.Println(podContainers)
 	expectedContainer := corev1.Container{
 		Name:  "nginx",
 		Image: "nginx:latest",
