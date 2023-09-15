@@ -81,6 +81,12 @@ spec:
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE
               value: "zeebe-api"
             {{- end }}
+            {{- if .Values.global.multitenancy.enabled }}
+            - name: ZEEBE_GATEWAY_MULTITENANCY_ENABLED
+              value: "true"
+            - name: ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED
+              value: "true"
+            {{- end }}
             {{- with .Values.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

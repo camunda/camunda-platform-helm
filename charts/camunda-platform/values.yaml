@@ -94,6 +94,10 @@ global:
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
   # ZeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
+  # Multitenancy configuration which is shared between the sub charts
+  multitenancy:
+    # multitenancy.enabled if true, then enable multitenancy in all applicable component.
+    enabled: false
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
