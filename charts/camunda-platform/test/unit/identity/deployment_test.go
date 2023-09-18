@@ -63,7 +63,7 @@ func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 			"global.identity.keycloak.auth.existingSecretKey": "test-admin",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -360,7 +360,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 			"identity.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -578,7 +578,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 			"identity.env[1].value": "nothingToSeeHere",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -601,7 +601,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
 			"identity.keycloak.auth.passwordSecretKey": "test-admin",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -630,7 +630,7 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableIntegration() {
 			"global.identity.auth.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -656,7 +656,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValu
 			"global.identity.auth.operate.existingSecret": "secretValue",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -685,7 +685,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 			"global.identity.auth.operate.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -714,7 +714,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTasklistIdentitySecretVal
 			"global.identity.auth.tasklist.existingSecret": "secretValue",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -743,7 +743,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTasklistIdentitySecretVia
 			"global.identity.auth.tasklist.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -772,7 +772,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVal
 			"global.identity.auth.optimize.existingSecret": "secretValue",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -801,7 +801,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVia
 			"global.identity.auth.optimize.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -853,7 +853,7 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 			"identity.contextPath": "/identity",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -892,7 +892,7 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 			"identity.startupProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -924,7 +924,7 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 			"identity.livenessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -957,7 +957,7 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 			"identity.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -1011,7 +1011,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetFirstUserExistingSecretVa
 			"identity.firstUser.existingSecret": "identityFirstUserSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when

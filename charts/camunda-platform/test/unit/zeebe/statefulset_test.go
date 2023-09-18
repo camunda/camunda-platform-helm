@@ -385,7 +385,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumes() {
 			"zeebe.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -412,7 +412,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
 			"zeebe.extraVolumeMounts[0].mountPath": "/usr/local/config",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -649,7 +649,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 			"zeebe.persistenceType": "memory",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -681,7 +681,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
 			"zeebe.persistenceType": "local",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -742,7 +742,7 @@ func (s *statefulSetTest) TestContainerStartupProbe() {
 			"zeebe.startupProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -774,7 +774,7 @@ func (s *statefulSetTest) TestContainerLivenessProbe() {
 			"zeebe.livenessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -806,7 +806,7 @@ func (s *statefulSetTest) TestContainerProbesWithContextPath() {
 			"zeebe.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when

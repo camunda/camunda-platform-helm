@@ -638,7 +638,7 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 			"zeebe-gateway.startupProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -670,7 +670,7 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 			"zeebe-gateway.livenessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -702,7 +702,7 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 			"zeebe-gateway.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when

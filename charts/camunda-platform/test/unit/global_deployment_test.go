@@ -54,7 +54,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderOptimizeIfDisabled(
 			"optimize.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -71,7 +71,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderOperateIfDisabled()
 			"operate.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -88,7 +88,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderTasklistIfDisabled(
 			"tasklist.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -106,7 +106,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 			"global.identity.auth.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -123,7 +123,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderWebModelerIfDisable
 			"webModeler.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when

@@ -173,7 +173,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 			"optimize.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -197,7 +197,7 @@ func (s *deploymentTemplateTest) TestContainerNotOverwriteGlobalImageTag() {
 			"global.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -220,7 +220,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 			"optimize.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -242,7 +242,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 			"optimize.command": "[printenv]",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -266,7 +266,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 			"optimize.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -293,7 +293,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 			"optimize.extraVolumeMounts[0].mountPath": "/usr/local/config",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -323,7 +323,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 			"optimize.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -358,7 +358,7 @@ func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 			"optimize.serviceAccount.name": "accName",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -539,7 +539,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVal
 			"global.identity.auth.optimize.existingSecret": "secretValue",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -568,7 +568,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVia
 			"global.identity.auth.optimize.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -599,7 +599,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUr
 			"global.identity.keycloak.url.port":     "80",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -645,7 +645,7 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 			"optimize.contextPath": "/optimize",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -678,7 +678,7 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 			"optimize.startupProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -710,7 +710,7 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 			"optimize.livenessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -742,7 +742,7 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 			"optimize.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when

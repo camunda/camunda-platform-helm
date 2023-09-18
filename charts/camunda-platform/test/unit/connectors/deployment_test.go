@@ -600,7 +600,7 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 			"connectors.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -772,7 +772,7 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_CLIENT-ID", Value: "connectors"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", Value: "camunda-platform"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
-	
+
 }
 
 func (s *deploymentTemplateTest) TestContainerSetContextPath() {

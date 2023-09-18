@@ -61,7 +61,7 @@ func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingE
 			"identity.keycloak.enabled":  "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// NOTE: helm.Options.ExtraArgs doesn't support passing args to Helm "template" command.
@@ -94,7 +94,7 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 			"identity.contextPath":                 "/identity",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -138,7 +138,7 @@ func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {
 			"global.identity.keycloak.url.port":     "8443",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -165,7 +165,7 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 			"webModeler.contextPath":              "/modeler",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -196,7 +196,7 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 			"webModeler.contextPath":              "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -223,7 +223,7 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 			"webModeler.enabled":     "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
