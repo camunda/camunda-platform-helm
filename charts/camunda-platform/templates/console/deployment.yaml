@@ -41,6 +41,8 @@ spec:
               value: camunda-platform
             - name: IDENTITY_AUDIENCE
               value: console
+            - name: IDENTITY_CLIENT_ID
+              value: console
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
