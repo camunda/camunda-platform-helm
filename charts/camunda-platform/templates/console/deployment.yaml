@@ -35,6 +35,12 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            - name: IDENTITY_BASE
+              value: "https://gke-dev-console-sm-main.ci.distro.ultrawombat.com/auth" # how to set this value dynamically?
+            - name: IDENTITY_REALM
+              value: camunda-platform
+            - name: IDENTITY_AUDIENCE
+              value: console
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
