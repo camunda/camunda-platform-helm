@@ -182,6 +182,14 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8084"
+      
+       # Identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
+      console:
+        # Identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access Console.
+        # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8080.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8080" # todo: is that correct?
+
 
       # Identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
