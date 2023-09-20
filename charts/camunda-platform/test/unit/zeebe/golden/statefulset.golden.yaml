@@ -42,6 +42,7 @@ spec:
       imagePullSecrets:
         []
       initContainers:
+        []
       containers:
       - name: zeebe
         image: "camunda/zeebe:8.2.13"

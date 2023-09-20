@@ -38,6 +38,7 @@ spec:
       imagePullSecrets:
         []
       initContainers:
+        []
       containers:
       - name: operate
         image: "camunda/operate:8.2.13"

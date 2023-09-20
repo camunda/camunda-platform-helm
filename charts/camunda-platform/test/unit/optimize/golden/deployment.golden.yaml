@@ -38,6 +38,7 @@ spec:
       imagePullSecrets:
         []
       initContainers:
+        []
       containers:
       - name: optimize
         image: "camunda/optimize:3.10.5"

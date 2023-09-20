@@ -38,6 +38,7 @@ spec:
       imagePullSecrets:
         []
       initContainers:
+        []
       containers:
       - name: tasklist
         image: "camunda/tasklist:8.2.13"
