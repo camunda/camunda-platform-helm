@@ -36,7 +36,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: IDENTITY_BASE
-              value: {{ include "console.identityBaseUrl" . | quote }} # how to set this value dynamically? should be https://gke-dev-console-sm-main.ci.distro.ultrawombat.com/auth
+              value: {{ include "camundaPlatform.keycloakURL" . | quote }}
             - name: IDENTITY_REALM
               value: camunda-platform
             - name: IDENTITY_AUDIENCE

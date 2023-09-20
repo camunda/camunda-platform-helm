@@ -52,10 +52,3 @@ Create the name of the service account to use
 {{- default "default" .Values.console.serviceAccount.name }}
 {{- end }}
 {{- end }}
-
-{{/*
-[console] Create the base URL of the Identity API
-*/}}
-{{- define "console.identityBaseUrl" -}}
-http://{{ include "identity.fullname" .Subcharts.identity }}:{{ .Values.identity.service.port }}{{ default "" .Values.identity.contextPath }}
-{{- end -}}
