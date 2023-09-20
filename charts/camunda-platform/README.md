@@ -803,6 +803,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `restapi` | Configuration of the Web Modeler restapi component | |
 | | `restapi.image` | Configuration of the restapi Docker image | |
 | | `restapi.image.repository` | Defines which image repository to use for the restapi Docker image | `web-modeler-ee/modeler-restapi` |
+| | `restapi.initContainers` | Can be used to set up extra init containers | `[]` |
 | | `restapi.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `restapi.externalDatabase` | Can be used to configure a connection to an external database. This will only be applied if the postgresql dependency chart is disabled (by setting `postgresql.enabled` to `false`).<br/>Note: Currently, the only supported database system is PostgreSQL.| |
 | | `restapi.externalDatabase.host` | Defines the host name of the database instance | |
@@ -863,6 +864,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `webapp.image` | Configuration of the webapp Docker image | |
 | | `webapp.image.repository` | Defines which image repository to use for the webapp Docker image | `web-modeler-ee/modeler-webapp` |
 | | `webapp.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `webapp.initContainers` | Can be used to set up extra init containers | `[]` |
 | | `webapp.podAnnotations` | Can be used to define extra webapp pod annotations | `{}` |
 | | `webapp.podLabels` | Can be used to define extra webapp pod labels | `{}` |
 | | `webapp.env` | Can be used to set extra environment variables in each webapp container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
@@ -907,6 +909,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets.image` | Configuration of the websockets Docker image | |
 | | `websockets.image.repository` | Defines which image repository to use for the websockets Docker image | `web-modeler-ee/modeler-websockets` |
 | | `websockets.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `websockets.initContainers` | Can be used to set up extra init containers | `[]` |
 | | `websockets.publicHost` | Can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service has been created.<br/>Note: The host will only be used if the Ingress resource for Web Modeler is disabled. | `localhost` |
 | | `websockets.publicPort` | Can be used to define the port number on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service on port `8085` has been created.<br/>Note: The port will only be used if the Ingress resource for Web Modeler is disabled. | `8085` |
 | | `websockets.podAnnotations` | Can be used to define extra websockets pod annotations | `{}` |
@@ -1002,6 +1005,7 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `env`                                | Can be used to set extra environment variables in each Connectors container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence.                                                                                                                                                      | `[]`                                                                                                  |
 |              | `extraVolumes`                       | Can be used to define extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                          | `[]`                                                                                                  |
 |              | `extraVolumeMounts`                  | Can be used to mount extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                           | `[]`                                                                                                  |
+|              | `initContainers`                     | Can be used to set up extra init containers for the identity pods, useful for adding interceptors                                                                                                                                                 | `[]`                                                                                                  |
 |              | `command`                            | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/)                                                                        | `[]`                                                                                                  |
 |              | `serviceAccount`                     | Configuration for the service account where the Connectors pods are assigned to                                                                                                                                                                   |                                                                                                       |
 |              | `serviceAccount.enabled`             | If true, enables the Connectors service account                                                                                                                                                                                                   | `true`                                                                                                |

@@ -22,6 +22,8 @@ spec:
     spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.webModeler.websockets.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
       - name: {{ include "webModeler.name" . }}-websockets
         image: {{ include "webModeler.websockets.image" . | quote }}

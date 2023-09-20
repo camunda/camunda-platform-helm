@@ -312,7 +312,7 @@ zeebe:
   extraVolumeMounts: []
   # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
- # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+ # initContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   initContainers: []
 
   # PodAnnotations can be used to define extra broker pod annotations
@@ -576,7 +576,7 @@ zeebe-gateway:
   extraVolumes: []
   # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
-  # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  # initContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   initContainers: []
 
   # Service configuration for the gateway service
@@ -1527,6 +1527,8 @@ webModeler:
 
     # Restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
+    # Restapi.initContainers can be used to set up extra init containers to the restapi deployment
+    initContainers: []
 
     # Restapi.externalDatabase can be used to configure a connection to an external database. This will only be applied
     # if the postgresql dependency chart is disabled (by setting postgresql.enabled to false).
@@ -1681,6 +1683,8 @@ webModeler:
 
     # Webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
+    # Webapp.initContainers can be used to set up extra init containers to the modeler webapp deployment
+    initContainers: []
 
     # Webapp.podAnnotations can be used to define extra webapp pod annotations
     podAnnotations: {}
@@ -1802,6 +1806,8 @@ webModeler:
 
     # Websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
+    # Websockets.initContainers can be used to set up extra init containers to the modeler websockets deployment
+    initContainers: []
 
     # Websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser.
     # The default value assumes that a port-forwarding to the websockets service has been created.
@@ -2007,6 +2013,8 @@ connectors:
 
   # Sidecars can be used to attach extra containers to the connectors deployment
   sidecars: []
+  # initContainers can be used to set up extra init containers to the connectors deployment
+  initContainers: []
 
   # Number of Connectors replicas
   replicas: 1

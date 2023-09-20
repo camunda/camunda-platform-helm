@@ -21,6 +21,8 @@ spec:
       {{- end }}
     spec:
       imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.connectors.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
         - name: connectors
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
