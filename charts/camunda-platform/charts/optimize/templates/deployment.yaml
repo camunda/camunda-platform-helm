@@ -164,3 +164,12 @@ spec:
       - name: migration
         image: {{ include "camundaPlatform.image" . | quote }}
         command: ['./upgrade/upgrade.sh', '--skip-warning']
+        env:
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+          value: "true"
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+          value: {{ .Values.partitionCount | quote }}
+        - name: OPTIMIZE_ELASTICSEARCH_HOST
+          value: {{ .Values.global.elasticsearch.host | quote }}
+        - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+          value: {{ .Values.global.elasticsearch.port | quote }}
