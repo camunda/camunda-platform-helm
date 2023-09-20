@@ -15,6 +15,8 @@ global:
   identity:
     auth:
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
       operate:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/operate"
       tasklist:
