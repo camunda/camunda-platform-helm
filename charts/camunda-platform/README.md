@@ -475,7 +475,7 @@ For more information about Operate, visit
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the operate pods, useful for additional exporters | `[ ]` |
 | | `contextPath` |  Can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Operate pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Operate pod labels | `{ }` |
@@ -548,7 +548,7 @@ For more information about Tasklist, visit
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the taskList pods, useful for adding interceptors | `[ ]` |
 | | `contextPath` |  Can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Tasklist pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Tasklist pod labels | `{ }` |
@@ -623,7 +623,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `partitionCount` |  Defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize | `"3"` |
 | | `env` |  Can be used to set extra environment variables in each Optimize container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the optimize pods, useful for adding interceptors | `[ ]` |
 | | `extraVolumes` |  Can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` |  Can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
 | | `serviceAccount` |  Configuration for the service account where the Optimize pods are assigned to | |
@@ -697,7 +697,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `image.tag` |   Can be set to overwrite the global.image.tag | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the identity pods, useful for adding interceptors | `[ ]` |
 | | `fullURL` |  Can be used when Ingress is configured (for both multi and single domain setup). <br/> Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the fullURL too. | |
 | | `contextPath` |  Can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. **Note:** Identity cannot be accessed over HTTP if a "contextPath" is configured. Which means that Identity cannot be configured in combined Ingress without HTTPS. To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath". | `` |
 | | `podAnnotations` | Can be used to define extra Identity pod annotations | `{ }` |

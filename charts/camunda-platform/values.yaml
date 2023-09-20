@@ -659,8 +659,8 @@ operate:
 
   # Sidecars can be used to attach extra containers to the operate deployment
   sidecars: []
-  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
-  extraInitContainers: []
+  # initContainers can be used to set up extra init containers for the operate pods, useful for additional exporters
+  initContainers: []
   # ContextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
   # contextPath: "/operate"
 
@@ -840,8 +840,8 @@ tasklist:
 
   # Sidecars can be used to attach extra containers to the tasklist deployment
   sidecars: []
-  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
-  extraInitContainers: []
+  # initContainers can be used to set up extra init containers for the taskList pods, useful for additional exporters
+  initContainers: []
   # ContextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
   # contextPath: "/tasklist"
 
@@ -1038,8 +1038,8 @@ optimize:
   extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
-  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
-  extraInitContainers: []
+  # initContainers can be used to set up extra init containers for the optimize pods, useful for additional exporters
+  initContainers: []
   # ServiceAccount configuration for the service account where the Optimize pods are assigned to
   serviceAccount:
     # ServiceAccount.enabled if true, enables the Optimize service account
@@ -1223,8 +1223,8 @@ identity:
 
   # Sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
-  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
-  extraInitContainers: []
+  # initContainers can be used to set up extra init containers for the identity pods, useful for additional exporters
+  initContainers: []
   # FullURL can be used when Ingress is configured (for both multi and single domain setup).
   # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
   # fullURL: "https://camunda.example.com/identity"

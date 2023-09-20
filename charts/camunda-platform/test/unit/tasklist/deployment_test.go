@@ -835,13 +835,13 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 	s.Require().Contains(podContainers, expectedContainer)
 }
 
-func (s *deploymentTemplateTest) TestExtraInitContainers() {
+func (s *deploymentTemplateTest) TestInitContainers() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"tasklist.extraInitContainers[0].name":                   "nginx",
-			"tasklist.extraInitContainers[0].image":                  "nginx:latest",
-			"tasklist.extraInitContainers[0].ports[0].containerPort": "80",
+			"tasklist.initContainers[0].name":                   "nginx",
+			"tasklist.initContainers[0].image":                  "nginx:latest",
+			"tasklist.initContainers[0].ports[0].containerPort": "80",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
