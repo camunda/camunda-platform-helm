@@ -312,6 +312,8 @@ zeebe:
   extraVolumeMounts: []
   # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
+ # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  initContainers: []
 
   # PodAnnotations can be used to define extra broker pod annotations
   podAnnotations: {}
@@ -574,6 +576,8 @@ zeebe-gateway:
   extraVolumes: []
   # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
+  # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  initContainers: []
 
   # Service configuration for the gateway service
   service:

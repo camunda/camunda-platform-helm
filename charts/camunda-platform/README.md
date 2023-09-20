@@ -336,7 +336,8 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `pvcStorageClassName` | Can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD. | ` ` |
 | | `extraVolumes` | Can be used to define extra volumes for the broker pods, useful for additional exporters | `[ ]`|
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for additional exporters | `[ ]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
+| | `extraInitContainers` | (Deprecated - use `initContainers` instead) Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
 | | `podAnnotations` | Can be used to define extra broker pod annotations | `{ }` |
 | | `podLabels` | Can be used to define extra broker pod labels | `{ }` |
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods | |
@@ -434,7 +435,8 @@ For more information about Zeebe Gateway, visit
 | | `affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity). The default defined PodAntiAffinity allows constraining on which nodes the [Zeebe gateway pods are scheduled on](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity). It uses a hard requirement for scheduling and works based on the Zeebe gateway pod labels. | `podAntiAffinity:</br>  requiredDuringSchedulingIgnoredDuringExecution:</br>  - labelSelector: </br>    matchExpressions:</br>    - key: "app.kubernetes.io/component"</br>    operator: In</br>    values:</br>    - zeebe-gatway</br>  topologyKey: "kubernetes.io/hostname"` |
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `[ ]` |
 | | `extraVolumes` | Can be used to define extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `[ ]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
+| | `extraInitContainers` | (Deprecated - use `initContainers` instead) Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
 | | `service` | Configuration for the gateway service | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.loadBalancerIP` | Can be used to set [ip address](https://cloud.google.com/kubernetes-engine/docs/how-to/service-parameters#lb_ip) if service.type is LoadBalancer | `""` |
