@@ -160,3 +160,7 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
+      initContainers:
+      - name: migration
+        image: {{ include "camundaPlatform.image" . | quote }}
+        command: ['./upgrade/upgrade.sh', '--skip-warning']
