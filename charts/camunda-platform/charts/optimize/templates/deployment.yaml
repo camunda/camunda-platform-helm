@@ -24,9 +24,7 @@ spec:
       imagePullSecrets:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- with .Values.extraInitContainers }}
-        {{- tpl (toYaml . ) $ | nindent 8  }}
-        {{- end }}
+        {{- tpl (.Values.extraInitContainers | default list | toYaml | nindent 8) $ }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ include "camundaPlatform.image" . | quote }}
