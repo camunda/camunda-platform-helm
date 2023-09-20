@@ -99,16 +99,3 @@ spec:
           timeoutSeconds: 1
         volumeMounts:
       volumes:
-      initContainers:
-      - name: migration
-        image: "camunda/optimize:3.10.5"
-        command: ['./upgrade/upgrade.sh', '--skip-warning']
-        env:
-        - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-          value: "true"
-        - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-          value: "3"
-        - name: OPTIMIZE_ELASTICSEARCH_HOST
-          value: "elasticsearch-master"
-        - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-          value: "9200"

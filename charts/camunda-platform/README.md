@@ -670,6 +670,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
 | | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
+| | `upgradeInitContainerEnabled:` | if true, an init container will be added to run the optimize upgrade script | `false` |
 
 ### Identity
 

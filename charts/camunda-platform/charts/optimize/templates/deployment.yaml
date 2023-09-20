@@ -160,6 +160,7 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
+      {{- if .Values.upgradeInitContainerEnabled }}
       initContainers:
       - name: migration
         image: {{ include "camundaPlatform.image" . | quote }}
@@ -173,3 +174,4 @@ spec:
           value: {{ .Values.global.elasticsearch.host | quote }}
         - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
           value: {{ .Values.global.elasticsearch.port | quote }}
+        {{- end }}
