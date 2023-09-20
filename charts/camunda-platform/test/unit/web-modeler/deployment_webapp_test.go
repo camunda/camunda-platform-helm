@@ -408,7 +408,7 @@ func (s *webappDeploymentTemplateTest) TestContainerProbesWithContextPath() {
 			"webModeler.webapp.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"template": {"--debug"}, "install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
