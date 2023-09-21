@@ -22,6 +22,8 @@ spec:
     spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.webModeler.restapi.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
       - name: {{ include "webModeler.name" . }}-restapi
         image: {{ include "webModeler.restapi.image" . | quote }}

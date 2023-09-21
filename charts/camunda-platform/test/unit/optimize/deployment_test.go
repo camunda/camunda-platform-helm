@@ -788,3 +788,34 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+
+func (s *deploymentTemplateTest) TestInitContainers() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"optimize.initContainers[0].name":                   "nginx",
+			"optimize.initContainers[0].image":                  "nginx:latest",
+			"optimize.initContainers[0].ports[0].containerPort": "80",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	podContainers := deployment.Spec.Template.Spec.InitContainers
+	expectedContainer := corev1.Container{
+		Name:  "nginx",
+		Image: "nginx:latest",
+		Ports: []corev1.ContainerPort{
+			{
+				ContainerPort: 80,
+			},
+		},
+	}
+
+	s.Require().Contains(podContainers, expectedContainer)
+}

@@ -211,6 +211,29 @@ func (s *statefulSetTest) TestContainerSetExtraInitContainers() {
 	s.Require().Equal("/exporters/", initContainer.VolumeMounts[0].MountPath)
 }
 
+func (s *statefulSetTest) TestInitContainers() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.initContainers[0].name":                   "nginx",
+			"zeebe.initContainers[0].image":                  "nginx:latest",
+			"zeebe.initContainers[0].ports[0].containerPort": "80",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	initContainer := statefulSet.Spec.Template.Spec.InitContainers[0]
+	s.Require().Equal("nginx", initContainer.Name)
+	s.Require().Equal("nginx:latest", initContainer.Image)
+
+}
+
 func (s *statefulSetTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{

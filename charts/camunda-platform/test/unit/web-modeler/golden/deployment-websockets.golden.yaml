@@ -37,6 +37,8 @@ spec:
     spec:
       imagePullSecrets:
         []
+      initContainers:
+        []
       containers:
       - name: web-modeler-websockets
         image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.2.6"

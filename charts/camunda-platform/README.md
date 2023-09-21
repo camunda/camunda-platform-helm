@@ -336,7 +336,8 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `pvcStorageClassName` | Can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD. | ` ` |
 | | `extraVolumes` | Can be used to define extra volumes for the broker pods, useful for additional exporters | `[ ]`|
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the broker pods, useful for additional exporters | `[ ]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
+| | `extraInitContainers` | (Deprecated - use `initContainers` instead) Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
 | | `podAnnotations` | Can be used to define extra broker pod annotations | `{ }` |
 | | `podLabels` | Can be used to define extra broker pod labels | `{ }` |
 | | `podDisruptionBudget` | Configuration to configure a [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for the broker pods | |
@@ -434,7 +435,8 @@ For more information about Zeebe Gateway, visit
 | | `affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity). The default defined PodAntiAffinity allows constraining on which nodes the [Zeebe gateway pods are scheduled on](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity). It uses a hard requirement for scheduling and works based on the Zeebe gateway pod labels. | `podAntiAffinity:</br>  requiredDuringSchedulingIgnoredDuringExecution:</br>  - labelSelector: </br>    matchExpressions:</br>    - key: "app.kubernetes.io/component"</br>    operator: In</br>    values:</br>    - zeebe-gatway</br>  topologyKey: "kubernetes.io/hostname"` |
 | | `extraVolumeMounts` | Can be used to mount extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `[ ]` |
 | | `extraVolumes` | Can be used to define extra volumes for the gateway pods, useful for enabling TLS between gateway and broker | `[ ]` |
-| | `extraInitContainers` | Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
+| | `extraInitContainers` | (Deprecated - use `initContainers` instead) Can be used to set up extra init containers for the gateway pods, useful for adding interceptors | `[ ]` |
+| | `initContainers` | Can be used to set up extra init containers for the broker pods, useful for additional exporters | `[ ]` |
 | | `service` | Configuration for the gateway service | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.loadBalancerIP` | Can be used to set [ip address](https://cloud.google.com/kubernetes-engine/docs/how-to/service-parameters#lb_ip) if service.type is LoadBalancer | `""` |
@@ -475,6 +477,7 @@ For more information about Operate, visit
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `initContainers` | Can be used to set up extra init containers for the operate pods, useful for additional exporters | `[ ]` |
 | | `contextPath` |  Can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Operate pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Operate pod labels | `{ }` |
@@ -547,6 +550,7 @@ For more information about Tasklist, visit
 | | `image.tag` | Can be set to overwrite the global tag, which should be used in that chart. | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `initContainers` | Can be used to set up extra init containers for the taskList pods, useful for adding interceptors | `[ ]` |
 | | `contextPath` |  Can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. | |
 | | `podAnnotations` | Can be used to define extra Tasklist pod annotations | `{ }` |
 | | `podLabels` |  Can be used to define extra Tasklist pod labels | `{ }` |
@@ -621,6 +625,7 @@ For more information, visit [Optimize Introduction](https://docs.camunda.io/opti
 | | `partitionCount` |  Defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize | `"3"` |
 | | `env` |  Can be used to set extra environment variables in each Optimize container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
 | | `command` | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) | `[]` |
+| | `initContainers` | Can be used to set up extra init containers for the optimize pods, useful for adding interceptors | `[ ]` |
 | | `extraVolumes` |  Can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
 | | `extraVolumeMounts` |  Can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates | `[]` |
 | | `serviceAccount` |  Configuration for the service account where the Optimize pods are assigned to | |
@@ -694,6 +699,7 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 | | `image.tag` |   Can be set to overwrite the global.image.tag | `` |
 | | `image.pullSecrets` | Can be set to overwrite the global.image.pullSecrets | `{{ global.image.pullSecrets }}` |
 | | `sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `initContainers` | Can be used to set up extra init containers for the identity pods, useful for adding interceptors | `[ ]` |
 | | `fullURL` |  Can be used when Ingress is configured (for both multi and single domain setup). <br/> Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the fullURL too. | |
 | | `contextPath` |  Can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain. **Note:** Identity cannot be accessed over HTTP if a "contextPath" is configured. Which means that Identity cannot be configured in combined Ingress without HTTPS. To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath". | `` |
 | | `podAnnotations` | Can be used to define extra Identity pod annotations | `{ }` |
@@ -797,6 +803,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `restapi` | Configuration of the Web Modeler restapi component | |
 | | `restapi.image` | Configuration of the restapi Docker image | |
 | | `restapi.image.repository` | Defines which image repository to use for the restapi Docker image | `web-modeler-ee/modeler-restapi` |
+| | `restapi.initContainers` | Can be used to set up extra init containers | `[]` |
 | | `restapi.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `restapi.externalDatabase` | Can be used to configure a connection to an external database. This will only be applied if the postgresql dependency chart is disabled (by setting `postgresql.enabled` to `false`).<br/>Note: Currently, the only supported database system is PostgreSQL.| |
 | | `restapi.externalDatabase.host` | Defines the host name of the database instance | |
@@ -857,6 +864,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `webapp.image` | Configuration of the webapp Docker image | |
 | | `webapp.image.repository` | Defines which image repository to use for the webapp Docker image | `web-modeler-ee/modeler-webapp` |
 | | `webapp.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `webapp.initContainers` | Can be used to set up extra init containers | `[]` |
 | | `webapp.podAnnotations` | Can be used to define extra webapp pod annotations | `{}` |
 | | `webapp.podLabels` | Can be used to define extra webapp pod labels | `{}` |
 | | `webapp.env` | Can be used to set extra environment variables in each webapp container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[]` |
@@ -901,6 +909,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets.image` | Configuration of the websockets Docker image | |
 | | `websockets.image.repository` | Defines which image repository to use for the websockets Docker image | `web-modeler-ee/modeler-websockets` |
 | | `websockets.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
+| | `websockets.initContainers` | Can be used to set up extra init containers | `[]` |
 | | `websockets.publicHost` | Can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service has been created.<br/>Note: The host will only be used if the Ingress resource for Web Modeler is disabled. | `localhost` |
 | | `websockets.publicPort` | Can be used to define the port number on which the WebSockets server can be reached from the Web Modeler client in the browser. The default value assumes that a port-forwarding to the websockets service on port `8085` has been created.<br/>Note: The port will only be used if the Ingress resource for Web Modeler is disabled. | `8085` |
 | | `websockets.podAnnotations` | Can be used to define extra websockets pod annotations | `{}` |
@@ -996,6 +1005,7 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `env`                                | Can be used to set extra environment variables in each Connectors container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence.                                                                                                                                                      | `[]`                                                                                                  |
 |              | `extraVolumes`                       | Can be used to define extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                          | `[]`                                                                                                  |
 |              | `extraVolumeMounts`                  | Can be used to mount extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                           | `[]`                                                                                                  |
+|              | `initContainers`                     | Can be used to set up extra init containers for the identity pods, useful for adding interceptors                                                                                                                                                 | `[]`                                                                                                  |
 |              | `command`                            | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/)                                                                        | `[]`                                                                                                  |
 |              | `serviceAccount`                     | Configuration for the service account where the Connectors pods are assigned to                                                                                                                                                                   |                                                                                                       |
 |              | `serviceAccount.enabled`             | If true, enables the Connectors service account                                                                                                                                                                                                   | `true`                                                                                                |

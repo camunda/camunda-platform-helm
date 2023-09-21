@@ -310,8 +310,10 @@ zeebe:
   extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
-  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  # (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
+ # initContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  initContainers: []
 
   # PodAnnotations can be used to define extra broker pod annotations
   podAnnotations: {}
@@ -572,8 +574,10 @@ zeebe-gateway:
   extraVolumeMounts: []
   # ExtraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
   extraVolumes: []
-  # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  # (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
+  # initContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  initContainers: []
 
   # Service configuration for the gateway service
   service:
@@ -659,7 +663,8 @@ operate:
 
   # Sidecars can be used to attach extra containers to the operate deployment
   sidecars: []
-
+  # initContainers can be used to set up extra init containers for the operate pods, useful for additional exporters
+  initContainers: []
   # ContextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
   # contextPath: "/operate"
 
@@ -839,7 +844,8 @@ tasklist:
 
   # Sidecars can be used to attach extra containers to the tasklist deployment
   sidecars: []
-
+  # initContainers can be used to set up extra init containers for the taskList pods, useful for additional exporters
+  initContainers: []
   # ContextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
   # contextPath: "/tasklist"
 
@@ -1036,7 +1042,8 @@ optimize:
   extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
-
+  # initContainers can be used to set up extra init containers for the optimize pods, useful for additional exporters
+  initContainers: []
   # ServiceAccount configuration for the service account where the Optimize pods are assigned to
   serviceAccount:
     # ServiceAccount.enabled if true, enables the Optimize service account
@@ -1220,7 +1227,8 @@ identity:
 
   # Sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
-
+  # initContainers can be used to set up extra init containers for the identity pods, useful for additional exporters
+  initContainers: []
   # FullURL can be used when Ingress is configured (for both multi and single domain setup).
   # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
   # fullURL: "https://camunda.example.com/identity"
@@ -1519,6 +1527,8 @@ webModeler:
 
     # Restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
+    # Restapi.initContainers can be used to set up extra init containers to the restapi deployment
+    initContainers: []
 
     # Restapi.externalDatabase can be used to configure a connection to an external database. This will only be applied
     # if the postgresql dependency chart is disabled (by setting postgresql.enabled to false).
@@ -1673,6 +1683,8 @@ webModeler:
 
     # Webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
+    # Webapp.initContainers can be used to set up extra init containers to the modeler webapp deployment
+    initContainers: []
 
     # Webapp.podAnnotations can be used to define extra webapp pod annotations
     podAnnotations: {}
@@ -1794,6 +1806,8 @@ webModeler:
 
     # Websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
+    # Websockets.initContainers can be used to set up extra init containers to the modeler websockets deployment
+    initContainers: []
 
     # Websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser.
     # The default value assumes that a port-forwarding to the websockets service has been created.
@@ -1999,6 +2013,8 @@ connectors:
 
   # Sidecars can be used to attach extra containers to the connectors deployment
   sidecars: []
+  # initContainers can be used to set up extra init containers to the connectors deployment
+  initContainers: []
 
   # Number of Connectors replicas
   replicas: 1
