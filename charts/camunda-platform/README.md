@@ -242,7 +242,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `ingress.tls` | Configuration for [TLS on the ingress resource](https://kubernetes.io/docs/concepts/services-networking/ingress/#tls) | |
 | | `ingress.tls.enabled` | If true, then TLS is configured on the ingress resource. If enabled the Ingress.host needs to be defined. | `false` |
 | | `ingress.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | `""` |
-| | `elasticsearch.enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
 | | `elasticsearch.disableExporter` | If true, disables the [Elasticsearch Exporter](https://github.com/camunda-cloud/zeebe/tree/develop/exporters/elasticsearch-exporter) in Zeebe | `false` |
 | | `elasticsearch.url` | Can be used to configure the URL to access Elasticsearch. When not set, services fallback to host and port configuration. | |
 | | `elasticsearch.protocol` | Defines the elasticsearch access protocol, by default HTTP. | `http` |
