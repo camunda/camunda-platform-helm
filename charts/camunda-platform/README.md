@@ -229,6 +229,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `global` | | Global variables which can be accessed by all sub charts | |
 | | `annotations` | Can be used to define common annotations, which should be applied to all deployments | |
 | | `labels` | Can be used to define common labels, which should be applied to all deployments | |
+| | `multitenancy.enabled` | If true, then enable multitenancy in all applicable component | `false` |
 | | `image.tag` | Defines the tag / version which should be used in the chart. | |
 | | `image.pullPolicy` | Defines the [image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) which should be used. | IfNotPresent |
 | | `image.pullSecrets` | Can be used to configure [image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod). Also it could be configured per component separately. | `[]` |
@@ -272,7 +273,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `identity.keycloak.auth.adminUser` |    Can be used to configure admin user to access existing Keycloak | `""` |
 | | `identity.keycloak.auth.existingSecret` |    Can be used to configure existing Secret object which has admin password to access existing Keycloak | `""` |
 | | `identity.keycloak.auth.existingSecretKey` |    Can be used to configure the key inside existing Secret object which has admin password to access existing Keycloak | `"admin-password"` |
-| `elasticsearch`| `enabled` | Enable Elasticsearch deployment as part of the Camunda Platform Cluster | `true` |
 
 ### Camunda Platform
 

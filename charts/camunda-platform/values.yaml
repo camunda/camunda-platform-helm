@@ -41,6 +41,11 @@ global:
   labels:
     app: camunda-platform
 
+  # Multitenancy configuration which is shared between the sub charts
+  multitenancy:
+    # multitenancy.enabled if true, then enable multitenancy in all applicable component.
+    enabled: false
+
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
   image:
