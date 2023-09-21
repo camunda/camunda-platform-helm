@@ -310,7 +310,7 @@ zeebe:
   extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
-  # ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  # (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
  # initContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   initContainers: []
@@ -574,7 +574,7 @@ zeebe-gateway:
   extraVolumeMounts: []
   # ExtraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
   extraVolumes: []
-  # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  # (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
   # initContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   initContainers: []
