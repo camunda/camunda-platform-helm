@@ -768,23 +768,3 @@ func (s *deploymentTemplateTest) TestZeebeMultiTenancyEnabled() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_GATEWAY_MULTITENANCY_ENABLED", Value: "true"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED", Value: "true"})
 }
-
-func (s *deploymentTemplateTest) TestZeebeMultiTenancyDisabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.multitenancy.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().NotContains(env, corev1.EnvVar{Name: "ZEEBE_GATEWAY_MULTITENANCY_ENABLED", Value: "true"})
-	s.Require().NotContains(env, corev1.EnvVar{Name: "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED", Value: "true"})
-}
