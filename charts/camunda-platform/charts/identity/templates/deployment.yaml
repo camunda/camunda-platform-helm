@@ -60,6 +60,23 @@ spec:
             {{- end }}
           - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
             value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
+          - name: KEYCLOAK_INIT_CONSOLE_SECRET
+            {{- if and .Values.global.identity.auth.console.existingSecret (not (typeIs "string" .Values.global.identity.auth.console.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.console.existingSecret "context" $) }}
+                key: console-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameConsoleIdentity" . }}
+                key: console-secret
+            {{- end }}
           - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
             value: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
           - name: KEYCLOAK_INIT_TASKLIST_SECRET
