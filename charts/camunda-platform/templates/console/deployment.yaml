@@ -40,7 +40,7 @@ spec:
             - name: IDENTITY_REALM
               value: camunda-platform
             - name: IDENTITY_AUDIENCE
-              value: console-api
+              value: console
             - name: IDENTITY_CLIENT_ID
               value: console
           {{- if .Values.console.env}}
