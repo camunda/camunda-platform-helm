@@ -69,6 +69,8 @@ spec:
                 key: optimize-secret
           - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
             value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL
+            value: "http://camunda-platform-test-identity:80"
           - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
             value: "optimize-api"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI

@@ -87,6 +87,8 @@ spec:
             {{- end }}
           - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
             value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL
+            value: "http://{{ .Release.Name }}-identity:80"
           - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
             value: "optimize-api"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
@@ -94,6 +96,14 @@ spec:
           {{- end }}
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
+          {{- if .Values.global.multitenancy.enabled }}
+          - name: CAMUNDA_OPTIMIZE_MULTI_TENANCY_ENABLED
+            value: "true"
+          - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
+            value: 10000
+          - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
+            value: 600000
+          {{- end }}
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
