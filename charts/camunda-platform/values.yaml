@@ -1160,8 +1160,6 @@ optimize:
       enabled: false
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-optimize
-  # UpgradeInitContainerEnabled if true, an init container will be added to run the optimize upgrade script
-  upgradeInitContainerEnabled: false
 
 
 ############################################
