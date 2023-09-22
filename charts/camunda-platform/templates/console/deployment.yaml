@@ -36,7 +36,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: IDENTITY_BASE
-              value: {{ include "camundaPlatform.keycloakURL" . | quote }}
+              value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
             - name: IDENTITY_REALM
               value: camunda-platform
             - name: IDENTITY_AUDIENCE
