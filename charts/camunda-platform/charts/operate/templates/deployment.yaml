@@ -101,10 +101,10 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "auth"
           {{- end }}
-          {{ - if .Values.global.multitenancy.enabled }}
+          {{- if .Values.global.multitenancy.enabled }}
           - name: CAMUNDA_OPERATE_MULTITENANCY_ENABLED
             value: "true"
-          {{ - end }}
+          {{- end }}
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
