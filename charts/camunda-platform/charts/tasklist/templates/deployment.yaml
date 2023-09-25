@@ -97,6 +97,10 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "auth"
           {{- end }}
+          {{- if .Values.global.multitenancy.enabled }}
+          - name: CAMUNDA_TASKLIST_MULTITENANCY_ENABLED
+            value: "true"
+          {{- end }}
           - name: GRAPHQL_PLAYGROUND_ENABLED
             value: {{ default "true" .Values.graphqlPlaygroundEnabled | quote }}
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
