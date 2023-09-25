@@ -846,3 +846,22 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+
+func (s *deploymentTemplateTest) TestOperateMultiTenancyEnabled() {
+ 	// given
+ 	options := &helm.Options{
+ 		SetValues: map[string]string{
+ 			"global.multitenancy.enabled": "true",
+ 		},
+ 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+ 	}
+
+ 	// when
+ 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+ 	var statefulSet appsv1.StatefulSet
+ 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+ 	// then
+ 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+ 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_MULTITENANCY_ENABLED", Value: "true"})
+}
