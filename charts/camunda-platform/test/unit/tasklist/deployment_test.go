@@ -866,7 +866,7 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 	s.Require().Contains(podContainers, expectedContainer)
 }
 
-func (s *deploymentTemplateTest) TestZeebeMultiTenancyEnabled() {
+func (s *deploymentTemplateTest) TestTasklistMultiTenancyEnabled() {
  	// given
  	options := &helm.Options{
  		SetValues: map[string]string{
