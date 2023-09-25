@@ -882,5 +882,5 @@ func (s *deploymentTemplateTest) TestTasklistMultiTenancyEnabled() {
 
  	// then
  	env := statefulSet.Spec.Template.Spec.Containers[0].Env
- 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_MULTITENANCY_ENABLED", Value: "true"})
+ 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_MULTITENANCY_WRONG_VAR_NAME_ENABLED", Value: "true"})
 }
