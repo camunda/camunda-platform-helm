@@ -137,11 +137,9 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.registry":     "global.custom.registry.io",
-			"global.image.tag":          "8.x.x",
-			"optimize.image.tag":        "3.x.x",
-			"retentionPolicy.enabled":   "true",
-			"retentionPolicy.image.tag": "5.x.x",
+			"global.image.registry": "global.custom.registry.io",
+			"global.image.tag":      "8.x.x",
+			"optimize.image.tag":    "3.x.x",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -155,5 +153,4 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/optimize:3.x.x\"")
 	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/tasklist:8.x.x\"")
 	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/zeebe:8.x.x\"")
-	s.Require().Contains(output, "image: \"global.custom.registry.io/bitnami/elasticsearch-curator-archived:5.x.x\"")
 }

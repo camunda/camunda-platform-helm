@@ -136,11 +136,15 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 [camunda-platform] Elasticsearch URL which could be external.
 */}}
 
+{{- define "camundaPlatform.elasticsearchHost" -}}
+    {{- tpl .Values.global.elasticsearch.host $ -}}
+{{- end -}}
+
 {{- define "camundaPlatform.elasticsearchURL" -}}
     {{- if .Values.global.elasticsearch.url -}}
         {{- .Values.global.elasticsearch.url -}}
     {{- else -}}
-        {{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}
+        {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.port }}
     {{- end -}}
 {{- end -}}
 

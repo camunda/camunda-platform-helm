@@ -27,7 +27,7 @@ data:
         # Cluster name
         clusterName: elasticsearch
         # Host
-        host: elasticsearch-master
+        host: camunda-platform-test-elasticsearch
         # Transport port
         port: 9200
       # Zeebe instance
@@ -39,7 +39,7 @@ data:
         # Cluster name
         clusterName: elasticsearch
         # Host
-        host: elasticsearch-master
+        host: camunda-platform-test-elasticsearch
         # Transport port
         port: 9200
         # Index prefix, configured in Zeebe Elasticsearch exporter

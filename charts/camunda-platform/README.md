@@ -245,7 +245,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `elasticsearch.disableExporter` | If true, disables the [Elasticsearch Exporter](https://github.com/camunda-cloud/zeebe/tree/develop/exporters/elasticsearch-exporter) in Zeebe | `false` |
 | | `elasticsearch.url` | Can be used to configure the URL to access Elasticsearch. When not set, services fallback to host and port configuration. | |
 | | `elasticsearch.protocol` | Defines the elasticsearch access protocol, by default HTTP. | `http` |
-| | `elasticsearch.host` | Defines the Elasticsearch host, ideally the service name inside the namespace. | `elasticsearch-master` |
+| | `elasticsearch.host` | Defines the Elasticsearch host, ideally the service name inside the namespace. | `{{ .Release.Name }}-elasticsearch` |
 | | `elasticsearch.port` | Defines the Elasticsearch port, under which Elasticsearch can be accessed | `9200` |
 | | `elasticsearch.clusterName` | Defines the cluster name which is used by Elasticsearch. | `elasticsearch` |
 | | `elasticsearch.prefix` | Defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes | `zeebe-record` |
@@ -278,16 +278,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `retentionPolicy` | | Configuration to configure the Elasticsearch index retention policies | |
-| | `enabled` | If true, Elasticsearch curator cronjob and configuration will be deployed. | `false` |
-| | `schedule` | Defines how often/when the curator should run. | `"0 0 * * *"` |
-| | `zeebeIndexTTL` | Defines after how many days a zeebe index can be deleted. | `1` |
-| | `zeebeIndexMaxSize` | Can be set to configure the maximum allowed zeebe index size in gigabytes. After reaching that size, curator will delete that corresponding index on the next run. To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes. | `` |
-| | `operateIndexTTL` | Defines after how many days an Operate index can be deleted. | `30` |
-| | `tasklistIndexTTL` | Defines after how many days an Tasklist index can be deleted. | `30` |
-| | `image.registry` | Can be used to set container image registry. | `""` |
-| | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator-archived` |
-| | `image.tag` | Defines the tag / version which should be used in the chart. | `Check the values file` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
 | | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|
 | | `labels` | Can be set to configure extra labels, which will be added to the ServiceMonitor and can be used on the prometheus controller for selecting the ServiceMonitors | `release: metrics` |

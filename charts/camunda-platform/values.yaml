@@ -89,7 +89,7 @@ global:
     # Elasticsearch.protocol defines the elasticsearch access protocol, by default HTTP.
     protocol: http
     # Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
-    host: "elasticsearch-master"
+    host: "{{ .Release.Name }}-elasticsearch"
     # Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
     port: 9200
     # Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
@@ -2429,70 +2429,33 @@ console:
 
 elasticsearch:
   enabled: true
-
-  # https://hub.docker.com/r/elastic/elasticsearch/tags
-  imageTag: 7.17.10
-
-  extraEnvs:
-    - name: "xpack.security.enabled"
-      value: "false"
-
-  replicas: 2
-
-  persistence:
-    labels:
-      enabled: true
-
-  volumeClaimTemplate:
-    accessModes: ["ReadWriteOnce"]
+  # https://hub.docker.com/r/bitnami/elasticsearch/tags
+  image:
+    repository: bitnami/elasticsearch
+    tag: 8.10.2
+  master:
+    masterOnly: false
+    heapSize: 1024m
+    persistence:
+      size: 64Gi
     resources:
       requests:
-        storage: 64Gi
-
-  esJavaOpts: "-Xmx1g -Xms1g"
-
-  resources:
-    requests:
-      cpu: 1
-      memory: 2Gi
-    limits:
-      cpu: 2
-      memory: 2Gi
-
-# Elasticsearch.
-#####  ###### ##### ###### #    # ##### #  ####  #    #
-#    # #        #   #      ##   #   #   # #    # ##   #
-#    # #####    #   #####  # #  #   #   # #    # # #  #
-#####  #        #   #      #  # #   #   # #    # #  # #
-#   #  #        #   #      #   ##   #   # #    # #   ##
-#    # ######   #   ###### #    #   #   #  ####  #    #
-
-# RetentionPolicy configuration to configure the elasticsearch index retention policies
-retentionPolicy:
-  # RetentionPolicy.enabled if true, elasticsearch curator cronjob and configuration will be deployed.
-  enabled: false
-  # RetentionPolicy.schedule defines how often/when the curator should run
-  schedule: "0 0 * * *"
-  # RetentionPolicy.zeebeIndexTTL defines after how many days a zeebe index can be deleted
-  zeebeIndexTTL: 1
-  # RetentionPolicy.zeebeIndexMaxSize can be set to configure the maximum allowed zeebe index size in gigabytes.
-  # After reaching that size, curator will delete that corresponding index on the next run.
-  # To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes.
-  zeebeIndexMaxSize:
-  # RetentionPolicy.operateIndexTTL defines after how many days an operate index can be deleted
-  operateIndexTTL: 30
-  # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
-  tasklistIndexTTL: 30
-
-  # Image configuration for the elasticsearch curator cronjob
-  # https://hub.docker.com/r/bitnami/elasticsearch-curator-archived/tags
-  image:
-    # Image.registry can be used to set container image registry.
-    registry: ""
-    # Image.repository defines which image repository to use
-    repository: bitnami/elasticsearch-curator-archived
-    # Image.tag defines the tag / version which should be used in the chart
-    tag: 5.8.4
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 2
+        memory: 2Gi
+    extraEnvVars:
+    - name: ELASTICSEARCH_ENABLE_REST_TLS
+      value: "false"
+  sysctlImage:
+    enabled: true
+  ingest:
+    enabled: false
+  data:
+    replicaCount: 0
+  coordinating:
+    replicaCount: 0
 
 
 #####################################################################
