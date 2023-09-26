@@ -78,7 +78,8 @@ spec:
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
               value: zeebe-api
-          command: []
+          command: 
+            []
           resources:
             limits:
               cpu: 2

@@ -102,7 +102,7 @@ spec:
           {{- tpl (toYaml .) $ | nindent 8 }}
         {{- end }}
         {{- if .Values.command}}
-        command: {{ .Values.command }}
+        command: {{ toYaml .Values.command | nindent 10 }}
         {{- end }}
         ports:
         - containerPort: {{ .Values.service.httpPort  }}
