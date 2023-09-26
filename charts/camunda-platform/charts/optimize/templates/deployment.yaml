@@ -24,7 +24,19 @@ spec:
       imagePullSecrets:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.initContainers | default list | toYaml | nindent 8) $ }}
+      - name: migration
+        image: {{ include "camundaPlatform.image" . | quote }}
+        command: ['./upgrade/upgrade.sh', '--skip-warning']
+        env:
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+          value: "true"
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+          value: {{ .Values.partitionCount | quote }}
+        - name: OPTIMIZE_ELASTICSEARCH_HOST
+          value: {{ .Values.global.elasticsearch.host | quote }}
+        - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+          value: {{ .Values.global.elasticsearch.port | quote }}
+        {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ include "camundaPlatform.image" . | quote }}
@@ -162,16 +174,3 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
-      initContainers:
-      - name: migration
-        image: {{ include "camundaPlatform.image" . | quote }}
-        command: ['./upgrade/upgrade.sh', '--skip-warning']
-        env:
-        - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-          value: "true"
-        - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-          value: {{ .Values.partitionCount | quote }}
-        - name: OPTIMIZE_ELASTICSEARCH_HOST
-          value: {{ .Values.global.elasticsearch.host | quote }}
-        - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-          value: {{ .Values.global.elasticsearch.port | quote }}
