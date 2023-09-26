@@ -36,7 +36,7 @@ spec:
           value: {{ .Values.global.elasticsearch.host | quote }}
         - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
           value: {{ .Values.global.elasticsearch.port | quote }}
-        {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
+        {{ tpl (.Values.initContainers | toYaml | nindent 6) $ }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ include "camundaPlatform.image" . | quote }}
