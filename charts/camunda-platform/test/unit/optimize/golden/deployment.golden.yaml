@@ -38,7 +38,18 @@ spec:
       imagePullSecrets:
         []
       initContainers:
-        []
+      - name: migration
+        image: "camunda/optimize:3.10.5"
+        command: ['./upgrade/upgrade.sh', '--skip-warning']
+        env:
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+          value: "true"
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+          value: "3"
+        - name: OPTIMIZE_ELASTICSEARCH_HOST
+          value: "elasticsearch-master"
+        - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+          value: "9200"
       containers:
       - name: optimize
         image: "camunda/optimize:3.10.5"
@@ -69,6 +80,8 @@ spec:
                 key: optimize-secret
           - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
             value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL
+            value: "http://camunda-platform-test-identity:80"
           - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
             value: "optimize-api"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
@@ -101,16 +114,3 @@ spec:
           timeoutSeconds: 1
         volumeMounts:
       volumes:
-      initContainers:
-      - name: migration
-        image: "camunda/optimize:3.10.5"
-        command: ['./upgrade/upgrade.sh', '--skip-warning']
-        env:
-        - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-          value: "true"
-        - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-          value: "3"
-        - name: OPTIMIZE_ELASTICSEARCH_HOST
-          value: "elasticsearch-master"
-        - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-          value: "9200"
