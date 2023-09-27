@@ -13,7 +13,7 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 0.23.0
+    tag: 0.23.2
 
 identity:
   keycloak:
