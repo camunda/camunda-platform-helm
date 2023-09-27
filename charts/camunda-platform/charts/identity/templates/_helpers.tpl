@@ -242,3 +242,17 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
     admin-password
 {{- end }}
 {{- end -}}
+
+{{- define "identity.postgresql.host" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-postgresql-identity" $name | trunc 63 | trimSuffix "-" }}
+{{- end -}}
+
+{{- define "identity.postgresql.databaseSecretName" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-postgresql-identity" $name | trunc 63 | trimSuffix "-" }}
+{{- end -}}
+
+{{- define "identity.postgresql.databaseSecretKey" -}}
+{{- printf "password" }}
+{{- end -}}
