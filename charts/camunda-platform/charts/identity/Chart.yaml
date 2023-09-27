@@ -9,3 +9,7 @@ dependencies:
     repository: https://charts.bitnami.com/bitnami
     version: 12.3.0
     condition: "keycloak.enabled"
+  - name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 11.x.x
+    condition: "postgresql.enabled"
