@@ -59,7 +59,7 @@ spec:
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.webModeler.websockets.command}}
-        command: {{ .Values.webModeler.websockets.command }}
+        command: {{ toYaml .Values.webModeler.websockets.command | nindent 10 }}
         {{- end }}
         resources:
           {{- toYaml .Values.webModeler.websockets.resources | nindent 10 }}

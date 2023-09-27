@@ -323,9 +323,9 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                     "true",
-			"webModeler.restapi.mail.fromAddress":    "example@example.com",
-			"webModeler." + s.component + ".command": "[printenv]",
+			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
+			"webModeler." + s.component + ".command[0]": "printenv",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
