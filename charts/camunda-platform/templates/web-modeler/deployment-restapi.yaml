@@ -99,7 +99,7 @@ spec:
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.webModeler.restapi.command }}
-        command: {{ .Values.webModeler.restapi.command }}
+        command: {{ toYaml .Values.webModeler.restapi.command | nindent 10 }}
         {{- end }}
         resources:
           {{- toYaml .Values.webModeler.restapi.resources | nindent 10 }}

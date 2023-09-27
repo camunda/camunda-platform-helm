@@ -102,7 +102,7 @@ spec:
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.webModeler.webapp.command }}
-        command: {{ .Values.webModeler.webapp.command }}
+        command: {{ toYaml .Values.webModeler.webapp.command | nindent 10 }}
         {{- end }}
         resources:
           {{- toYaml .Values.webModeler.webapp.resources | nindent 10 }}

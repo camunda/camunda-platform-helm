@@ -295,7 +295,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"tasklist.command": "[printenv]",
+			"tasklist.command[0]": "printenv",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

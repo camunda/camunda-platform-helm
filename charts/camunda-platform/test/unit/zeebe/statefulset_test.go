@@ -361,7 +361,7 @@ func (s *statefulSetTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.command": "[printenv]",
+			"zeebe.command[0]": "printenv",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

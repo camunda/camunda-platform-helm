@@ -107,7 +107,7 @@ spec:
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
-          command: {{ .Values.connectors.command }}
+          command: {{ toYaml .Values.connectors.command | nindent 12 }}
           resources: {{- toYaml .Values.connectors.resources | nindent 12 }}
           {{- if .Values.connectors.startupProbe.enabled }}
           startupProbe:
