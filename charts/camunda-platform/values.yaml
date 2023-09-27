@@ -422,6 +422,12 @@ zeebe:
   # PriorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
+  # Retention of Zeebe data in Elasticsearch.
+  retention:
+    enabled: false
+    minimumAge: 30d
+    policyName: zeebe-record-retention-policy
+
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
 #    #  #  #    #   #      #    #  #  #   # #
@@ -823,6 +829,11 @@ operate:
   # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
 
+  # Retention of Operate data in Elasticsearch.
+  retention:
+    enabled: false
+    minimumAge: 30d
+
 
 ##################################################
 #######
@@ -1002,6 +1013,10 @@ tasklist:
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-tasklist
 
+  # Retention of Tasklist data in Elasticsearch.
+  retention:
+    enabled: false
+    minimumAge: 30d
 
 #############################################
  #####

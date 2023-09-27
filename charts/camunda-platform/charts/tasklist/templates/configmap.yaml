@@ -43,6 +43,11 @@ data:
         # Elasticsearch full url
         url: {{ .Values.global.elasticsearch.url }}
         {{- end }}
+      {{- if .Values.retention.enabled }}
+      archiver:
+        ilmEnabled: true
+        ilmMinAgeForDeleteArchivedIndices: {{ .Values.retention.minimumAge }}
+      {{- end }}
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
     # Enable or disable metrics
