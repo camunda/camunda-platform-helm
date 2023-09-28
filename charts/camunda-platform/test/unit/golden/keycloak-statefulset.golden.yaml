@@ -30,7 +30,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: "20.0.1"
+        app.kubernetes.io/version: 22.0.3
         app.kubernetes.io/component: keycloak
     spec:
       serviceAccountName: camunda-platform-test-keycloak
@@ -51,6 +51,7 @@ spec:
           
       securityContext:
         fsGroup: 1001
+      enableServiceLinks: true
       initContainers:
         - command:
           - sh
@@ -64,7 +65,7 @@ spec:
             name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:22.0.1
+          image: docker.io/bitnami/keycloak:22.0.3
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true
