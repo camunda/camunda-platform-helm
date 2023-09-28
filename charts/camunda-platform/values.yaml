@@ -34,30 +34,45 @@
 ##########################################
 
 # Global configuration for variables which can be accessed by all sub charts
+## @section Global parameters
+## @extra global
 global:
-  # Annotations can be used to define common annotations, which should be applied to all deployments
+  ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
-  # Labels can be used to define common labels, which should be applied to all deployments
   labels:
+  ## @param global.labels.app Name of the application
     app: camunda-platform
-
-  # Multitenancy configuration which is shared between the sub charts
-  multitenancy:
-    # multitenancy.enabled if true, then enable multitenancy in all applicable component.
-    enabled: false
 
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
   image:
-    # Image.registry can be used to set container image registry.
+    ## @param global.image.registry Can be used to set container image registry.
     registry: ""
-    # Image.tag defines the tag / version which should be used in the most of the apps.
+    ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
     tag: 8.2.15
-    # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
-    # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+    ## @skip global.ingress
+    ## @skip global.elasticsearch
+    ## @skip global.zeebeClusterName
+    ## @skip global.zeebePort
+    ## @skip global.identity
+    ## @skip zeebe
+    ## @skip zeebe-gateway
+    ## @skip operate
+    ## @skip tasklist
+    ## @skip optimize
+    ## @skip identity
+    ## @skip webModeler
+    ## @skip connectors
+    ## @skip console
+    ## @skip elasticsearch
+    ## @skip retentionPolicy
+    ## @skip postgresql
+    ## @skip prometheusServiceMonitor
 
   # Ingress configuration to configure the ingress resource
   ingress:
