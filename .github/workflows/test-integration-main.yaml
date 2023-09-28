@@ -47,7 +47,7 @@ env:
 
 jobs:
   test:
-    name: Chart full setup - ${{ matrix.test.name }}
+    name: ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test:
+        distro:
         - name: Kubernetes 1.24
           type: kubernetes
           platform: gke
@@ -72,11 +72,18 @@ jobs:
           version: 4.13
           platform: rosa
           if: ${{ github.event.pull_request.number || contains(inputs.platforms, 'rosa') }}
+        scenario:
+        - name: Chart Setup
+          desc: Setup chart in production-like setup with Ingress and TLS.
+          action: install
+        - name: Chart Upgrade
+          desc: Upgrade chart from the latest released version to the current branch.
+          action: upgrade
         exclude:
-        - test:
+        - distro:
             if: false
     env:
-      TEST_CLUSTER_TYPE: ${{ matrix.test.type }}
+      TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
     steps:
     - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       with:
@@ -84,22 +91,22 @@ jobs:
         repository: camunda/camunda-platform-helm
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
-      if: matrix.test.platform == 'gke'
+      if: matrix.distro.platform == 'gke'
       uses: ./.github/actions/gke-login
       with:
-        cluster-name: ${{ secrets[matrix.test.secret.cluster-name] }}
-        cluster-location: ${{ secrets[matrix.test.secret.cluster-location] }}
-        workload-identity-provider: ${{ secrets[matrix.test.secret.workload-identity-provider] }}
-        service-account: ${{ secrets[matrix.test.secret.service-account] }}
+        cluster-name: ${{ secrets[matrix.distro.secret.cluster-name] }}
+        cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
+        workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
+        service-account: ${{ secrets[matrix.distro.secret.service-account] }}
     - name: Set OpenShift authentication vars
-      if: matrix.test.type == 'openshift'
+      if: matrix.distro.type == 'openshift'
       run: |
-        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.test.version }} | tr -d '.')"
+        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.distro.version }} | tr -d '.')"
         echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_CLUSTER_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
         echo "OPENSHIFT_CLUSTER_USERNAME=OPENSHIFT_CLUSTER_USERNAME_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
         echo "OPENSHIFT_CLUSTER_PASSWORD=OPENSHIFT_CLUSTER_PASSWORD_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
     - name: Authenticate to OpenShift
-      if: matrix.test.platform == 'rosa'
+      if: matrix.distro.platform == 'rosa'
       uses: redhat-actions/oc-login@v1
       with:
         openshift_server_url: ${{ secrets[env.OPENSHIFT_CLUSTER_URL] }}
@@ -110,7 +117,7 @@ jobs:
       uses: ./.github/actions/workflow-vars
       with:
         persistent: ${{ env.TEST_PERSISTENT }}
-        platform: ${{ matrix.test.platform }}
+        platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ github.event.pull_request.number || inputs.identifier }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
     - name: Install env dependencies
@@ -150,7 +157,7 @@ jobs:
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
-    - name: Setup Camunda Platform
+    - name: 🌟 Setup Camunda Platform chart 🌟
       env:
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -161,6 +168,14 @@ jobs:
       timeout-minutes: 5
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+    - name: 🌟 Upgrade Camunda Platform chart 🌟
+      if: matrix.scenario.action == 'upgrade'
+      env:
+        TEST_HELM_EXTRA_ARGS: >-
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          --values /tmp/extra-values-file.yaml
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.upgrade
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@v1
       with:
@@ -186,7 +201,7 @@ jobs:
     # Even using GH app token with deployment write access doesn't work.
     # https://github.com/bobheadxi/deployments/issues/145
     - name: Cleanup GitHub deployment
-      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.test.type != 'kubernetes')
+      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@v1
       with:
         step: deactivate-env
@@ -194,7 +209,7 @@ jobs:
         env: ${{ steps.deployment.outputs.env }}
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Cleanup test namespace
-      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.test.type != 'kubernetes')
+      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       run: |
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
