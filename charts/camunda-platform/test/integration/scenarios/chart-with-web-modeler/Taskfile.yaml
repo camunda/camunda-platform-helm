@@ -37,7 +37,7 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
-    - helm install integration {{ .CHART_DIR }}
+    - helm install integration {{ .TEST_CHART }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-web-modeler-enabled.yaml
