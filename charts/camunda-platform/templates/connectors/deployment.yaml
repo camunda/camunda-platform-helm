@@ -142,10 +142,10 @@ spec:
             failureThreshold: {{ .Values.connectors.livenessProbe.failureThreshold }}
             timeoutSeconds: {{ .Values.connectors.livenessProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.connectors.extraVolumeMounts }}
           volumeMounts: 
             - mountPath: /tmp
               name: tmp
+          {{- if .Values.connectors.extraVolumeMounts }}
             {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
         {{- if .Values.connectors.sidecars }}
