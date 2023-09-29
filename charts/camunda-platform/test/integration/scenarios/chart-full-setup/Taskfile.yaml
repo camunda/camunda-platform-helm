@@ -4,7 +4,6 @@ vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
-  TEST_CHART_FLOW: '{{ env "TEST_CHART_FLOW" | default "install" }}'
 
 dotenv:
 - ../vars/common.env
