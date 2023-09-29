@@ -806,9 +806,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `restapi.initContainers` | Can be used to set up extra init containers | `[]` |
 | | `restapi.sidecars` | Can be used to deploy extra containers in the same pod | `[]` |
 | | `restapi.externalDatabase` | Can be used to configure a connection to an external database. This will only be applied if the postgresql dependency chart is disabled (by setting `postgresql.enabled` to `false`).<br/>Note: Currently, the only supported database system is PostgreSQL.| |
-| | `restapi.externalDatabase.host` | Defines the host name of the database instance | |
-| | `restapi.externalDatabase.port` | Defines the port number of the database instance | `5432` |
-| | `restapi.externalDatabase.database` | Defines the database name | |
+| | `restapi.externalDatabase.url` | Defines the JDBC url of the database instance | |
 | | `restapi.externalDatabase.user` | Defines the database user | |
 | | `restapi.externalDatabase.password` | Defines the database user's password | |
 | | `restapi.mail` | Configuration for emails sent by Web Modeler | |

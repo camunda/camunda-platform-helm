@@ -46,15 +46,11 @@ spec:
         env:
           - name: JAVA_OPTIONS
             value: "-Xmx1536m"
-          - name: RESTAPI_DB_HOST
-            value: "camunda-platform-test-postgresql-web-modeler"
-          - name: RESTAPI_DB_PORT
-            value: "5432"
-          - name: RESTAPI_DB_NAME
+          - name: SPRING_DATASOURCE_URL
+            value: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"
+          - name: SPRING_DATASOURCE_USERNAME
             value: "web-modeler"
-          - name: RESTAPI_DB_USER
-            value: "web-modeler"
-          - name: RESTAPI_DB_PASSWORD
+          - name: SPRING_DATASOURCE_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: camunda-platform-test-postgresql-web-modeler

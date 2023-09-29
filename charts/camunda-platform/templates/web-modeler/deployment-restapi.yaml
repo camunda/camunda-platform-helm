@@ -34,15 +34,11 @@ spec:
         env:
           - name: JAVA_OPTIONS
             value: "-Xmx1536m"
-          - name: RESTAPI_DB_HOST
-            value: {{ include "webModeler.restapi.databaseHost" . | quote }}
-          - name: RESTAPI_DB_PORT
-            value: {{ include "webModeler.restapi.databasePort" . | quote }}
-          - name: RESTAPI_DB_NAME
-            value: {{ include "webModeler.restapi.databaseName" . | quote }}
-          - name: RESTAPI_DB_USER
+          - name: SPRING_DATASOURCE_URL
+            value: {{ include "webModeler.restapi.databaseUrl" . | quote }}
+          - name: SPRING_DATASOURCE_USERNAME
             value: {{ include "webModeler.restapi.databaseUser" . | quote }}
-          - name: RESTAPI_DB_PASSWORD
+          - name: SPRING_DATASOURCE_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: {{ include "webModeler.restapi.databaseSecretName" . }}
