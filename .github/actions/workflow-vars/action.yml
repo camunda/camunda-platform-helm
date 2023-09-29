@@ -5,6 +5,9 @@ inputs:
     description: Don't use changing vars like SHA commit
     # TODO: Change that to real bool when it's supported in GHA.
     default: "false"
+  setup-flow:
+    description: The chart setup flow either "install" or "upgrade".
+    default: "install"
   ingress-hostname-base:
     description: The base of the Ingress hostname.
   platform:
@@ -52,6 +55,10 @@ runs:
 
       if [[ "${{ inputs.persistent }}" == 'false' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
+      fi
+
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
       fi
 
       echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_ENV

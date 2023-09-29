@@ -117,6 +117,7 @@ jobs:
       uses: ./.github/actions/workflow-vars
       with:
         persistent: ${{ env.TEST_PERSISTENT }}
+        setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ github.event.pull_request.number || inputs.identifier }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
