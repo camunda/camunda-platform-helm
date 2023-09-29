@@ -1584,7 +1584,10 @@ identity:
       volumeMounts:
       - name: camunda-theme
         mountPath: /mnt
-
+      - name: config
+        mountPath: /config
+      - name: quarkus
+        mountPath: /quarkus
     - name: copy-configs
       image: bitnami/keycloak:19.0.3
       imagePullPolicy: "Always"
