@@ -72,6 +72,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
         with:
+          # The verify step happens in the "release" branch before merging to the "main" branch.
+          ref: release
           fetch-depth: 0
       - name: Simple smoke test
         # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
