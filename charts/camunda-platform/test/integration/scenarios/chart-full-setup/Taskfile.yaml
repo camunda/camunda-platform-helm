@@ -4,6 +4,7 @@ vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  TEST_CHART_FLOW: '{{ env "TEST_CHART_FLOW" | default "install" }}'
 
 dotenv:
 - ../vars/common.env
@@ -48,7 +49,7 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
-    - helm install integration {{ .TEST_CHART }}
+    - helm install integration {{ .TEST_CHART_NAME }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml
