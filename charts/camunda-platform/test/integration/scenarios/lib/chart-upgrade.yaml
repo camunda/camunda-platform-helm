@@ -26,7 +26,7 @@ tasks:
       export POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
 
-      helm upgrade integration {{ .CHART_DIR }} \
+      helm upgrade integration {{ .TEST_CHART }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml \
         --set test.existingSecret=$TEST_SECRET \

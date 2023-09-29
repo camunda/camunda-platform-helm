@@ -75,10 +75,10 @@ jobs:
         scenario:
         - name: Chart Setup
           desc: Setup chart in production-like setup with Ingress and TLS.
-          action: install
+          flow: install
         - name: Chart Upgrade
           desc: Upgrade chart from the latest released version to the current branch.
-          action: upgrade
+          flow: upgrade
         exclude:
         - distro:
             if: false
@@ -159,6 +159,7 @@ jobs:
         cat /tmp/extra-values-file.yaml
     - name: 🌟 Setup Camunda Platform chart 🌟
       env:
+        TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
@@ -169,7 +170,7 @@ jobs:
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
     - name: 🌟 Upgrade Camunda Platform chart 🌟
-      if: matrix.scenario.action == 'upgrade'
+      if: matrix.scenario.flow == 'upgrade'
       env:
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
