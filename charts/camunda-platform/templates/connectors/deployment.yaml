@@ -151,10 +151,10 @@ spec:
         {{- if .Values.connectors.sidecars }}
         {{- .Values.connectors.sidecars | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.connectors.extraVolumes }}
       volumes:
         - name: tmp
           emptyDir: {}
+      {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       {{- if .Values.connectors.serviceAccount.name}}
