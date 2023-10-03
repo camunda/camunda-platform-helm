@@ -7,12 +7,13 @@ vars:
 
 dotenv:
 - ../vars/common.env
+- ../vars/dynamic.env
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
   init.seed: ../lib/init-seed-taskfile.yaml
   setup.upgrade:
-    taskfile: ../lib/chart-upgrade.yaml
+    taskfile: ../lib/chart-upgrade-taskfile.yaml
     vars:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
       TEST_HELM_EXTRA_ARGS: |-
@@ -44,6 +45,13 @@ tasks:
     - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
       ../../testsuites/base/files/variables.env
+    - |
+      # Extract OpenShift values from released chart for upgrade test.
+      if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
+        helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }}
+        # TODO: Remove this after the next release.
+        cp -a {{ .TEST_CHART_DIR }}/openshift/patch.sh {{ .TEST_OPENSHIFT_DIR }}/openshift/patch.sh
+      fi
 
   setup.exec:
     deps: [init.seed]
