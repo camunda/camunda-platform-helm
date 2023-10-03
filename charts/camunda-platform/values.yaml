@@ -62,14 +62,11 @@ global:
     enabled: false
     ## @param global.ingress.className Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra global.ingress.annotations Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ## @param global.ingress.annotations.ingress\.kubernetes\.io/rewrite-target
-      ingress\.kubernetes\.io/rewrite-target: "/"
-      ## @param global.ingress.annotations.nginx\.ingress\.kubernetes\.io/ssl-redirect
-      nginx\.ingress\.kubernetes\.io/ssl-redirect: "false"
-      ## @param global.ingress.annotations.nginx\.ingress\.kubernetes\.io/proxy-buffer-size
-      nginx\.ingress\.kubernetes\.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.iorewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -661,7 +658,6 @@ zeebe-gateway:
     ## @param zeebe-gateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: {}
 
-  ## @extra zeebe-gateway.ingress configuration to configure the ingress resource
   ingress:
     ## @param zeebe-gateway.ingress.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
@@ -781,13 +777,12 @@ operate:
     ## @param operate.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
 
-  ## @extra operate.ingress configuration to configure the ingress resource
   ingress:
     ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     ## @param operate.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra operate.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param operate.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip operate.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip operate.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip operate.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -1061,13 +1056,12 @@ tasklist:
       cpu: 1000m
       memory: 2Gi
 
-  ## @extra tasklist.ingress configuration to configure the ingress resource
   ingress:
     ## @param tasklist.ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     ## @param tasklist.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra tasklist.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param tasklist.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip tasklist.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -1256,13 +1250,12 @@ optimize:
       cpu: 2000m
       memory: 2Gi
 
-  ## @extra optimize.ingress configuration to configure the ingress resource
   ingress:
     ## @param optimize.ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     ## @param optimize.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra optimize.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param optimize.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip optimize.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -1481,13 +1474,12 @@ identity:
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
 
-  ## @extra identity.ingress configuration to configure the ingress resource
   ingress:
     ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     ## @param identity.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra identity.ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param identity.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip identity.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip identity.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip identity.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -1707,7 +1699,6 @@ identity:
     - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
       value: "{{ .Values.global.ingress.tls.enabled }}"
 
-    ## @extra identity.keycloak.ingress can be used to configure an Ingress for Keycloak. No need to enable it if the global Ingress
     # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
     # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
     ingress:
@@ -1717,7 +1708,7 @@ identity:
       tls: false
       ## @param identity.keycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
       extraTls: []
-      ## @extra identity.keycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
+      ## @param identity.keycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
       annotations:
       ## @skip identity.keycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
         nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
@@ -2210,13 +2201,12 @@ webModeler:
     ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the Web Modeler service account
     annotations: {}
 
-  ## @extra webModeler.ingress configuration of the Web Modeler ingress resource
   ingress:
     ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the Web Modeler deployment. Only useful if an Ingress controller like NGINX is available.
     enabled: false
     ## @param webModeler.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra webModeler.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param webModeler.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip webModeler.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip webModeler.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip webModeler.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -2457,13 +2447,12 @@ connectors:
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
 
-  ## @extra connectors.ingress configuration to configure the ingress resource
   ingress:
     ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     ## @param connectors.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra connectors.ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param connectors.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip connectors.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip connectors.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip connectors.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -2705,13 +2694,12 @@ console:
     ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
 
-  ## @extra console.ingress configuration to configure the ingress resource
   ingress:
     ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @extra console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @param console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
