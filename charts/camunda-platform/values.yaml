@@ -422,10 +422,13 @@ zeebe:
   # PriorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
-  # Retention of Zeebe data in Elasticsearch.
+  # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
+    # Retention.Enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
+    # Retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
+    # Retention.policyName defines the name of the created and applied ILM policy.
     policyName: zeebe-record-retention-policy
 
 # Zeebe.
@@ -829,9 +832,11 @@ operate:
   # Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
 
-  # Retention of Operate data in Elasticsearch.
+  # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
+    # Retention.Enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
+    # Retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
 
 
@@ -1013,9 +1018,11 @@ tasklist:
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-tasklist
 
-  # Retention of Tasklist data in Elasticsearch.
+  # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
+    # Retention.Enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
+    # Retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
 
 #############################################
@@ -2465,12 +2472,12 @@ elasticsearch:
       value: "false"
   sysctlImage:
     enabled: true
-  ingest:
-    enabled: false
   data:
     replicaCount: 0
   coordinating:
     replicaCount: 0
+  ingest:
+    enabled: false
 
 
 #####################################################################
