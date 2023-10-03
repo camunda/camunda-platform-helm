@@ -200,7 +200,7 @@ global:
  #      #      #      #    # #
 ####### ###### ###### #####  ######
 ###################################
-
+## @section Zeebe Parameters
  ## @extra zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
    ## @param zeebe.enabled if true, all zeebe related resources are deployed via the helm release
@@ -458,7 +458,7 @@ zeebe:
 #  ### ######   #   #      # ## # ######   #
 #    # #    #   #   #      ##  ## #    #   #
  ####  #    #   #   ###### #    # #    #   #
-
+## @section Zeebe Gateway Parameters
 ## @extra Gateway configuration to define properties related to the standalone gateway
 zeebe-gateway:
   ## @param zeebe-gateway.replicas defines how many standalone gateways are deployed
@@ -699,7 +699,7 @@ zeebe-gateway:
 #     # #      #      #   #  #    #   #   #
  #####  #      ###### #    # #    #   #   ######
 ################################################
-
+## @section Operate Parameters
 ## @extra.operate configuration for the Operate sub chart.
 operate:
   ## @param operate.enabled if true, the Operate deployment and its related resources are deployed via a helm release
@@ -903,7 +903,7 @@ operate:
    #    #    # #    # #   #  #      # #    #   #
    #    #    #  ####  #    # ###### #  ####    #
 ##################################################
-
+## @section Tasklist Parameters
 # Tasklist configuration for the tasklist sub chart.
 tasklist:
   ## @param tasklist.enabled if true, the tasklist deployment and its related resources are deployed via a helm release
@@ -1103,7 +1103,7 @@ tasklist:
 #     # #        #   # #    # #  #     #
  #####  #        #   # #    # # ###### ######
 #############################################
-
+## @section Optimize Parameters
 # Optimize configuration for the Optimize sub chart.
 optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
@@ -1292,7 +1292,7 @@ optimize:
  #  #    # #      #   ##   #   #   #     #
 ### #####  ###### #    #   #   #   #     #
 ############################################
-
+## @section Identity Parameters
 # Identity configuration for the identity sub chart.
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
@@ -1563,7 +1563,7 @@ identity:
   #  #   #        #   #      #      #    # ###### #  #
   #   #  #        #   #    # #      #    # #    # #   #
   #    # ######   #    ####  ######  ####  #    # #    #
-
+## @section keycloak Parameters
   # Identity.keycloak
   ## @extra identity.keycloak configuration, for the keycloak dependency chart which is used by identity.
   # For more details: https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters
@@ -1749,7 +1749,7 @@ identity:
 #  #  # #      #    # #     # #    # #    # #      #      #      #   #
  ## ##  ###### #####  #     #  ####  #####  ###### ###### ###### #    #
 #######################################################################
-
+## @section WebModeler Parameters
 # WebModeler configuration of the Web Modeler deployment
 webModeler:
   ## @param webModeler.enabled if true, the Web Modeler deployment and its related resources are deployed via a helm release
@@ -1945,7 +1945,7 @@ webModeler:
   # ## # #      #    # ###### #####  #####
   ##  ## #      #    # #    # #      #
   #    # ###### #####  #    # #      #
-
+## @section webapp Parameters
   ## @extra webModeler.webapp. configuration of the Web Modeler webapp component
   webapp:
     ## @extra webModeler.webapp.image configuration of the webapp Docker image
@@ -2079,7 +2079,7 @@ webModeler:
   # ## # #      #    #      # #    # #      #  #   #        #        #
   ##  ## #      #    # #    # #    # #    # #   #  #        #   #    #
   #    # ###### #####   ####   ####   ####  #    # ######   #    ####
-
+## @section websockets Parameters
   ## @extra webModeler.websockets configuration of the Web Modeler websockets component
   websockets:
     ## @extra webModeler.websockets.image configuration of the websockets Docker image
@@ -2254,7 +2254,7 @@ webModeler:
 #####  #    #      #   #   #  ### #####  #           # #  # # #
 #      #    # #    #   #   #    # #   #  #      #    # #   #  #
 #       ####   ####    #    ####  #    # ######  ####   ### # ######
-
+## @section postgresql Parameters
 ## @extra postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
 postgresql:
   ## @param postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
@@ -2307,7 +2307,7 @@ postgresql:
 #     # #    # #   ## #   ## #      #    #   #   #    # #   #  #    #
  #####   ####  #    # #    # ######  ####    #    ####  #    #  ####
 #####################################################################
-
+## @section connectors Parameters
 ## @extra connectors configuration for the Connectors.
 connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
@@ -2512,7 +2512,7 @@ connectors:
 #     # #    # #   ## #    # #    # #      #
  #####   ####  #    #  ####   ####  ###### ######
 #################################################
-
+## @section console Parameters
 ## @extra console configuration.
 # NOTE: The values here are just placeholder and not all of them are active.
 # TODO: Update Console template to match the values when the 1st dev iteration is done.
@@ -2754,6 +2754,9 @@ console:
 #       #      #    # #    #   #   # #    # #    # #      #    # #   #  #    # #    #
 ####### ###### #    #  ####    #   #  ####   ####  ###### #    # #    #  ####  #    #
 #####################################################################################
+
+## @section elasticsearch Parameters
+
 ## @extra elasticsearch
 elasticsearch:
   ## @param elasticsearch.enabled
@@ -2831,6 +2834,8 @@ elasticsearch:
 #       #   #  #    # #    # #        #   #    # #      #    # #    #
 #       #    #  ####  #    # ######   #   #    # ######  ####   ####
 #####################################################################
+
+## @section prometheus Parameters
 
 ## @extra PrometheusServiceMonitor configuration to configure a prometheus service monitor
 prometheusServiceMonitor:
