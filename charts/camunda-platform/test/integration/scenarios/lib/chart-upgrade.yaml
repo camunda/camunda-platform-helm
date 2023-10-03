@@ -2,37 +2,12 @@ version: '3'
 
 vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
-  TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
 
-dotenv:
-- ../vars/common.env
-- ../vars/{{ .TEST_CLUSTER_TYPE }}.env
-
-includes:
-  init.seed: ../lib/init-seed-taskfile.yaml
-  test.preflight:
-    taskfile: ../lib/testsuite-deploy-taskfile.yaml
-    vars:
-      testID: preflight
-  test.core:
-    taskfile: ../lib/testsuite-deploy-taskfile.yaml
-    vars:
-      testID: core
-
 tasks:
-  setup.pre:
-    cmds:
-    - echo "No pre setup task for this test."
-
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
-  setup.exec:
-    deps: [init.seed]
+  default:
     cmds:
-    - helm install integration {{ .CHART_DIR }}
-        --namespace {{ .TEST_NAMESPACE }}
-        --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
-        {{ .TEST_HELM_EXTRA_ARGS }}
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
@@ -51,7 +26,7 @@ tasks:
       export POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
 
-      helm upgrade integration {{ .CHART_DIR }} \
+      helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml \
         --set test.existingSecret=$TEST_SECRET \
@@ -64,16 +39,3 @@ tasks:
         --set identity.keycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
-
-  setup.post:
-    cmds:
-    - echo "No post task for this test."
-
-  all:
-    cmds:
-    - task: init.seed
-    - task: setup.pre
-    - task: setup.exec
-    - task: setup.post
-    - task: test.preflight
-    - task: test.core

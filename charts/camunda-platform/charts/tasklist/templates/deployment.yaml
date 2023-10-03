@@ -97,6 +97,10 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "auth"
           {{- end }}
+          {{- if .Values.global.multitenancy.enabled }}
+          - name: CAMUNDA_TASKLIST_MULTITENANCY_ENABLED
+            value: "true"
+          {{- end }}
           - name: GRAPHQL_PLAYGROUND_ENABLED
             value: {{ default "true" .Values.graphqlPlaygroundEnabled | quote }}
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
@@ -105,7 +109,7 @@ spec:
             {{- tpl (toYaml .) $ | nindent 10 }}
           {{- end }}
         {{- if .Values.command}}
-        command: {{ .Values.command }}
+        command: {{ toYaml .Values.command | nindent 10 }}
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}

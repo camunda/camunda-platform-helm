@@ -236,7 +236,8 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag": "a.b.c",
+			"global.image.tag":   "a.b.c",
+			"identity.image.tag": "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -279,7 +280,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.command": "[printenv]",
+			"identity.command[0]": "printenv",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

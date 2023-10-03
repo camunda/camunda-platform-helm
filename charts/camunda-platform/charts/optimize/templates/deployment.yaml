@@ -24,7 +24,21 @@ spec:
       imagePullSecrets:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.initContainers | default list | toYaml | nindent 8) $ }}
+      - name: migration
+        image: {{ include "camundaPlatform.image" . | quote }}
+        command: ['./upgrade/upgrade.sh', '--skip-warning']
+        env:
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+          value: "true"
+        - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+          value: {{ .Values.partitionCount | quote }}
+        - name: OPTIMIZE_ELASTICSEARCH_HOST
+          value: {{ .Values.global.elasticsearch.host | quote }}
+        - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+          value: {{ .Values.global.elasticsearch.port | quote }}
+      {{- if .Values.initContainers }}
+        {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ include "camundaPlatform.image" . | quote }}
@@ -75,6 +89,8 @@ spec:
             {{- end }}
           - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
             value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL
+            value: "http://{{ .Release.Name }}-identity:80"
           - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
             value: "optimize-api"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
@@ -82,11 +98,19 @@ spec:
           {{- end }}
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
+          {{- if .Values.global.multitenancy.enabled }}
+          - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
+            value: "true"
+          - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
+            value: "10000"
+          - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
+            value: "600000"
+          {{- end }}
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.command}}
-        command: {{ .Values.command }}
+        command: {{ toYaml .Values.command | nindent 10 }}
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}

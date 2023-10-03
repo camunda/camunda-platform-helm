@@ -229,7 +229,7 @@ spec:
                 key: {{ include "identity.postgresql.databaseSecretKey" . }}
         {{- end }}
         {{- if .Values.command}}
-        command: {{ .Values.command }}
+        command: {{ toYaml .Values.command | nindent 10 }}
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}

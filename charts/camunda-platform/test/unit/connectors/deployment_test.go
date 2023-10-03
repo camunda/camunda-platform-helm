@@ -270,8 +270,8 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled": "true",
-			"connectors.command": "[printenv]",
+			"connectors.enabled":    "true",
+			"connectors.command[0]": "printenv",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

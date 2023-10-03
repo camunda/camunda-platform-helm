@@ -11,6 +11,12 @@ dotenv:
 
 includes:
   init.seed: ../lib/init-seed-taskfile.yaml
+  setup.upgrade:
+    taskfile: ../lib/chart-upgrade.yaml
+    vars:
+      TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
+      TEST_HELM_EXTRA_ARGS: |-
+        {{ .TEST_HELM_EXTRA_ARGS }} --values ../chart-full-setup/values-integration-test-ingress.yaml
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -42,7 +48,7 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
-    - helm install integration {{ .CHART_DIR }}
+    - helm install integration {{ .TEST_CHART_NAME }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml

@@ -53,7 +53,7 @@ global:
     registry: ""
     # Image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.2.13
+    tag: 8.2.15
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -69,6 +69,7 @@ global:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -630,6 +631,7 @@ zeebe-gateway:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -738,6 +740,7 @@ operate:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.path defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -990,6 +993,7 @@ tasklist:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -1164,6 +1168,7 @@ optimize:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -1376,6 +1381,7 @@ identity:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -1425,7 +1431,11 @@ identity:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
       repository: bitnami/keycloak
-      tag: 19.0.3
+      tag: 22.0.3
+
+    # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
+    # Docs: https://www.keycloak.org/server/reverseproxy
+    proxy: edge
 
     # Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
     tls:
@@ -1475,6 +1485,9 @@ identity:
       tls: false
       # Keycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
       extraTls: []
+      # Keycloak.ingress.annotations configures annotations to be applied to the ingress record.
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 
     # Keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:
@@ -1553,12 +1566,8 @@ webModeler:
     # if the postgresql dependency chart is disabled (by setting postgresql.enabled to false).
     # Note: Currently, the only supported database system is PostgreSQL.
     externalDatabase:
-      # Restapi.externalDatabase.host defines the host name of the database instance
-      host: ""
-      # Restapi.externalDatabase.port defines the port number of the database instance
-      port: 5432
-      # Restapi.externalDatabase.database defines the database name
-      database: ""
+      # Restapi.externalDatabase.url defines the JDBC url of the database instance
+      url: ""
       # Restapi.externalDatabase.user defines the database user
       user: ""
       # Restapi.externalDatabase.password defines the database user's password
@@ -1945,6 +1954,7 @@ webModeler:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.webapp configuration of the webapp ingress
     webapp:
       # Ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the Web Modeler web application will be available
@@ -2026,7 +2036,7 @@ connectors:
     # Image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 0.23.0
+    tag: 0.23.2
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2159,6 +2169,7 @@ connectors:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.path defines the path which is associated with the Connectors service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -2393,6 +2404,7 @@ console:
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     # Ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules

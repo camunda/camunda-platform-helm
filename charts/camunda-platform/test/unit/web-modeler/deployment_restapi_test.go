@@ -156,9 +156,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseCo
 			"webModeler.enabled":                           "true",
 			"webModeler.restapi.mail.fromAddress":          "example@example.com",
 			"postgresql.enabled":                           "false",
-			"webModeler.restapi.externalDatabase.host":     "postgres.example.com",
-			"webModeler.restapi.externalDatabase.port":     "65432",
-			"webModeler.restapi.externalDatabase.database": "modeler-database",
+			"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":     "modeler-user",
 			"webModeler.restapi.externalDatabase.password": "modeler-password",
 		},
@@ -172,13 +170,11 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseCo
 
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, corev1.EnvVar{Name: "RESTAPI_DB_HOST", Value: "postgres.example.com"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "RESTAPI_DB_PORT", Value: "65432"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "RESTAPI_DB_NAME", Value: "modeler-database"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "RESTAPI_DB_USER", Value: "modeler-user"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_DATASOURCE_URL", Value: "jdbc:postgresql://postgres.example.com:65432/modeler-database"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_DATASOURCE_USERNAME", Value: "modeler-user"})
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name: "RESTAPI_DB_PASSWORD",
+			Name: "SPRING_DATASOURCE_PASSWORD",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-web-modeler-restapi"},
