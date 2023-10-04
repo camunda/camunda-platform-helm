@@ -44,6 +44,9 @@ spec:
           name: tmp
         - mountPath: /camunda
           name: camunda
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ include "camundaPlatform.image" . | quote }}
