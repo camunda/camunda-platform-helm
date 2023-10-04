@@ -49,7 +49,7 @@ tasks:
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }}
-        # TODO: Remove this after the next release.
+        # TODO: Remove this once Camunda v8.3 release.
         cp -a {{ .TEST_CHART_DIR }}/openshift/patch.sh {{ .TEST_OPENSHIFT_DIR }}/openshift/patch.sh
       fi
 
