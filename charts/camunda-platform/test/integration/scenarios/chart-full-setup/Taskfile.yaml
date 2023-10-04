@@ -19,6 +19,7 @@ includes:
     internal: true
     vars:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
+      TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
       TEST_HELM_EXTRA_ARGS: |-
         {{ .TEST_HELM_EXTRA_ARGS }} --values ../chart-full-setup/values-integration-test-ingress.yaml
   test.preflight:
