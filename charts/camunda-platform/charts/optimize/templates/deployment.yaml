@@ -39,6 +39,11 @@ spec:
       {{- if .Values.initContainers }}
         {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
       {{- end }}
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
       containers:
       - name: {{ .Chart.Name }}
         image: {{ include "camundaPlatform.image" . | quote }}
