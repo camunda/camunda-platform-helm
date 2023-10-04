@@ -141,19 +141,19 @@ spec:
           failureThreshold: {{ .Values.webModeler.restapi.livenessProbe.failureThreshold }}
           timeoutSeconds: {{ .Values.webModeler.restapi.livenessProbe.timeoutSeconds }}
         {{- end }}
-        {{- if .Values.webModeler.restapi.extraVolumeMounts }}
         volumeMounts:
         - name: tmp
           mountPath: /tmp
+        {{- if .Values.webModeler.restapi.extraVolumeMounts }}
         {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.webModeler.restapi.sidecars }}
       {{- .Values.webModeler.restapi.sidecars | toYaml | nindent 6 }}
       {{- end }}
-      {{- if .Values.webModeler.restapi.extraVolumes }}
       volumes:
       - name: tmp
         emptyDir: {}
+      {{- if .Values.webModeler.restapi.extraVolumes }}
       {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.webModeler.serviceAccount.name }}
