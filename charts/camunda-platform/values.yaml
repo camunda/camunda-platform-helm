@@ -2454,7 +2454,7 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.6.2
+    tag: 8.10.2
   master:
     masterOnly: false
     heapSize: 1024m
