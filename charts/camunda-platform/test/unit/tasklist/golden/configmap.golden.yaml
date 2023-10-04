@@ -1,5 +1,6 @@
 ---
 # Source: camunda-platform/charts/tasklist/templates/configmap.yaml
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: camunda-platform-test-tasklist
@@ -11,11 +12,9 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "8.2.15"
     app.kubernetes.io/component: tasklist
-apiVersion: v1
 data:
   application.yml: |
     # Tasklist configuration file
-
     camunda.tasklist:
       # Set Tasklist username and password.
       # If user with <username> does not exists it will be created.

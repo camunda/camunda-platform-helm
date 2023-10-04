@@ -5,8 +5,17 @@ vars:
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
 
 tasks:
+  pre:
+    cmds:
+    # TODO: Remove this when 8.3 is released.
+    - kubectl scale sts elasticsearch-master --replicas=0 -n {{ .TEST_NAMESPACE }}
+    - sleep 60
+    - kubectl apply -f {{ .FIXTURES_DIR }}/data-integration-elasticsearch-master-0.yaml
+      -n {{ .TEST_NAMESPACE }}
+    - kubectl apply -f {{ .FIXTURES_DIR }}/data-integration-elasticsearch-master-1.yaml
+      -n {{ .TEST_NAMESPACE }}
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
-  default:
+  exec:
     cmds:
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \

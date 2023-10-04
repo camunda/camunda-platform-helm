@@ -11,9 +11,12 @@ dotenv:
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
-  init.seed: ../lib/init-seed-taskfile.yaml
-  setup.upgrade:
+  init.seed:
+    taskfile: ../lib/init-seed-taskfile.yaml
+    internal: true
+  upgrade:
     taskfile: ../lib/chart-upgrade-taskfile.yaml
+    internal: true
     vars:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
       TEST_HELM_EXTRA_ARGS: |-
@@ -72,6 +75,12 @@ tasks:
     cmds:
     - kubectl delete secret registry-camunda-cloud --ignore-not-found=true
     - git checkout ../../testsuites/base/files/variables.env
+
+  upgrade.pre:
+    deps: [upgrade:pre]
+
+  upgrade.exec:
+    deps: [upgrade:exec]
 
   all:
     cmds:
