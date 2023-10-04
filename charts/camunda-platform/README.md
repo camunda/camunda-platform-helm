@@ -245,7 +245,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | | `elasticsearch.disableExporter` | If true, disables the [Elasticsearch Exporter](https://github.com/camunda-cloud/zeebe/tree/develop/exporters/elasticsearch-exporter) in Zeebe | `false` |
 | | `elasticsearch.url` | Can be used to configure the URL to access Elasticsearch. When not set, services fallback to host and port configuration. | |
 | | `elasticsearch.protocol` | Defines the elasticsearch access protocol, by default HTTP. | `http` |
-| | `elasticsearch.host` | Defines the Elasticsearch host, ideally the service name inside the namespace. | `elasticsearch-master` |
+| | `elasticsearch.host` | Defines the Elasticsearch host, ideally the service name inside the namespace. | `{{ .Release.Name }}-elasticsearch` |
 | | `elasticsearch.port` | Defines the Elasticsearch port, under which Elasticsearch can be accessed | `9200` |
 | | `elasticsearch.clusterName` | Defines the cluster name which is used by Elasticsearch. | `elasticsearch` |
 | | `elasticsearch.prefix` | Defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes | `zeebe-record` |
@@ -278,16 +278,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `retentionPolicy` | | Configuration to configure the Elasticsearch index retention policies | |
-| | `enabled` | If true, Elasticsearch curator cronjob and configuration will be deployed. | `false` |
-| | `schedule` | Defines how often/when the curator should run. | `"0 0 * * *"` |
-| | `zeebeIndexTTL` | Defines after how many days a zeebe index can be deleted. | `1` |
-| | `zeebeIndexMaxSize` | Can be set to configure the maximum allowed zeebe index size in gigabytes. After reaching that size, curator will delete that corresponding index on the next run. To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes. | `` |
-| | `operateIndexTTL` | Defines after how many days an Operate index can be deleted. | `30` |
-| | `tasklistIndexTTL` | Defines after how many days an Tasklist index can be deleted. | `30` |
-| | `image.registry` | Can be used to set container image registry. | `""` |
-| | `image.repository` | Defines which image repository to use. | `bitnami/elasticsearch-curator-archived` |
-| | `image.tag` | Defines the tag / version which should be used in the chart. | `Check the values file` |
 | `prometheusServiceMonitor` | | Configuration to configure a prometheus service monitor | |
 | | `enabled` | If true, then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods. | `false`|
 | | `labels` | Can be set to configure extra labels, which will be added to the ServiceMonitor and can be used on the prometheus controller for selecting the ServiceMonitors | `release: metrics` |
@@ -374,6 +364,10 @@ For more information about Zeebe, visit [Zeebe Overview](https://docs.camunda.io
 | | `tolerations` | Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ]` |
 | | `affinity` | Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity). The default defined PodAntiAffinity allows constraining on which nodes the [Zeebe pods are scheduled on](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity). It uses a hard requirement for scheduling and works based on the Zeebe pod labels. To disable the default rule set `podAntiAffinity: null`. | `podAntiAffinity:`</br>`  requiredDuringSchedulingIgnoredDuringExecution:`</br>`  - labelSelector: `</br>`    matchExpressions:`</br>`    - key: "app.kubernetes.io/component"`</br>`    operator: In`</br>`    values:`</br>`    - zeebe-broker`</br>`  topologyKey: "kubernetes.io/hostname"` |
 | | `priorityClassName` | Can be used to define the broker [pods priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass) | `""` |
+| | `retention` | Can be used to define the Zeebe data in Elasticsearch (ILM) | |
+| | `retention.enabled` | If true, the ILM Policy is created and applied to the index templates | `false` |
+| | `retention.minimumAge` | Defines how old the data must be, before the data is deleted as a duration | `30d` |
+| | `retention.policyName` | Defines the name of the created and applied ILM policy. | `zeebe-record-retention-policy` |
 
 ### Zeebe Gateway
 
@@ -534,6 +528,9 @@ For more information about Operate, visit
 | | `nodeSelector` |  Can be used to define on which nodes the Operate pods should run | `{ }` |
 | | `tolerations` |  Can be used to define [pod toleration's](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) | `[ ] ` |
 | | `affinity` |  Can be used to define [pod affinity or anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) | `{ }` |
+| | `retention` | Can be used to define the data in Elasticsearch (ILM) | |
+| | `retention.enabled` | If true, the ILM Policy is created and applied to the index templates | `false` |
+| | `retention.minimumAge` | Defines how old the data must be, before the data is deleted as a duration | `30d` |
 
 ### Tasklist
 
@@ -604,6 +601,9 @@ For more information about Tasklist, visit
 | | `ingress.path` | Defines the path which is associated with the Tasklist [service and port](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) | `/` |
 | | `ingress.host` | Can be used to define the [host of the ingress rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules) If not specified the rules applies to all inbound HTTP traffic, if specified the rule applies to that host. | `""` |
 | | `env` | Can be used to set extra environment variables on each Tasklist container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[ ]` |
+| | `retention` | Can be used to define the data in Elasticsearch (ILM) | |
+| | `retention.enabled` | If true, the ILM Policy is created and applied to the index templates | `false` |
+| | `retention.minimumAge` | Defines how old the data must be, before the data is deleted as a duration | `30d` |
 
 ### Optimize
 
@@ -1088,7 +1088,12 @@ Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/se
 
 ### Elasticsearch
 
-Camunda Platform 8 Helm chart has a dependency on the [Elasticsearch Helm Chart](https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md). All variables related to Elasticsearch can be found in [elastic/helm-charts/values.yaml](https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml) and can be set under `elasticsearch`.
+Camunda Platform 8 Helm chart has a dependency on the [Elasticsearch 8 Helm Chart](https://artifacthub.io/packages/helm/bitnami/elasticsearch). All variables related to Elasticsearch can be set under `elasticsearch`.
+
+> **Note**
+>
+> The default setup of the Elasticsearch 8 part of Camunda Platform 8 uses nodes have all roles (master, data, coordinating, and ingest).
+> For high-demand deployments, it's recommended to deploy the Elasticsearch master-elegible nodes as master-only nodes.
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -1099,8 +1104,13 @@ Camunda Platform 8 Helm chart has a dependency on the [Elasticsearch Helm Chart]
 ```yaml
 elasticsearch:
   enabled: true
-  imageTag: <YOUR VERSION HERE>
+  image:
+    tag: <YOUR_VERSION_HERE>
 ```
+
+#### Elasticsearch Retention
+
+Since moving to Elasticsearch 8, [Curator](https://github.com/elastic/curator) is deprecated in favor of [Manage the index lifecycle](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-lifecycle-management.html) (ILM). Hence, each component in Camunda 8 controls its Elasticsearch index retention.
 
 ### Keycloak
 
@@ -1126,7 +1136,7 @@ identity:
 
 Camunda provides a custom theme for the login page used in all apps. The theme is copied from the Identity image.
 
-The theme is added to Keycloak by default, however, since Helm v3 (latest checked 3.10.x) doesn't merge lists
+The theme is added to Keycloak by default, however, since Helm v3 (the latest checked 3.10.x) doesn't merge lists
 with custom values files, then you will need to add this to your own values file if you override any of
 `extraVolumes`, `initContainers`, or `extraVolumeMounts`.
 

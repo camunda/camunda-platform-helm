@@ -1,5 +1,6 @@
 ---
 # Source: camunda-platform/charts/operate/templates/configmap.yaml
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: camunda-platform-test-operate
@@ -11,7 +12,6 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "8.2.15"
     app.kubernetes.io/component: operate
-apiVersion: v1
 data:
   application.yml: |
     # Operate configuration file
@@ -21,7 +21,7 @@ data:
         # Cluster name
         clusterName: elasticsearch
         # Host
-        host: elasticsearch-master
+        host: camunda-platform-test-elasticsearch
         # Transport port
         port: 9200
       # Zeebe instance
@@ -33,7 +33,7 @@ data:
         # Cluster name
         clusterName: elasticsearch
         # Host
-        host: elasticsearch-master
+        host: camunda-platform-test-elasticsearch
         # Transport port
         port: 9200
         # Index prefix, configured in Zeebe Elasticsearch exporter

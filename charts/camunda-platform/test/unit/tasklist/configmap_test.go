@@ -53,7 +53,7 @@ func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.elasticsearch.url": "elasticsearch-master-test",
+			"global.elasticsearch.url": "elasticsearch-test",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -69,5 +69,5 @@ func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
 	elasticsearchURL := configmapApplication["camunda.tasklist"].(map[string]interface{})["elasticsearch"].(map[string]interface{})["url"]
 
 	// then
-	s.Require().Equal("elasticsearch-master-test", elasticsearchURL)
+	s.Require().Equal("elasticsearch-test", elasticsearchURL)
 }

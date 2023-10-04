@@ -108,6 +108,3 @@ console:
         url: "https://example-stage.camunda.com/modeler"
       - name: zeebeGateway
         url: "grpc://zeebe-example-stage.camunda.com/"
-
-elasticsearch:
-  maxUnavailable: 0

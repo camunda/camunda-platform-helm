@@ -47,7 +47,7 @@ spec:
         - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
           value: "3"
         - name: OPTIMIZE_ELASTICSEARCH_HOST
-          value: "elasticsearch-master"
+          value: "camunda-platform-test-elasticsearch"
         - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
           value: "9200"
       containers:
@@ -60,7 +60,7 @@ spec:
           - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
             value: "3"
           - name: OPTIMIZE_ELASTICSEARCH_HOST
-            value: "elasticsearch-master"
+            value: "camunda-platform-test-elasticsearch"
           - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
             value: "9200"
           - name: SPRING_PROFILES_ACTIVE
