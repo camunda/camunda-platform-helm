@@ -781,7 +781,7 @@ operate:
     allowPrivilegeEscalation: false
     privileged: false
     readOnlyRootFilesystem: true
-    runAsUser: 1000
+    runAsUser: 1004
 
   # StartupProbe configuration
   startupProbe:
@@ -935,14 +935,14 @@ tasklist:
   # PodSecurityContext defines the security options the Tasklist pod should be run with
   podSecurityContext:
     runAsNonRoot: true
-    fsGroup: 1000 # TODO jesse
+    fsGroup: 1002
 
   # ContainerSecurityContext defines the security options the Tasklist container should be run with
   containerSecurityContext:
     allowPrivilegeEscalation: false
     privileged: false
     readOnlyRootFilesystem: true
-    runAsUser: 1000
+    runAsUser: 1002
 
   # StartupProbe configuration
   startupProbe:
@@ -1122,14 +1122,14 @@ optimize:
   # PodSecurityContext defines the security options the Optimize pod should be run with
   podSecurityContext:
     runAsNonRoot: true
-    fsGroup: 1000 # TODO jesse
+    fsGroup: 100
 
   # ContainerSecurityContext defines the security options the Optimize container should be run with
   containerSecurityContext:
     allowPrivilegeEscalation: false
     privileged: false
     readOnlyRootFilesystem: true
-    runAsUser: 1000
+    runAsUser: 100
 
   # StartupProbe configuration
   startupProbe:
@@ -1322,7 +1322,7 @@ identity:
 
   # PodSecurityContext defines the security options the Identity pod should be run with
   podSecurityContext:
-    fsGroup: 1000 # TODO jesse: change to user uid in connectors container 
+    fsGroup: 1005
 
   # ContainerSecurityContext defines the security options the Identity container should be run with
   containerSecurityContext:
@@ -1330,7 +1330,7 @@ identity:
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
     runAsNonRoot: true
-    runAsUser: 1000
+    runAsUser: 1005
 
   # StartupProbe configuration
   startupProbe:
@@ -1538,11 +1538,11 @@ identity:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           runAsNonRoot: true
-          runAsUser: 1000
+          runAsUser: 1001
         podSecurityContext:
           enabled: true
           runAsNonRoot: true
-          fsGroup: 1000 # TODO jesse: change to user uid in connectors container 
+          fsGroup: 1001
 
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
@@ -1614,10 +1614,10 @@ identity:
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       runAsNonRoot: true
-      runAsUser: 1000 # TODO jesse: change to user uid in connectors container 
+      runAsUser: 1001
 
     podSecurityContext:
-      fsGroup: 1000 # TODO jesse: change to user uid in connectors container 
+      fsGroup: 1001
 
     # Keycloak.httpRelativePath defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
     # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
@@ -1764,7 +1764,7 @@ webModeler:
     # Restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
     podSecurityContext:
       runAsNonRoot: true
-      fsGroup: 1000 #TODO: jesse
+      fsGroup: 1000
     # Restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
     containerSecurityContext:
       privileged: false
@@ -2200,11 +2200,11 @@ postgresql:
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       runAsNonRoot: true
-      runAsUser: 1000
+      runAsUser: 1001
     podSecurityContext:
       enabled: true
       runAsNonRoot: true
-      fsGroup: 1000
+      fsGroup: 1001
 
 #####################################################################
  #####
@@ -2387,7 +2387,7 @@ connectors:
 
   # PodSecurityContext defines the security options the Connectors pod should be run with
   podSecurityContext:
-    fsGroup: 1000
+    fsGroup: 1003
 
   # ContainerSecurityContext defines the security options the Connectors container should be run with
   containerSecurityContext:
@@ -2395,7 +2395,7 @@ connectors:
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
     runAsNonRoot: true
-    runAsUser: 1000 # TODO jesse: change to user uid in connectors container 
+    runAsUser: 1003
 
   # NodeSelector can be used to define on which nodes the Connectors pods should run
   nodeSelector: {}
