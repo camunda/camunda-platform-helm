@@ -7,14 +7,19 @@ vars:
 
 dotenv:
 - ../vars/common.env
+- ../vars/dynamic.env
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
-  init.seed: ../lib/init-seed-taskfile.yaml
-  setup.upgrade:
-    taskfile: ../lib/chart-upgrade.yaml
+  init.seed:
+    taskfile: ../lib/init-seed-taskfile.yaml
+    internal: true
+  upgrade:
+    taskfile: ../lib/chart-upgrade-taskfile.yaml
+    internal: true
     vars:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
+      TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
       TEST_HELM_EXTRA_ARGS: |-
         {{ .TEST_HELM_EXTRA_ARGS }} --values ../chart-full-setup/values-integration-test-ingress.yaml
   test.preflight:
@@ -44,6 +49,13 @@ tasks:
     - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
       ../../testsuites/base/files/variables.env
+    - |
+      # Extract OpenShift values from released chart for upgrade test.
+      if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
+        helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }}
+        # TODO: Remove this once Camunda v8.3 release.
+        cp -a {{ .TEST_CHART_DIR }}/openshift/patch.sh {{ .TEST_OPENSHIFT_DIR }}/openshift/patch.sh
+      fi
 
   setup.exec:
     deps: [init.seed]
@@ -64,6 +76,12 @@ tasks:
     cmds:
     - kubectl delete secret registry-camunda-cloud --ignore-not-found=true
     - git checkout ../../testsuites/base/files/variables.env
+
+  upgrade.pre:
+    deps: [upgrade:pre]
+
+  upgrade.exec:
+    deps: [upgrade:exec]
 
   all:
     cmds:

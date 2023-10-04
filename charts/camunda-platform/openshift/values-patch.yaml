@@ -49,17 +49,9 @@ zeebe:
   podSecurityContext:
     fsGroup: "@@null@@"
 
-# omit the values below if elasticsearch.enabled is false
-elasticsearch:
-  # test resources are disabled as they aren't pass on to the post-renderer, meaning they will not be deploy-able. this
-  # has no impact on a production deployment.
-  tests:
-    enabled: false
-  securityContext:
-    runAsUser: "@@null@@"
-  podSecurityContext:
-    fsGroup: "@@null@@"
-    runAsUser: "@@null@@"
+# Elasticsearch.
+# The bitnami/elasticsearch chart  since the schema doesn't allow to have to apply this workaround.
+# So we cannot use '@@null@@' as it's a string not an int.
 
 postgresql:
   primary:

@@ -85,6 +85,14 @@ spec:
           value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
           value: {{ .Values.global.elasticsearch.prefix | quote }}
+        {{- if .Values.retention.enabled }}
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_ENABLED
+          value: "true"
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_MINIMUMAGE
+          value: {{ .Values.retention.minimumAge | quote }}
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_POLICYNAME
+          value: {{ .Values.retention.policyName | quote }}
+        {{- end }}
         {{- end }}
         - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
           value: {{ .Values.service.commandPort  | quote }}

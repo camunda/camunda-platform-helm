@@ -1,6 +1,6 @@
 preflightVars:
   baseURLs:
-    elasticsearch: http://elasticsearch-master:9200
+    elasticsearch: http://integration-elasticsearch:9200
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82
     optimize: http://integration-optimize/optimize

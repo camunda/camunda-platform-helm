@@ -67,13 +67,19 @@ identity:
 
 # omit the values below if elasticsearch.enabled is false
 elasticsearch:
-  securityContext:
-    runAsUser: null
-  sysctlInitContainer:
+  master:
+    podSecurityContext:
+      enabled: null
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+      runAsNonRoot: null
+  # If needed, OpenShift TuneD operator will be used to set sysctl vm.max_map_count.
+  # Apply the manifest "openshift-tuned.yaml" before install Camunda 8 chart.
+  sysctlImage:
     enabled: false
-  podSecurityContext:
-    fsGroup: null
-    runAsUser: null
+  commonLabels:
+    tuned.openshift.io/elasticsearch: ""
 
 postgresql:
   primary:

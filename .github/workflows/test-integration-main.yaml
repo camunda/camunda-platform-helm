@@ -131,11 +131,12 @@ jobs:
       run: |
         echo $TEST_NAMESPACE
         kubectl delete ns --ignore-not-found=true \
-          -l "github-id=${{ steps.vars.outputs.identifier }},test-persistent=true"
+          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
+        kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
     - name: Copy PRs wildcard certificate
       run: |
@@ -151,6 +152,7 @@ jobs:
     - name: Pre setup
       timeout-minutes: 5
       env:
+        TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
         TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
@@ -170,6 +172,10 @@ jobs:
       timeout-minutes: 5
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+    - name: Pre Upgrade
+      if: matrix.scenario.flow == 'upgrade'
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
     - name: 🌟 Upgrade Camunda Platform chart 🌟
       if: matrix.scenario.flow == 'upgrade'
       env:
@@ -177,7 +183,7 @@ jobs:
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.upgrade
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@v1
       with:

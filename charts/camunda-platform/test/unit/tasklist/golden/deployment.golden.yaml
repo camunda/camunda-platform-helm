@@ -34,6 +34,8 @@ spec:
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "8.2.15"
         app.kubernetes.io/component: tasklist
+      annotations:
+        checksum/config: 65c1637bd7d782d6334dd62e36e31e3fb8568bf476b18e7b5ba6388bb5986cb5
     spec:
       imagePullSecrets:
         []

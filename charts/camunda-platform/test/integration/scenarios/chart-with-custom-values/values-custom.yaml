@@ -7,6 +7,3 @@ zeebe-gateway:
       command: ["sh", "-c" , "echo", "Hello World!"]
   podDisruptionBudget:
     enabled: true
-
-retentionPolicy:
-  enabled: true

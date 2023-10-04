@@ -2,11 +2,27 @@ version: '3'
 
 vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
+  TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
 
 tasks:
+  pre:
+    cmds:
+    # TODO: Remove this when 8.3 is released.
+    # It's hard to clone PVC on our OpenShift setup, so only test the upgrade on GKE/K8s.
+    # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/issues/207
+    - |
+      if [[ "{{ .TEST_NAMESPACE }}" == 'kubernetes' ]]; then
+        kubectl scale sts elasticsearch-master --replicas=0 -n {{ .TEST_NAMESPACE }};
+        sleep 60;
+        kubectl apply -f {{ .FIXTURES_DIR }}/data-integration-elasticsearch-master-0.yaml \
+        -n {{ .TEST_NAMESPACE }};
+        kubectl apply -f {{ .FIXTURES_DIR }}/data-integration-elasticsearch-master-1.yaml \
+        -n {{ .TEST_NAMESPACE }};
+      fi
+
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
-  default:
+  exec:
     cmds:
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \

@@ -78,5 +78,6 @@ global:
     - name: index-docker-io
 
 elasticsearch:
-  imagePullSecrets:
-  - name: index-docker-io
+  global:
+    imagePullSecrets:
+    - name: index-docker-io

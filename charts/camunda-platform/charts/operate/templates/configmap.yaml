@@ -1,8 +1,8 @@
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "operate.fullname" . }}
   labels: {{- include "operate.labels" . | nindent 4 }}
-apiVersion: v1
 data:
   application.yml: |
     # Operate configuration file
@@ -12,7 +12,7 @@ data:
         # Cluster name
         clusterName: {{ .Values.global.elasticsearch.clusterName }}
         # Host
-        host: {{ .Values.global.elasticsearch.host }}
+        host: {{ include "camundaPlatform.elasticsearchHost" . }}
         # Transport port
         port: {{ .Values.global.elasticsearch.port }}
         {{- if .Values.global.elasticsearch.url }}
@@ -28,7 +28,7 @@ data:
         # Cluster name
         clusterName: {{ .Values.global.elasticsearch.clusterName }}
         # Host
-        host: {{ .Values.global.elasticsearch.host }}
+        host: {{ include "camundaPlatform.elasticsearchHost" . }}
         # Transport port
         port: {{ .Values.global.elasticsearch.port }}
         # Index prefix, configured in Zeebe Elasticsearch exporter
@@ -37,6 +37,11 @@ data:
         # Elasticsearch full url
         url: {{ .Values.global.elasticsearch.url }}
         {{- end }}
+      {{- if .Values.retention.enabled }}
+      archiver:
+        ilmEnabled: true
+        ilmMinAgeForDeleteArchivedIndices: {{ .Values.retention.minimumAge }}
+      {{- end }}
     logging:
 {{- with .Values.logging }}
 {{ . | toYaml | indent 6 }}

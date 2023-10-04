@@ -67,6 +67,9 @@ runs:
 
       # Deployment identifier.
       TEST_IDENTIFIER="${{ inputs.platform }}-${{ inputs.identifier-base }}"
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
+      fi
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
 
       # Ingress hostname.
