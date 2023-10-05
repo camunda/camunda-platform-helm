@@ -51,12 +51,14 @@ func TestSecretTemplate(t *testing.T) {
 			"charts/identity/templates/tasklist-secret.yaml",
 			"charts/identity/templates/optimize-secret.yaml",
 			"charts/identity/templates/connectors-secret.yaml",
+			"charts/identity/templates/postgresql-secret.yaml",
 		},
 		secretName: []string{
 			"operate-secret",
 			"tasklist-secret",
 			"optimize-secret",
 			"connectors-secret",
+			"postgres-password",
 		},
 	})
 }
@@ -64,11 +66,14 @@ func TestSecretTemplate(t *testing.T) {
 func (s *secretTest) TestContainerGenerateSecret() {
 	// given
 	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.postgresql.enabled": "true",
+		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
 	// when
-	s.Require().GreaterOrEqual(4, len(s.templates))
+	s.Require().GreaterOrEqual(5, len(s.templates))
 	for idx, template := range s.templates {
 		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
 		var secret coreV1.Secret
