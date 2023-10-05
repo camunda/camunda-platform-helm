@@ -103,15 +103,6 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
-    postgresql:
-      enabled: false
-    externalDatabase:
-      host:
-      port:
-      database:
-      auth:
-        username:
-        password:
     keycloak:
       # Identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       # It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
@@ -1406,10 +1397,23 @@ identity:
     image:
       repository: bitnami/postgresql
       tag: 15.4.0
-    nameOverride: postgresql-identity
+    nameOverride: identity-postgresql
     auth:
       username: identity
       database: identity
+      secretAnnotations:
+        "helm.sh/hook": pre-install
+      password:
+      existingSecret:
+  externalDatabase:
+    enabled: false
+    host:
+    port:
+    username:
+    database:
+    password:
+    existingSecret:
+    existingSecretPasswordKey:
 
   # Identity.
   #    # ###### #   #  ####  #       ####    ##   #    #

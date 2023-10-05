@@ -243,28 +243,38 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- end }}
 {{- end -}}
 
+{{/*
+[identity] PostgreSQL helpers.
+*/}}
+
+{{- define "identity.postgresql.id" -}}
+    {{- (printf "%s-%s" .Release.Name .Values.postgresql.nameOverride) | trunc 63 | trimSuffix "-" }}
+{{- end -}}
+
+{{- define "identity.postgresql.secretName" -}}
+    {{- .Values.externalDatabase.existingSecret | default (include "identity.postgresql.id" .) -}}
+{{- end -}}
+
+{{- define "identity.postgresql.secretKey" -}}
+    {{- .Values.externalDatabase.existingSecretPasswordKey | default (print "password") }}
+{{- end -}}
+
 {{- define "identity.postgresql.host" -}}
-{{- $name := .Release.Name -}}
-{{- .Values.postgresql.enabled | ternary (printf "%s-postgresql-identity" $name | trunc 63 | trimSuffix "-") .Values.global.identity.externalDatabase.host -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.host (include "identity.postgresql.id" .) }}
 {{- end -}}
 
 {{- define "identity.postgresql.port" -}}
-{{- .Values.postgresql.enabled | ternary "5432" .Values.global.identity.externalDatabase.port -}}
-{{- end -}}
-
-{{- define "identity.postgresql.database" -}}
-{{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.database .Values.global.identity.externalDatabase.database -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.port "5432" }}
 {{- end -}}
 
 {{- define "identity.postgresql.username" -}}
-{{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.username .Values.global.identity.externalDatabase.auth.username -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.username .Values.postgresql.auth.username }}
 {{- end -}}
 
-{{- define "identity.postgresql.databaseSecretName" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-postgresql-identity" $name | trunc 63 | trimSuffix "-" }}
+{{- define "identity.postgresql.database" -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.database .Values.postgresql.auth.database }}
 {{- end -}}
 
-{{- define "identity.postgresql.databaseSecretKey" -}}
-{{- printf "password" }}
+{{- define "identity.postgresql.authPassword" -}}
+    {{- .Values.postgresql.auth.password | default (randAlphaNum 20) }}
 {{- end -}}
