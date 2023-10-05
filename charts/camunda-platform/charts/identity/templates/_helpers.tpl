@@ -245,7 +245,19 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 
 {{- define "identity.postgresql.host" -}}
 {{- $name := .Release.Name -}}
-{{- printf "%s-postgresql-identity" $name | trunc 63 | trimSuffix "-" }}
+{{- .Values.postgresql.enabled | ternary (printf "%s-postgresql-identity" $name | trunc 63 | trimSuffix "-") .Values.global.identity.externalDatabase.host -}}
+{{- end -}}
+
+{{- define "identity.postgresql.port" -}}
+{{- .Values.postgresql.enabled | ternary "5432" .Values.global.identity.externalDatabase.port -}}
+{{- end -}}
+
+{{- define "identity.postgresql.database" -}}
+{{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.database .Values.global.identity.externalDatabase.database -}}
+{{- end -}}
+
+{{- define "identity.postgresql.username" -}}
+{{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.username .Values.global.identity.externalDatabase.auth.username -}}
 {{- end -}}
 
 {{- define "identity.postgresql.databaseSecretName" -}}

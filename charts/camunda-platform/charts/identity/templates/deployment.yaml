@@ -212,16 +212,16 @@ spec:
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
         {{- if .Values.global.multitenancy.enabled }}
-          - name: MULTI_TENANCY_ENABLED
+          - name: MULTITENANCY_ENABLED
             value: "true"
           - name: IDENTITY_DATABASE_HOST
             value: {{ include "identity.postgresql.host" . | quote }}
           - name: IDENTITY_DATABASE_PORT
-            value: "5432"
+            value: {{ include "identity.postgresql.port" . | quote }}
           - name: IDENTITY_DATABASE_NAME
-            value: "identity"
+            value: {{ include "identity.postgresql.database" . | quote }}
           - name: IDENTITY_DATABASE_USERNAME
-            value: identity
+            value: {{ include "identity.postgresql.username" . | quote }}
           - name: IDENTITY_DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:
