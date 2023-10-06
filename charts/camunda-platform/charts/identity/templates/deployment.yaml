@@ -15,8 +15,9 @@ spec:
         {{- if .Values.podLabels }}
         {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
-      {{- if .Values.podAnnotations }}
       annotations:
+        checksum/configmap-env-vars: {{ include (print $.Template.BasePath "/configmap-env-vars.yaml") . | sha256sum }}
+      {{- if .Values.podAnnotations }}
         {{- toYaml  .Values.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
@@ -227,8 +228,20 @@ spec:
             value: "Web Modeler"
         {{- end }}
         {{- end }}
+        {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
+          - name: IDENTITY_DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.postgresql.secretName" . }}
+                key: {{ include "identity.postgresql.secretKey" . }}
+        {{- end }}
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        envFrom:
+        {{- if .Values.postgresql.enabled }}
+          - configMapRef:
+              name: {{ include "identity.postgresql.id" . }}
         {{- end }}
         {{- if .Values.command}}
         command: {{ toYaml .Values.command | nindent 10 }}

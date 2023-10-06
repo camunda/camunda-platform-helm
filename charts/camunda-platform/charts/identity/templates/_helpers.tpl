@@ -250,3 +250,41 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
     admin-password
 {{- end }}
 {{- end -}}
+
+{{/*
+[identity] PostgreSQL helpers.
+*/}}
+
+{{- define "identity.postgresql.id" -}}
+    {{- (printf "%s-%s" .Release.Name .Values.postgresql.nameOverride) | trunc 63 | trimSuffix "-" }}
+{{- end -}}
+
+{{- define "identity.postgresql.secretName" -}}
+    {{- $autSecretName := .Values.postgresql.auth.existingSecret | default (include "identity.postgresql.id" .) -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.existingSecret $autSecretName }}
+{{- end -}}
+
+{{- define "identity.postgresql.secretKey" -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.existingSecretPasswordKey "identity-password" }}
+{{- end -}}
+
+{{- define "identity.postgresql.secretPassword" -}}
+    {{- $authPassword := .Values.postgresql.auth.password | default (randAlphaNum 20) -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.password $authPassword }}
+{{- end -}}
+
+{{- define "identity.postgresql.host" -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.host (include "identity.postgresql.id" .) }}
+{{- end -}}
+
+{{- define "identity.postgresql.port" -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.port "5432" }}
+{{- end -}}
+
+{{- define "identity.postgresql.username" -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.username .Values.postgresql.auth.username }}
+{{- end -}}
+
+{{- define "identity.postgresql.database" -}}
+    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.database .Values.postgresql.auth.database }}
+{{- end -}}

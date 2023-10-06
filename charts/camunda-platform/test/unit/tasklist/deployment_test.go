@@ -872,6 +872,7 @@ func (s *deploymentTemplateTest) TestTasklistMultiTenancyEnabled() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled": "true",
+			"identity.postgresql.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
