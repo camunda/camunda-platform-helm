@@ -1585,7 +1585,7 @@ identity:
       - name: camunda-theme
         mountPath: /mnt
     - name: copy-configs
-      image: bitnami/keycloak:22.0.4
+      image: bitnami/keycloak:{{ .Values.image.tag }}
       imagePullPolicy: "Always"
       command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config  && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
       securityContext:
