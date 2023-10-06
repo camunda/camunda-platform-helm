@@ -1413,6 +1413,60 @@ identity:
       # Ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-identity
 
+  ## PostgreSQL chart configuration
+  postgresql:
+    ## @param identity.postgresql.enabled Enable PostgreSQL Helm chart. Required for Multi-Tenancy.
+    ##
+    enabled: false
+    # https://hub.docker.com/r/bitnami/postgresql/tags
+    ## @param image.tag PostgreSQL image tag
+    ##
+    image:
+      repository: bitnami/postgresql
+      tag: 15.4.0
+    ## @param identity.postgresql.nameOverride the name used for Identity PostgreSQL.
+    ##
+    nameOverride: identity-postgresql
+    auth:
+      ## @param externalDatabase.username Non-root username
+      ##
+      username: identity
+      ## @param externalDatabase.database The database name
+      ##
+      database: identity
+      ## @param postgresql.auth.password Password for the non-root username
+      ##
+      password:
+      ## @param postgresql.auth.secretAnnotations Secret annotations for auto-generated password.
+      ##
+      secretAnnotations:
+        "helm.sh/hook": pre-install
+        "helm.sh/resource-policy": keep
+      ## @param postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
+      ##
+      existingSecret:
+
+  ## External PostgreSQL configuration
+  ## All of these values are only used when postgresql.enabled is set to false
+  ## @param externalDatabase.enabled
+  ## @param externalDatabase.host Database host
+  ## @param externalDatabase.port Database port number
+  ## @param externalDatabase.username Non-root username
+  ## @param externalDatabase.password Password for the non-root username
+  ## @param externalDatabase.database The database name
+  ## @param externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
+  ## @param externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
+  ##
+  externalDatabase:
+    enabled: false
+    host:
+    port:
+    username:
+    database:
+    password:
+    existingSecret:
+    existingSecretPasswordKey:
+
   # Identity.
   #    # ###### #   #  ####  #       ####    ##   #    #
   #   #  #       # #  #    # #      #    #  #  #  #   #

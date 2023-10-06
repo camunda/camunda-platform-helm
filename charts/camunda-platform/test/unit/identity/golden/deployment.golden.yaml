@@ -34,6 +34,8 @@ spec:
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "8.2.15"
         app.kubernetes.io/component: identity
+      annotations:
+        checksum/configmap-env-vars: 76bfdaacf36241368480b1c562a49c8517b58f3fad50b5edc898a54dbd2769db
     spec:
       imagePullSecrets:
         []
@@ -138,6 +140,7 @@ spec:
             value: "Optimize"
           - name: KEYCLOAK_USERS_0_ROLES_4
             value: "Web Modeler"
+        envFrom:
         resources:
           limits:
             cpu: 2000m

@@ -821,13 +821,14 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 }
 
 func (s *deploymentTemplateTest) TestOptimizeMultiTenancyEnabled() {
- 	// given
- 	options := &helm.Options{
- 		SetValues: map[string]string{
- 			"global.multitenancy.enabled": "true",
- 		},
- 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
- 	}
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.multitenancy.enabled": "true",
+			"identity.postgresql.enabled": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
