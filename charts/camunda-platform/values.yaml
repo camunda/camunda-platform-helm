@@ -1518,7 +1518,7 @@ identity:
         tag: 15.4.0
 
       primary:
-        extraVolumes: 
+        extraVolumes:
         - name: tmp
           emptyDir: {}
         - name: config
@@ -1532,7 +1532,7 @@ identity:
           name: config
         - mountPath: /opt/bitnami/postgresql/tmp
           name: postgresqltmp
-        containerSecurityContext: 
+        containerSecurityContext:
           enabled: true
           privileged: false
           readOnlyRootFilesystem: true
@@ -1588,7 +1588,7 @@ identity:
       image: bitnami/keycloak:19.0.3
       imagePullPolicy: "Always"
       command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config  && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
-      securityContext: 
+      securityContext:
         privileged: false
         readOnlyRootFilesystem: true
         allowPrivilegeEscalation: false
@@ -2180,7 +2180,7 @@ postgresql:
     # Postgresql.auth.database defines the name of the database to be created for Web Modeler
     database: web-modeler
   primary:
-    extraVolumes: 
+    extraVolumes:
     - name: tmp
       emptyDir: {}
     - name: config
@@ -2194,7 +2194,7 @@ postgresql:
       name: config
     - mountPath: /opt/bitnami/postgresql/tmp
       name: postgresqltmp
-    containerSecurityContext: 
+    containerSecurityContext:
       enabled: true
       privileged: false
       readOnlyRootFilesystem: true
@@ -2679,13 +2679,13 @@ elasticsearch:
     replicaCount: 0
   ingest:
     enabled: false
-  securityContext: 
+  securityContext:
     privileged: false
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 1000
-  extraVolumes: 
+  extraVolumes:
   - name: tmp
     emptyDir: {}
   - name: logs
@@ -2699,7 +2699,6 @@ elasticsearch:
     name: logs
   - mountPath: /usr/share/elasticsearch/config
     name: config
- 
 
 
 #####################################################################
