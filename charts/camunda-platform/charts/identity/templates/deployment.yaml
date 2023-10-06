@@ -250,7 +250,7 @@ spec:
         envFrom:
         {{- if .Values.postgresql.enabled }}
           - configMapRef:
-              name: {{ include "identity.postgresql.id" . }}
+              name: {{ include "identity.fullname" . }}-env-vars
         {{- end }}
         {{- if .Values.command}}
         command: {{ toYaml .Values.command | nindent 10 }}
