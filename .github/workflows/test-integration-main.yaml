@@ -78,7 +78,7 @@ jobs:
           flow: install
         - name: Chart Upgrade
           desc: Upgrade chart from the latest released version to the current branch.
-          flow: upgrade
+          flow: install
         exclude:
         - distro:
             if: false
@@ -173,11 +173,11 @@ jobs:
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
     - name: Pre Upgrade
-      if: matrix.scenario.flow == 'upgrade'
+      # if: matrix.scenario.flow == 'upgrade'
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
     - name: 🌟 Upgrade Camunda Platform chart 🌟
-      if: matrix.scenario.flow == 'upgrade'
+      # if: matrix.scenario.flow == 'upgrade'
       env:
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
