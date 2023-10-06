@@ -1419,6 +1419,7 @@ identity:
       ##
       secretAnnotations:
         "helm.sh/hook": pre-install
+        "helm.sh/resource-policy": keep
       ## @param postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
       ##
       existingSecret:

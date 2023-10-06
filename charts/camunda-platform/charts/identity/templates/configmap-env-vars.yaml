@@ -1,4 +1,4 @@
-{{/* TODO: Move rest of the config vars from deployment to here. */}}
+{{/* TODO: Move rest of the config vars from deployment file to here. */}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
