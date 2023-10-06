@@ -260,7 +260,8 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- end -}}
 
 {{- define "identity.postgresql.secretName" -}}
-    {{- $autSecretName := .Values.postgresql.auth.existingSecret | default (include "identity.postgresql.id" .) -}}
+    {{- $defaultSecretName := printf "%s-access" (include "identity.postgresql.id" .) -}}
+    {{- $autSecretName := .Values.postgresql.auth.existingSecret | default $defaultSecretName -}}
     {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.existingSecret $autSecretName }}
 {{- end -}}
 
