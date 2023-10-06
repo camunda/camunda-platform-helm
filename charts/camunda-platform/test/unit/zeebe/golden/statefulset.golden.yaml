@@ -103,10 +103,10 @@ spec:
           value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
         - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
           value: 5m
-        - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
-          value: "0.85"
-        - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
-          value: "0.87"
+        - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
+          value: 2GB
+        - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
+          value: 3GB
         ports:
         - containerPort: 9600
           name: http
