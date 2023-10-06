@@ -1417,7 +1417,7 @@ identity:
   postgresql:
     ## @param identity.postgresql.enabled Enable PostgreSQL Helm chart. Required for Multi-Tenancy.
     ##
-    enabled: false
+    enabled: true
     # https://hub.docker.com/r/bitnami/postgresql/tags
     ## @param image.tag PostgreSQL image tag
     ##
@@ -1437,11 +1437,6 @@ identity:
       ## @param postgresql.auth.password Password for the non-root username
       ##
       password:
-      ## @param postgresql.auth.secretAnnotations Secret annotations for auto-generated password.
-      ##
-      secretAnnotations:
-        "helm.sh/hook": pre-install
-        "helm.sh/resource-policy": keep
       ## @param postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
       ##
       existingSecret:
