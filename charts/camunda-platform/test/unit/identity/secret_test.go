@@ -113,6 +113,7 @@ func (s *secretTest) TestSecretBuiltinDatabaseEnabledWithDefinedPassword() {
 	// then
 	s.NotEmpty(secret.Data)
 	s.Require().Equal("super-secure", string(secret.Data["identity-password"]))
+	s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["postgres-password"]))
 }
 
 func (s *secretTest) TestSecretBuiltinDatabaseEnabledWithGeneratedPassword() {
@@ -137,6 +138,7 @@ func (s *secretTest) TestSecretBuiltinDatabaseEnabledWithGeneratedPassword() {
 	// then
 	s.NotEmpty(secret.Data)
 	s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["identity-password"]))
+	s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["postgres-password"]))
 }
 
 func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
@@ -162,4 +164,5 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 	// then
 	s.NotEmpty(secret.Data)
 	s.Require().Equal("super-secure-ext", string(secret.Data["identity-password"]))
+	s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["postgres-password"]))
 }
