@@ -16,9 +16,7 @@ spec:
         {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-      {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
-        checksum/postgresql-configmap: {{ include (print $.Template.BasePath "/postgresql-configmap.yaml") . | sha256sum }}
-      {{- end }}
+        checksum/configmap-env-vars: {{ include (print $.Template.BasePath "/configmap-env-vars.yaml") . | sha256sum }}
       {{- if .Values.podAnnotations }}
         {{- toYaml  .Values.podAnnotations | nindent 8 }}
       {{- end }}

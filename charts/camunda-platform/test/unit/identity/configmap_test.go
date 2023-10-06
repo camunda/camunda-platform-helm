@@ -45,7 +45,7 @@ func TestConfigMapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/identity/templates/postgresql-configmap.yaml"},
+		templates: []string{"charts/identity/templates/configmap-env-vars.yaml"},
 	})
 }
 

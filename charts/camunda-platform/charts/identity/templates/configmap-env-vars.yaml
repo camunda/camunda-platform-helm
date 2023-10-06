@@ -1,11 +1,12 @@
-{{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
+{{/* TODO: Move rest of the config vars from deployment to here. */}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "identity.postgresql.id" . }}
+  name: {{ include "identity.fullname" . }}
   labels: {{- include "identity.labels" . | nindent 4 }}
   annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
 data:
+{{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
   MULTITENANCY_ENABLED: {{ .Values.global.multitenancy.enabled | quote }}
   IDENTITY_DATABASE_HOST: {{ include "identity.postgresql.host" . | quote }}
   IDENTITY_DATABASE_PORT: {{ include "identity.postgresql.port" . | quote }}
