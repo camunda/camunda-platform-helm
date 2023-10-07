@@ -24,6 +24,9 @@ spec:
       imagePullSecrets:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       initContainers:
+      {{- if .Values.initContainers }}
+        {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
+      {{- end }}
       - name: migration
         image: {{ include "camundaPlatform.image" . | quote }}
         command: ['./upgrade/upgrade.sh', '--skip-warning']
@@ -36,9 +39,6 @@ spec:
           value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
         - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
           value: {{ .Values.global.elasticsearch.port | quote }}
-      {{- if .Values.initContainers }}
-        {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
-      {{- end }}
         volumeMounts:
         - mountPath: /tmp
           name: tmp

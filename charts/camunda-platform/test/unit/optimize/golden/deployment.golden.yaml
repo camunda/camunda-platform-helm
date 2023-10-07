@@ -50,10 +50,25 @@ spec:
           value: "camunda-platform-test-elasticsearch"
         - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
           value: "9200"
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 100
       containers:
       - name: optimize
         image: "camunda/optimize:3.10.5"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 100
         env:
           - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
             value: "true"
@@ -113,4 +128,15 @@ spec:
           failureThreshold: 5
           timeoutSeconds: 1
         volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
       volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: camunda
+        emptyDir: {}
+      securityContext:
+        fsGroup: 100
+        runAsNonRoot: true

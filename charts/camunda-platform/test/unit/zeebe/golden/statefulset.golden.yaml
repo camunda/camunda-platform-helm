@@ -47,6 +47,11 @@ spec:
       - name: zeebe
         image: "camunda/zeebe:8.2.15"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 1000
         env:
         - name: LC_ALL
           value: C.UTF-8
@@ -146,8 +151,11 @@ spec:
             defaultMode: 492
         - name: exporters
           emptyDir: {}
+        - name: tmp
+          emptyDir: {}
       securityContext:
         fsGroup: 1000
+        runAsNonRoot: true
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

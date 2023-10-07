@@ -379,6 +379,11 @@ func (s *statefulSetTest) TestContainerSetContainerCommand() {
 }
 
 func (s *statefulSetTest) TestContainerSetLog4j2() {
+	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	var statefulSetBefore appsv1.StatefulSet
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
+	volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -394,13 +399,18 @@ func (s *statefulSetTest) TestContainerSetLog4j2() {
 
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(4, len(volumeMounts))
+	s.Require().Equal(volumeMountLenBefore+2, len(volumeMounts))
 	s.Require().Equal("config", volumeMounts[3].Name)
 	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[3].MountPath)
 	s.Require().Equal("broker-log4j2.xml", volumeMounts[3].SubPath)
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumes() {
+	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	var statefulSetBefore appsv1.StatefulSet
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
+	volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -419,9 +429,9 @@ func (s *statefulSetTest) TestContainerSetExtraVolumes() {
 
 	// then
 	volumes := statefulSet.Spec.Template.Spec.Volumes
-	s.Require().Equal(3, len(volumes))
+	s.Require().Equal(volumeLenBefore+1, len(volumes))
 
-	extraVolume := volumes[2]
+	extraVolume := volumes[volumeLenBefore]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
@@ -429,6 +439,11 @@ func (s *statefulSetTest) TestContainerSetExtraVolumes() {
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
+	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	var statefulSetBefore appsv1.StatefulSet
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
+	volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -446,13 +461,20 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
 
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(4, len(volumeMounts))
-	extraVolumeMount := volumeMounts[3]
+	s.Require().Equal(volumeMountLenBefore+1, len(volumeMounts))
+	extraVolumeMount := volumeMounts[volumeMountLenBefore]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
+	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	var statefulSetBefore appsv1.StatefulSet
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
+	volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
+	volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
+
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -472,17 +494,17 @@ func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
 
 	// then
 	volumes := statefulSet.Spec.Template.Spec.Volumes
-	s.Require().Equal(3, len(volumes))
+	s.Require().Equal(volumeLenBefore+1, len(volumes))
 
-	extraVolume := volumes[2]
+	extraVolume := volumes[volumeLenBefore]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
 	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(4, len(volumeMounts))
-	extraVolumeMount := volumeMounts[3]
+	s.Require().Equal(volumeMountLenBefore+1, len(volumeMounts))
+	extraVolumeMount := volumeMounts[volumeMountLenBefore]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
@@ -667,6 +689,12 @@ func (s *statefulSetTest) TestContainerSetTolerations() {
 }
 
 func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
+	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	var statefulSetBefore appsv1.StatefulSet
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
+	volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
+	volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -683,13 +711,13 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(3, len(volumeMounts))
+	s.Require().Equal(volumeMountLenBefore, len(volumeMounts))
 	dataVolumeMount := volumeMounts[1]
 	s.Require().Equal("data", dataVolumeMount.Name)
 	s.Require().Equal("/usr/local/zeebe/data", dataVolumeMount.MountPath)
 
 	volumes := statefulSet.Spec.Template.Spec.Volumes
-	s.Require().Equal(3, len(volumes))
+	s.Require().Equal(volumeLenBefore+1, len(volumes))
 	dataVolume := volumes[0]
 	s.Require().Equal("data", dataVolume.Name)
 	s.Require().NotEmpty(dataVolume.EmptyDir)
@@ -699,6 +727,12 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 }
 
 func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
+	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	var statefulSetBefore appsv1.StatefulSet
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
+	volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
+	volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -715,13 +749,13 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
 
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(2, len(volumeMounts))
+	s.Require().Equal(volumeMountLenBefore-1, len(volumeMounts))
 	for _, volumeMount := range volumeMounts {
 		s.Require().NotEqual("data", volumeMount.Name)
 	}
 
 	volumes := statefulSet.Spec.Template.Spec.Volumes
-	s.Require().Equal(2, len(volumes))
+	s.Require().Equal(volumeLenBefore, len(volumes))
 	for _, volumeMount := range volumeMounts {
 		s.Require().NotEqual("data", volumeMount.Name)
 	}

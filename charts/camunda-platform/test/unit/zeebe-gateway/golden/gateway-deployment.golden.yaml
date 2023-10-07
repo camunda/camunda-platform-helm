@@ -90,6 +90,12 @@ spec:
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE
               value: "zeebe-api"
           volumeMounts:
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -112,6 +118,9 @@ spec:
           configMap:
             name: camunda-platform-test-zeebe-gateway-gateway
             defaultMode: 484
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

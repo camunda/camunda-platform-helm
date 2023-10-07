@@ -616,7 +616,13 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 }
 
-func (s *deploymentTemplateTest) TestContainerExtraVolumes() {
+func (s *deploymentTemplateTest) TestContainerExtraVolumeMounts() {
+	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	var deploymentBefore appsv1.Deployment
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+	containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
+	volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -634,16 +640,21 @@ func (s *deploymentTemplateTest) TestContainerExtraVolumes() {
 
 	// then
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(1, len(containers))
+	s.Require().Equal(containerLenBefore, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(1, len(volumeMounts))
-	extraVolumeMount := volumeMounts[0]
+	s.Require().Equal(volumeMountLenBefore+1, len(volumeMounts))
+	extraVolumeMount := volumeMounts[volumeMountLenBefore]
 	s.Require().Equal("someConfig", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
-func (s *deploymentTemplateTest) TestContainerExtraVolumeMounts() {
+func (s *deploymentTemplateTest) TestContainerExtraVolumes() {
+	//finding out the length of volumes array before addition of new volume
+	var deploymentBefore appsv1.Deployment
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+	volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -662,9 +673,9 @@ func (s *deploymentTemplateTest) TestContainerExtraVolumeMounts() {
 
 	// then
 	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(1, len(volumes))
+	s.Require().Equal(volumeLenBefore+1, len(volumes))
 
-	extraVolume := volumes[0]
+	extraVolume := volumes[volumeLenBefore]
 	s.Require().Equal("myExtraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
