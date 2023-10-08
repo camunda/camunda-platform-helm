@@ -1,5 +1,0 @@
-identity:
-  postgresql:
-    auth:
-      secretAnnotations:
-        "helm.sh/hook": pre-upgrade

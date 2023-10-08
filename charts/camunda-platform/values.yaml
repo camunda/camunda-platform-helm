@@ -1417,7 +1417,7 @@ identity:
   postgresql:
     ## @param identity.postgresql.enabled Enable PostgreSQL Helm chart. Required for Multi-Tenancy.
     ##
-    enabled: true
+    enabled: false
     # https://hub.docker.com/r/bitnami/postgresql/tags
     ## @param image.tag PostgreSQL image tag
     ##

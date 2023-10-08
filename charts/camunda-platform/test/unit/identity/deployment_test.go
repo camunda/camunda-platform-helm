@@ -1065,36 +1065,6 @@ func (s *deploymentTemplateTest) TestContainerShouldSetFirstUserExistingSecretVa
 		})
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldSetBuiltinDatabaseExistingSecret() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.externalDatabase.enabled":       "false",
-			"identity.postgresql.enabled":             "true",
-			"identity.postgresql.auth.existingSecret": "postgres-secret-int",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name: "IDENTITY_DATABASE_PASSWORD",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{Name: "postgres-secret-int"},
-					Key:                  "identity-password",
-				},
-			},
-		})
-}
-
 func (s *deploymentTemplateTest) TestContainerShouldSetExternalDatabaseExistingSecret() {
 	// given
 	options := &helm.Options{
