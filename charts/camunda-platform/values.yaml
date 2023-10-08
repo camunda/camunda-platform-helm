@@ -35,9 +35,6 @@
 
 # Global configuration for variables which can be accessed by all sub charts
 global:
-  postgresql:
-    auth:
-      password: will-be-auto-generated
   # Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   # Labels can be used to define common labels, which should be applied to all deployments
@@ -1440,16 +1437,9 @@ identity:
       ## @param postgresql.auth.password Password for the non-root username
       ##
       password:
-      ## @param postgresql.auth.secretAnnotations Secret annotations for auto-generated password.
-      ##
-      secretAnnotations:
-        "helm.sh/hook": pre-install
-        "helm.sh/resource-policy": keep
       ## @param postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
       ##
-      existingSecret: "{{ .Release.Name }}-identity-postgresql"
-      secretKeys:
-        userPasswordKey: identity-password
+      existingSecret:
 
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
