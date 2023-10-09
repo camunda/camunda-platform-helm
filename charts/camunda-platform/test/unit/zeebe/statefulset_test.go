@@ -399,10 +399,10 @@ func (s *statefulSetTest) TestContainerSetLog4j2() {
 
 	// then
 	volumeMounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(volumeMountLenBefore+2, len(volumeMounts))
-	s.Require().Equal("config", volumeMounts[3].Name)
-	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[3].MountPath)
-	s.Require().Equal("broker-log4j2.xml", volumeMounts[3].SubPath)
+	s.Require().Equal(volumeMountLenBefore+1, len(volumeMounts))
+	s.Require().Equal("config", volumeMounts[4].Name)
+	s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[4].MountPath)
+	s.Require().Equal("broker-log4j2.xml", volumeMounts[4].SubPath)
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumes() {

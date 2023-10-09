@@ -144,6 +144,8 @@ spec:
           mountPath: /usr/local/zeebe/data
         - name: exporters
           mountPath: /exporters
+        - mountPath: /tmp
+          name: tmp
       volumes:
         - name: config
           configMap:

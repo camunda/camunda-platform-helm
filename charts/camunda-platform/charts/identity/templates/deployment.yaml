@@ -276,10 +276,10 @@ spec:
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
         {{- end }}
         volumeMounts:
-          - mountPath: /tmp
-            name: tmp
+        - mountPath: /tmp
+          name: tmp
         {{- if .Values.extraVolumeMounts}}
-        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+          {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.sidecars }}
       {{- .Values.sidecars | toYaml | nindent 6 }}
