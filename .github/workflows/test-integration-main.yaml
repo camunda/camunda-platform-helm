@@ -122,7 +122,7 @@ jobs:
         identifier-base: ${{ github.event.pull_request.number || inputs.identifier }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
     - name: Install env dependencies
-      uses: asdf-vm/actions/install@v2
+      uses: asdf-vm/actions/install@v3
     - name: Add Helm repos and dependencies
       run: |
         make helm.repos-add

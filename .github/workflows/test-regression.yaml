@@ -49,7 +49,7 @@ jobs:
         TEST_NAMESPACE="camunda-platform-pr-$GITHUB_PR_NUMBER-regression-${{ matrix.camundaChart }}"
         echo "TEST_NAMESPACE=${TEST_NAMESPACE//./-}" >> $GITHUB_ENV
     - name: Install env dependencies
-      uses: asdf-vm/actions/install@v2
+      uses: asdf-vm/actions/install@v3
     - name: Cleanup any old namespace
       run: |
         kubectl delete ns $TEST_NAMESPACE --ignore-not-found=true
