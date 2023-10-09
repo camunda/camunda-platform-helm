@@ -39,7 +39,9 @@ tasks:
         -n $TEST_NAMESPACE -o jsonpath="{.data.connectors-secret}" | base64 --decode)
       export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret "integration-keycloak" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.admin-password}" | base64 --decode)
-      export POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
+      export KEYCLOAK_POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
+      export IDENTITY_POSTGRESQL_SECRET=$(kubectl get secret "integration-identity-postgresql" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
 
       helm upgrade integration {{ .TEST_CHART_NAME }} \
@@ -52,6 +54,7 @@ tasks:
         --set global.identity.auth.operate.existingSecret=$OPERATE_SECRET \
         --set global.identity.auth.connectors.existingSecret=$CONNECTORS_SECRET \
         --set identity.keycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
-        --set identity.keycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
+        --set identity.keycloak.postgresql.auth.password=$KEYCLOAK_POSTGRESQL_SECRET \
+        --set global.postgresql.auth.password=${IDENTITY_POSTGRESQL_SECRET} \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}

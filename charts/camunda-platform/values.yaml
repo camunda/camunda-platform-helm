@@ -1428,20 +1428,15 @@ identity:
     ##
     nameOverride: identity-postgresql
     auth:
-      ## @param externalDatabase.username Non-root username
+      ## @param postgresql.auth.username Non-root username
       ##
       username: identity
-      ## @param externalDatabase.database The database name
+      ## @param postgresql.auth.database The database name
       ##
       database: identity
       ## @param postgresql.auth.password Password for the non-root username
       ##
       password:
-      ## @param postgresql.auth.secretAnnotations Secret annotations for auto-generated password.
-      ##
-      secretAnnotations:
-        "helm.sh/hook": pre-install
-        "helm.sh/resource-policy": keep
       ## @param postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
       ##
       existingSecret:
