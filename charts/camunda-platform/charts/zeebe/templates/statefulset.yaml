@@ -167,12 +167,12 @@ spec:
         {{- end }}
         - name: exporters
           mountPath: /exporters
+        - mountPath: /tmp
+          name: tmp
         {{- if .Values.log4j2 }}
         - name: config
           mountPath: /usr/local/zeebe/config/log4j2.xml
           subPath: broker-log4j2.xml
-        - mountPath: /tmp
-          name: tmp
         {{- end }}
         {{- if .Values.extraVolumeMounts}}
         {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
