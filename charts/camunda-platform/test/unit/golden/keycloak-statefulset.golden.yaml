@@ -56,18 +56,39 @@ spec:
         - command:
           - sh
           - -c
-          - cp -a /app/keycloak-theme/* /mnt
+          - 'cp -a /app/keycloak-theme/* /mnt '
           image: 'camunda/identity:8.2.15'
           imagePullPolicy: 'IfNotPresent'
           name: copy-camunda-theme
           volumeMounts:
           - mountPath: /mnt
             name: camunda-theme
+        - command:
+          - sh
+          - -c
+          - cp -ar /opt/bitnami/keycloak/conf/* /config  && cp -a /opt/bitnami/keycloak/lib/quarkus/*
+            /quarkus
+          image: bitnami/keycloak:22.0.4
+          imagePullPolicy: Always
+          name: copy-configs
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          volumeMounts:
+          - mountPath: /config
+            name: config
+          - mountPath: /quarkus
+            name: quarkus
       containers:
         - name: keycloak
           image: docker.io/bitnami/keycloak:22.0.4
           imagePullPolicy: IfNotPresent
           securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
           env:
@@ -124,9 +145,21 @@ spec:
               path: /auth/realms/master
               port: http
           volumeMounts:
+            - mountPath: /opt/bitnami/keycloak/conf/
+              name: config
+            - mountPath: /opt/bitnami/keycloak/lib/quarkus
+              name: quarkus
             - mountPath: /opt/bitnami/keycloak/themes/identity
               name: camunda-theme
+            - mountPath: /tmp
+              name: tmp
       volumes:
+        - emptyDir: {}
+          name: config
+        - emptyDir: {}
+          name: quarkus
+        - emptyDir: {}
+          name: tmp
         - emptyDir:
             sizeLimit: 10Mi
           name: camunda-theme

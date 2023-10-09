@@ -336,10 +336,15 @@ zeebe:
 
   # PodSecurityContext defines the security options the Zeebe broker pod should be run with
   podSecurityContext:
+    runAsNonRoot: true
     fsGroup: 1000
 
   # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
-  containerSecurityContext: {}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsUser: 1000
 
   # StartupProbe configuration
   startupProbe:
@@ -502,10 +507,17 @@ zeebe-gateway:
   priorityClassName: ""
 
   # PodSecurityContext defines the security options the gateway pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1000
 
   # ContainerSecurityContext defines the security options the gateway container should be run with
-  containerSecurityContext: {}
+  containerSecurityContext:
+    privileged: false
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1000
 
   # StartupProbe configuration
   startupProbe:
@@ -760,10 +772,16 @@ operate:
       secretName: camunda-platform-operate
 
   # PodSecurityContext defines the security options the Operate pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1000
 
   # ContainerSecurityContext defines the security options the Operate container should be run with
-  containerSecurityContext: {}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsUser: 1004
 
   # StartupProbe configuration
   startupProbe:
@@ -915,10 +933,16 @@ tasklist:
     annotations: {}
 
   # PodSecurityContext defines the security options the Tasklist pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1002
 
   # ContainerSecurityContext defines the security options the Tasklist container should be run with
-  containerSecurityContext: {}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsUser: 1002
 
   # StartupProbe configuration
   startupProbe:
@@ -1096,10 +1120,16 @@ optimize:
     managementPort: 8092
 
   # PodSecurityContext defines the security options the Optimize pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 100
 
   # ContainerSecurityContext defines the security options the Optimize container should be run with
-  containerSecurityContext: {}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsUser: 100
 
   # StartupProbe configuration
   startupProbe:
@@ -1291,10 +1321,16 @@ identity:
     metricsName: metrics
 
   # PodSecurityContext defines the security options the Identity pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    fsGroup: 1005
 
   # ContainerSecurityContext defines the security options the Identity container should be run with
-  containerSecurityContext: {}
+  containerSecurityContext:
+    privileged: false
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1005
 
   # StartupProbe configuration
   startupProbe:
@@ -1481,6 +1517,33 @@ identity:
         repository: bitnami/postgresql
         tag: 15.4.0
 
+      primary:
+        extraVolumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+        - name: postgresqltmp
+          emptyDir: {}
+        extraVolumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /opt/bitnami/postgresql/conf
+          name: config
+        - mountPath: /opt/bitnami/postgresql/tmp
+          name: postgresqltmp
+        containerSecurityContext:
+          enabled: true
+          privileged: false
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+        podSecurityContext:
+          enabled: true
+          runAsNonRoot: true
+          fsGroup: 1001
+
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
 
@@ -1501,6 +1564,12 @@ identity:
     # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
     # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
     extraVolumes:
+    - name: config
+      emptyDir: {}
+    - name: quarkus
+      emptyDir: {}
+    - name: tmp
+      emptyDir: {}
     - name: camunda-theme
       emptyDir:
         sizeLimit: 10Mi
@@ -1511,14 +1580,44 @@ identity:
         {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
         {{- include "camundaPlatform.imageByParams" $identityImageParams }}
       imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
-      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
+      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt "]
       volumeMounts:
       - name: camunda-theme
         mountPath: /mnt
+    - name: copy-configs
+      image: bitnami/keycloak:{{ .Values.image.tag }}
+      imagePullPolicy: "Always"
+      command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config  && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
+      securityContext:
+        privileged: false
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+      volumeMounts:
+      - name: config
+        mountPath: /config
+      - name: quarkus
+        mountPath: /quarkus
 
     extraVolumeMounts:
+    - mountPath: /opt/bitnami/keycloak/conf/
+      name: config
+    - mountPath: /opt/bitnami/keycloak/lib/quarkus
+      name: quarkus
     - name: camunda-theme
       mountPath: /opt/bitnami/keycloak/themes/identity
+    - mountPath: /tmp
+      name: tmp
+
+    containerSecurityContext:
+      privileged: false
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1001
+
+    podSecurityContext:
+      fsGroup: 1001
 
     # Keycloak.httpRelativePath defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
     # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
@@ -1663,9 +1762,16 @@ webModeler:
     extraVolumeMounts: []
 
     # Restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
-    podSecurityContext: {}
+    podSecurityContext:
+      runAsNonRoot: true
+      fsGroup: 1000
     # Restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
-    containerSecurityContext: {}
+    containerSecurityContext:
+      privileged: false
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
 
     # Restapi.startupProbe configuration of the restapi startup probe
     startupProbe:
@@ -1786,9 +1892,16 @@ webModeler:
     extraVolumeMounts: []
 
     # Webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
-    podSecurityContext: {}
+    podSecurityContext:
+      runAsNonRoot: true
+      fsGroup: 1000
     # Webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
-    containerSecurityContext: {}
+    containerSecurityContext:
+      privileged: false
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
 
     # Webapp.startupProbe configuration of the webapp startup probe
     startupProbe:
@@ -1918,9 +2031,16 @@ webModeler:
     extraVolumeMounts: []
 
     # Websockets.podSecurityContext can be used to define the security options the websockets pod should be run with
-    podSecurityContext: {}
+    podSecurityContext:
+      runAsNonRoot: true
+      fsGroup: 1000
     # Websockets.containerSecurityContext can be used to define the security options the websockets container should be run with
-    containerSecurityContext: {}
+    containerSecurityContext:
+      privileged: false
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
 
     # Websockets.startupProbe configuration of the websockets startup probe
     startupProbe:
@@ -2059,6 +2179,32 @@ postgresql:
     password: ""
     # Postgresql.auth.database defines the name of the database to be created for Web Modeler
     database: web-modeler
+  primary:
+    extraVolumes:
+    - name: tmp
+      emptyDir: {}
+    - name: config
+      emptyDir: {}
+    - name: postgresqltmp
+      emptyDir: {}
+    extraVolumeMounts:
+    - mountPath: /tmp
+      name: tmp
+    - mountPath: /opt/bitnami/postgresql/conf
+      name: config
+    - mountPath: /opt/bitnami/postgresql/tmp
+      name: postgresqltmp
+    containerSecurityContext:
+      enabled: true
+      privileged: false
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1001
+    podSecurityContext:
+      enabled: true
+      runAsNonRoot: true
+      fsGroup: 1001
 
 #####################################################################
  #####
@@ -2240,10 +2386,16 @@ connectors:
       secretName: camunda-platform-connectors
 
   # PodSecurityContext defines the security options the Connectors pod should be run with
-  podSecurityContext: {}
+  podSecurityContext:
+    fsGroup: 1003
 
   # ContainerSecurityContext defines the security options the Connectors container should be run with
-  containerSecurityContext: {}
+  containerSecurityContext:
+    privileged: false
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1003
 
   # NodeSelector can be used to define on which nodes the Connectors pods should run
   nodeSelector: {}
@@ -2527,6 +2679,26 @@ elasticsearch:
     replicaCount: 0
   ingest:
     enabled: false
+  securityContext:
+    privileged: false
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1000
+  extraVolumes:
+  - name: tmp
+    emptyDir: {}
+  - name: logs
+    emptyDir: {}
+  - name: config
+    emptyDir: {}
+  extraVolumeMounts:
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /usr/share/elasticsearch/logs
+    name: logs
+  - mountPath: /usr/share/elasticsearch/config
+    name: config
 
 
 #####################################################################

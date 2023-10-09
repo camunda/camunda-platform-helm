@@ -43,6 +43,12 @@ spec:
       - name: web-modeler-restapi
         image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.2.6"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
         env:
           - name: JAVA_OPTIONS
             value: "-Xmx1536m"
@@ -92,6 +98,8 @@ spec:
             value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
           - name: RESTAPI_IDENTITY_BASE_URL
             value: "http://camunda-platform-test-identity:80"
+          - name: ZEEBE_CLIENT_CONFIG_PATH
+            value: /tmp/zeebe_client_cache.txt
         resources:
           limits:
             cpu: 1000m
@@ -115,3 +123,12 @@ spec:
           successThreshold: 1
           failureThreshold: 5
           timeoutSeconds: 1
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true

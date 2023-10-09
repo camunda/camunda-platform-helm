@@ -43,6 +43,12 @@ spec:
       - name: web-modeler-webapp
         image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.2.6"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
         env:
           - name: NODE_ENV
             value: "production"
@@ -130,3 +136,6 @@ spec:
           successThreshold: 1
           failureThreshold: 5
           timeoutSeconds: 1
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true

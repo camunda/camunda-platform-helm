@@ -45,6 +45,11 @@ spec:
       - name: operate
         image: "camunda/operate:8.2.15"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 1004
         env:
           - name: SPRING_PROFILES_ACTIVE
             value: "identity-auth"
@@ -103,8 +108,19 @@ spec:
         - name: config
           mountPath: /usr/local/operate/config/application.yml
           subPath: application.yml
+        - name: tmp
+          mountPath: /tmp
+        - name: camunda
+          mountPath: /camunda
       volumes:
       - name: config
         configMap:
           name: camunda-platform-test-operate
           defaultMode: 484
+      - name: tmp
+        emptyDir: {}
+      - name: camunda
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
