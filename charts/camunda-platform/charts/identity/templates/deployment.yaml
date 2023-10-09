@@ -277,6 +277,8 @@ spec:
         {{- end }}
         {{- if .Values.extraVolumeMounts}}
         volumeMounts:
+        - mountPath: /tmp
+          name: tmp
         {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.sidecars }}
@@ -285,6 +287,8 @@ spec:
 
       {{- if .Values.extraVolumes}}
       volumes:
+        - name: tmp
+          emptyDir: {}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.serviceAccount.name}}
