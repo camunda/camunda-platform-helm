@@ -36,7 +36,7 @@ jobs:
     steps:
     - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
     - name: Install env dependencies
-      uses: asdf-vm/actions/install@v2
+      uses: asdf-vm/actions/install@v3
     - uses: actions/cache@v3
       with:
         path: |
