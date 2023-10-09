@@ -239,10 +239,10 @@ zeebe:
   env:
     - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
       value: "5m"
-    - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
-      value: "0.85"
-    - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
-      value: "0.87"
+    - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
+      value: "2GB"
+    - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
+      value: "3GB"
   # ConfigMap configuration which will be applied to the mounted config map.
   configMap:
     # ConfigMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
