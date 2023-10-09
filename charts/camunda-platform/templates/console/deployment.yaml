@@ -35,6 +35,16 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            - name: IDENTITY_BASE
+              value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+            - name: IDENTITY_ISSUER_URL
+              value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+            - name: IDENTITY_REALM
+              value: camunda-platform
+            - name: IDENTITY_AUDIENCE
+              value: console
+            - name: IDENTITY_CLIENT_ID
+              value: console
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
