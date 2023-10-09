@@ -275,10 +275,10 @@ spec:
           failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
         {{- end }}
-        {{- if .Values.extraVolumeMounts}}
         volumeMounts:
         - mountPath: /tmp
           name: tmp
+        {{- if .Values.extraVolumeMounts}}
         {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.sidecars }}
