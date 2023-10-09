@@ -228,12 +228,12 @@ zeebe:
   replicationFactor: "3"
    ## @extra zeebe.env can be used to set extra environment variables in each zeebe broker container
   env:
-    ## @skip zeebe.env[0].name
-    ## @skip zeebe.env[0].value
-    ## @skip zeebe.env[1].name
-    ## @skip zeebe.env[1].value
-    ## @skip zeebe.env[2].name
-    ## @skip zeebe.env[2].value
+    ## @param zeebe.env[0].name
+    ## @param zeebe.env[0].value
+    ## @param zeebe.env[1].name
+    ## @param zeebe.env[1].value
+    ## @param zeebe.env[2].name
+    ## @param zeebe.env[2].value
     - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
       value: "5m"
     - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
@@ -296,11 +296,10 @@ zeebe:
   ioThreadCount: "3"
    ## @extra zeebe.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
    ## @extra zeebe.resources.requests
-   ## @skip zeebe.resources.requests.cpu
-   ## @skip zeebe.resources.requests.memory
-   ## @skip zeebe.resources.limits.cpu
-   ## @skip zeebe.resources.limits.memory
-   ## @skip zeebe.resources.request
+   ## @param zeebe.resources.requests.cpu
+   ## @param zeebe.resources.requests.memory
+   ## @param zeebe.resources.limits.cpu
+   ## @param zeebe.resources.limits.memory
   resources:
     requests:
       cpu: 800m
@@ -346,6 +345,7 @@ zeebe:
    ## @extra zeebe.podSecurityContext defines the security options the Zeebe broker pod should be run with
   podSecurityContext:
     runAsNonRoot: true
+    ## @param zeebe.podSecurityContext.fsGroup
     fsGroup: 1000
 
   # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
@@ -421,10 +421,10 @@ zeebe:
    ## @extra global.zeebe.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
   # It uses a hard requirement for scheduling and works based on the Zeebe pod labels
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -439,13 +439,12 @@ zeebe:
   ## @param zeebe.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
-  # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
-    # Retention.Enabled if true, the ILM Policy is created and applied to the index templates.
+    ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
-    # Retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
-    # Retention.policyName defines the name of the created and applied ILM policy.
+    ## @param zeebe.retention.policyName defines the name of the created and applied ILM policy.
     policyName: zeebe-record-retention-policy
 
 # Zeebe.
@@ -507,10 +506,10 @@ zeebe-gateway:
     maxUnavailable:
 
   ## @extra zeebe-gateway.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip zeebe-gateway.resources.requests.cpu
-  ## @skip zeebe-gateway.resources.requests.memory
-  ## @skip zeebe-gateway.resources.limits.cpu
-  ## @skip zeebe-gateway.resources.limits.memory
+  ## @param zeebe-gateway.resources.requests.cpu
+  ## @param zeebe-gateway.resources.requests.memory
+  ## @param zeebe-gateway.resources.limits.cpu
+  ## @param zeebe-gateway.resources.limits.memory
   resources:
     requests:
       cpu: 400m
@@ -601,10 +600,10 @@ zeebe-gateway:
   ## @extra zeebe-gateway.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe gateway pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
   # It uses a hard requirement for scheduling and works based on the Zeebe gateway pod labels
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
 
   affinity:
     podAntiAffinity:
@@ -725,8 +724,8 @@ operate:
   podLabels: {}
 
   ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file
-  ## @skip operate.logging.level.ROOT
-  ## @skip operate.logging.level.io.camunda.operate
+  ## @param operate.logging.level.ROOT
+  ## @param operate.logging.level.io.camunda.operate
   logging:
     level:
       ROOT: INFO
@@ -742,10 +741,10 @@ operate:
     annotations: {}
 
   ## @extra operate.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip operate.resources.requests.cpu
-  ## @skip operate.resources.requests.memory
-  ## @skip operate.resources.limits.cpu
-  ## @skip operate.resources.limits.memory
+  ## @param operate.resources.requests.cpu
+  ## @param operate.resources.requests.memory
+  ## @param operate.resources.limits.cpu
+  ## @param operate.resources.limits.memory
   resources:
     requests:
       cpu: 600m
@@ -883,9 +882,9 @@ operate:
 
   # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
-    # Retention.Enabled if true, the ILM Policy is created and applied to the index templates.
+    ## @param operate.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
-    # Retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    ## @param operate.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
 
 
@@ -1043,11 +1042,10 @@ tasklist:
   affinity: {}
 
   ## @extra tasklist.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip tasklist.resources.requests.cpu
-  ## @skip tasklist.resources.requests.memory
-  ## @skip tasklist.resources.limits.cpu
-  ## @skip tasklist.resources.limits.memory
-  ## @skip 
+  ## @param tasklist.resources.requests.cpu
+  ## @param tasklist.resources.requests.memory
+  ## @param tasklist.resources.limits.cpu
+  ## @param tasklist.resources.limits.memory
   resources:
     requests:
       cpu: 400m
@@ -1083,9 +1081,9 @@ tasklist:
 
   # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
-    # Retention.Enabled if true, the ILM Policy is created and applied to the index templates.
+    ## @param tasklist.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
-    # Retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    ## @param tasklist.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
 
 #############################################
@@ -1238,10 +1236,10 @@ optimize:
   affinity: {}
 
   ## @extra optimize.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip optimize.resources.requests.cpu
-  ## @skip optimize.resources.requests.memory
-  ## @skip optimize.resources.limits.cpu
-  ## @skip optimize.resources.limits.memory
+  ## @param optimize.resources.requests.cpu
+  ## @param optimize.resources.requests.memory
+  ## @param optimize.resources.limits.cpu
+  ## @param optimize.resources.limits.memory
   resources:
     requests:
       cpu: 600m
@@ -1444,10 +1442,10 @@ identity:
   affinity: {}
 
   ## @extra identity.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip identity.resources.requests.memory
-  ## @skip identity.resources.limits.cpu
-  ## @skip identity.resources.requests.cpu
-  ## @skip identity.resources.limits.memory
+  ## @param identity.resources.requests.memory
+  ## @param identity.resources.limits.cpu
+  ## @param identity.resources.requests.cpu
+  ## @param identity.resources.limits.memory
   resources:
     requests:
       cpu: 600m
@@ -1505,7 +1503,8 @@ identity:
     ##
     enabled: false
     # https://hub.docker.com/r/bitnami/postgresql/tags
-    ## @param image.tag PostgreSQL image tag
+    ## @param identity.postgresql.image.repository PostgreSQL repo
+    ## @param identity.postgresql.image.tag PostgreSQL image tag
     ##
     image:
       repository: bitnami/postgresql
@@ -1514,29 +1513,29 @@ identity:
     ##
     nameOverride: identity-postgresql
     auth:
-      ## @param postgresql.auth.username Non-root username
+      ## @param identity.postgresql.auth.username Non-root username
       ##
       username: identity
-      ## @param postgresql.auth.database The database name
+      ## @param identity.postgresql.auth.database The database name
       ##
       database: identity
-      ## @param postgresql.auth.password Password for the non-root username
+      ## @param identity.postgresql.auth.password Password for the non-root username
       ##
       password:
-      ## @param postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
+      ## @param identity.postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
       ##
       existingSecret:
 
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
-  ## @param externalDatabase.enabled
-  ## @param externalDatabase.host Database host
-  ## @param externalDatabase.port Database port number
-  ## @param externalDatabase.username Non-root username
-  ## @param externalDatabase.password Password for the non-root username
-  ## @param externalDatabase.database The database name
-  ## @param externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
-  ## @param externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
+  ## @param identity.externalDatabase.enabled
+  ## @param identity.externalDatabase.host Database host
+  ## @param identity.externalDatabase.port Database port number
+  ## @param identity.externalDatabase.username Non-root username
+  ## @param identity.externalDatabase.password Password for the non-root username
+  ## @param identity.externalDatabase.database The database name
+  ## @param identity.externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
+  ## @param identity.externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
     enabled: false
@@ -1609,6 +1608,7 @@ identity:
 
     # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
     # Docs: https://www.keycloak.org/server/reverseproxy
+    ## @param identity.keycloak.proxy keycloak proxy
     proxy: edge
 
     ## @extra identity.keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
@@ -1619,8 +1619,8 @@ identity:
     # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
     # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
     ## @extra identity.keycloak.extraVolumes [object] Extra volumes for keycloak
-    ## @skip identity.keycloak.extraVolumes[0].name
-    ## @skip identity.keycloak.extraVolumes[0].emptyDir.sizeLimit
+    ## @param identity.keycloak.extraVolumes[0].name
+    ## @param identity.keycloak.extraVolumes[0].emptyDir.sizeLimit
     extraVolumes:
     - name: config
       emptyDir: {}
@@ -1632,16 +1632,16 @@ identity:
       emptyDir:
         sizeLimit: 10Mi
 
-    ## @skip identity.keycloak.initContainers[0].name
-    ## @skip identity.keycloak.initContainers[0].image
-    ## @skip identity.keycloak.initContainers[0].imagePullPolicy
-    ## @skip identity.keycloak.initContainers[0].command
-    ## @skip identity.keycloak.initContainers[0].volumeMounts[0].name
-    ## @skip identity.keycloak.initContainers[0].volumeMounts[0].mountPath
-    ## @skip identity.keycloak.extraVolumeMounts[0].name
-    ## @skip identity.keycloak.extraVolumeMounts[0].mountPath
-    ## @skip identity.keycloak.extraEnvVars[0].name
-    ## @skip identity.keycloak.extraEnvVars[0].value
+    ## @param identity.keycloak.initContainers[0].name
+    ## @param identity.keycloak.initContainers[0].image
+    ## @param identity.keycloak.initContainers[0].imagePullPolicy
+    ## @param identity.keycloak.initContainers[0].command
+    ## @param identity.keycloak.initContainers[0].volumeMounts[0].name
+    ## @param identity.keycloak.initContainers[0].volumeMounts[0].mountPath
+    ## @param identity.keycloak.extraVolumeMounts[0].name
+    ## @param identity.keycloak.extraVolumeMounts[0].mountPath
+    ## @param identity.keycloak.extraEnvVars[0].name
+    ## @param identity.keycloak.extraEnvVars[0].value
     initContainers:
     - name: copy-camunda-theme
       image: >-
@@ -1906,10 +1906,10 @@ webModeler:
     affinity: {}
 
     ## @extra webModeler.restapi.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    ## @skip webModeler.restapi.resources.requests.cpu
-    ## @skip webModeler.restapi.resources.requests.memory
-    ## @skip webModeler.restapi.resources.limits.cpu
-    ## @skip webModeler.restapi.resources.limits.memory
+    ## @param webModeler.restapi.resources.requests.cpu
+    ## @param webModeler.restapi.resources.requests.memory
+    ## @param webModeler.restapi.resources.limits.cpu
+    ## @param webModeler.restapi.resources.limits.memory
     resources:
       requests:
         cpu: 500m
@@ -2040,10 +2040,10 @@ webModeler:
     affinity: {}
 
     ## @extra webModeler.webapp.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    ## @skip webModeler.webapp.resources.requests.cpu
-    ## @skip webModeler.webapp.resources.requests.memory
-    ## @skip webModeler.webapp.resources.limits.cpu
-    ## @skip webModeler.webapp.resources.limits.memory
+    ## @param webModeler.webapp.resources.requests.cpu
+    ## @param webModeler.webapp.resources.requests.memory
+    ## @param webModeler.webapp.resources.limits.cpu
+    ## @param webModeler.webapp.resources.limits.memory
     resources:
       requests:
         cpu: 400m
@@ -2171,10 +2171,10 @@ webModeler:
     affinity: {}
 
     ## @extra webModeler.websockets.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    ## @skip webModeler.websockets.resources.requests.cpu
-    ## @skip webModeler.websockets.resources.requests.memory
-    ## @skip webModeler.websockets.resources.limits.cpu
-    ## @skip webModeler.websockets.resources.limits.memory
+    ## @param webModeler.websockets.resources.requests.cpu
+    ## @param webModeler.websockets.resources.requests.memory
+    ## @param webModeler.websockets.resources.limits.cpu
+    ## @param webModeler.websockets.resources.limits.memory
     resources:
       requests:
         cpu: 100m
@@ -2341,7 +2341,7 @@ connectors:
   podLabels: {}
 
   ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration yaml file
-  ## @skip connectors.logging.level.io.camunda.connector
+  ## @param connectors.logging.level.io.camunda.connector
   logging:
     level:
       io.camunda.connector: ERROR
@@ -2358,10 +2358,10 @@ connectors:
     serverName: http
 
   ## @extra connectors.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip connectors.resources.requests.cpu
-  ## @skip connectors.resources.requests.memory
-  ## @skip connectors.resources.limits.cpu
-  ## @skip connectors.resources.limits.memory
+  ## @param connectors.resources.requests.cpu
+  ## @param connectors.resources.requests.memory
+  ## @param connectors.resources.limits.cpu
+  ## @param connectors.resources.limits.memory
   resources:
     requests:
       cpu: 1
@@ -2604,10 +2604,10 @@ console:
     serverName: http
 
   ## @extra console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip console.resources.requests.memory
-  ## @skip console.resources.limits.cpu
-  ## @skip console.resources.limits.memory
-  ## @skip console.resources.requests.cpu
+  ## @param console.resources.requests.memory
+  ## @param console.resources.limits.cpu
+  ## @param console.resources.limits.memory
+  ## @param console.resources.requests.cpu
   resources:
     requests:
       cpu: 1
@@ -2765,19 +2765,19 @@ elasticsearch:
       size: 64Gi
     resources:
       requests:
-        ## @param elasticsearch.master.resources.requests.cpu
+        ## @param elasticsearch.master.resources.requests.cpu cpu request
         cpu: 1
-        ## @param elasticsearch.master.resources.requests.memory
+        ## @param elasticsearch.master.resources.requests.memory request
         memory: 2Gi
       limits:
-        ## @param elasticsearch.master.resources.requests.limits.cpu
+        ## @param elasticsearch.master.resources.limits.cpu cpu limit
         cpu: 2
-        ## @param elasticsearch.master.resources.requests.limits.memory
+        ## @param elasticsearch.master.resources.limits.memory memory limit
         memory: 2Gi
     extraEnvVars:
-    ## @param elasticsearch.master.extraEnvVars.name
+    ## @param elasticsearch.master.extraEnvVars[0].name env
     - name: ELASTICSEARCH_ENABLE_REST_TLS
-    ## @param elasticsearch.master.extraEnvVars.value
+    ## @param elasticsearch.master.extraEnvVars[0].value env value
       value: "false"
   sysctlImage:
   ## @param elasticsearch.sysctlImage.enabled
