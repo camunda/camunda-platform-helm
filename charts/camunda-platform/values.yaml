@@ -48,7 +48,7 @@ global:
     registry: ""
     # Image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.2.15
+    tag: 8.2.16
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1011,7 +1011,7 @@ optimize:
     # Image.repository defines which image repository to use
     repository: camunda/optimize
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 3.10.5
+    tag: 3.10.6
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2398,7 +2398,10 @@ elasticsearch:
   enabled: true
 
   # https://hub.docker.com/r/elastic/elasticsearch/tags
-  imageTag: 7.17.10
+  image: docker.elastic.co/elasticsearch/elasticsearch
+
+  # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
+  imageTag: 7.17.13
 
   extraEnvs:
     - name: "xpack.security.enabled"
