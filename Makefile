@@ -27,6 +27,11 @@ go.test-golden-updated: helm.dependency-update
 go.test-it: helm.dependency-update
 	go test -p 1 -timeout 1h -tags integration ./.../integration $(value GO_TEST_IT_ARGS)
 
+# go.update-golden-only: update the golden files only without the rest of the tests
+.PHONY: go.update-golden-only
+go.update-golden-only: helm.dependency-update
+	go test ./... -run '^TestGolden.+$$' -args -update-golden
+
 # go.it-os: runs a subset of the integration tests against the current Openshift cluster
 .PHONY: go.test-it-os
 go.test-it-os: helm.dependency-update
@@ -158,14 +163,14 @@ release.generate-pr-url:
 
 .PHONY: release.chores
 release.chores:
-	git checkout main
+	git checkout camunda-platform-8.2
 	git pull --tags
 	git switch -C release
 	@$(MAKE) release.bump-chart-version-and-commit
 	@$(MAKE) release.generate-notes-and-commit
 	git push -fu origin release
 	@$(MAKE) release.generate-pr-url
-	git checkout main
+	git checkout camunda-platform-8.2
 
 .PHONY: release.verify-components-version
 release.verify-components-version:
