@@ -37,9 +37,10 @@
 ## @section Global parameters
 ## @extra global
 global:
-  # @param global.multitenancy Multitenancy configuration.
+  ## Multitenancy configuration.
+  ## @extra global.multitenancy
   multitenancy:
-    # @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
+    ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
@@ -83,7 +84,7 @@ global:
   # Elasticsearch configuration which is shared between the sub charts
   ## @extra global.elasticsearch
   elasticsearch:
-   ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
+    ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
     ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
     url:
@@ -201,15 +202,15 @@ global:
 ####### ###### ###### #####  ######
 ###################################
 ## @section Zeebe Parameters
- ## @extra zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
+## @extra zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
-   ## @param zeebe.enabled if true, all zeebe related resources are deployed via the helm release
+  ## @param zeebe.enabled if true, all zeebe related resources are deployed via the helm release
   enabled: true
 
-   ## @param zeebe.debug if true, extra info is printed.
+  ## @param zeebe.debug if true, extra info is printed.
   debug: false
 
-   ## @extra zeebe.image configuration to configure the zeebe image specifics
+  ## @extra zeebe.image configuration to configure the zeebe image specifics
   image:
      ## @param zeebe.image.registry can be used to set container image registry.
     registry: ""
@@ -220,16 +221,16 @@ zeebe:
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-   ## @param zeebe.sidecars can be used to attach extra containers to the zeebe deployment
+  ## @param zeebe.sidecars can be used to attach extra containers to the zeebe deployment
   sidecars: []
 
-   ## @param zeebe.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  ## @param zeebe.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
-   ## @param zeebe.partitionCount defines how many zeebe partitions are set up in the cluster
+  ## @param zeebe.partitionCount defines how many zeebe partitions are set up in the cluster
   partitionCount: "3"
-   ## @param zeebe.replicationFactor defines how each partition is replicated, the value defines the number of nodes
+  ## @param zeebe.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-   ## @extra zeebe.env can be used to set extra environment variables in each zeebe broker container
+  ## @extra zeebe.env can be used to set extra environment variables in each zeebe broker container
   env:
     ## @param zeebe.env[0].name
     ## @param zeebe.env[0].value
@@ -247,14 +248,14 @@ zeebe:
   configMap:
      ## @param zeebe.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
-   ## @param zeebe.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  ## @param zeebe.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
-   ## @param zeebe.logLevel defines the log level which is used by the zeebe brokers
+  ## @param zeebe.logLevel defines the log level which is used by the zeebe brokers
   logLevel: info
-   ## @param zeebe.log4j2 can be used to overwrite the log4j2 configuration of the zeebe brokers
+  ## @param zeebe.log4j2 can be used to overwrite the log4j2 configuration of the zeebe brokers
   log4j2: ''
-   ## @param zeebe.javaOpts can be used to set java options for the zeebe brokers
+  ## @param zeebe.javaOpts can be used to set java options for the zeebe brokers
   javaOpts: >-
     -XX:+HeapDumpOnOutOfMemoryError
     -XX:HeapDumpPath=/usr/local/zeebe/data
@@ -284,7 +285,7 @@ zeebe:
       #   port: 5701
       #   targetPort: 5701
 
-   ## @extra global.zeebe.ServiceAccount configuration for the service account where the broker pods are assigned to
+  ## @extra global.zeebe.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
      ## @param zeebe.serviceAccount.enabled if true, enables the broker service account
     enabled: true
@@ -293,16 +294,16 @@ zeebe:
      ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
 
-   ## @param zeebe.cpuThreadCount defines how many threads can be used for the processing on each broker pod
+  ## @param zeebe.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
-   ## @param zeebe.ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ## @param zeebe.ioThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
-   ## @extra zeebe.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-   ## @extra zeebe.resources.requests
-   ## @param zeebe.resources.requests.cpu
-   ## @param zeebe.resources.requests.memory
-   ## @param zeebe.resources.limits.cpu
-   ## @param zeebe.resources.limits.memory
+  ## @extra zeebe.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @extra zeebe.resources.requests
+  ## @param zeebe.resources.requests.cpu
+  ## @param zeebe.resources.requests.memory
+  ## @param zeebe.resources.limits.cpu
+  ## @param zeebe.resources.limits.memory
   resources:
     requests:
       cpu: 800m
@@ -311,32 +312,32 @@ zeebe:
       cpu: 960m
       memory: 1920Mi
 
-   ## @param zeebe.persistenceType defines the type of persistence which is used by Zeebe. Possible values are: disk, local and memory.
+  ## @param zeebe.persistenceType defines the type of persistence which is used by Zeebe. Possible values are: disk, local and memory.
   #   disk  - means a persistence volume claim is configured and used
   #   local - means the data is stored into the container, no volumeMount nor volume nor claim is configured
   #   memory   - means zeebe uses a tmpfs for the data persistence, be aware that this takes the limits into account
   persistenceType: disk
-   ## @param zeebe.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  ## @param zeebe.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
-   ## @param zeebe.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  ## @param zeebe.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
   pvcAccessModes: ["ReadWriteOnce"]
-   ## @param zeebe.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
+  ## @param zeebe.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
   pvcStorageClassName: ''
 
-   ## @param zeebe.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
+  ## @param zeebe.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
-   ## @param zeebe.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  ## @param zeebe.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
   ## @param zeebe.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
   ## @param zeebe.initContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   initContainers: []
 
-   ## @param zeebe.podAnnotations can be used to define extra broker pod annotations
+  ## @param zeebe.podAnnotations can be used to define extra broker pod annotations
   podAnnotations: {}
-   ## @param zeebe.podLabels can be used to define extra broker pod labels
+  ## @param zeebe.podLabels can be used to define extra broker pod labels
   podLabels: {}
-   ## @extra zeebe.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  ## @extra zeebe.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
      ## @param zeebe.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
@@ -345,7 +346,7 @@ zeebe:
      ## @param zeebe.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
-   ## @extra zeebe.podSecurityContext defines the security options the Zeebe broker pod should be run with
+  ## @extra zeebe.podSecurityContext defines the security options the Zeebe broker pod should be run with
   podSecurityContext:
     ## @param zeebe.podSecurityContext.runAsNonRoot run as non root
     runAsNonRoot: true
@@ -363,7 +364,7 @@ zeebe:
     ## @param zeebe.containerSecurityContext.runAsUser
     runAsUser: 1000
 
-   ## @extra zeebe.startupProbe configuration
+  ## @extra zeebe.startupProbe configuration
   startupProbe:
      ## @param zeebe.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
@@ -382,7 +383,7 @@ zeebe:
      ## @param zeebe.startupProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-   ## @extra zeebe.readinessProbe configuration
+  ## @extra zeebe.readinessProbe configuration
   readinessProbe:
      ## @param zeebe.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
@@ -402,7 +403,7 @@ zeebe:
      ## @param zeebe.readinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-   ## @extra zeebe.livenessProbe configuration
+  ## @extra zeebe.livenessProbe configuration
   livenessProbe:
      ## @param zeebe.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
@@ -422,17 +423,17 @@ zeebe:
      ## @param zeebe.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-   ## @param zeebe.nodeSelector can be used to define on which nodes the broker pods should run
+  ## @param zeebe.nodeSelector can be used to define on which nodes the broker pods should run
   nodeSelector: {}
-   ## @param zeebe.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ## @param zeebe.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-   ## @extra global.zeebe.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ## @extra global.zeebe.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
   # It uses a hard requirement for scheduling and works based on the Zeebe pod labels
-  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @param zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -615,11 +616,10 @@ zeebe-gateway:
   ## @extra zeebe-gateway.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe gateway pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
   # It uses a hard requirement for scheduling and works based on the Zeebe gateway pod labels
-  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @param zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
-
+  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -1401,7 +1401,7 @@ identity:
   ## @param identity.podSecurityContext.fsGroup
     fsGroup: 1005
 
-   ## @extra identity.containerSecurityContext defines the security options the Identity container should be run with
+  ## @extra identity.containerSecurityContext defines the security options the Identity container should be run with
   containerSecurityContext:
   ## @param identity.containerSecurityContext.privileged
     privileged: false
@@ -1592,7 +1592,7 @@ identity:
   #  #   #        #   #      #      #    # ###### #  #
   #   #  #        #   #    # #      #    # #    # #   #
   #    # ######   #    ####  ######  ####  #    # #    #
-## @section keycloak Parameters
+  ## @section Identity - Keycloak Parameters
   # Identity.keycloak
   ## @extra identity.keycloak configuration, for the keycloak dependency chart which is used by identity.
   # For more details: https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters
@@ -1607,52 +1607,52 @@ identity:
         tag: 15.4.0
 
       primary:
+        ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].name
+        ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].emptyDir
+        ## @skip identity.keycloak.postgresql.primary.extraVolumes[1].name
+        ## @skip identity.keycloak.postgresql.primary.extraVolumes[1].emptyDir
+        ## @skip identity.keycloak.postgresql.primary.extraVolumes[2].name
+        ## @skip identity.keycloak.postgresql.primary.extraVolumes[2].emptyDir
         extraVolumes:
-        ## @param identity.keycloak.postgresql.primary.extraVolumes[0].name
         - name: tmp
-        ## @param identity.keycloak.postgresql.primary.extraVolumes[0].emptyDir
           emptyDir: {}
-        ## @param identity.keycloak.postgresql.primary.extraVolumes[1].name
         - name: config
-        ## @param identity.keycloak.postgresql.primary.extraVolumes[1].emptyDir
           emptyDir: {}
-        ## @param identity.keycloak.postgresql.primary.extraVolumes[2].name
-        - name: postgresqltmp
-        ## @param identity.keycloak.postgresql.primary.extraVolumes[2].emptyDir
+        - name: postgresql-tmp
           emptyDir: {}
-        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
+        ## identity.keycloak.postgresql.primary.extraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
+        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[0].mountPath
+        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[0].name
+        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[1].mountPath
+        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[1].name
+        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[2].mountPath
+        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[2].name
         extraVolumeMounts:
-        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts[0].mountPath
         - mountPath: /tmp
-        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts[0].name
           name: tmp
-        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts[1].mountPath
         - mountPath: /opt/bitnami/postgresql/conf
-        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts[1].name
           name: config
-        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts[2].mountPath
         - mountPath: /opt/bitnami/postgresql/tmp
-        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts[2].name
-          name: postgresqltmp
-        containerSecurityContext:
+          name: postgresql-tmp
         ## @param identity.keycloak.postgresql.primary.containerSecurityContext.enabled
-          enabled: true
         ## @param identity.keycloak.postgresql.primary.containerSecurityContext.privileged
-          privileged: false
         ## @param identity.keycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-          readOnlyRootFilesystem: true
         ## @param identity.keycloak.postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-          allowPrivilegeEscalation: false
         ## @param identity.keycloak.postgresql.primary.containerSecurityContext.runAsNonRoot
-          runAsNonRoot: true
         ## @param identity.keycloak.postgresql.primary.containerSecurityContext.runAsUser
-          runAsUser: 1001
-        podSecurityContext:
-        ## @param identity.keycloak.postgresql.primary.podSecurityContext.enabled
+        containerSecurityContext:
           enabled: true
-        ## @param identity.keycloak.postgresql.primary.podSecurityContext.runAsNonRoot
+          privileged: false
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
           runAsNonRoot: true
+          runAsUser: 1001
+        ## @param identity.keycloak.postgresql.primary.podSecurityContext.enabled
+        ## @param identity.keycloak.postgresql.primary.podSecurityContext.runAsNonRoot
         ## @param identity.keycloak.postgresql.primary.podSecurityContext.fsGroup
+        podSecurityContext:
+          enabled: true
+          runAsNonRoot: true
           fsGroup: 1001
 
     ## @param identity.keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart
@@ -1678,26 +1678,27 @@ identity:
 
     # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
     # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
-    ## @extra identity.keycloak.extraVolumes [object] Extra volumes for keycloak
+    ## @skip identity.keycloak.extraVolumes [object] Extra volumes for keycloak
+    ## @skip identity.keycloak.extraVolumes[0].name
+    ## @skip identity.keycloak.extraVolumes[0].emptyDir
+    ## @skip identity.keycloak.extraVolumes[1].name
+    ## @skip identity.keycloak.extraVolumes[1].emptyDir
+    ## @skip identity.keycloak.extraVolumes[2].name
+    ## @skip identity.keycloak.extraVolumes[2].emptyDir
+    ## @skip identity.keycloak.extraVolumes[3].name
     extraVolumes:
-    ## @param identity.keycloak.extraVolumes[0].name
     - name: config
-    ## @param identity.keycloak.extraVolumes[0].emptyDir
       emptyDir: {}
-    ## @param identity.keycloak.extraVolumes[1].name
     - name: quarkus
-    ## @param identity.keycloak.extraVolumes[1].emptyDir
       emptyDir: {}
-    ## @param identity.keycloak.extraVolumes[2].name
     - name: tmp
-    ## @param identity.keycloak.extraVolumes[2].emptyDir
       emptyDir: {}
-    ## @param identity.keycloak.extraVolumes[3].name
     - name: camunda-theme
       emptyDir:
         ## @param identity.keycloak.extraVolumes[3].emptyDir.sizeLimit
         sizeLimit: 10Mi
 
+    initContainers:
     ## @param identity.keycloak.initContainers[0].name
     ## @param identity.keycloak.initContainers[0].image
     ## @param identity.keycloak.initContainers[0].imagePullPolicy
@@ -1708,19 +1709,6 @@ identity:
     ## @param identity.keycloak.extraVolumeMounts[0].mountPath
     ## @param identity.keycloak.extraEnvVars[0].name
     ## @param identity.keycloak.extraEnvVars[0].value
-## @param identity.keycloak.initContainers[1].name
-## @param identity.keycloak.initContainers[1].image
-## @param identity.keycloak.initContainers[1].imagePullPolicy
-## @param identity.keycloak.initContainers[1].command
-## @param identity.keycloak.initContainers[1].securityContext.privileged
-## @param identity.keycloak.initContainers[1].securityContext.readOnlyRootFilesystem
-## @param identity.keycloak.initContainers[1].securityContext.allowPrivilegeEscalation
-## @param identity.keycloak.initContainers[1].securityContext.runAsNonRoot
-## @param identity.keycloak.initContainers[1].volumeMounts[0].name
-## @param identity.keycloak.initContainers[1].volumeMounts[0].mountPath
-## @param identity.keycloak.initContainers[1].volumeMounts[1].name
-## @param identity.keycloak.initContainers[1].volumeMounts[1].mountPath
-    initContainers:
     - name: copy-camunda-theme
       image: >-
         {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
@@ -1730,6 +1718,18 @@ identity:
       volumeMounts:
       - name: camunda-theme
         mountPath: /mnt
+    ## @param identity.keycloak.initContainers[1].name
+    ## @param identity.keycloak.initContainers[1].image
+    ## @param identity.keycloak.initContainers[1].imagePullPolicy
+    ## @param identity.keycloak.initContainers[1].command
+    ## @param identity.keycloak.initContainers[1].securityContext.privileged
+    ## @param identity.keycloak.initContainers[1].securityContext.readOnlyRootFilesystem
+    ## @param identity.keycloak.initContainers[1].securityContext.allowPrivilegeEscalation
+    ## @param identity.keycloak.initContainers[1].securityContext.runAsNonRoot
+    ## @param identity.keycloak.initContainers[1].volumeMounts[0].name
+    ## @param identity.keycloak.initContainers[1].volumeMounts[0].mountPath
+    ## @param identity.keycloak.initContainers[1].volumeMounts[1].name
+    ## @param identity.keycloak.initContainers[1].volumeMounts[1].mountPath
     - name: copy-configs
       image: bitnami/keycloak:{{ .Values.image.tag }}
       imagePullPolicy: "Always"
@@ -1744,12 +1744,12 @@ identity:
         mountPath: /config
       - name: quarkus
         mountPath: /quarkus
-## @param identity.keycloak.extraVolumeMounts[1].mountPath
-## @param identity.keycloak.extraVolumeMounts[1].name
-## @param identity.keycloak.extraVolumeMounts[2].name
-## @param identity.keycloak.extraVolumeMounts[2].mountPath
-## @param identity.keycloak.extraVolumeMounts[3].mountPath
-## @param identity.keycloak.extraVolumeMounts[3].name
+    ## @param identity.keycloak.extraVolumeMounts[1].mountPath
+    ## @param identity.keycloak.extraVolumeMounts[1].name
+    ## @param identity.keycloak.extraVolumeMounts[2].name
+    ## @param identity.keycloak.extraVolumeMounts[2].mountPath
+    ## @param identity.keycloak.extraVolumeMounts[3].mountPath
+    ## @param identity.keycloak.extraVolumeMounts[3].name
     extraVolumeMounts:
     - mountPath: /opt/bitnami/keycloak/conf/
       name: config
@@ -1760,22 +1760,20 @@ identity:
     - mountPath: /tmp
       name: tmp
 
-## @param identity.keycloak.containerSecurityContext.privileged
-## @param identity.keycloak.containerSecurityContext.readOnlyRootFilesystem
-## @param identity.keycloak.containerSecurityContext.allowPrivilegeEscalation
-## @param identity.keycloak.containerSecurityContext.runAsNonRoot
-## @param identity.keycloak.containerSecurityContext.runAsUser
+    ## @param identity.keycloak.containerSecurityContext.privileged
+    ## @param identity.keycloak.containerSecurityContext.readOnlyRootFilesystem
+    ## @param identity.keycloak.containerSecurityContext.allowPrivilegeEscalation
+    ## @param identity.keycloak.containerSecurityContext.runAsNonRoot
+    ## @param identity.keycloak.containerSecurityContext.runAsUser
     containerSecurityContext:
       privileged: false
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       runAsNonRoot: true
       runAsUser: 1001
-
-## @param identity.keycloak.podSecurityContext.fsGroup
+    ## @param identity.keycloak.podSecurityContext.fsGroup
     podSecurityContext:
       fsGroup: 1001
-
     ## @param identity.keycloak.httpRelativePath defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
     # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
     # NOTE: This should be the same as ".Values.global.identity.keycloak.contextPath" plus a trailing slash,
@@ -1863,6 +1861,15 @@ webModeler:
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
   # contextPath: "/modeler"
 
+  # WebModeler.
+  ######                         #    ######  ###
+  #     # ######  ####  #####   # #   #     #  #
+  #     # #      #        #    #   #  #     #  #
+  ######  #####   ####    #   #     # ######   #
+  #   #   #           #   #   ####### #        #
+  #    #  #      #    #   #   #     # #        #
+  #     # ######  ####    #   #     # #       ###
+  ## @section WebModeler - RestAPI Parameters
   ## @extra webModeler.restapi configuration of the Web Modeler restapi component
   restapi:
     ## @extra webModeler.restapi.image configuration of the restapi Docker image
@@ -1918,18 +1925,18 @@ webModeler:
     ## @param webModeler.restapi.extraVolumeMounts can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates
     extraVolumeMounts: []
 
-   ## @extra webModeler.restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
+    ## @extra webModeler.restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
     podSecurityContext:
-## @param webModeler.restapi.podSecurityContext.runAsNonRoot
-## @param webModeler.restapi.podSecurityContext.fsGroup
+      ## @param webModeler.restapi.podSecurityContext.runAsNonRoot
+      ## @param webModeler.restapi.podSecurityContext.fsGroup
       runAsNonRoot: true
       fsGroup: 1000
-   ## @extra webModeler.restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
-## @param webModeler.restapi.containerSecurityContext.privileged
-## @param webModeler.restapi.containerSecurityContext.readOnlyRootFilesystem
-## @param webModeler.restapi.containerSecurityContext.allowPrivilegeEscalation
-## @param webModeler.restapi.containerSecurityContext.runAsNonRoot
-## @param webModeler.restapi.containerSecurityContext.runAsUser
+    ## @extra webModeler.restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
+    ## @param webModeler.restapi.containerSecurityContext.privileged
+    ## @param webModeler.restapi.containerSecurityContext.readOnlyRootFilesystem
+    ## @param webModeler.restapi.containerSecurityContext.allowPrivilegeEscalation
+    ## @param webModeler.restapi.containerSecurityContext.runAsNonRoot
+    ## @param webModeler.restapi.containerSecurityContext.runAsUser
     containerSecurityContext:
       privileged: false
       readOnlyRootFilesystem: true
@@ -2032,7 +2039,7 @@ webModeler:
   # ## # #      #    # ###### #####  #####
   ##  ## #      #    # #    # #      #
   #    # ###### #####  #    # #      #
-## @section webapp Parameters
+  ## @section WebModeler - WebApp Parameters
   ## @extra webModeler.webapp. configuration of the Web Modeler webapp component
   webapp:
     ## @extra webModeler.webapp.image configuration of the webapp Docker image
@@ -2060,17 +2067,17 @@ webModeler:
     extraVolumeMounts: []
 
     ## @extra webModeler.webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
-## @param webModeler.webapp.podSecurityContext.runAsNonRoot
-## @param webModeler.webapp.podSecurityContext.fsGroup
+    ## @param webModeler.webapp.podSecurityContext.runAsNonRoot
+    ## @param webModeler.webapp.podSecurityContext.fsGroup
     podSecurityContext:
       runAsNonRoot: true
       fsGroup: 1000
     ## @extra webModeler.webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
-## @param webModeler.webapp.containerSecurityContext.privileged
-## @param webModeler.webapp.containerSecurityContext.readOnlyRootFilesystem
-## @param webModeler.webapp.containerSecurityContext.allowPrivilegeEscalation
-## @param webModeler.webapp.containerSecurityContext.runAsNonRoot
-## @param webModeler.webapp.containerSecurityContext.runAsUser
+    ## @param webModeler.webapp.containerSecurityContext.privileged
+    ## @param webModeler.webapp.containerSecurityContext.readOnlyRootFilesystem
+    ## @param webModeler.webapp.containerSecurityContext.allowPrivilegeEscalation
+    ## @param webModeler.webapp.containerSecurityContext.runAsNonRoot
+    ## @param webModeler.webapp.containerSecurityContext.runAsUser
     containerSecurityContext:
       privileged: false
       readOnlyRootFilesystem: true
@@ -2173,7 +2180,7 @@ webModeler:
   # ## # #      #    #      # #    # #      #  #   #        #        #
   ##  ## #      #    # #    # #    # #    # #   #  #        #   #    #
   #    # ###### #####   ####   ####   ####  #    # ######   #    ####
-## @section websockets Parameters
+  ## @section WebModeler - WebSockets Parameters
   ## @extra webModeler.websockets configuration of the Web Modeler websockets component
   websockets:
     ## @extra webModeler.websockets.image configuration of the websockets Docker image
@@ -2210,17 +2217,17 @@ webModeler:
     extraVolumeMounts: []
 
     ## @extra webModeler.websockets.podSecurityContext can be used to define the security options the websockets pod should be run with
-## @param webModeler.websockets.podSecurityContext.runAsNonRoot
-## @param webModeler.websockets.podSecurityContext.fsGroup
+    ## @param webModeler.websockets.podSecurityContext.runAsNonRoot
+    ## @param webModeler.websockets.podSecurityContext.fsGroup
     podSecurityContext:
       runAsNonRoot: true
       fsGroup: 1000
     ## @extra webModeler.websockets.containerSecurityContext can be used to define the security options the websockets container should be run with
-## @param webModeler.websockets.containerSecurityContext.privileged
-## @param webModeler.websockets.containerSecurityContext.readOnlyRootFilesystem
-## @param webModeler.websockets.containerSecurityContext.allowPrivilegeEscalation
-## @param webModeler.websockets.containerSecurityContext.runAsNonRoot
-## @param webModeler.websockets.containerSecurityContext.runAsUser
+    ## @param webModeler.websockets.containerSecurityContext.privileged
+    ## @param webModeler.websockets.containerSecurityContext.readOnlyRootFilesystem
+    ## @param webModeler.websockets.containerSecurityContext.allowPrivilegeEscalation
+    ## @param webModeler.websockets.containerSecurityContext.runAsNonRoot
+    ## @param webModeler.websockets.containerSecurityContext.runAsUser
     containerSecurityContext:
       privileged: false
       readOnlyRootFilesystem: true
@@ -2354,7 +2361,7 @@ webModeler:
 #####  #    #      #   #   #  ### #####  #           # #  # # #
 #      #    # #    #   #   #    # #   #  #      #    # #   #  #
 #       ####   ####    #    ####  #    # ######  ####   ### # ######
-## @section postgresql Parameters
+## @section WebModeler - PostgreSQL Parameters
 ## @extra postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
 postgresql:
   ## @param postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
@@ -2373,50 +2380,50 @@ postgresql:
     database: web-modeler
 
   primary:
-## @param postgresql.primary.extraVolumes[0].name
-## @param postgresql.primary.extraVolumes[0].emptyDir
-## @param postgresql.primary.extraVolumes[1].name
-## @param postgresql.primary.extraVolumes[1].emptyDir
-## @param postgresql.primary.extraVolumes[2].name
-## @param postgresql.primary.extraVolumes[2].emptyDir
+    ## @param postgresql.primary.extraVolumes[0].name
+    ## @param postgresql.primary.extraVolumes[0].emptyDir
+    ## @param postgresql.primary.extraVolumes[1].name
+    ## @param postgresql.primary.extraVolumes[1].emptyDir
+    ## @param postgresql.primary.extraVolumes[2].name
+    ## @param postgresql.primary.extraVolumes[2].emptyDir
     extraVolumes:
     - name: tmp
       emptyDir: {}
     - name: config
       emptyDir: {}
-    - name: postgresqltmp
+    - name: postgresql-tmp
       emptyDir: {}
+    ## @param postgresql.primary.extraVolumeMounts[0].mountPath
+    ## @param postgresql.primary.extraVolumeMounts[0].name
+    ## @param postgresql.primary.extraVolumeMounts[1].mountPath
+    ## @param postgresql.primary.extraVolumeMounts[1].name
+    ## @param postgresql.primary.extraVolumeMounts[2].mountPath
+    ## @param postgresql.primary.extraVolumeMounts[2].name
     extraVolumeMounts:
-## @param postgresql.primary.extraVolumeMounts[0].mountPath
-## @param postgresql.primary.extraVolumeMounts[0].name
-## @param postgresql.primary.extraVolumeMounts[1].mountPath
-## @param postgresql.primary.extraVolumeMounts[1].name
-## @param postgresql.primary.extraVolumeMounts[2].mountPath
-## @param postgresql.primary.extraVolumeMounts[2].name
     - mountPath: /tmp
       name: tmp
     - mountPath: /opt/bitnami/postgresql/conf
       name: config
     - mountPath: /opt/bitnami/postgresql/tmp
-      name: postgresqltmp
+      name: postgresql-tmp
+    ## @param postgresql.primary.containerSecurityContext.enabled
+    ## @param postgresql.primary.containerSecurityContext.privileged
+    ## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
+    ## @param postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
+    ## @param postgresql.primary.containerSecurityContext.runAsNonRoot
+    ## @param postgresql.primary.containerSecurityContext.runAsUser
     containerSecurityContext:
-## @param postgresql.primary.containerSecurityContext.enabled
-## @param postgresql.primary.containerSecurityContext.privileged
-## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-## @param postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-## @param postgresql.primary.containerSecurityContext.runAsNonRoot
-## @param postgresql.primary.containerSecurityContext.runAsUser
       enabled: true
       privileged: false
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       runAsNonRoot: true
       runAsUser: 1001
+    ## @param postgresql.primary.podSecurityContext.enabled
+    ## @param postgresql.primary.podSecurityContext.runAsNonRoot
+    ## @param postgresql.primary.podSecurityContext.fsGroup
+    ## @param connectors.podSecurityContext.fsGroup
     podSecurityContext:
-## @param postgresql.primary.podSecurityContext.enabled
-## @param postgresql.primary.podSecurityContext.runAsNonRoot
-## @param postgresql.primary.podSecurityContext.fsGroup
-## @param connectors.podSecurityContext.fsGroup
       enabled: true
       runAsNonRoot: true
       fsGroup: 1001
@@ -2430,7 +2437,7 @@ postgresql:
 #     # #    # #   ## #   ## #      #    #   #   #    # #   #  #    #
  #####   ####  #    # #    # ######  ####    #    ####  #    #  ####
 #####################################################################
-## @section connectors Parameters
+## @section Connectors Parameters
 ## @extra connectors configuration for the Connectors.
 connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
@@ -2610,11 +2617,11 @@ connectors:
     fsGroup: 1003
 
   ## @extra connectors.containerSecurityContext defines the security options the Connectors container should be run with
-## @param connectors.containerSecurityContext.privileged
-## @param connectors.containerSecurityContext.readOnlyRootFilesystem
-## @param connectors.containerSecurityContext.allowPrivilegeEscalation
-## @param connectors.containerSecurityContext.runAsNonRoot
-## @param connectors.containerSecurityContext.runAsUser
+  ## @param connectors.containerSecurityContext.privileged
+  ## @param connectors.containerSecurityContext.readOnlyRootFilesystem
+  ## @param connectors.containerSecurityContext.allowPrivilegeEscalation
+  ## @param connectors.containerSecurityContext.runAsNonRoot
+  ## @param connectors.containerSecurityContext.runAsUser
   containerSecurityContext:
     privileged: false
     readOnlyRootFilesystem: true
@@ -2639,7 +2646,7 @@ connectors:
 #     # #    # #   ## #    # #    # #      #
  #####   ####  #    #  ####   ####  ###### ######
 #################################################
-## @section console Parameters
+## @section Console Parameters
 ## @extra console configuration.
 # NOTE: The values here are just placeholder and not all of them are active.
 # TODO: Update Console template to match the values when the 1st dev iteration is done.
@@ -2881,7 +2888,7 @@ console:
 ####### ###### #    #  ####    #   #  ####   ####  ###### #    # #    #  ####  #    #
 #####################################################################################
 
-## @section elasticsearch Parameters
+## @section Elasticsearch Parameters
 
 ## @extra elasticsearch
 elasticsearch:
@@ -2929,23 +2936,23 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
-## @param elasticsearch.securityContext.privileged
-## @param elasticsearch.securityContext.readOnlyRootFilesystem
-## @param elasticsearch.securityContext.allowPrivilegeEscalation
-## @param elasticsearch.securityContext.runAsNonRoot
-## @extra elasticsearch.securityContext.runAsUser
+  ## @param elasticsearch.securityContext.privileged
+  ## @param elasticsearch.securityContext.readOnlyRootFilesystem
+  ## @param elasticsearch.securityContext.allowPrivilegeEscalation
+  ## @param elasticsearch.securityContext.runAsNonRoot
+  ## @param elasticsearch.securityContext.runAsUser
   securityContext:
     privileged: false
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 1001
-## @param elasticsearch.extraVolumes[0].name
-## @param elasticsearch.extraVolumes[0].emptyDir
-## @param elasticsearch.extraVolumes[1].name
-## @param elasticsearch.extraVolumes[1].emptyDir
-## @param elasticsearch.extraVolumes[2].name
-## @param elasticsearch.extraVolumes[2].emptyDir
+  ## @param elasticsearch.extraVolumes[0].name
+  ## @param elasticsearch.extraVolumes[0].emptyDir
+  ## @param elasticsearch.extraVolumes[1].name
+  ## @param elasticsearch.extraVolumes[1].emptyDir
+  ## @param elasticsearch.extraVolumes[2].name
+  ## @param elasticsearch.extraVolumes[2].emptyDir
   extraVolumes:
   - name: tmp
     emptyDir: {}
@@ -2953,12 +2960,12 @@ elasticsearch:
     emptyDir: {}
   - name: config
     emptyDir: {}
-## @param elasticsearch.extraVolumeMounts[0].mountPath
-## @param elasticsearch.extraVolumeMounts[0].name
-## @param elasticsearch.extraVolumeMounts[1].mountPath
-## @param elasticsearch.extraVolumeMounts[1].name
-## @param elasticsearch.extraVolumeMounts[2].mountPath
-## @param elasticsearch.extraVolumeMounts[2].name
+  ## @param elasticsearch.extraVolumeMounts[0].mountPath
+  ## @param elasticsearch.extraVolumeMounts[0].name
+  ## @param elasticsearch.extraVolumeMounts[1].mountPath
+  ## @param elasticsearch.extraVolumeMounts[1].name
+  ## @param elasticsearch.extraVolumeMounts[2].mountPath
+  ## @param elasticsearch.extraVolumeMounts[2].name
   extraVolumeMounts:
   - mountPath: /tmp
     name: tmp
@@ -2978,7 +2985,7 @@ elasticsearch:
 #       #    #  ####  #    # ######   #   #    # ######  ####   ####
 #####################################################################
 
-## @section prometheus Parameters
+## @section Prometheus Parameters
 
 ## @extra PrometheusServiceMonitor configuration to configure a prometheus service monitor
 prometheusServiceMonitor:

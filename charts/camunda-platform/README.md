@@ -19,23 +19,32 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 - [Backporting](#backporting)
 - [Uninstalling Charts](#uninstalling-charts)
 - [Configuration](#configuration)
-  - [Global](#global)
-  - [Camunda Platform](#camunda-platform)
-  - [Zeebe](#zeebe)
-  - [Zeebe Gateway](#zeebe-gateway)
-  - [Operate](#operate)
-  - [Tasklist](#tasklist)
-  - [Optimize](#optimize)
-  - [Identity](#identity)
+- [Notes on Configuration](#notes-on-configuration)
   - [Web Modeler](#web-modeler)
-  - [PostgreSQL for Web Modeler](#postgresql-for-web-modeler)
-  - [Connectors](#connectors)
   - [Elasticsearch](#elasticsearch)
   - [Keycloak](#keycloak)
 - [Guides](#guides)
   - [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
+- [Parameters](#parameters)
+  - [Global parameters](#global-parameters)
+  - [Zeebe Parameters](#zeebe-parameters)
+  - [Zeebe Gateway Parameters](#zeebe-gateway-parameters)
+  - [Operate Parameters](#operate-parameters)
+  - [Tasklist Parameters](#tasklist-parameters)
+  - [Optimize Parameters](#optimize-parameters)
+  - [Identity Parameters](#identity-parameters)
+  - [Identity - Keycloak Parameters](#identity---keycloak-parameters)
+  - [WebModeler Parameters](#webmodeler-parameters)
+  - [WebModeler - RestAPI Parameters](#webmodeler---restapi-parameters)
+  - [WebModeler - WebApp Parameters](#webmodeler---webapp-parameters)
+  - [WebModeler - WebSockets Parameters](#webmodeler---websockets-parameters)
+  - [WebModeler - PostgreSQL Parameters](#webmodeler---postgresql-parameters)
+  - [Connectors Parameters](#connectors-parameters)
+  - [Console Parameters](#console-parameters)
+  - [Elasticsearch Parameters](#elasticsearch-parameters)
+  - [Prometheus Parameters](#prometheus-parameters)
 
 ## Architecture
 
@@ -222,6 +231,248 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 > For more details about deploying Camunda Platform 8 on Kubernetes, please visit the
 > [Helm/Kubernetes installation instructions docs](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/overview/).
 
+## Notes on Configuration
+
+### Web Modeler
+
+> :information_source: Web Modeler Self-Managed is available to Camunda enterprise customers only.
+
+#### Docker registry
+The Docker images for Web Modeler are available in a private registry.
+Enterprise customers either already have credentials to this registry, or they can request access to this registry through their CSM contact at Camunda.
+To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
+- [create an image pull secret](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) using the provided credentials
+- configure the Web Modeler pods to use the secret:
+  ```yaml
+  webModeler:
+    image:
+      pullSecrets:
+        - name: <MY_SECRET_NAME>
+   ```
+
+#### Database
+Web Modeler requires a PostgreSQL database to store the data.
+You can either:
+- deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the [`postgresql` chart dependency](#postgresql-for-web-modeler))
+- configure a connection to an (existing) external database by setting `postgresql.enabled` to `false` and providing the values under `restapi.externalDatabase`
+
+#### SMTP server
+Web Modeler requires an SMTP server to send (notification) emails to users.
+The SMTP connection can be configured with the values under `restapi.mail`.
+
+#### Updating Environment Variables
+When configuring the `env` options in the settings listed above, the environment variables you specify in values.yaml may show up twice when running `kubectl describe deployment <deployment>`. However, the environment variable specified in values.yaml will have precedence when the pod actually runs. To verify this, you can check the output from the following command:
+
+```bash
+kubectl exec pod/<podName> -- env
+```
+
+#### Outbound Connectors
+
+To learn more about outbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#outbound-connector).
+
+#### Inbound Connectors
+
+To learn more about inbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#inbound-connector).
+
+#### Using Connector Secrets
+
+Connector secrets are generally configured via environment variables.
+
+You can set them via `values.yaml`, or command line. For example, if you need to set a Slack token, you should configure the following:
+
+```yaml
+connectors:
+  env:
+    - name: SLACK_TOKEN
+      value: <your actual token value>
+```
+
+After that, a Modeler user can set in their BPMN diagram a value `secrets.SLACK_TOKEN` without ever knowing the actual token.
+
+Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/self-managed/connectors-deployment/connectors-configuration/#secrets-in-manual-installations) to learn more.
+
+### Elasticsearch
+
+Camunda Platform 8 Helm chart has a dependency on the [Elasticsearch 8 Helm Chart](https://artifacthub.io/packages/helm/bitnami/elasticsearch). All variables related to Elasticsearch can be set under `elasticsearch`.
+
+> **Note**
+>
+> The default setup of the Elasticsearch 8 part of Camunda Platform 8 uses nodes have all roles (master, data, coordinating, and ingest).
+> For high-demand deployments, it's recommended to deploy the Elasticsearch master-elegible nodes as master-only nodes.
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `elasticsearch`| `enabled` | If true, enables Elasticsearch deployment as part of the Camunda Platform Helm chart | `true` |
+
+**Example:**
+
+```yaml
+elasticsearch:
+  enabled: true
+  image:
+    tag: <YOUR_VERSION_HERE>
+```
+
+#### Elasticsearch Retention
+
+Since moving to Elasticsearch 8, [Curator](https://github.com/elastic/curator) is deprecated in favor of [Manage the index lifecycle](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-lifecycle-management.html) (ILM). Hence, each component in Camunda 8 controls its Elasticsearch index retention.
+
+### Keycloak
+
+When Camunda Platform 8 Identity component is enabled by default, and it depends on
+[Bitnami Keycloak chart](https://github.com/bitnami/charts/tree/main/bitnami/keycloak).
+Since Keycloak is a dependency for Identity, all variables related to Keycloak can be found in
+[bitnami/keycloak/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/keycloak/values.yaml)
+and can be set under `identity.keycloak`.
+
+| Section | Parameter | Description | Default |
+|-|-|-|-|
+| `identity.keycloak`| `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Platform Helm chart | `true` |
+
+**Example:**
+
+```yaml
+identity:
+  keycloak:
+    enabled: true
+```
+
+#### Keycloak Theme
+
+Camunda provides a custom theme for the login page used in all apps. The theme is copied from the Identity image.
+
+The theme is added to Keycloak by default, however, since Helm v3 (the latest checked 3.10.x) doesn't merge lists
+with custom values files, then you will need to add this to your own values file if you override any of
+`extraVolumes`, `initContainers`, or `extraVolumeMounts`.
+
+```yaml
+identity:
+  keycloak:
+    extraVolumes:
+    - name: camunda-theme
+      emptyDir:
+        sizeLimit: 10Mi
+    initContainers:
+    - name: copy-camunda-theme
+      image: >-
+        {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
+        {{- include "camundaPlatform.imageByParams" $identityImageParams }}
+      imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
+      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
+      volumeMounts:
+      - name: camunda-theme
+        mountPath: /mnt
+    extraVolumeMounts:
+    - name: camunda-theme
+      mountPath: /opt/bitnami/keycloak/themes/identity
+```
+
+## Guides
+
+> **Note**
+>
+> For full list of guides list, please visit
+> [Helm/Kubernetes Guides](https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/overview/)
+
+### Adding dynamic exporters to Zeebe Brokers
+
+This chart supports the addition of Zeebe Exporters by using `initContainer` as shown in the following example:
+
+```
+extraInitContainers:
+  - name: init-exporters-hazelcast
+    image: busybox:1.35
+    command: ['/bin/sh', '-c']
+    args: ['wget --no-check-certificate https://repo1.maven.org/maven2/io/zeebe/hazelcast/zeebe-hazelcast-exporter/0.8.0-alpha1/zeebe-hazelcast-exporter-0.8.0-alpha1-jar-with-dependencies.jar -O /exporters/zeebe-hazelcast-exporter.jar; ls -al /exporters']
+    volumeMounts:
+    - name: exporters
+      mountPath: /exporters/
+  - name: init-exporters-kafka
+    image: busybox:1.35
+    command: ['/bin/sh', '-c']
+    args: ['wget --no-check-certificate https://github.com/zeebe-io/zeebe-kafka-exporter/releases/download/1.1.0/zeebe-kafka-exporter-1.1.0-uber.jar -O /exporters/zeebe-kafka-exporter.jar; ls -al /exporters']
+    volumeMounts:
+    - name: exporters
+      mountPath: /exporters/
+env:
+  - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_JARPATH
+    value: /exporters/zeebe-hazelcast-exporter.jar
+  - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_CLASSNAME
+    value: io.zeebe.hazelcast.exporter.HazelcastExporter
+  - name: ZEEBE_HAZELCAST_REMOTE_ADDRESS
+    value: "{{ .Release.Name }}-hazelcast"
+```
+
+This example is downloading the exporters' Jar from a URL and adding the Jars to the `exporters` directory,
+which will be scanned for jars and added to the Zeebe broker classpath. Then with `environment variables`,
+you can configure the exporter parameters.
+
+## Development
+
+For development purposes, you might want to deploy and test the charts without creating a new helm chart release.
+To do this you can run the following:
+
+```sh
+ helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
+```
+
+ * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
+
+ * `--debug enable verbose output`
+
+To generate the resources/manifests without really installing them, you can use: 
+
+ * `--dry-run simulate an install`
+
+If you see errors like:
+
+```sh
+Error: found in Chart.yaml, but missing in charts/ directory: elasticsearch
+```
+
+Then you need to download the dependencies first.
+
+Run the following to add resolve the dependencies:
+
+```sh
+make helm.repos-add
+```
+
+After this, you can run: `make helm.dependency-update`, which will update and download the dependencies for all charts.
+
+The execution should look like this:
+```
+$ make helm.dependency-update
+helm dependency update charts/camunda-platform
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "camunda-platform" chart repository
+...Successfully got an update from the "elastic" chart repository
+...Successfully got an update from the "bitnami" chart repository
+Update Complete. ⎈Happy Helming!⎈
+Saving 6 charts
+Dependency zeebe did not declare a repository. Assuming it exists in the charts directory
+Dependency zeebe-gateway did not declare a repository. Assuming it exists in the charts directory
+Dependency operate did not declare a repository. Assuming it exists in the charts directory
+Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
+Dependency identity did not declare a repository. Assuming it exists in the charts directory
+Downloading elasticsearch from repo https://helm.elastic.co
+Deleting outdated charts
+helm dependency update charts/camunda-platform/charts/identity
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "camunda-platform" chart repository
+...Successfully got an update from the "elastic" chart repository
+...Successfully got an update from the "bitnami" chart repository
+Update Complete. ⎈Happy Helming!⎈
+Saving 2 charts
+Downloading keycloak from repo https://charts.bitnami.com/bitnami
+Downloading common from repo https://charts.bitnami.com/bitnami
+```
+
+## Releasing the Charts
+
+Please see the corresponding [release guide](../../RELEASE.md) to find out how to release the chart.
+
 ## Parameters
 
 ### Global parameters
@@ -229,10 +480,12 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | Name                                             | Description                                                                                                                                              | Value                                                 |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `global`                                         |                                                                                                                                                          |                                                       |
+| `global.multitenancy`                            |                                                                                                                                                          |                                                       |
+| `global.multitenancy.enabled`                    | if true, then enable multitenancy in all applicable components.                                                                                          | `false`                                               |
 | `global.annotations`                             | Annotations can be used to define common annotations, which should be applied to all deployments                                                         | `{}`                                                  |
 | `global.labels.app`                              | Name of the application                                                                                                                                  | `camunda-platform`                                    |
 | `global.image.registry`                          | Can be used to set container image registry.                                                                                                             | `""`                                                  |
-| `global.image.tag`                               | defines the tag / version which should be used in the most of the apps.                                                                                  | `8.2.15`                                              |
+| `global.image.tag`                               | defines the tag / version which should be used in the most of the apps.                                                                                  | `8.2.16`                                              |
 | `global.image.pullPolicy`                        | defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy                              | `IfNotPresent`                                        |
 | `global.image.pullSecrets`                       | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                  | `[]`                                                  |
 | `global.ingress`                                 |                                                                                                                                                          |                                                       |
@@ -279,216 +532,208 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 ### Zeebe Parameters
 
-| Name                                                                                                                          | Description                                                                                                                                                                                                                   | Value                                                                                                                                                      |
-| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zeebe`                                                                                                                       | configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.                                                                                                                     |                                                                                                                                                            |
-| `zeebe.enabled`                                                                                                               | if true, all zeebe related resources are deployed via the helm release                                                                                                                                                        | `true`                                                                                                                                                     |
-| `zeebe.debug`                                                                                                                 | if true, extra info is printed.                                                                                                                                                                                               | `false`                                                                                                                                                    |
-| `zeebe.image`                                                                                                                 | configuration to configure the zeebe image specifics                                                                                                                                                                          |                                                                                                                                                            |
-| `zeebe.image.registry`                                                                                                        | can be used to set container image registry.                                                                                                                                                                                  | `""`                                                                                                                                                       |
-| `zeebe.image.repository`                                                                                                      | defines which image repository to use                                                                                                                                                                                         | `camunda/zeebe`                                                                                                                                            |
-| `zeebe.image.tag`                                                                                                             | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                    | `nil`                                                                                                                                                      |
-| `zeebe.image.pullSecrets`                                                                                                     | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                       | `[]`                                                                                                                                                       |
-| `zeebe.sidecars`                                                                                                              | can be used to attach extra containers to the zeebe deployment                                                                                                                                                                | `[]`                                                                                                                                                       |
-| `zeebe.clusterSize`                                                                                                           | defines the amount of brokers (=replicas), which are deployed via helm                                                                                                                                                        | `3`                                                                                                                                                        |
-| `zeebe.partitionCount`                                                                                                        | defines how many zeebe partitions are set up in the cluster                                                                                                                                                                   | `3`                                                                                                                                                        |
-| `zeebe.replicationFactor`                                                                                                     | defines how each partition is replicated, the value defines the number of nodes                                                                                                                                               | `3`                                                                                                                                                        |
-| `zeebe.env`                                                                                                                   | can be used to set extra environment variables in each zeebe broker container                                                                                                                                                 |                                                                                                                                                            |
-| `zeebe.env[0].name`                                                                                                           |                                                                                                                                                                                                                               | `ZEEBE_BROKER_DATA_SNAPSHOTPERIOD`                                                                                                                         |
-| `zeebe.env[0].value`                                                                                                          |                                                                                                                                                                                                                               | `5m`                                                                                                                                                       |
-| `zeebe.env[1].name`                                                                                                           |                                                                                                                                                                                                                               | `ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION`                                                                                                             |
-| `zeebe.env[1].value`                                                                                                          |                                                                                                                                                                                                                               | `2GB`                                                                                                                                                      |
-| `zeebe.env[2].name`                                                                                                           |                                                                                                                                                                                                                               | `ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING`                                                                                                              |
-| `zeebe.env[2].value`                                                                                                          |                                                                                                                                                                                                                               | `3GB`                                                                                                                                                      |
-| `zeebe.configMap`                                                                                                             | configuration which will be applied to the mounted config map.                                                                                                                                                                |                                                                                                                                                            |
-| `zeebe.configMap.defaultMode`                                                                                                 | can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623 | `754`                                                                                                                                                      |
-| `zeebe.command`                                                                                                               | can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/                                                  | `[]`                                                                                                                                                       |
-| `zeebe.logLevel`                                                                                                              | defines the log level which is used by the zeebe brokers                                                                                                                                                                      | `info`                                                                                                                                                     |
-| `zeebe.log4j2`                                                                                                                | can be used to overwrite the log4j2 configuration of the zeebe brokers                                                                                                                                                        | `""`                                                                                                                                                       |
-| `zeebe.javaOpts`                                                                                                              | can be used to set java options for the zeebe brokers                                                                                                                                                                         | `-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
-| `zeebe.service`                                                                                                               | configuration for the broker service                                                                                                                                                                                          |                                                                                                                                                            |
-| `zeebe.service.type`                                                                                                          | defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types                                                                                            | `ClusterIP`                                                                                                                                                |
-| `zeebe.service.httpPort`                                                                                                      | defines the port of the http endpoint, where for example metrics are provided                                                                                                                                                 | `9600`                                                                                                                                                     |
-| `zeebe.service.httpName`                                                                                                      | defines the name of the http endpoint, where for example metrics are provided                                                                                                                                                 | `http`                                                                                                                                                     |
-| `zeebe.service.commandPort`                                                                                                   | defines the port of the command api endpoint, where the broker commands are sent to                                                                                                                                           | `26501`                                                                                                                                                    |
-| `zeebe.service.commandName`                                                                                                   | defines the name of the command api endpoint, where the broker commands are sent to                                                                                                                                           | `command`                                                                                                                                                  |
-| `zeebe.service.internalPort`                                                                                                  | defines the port of the internal api endpoint, which is used for internal communication                                                                                                                                       | `26502`                                                                                                                                                    |
-| `zeebe.service.internalName`                                                                                                  | defines the name of the internal api endpoint, which is used for internal communication                                                                                                                                       | `internal`                                                                                                                                                 |
-| `zeebe.service.extraPorts`                                                                                                    | can be used to expose any other ports which are required. Can be useful for exporters                                                                                                                                         | `[]`                                                                                                                                                       |
-| `global.zeebe.ServiceAccount`                                                                                                 | configuration for the service account where the broker pods are assigned to                                                                                                                                                   |                                                                                                                                                            |
-| `zeebe.serviceAccount.enabled`                                                                                                | if true, enables the broker service account                                                                                                                                                                                   | `true`                                                                                                                                                     |
-| `zeebe.serviceAccount.name`                                                                                                   | can be used to set the name of the broker service account                                                                                                                                                                     | `""`                                                                                                                                                       |
-| `zeebe.serviceAccount.annotations`                                                                                            | can be used to set the annotations of the broker service account                                                                                                                                                              | `{}`                                                                                                                                                       |
-| `zeebe.cpuThreadCount`                                                                                                        | defines how many threads can be used for the processing on each broker pod                                                                                                                                                    | `3`                                                                                                                                                        |
-| `zeebe.ioThreadCount`                                                                                                         | defines how many threads can be used for the exporting on each broker pod                                                                                                                                                     | `3`                                                                                                                                                        |
-| `zeebe.resources`                                                                                                             | configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits                                                     |                                                                                                                                                            |
-| `zeebe.resources.requests`                                                                                                    |                                                                                                                                                                                                                               |                                                                                                                                                            |
-| `zeebe.resources.requests.cpu`                                                                                                |                                                                                                                                                                                                                               | `800m`                                                                                                                                                     |
-| `zeebe.resources.requests.memory`                                                                                             |                                                                                                                                                                                                                               | `1200Mi`                                                                                                                                                   |
-| `zeebe.resources.limits.cpu`                                                                                                  |                                                                                                                                                                                                                               | `960m`                                                                                                                                                     |
-| `zeebe.resources.limits.memory`                                                                                               |                                                                                                                                                                                                                               | `1920Mi`                                                                                                                                                   |
-| `zeebe.persistenceType`                                                                                                       | defines the type of persistence which is used by Zeebe. Possible values are: disk, local and memory.                                                                                                                          | `disk`                                                                                                                                                     |
-| `zeebe.pvcSize`                                                                                                               | defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims                                                             | `32Gi`                                                                                                                                                     |
-| `zeebe.pvcAccessModes`                                                                                                        | can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes                                                                                 | `["ReadWriteOnce"]`                                                                                                                                        |
-| `zeebe.pvcStorageClassName`                                                                                                   | can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.                                                          | `""`                                                                                                                                                       |
-| `zeebe.extraVolumes`                                                                                                          | can be used to define extra volumes for the broker pods, useful for additional exporters                                                                                                                                      | `[]`                                                                                                                                                       |
-| `zeebe.extraVolumeMounts`                                                                                                     | can be used to mount extra volumes for the broker pods, useful for additional exporters                                                                                                                                       | `[]`                                                                                                                                                       |
-| `zeebe.extraInitContainers`                                                                                                   | (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters                                                              | `[]`                                                                                                                                                       |
-| `zeebe.initContainers`                                                                                                        | can be used to set up extra init containers for the broker pods, useful for additional exporters                                                                                                                              | `[]`                                                                                                                                                       |
-| `zeebe.podAnnotations`                                                                                                        | can be used to define extra broker pod annotations                                                                                                                                                                            | `{}`                                                                                                                                                       |
-| `zeebe.podLabels`                                                                                                             | can be used to define extra broker pod labels                                                                                                                                                                                 | `{}`                                                                                                                                                       |
-| `zeebe.podDisruptionBudget`                                                                                                   | configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/                                                                                        |                                                                                                                                                            |
-| `zeebe.podDisruptionBudget.enabled`                                                                                           | if true a pod disruption budget is defined for the brokers                                                                                                                                                                    | `false`                                                                                                                                                    |
-| `zeebe.podDisruptionBudget.minAvailable`                                                                                      | can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).                                                                     | `nil`                                                                                                                                                      |
-| `zeebe.podDisruptionBudget.maxUnavailable`                                                                                    | can be used to set how many pods should be at max. unavailable                                                                                                                                                                | `1`                                                                                                                                                        |
-| `zeebe.podSecurityContext`                                                                                                    | defines the security options the Zeebe broker pod should be run with                                                                                                                                                          |                                                                                                                                                            |
-| `zeebe.podSecurityContext.runAsNonRoot`                                                                                       | run as non root                                                                                                                                                                                                               | `true`                                                                                                                                                     |
-| `zeebe.podSecurityContext.fsGroup`                                                                                            |                                                                                                                                                                                                                               | `1000`                                                                                                                                                     |
-| `zeebe.containerSecurityContext.allowPrivilegeEscalation`                                                                     |                                                                                                                                                                                                                               | `false`                                                                                                                                                    |
-| `zeebe.containerSecurityContext.privileged`                                                                                   |                                                                                                                                                                                                                               | `false`                                                                                                                                                    |
-| `zeebe.containerSecurityContext.readOnlyRootFilesystem`                                                                       |                                                                                                                                                                                                                               | `true`                                                                                                                                                     |
-| `zeebe.containerSecurityContext.runAsUser`                                                                                    |                                                                                                                                                                                                                               | `1000`                                                                                                                                                     |
-| `zeebe.startupProbe`                                                                                                          | configuration                                                                                                                                                                                                                 |                                                                                                                                                            |
-| `zeebe.startupProbe.enabled`                                                                                                  | if true, the startup probe is enabled in app container                                                                                                                                                                        | `false`                                                                                                                                                    |
-| `zeebe.startupProbe.scheme`                                                                                                   | defines the startup probe schema used on calling the probePath                                                                                                                                                                | `HTTP`                                                                                                                                                     |
-| `zeebe.startupProbe.probePath`                                                                                                | defines the startup probe route used on the app                                                                                                                                                                               | `/ready`                                                                                                                                                   |
-| `zeebe.startupProbe.initialDelaySeconds`                                                                                      | defines the number of seconds after the container has started before the probe is initiated.                                                                                                                                  | `30`                                                                                                                                                       |
-| `zeebe.startupProbe.periodSeconds`                                                                                            | defines how often the probe is executed                                                                                                                                                                                       | `30`                                                                                                                                                       |
-| `zeebe.startupProbe.successThreshold`                                                                                         | defines how often it needs to be true to be marked as ready, after failure                                                                                                                                                    | `1`                                                                                                                                                        |
-| `zeebe.startupProbe.failureThreshold`                                                                                         | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                                                                              | `5`                                                                                                                                                        |
-| `zeebe.startupProbe.timeoutSeconds`                                                                                           | defines the seconds after the probe times out                                                                                                                                                                                 | `1`                                                                                                                                                        |
-| `zeebe.readinessProbe`                                                                                                        | configuration                                                                                                                                                                                                                 |                                                                                                                                                            |
-| `zeebe.readinessProbe.enabled`                                                                                                | if true, the readiness probe is enabled in app container                                                                                                                                                                      | `true`                                                                                                                                                     |
-| `zeebe.readinessProbe.scheme`                                                                                                 | defines the startup probe schema used on calling the probePath                                                                                                                                                                | `HTTP`                                                                                                                                                     |
-| `zeebe.readinessProbe.probePath`                                                                                              | defines the readiness probe route used on the app                                                                                                                                                                             | `/ready`                                                                                                                                                   |
-| `zeebe.readinessProbe.initialDelaySeconds`                                                                                    | defines the number of seconds after the container has started before                                                                                                                                                          | `30`                                                                                                                                                       |
-| `zeebe.readinessProbe.periodSeconds`                                                                                          | defines how often the probe is executed                                                                                                                                                                                       | `30`                                                                                                                                                       |
-| `zeebe.readinessProbe.successThreshold`                                                                                       | defines how often it needs to be true to be marked as ready, after failure                                                                                                                                                    | `1`                                                                                                                                                        |
-| `zeebe.readinessProbe.failureThreshold`                                                                                       | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                                                                              | `5`                                                                                                                                                        |
-| `zeebe.readinessProbe.timeoutSeconds`                                                                                         | defines the seconds after the probe times out                                                                                                                                                                                 | `1`                                                                                                                                                        |
-| `zeebe.livenessProbe`                                                                                                         | configuration                                                                                                                                                                                                                 |                                                                                                                                                            |
-| `zeebe.livenessProbe.enabled`                                                                                                 | if true, the liveness probe is enabled in app container                                                                                                                                                                       | `false`                                                                                                                                                    |
-| `zeebe.livenessProbe.scheme`                                                                                                  | defines the startup probe schema used on calling the probePath                                                                                                                                                                | `HTTP`                                                                                                                                                     |
-| `zeebe.livenessProbe.probePath`                                                                                               | defines the liveness probe route used on the app                                                                                                                                                                              | `/health`                                                                                                                                                  |
-| `zeebe.livenessProbe.initialDelaySeconds`                                                                                     | defines the number of seconds after the container has started before                                                                                                                                                          | `30`                                                                                                                                                       |
-| `zeebe.livenessProbe.periodSeconds`                                                                                           | defines how often the probe is executed                                                                                                                                                                                       | `30`                                                                                                                                                       |
-| `zeebe.livenessProbe.successThreshold`                                                                                        | defines how often it needs to be true to be considered successful after having failed                                                                                                                                         | `1`                                                                                                                                                        |
-| `zeebe.livenessProbe.failureThreshold`                                                                                        | defines when the probe is considered as failed so the container will be restarted                                                                                                                                             | `5`                                                                                                                                                        |
-| `zeebe.livenessProbe.timeoutSeconds`                                                                                          | defines the seconds after the probe times out                                                                                                                                                                                 | `1`                                                                                                                                                        |
-| `zeebe.nodeSelector`                                                                                                          | can be used to define on which nodes the broker pods should run                                                                                                                                                               | `{}`                                                                                                                                                       |
-| `zeebe.tolerations`                                                                                                           | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                                                                          | `[]`                                                                                                                                                       |
-| `global.zeebe.Affinity`                                                                                                       | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                                                                       |                                                                                                                                                            |
-| `zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key`      |                                                                                                                                                                                                                               | `app.kubernetes.io/component`                                                                                                                              |
-| `zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator` |                                                                                                                                                                                                                               | `In`                                                                                                                                                       |
-| `zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values`   |                                                                                                                                                                                                                               | `["zeebe-broker"]`                                                                                                                                         |
-| `zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey`                                |                                                                                                                                                                                                                               | `kubernetes.io/hostname`                                                                                                                                   |
-| `zeebe.priorityClassName`                                                                                                     | can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass                                                                                 | `""`                                                                                                                                                       |
-| `zeebe.retention.enabled`                                                                                                     | if true, the ILM Policy is created and applied to the index templates.                                                                                                                                                        | `false`                                                                                                                                                    |
-| `zeebe.retention.minimumAge`                                                                                                  | defines how old the data must be, before the data is deleted as a duration.                                                                                                                                                   | `30d`                                                                                                                                                      |
-| `zeebe.retention.policyName`                                                                                                  | defines the name of the created and applied ILM policy.                                                                                                                                                                       | `zeebe-record-retention-policy`                                                                                                                            |
+| Name                                                      | Description                                                                                                                                                                                                                   | Value                                                                                                                                                      |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zeebe`                                                   | configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.                                                                                                                     |                                                                                                                                                            |
+| `zeebe.enabled`                                           | if true, all zeebe related resources are deployed via the helm release                                                                                                                                                        | `true`                                                                                                                                                     |
+| `zeebe.debug`                                             | if true, extra info is printed.                                                                                                                                                                                               | `false`                                                                                                                                                    |
+| `zeebe.image`                                             | configuration to configure the zeebe image specifics                                                                                                                                                                          |                                                                                                                                                            |
+| `zeebe.image.registry`                                    | can be used to set container image registry.                                                                                                                                                                                  | `""`                                                                                                                                                       |
+| `zeebe.image.repository`                                  | defines which image repository to use                                                                                                                                                                                         | `camunda/zeebe`                                                                                                                                            |
+| `zeebe.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                    | `nil`                                                                                                                                                      |
+| `zeebe.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                       | `[]`                                                                                                                                                       |
+| `zeebe.sidecars`                                          | can be used to attach extra containers to the zeebe deployment                                                                                                                                                                | `[]`                                                                                                                                                       |
+| `zeebe.clusterSize`                                       | defines the amount of brokers (=replicas), which are deployed via helm                                                                                                                                                        | `3`                                                                                                                                                        |
+| `zeebe.partitionCount`                                    | defines how many zeebe partitions are set up in the cluster                                                                                                                                                                   | `3`                                                                                                                                                        |
+| `zeebe.replicationFactor`                                 | defines how each partition is replicated, the value defines the number of nodes                                                                                                                                               | `3`                                                                                                                                                        |
+| `zeebe.env`                                               | can be used to set extra environment variables in each zeebe broker container                                                                                                                                                 |                                                                                                                                                            |
+| `zeebe.env[0].name`                                       |                                                                                                                                                                                                                               | `ZEEBE_BROKER_DATA_SNAPSHOTPERIOD`                                                                                                                         |
+| `zeebe.env[0].value`                                      |                                                                                                                                                                                                                               | `5m`                                                                                                                                                       |
+| `zeebe.env[1].name`                                       |                                                                                                                                                                                                                               | `ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION`                                                                                                             |
+| `zeebe.env[1].value`                                      |                                                                                                                                                                                                                               | `2GB`                                                                                                                                                      |
+| `zeebe.env[2].name`                                       |                                                                                                                                                                                                                               | `ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING`                                                                                                              |
+| `zeebe.env[2].value`                                      |                                                                                                                                                                                                                               | `3GB`                                                                                                                                                      |
+| `zeebe.configMap`                                         | configuration which will be applied to the mounted config map.                                                                                                                                                                |                                                                                                                                                            |
+| `zeebe.configMap.defaultMode`                             | can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623 | `754`                                                                                                                                                      |
+| `zeebe.command`                                           | can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/                                                  | `[]`                                                                                                                                                       |
+| `zeebe.logLevel`                                          | defines the log level which is used by the zeebe brokers                                                                                                                                                                      | `info`                                                                                                                                                     |
+| `zeebe.log4j2`                                            | can be used to overwrite the log4j2 configuration of the zeebe brokers                                                                                                                                                        | `""`                                                                                                                                                       |
+| `zeebe.javaOpts`                                          | can be used to set java options for the zeebe brokers                                                                                                                                                                         | `-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError` |
+| `zeebe.service`                                           | configuration for the broker service                                                                                                                                                                                          |                                                                                                                                                            |
+| `zeebe.service.type`                                      | defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types                                                                                            | `ClusterIP`                                                                                                                                                |
+| `zeebe.service.httpPort`                                  | defines the port of the http endpoint, where for example metrics are provided                                                                                                                                                 | `9600`                                                                                                                                                     |
+| `zeebe.service.httpName`                                  | defines the name of the http endpoint, where for example metrics are provided                                                                                                                                                 | `http`                                                                                                                                                     |
+| `zeebe.service.commandPort`                               | defines the port of the command api endpoint, where the broker commands are sent to                                                                                                                                           | `26501`                                                                                                                                                    |
+| `zeebe.service.commandName`                               | defines the name of the command api endpoint, where the broker commands are sent to                                                                                                                                           | `command`                                                                                                                                                  |
+| `zeebe.service.internalPort`                              | defines the port of the internal api endpoint, which is used for internal communication                                                                                                                                       | `26502`                                                                                                                                                    |
+| `zeebe.service.internalName`                              | defines the name of the internal api endpoint, which is used for internal communication                                                                                                                                       | `internal`                                                                                                                                                 |
+| `zeebe.service.extraPorts`                                | can be used to expose any other ports which are required. Can be useful for exporters                                                                                                                                         | `[]`                                                                                                                                                       |
+| `global.zeebe.ServiceAccount`                             | configuration for the service account where the broker pods are assigned to                                                                                                                                                   |                                                                                                                                                            |
+| `zeebe.serviceAccount.enabled`                            | if true, enables the broker service account                                                                                                                                                                                   | `true`                                                                                                                                                     |
+| `zeebe.serviceAccount.name`                               | can be used to set the name of the broker service account                                                                                                                                                                     | `""`                                                                                                                                                       |
+| `zeebe.serviceAccount.annotations`                        | can be used to set the annotations of the broker service account                                                                                                                                                              | `{}`                                                                                                                                                       |
+| `zeebe.cpuThreadCount`                                    | defines how many threads can be used for the processing on each broker pod                                                                                                                                                    | `3`                                                                                                                                                        |
+| `zeebe.ioThreadCount`                                     | defines how many threads can be used for the exporting on each broker pod                                                                                                                                                     | `3`                                                                                                                                                        |
+| `zeebe.resources`                                         | configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits                                                     |                                                                                                                                                            |
+| `zeebe.resources.requests`                                |                                                                                                                                                                                                                               |                                                                                                                                                            |
+| `zeebe.resources.requests.cpu`                            |                                                                                                                                                                                                                               | `800m`                                                                                                                                                     |
+| `zeebe.resources.requests.memory`                         |                                                                                                                                                                                                                               | `1200Mi`                                                                                                                                                   |
+| `zeebe.resources.limits.cpu`                              |                                                                                                                                                                                                                               | `960m`                                                                                                                                                     |
+| `zeebe.resources.limits.memory`                           |                                                                                                                                                                                                                               | `1920Mi`                                                                                                                                                   |
+| `zeebe.persistenceType`                                   | defines the type of persistence which is used by Zeebe. Possible values are: disk, local and memory.                                                                                                                          | `disk`                                                                                                                                                     |
+| `zeebe.pvcSize`                                           | defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims                                                             | `32Gi`                                                                                                                                                     |
+| `zeebe.pvcAccessModes`                                    | can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes                                                                                 | `["ReadWriteOnce"]`                                                                                                                                        |
+| `zeebe.pvcStorageClassName`                               | can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.                                                          | `""`                                                                                                                                                       |
+| `zeebe.extraVolumes`                                      | can be used to define extra volumes for the broker pods, useful for additional exporters                                                                                                                                      | `[]`                                                                                                                                                       |
+| `zeebe.extraVolumeMounts`                                 | can be used to mount extra volumes for the broker pods, useful for additional exporters                                                                                                                                       | `[]`                                                                                                                                                       |
+| `zeebe.extraInitContainers`                               | (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters                                                              | `[]`                                                                                                                                                       |
+| `zeebe.initContainers`                                    | can be used to set up extra init containers for the broker pods, useful for additional exporters                                                                                                                              | `[]`                                                                                                                                                       |
+| `zeebe.podAnnotations`                                    | can be used to define extra broker pod annotations                                                                                                                                                                            | `{}`                                                                                                                                                       |
+| `zeebe.podLabels`                                         | can be used to define extra broker pod labels                                                                                                                                                                                 | `{}`                                                                                                                                                       |
+| `zeebe.podDisruptionBudget`                               | configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/                                                                                        |                                                                                                                                                            |
+| `zeebe.podDisruptionBudget.enabled`                       | if true a pod disruption budget is defined for the brokers                                                                                                                                                                    | `false`                                                                                                                                                    |
+| `zeebe.podDisruptionBudget.minAvailable`                  | can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).                                                                     | `nil`                                                                                                                                                      |
+| `zeebe.podDisruptionBudget.maxUnavailable`                | can be used to set how many pods should be at max. unavailable                                                                                                                                                                | `1`                                                                                                                                                        |
+| `zeebe.podSecurityContext`                                | defines the security options the Zeebe broker pod should be run with                                                                                                                                                          |                                                                                                                                                            |
+| `zeebe.podSecurityContext.runAsNonRoot`                   | run as non root                                                                                                                                                                                                               | `true`                                                                                                                                                     |
+| `zeebe.podSecurityContext.fsGroup`                        |                                                                                                                                                                                                                               | `1000`                                                                                                                                                     |
+| `zeebe.containerSecurityContext.allowPrivilegeEscalation` |                                                                                                                                                                                                                               | `false`                                                                                                                                                    |
+| `zeebe.containerSecurityContext.privileged`               |                                                                                                                                                                                                                               | `false`                                                                                                                                                    |
+| `zeebe.containerSecurityContext.readOnlyRootFilesystem`   |                                                                                                                                                                                                                               | `true`                                                                                                                                                     |
+| `zeebe.containerSecurityContext.runAsUser`                |                                                                                                                                                                                                                               | `1000`                                                                                                                                                     |
+| `zeebe.startupProbe`                                      | configuration                                                                                                                                                                                                                 |                                                                                                                                                            |
+| `zeebe.startupProbe.enabled`                              | if true, the startup probe is enabled in app container                                                                                                                                                                        | `false`                                                                                                                                                    |
+| `zeebe.startupProbe.scheme`                               | defines the startup probe schema used on calling the probePath                                                                                                                                                                | `HTTP`                                                                                                                                                     |
+| `zeebe.startupProbe.probePath`                            | defines the startup probe route used on the app                                                                                                                                                                               | `/ready`                                                                                                                                                   |
+| `zeebe.startupProbe.initialDelaySeconds`                  | defines the number of seconds after the container has started before the probe is initiated.                                                                                                                                  | `30`                                                                                                                                                       |
+| `zeebe.startupProbe.periodSeconds`                        | defines how often the probe is executed                                                                                                                                                                                       | `30`                                                                                                                                                       |
+| `zeebe.startupProbe.successThreshold`                     | defines how often it needs to be true to be marked as ready, after failure                                                                                                                                                    | `1`                                                                                                                                                        |
+| `zeebe.startupProbe.failureThreshold`                     | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                                                                              | `5`                                                                                                                                                        |
+| `zeebe.startupProbe.timeoutSeconds`                       | defines the seconds after the probe times out                                                                                                                                                                                 | `1`                                                                                                                                                        |
+| `zeebe.readinessProbe`                                    | configuration                                                                                                                                                                                                                 |                                                                                                                                                            |
+| `zeebe.readinessProbe.enabled`                            | if true, the readiness probe is enabled in app container                                                                                                                                                                      | `true`                                                                                                                                                     |
+| `zeebe.readinessProbe.scheme`                             | defines the startup probe schema used on calling the probePath                                                                                                                                                                | `HTTP`                                                                                                                                                     |
+| `zeebe.readinessProbe.probePath`                          | defines the readiness probe route used on the app                                                                                                                                                                             | `/ready`                                                                                                                                                   |
+| `zeebe.readinessProbe.initialDelaySeconds`                | defines the number of seconds after the container has started before                                                                                                                                                          | `30`                                                                                                                                                       |
+| `zeebe.readinessProbe.periodSeconds`                      | defines how often the probe is executed                                                                                                                                                                                       | `30`                                                                                                                                                       |
+| `zeebe.readinessProbe.successThreshold`                   | defines how often it needs to be true to be marked as ready, after failure                                                                                                                                                    | `1`                                                                                                                                                        |
+| `zeebe.readinessProbe.failureThreshold`                   | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                                                                              | `5`                                                                                                                                                        |
+| `zeebe.readinessProbe.timeoutSeconds`                     | defines the seconds after the probe times out                                                                                                                                                                                 | `1`                                                                                                                                                        |
+| `zeebe.livenessProbe`                                     | configuration                                                                                                                                                                                                                 |                                                                                                                                                            |
+| `zeebe.livenessProbe.enabled`                             | if true, the liveness probe is enabled in app container                                                                                                                                                                       | `false`                                                                                                                                                    |
+| `zeebe.livenessProbe.scheme`                              | defines the startup probe schema used on calling the probePath                                                                                                                                                                | `HTTP`                                                                                                                                                     |
+| `zeebe.livenessProbe.probePath`                           | defines the liveness probe route used on the app                                                                                                                                                                              | `/health`                                                                                                                                                  |
+| `zeebe.livenessProbe.initialDelaySeconds`                 | defines the number of seconds after the container has started before                                                                                                                                                          | `30`                                                                                                                                                       |
+| `zeebe.livenessProbe.periodSeconds`                       | defines how often the probe is executed                                                                                                                                                                                       | `30`                                                                                                                                                       |
+| `zeebe.livenessProbe.successThreshold`                    | defines how often it needs to be true to be considered successful after having failed                                                                                                                                         | `1`                                                                                                                                                        |
+| `zeebe.livenessProbe.failureThreshold`                    | defines when the probe is considered as failed so the container will be restarted                                                                                                                                             | `5`                                                                                                                                                        |
+| `zeebe.livenessProbe.timeoutSeconds`                      | defines the seconds after the probe times out                                                                                                                                                                                 | `1`                                                                                                                                                        |
+| `zeebe.nodeSelector`                                      | can be used to define on which nodes the broker pods should run                                                                                                                                                               | `{}`                                                                                                                                                       |
+| `zeebe.tolerations`                                       | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                                                                          | `[]`                                                                                                                                                       |
+| `global.zeebe.Affinity`                                   | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                                                                       |                                                                                                                                                            |
+| `zeebe.priorityClassName`                                 | can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass                                                                                 | `""`                                                                                                                                                       |
+| `zeebe.retention.enabled`                                 | if true, the ILM Policy is created and applied to the index templates.                                                                                                                                                        | `false`                                                                                                                                                    |
+| `zeebe.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                                                                   | `30d`                                                                                                                                                      |
+| `zeebe.retention.policyName`                              | defines the name of the created and applied ILM policy.                                                                                                                                                                       | `zeebe-record-retention-policy`                                                                                                                            |
 
 ### Zeebe Gateway Parameters
 
-| Name                                                                                                                                  | Description                                                                                                                                                                  | Value                            |
-| ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `Gateway`                                                                                                                             | configuration to define properties related to the standalone gateway                                                                                                         |                                  |
-| `zeebe-gateway.replicas`                                                                                                              | defines how many standalone gateways are deployed                                                                                                                            | `2`                              |
-| `zeebe-gateway.image`                                                                                                                 | configuration to configure the zeebe-gateway image specifics                                                                                                                 |                                  |
-| `zeebe-gateway.image.registry`                                                                                                        | can be used to set container image registry.                                                                                                                                 | `""`                             |
-| `zeebe-gateway.image.repository`                                                                                                      | defines which image repository to use                                                                                                                                        | `camunda/zeebe`                  |
-| `zeebe-gateway.image.tag`                                                                                                             | can be set to overwrite the global tag, which should be used in that chart                                                                                                   | `nil`                            |
-| `zeebe-gateway.image.pullSecrets`                                                                                                     | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                      | `[]`                             |
-| `zeebe-gateway.sidecars`                                                                                                              | can be used to attach extra containers to the zeebe gateway deployment                                                                                                       | `[]`                             |
-| `zeebe-gateway.podAnnotations`                                                                                                        | can be used to define extra gateway pod annotations                                                                                                                          | `{}`                             |
-| `zeebe-gateway.podLabels`                                                                                                             | can be used to define extra gateway pod labels                                                                                                                               | `{}`                             |
-| `zeebe-gateway.logLevel`                                                                                                              | defines the log level which is used by the gateway                                                                                                                           | `info`                           |
-| `zeebe-gateway.log4j2`                                                                                                                | can be used to overwrite the log4j2 configuration of the gateway                                                                                                             | `""`                             |
-| `zeebe-gateway.javaOpts`                                                                                                              | can be used to set java options for the zeebe gateways                                                                                                                       | `-XX:+ExitOnOutOfMemoryError`    |
-| `zeebe-gateway.env`                                                                                                                   | can be used to set extra environment variables in each gateway container                                                                                                     | `[]`                             |
-| `zeebe-gateway.configMap`                                                                                                             | configuration which will be applied to the mounted config map.                                                                                                               |                                  |
-| `zeebe-gateway.configMap.defaultMode`                                                                                                 | can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.                               | `744`                            |
-| `zeebe-gateway.command`                                                                                                               | can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/ | `[]`                             |
-| `zeebe-gateway.podDisruptionBudget`                                                                                                   | configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/                                      |                                  |
-| `zeebe-gateway.podDisruptionBudget.enabled`                                                                                           | if true a pod disruption budget is defined for the gateways                                                                                                                  | `false`                          |
-| `zeebe-gateway.podDisruptionBudget.minAvailable`                                                                                      | can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).                    | `1`                              |
-| `zeebe-gateway.podDisruptionBudget.maxUnavailable`                                                                                    | can be used to set how many pods should be at max. unavailable                                                                                                               | `nil`                            |
-| `zeebe-gateway.resources`                                                                                                             | configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits    |                                  |
-| `zeebe-gateway.resources.requests.cpu`                                                                                                |                                                                                                                                                                              | `400m`                           |
-| `zeebe-gateway.resources.requests.memory`                                                                                             |                                                                                                                                                                              | `450Mi`                          |
-| `zeebe-gateway.resources.limits.cpu`                                                                                                  |                                                                                                                                                                              | `400m`                           |
-| `zeebe-gateway.resources.limits.memory`                                                                                               |                                                                                                                                                                              | `450Mi`                          |
-| `zeebe-gateway.priorityClassName`                                                                                                     | can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass                               | `""`                             |
-| `zeebe-gateway.podSecurityContext`                                                                                                    | defines the security options the gateway pod should be run wit                                                                                                               |                                  |
-| `zeebe-gateway.podSecurityContext.runAsNonRoot`                                                                                       |                                                                                                                                                                              | `true`                           |
-| `zeebe-gateway.podSecurityContext.fsGroup`                                                                                            |                                                                                                                                                                              | `1000`                           |
-| `zeebe-gateway.containerSecurityContext`                                                                                              | defines the security options the gateway container should be run with                                                                                                        |                                  |
-| `zeebe-gateway.containerSecurityContext.privileged`                                                                                   |                                                                                                                                                                              | `false`                          |
-| `zeebe-gateway.containerSecurityContext.readOnlyRootFilesystem`                                                                       |                                                                                                                                                                              | `true`                           |
-| `zeebe-gateway.containerSecurityContext.allowPrivilegeEscalation`                                                                     |                                                                                                                                                                              | `false`                          |
-| `zeebe-gateway.containerSecurityContext.runAsNonRoot`                                                                                 |                                                                                                                                                                              | `true`                           |
-| `zeebe-gateway.containerSecurityContext.runAsUser`                                                                                    |                                                                                                                                                                              | `1000`                           |
-| `zeebe-gateway.startupProbe`                                                                                                          | configuration                                                                                                                                                                |                                  |
-| `zeebe-gateway.startupProbe.enabled`                                                                                                  | if true, the startup probe is enabled in app container                                                                                                                       | `false`                          |
-| `zeebe-gateway.startupProbe.scheme`                                                                                                   | defines the startup probe schema used on calling the probePath                                                                                                               | `HTTP`                           |
-| `zeebe-gateway.startupProbe.probePath`                                                                                                | defines the startup probe route used on the app                                                                                                                              | `/actuator/health/startup`       |
-| `zeebe-gateway.startupProbe.initialDelaySeconds`                                                                                      | defines the number of seconds after the container has started before                                                                                                         | `30`                             |
-| `zeebe-gateway.startupProbe.periodSeconds`                                                                                            | defines how often the probe is executed                                                                                                                                      | `30`                             |
-| `zeebe-gateway.startupProbe.successThreshold`                                                                                         | defines how often it needs to be true to be marked as ready, after failure                                                                                                   | `1`                              |
-| `zeebe-gateway.startupProbe.failureThreshold`                                                                                         | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                             | `5`                              |
-| `zeebe-gateway.startupProbe.timeoutSeconds`                                                                                           | defines the seconds after the probe times out                                                                                                                                | `1`                              |
-| `zeebe-gateway.readinessProbe`                                                                                                        | configuration                                                                                                                                                                |                                  |
-| `zeebe-gateway.readinessProbe.enabled`                                                                                                | if true, the readiness probe is enabled in app container                                                                                                                     | `true`                           |
-| `zeebe-gateway.readinessProbe.scheme`                                                                                                 | defines the startup probe schema used on calling the probePath                                                                                                               | `HTTP`                           |
-| `zeebe-gateway.readinessProbe.probePath`                                                                                              | defines the readiness probe route used on the app                                                                                                                            | `/actuator/health`               |
-| `zeebe-gateway.readinessProbe.initialDelaySeconds`                                                                                    | defines the number of seconds after the container has started before                                                                                                         | `30`                             |
-| `zeebe-gateway.the`                                                                                                                   | probe is initiated.                                                                                                                                                          |                                  |
-| `zeebe-gateway.readinessProbe.periodSeconds`                                                                                          | defines how often the probe is executed                                                                                                                                      | `30`                             |
-| `zeebe-gateway.readinessProbe.successThreshold`                                                                                       | defines how often it needs to be true to be marked as ready, after failure                                                                                                   | `1`                              |
-| `zeebe-gateway.readinessProbe.failureThreshold`                                                                                       | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                             | `5`                              |
-| `zeebe-gateway.readinessProbe.timeoutSeconds`                                                                                         | defines the seconds after the probe times out                                                                                                                                | `1`                              |
-| `zeebe-gateway.livenessProbe`                                                                                                         | configuration                                                                                                                                                                |                                  |
-| `zeebe-gateway.livenessProbe.enabled`                                                                                                 | if true, the liveness probe is enabled in app container                                                                                                                      | `false`                          |
-| `zeebe-gateway.livenessProbe.scheme`                                                                                                  | defines the startup probe schema used on calling the probePath                                                                                                               | `HTTP`                           |
-| `zeebe-gateway.livenessProbe.probePath`                                                                                               | defines the liveness probe route used on the app                                                                                                                             | `/actuator/health/liveness`      |
-| `zeebe-gateway.livenessProbe.initialDelaySeconds`                                                                                     | defines the number of seconds after the container has started before                                                                                                         | `30`                             |
-| `zeebe-gateway.livenessProbe.periodSeconds`                                                                                           | defines how often the probe is executed                                                                                                                                      | `30`                             |
-| `zeebe-gateway.livenessProbe.successThreshold`                                                                                        | defines how often it needs to be true to be considered successful after having failed                                                                                        | `1`                              |
-| `zeebe-gateway.livenessProbe.failureThreshold`                                                                                        | defines when the probe is considered as failed so the container will be restarted                                                                                            | `5`                              |
-| `zeebe-gateway.livenessProbe.timeoutSeconds`                                                                                          | defines the seconds after the probe times out                                                                                                                                | `1`                              |
-| `zeebe-gateway.nodeSelector`                                                                                                          | can be used to define on which nodes the gateway pods should run                                                                                                             | `{}`                             |
-| `zeebe-gateway.tolerations`                                                                                                           | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                         | `[]`                             |
-| `zeebe-gateway.affinity`                                                                                                              | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                      |                                  |
-| `zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key`      |                                                                                                                                                                              | `app.kubernetes.io/component`    |
-| `zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator` |                                                                                                                                                                              | `In`                             |
-| `zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values`   |                                                                                                                                                                              | `["zeebe-gateway"]`              |
-| `zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey`                                |                                                                                                                                                                              | `kubernetes.io/hostname`         |
-| `zeebe-gateway.extraVolumeMounts`                                                                                                     | can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker                                                                  | `[]`                             |
-| `zeebe-gateway.extraVolumes`                                                                                                          | can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker                                                                 | `[]`                             |
-| `zeebe-gateway.extraInitContainers`                                                                                                   | (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors                                 | `[]`                             |
-| `zeebe-gateway.initContainers`                                                                                                        | can be used to set up extra init containers for the gateway pods, useful for adding interceptors                                                                             | `[]`                             |
-| `zeebe-gateway.service`                                                                                                               | configuration for the gateway service                                                                                                                                        |                                  |
-| `zeebe-gateway.service.type`                                                                                                          | defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types                                           | `ClusterIP`                      |
-| `zeebe-gateway.service.loadBalancerIP`                                                                                                | defines public ip of the load balancer if the type is LoadBalancer                                                                                                           | `""`                             |
-| `zeebe-gateway.service.loadBalancerSourceRanges`                                                                                      | defines list of allowed source ip address ranges if the type is LoadBalancer                                                                                                 | `[]`                             |
-| `zeebe-gateway.service.httpPort`                                                                                                      | defines the port of the http endpoint, where for example metrics are provided                                                                                                | `9600`                           |
-| `zeebe-gateway.service.httpName`                                                                                                      | defines the name of the http endpoint, where for example metrics are provided                                                                                                | `http`                           |
-| `zeebe-gateway.service.gatewayPort`                                                                                                   | defines the port of the gateway endpoint, where client commands (grpc) are sent to                                                                                           | `26500`                          |
-| `zeebe-gateway.service.gatewayName`                                                                                                   | defines the name of the gateway endpoint, where client commands (grpc) are sent to                                                                                           | `gateway`                        |
-| `zeebe-gateway.service.internalPort`                                                                                                  | defines the port of the internal api endpoint, which is used for internal communication                                                                                      | `26502`                          |
-| `zeebe-gateway.service.internalName`                                                                                                  | defines the name of the internal api endpoint, which is used for internal communication                                                                                      | `internal`                       |
-| `zeebe-gateway.service.annotations`                                                                                                   | can be used to define annotations, which will be applied to the zeebe-gateway service                                                                                        | `{}`                             |
-| `zeebe-gateway.serviceAccount`                                                                                                        | configuration for the service account where the gateway pods are assigned to                                                                                                 |                                  |
-| `zeebe-gateway.serviceAccount.enabled`                                                                                                | if true, enables the gateway service account                                                                                                                                 | `true`                           |
-| `zeebe-gateway.serviceAccount.name`                                                                                                   | can be used to set the name of the gateway service account                                                                                                                   | `""`                             |
-| `zeebe-gateway.serviceAccount.annotations`                                                                                            | can be used to set the annotations of the gateway service account                                                                                                            | `{}`                             |
-| `zeebe-gateway.ingress.enabled`                                                                                                       | if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.                                   | `false`                          |
-| `zeebe-gateway.ingress.className`                                                                                                     | defines the class or configuration of ingress which should be used by the controller                                                                                         | `nginx`                          |
-| `zeebe-gateway.ingress.annotations`                                                                                                   | defines the ingress related annotations, consumed mostly by the ingress controller                                                                                           | `{}`                             |
-| `zeebe-gateway.ingress.path`                                                                                                          | defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules                        | `/`                              |
-| `zeebe-gateway.ingress.host`                                                                                                          | can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules                                           | `""`                             |
-| `zeebe-gateway.ingress.tls`                                                                                                           | configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls                                                           |                                  |
-| `zeebe-gateway.ingress.tls.enabled`                                                                                                   | if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.                                                                     | `false`                          |
-| `zeebe-gateway.ingress.tls.secretName`                                                                                                | defines the secret name which contains the TLS private key and certificate                                                                                                   | `camunda-platform-zeebe-gateway` |
+| Name                                                              | Description                                                                                                                                                                  | Value                            |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `Gateway`                                                         | configuration to define properties related to the standalone gateway                                                                                                         |                                  |
+| `zeebe-gateway.replicas`                                          | defines how many standalone gateways are deployed                                                                                                                            | `2`                              |
+| `zeebe-gateway.image`                                             | configuration to configure the zeebe-gateway image specifics                                                                                                                 |                                  |
+| `zeebe-gateway.image.registry`                                    | can be used to set container image registry.                                                                                                                                 | `""`                             |
+| `zeebe-gateway.image.repository`                                  | defines which image repository to use                                                                                                                                        | `camunda/zeebe`                  |
+| `zeebe-gateway.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                   | `nil`                            |
+| `zeebe-gateway.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                      | `[]`                             |
+| `zeebe-gateway.sidecars`                                          | can be used to attach extra containers to the zeebe gateway deployment                                                                                                       | `[]`                             |
+| `zeebe-gateway.podAnnotations`                                    | can be used to define extra gateway pod annotations                                                                                                                          | `{}`                             |
+| `zeebe-gateway.podLabels`                                         | can be used to define extra gateway pod labels                                                                                                                               | `{}`                             |
+| `zeebe-gateway.logLevel`                                          | defines the log level which is used by the gateway                                                                                                                           | `info`                           |
+| `zeebe-gateway.log4j2`                                            | can be used to overwrite the log4j2 configuration of the gateway                                                                                                             | `""`                             |
+| `zeebe-gateway.javaOpts`                                          | can be used to set java options for the zeebe gateways                                                                                                                       | `-XX:+ExitOnOutOfMemoryError`    |
+| `zeebe-gateway.env`                                               | can be used to set extra environment variables in each gateway container                                                                                                     | `[]`                             |
+| `zeebe-gateway.configMap`                                         | configuration which will be applied to the mounted config map.                                                                                                               |                                  |
+| `zeebe-gateway.configMap.defaultMode`                             | can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.                               | `744`                            |
+| `zeebe-gateway.command`                                           | can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/ | `[]`                             |
+| `zeebe-gateway.podDisruptionBudget`                               | configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/                                      |                                  |
+| `zeebe-gateway.podDisruptionBudget.enabled`                       | if true a pod disruption budget is defined for the gateways                                                                                                                  | `false`                          |
+| `zeebe-gateway.podDisruptionBudget.minAvailable`                  | can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).                    | `1`                              |
+| `zeebe-gateway.podDisruptionBudget.maxUnavailable`                | can be used to set how many pods should be at max. unavailable                                                                                                               | `nil`                            |
+| `zeebe-gateway.resources`                                         | configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits    |                                  |
+| `zeebe-gateway.resources.requests.cpu`                            |                                                                                                                                                                              | `400m`                           |
+| `zeebe-gateway.resources.requests.memory`                         |                                                                                                                                                                              | `450Mi`                          |
+| `zeebe-gateway.resources.limits.cpu`                              |                                                                                                                                                                              | `400m`                           |
+| `zeebe-gateway.resources.limits.memory`                           |                                                                                                                                                                              | `450Mi`                          |
+| `zeebe-gateway.priorityClassName`                                 | can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass                               | `""`                             |
+| `zeebe-gateway.podSecurityContext`                                | defines the security options the gateway pod should be run wit                                                                                                               |                                  |
+| `zeebe-gateway.podSecurityContext.runAsNonRoot`                   |                                                                                                                                                                              | `true`                           |
+| `zeebe-gateway.podSecurityContext.fsGroup`                        |                                                                                                                                                                              | `1000`                           |
+| `zeebe-gateway.containerSecurityContext`                          | defines the security options the gateway container should be run with                                                                                                        |                                  |
+| `zeebe-gateway.containerSecurityContext.privileged`               |                                                                                                                                                                              | `false`                          |
+| `zeebe-gateway.containerSecurityContext.readOnlyRootFilesystem`   |                                                                                                                                                                              | `true`                           |
+| `zeebe-gateway.containerSecurityContext.allowPrivilegeEscalation` |                                                                                                                                                                              | `false`                          |
+| `zeebe-gateway.containerSecurityContext.runAsNonRoot`             |                                                                                                                                                                              | `true`                           |
+| `zeebe-gateway.containerSecurityContext.runAsUser`                |                                                                                                                                                                              | `1000`                           |
+| `zeebe-gateway.startupProbe`                                      | configuration                                                                                                                                                                |                                  |
+| `zeebe-gateway.startupProbe.enabled`                              | if true, the startup probe is enabled in app container                                                                                                                       | `false`                          |
+| `zeebe-gateway.startupProbe.scheme`                               | defines the startup probe schema used on calling the probePath                                                                                                               | `HTTP`                           |
+| `zeebe-gateway.startupProbe.probePath`                            | defines the startup probe route used on the app                                                                                                                              | `/actuator/health/startup`       |
+| `zeebe-gateway.startupProbe.initialDelaySeconds`                  | defines the number of seconds after the container has started before                                                                                                         | `30`                             |
+| `zeebe-gateway.startupProbe.periodSeconds`                        | defines how often the probe is executed                                                                                                                                      | `30`                             |
+| `zeebe-gateway.startupProbe.successThreshold`                     | defines how often it needs to be true to be marked as ready, after failure                                                                                                   | `1`                              |
+| `zeebe-gateway.startupProbe.failureThreshold`                     | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                             | `5`                              |
+| `zeebe-gateway.startupProbe.timeoutSeconds`                       | defines the seconds after the probe times out                                                                                                                                | `1`                              |
+| `zeebe-gateway.readinessProbe`                                    | configuration                                                                                                                                                                |                                  |
+| `zeebe-gateway.readinessProbe.enabled`                            | if true, the readiness probe is enabled in app container                                                                                                                     | `true`                           |
+| `zeebe-gateway.readinessProbe.scheme`                             | defines the startup probe schema used on calling the probePath                                                                                                               | `HTTP`                           |
+| `zeebe-gateway.readinessProbe.probePath`                          | defines the readiness probe route used on the app                                                                                                                            | `/actuator/health`               |
+| `zeebe-gateway.readinessProbe.initialDelaySeconds`                | defines the number of seconds after the container has started before                                                                                                         | `30`                             |
+| `zeebe-gateway.the`                                               | probe is initiated.                                                                                                                                                          |                                  |
+| `zeebe-gateway.readinessProbe.periodSeconds`                      | defines how often the probe is executed                                                                                                                                      | `30`                             |
+| `zeebe-gateway.readinessProbe.successThreshold`                   | defines how often it needs to be true to be marked as ready, after failure                                                                                                   | `1`                              |
+| `zeebe-gateway.readinessProbe.failureThreshold`                   | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                             | `5`                              |
+| `zeebe-gateway.readinessProbe.timeoutSeconds`                     | defines the seconds after the probe times out                                                                                                                                | `1`                              |
+| `zeebe-gateway.livenessProbe`                                     | configuration                                                                                                                                                                |                                  |
+| `zeebe-gateway.livenessProbe.enabled`                             | if true, the liveness probe is enabled in app container                                                                                                                      | `false`                          |
+| `zeebe-gateway.livenessProbe.scheme`                              | defines the startup probe schema used on calling the probePath                                                                                                               | `HTTP`                           |
+| `zeebe-gateway.livenessProbe.probePath`                           | defines the liveness probe route used on the app                                                                                                                             | `/actuator/health/liveness`      |
+| `zeebe-gateway.livenessProbe.initialDelaySeconds`                 | defines the number of seconds after the container has started before                                                                                                         | `30`                             |
+| `zeebe-gateway.livenessProbe.periodSeconds`                       | defines how often the probe is executed                                                                                                                                      | `30`                             |
+| `zeebe-gateway.livenessProbe.successThreshold`                    | defines how often it needs to be true to be considered successful after having failed                                                                                        | `1`                              |
+| `zeebe-gateway.livenessProbe.failureThreshold`                    | defines when the probe is considered as failed so the container will be restarted                                                                                            | `5`                              |
+| `zeebe-gateway.livenessProbe.timeoutSeconds`                      | defines the seconds after the probe times out                                                                                                                                | `1`                              |
+| `zeebe-gateway.nodeSelector`                                      | can be used to define on which nodes the gateway pods should run                                                                                                             | `{}`                             |
+| `zeebe-gateway.tolerations`                                       | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                         | `[]`                             |
+| `zeebe-gateway.affinity`                                          | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                      |                                  |
+| `zeebe-gateway.extraVolumeMounts`                                 | can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker                                                                  | `[]`                             |
+| `zeebe-gateway.extraVolumes`                                      | can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker                                                                 | `[]`                             |
+| `zeebe-gateway.extraInitContainers`                               | (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors                                 | `[]`                             |
+| `zeebe-gateway.initContainers`                                    | can be used to set up extra init containers for the gateway pods, useful for adding interceptors                                                                             | `[]`                             |
+| `zeebe-gateway.service`                                           | configuration for the gateway service                                                                                                                                        |                                  |
+| `zeebe-gateway.service.type`                                      | defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types                                           | `ClusterIP`                      |
+| `zeebe-gateway.service.loadBalancerIP`                            | defines public ip of the load balancer if the type is LoadBalancer                                                                                                           | `""`                             |
+| `zeebe-gateway.service.loadBalancerSourceRanges`                  | defines list of allowed source ip address ranges if the type is LoadBalancer                                                                                                 | `[]`                             |
+| `zeebe-gateway.service.httpPort`                                  | defines the port of the http endpoint, where for example metrics are provided                                                                                                | `9600`                           |
+| `zeebe-gateway.service.httpName`                                  | defines the name of the http endpoint, where for example metrics are provided                                                                                                | `http`                           |
+| `zeebe-gateway.service.gatewayPort`                               | defines the port of the gateway endpoint, where client commands (grpc) are sent to                                                                                           | `26500`                          |
+| `zeebe-gateway.service.gatewayName`                               | defines the name of the gateway endpoint, where client commands (grpc) are sent to                                                                                           | `gateway`                        |
+| `zeebe-gateway.service.internalPort`                              | defines the port of the internal api endpoint, which is used for internal communication                                                                                      | `26502`                          |
+| `zeebe-gateway.service.internalName`                              | defines the name of the internal api endpoint, which is used for internal communication                                                                                      | `internal`                       |
+| `zeebe-gateway.service.annotations`                               | can be used to define annotations, which will be applied to the zeebe-gateway service                                                                                        | `{}`                             |
+| `zeebe-gateway.serviceAccount`                                    | configuration for the service account where the gateway pods are assigned to                                                                                                 |                                  |
+| `zeebe-gateway.serviceAccount.enabled`                            | if true, enables the gateway service account                                                                                                                                 | `true`                           |
+| `zeebe-gateway.serviceAccount.name`                               | can be used to set the name of the gateway service account                                                                                                                   | `""`                             |
+| `zeebe-gateway.serviceAccount.annotations`                        | can be used to set the annotations of the gateway service account                                                                                                            | `{}`                             |
+| `zeebe-gateway.ingress.enabled`                                   | if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.                                   | `false`                          |
+| `zeebe-gateway.ingress.className`                                 | defines the class or configuration of ingress which should be used by the controller                                                                                         | `nginx`                          |
+| `zeebe-gateway.ingress.annotations`                               | defines the ingress related annotations, consumed mostly by the ingress controller                                                                                           | `{}`                             |
+| `zeebe-gateway.ingress.path`                                      | defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules                        | `/`                              |
+| `zeebe-gateway.ingress.host`                                      | can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules                                           | `""`                             |
+| `zeebe-gateway.ingress.tls`                                       | configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls                                                           |                                  |
+| `zeebe-gateway.ingress.tls.enabled`                               | if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.                                                                     | `false`                          |
+| `zeebe-gateway.ingress.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                   | `camunda-platform-zeebe-gateway` |
 
 ### Operate Parameters
 
@@ -789,7 +1034,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `identity.readinessProbe.enabled`                            | if true, the readiness probe is enabled in app container                                                                                                                                                  | `true`                      |
 | `identity.readinessProbe.scheme`                             | defines the startup probe schema used on calling the probePath                                                                                                                                            | `HTTP`                      |
 | `identity.readinessProbe.probePath`                          | defines the readiness probe route used on the app                                                                                                                                                         | `/actuator/health`          |
-| `identity.readinessProbe.initialDelaySeconds`                | defines the number of seconds after the container has started before                                                                                                                                      | `30`                        |
+| `identity.readinessProbe.initialDelaySeconds`                | defines the number of seconds after the container has started before the probe is initiated.                                                                                                              | `30`                        |
 | `identity.readinessProbe.periodSeconds`                      | defines how often the probe is executed                                                                                                                                                                   | `30`                        |
 | `identity.readinessProbe.successThreshold`                   | defines how often it needs to be true to be marked as ready, after failure                                                                                                                                | `1`                         |
 | `identity.readinessProbe.failureThreshold`                   | defines when the probe is considered as failed so the Pod will be marked Unready                                                                                                                          | `5`                         |
@@ -844,7 +1089,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `identity.externalDatabase.existingSecret`                   | Name of an existing secret resource containing the database credentials                                                                                                                                   | `nil`                       |
 | `identity.externalDatabase.existingSecretPasswordKey`        | Name of an existing secret key containing the database credentials                                                                                                                                        | `nil`                       |
 
-### keycloak Parameters
+### Identity - Keycloak Parameters
 
 | Name                                                                                     | Description                                                                                                                            | Value                                                                                                                                                                |
 | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -852,18 +1097,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `identity.keycloak.postgresql`                                                           | configuration.                                                                                                                         |                                                                                                                                                                      |
 | `identity.keycloak.postgresql.image.repository`                                          | image repo                                                                                                                             | `bitnami/postgresql`                                                                                                                                                 |
 | `identity.keycloak.postgresql.image.tag`                                                 | image tag                                                                                                                              | `15.4.0`                                                                                                                                                             |
-| `identity.keycloak.postgresql.primary.extraVolumes[0].name`                              |                                                                                                                                        | `tmp`                                                                                                                                                                |
-| `identity.keycloak.postgresql.primary.extraVolumes[0].emptyDir`                          |                                                                                                                                        | `{}`                                                                                                                                                                 |
-| `identity.keycloak.postgresql.primary.extraVolumes[1].name`                              |                                                                                                                                        | `config`                                                                                                                                                             |
-| `identity.keycloak.postgresql.primary.extraVolumes[1].emptyDir`                          |                                                                                                                                        | `{}`                                                                                                                                                                 |
-| `identity.keycloak.postgresql.primary.extraVolumes[2].name`                              |                                                                                                                                        | `postgresqltmp`                                                                                                                                                      |
-| `identity.keycloak.postgresql.primary.extraVolumes[2].emptyDir`                          |                                                                                                                                        | `{}`                                                                                                                                                                 |
-| `identity.keycloak.postgresql.primary.extraVolumeMounts[0].mountPath`                    |                                                                                                                                        | `/tmp`                                                                                                                                                               |
-| `identity.keycloak.postgresql.primary.extraVolumeMounts[0].name`                         |                                                                                                                                        | `tmp`                                                                                                                                                                |
-| `identity.keycloak.postgresql.primary.extraVolumeMounts[1].mountPath`                    |                                                                                                                                        | `/opt/bitnami/postgresql/conf`                                                                                                                                       |
-| `identity.keycloak.postgresql.primary.extraVolumeMounts[1].name`                         |                                                                                                                                        | `config`                                                                                                                                                             |
-| `identity.keycloak.postgresql.primary.extraVolumeMounts[2].mountPath`                    |                                                                                                                                        | `/opt/bitnami/postgresql/tmp`                                                                                                                                        |
-| `identity.keycloak.postgresql.primary.extraVolumeMounts[2].name`                         |                                                                                                                                        | `postgresqltmp`                                                                                                                                                      |
 | `identity.keycloak.postgresql.primary.containerSecurityContext.enabled`                  |                                                                                                                                        | `true`                                                                                                                                                               |
 | `identity.keycloak.postgresql.primary.containerSecurityContext.privileged`               |                                                                                                                                        | `false`                                                                                                                                                              |
 | `identity.keycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem`   |                                                                                                                                        | `true`                                                                                                                                                               |
@@ -880,14 +1113,6 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `identity.keycloak.proxy`                                                                | keycloak proxy                                                                                                                         | `edge`                                                                                                                                                               |
 | `identity.keycloak.tls`                                                                  | can be used to enable TLS encryption. Required for HTTPs traffic.                                                                      |                                                                                                                                                                      |
 | `identity.keycloak.tls.enabled`                                                          | enabling tls                                                                                                                           | `false`                                                                                                                                                              |
-| `identity.keycloak.extraVolumes`                                                         | Extra volumes for keycloak                                                                                                             |                                                                                                                                                                      |
-| `identity.keycloak.extraVolumes[0].name`                                                 |                                                                                                                                        | `config`                                                                                                                                                             |
-| `identity.keycloak.extraVolumes[0].emptyDir`                                             |                                                                                                                                        | `{}`                                                                                                                                                                 |
-| `identity.keycloak.extraVolumes[1].name`                                                 |                                                                                                                                        | `quarkus`                                                                                                                                                            |
-| `identity.keycloak.extraVolumes[1].emptyDir`                                             |                                                                                                                                        | `{}`                                                                                                                                                                 |
-| `identity.keycloak.extraVolumes[2].name`                                                 |                                                                                                                                        | `tmp`                                                                                                                                                                |
-| `identity.keycloak.extraVolumes[2].emptyDir`                                             |                                                                                                                                        | `{}`                                                                                                                                                                 |
-| `identity.keycloak.extraVolumes[3].name`                                                 |                                                                                                                                        | `camunda-theme`                                                                                                                                                      |
 | `identity.keycloak.extraVolumes[3].emptyDir.sizeLimit`                                   |                                                                                                                                        | `10Mi`                                                                                                                                                               |
 | `identity.keycloak.initContainers[0].name`                                               |                                                                                                                                        | `copy-camunda-theme`                                                                                                                                                 |
 | `identity.keycloak.initContainers[0].image`                                              |                                                                                                                                        | `{{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}} {{- include "camundaPlatform.imageByParams" $identityImageParams }}` |
@@ -937,15 +1162,20 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 ### WebModeler Parameters
 
+| Name                           | Description                                                                                                                                  | Value                    |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `webModeler.enabled`           | if true, the Web Modeler deployment and its related resources are deployed via a helm release                                                | `false`                  |
+| `webModeler.fullnameOverride`  | can be used to override the full name of the Web Modeler resources                                                                           | `""`                     |
+| `webModeler.nameOverride`      | can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name)                    | `""`                     |
+| `webModeler.image`             | configuration of the Web Modeler Docker images                                                                                               |                          |
+| `webModeler.image.registry`    | can be used to set the Docker registry for the Web Modeler images (overwrites global.image.registry)                                         | `registry.camunda.cloud` |
+| `webModeler.image.tag`         | can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)                                             | `8.2.6`                  |
+| `webModeler.image.pullSecrets` | can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod | `[]`                     |
+
+### WebModeler - RestAPI Parameters
+
 | Name                                                                   | Description                                                                                                                                                                  | Value                            |
 | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `webModeler.enabled`                                                   | if true, the Web Modeler deployment and its related resources are deployed via a helm release                                                                                | `false`                          |
-| `webModeler.fullnameOverride`                                          | can be used to override the full name of the Web Modeler resources                                                                                                           | `""`                             |
-| `webModeler.nameOverride`                                              | can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name)                                                    | `""`                             |
-| `webModeler.image`                                                     | configuration of the Web Modeler Docker images                                                                                                                               |                                  |
-| `webModeler.image.registry`                                            | can be used to set the Docker registry for the Web Modeler images (overwrites global.image.registry)                                                                         | `registry.camunda.cloud`         |
-| `webModeler.image.tag`                                                 | can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)                                                                             | `8.2.6`                          |
-| `webModeler.image.pullSecrets`                                         | can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                 | `[]`                             |
 | `webModeler.restapi`                                                   | configuration of the Web Modeler restapi component                                                                                                                           |                                  |
 | `webModeler.restapi.image`                                             | configuration of the restapi Docker image                                                                                                                                    |                                  |
 | `webModeler.restapi.image.repository`                                  | defines which image repository to use for the restapi Docker image                                                                                                           | `web-modeler-ee/modeler-restapi` |
@@ -1019,7 +1249,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `webModeler.restapi.service.managementPort`                            | defines the management port of the service                                                                                                                                   | `8091`                           |
 | `webModeler.restapi.service.annotations`                               | can be used to define annotations which will be applied to the service                                                                                                       | `{}`                             |
 
-### webapp Parameters
+### WebModeler - WebApp Parameters
 
 | Name                                                                  | Description                                                                                                                                                                  | Value                           |
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
@@ -1084,7 +1314,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `webModeler.webapp.service.managementPort`                            | defines the management port of the service                                                                                                                                   | `8071`                          |
 | `webModeler.webapp.service.annotations`                               | can be used to define annotations which will be applied to the service                                                                                                       | `{}`                            |
 
-### websockets Parameters
+### WebModeler - WebSockets Parameters
 
 | Name                                                                      | Description                                                                                                                                                                                                                        | Value                                    |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -1161,7 +1391,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `webModeler.ingress.websockets.tls.enabled`                               | if true, TLS will be configured on the ingress resource                                                                                                                                                                            | `false`                                  |
 | `webModeler.ingress.websockets.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                                                                         | `camunda-platform-webmodeler-websockets` |
 
-### postgresql Parameters
+### WebModeler - PostgreSQL Parameters
 
 | Name                                                                   | Description                                                                                                                                                                                      | Value                          |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
@@ -1176,14 +1406,14 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `postgresql.primary.extraVolumes[0].emptyDir`                          |                                                                                                                                                                                                  | `{}`                           |
 | `postgresql.primary.extraVolumes[1].name`                              |                                                                                                                                                                                                  | `config`                       |
 | `postgresql.primary.extraVolumes[1].emptyDir`                          |                                                                                                                                                                                                  | `{}`                           |
-| `postgresql.primary.extraVolumes[2].name`                              |                                                                                                                                                                                                  | `postgresqltmp`                |
+| `postgresql.primary.extraVolumes[2].name`                              |                                                                                                                                                                                                  | `postgresql-tmp`               |
 | `postgresql.primary.extraVolumes[2].emptyDir`                          |                                                                                                                                                                                                  | `{}`                           |
 | `postgresql.primary.extraVolumeMounts[0].mountPath`                    |                                                                                                                                                                                                  | `/tmp`                         |
 | `postgresql.primary.extraVolumeMounts[0].name`                         |                                                                                                                                                                                                  | `tmp`                          |
 | `postgresql.primary.extraVolumeMounts[1].mountPath`                    |                                                                                                                                                                                                  | `/opt/bitnami/postgresql/conf` |
 | `postgresql.primary.extraVolumeMounts[1].name`                         |                                                                                                                                                                                                  | `config`                       |
 | `postgresql.primary.extraVolumeMounts[2].mountPath`                    |                                                                                                                                                                                                  | `/opt/bitnami/postgresql/tmp`  |
-| `postgresql.primary.extraVolumeMounts[2].name`                         |                                                                                                                                                                                                  | `postgresqltmp`                |
+| `postgresql.primary.extraVolumeMounts[2].name`                         |                                                                                                                                                                                                  | `postgresql-tmp`               |
 | `postgresql.primary.containerSecurityContext.enabled`                  |                                                                                                                                                                                                  | `true`                         |
 | `postgresql.primary.containerSecurityContext.privileged`               |                                                                                                                                                                                                  | `false`                        |
 | `postgresql.primary.containerSecurityContext.readOnlyRootFilesystem`   |                                                                                                                                                                                                  | `true`                         |
@@ -1195,7 +1425,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `postgresql.primary.podSecurityContext.fsGroup`                        |                                                                                                                                                                                                  | `1001`                         |
 | `connectors.podSecurityContext.fsGroup`                                |                                                                                                                                                                                                  | `1003`                         |
 
-### connectors Parameters
+### Connectors Parameters
 
 | Name                                                           | Description                                                                                                                                                                  | Value                         |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
@@ -1282,7 +1512,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `connectors.tolerations`                                       | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                         | `[]`                          |
 | `connectors.affinity`                                          | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                      | `{}`                          |
 
-### console Parameters
+### Console Parameters
 
 | Name                                         | Description                                                                                                                                                                  | Value                       |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
@@ -1360,7 +1590,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `console.tolerations`                        | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                         | `[]`                        |
 | `console.affinity`                           | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                      | `{}`                        |
 
-### elasticsearch Parameters
+### Elasticsearch Parameters
 
 | Name                                                     | Description  | Value                             |
 | -------------------------------------------------------- | ------------ | --------------------------------- |
@@ -1385,7 +1615,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `elasticsearch.securityContext.readOnlyRootFilesystem`   |              | `true`                            |
 | `elasticsearch.securityContext.allowPrivilegeEscalation` |              | `false`                           |
 | `elasticsearch.securityContext.runAsNonRoot`             |              | `true`                            |
-| `elasticsearch.securityContext.runAsUser`                |              |                                   |
+| `elasticsearch.securityContext.runAsUser`                |              | `1001`                            |
 | `elasticsearch.extraVolumes[0].name`                     |              | `tmp`                             |
 | `elasticsearch.extraVolumes[0].emptyDir`                 |              | `{}`                              |
 | `elasticsearch.extraVolumes[1].name`                     |              | `logs`                            |
@@ -1399,7 +1629,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `elasticsearch.extraVolumeMounts[2].mountPath`           |              | `/usr/share/elasticsearch/config` |
 | `elasticsearch.extraVolumeMounts[2].name`                |              | `config`                          |
 
-### prometheus Parameters
+### Prometheus Parameters
 
 | Name                                      | Description                                                                                                                                                    | Value     |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
@@ -1408,246 +1638,3 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 | `promotheuServiceMonitor.labels`          | can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors |           |
 | `prometheusServiceMonitor.labels.release` |                                                                                                                                                                | `metrics` |
 | `prometheusServiceMonitor.scrapeInterval` | can be set to configure the interval at which metrics should be scraped                                                                                        | `10s`     |
-
-## Notes on Configuration
-
-### Web Modeler
-
-> :information_source: Web Modeler Self-Managed is available to Camunda enterprise customers only.
-
-#### Docker registry
-The Docker images for Web Modeler are available in a private registry.
-Enterprise customers either already have credentials to this registry, or they can request access to this registry through their CSM contact at Camunda.
-To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
-- [create an image pull secret](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) using the provided credentials
-- configure the Web Modeler pods to use the secret:
-  ```yaml
-  webModeler:
-    image:
-      pullSecrets:
-        - name: <MY_SECRET_NAME>
-   ```
-
-#### Database
-Web Modeler requires a PostgreSQL database to store the data.
-You can either:
-- deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the [`postgresql` chart dependency](#postgresql-for-web-modeler))
-- configure a connection to an (existing) external database by setting `postgresql.enabled` to `false` and providing the values under `restapi.externalDatabase`
-
-#### SMTP server
-Web Modeler requires an SMTP server to send (notification) emails to users.
-The SMTP connection can be configured with the values under `restapi.mail`.
-
-#### Updating Environment Variables
-When configuring the `env` options in the settings listed above, the environment variables you specify in values.yaml may show up twice when running `kubectl describe deployment <deployment>`. However, the environment variable specified in values.yaml will have precedence when the pod actually runs. To verify this, you can check the output from the following command:
-
-```bash
-kubectl exec pod/<podName> -- env
-```
-
-#### Outbound Connectors
-
-To learn more about outbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#outbound-connector).
-
-#### Inbound Connectors
-
-To learn more about inbound connectors, visit [related documentation article](https://docs.camunda.io/docs/components/connectors/use-connectors/#inbound-connector).
-
-#### Using Connector Secrets
-
-Connector secrets are generally configured via environment variables.
-
-You can set them via `values.yaml`, or command line. For example, if you need to set a Slack token, you should configure the following:
-
-```yaml
-connectors:
-  env:
-    - name: SLACK_TOKEN
-      value: <your actual token value>
-```
-
-After that, a Modeler user can set in their BPMN diagram a value `secrets.SLACK_TOKEN` without ever knowing the actual token.
-
-Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/self-managed/connectors-deployment/connectors-configuration/#secrets-in-manual-installations) to learn more.
-
-### Elasticsearch
-
-Camunda Platform 8 Helm chart has a dependency on the [Elasticsearch 8 Helm Chart](https://artifacthub.io/packages/helm/bitnami/elasticsearch). All variables related to Elasticsearch can be set under `elasticsearch`.
-
-> **Note**
->
-> The default setup of the Elasticsearch 8 part of Camunda Platform 8 uses nodes have all roles (master, data, coordinating, and ingest).
-> For high-demand deployments, it's recommended to deploy the Elasticsearch master-elegible nodes as master-only nodes.
-
-| Section | Parameter | Description | Default |
-|-|-|-|-|
-| `elasticsearch`| `enabled` | If true, enables Elasticsearch deployment as part of the Camunda Platform Helm chart | `true` |
-
-**Example:**
-
-```yaml
-elasticsearch:
-  enabled: true
-  image:
-    tag: <YOUR_VERSION_HERE>
-```
-
-#### Elasticsearch Retention
-
-Since moving to Elasticsearch 8, [Curator](https://github.com/elastic/curator) is deprecated in favor of [Manage the index lifecycle](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-lifecycle-management.html) (ILM). Hence, each component in Camunda 8 controls its Elasticsearch index retention.
-
-### Keycloak
-
-When Camunda Platform 8 Identity component is enabled by default, and it depends on
-[Bitnami Keycloak chart](https://github.com/bitnami/charts/tree/main/bitnami/keycloak).
-Since Keycloak is a dependency for Identity, all variables related to Keycloak can be found in
-[bitnami/keycloak/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/keycloak/values.yaml)
-and can be set under `identity.keycloak`.
-
-| Section | Parameter | Description | Default |
-|-|-|-|-|
-| `identity.keycloak`| `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Platform Helm chart | `true` |
-
-**Example:**
-
-```yaml
-identity:
-  keycloak:
-    enabled: true
-```
-
-#### Keycloak Theme
-
-Camunda provides a custom theme for the login page used in all apps. The theme is copied from the Identity image.
-
-The theme is added to Keycloak by default, however, since Helm v3 (the latest checked 3.10.x) doesn't merge lists
-with custom values files, then you will need to add this to your own values file if you override any of
-`extraVolumes`, `initContainers`, or `extraVolumeMounts`.
-
-```yaml
-identity:
-  keycloak:
-    extraVolumes:
-    - name: camunda-theme
-      emptyDir:
-        sizeLimit: 10Mi
-    initContainers:
-    - name: copy-camunda-theme
-      image: >-
-        {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
-        {{- include "camundaPlatform.imageByParams" $identityImageParams }}
-      imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
-      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
-      volumeMounts:
-      - name: camunda-theme
-        mountPath: /mnt
-    extraVolumeMounts:
-    - name: camunda-theme
-      mountPath: /opt/bitnami/keycloak/themes/identity
-```
-
-## Guides
-
-> **Note**
->
-> For full list of guides list, please visit
-> [Helm/Kubernetes Guides](https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/overview/)
-
-### Adding dynamic exporters to Zeebe Brokers
-
-This chart supports the addition of Zeebe Exporters by using `initContainer` as shown in the following example:
-
-```
-extraInitContainers:
-  - name: init-exporters-hazelcast
-    image: busybox:1.35
-    command: ['/bin/sh', '-c']
-    args: ['wget --no-check-certificate https://repo1.maven.org/maven2/io/zeebe/hazelcast/zeebe-hazelcast-exporter/0.8.0-alpha1/zeebe-hazelcast-exporter-0.8.0-alpha1-jar-with-dependencies.jar -O /exporters/zeebe-hazelcast-exporter.jar; ls -al /exporters']
-    volumeMounts:
-    - name: exporters
-      mountPath: /exporters/
-  - name: init-exporters-kafka
-    image: busybox:1.35
-    command: ['/bin/sh', '-c']
-    args: ['wget --no-check-certificate https://github.com/zeebe-io/zeebe-kafka-exporter/releases/download/1.1.0/zeebe-kafka-exporter-1.1.0-uber.jar -O /exporters/zeebe-kafka-exporter.jar; ls -al /exporters']
-    volumeMounts:
-    - name: exporters
-      mountPath: /exporters/
-env:
-  - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_JARPATH
-    value: /exporters/zeebe-hazelcast-exporter.jar
-  - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_CLASSNAME
-    value: io.zeebe.hazelcast.exporter.HazelcastExporter
-  - name: ZEEBE_HAZELCAST_REMOTE_ADDRESS
-    value: "{{ .Release.Name }}-hazelcast"
-```
-
-This example is downloading the exporters' Jar from a URL and adding the Jars to the `exporters` directory,
-which will be scanned for jars and added to the Zeebe broker classpath. Then with `environment variables`,
-you can configure the exporter parameters.
-
-## Development
-
-For development purposes, you might want to deploy and test the charts without creating a new helm chart release.
-To do this you can run the following:
-
-```sh
- helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
-```
-
- * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
-
- * `--debug enable verbose output`
-
-To generate the resources/manifests without really installing them, you can use: 
-
- * `--dry-run simulate an install`
-
-If you see errors like:
-
-```sh
-Error: found in Chart.yaml, but missing in charts/ directory: elasticsearch
-```
-
-Then you need to download the dependencies first.
-
-Run the following to add resolve the dependencies:
-
-```sh
-make helm.repos-add
-```
-
-After this, you can run: `make helm.dependency-update`, which will update and download the dependencies for all charts.
-
-The execution should look like this:
-```
-$ make helm.dependency-update
-helm dependency update charts/camunda-platform
-Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "camunda-platform" chart repository
-...Successfully got an update from the "elastic" chart repository
-...Successfully got an update from the "bitnami" chart repository
-Update Complete. ⎈Happy Helming!⎈
-Saving 6 charts
-Dependency zeebe did not declare a repository. Assuming it exists in the charts directory
-Dependency zeebe-gateway did not declare a repository. Assuming it exists in the charts directory
-Dependency operate did not declare a repository. Assuming it exists in the charts directory
-Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
-Dependency identity did not declare a repository. Assuming it exists in the charts directory
-Downloading elasticsearch from repo https://helm.elastic.co
-Deleting outdated charts
-helm dependency update charts/camunda-platform/charts/identity
-Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "camunda-platform" chart repository
-...Successfully got an update from the "elastic" chart repository
-...Successfully got an update from the "bitnami" chart repository
-Update Complete. ⎈Happy Helming!⎈
-Saving 2 charts
-Downloading keycloak from repo https://charts.bitnami.com/bitnami
-Downloading common from repo https://charts.bitnami.com/bitnami
-```
-
-## Releasing the Charts
-
-Please see the corresponding [release guide](../../RELEASE.md) to find out how to release the chart.
-
