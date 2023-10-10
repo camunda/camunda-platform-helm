@@ -1,7 +1,7 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.2.15
-appVersion: 8.2.x
+version: 8.3.0
+appVersion: 8.3.x
 description: |
   Camunda 8 Self-Managed Helm charts.
   Camunda's process automation platform allows developers to design, automate and improve processes.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 8.2.15
+    version: 8.3.0
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.2.15
+    version: 8.3.0
     condition: "operate.enabled"
   - name: optimize
-    version: 8.2.15
+    version: 8.3.0
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.2.15
+    version: 8.3.0
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.2.15
+    version: 8.3.0
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.2.15
+    version: 8.3.0
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
@@ -72,3 +72,23 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Support Multi-tenancy for all components"
+    - kind: added
+      description: "Support extra initContainers for all components"
+    - kind: added
+      description: "Upgrade Optimize via predefined initContainer"
+    - kind: changed
+      description: "Use read-only root file system for all components"
+    - kind: changed
+      description: "Upgrade Keycloak from v19 to v22"
+    - kind: changed
+      description: "Upgrade Elasticsearch from v7 to v8"
+    - kind: changed
+      description: "Use JDBC URL in Web-Modeler API config"
+    - kind: changed
+      description: "Increased Ingress proxy-buffer-size"
+    - kind: fixed
+      description: "Correct command value for all components"
+    - kind: removed
+      description: "Removed Elasticsearch Curator"
