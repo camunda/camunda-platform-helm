@@ -1,0 +1,32 @@
+name: "Chart - Update README"
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    paths:
+      - 'charts/camunda-platform/values.yaml'
+jobs:
+  update-readme-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install readme-generator-for-helm
+        run: npm install -g @bitnami/readme-generator-for-helm
+      - name: Checkout bitnami/charts
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+        with:
+          path: charts
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: camunda/camunda-platform-helm
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run readme generator
+        run: |
+          echo "Updating README.md"
+          readme-generator \
+            --values "charts/camunda-platform/values.yaml" \
+            --readme "charts/camunda-platform/README.md"
+      - uses: EndBug/add-and-commit@v9.1.3
+        with:
+          author_name: "renovate[bot]"
+          author_email: "29139614+renovate[bot]@users.noreply.github.com"
+          message: "chore: Update README.md with readme-generator-for-helm"
