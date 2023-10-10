@@ -89,6 +89,6 @@ annotations:
     - kind: changed
       description: "Increased Ingress proxy-buffer-size"
     - kind: fixed
-      description: "Correct command value for all components" 
+      description: "Correct command value for all components"
     - kind: removed
       description: "Removed Elasticsearch Curator"
