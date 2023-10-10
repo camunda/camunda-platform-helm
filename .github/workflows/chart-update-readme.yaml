@@ -1,4 +1,4 @@
-name: 'Update README'
+name: "Chart - Update README"
 
 on:
   pull_request_target:
@@ -19,10 +19,14 @@ jobs:
           ref: ${{github.event.pull_request.head.ref}}
           repository: camunda/camunda-platform-helm
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Execute readme-generator-for-helm
+      - name: Run readme generator
         run: |
-            echo "Updating README.md"
-            readme-generator --values "charts/camunda-platform/values.yaml" --readme "charts/camunda-platform/README.md"
-      - name: Push changes
-        run: |
-            git add . && git commit -am "Update README.md with readme-generator-for-helm" --signoff && git push
+          echo "Updating README.md"
+          readme-generator \
+            --values "charts/camunda-platform/values.yaml" \
+            --readme "charts/camunda-platform/README.md"
+      - uses: EndBug/add-and-commit@v9.1.3
+        with:
+          author_name: "renovate[bot]"
+          author_email: "29139614+renovate[bot]@users.noreply.github.com"
+          message: "chore: Update README.md with readme-generator-for-helm"
