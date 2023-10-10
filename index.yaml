@@ -2,6 +2,102 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Support Multi-tenancy for all components"
+        - kind: added
+          description: "Support extra initContainers for all components"
+        - kind: added
+          description: "Upgrade Optimize via predefined initContainer"
+        - kind: changed
+          description: "Use read-only root file system for all components"
+        - kind: changed
+          description: "Upgrade Keycloak from v19 to v22"
+        - kind: changed
+          description: "Upgrade Elasticsearch from v7 to v8"
+        - kind: changed
+          description: "Use JDBC URL in Web-Modeler API config"
+        - kind: changed
+          description: "Increased Ingress proxy-buffer-size"
+        - kind: fixed
+          description: "Correct command value for all components"
+        - kind: removed
+          description: "Removed Elasticsearch Curator"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.3.x
+    created: "2023-10-10T23:18:06.232660135Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.3.0
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.3.0
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.3.0
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.3.0
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.3.0
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.3.0
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.13.2
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 0ec390f8b6d6e7b41672be1bcc0e9e16ec7bde8a035315a11ac4eb79c2c405ba
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.0/camunda-platform-8.3.0.tgz
+    version: 8.3.0
+  - annotations:
       artifacthub.io/changes: ""
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
@@ -6648,4 +6744,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-10-10T21:20:09.986824501Z"
+generated: "2023-10-10T23:18:06.23309334Z"
