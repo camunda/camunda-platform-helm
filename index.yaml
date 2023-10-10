@@ -1217,6 +1217,82 @@ entries:
           url: https://github.com/camunda/camunda-platform-helm
     apiVersion: v2
     appVersion: 8.1.x
+    created: "2023-10-10T20:26:00.067329851Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.1.17
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.1.17
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.1.17
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.1.17
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.1.17
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.1.17
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: f983d999c27bd85753ea86f68062040d1d16752c8b364d08dc807aebed7847e6
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.1.17/camunda-platform-8.1.17.tgz
+    version: 8.1.17
+  - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.1.x
     created: "2023-09-13T09:51:13.847530573Z"
     dependencies:
     - condition: identity.enabled
@@ -6496,4 +6572,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-09-29T09:40:33.496865861Z"
+generated: "2023-10-10T20:26:00.068316772Z"
