@@ -121,7 +121,7 @@ Keycloak helpers
     - global.identity.keycloak.auth.adminUser
     - global.identity.keycloak.auth.existingSecret
 
-For more details, please check Camunda Platform Helm chart documentation.
+For more details, please check Camunda Helm chart documentation.
 ` -}}
     {{- $failMessage := printf "\n%s" $failMessageRaw | trimSuffix "\n" -}}
 

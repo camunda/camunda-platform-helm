@@ -160,7 +160,7 @@ jobs:
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
-    - name: 🌟 Setup Camunda Platform chart 🌟
+    - name: 🌟 Setup Camunda chart 🌟
       env:
         TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
         TEST_HELM_EXTRA_ARGS: >-
@@ -176,7 +176,7 @@ jobs:
       if: matrix.scenario.flow == 'upgrade'
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
-    - name: 🌟 Upgrade Camunda Platform chart 🌟
+    - name: 🌟 Upgrade Camunda chart 🌟
       if: matrix.scenario.flow == 'upgrade'
       env:
         TEST_HELM_EXTRA_ARGS: >-

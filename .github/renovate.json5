@@ -27,26 +27,26 @@
       "matchUpdateTypes": ["major"]
     },
     {
-      // Disable minor version update for previous Camunda Platform releases which will only get patch updates.
+      // Disable minor version update for previous Camunda releases which will only get patch updates.
       "enabled": false,
       "matchManagers": ["helm-values", "regex"],
       "matchPaths": ["**/values/values-v8.*.yaml"],
       "matchUpdateTypes": ["minor"]
     },
     {
-      // Enable non-major version update for current Camunda Platform version.
+      // Enable non-major version update for current Camunda version.
       "matchDatasources": ["github-releases", "docker", "regex"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      // Enable patch version update for previous Camunda Platform version.
+      // Enable patch version update for previous Camunda version.
       "matchDatasources": ["github-releases", "docker", "regex"],
       "matchPaths": ["**/values/values-v8.*.yaml"],
       "matchUpdateTypes": ["patch"]
     },
     {
-      // Limit Web-Modeler version to 0.8.x for Camunda Platform v8.1.
+      // Limit Web-Modeler version to 0.8.x for Camunda v8.1.
       "matchManagers": ["regex"],
       "matchDatasources": ["docker"],
       "matchPackageNames": ["web-modeler-ee/modeler-restapi"],
@@ -54,7 +54,7 @@
       "allowedVersions": "~0.8.0"
     },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda Platform v8.2.
+      // Limit Elasticsearch version to latest supported version in Camunda v8.2.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
@@ -73,7 +73,7 @@
   ],
   "regexManagers": [
     {
-      // This is mainly used to update Camunda Platform unified image tag.
+      // This is mainly used to update Camunda unified image tag.
       "fileMatch": ["\\.yaml$"],
       "datasourceTemplate":"github-releases",
       "matchStrings": [

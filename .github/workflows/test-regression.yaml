@@ -1,4 +1,4 @@
-# Basic test for older Camunda Platform 8 Helm charts.
+# Basic test for older Camunda 8 Helm charts.
 name: "Test - Regression"
 
 on:
@@ -53,10 +53,10 @@ jobs:
     - name: Cleanup any old namespace
       run: |
         kubectl delete ns $TEST_NAMESPACE --ignore-not-found=true
-    - name: Add Camunda Platform 8 Helm chart repo
+    - name: Add Camunda 8 Helm chart repo
       run: |
         helm repo add camunda https://helm.camunda.io
-    - name: Install Camunda Platform 8 Helm chart v${{ matrix.camundaChart }}
+    - name: Install Camunda 8 Helm chart v${{ matrix.camundaChart }}
       timeout-minutes: 15
       run: |
         helm install camunda-platform camunda/camunda-platform \

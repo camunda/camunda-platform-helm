@@ -6,10 +6,10 @@ of the CI pipelines.
 ## Integration tests
 
 The most important workflow is the [main integration workflow](../.github/workflows/test-integration-main.yaml),
-where each Camunda Platform component can reuse that workflow in their CI pipelines to ensure that
-each component works as expected within the Camunda Platform as a whole.
+where each Camunda component can reuse that workflow in their CI pipelines to ensure that
+each component works as expected within the Camunda as a whole.
 
-To embed the Camunda Platform Helm chart integration tests in your GHA workflow, you need to use
+To embed the Camunda Helm chart integration tests in your GHA workflow, you need to use
 the following:
 
 ```yaml
@@ -28,7 +28,7 @@ deploy:
           tag: xyz
 ```
 
-Adding that will run Camunda Platform Helm chart integration tests and add the deployment URL
+Adding that will run Camunda Helm chart integration tests and add the deployment URL
 in your repo (the URL will show in the PR or in the GH deployment section).
 
 > **Note**

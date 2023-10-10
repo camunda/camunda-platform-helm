@@ -3,7 +3,7 @@ name: camunda-platform
 version: 8.2.15
 appVersion: 8.2.x
 description: |
-  Camunda Platform 8 Self-Managed Helm charts.
+  Camunda 8 Self-Managed Helm charts.
   Camunda's process automation platform allows developers to design, automate and improve processes.
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
@@ -18,7 +18,7 @@ keywords:
   - process-engine
   - workflow
 dependencies:
-  # Camunda Platform charts.
+  # Camunda charts.
   - name: identity
     version: 8.2.15
     condition: "identity.enabled"
@@ -64,11 +64,11 @@ maintainers:
     email: ahmed.abouzaid@camunda.com
 annotations:
   artifacthub.io/links: |
-    - name: Camunda Platform 8 docs
+    - name: Camunda 8 docs
       url: https://docs.camunda.io/
-    - name: Camunda Platform 8 Self-Managed docs
+    - name: Camunda 8 Self-Managed docs
       url: https://docs.camunda.io/docs/self-managed/about-self-managed/
-    - name: Camunda Platform 8 Self-Managed Helm charts
+    - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
