@@ -22,7 +22,7 @@
 .vscode/
 
 # Scripts
-*.sh
+convertValuesDoc.sh
 
 # Tests
 test/
