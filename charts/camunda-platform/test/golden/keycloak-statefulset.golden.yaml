@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/version: "16.1.1"
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -29,6 +30,7 @@ spec:
         app.kubernetes.io/name: keycloak
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/version: "16.1.1"
         app.kubernetes.io/component: keycloak
     spec:
       serviceAccountName: camunda-platform-tes
@@ -41,8 +43,8 @@ spec:
             - podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app.kubernetes.io/name: keycloak
                     app.kubernetes.io/instance: camunda-platform-test
+                    app.kubernetes.io/name: keycloak
                 topologyKey: kubernetes.io/hostname
               weight: 1
         nodeAffinity:
@@ -54,7 +56,7 @@ spec:
           - sh
           - -c
           - cp -a /app/keycloak-theme/* /mnt
-          image: 'camunda/identity:8.1.14'
+          image: 'camunda/identity:8.1.17'
           imagePullPolicy: 'IfNotPresent'
           name: copy-camunda-theme
           volumeMounts:
@@ -62,7 +64,7 @@ spec:
             name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:16.1.1-debian-10-r52
+          image: docker.io/bitnami/keycloak:16.1.1
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true

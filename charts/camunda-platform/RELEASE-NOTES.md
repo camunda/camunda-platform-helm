@@ -2,6 +2,6 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-8.1.16"></a>
-## [camunda-platform-8.1.16](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.1.15...camunda-platform-8.1.16) (2023-09-13)
+<a name="camunda-platform-8.1.17"></a>
+## [camunda-platform-8.1.17](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.1.16...camunda-platform-8.1.17) (2023-10-10)
 

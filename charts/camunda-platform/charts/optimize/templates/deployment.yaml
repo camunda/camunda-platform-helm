@@ -79,7 +79,7 @@ spec:
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"
           - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
-            value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}/api/authentication/callback"
+            value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}"
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
