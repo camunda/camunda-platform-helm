@@ -37,12 +37,15 @@
 ## @section Global parameters
 ## @extra global
 global:
+  # @param global.multitenancy Multitenancy configuration.
+  multitenancy:
+    # @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
+    enabled: false
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   labels:
   ## @param global.labels.app Name of the application
     app: camunda-platform
-
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
   image:
