@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: ea46b375e9561b98ef8c4831f5a7ed2efb6f5f404e81ca2702f1870160360285
+        checksum/configmap-env-vars: ee21dd4cb7f9eb6cbbb660e701156acc93bd2585a0289b62b46ed2a6b4a937d3
     spec:
       imagePullSecrets:
         []
