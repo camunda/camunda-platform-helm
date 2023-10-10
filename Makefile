@@ -22,6 +22,11 @@ go.test: helm.dependency-update
 go.test-golden-updated: helm.dependency-update
 	go test ./... -args -update-golden 
 
+# go.update-golden-only: update the golden files only without the rest of the tests
+.PHONY: go.update-golden-only
+go.update-golden-only: helm.dependency-update
+	go test ./... -run '^TestGolden.+$$' -args -update-golden
+
 # go.test-it: runs the integration tests against the current kube context
 .PHONY: go.test-it
 go.test-it: helm.dependency-update
