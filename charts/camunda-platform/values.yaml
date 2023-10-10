@@ -2900,6 +2900,32 @@ elasticsearch:
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.6.2
+  ## @param elasticsearch.extraVolumes[0].name
+  ## @param elasticsearch.extraVolumes[0].emptyDir
+  ## @param elasticsearch.extraVolumes[1].name
+  ## @param elasticsearch.extraVolumes[1].emptyDir
+  ## @param elasticsearch.extraVolumes[2].name
+  ## @param elasticsearch.extraVolumes[2].emptyDir
+  extraVolumes:
+  - name: tmp
+    emptyDir: {}
+  - name: logs
+    emptyDir: {}
+  - name: config
+    emptyDir: {}
+  ## @param elasticsearch.extraVolumeMounts[0].mountPath
+  ## @param elasticsearch.extraVolumeMounts[0].name
+  ## @param elasticsearch.extraVolumeMounts[1].mountPath
+  ## @param elasticsearch.extraVolumeMounts[1].name
+  ## @param elasticsearch.extraVolumeMounts[2].mountPath
+  ## @param elasticsearch.extraVolumeMounts[2].name
+  extraVolumeMounts:
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /usr/share/elasticsearch/logs
+    name: logs
+  - mountPath: /usr/share/elasticsearch/config
+    name: config
   master:
     ## @param elasticsearch.master.masterOnly
     masterOnly: false
@@ -2936,43 +2962,6 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
-  ## @param elasticsearch.securityContext.privileged
-  ## @param elasticsearch.securityContext.readOnlyRootFilesystem
-  ## @param elasticsearch.securityContext.allowPrivilegeEscalation
-  ## @param elasticsearch.securityContext.runAsNonRoot
-  ## @param elasticsearch.securityContext.runAsUser
-  securityContext:
-    privileged: false
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
-    runAsNonRoot: true
-    runAsUser: 1001
-  ## @param elasticsearch.extraVolumes[0].name
-  ## @param elasticsearch.extraVolumes[0].emptyDir
-  ## @param elasticsearch.extraVolumes[1].name
-  ## @param elasticsearch.extraVolumes[1].emptyDir
-  ## @param elasticsearch.extraVolumes[2].name
-  ## @param elasticsearch.extraVolumes[2].emptyDir
-  extraVolumes:
-  - name: tmp
-    emptyDir: {}
-  - name: logs
-    emptyDir: {}
-  - name: config
-    emptyDir: {}
-  ## @param elasticsearch.extraVolumeMounts[0].mountPath
-  ## @param elasticsearch.extraVolumeMounts[0].name
-  ## @param elasticsearch.extraVolumeMounts[1].mountPath
-  ## @param elasticsearch.extraVolumeMounts[1].name
-  ## @param elasticsearch.extraVolumeMounts[2].mountPath
-  ## @param elasticsearch.extraVolumeMounts[2].name
-  extraVolumeMounts:
-  - mountPath: /tmp
-    name: tmp
-  - mountPath: /usr/share/elasticsearch/logs
-    name: logs
-  - mountPath: /usr/share/elasticsearch/config
-    name: config
 
 
 #####################################################################
