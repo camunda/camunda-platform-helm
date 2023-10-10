@@ -20,7 +20,12 @@ go.test: helm.dependency-update
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
 go.test-golden-updated: helm.dependency-update
-	go test ./... -args -update-golden 
+	go test ./... -args -update-golden
+
+# go.update-golden-only: update the golden files only without the rest of the tests
+.PHONY: go.update-golden-only
+go.update-golden-only:
+	go test ./... -run '^TestGolden.+$$' -args -update-golden
 
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt
