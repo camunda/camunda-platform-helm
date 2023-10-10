@@ -1605,7 +1605,6 @@ identity:
         repository: bitnami/postgresql
         ## @param identity.keycloak.postgresql.image.tag image tag
         tag: 15.4.0
-
       primary:
         ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].name
         ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].emptyDir
@@ -2460,7 +2459,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 0.23.2
+    tag: 8.3.0
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
