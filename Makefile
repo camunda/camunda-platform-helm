@@ -121,9 +121,9 @@ helm.dry-run: helm.dependency-update
 helm.template: helm.dependency-update
 	helm template $(releaseName) $(chartPath)
 
-# helm.readme-generator: generate readme from values file
-.PHONY: helm.readme-generator
-helm.readme-generator:
+# helm.readme-update: generate readme from values file
+.PHONY: helm.readme-update
+helm.readme-update:
 	readme-generator \
 		--values "$(chartPath)/values.yaml" \
 		--readme "$(chartPath)/README.md"
