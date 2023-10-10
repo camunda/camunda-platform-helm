@@ -1441,8 +1441,7 @@ identity:
     scheme: HTTP
     ## @param identity.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health
-    ## @param identity.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    #the probe is initiated.
+    ## @param identity.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
     ## @param identity.readinessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
@@ -1621,7 +1620,7 @@ identity:
         - name: postgresqltmp
         ## @param identity.keycloak.postgresql.primary.extraVolumes[2].emptyDir
           emptyDir: {}
-        ## @param 
+        ## @param identity.keycloak.postgresql.primary.extraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
         extraVolumeMounts:
         ## @param identity.keycloak.postgresql.primary.extraVolumeMounts[0].mountPath
         - mountPath: /tmp
@@ -1662,7 +1661,7 @@ identity:
     ## @extra identity.keycloak.image configuration.
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
-    ## @param identity.keycloak.image.repository image repo 
+      ## @param identity.keycloak.image.repository image repo
       repository: bitnami/keycloak
       ## @param identity.keycloak.image.tag image tag
       tag: 22.0.4
@@ -1695,8 +1694,8 @@ identity:
       emptyDir: {}
     ## @param identity.keycloak.extraVolumes[3].name
     - name: camunda-theme
-      emptyDir: 
-    ## @param identity.keycloak.extraVolumes[3].emptyDir.sizeLimit
+      emptyDir:
+        ## @param identity.keycloak.extraVolumes[3].emptyDir.sizeLimit
         sizeLimit: 10Mi
 
     ## @param identity.keycloak.initContainers[0].name
@@ -2328,7 +2327,7 @@ webModeler:
     ## @extra webModeler.ingress.webapp configuration of the webapp ingress
     webapp:
       ## @param webModeler.ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the Web Modeler web application will be available
-      #webModeler.note: the value must be different from ingress.websockets.host
+      # webModeler.note: the value must be different from ingress.websockets.host
       host: ""
       ## @extra webModeler.ingress.webapp.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
@@ -2466,7 +2465,7 @@ connectors:
   ## @param connectors.replicas number of Connectors replicas
   replicas: 1
 
-  #contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
+  # contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda Platform web applications under a single domain.
   # contextPath: "/connectors"
 
   ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
@@ -2940,13 +2939,13 @@ elasticsearch:
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
     runAsNonRoot: true
- ## @param elasticsearch.extraVolumes[0].name
+    runAsUser: 1001
+## @param elasticsearch.extraVolumes[0].name
 ## @param elasticsearch.extraVolumes[0].emptyDir
 ## @param elasticsearch.extraVolumes[1].name
 ## @param elasticsearch.extraVolumes[1].emptyDir
 ## @param elasticsearch.extraVolumes[2].name
 ## @param elasticsearch.extraVolumes[2].emptyDir
-#   runAsUser: 1000
   extraVolumes:
   - name: tmp
     emptyDir: {}
