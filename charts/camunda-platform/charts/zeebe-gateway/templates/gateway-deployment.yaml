@@ -90,6 +90,8 @@ spec:
           command: {{ toYaml .Values.command | nindent 12 }}
           {{- end }}
           volumeMounts:
+            - mountPath: /tmp
+              name: tmp
             {{- if .Values.log4j2 }}
             - name: config
               mountPath: /usr/local/zeebe/config/log4j2.xml
@@ -145,6 +147,8 @@ spec:
       {{- .Values.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
+        - name: tmp
+          emptyDir: {}
         - name: config
           configMap:
             name: {{ include "zeebe-gateway.fullname" . }}

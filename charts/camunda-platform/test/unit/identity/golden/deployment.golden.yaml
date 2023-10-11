@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.15"
+    app.kubernetes.io/version: "8.3.0"
     app.kubernetes.io/component: identity
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.15"
+        app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: 76bfdaacf36241368480b1c562a49c8517b58f3fad50b5edc898a54dbd2769db
+        checksum/configmap-env-vars: ee21dd4cb7f9eb6cbbb660e701156acc93bd2585a0289b62b46ed2a6b4a937d3
     spec:
       imagePullSecrets:
         []
@@ -43,8 +43,14 @@ spec:
         []
       containers:
       - name: identity
-        image: "camunda/identity:8.2.15"
+        image: "camunda/identity:8.3.0"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1005
         env:
           - name: KEYCLOAK_INIT_OPERATE_SECRET
             valueFrom:
@@ -166,3 +172,12 @@ spec:
           successThreshold: 1
           failureThreshold: 5
           timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1005

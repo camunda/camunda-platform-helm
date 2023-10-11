@@ -24,6 +24,9 @@ spec:
       imagePullSecrets:
         {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
       initContainers:
+      {{- if .Values.initContainers }}
+        {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
+      {{- end }}
       - name: migration
         image: {{ include "camundaPlatform.image" . | quote }}
         command: ['./upgrade/upgrade.sh', '--skip-warning']
@@ -36,9 +39,14 @@ spec:
           value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
         - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
           value: {{ .Values.global.elasticsearch.port | quote }}
-      {{- if .Values.initContainers }}
-        {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}
-      {{- end }}
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ include "camundaPlatform.image" . | quote }}
@@ -158,6 +166,10 @@ spec:
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
         {{- end }}
         volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
         {{- if .Values.extraVolumeMounts}}
           {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
@@ -165,6 +177,10 @@ spec:
       {{- .Values.sidecars | toYaml | nindent 6 }}
       {{- end }}
       volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: camunda
+        emptyDir: {}
       {{- if .Values.extraVolumes}}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}

@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.15"
+    app.kubernetes.io/version: "8.3.0"
     app.kubernetes.io/component: tasklist
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.15"
+        app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: 65c1637bd7d782d6334dd62e36e31e3fb8568bf476b18e7b5ba6388bb5986cb5
+        checksum/config: 6170697375a825d6c3e873d09c806ac9d31d795acd3a9b37c2ce04a2d4883c69
     spec:
       imagePullSecrets:
         []
@@ -43,8 +43,13 @@ spec:
         []
       containers:
       - name: tasklist
-        image: "camunda/tasklist:8.2.15"
+        image: "camunda/tasklist:8.3.0"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 1002
         env:
           - name: SPRING_PROFILES_ACTIVE
             value: "identity-auth"
@@ -82,6 +87,8 @@ spec:
             value: "true"
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
             value: "include"
+          - name: HOME
+            value: /parent
         resources:
           limits:
             cpu: 1000m
@@ -107,8 +114,19 @@ spec:
         - name: config
           mountPath: /app/resources/application.yml
           subPath: application.yml
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
       volumes:
       - name: config
         configMap:
           name: camunda-platform-test-tasklist
           defaultMode: 484
+      - name: tmp
+        emptyDir: {}
+      - name: camunda
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1002
+        runAsNonRoot: true

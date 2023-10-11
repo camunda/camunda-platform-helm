@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "3.10.5"
+    app.kubernetes.io/version: "3.11.0"
     app.kubernetes.io/component: optimize
   annotations:
     {}
@@ -32,14 +32,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "3.10.5"
+        app.kubernetes.io/version: "3.11.0"
         app.kubernetes.io/component: optimize
     spec:
       imagePullSecrets:
         []
       initContainers:
       - name: migration
-        image: "camunda/optimize:3.10.5"
+        image: "camunda/optimize:3.11.0"
         command: ['./upgrade/upgrade.sh', '--skip-warning']
         env:
         - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
@@ -50,10 +50,25 @@ spec:
           value: "camunda-platform-test-elasticsearch"
         - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
           value: "9200"
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 100
       containers:
       - name: optimize
-        image: "camunda/optimize:3.10.5"
+        image: "camunda/optimize:3.11.0"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 100
         env:
           - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
             value: "true"
@@ -113,4 +128,15 @@ spec:
           failureThreshold: 5
           timeoutSeconds: 1
         volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /camunda
+          name: camunda
       volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: camunda
+        emptyDir: {}
+      securityContext:
+        fsGroup: 100
+        runAsNonRoot: true

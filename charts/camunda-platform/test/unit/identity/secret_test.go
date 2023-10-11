@@ -54,9 +54,6 @@ func TestSecretTemplate(t *testing.T) {
 func (s *secretTest) TestContainerGenerateSecret() {
 	// given
 	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.postgresql.enabled": "true",
-		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
@@ -65,7 +62,6 @@ func (s *secretTest) TestContainerGenerateSecret() {
 		"charts/identity/templates/tasklist-secret.yaml",
 		"charts/identity/templates/optimize-secret.yaml",
 		"charts/identity/templates/connectors-secret.yaml",
-		"charts/identity/templates/postgresql-secret.yaml",
 	}
 
 	s.secretName = []string{
@@ -73,10 +69,9 @@ func (s *secretTest) TestContainerGenerateSecret() {
 		"tasklist-secret",
 		"optimize-secret",
 		"connectors-secret",
-		"identity-password",
 	}
 
-	s.Require().GreaterOrEqual(5, len(s.templates))
+	s.Require().GreaterOrEqual(4, len(s.templates))
 	for idx, template := range s.templates {
 		// when
 		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
@@ -88,55 +83,6 @@ func (s *secretTest) TestContainerGenerateSecret() {
 		s.Require().NotNil(secret.Data[s.secretName[idx]])
 		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
 	}
-}
-
-func (s *secretTest) TestSecretBuiltinDatabaseEnabledWithDefinedPassword() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.externalDatabase.enabled": "false",
-			"identity.postgresql.enabled":       "true",
-			"identity.postgresql.auth.password": "super-secure",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	s.templates = []string{
-		"charts/identity/templates/postgresql-secret.yaml",
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-	// then
-	s.NotEmpty(secret.Data)
-	s.Require().Equal("super-secure", string(secret.Data["identity-password"]))
-}
-
-func (s *secretTest) TestSecretBuiltinDatabaseEnabledWithGeneratedPassword() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.externalDatabase.enabled": "false",
-			"identity.postgresql.enabled":       "true",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	s.templates = []string{
-		"charts/identity/templates/postgresql-secret.yaml",
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-	// then
-	s.NotEmpty(secret.Data)
-	s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["identity-password"]))
 }
 
 func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
@@ -161,5 +107,5 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 
 	// then
 	s.NotEmpty(secret.Data)
-	s.Require().Equal("super-secure-ext", string(secret.Data["identity-password"]))
+	s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
 }

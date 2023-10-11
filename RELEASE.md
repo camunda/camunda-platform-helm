@@ -1,4 +1,4 @@
-# Camunda Platform Helm Chart Release Process
+# Camunda Helm Chart Release Process
 
 The charts are build, linted and tested on every push to the main branch. If the chart version
 (in `Chart.yaml`) changes a new github release with the corresponding packaged helm chart is

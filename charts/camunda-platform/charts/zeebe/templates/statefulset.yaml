@@ -167,6 +167,8 @@ spec:
         {{- end }}
         - name: exporters
           mountPath: /exporters
+        - mountPath: /tmp
+          name: tmp
         {{- if .Values.log4j2 }}
         - name: config
           mountPath: /usr/local/zeebe/config/log4j2.xml
@@ -189,6 +191,8 @@ spec:
             name: {{ include "zeebe.fullname" . }}
             defaultMode: {{ .Values.configMap.defaultMode }}
         - name: exporters
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
         {{- if .Values.extraVolumes}}
           {{ .Values.extraVolumes | toYaml | nindent 8 }}

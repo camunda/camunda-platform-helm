@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.6"
+    app.kubernetes.io/version: "8.3.0"
     app.kubernetes.io/component: restapi
   annotations:
     {}
@@ -32,7 +32,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.6"
+        app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: restapi
     spec:
       imagePullSecrets:
@@ -41,8 +41,14 @@ spec:
         []
       containers:
       - name: web-modeler-restapi
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.2.6"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.3.0"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
         env:
           - name: JAVA_OPTIONS
             value: "-Xmx1536m"
@@ -64,7 +70,7 @@ spec:
           - name: RESTAPI_MAIL_FROM_ADDRESS
             value: "example@example.com"
           - name: RESTAPI_MAIL_FROM_NAME
-            value: "Camunda Platform"
+            value: "Camunda 8"
           - name: RESTAPI_SERVER_URL
             value: "http://localhost:8084"
           - name: RESTAPI_PUSHER_HOST
@@ -92,6 +98,8 @@ spec:
             value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
           - name: RESTAPI_IDENTITY_BASE_URL
             value: "http://camunda-platform-test-identity:80"
+          - name: ZEEBE_CLIENT_CONFIG_PATH
+            value: /tmp/zeebe_client_cache.txt
         resources:
           limits:
             cpu: 1000m
@@ -115,3 +123,12 @@ spec:
           successThreshold: 1
           failureThreshold: 5
           timeoutSeconds: 1
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true

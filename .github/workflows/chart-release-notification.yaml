@@ -32,7 +32,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "Hi team :wave:\nCamunda Platform 8 Self-Managed Helm chart `v${{ steps.get-version.outputs.latest }}` has been released :tadada:\nCheck the <https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-${{ steps.get-version.outputs.latest }}|release notes> for more details."
+                  "text": "Hi team :wave:\nCamunda 8 Self-Managed Helm chart `v${{ steps.get-version.outputs.latest }}` has been released :tadada:\nCheck the <https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-${{ steps.get-version.outputs.latest }}|release notes> for more details."
                 }
               }
             ]

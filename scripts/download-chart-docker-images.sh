@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This snippet helps to download all Docker images used in the latest Camunda Platform 8 Helm chart
+# This snippet helps to download all Docker images used in the latest Camunda 8 Helm chart
 # to push them to a private Docker registry. The registry name could be easily customized in the values file
 # under "global.image.registry".
 

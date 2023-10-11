@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.6"
+    app.kubernetes.io/version: "8.3.0"
     app.kubernetes.io/component: websockets
   annotations:
     {}
@@ -32,7 +32,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.6"
+        app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: websockets
     spec:
       imagePullSecrets:
@@ -41,8 +41,14 @@ spec:
         []
       containers:
       - name: web-modeler-websockets
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.2.6"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.3.0"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
         env:
           - name: APP_NAME
             value: "Web Modeler WebSockets"
@@ -82,3 +88,6 @@ spec:
           successThreshold: 1
           failureThreshold: 5
           timeoutSeconds: 1
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true

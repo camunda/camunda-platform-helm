@@ -294,16 +294,20 @@ spec:
           failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
         {{- end }}
-        {{- if .Values.extraVolumeMounts}}
         volumeMounts:
-        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        - mountPath: /tmp
+          name: tmp
+        {{- if .Values.extraVolumeMounts}}
+          {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.sidecars }}
       {{- .Values.sidecars | toYaml | nindent 6 }}
       {{- end }}
 
-      {{- if .Values.extraVolumes}}
       volumes:
+      - name: tmp
+        emptyDir: {}
+      {{- if .Values.extraVolumes}}
       {{- .Values.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.serviceAccount.name}}

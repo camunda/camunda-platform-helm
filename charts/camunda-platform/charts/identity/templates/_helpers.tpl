@@ -129,7 +129,7 @@ Keycloak helpers
     - global.identity.keycloak.auth.adminUser
     - global.identity.keycloak.auth.existingSecret
 
-For more details, please check Camunda Platform Helm chart documentation.
+For more details, please check Camunda Helm chart documentation.
 ` -}}
     {{- $failMessage := printf "\n%s" $failMessageRaw | trimSuffix "\n" -}}
 
@@ -260,17 +260,20 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- end -}}
 
 {{- define "identity.postgresql.secretName" -}}
-    {{- $defaultSecretName := printf "%s-access" (include "identity.postgresql.id" .) -}}
-    {{- $autSecretName := .Values.postgresql.auth.existingSecret | default $defaultSecretName -}}
-    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.existingSecret $autSecretName }}
+    {{- $defaultExistingSecret := (include "identity.postgresql.id" .) -}}
+    {{- $autExistingSecret := (.Values.postgresql.auth.existingSecret | default $defaultExistingSecret) -}}
+    {{- $externalDatabaseExistingSecret := (.Values.externalDatabase.existingSecret | default $defaultExistingSecret) -}}
+    {{- .Values.externalDatabase.enabled | ternary $externalDatabaseExistingSecret $autExistingSecret }}
 {{- end -}}
 
 {{- define "identity.postgresql.secretKey" -}}
-    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.existingSecretPasswordKey "identity-password" }}
+    {{- $defaultSecretKey := "password" -}}
+    {{- $externalDatabaseSecretKey := (.Values.externalDatabase.existingSecretPasswordKey | default $defaultSecretKey) -}}
+    {{- .Values.externalDatabase.enabled | ternary $externalDatabaseSecretKey $defaultSecretKey }}
 {{- end -}}
 
 {{- define "identity.postgresql.secretPassword" -}}
-    {{- $authPassword := .Values.postgresql.auth.password | default (randAlphaNum 20) -}}
+    {{- $authPassword := .Values.postgresql.auth.password -}}
     {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.password $authPassword }}
 {{- end -}}
 

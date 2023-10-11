@@ -1,9 +1,9 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.2.15
-appVersion: 8.2.x
+version: 8.3.0
+appVersion: 8.3.x
 description: |
-  Camunda Platform 8 Self-Managed Helm charts.
+  Camunda 8 Self-Managed Helm charts.
   Camunda's process automation platform allows developers to design, automate and improve processes.
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
@@ -18,9 +18,9 @@ keywords:
   - process-engine
   - workflow
 dependencies:
-  # Camunda Platform charts.
+  # Camunda charts.
   - name: identity
-    version: 8.2.15
+    version: 8.3.0
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -30,24 +30,24 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.2.15
+    version: 8.3.0
     condition: "operate.enabled"
   - name: optimize
-    version: 8.2.15
+    version: 8.3.0
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.2.15
+    version: 8.3.0
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.2.15
+    version: 8.3.0
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.2.15
+    version: 8.3.0
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.13.0
+    version: 19.13.2
     condition: "elasticsearch.enabled"
   - name: postgresql
     repository: https://charts.bitnami.com/bitnami
@@ -64,11 +64,31 @@ maintainers:
     email: ahmed.abouzaid@camunda.com
 annotations:
   artifacthub.io/links: |
-    - name: Camunda Platform 8 docs
+    - name: Camunda 8 docs
       url: https://docs.camunda.io/
-    - name: Camunda Platform 8 Self-Managed docs
+    - name: Camunda 8 Self-Managed docs
       url: https://docs.camunda.io/docs/self-managed/about-self-managed/
-    - name: Camunda Platform 8 Self-Managed Helm charts
+    - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Support Multi-tenancy for all components"
+    - kind: added
+      description: "Support extra initContainers for all components"
+    - kind: added
+      description: "Upgrade Optimize via predefined initContainer"
+    - kind: changed
+      description: "Use read-only root file system for all components"
+    - kind: changed
+      description: "Upgrade Keycloak from v19 to v22"
+    - kind: changed
+      description: "Upgrade Elasticsearch from v7 to v8"
+    - kind: changed
+      description: "Use JDBC URL in Web-Modeler API config"
+    - kind: changed
+      description: "Increased Ingress proxy-buffer-size"
+    - kind: fixed
+      description: "Correct command value for all components"
+    - kind: removed
+      description: "Removed Elasticsearch Curator"

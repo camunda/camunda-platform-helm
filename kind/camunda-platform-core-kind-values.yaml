@@ -5,7 +5,7 @@ global:
       # it will fall back to basic-auth: demo/demo as default user
       enabled: false
 
-# Disable identity as part of the camunda platform core
+# Disable identity as part of the Camunda core
 identity:
   enabled: false
 

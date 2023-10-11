@@ -313,6 +313,11 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 }
 
 func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
+	//finding out the length of volumes array before addition of new volume
+	var deploymentBefore appsv1.Deployment
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+	volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -331,9 +336,9 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 
 	// then
 	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(2, len(volumes))
+	s.Require().Equal(volumeLenBefore+1, len(volumes))
 
-	extraVolume := volumes[1]
+	extraVolume := volumes[volumeLenBefore]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
@@ -341,6 +346,12 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 }
 
 func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
+	//finding out the length of volumes, volumemounts array before addition of new volume
+	var deploymentBefore appsv1.Deployment
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+	volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
+	containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -358,16 +369,23 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 
 	// then
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(1, len(containers))
+	s.Require().Equal(containerLenBefore, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(2, len(volumeMounts))
-	extraVolumeMount := volumeMounts[1]
+	s.Require().Equal(volumeMountLenBefore+1, len(volumeMounts))
+	extraVolumeMount := volumeMounts[volumeMountLenBefore]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
 func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
+	//finding out the length of volumes, volumemounts array before addition of new volume
+	var deploymentBefore appsv1.Deployment
+	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+	helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+	volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
+	volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
+	containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -388,20 +406,20 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 
 	// then
 	volumes := deployment.Spec.Template.Spec.Volumes
-	s.Require().Equal(2, len(volumes))
+	s.Require().Equal(volumeLenBefore+1, len(volumes))
 
-	extraVolume := volumes[1]
+	extraVolume := volumes[volumeLenBefore]
 	s.Require().Equal("extraVolume", extraVolume.Name)
 	s.Require().NotNil(*extraVolume.ConfigMap)
 	s.Require().Equal("otherConfigMap", extraVolume.ConfigMap.Name)
 	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 
 	containers := deployment.Spec.Template.Spec.Containers
-	s.Require().Equal(1, len(containers))
+	s.Require().Equal(containerLenBefore, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(2, len(volumeMounts))
-	extraVolumeMount := volumeMounts[1]
+	s.Require().Equal(volumeMountLenBefore+1, len(volumeMounts))
+	extraVolumeMount := volumeMounts[volumeMountLenBefore]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }

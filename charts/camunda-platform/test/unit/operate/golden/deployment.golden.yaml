@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.15"
+    app.kubernetes.io/version: "8.3.0"
     app.kubernetes.io/component: operate
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.15"
+        app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: operate
       annotations:
-        checksum/config: 5ba7298a49fb4f99ebc7a80277816629b842652140c3082f48549e96b9fcbce7
+        checksum/config: c5f88ec208d84ebe0c0453c6201cc7e33e2a5bb41b84536dee4dbe6bf650fc93
     spec:
       imagePullSecrets:
         []
@@ -43,8 +43,13 @@ spec:
         []
       containers:
       - name: operate
-        image: "camunda/operate:8.2.15"
+        image: "camunda/operate:8.3.0"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 1004
         env:
           - name: SPRING_PROFILES_ACTIVE
             value: "identity-auth"
@@ -103,8 +108,19 @@ spec:
         - name: config
           mountPath: /usr/local/operate/config/application.yml
           subPath: application.yml
+        - name: tmp
+          mountPath: /tmp
+        - name: camunda
+          mountPath: /camunda
       volumes:
       - name: config
         configMap:
           name: camunda-platform-test-operate
           defaultMode: 484
+      - name: tmp
+        emptyDir: {}
+      - name: camunda
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
