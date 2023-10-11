@@ -51,3 +51,30 @@ data:
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
     # Enable or disable metrics
     #management.metrics.export.prometheus.enabled: false
+  init-migration.sh: |
+    #!/usr/bin/env bash
+
+    # wrapper script to handle migration of different operate versions
+    # OPE <= 0.22.x: no migration available -> skip
+    # OPE == 0.23.x: external migration script available -> migration/migrate.sh
+    # OPE >= 0.24.x: internal migration in java app -> bin/migrate
+
+    set -eux -o pipefail
+
+    OPE_023_SCRIPT=/usr/local/operate/migration/migrate.sh
+    OPE_024_SCRIPT=/usr/local/operate/bin/migrate
+    ES_HOST=http://{{ .Release.Name }}-elasticsearch:9200
+
+    # TODO(menski): Workaround til https://jira.camunda.com/browse/OPE-962 is implemented
+    if command -v curl &> /dev/null; then
+      curl -H "Content-Type: application/json" -XPUT ${ES_HOST}/_template/template_operate \
+          --data '{"index_patterns": ["operate-*"], "settings": {"number_of_shards": 1, "number_of_replicas": '"$NUMBER_OF_REPLICAS"'}}'
+    fi
+
+    if [[ -e "$OPE_023_SCRIPT" ]]; then
+      exec "$OPE_023_SCRIPT" "$ES_HOST"
+    elif [[ -e "$OPE_024_SCRIPT" ]]; then
+      exec "$OPE_024_SCRIPT"
+    else
+      echo "Skipping migration initialization - no migration script found at $OPE_023_SCRIPT or $OPE_024_SCRIPT"
+    fi

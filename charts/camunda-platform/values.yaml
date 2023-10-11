@@ -938,7 +938,28 @@ tasklist:
   ## @param tasklist.sidecars can be used to attach extra containers to the tasklist deployment
   sidecars: []
   ## @param tasklist.initContainers can be used to set up extra init containers for the taskList pods, useful for additional exporters
-  initContainers: []
+  initContainers:
+  - name: tasklist-migration
+    image: >-
+       {{- $tasklistImageParams := (dict "base" .Values.global "overlay" .Values) -}}
+       {{- include "camundaPlatform.imageByParams" $tasklistImageParams }}
+    command: ["/bin/bash", "/usr/local/operate/init-migration.sh"]
+    env:
+    - name: NUMBER_OF_REPLICAS
+      value: "1"
+    securityContext:
+      runAsUser: 1002
+    volumeMounts:
+    - name: config
+      mountPath: /usr/local/operate/init-migration.sh
+      subPath: init-migration.sh
+    - name: config
+      mountPath: /usr/local/operate/config/application.yml
+      subPath: operate.yaml
+    - mountPath: /tmp
+      name: tmp
+    - mountPath: /camunda
+      name: camunda
   # tasklist.contextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   # contextPath: "/tasklist"
 
