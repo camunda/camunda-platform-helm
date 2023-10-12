@@ -88,7 +88,7 @@ identity:
       runAsUser: null
     podSecurityContext:
       fsGroup: null
-      runAsUser: ~
+      runAsUser: null
     # omit the values below if identity.keycloak.postgresql.enabled is false
     postgresql:
       # omit the values below if identity.keycloak.postgresql.primary.enabled is false
@@ -97,7 +97,7 @@ identity:
           runAsUser: null
         podSecurityContext:
           fsGroup: null
-          runAsUser: ~
+          runAsUser: null
       # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
       readReplicas:
         containerSecurityContext:

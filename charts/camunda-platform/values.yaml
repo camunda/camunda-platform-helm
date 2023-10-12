@@ -1646,6 +1646,10 @@ identity:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
           runAsUser: 1001
+          capabilities:
+            drop: ["ALL"]
+          seccompProfile:
+            type: RuntimeDefault
         ## @param identity.keycloak.postgresql.primary.podSecurityContext.enabled
         ## @param identity.keycloak.postgresql.primary.podSecurityContext.runAsNonRoot
         ## @param identity.keycloak.postgresql.primary.podSecurityContext.fsGroup
@@ -1714,6 +1718,15 @@ identity:
         {{- include "camundaPlatform.imageByParams" $identityImageParams }}
       imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
       command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt "]
+      securityContext:
+        privileged: false
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop: ["ALL"]
+        seccompProfile:
+          type: RuntimeDefault
       volumeMounts:
       - name: camunda-theme
         mountPath: /mnt
@@ -1738,6 +1751,10 @@ identity:
         readOnlyRootFilesystem: true
         allowPrivilegeEscalation: false
         runAsNonRoot: true
+        capabilities:
+          drop: ["ALL"]
+        seccompProfile:
+          type: RuntimeDefault
       volumeMounts:
       - name: config
         mountPath: /config
@@ -1770,6 +1787,10 @@ identity:
       allowPrivilegeEscalation: false
       runAsNonRoot: true
       runAsUser: 1001
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
     ## @param identity.keycloak.podSecurityContext.fsGroup
     podSecurityContext:
       fsGroup: 1001
@@ -2418,6 +2439,10 @@ postgresql:
       allowPrivilegeEscalation: false
       runAsNonRoot: true
       runAsUser: 1001
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
     ## @param postgresql.primary.podSecurityContext.enabled
     ## @param postgresql.primary.podSecurityContext.runAsNonRoot
     ## @param postgresql.primary.podSecurityContext.fsGroup
