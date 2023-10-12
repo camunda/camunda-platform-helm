@@ -54,10 +54,10 @@ tasklist:
 # omit the values below if webModeler.enabled is false
 webModeler:
   restapi:
-  podSecurityContext:
-    fsGroup: null
-  containerSecurityContext:
-    runAsUser: null
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
   webapp:
     podSecurityContext:
       fsGroup: null
@@ -88,7 +88,7 @@ identity:
       runAsUser: null
     podSecurityContext:
       fsGroup: null
-      runAsUser: none
+      runAsUser: ~
     # omit the values below if identity.keycloak.postgresql.enabled is false
     postgresql:
       # omit the values below if identity.keycloak.postgresql.primary.enabled is false
@@ -97,7 +97,7 @@ identity:
           runAsUser: null
         podSecurityContext:
           fsGroup: null
-          runAsUser: none
+          runAsUser: ~
       # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
       readReplicas:
         containerSecurityContext:
