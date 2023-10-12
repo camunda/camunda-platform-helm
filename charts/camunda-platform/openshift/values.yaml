@@ -12,28 +12,69 @@
 zeebe:
   configMap:
     defaultMode: 0555
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
 
 # omit the values below if zeebe-gateway.enabled is false
 zeebe-gateway:
-  # ensure we can run this pod as a random user
   configMap:
     defaultMode: 0444
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
 
 # omit the values below if operate.enabled is false
 operate:
   configMap:
     defaultMode: 0444
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
 
 # omit the values below if optimize.enabled is false
-optimize: {}
+optimize:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
 
 # omit the values below if tasklist.enabled is false
 tasklist:
   configMap:
     defaultMode: 0444
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if webModeler.enabled is false
+webModeler:
+  restapi:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+  webapp:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+  websockets:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
 
 # omit the values below if identity.enabled is false
 identity:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
   # omit the values below if identity.keycloak.enabled is false
   keycloak:
     containerSecurityContext:

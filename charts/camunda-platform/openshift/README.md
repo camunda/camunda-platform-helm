@@ -1,130 +1,49 @@
 # OpenShift Support
 
-The `camunda-platform` Helm chart can be deployed to Openshift with a few modifications.
+The Camunda 8 Helm chart can be deployed to OpenShift using extra values file that unset the `securityContext`
+according to OpenShift default Security Context Constraints (SCCs).
 
-## Getting started
+For full details, please check the official docs:
+[Camunda 8 Self-Managed Red Hat OpenShift](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/platforms/redhat-openshift/).
 
-In order to deploy the chart to a standard Openshift cluster with default policies, we need to configure each chart
-ensure that none of the bundled applications run under a specific user and/or group. This means making sure that no
-security context, whether pod or container specific, specifies a user via `runAsUser` or `fsGroup`.
 
-The `Elasticsearch`, `Keycloak`, and `Postgresql` charts all specify default non-root users for security purposes. This
-needs to be disabled by removing these. Because of this, it's unfortunately not possible to deploy the chart with Helm
-3.2.x or greater and the `restricted` SCC without using a workaround. This is due to a longstanding bug in Helm, which
-you can see [here](https://github.com/helm/helm/issues/9136). You can read more about this in the [Usage](#usage)
-section.
+## Prerequisite
 
-## Compatibility
-
-We test against the following Openshift versions, and guarantee compatibility with:
-
-| Openshift Version |     Supported      |
-|-------------------|--------------------|
-| 4.10.x            | :white_check_mark: |
-
-Any version not explicitly marked in the table above is not tested, and we cannot guarantee compatibility.
-
-## Usage
-
-You will find in this repository a sample `values.yaml` file to get you start on Openshift
-[here](./values.yaml).
-
-Before proceeding, make sure you've fulfilled all the requirements as described in the [README](/README.md), namely that
-you have Helm installed, and you've added the chart's repository.
-
-Finally, due to a longstanding bug in Helm (see [here](https://github.com/helm/helm/issues/9136)), the installation
-instructions are a bit different depending on your Helm version. To find out, quickly run:
+First, download the exact chart version you use and extract the OpenShift extra values file:
 
 ```shell
-helm version
+# Ensure set CHART_VERSION to match the chart you want to install.
+helm pull camunda/camunda-platform --version CHART_VERSION --untar --untardir /tmp
 ```
 
-For example, if your version was "3.9.0", you would get something like this:
+## Normal setup
+
+If you are using any Helm CLI **NOT** between the 3.1.4 and 3.1.12 (**a recommended version to use: 3.1.13**),
+which is not affected by the [nested null bug](https://github.com/helm/helm/issues/9136),
+then follow [normal installation flow](../README.md#installation) using OpenShift extra values file
+(you don't need to edit that file!).
+
+E.g.
 
 ```shell
-$ helm version
-version.BuildInfo{Version:"v3.9.0", GitCommit:"7ceeda6c585217a19a1131663d8cd1f7d641b2a7", GitTreeState:"clean", GoVersion:"go1.17.5"}
+helm install camunda camunda/camunda-platform --skip-crds \
+    --values /tmp/camunda-platform/openshift/values.yaml
 ```
 
-If your version is greater than or equal to 3.2.0, refer to [this section](#helm-32x-and-greater). If it's lower, refer
-to [this section](#helm-313-or-lower).
+## Post-renderer setup
 
-### Helm 3.1.3 or lower
+> **Warning**
+> If using a post-renderer, you must use the post-renderer whenever you are updating your release,
+> not only during the initial installation. If you do not, the default values will be used again,
+> which will prevent some services from starting.
 
-If you're using Helm 3.1.3 or lower, you can simply install the chart as you normally would. Copy
-the [values.yaml](/openshift/values.yaml) locally, or merge the values with your own values file.
-
-> Make sure you've logged into your Openshift cluster, and have selected a project to deploy the chart into. You can
-> login using `oc login`, and create a new project via `oc new-project myProject`.
+If you are using one of the Helm CLI version affected by the [nested null bug](https://github.com/helm/helm/issues/9136)
+(Helm CLI **between** the 3.1.4 and 3.1.12), and cannot upgrade your Helm CLI for a reason or another,
+then you need to Helm post-render with a patch script as following:
 
 ```shell
-helm install test camunda/camunda-platform --skip-crds -f values.yaml
+helm install camunda camunda/camunda-platform --skip-crds       \
+    --values /tmp/camunda-platform/openshift/values.yaml        \
+    --values /tmp/camunda-platform/openshift/values-patch.yaml  \
+    --post-renderer /tmp/camunda-platform/openshift/patch.sh
 ```
-
-If you wanted to use the chart with your own values, simply copy the [values.yaml](/openshift/values.yaml) locally, e.g.
-as `openshift.yaml`, and run:
-
-```shell
-helm install test camunda/camunda-platform --skip-crds -f openshift.yaml -f values.yaml
-```
-
-By specifying your own values file last, you can then override any default values we set in the OpenShift specific file.
-
-You can verify the installation as described in the [README.md](/README.md).
-
-### Helm 3.2.x and greater
-
-Because Helm 3.2.x or greater cannot unset default values in sub-charts, we have two options: allow usage of the
-`anyuid` or `nonroot` SCC, or use a chart post-renderer.
-
-#### anyuid or nonroot SCC
-
-Under the `restricted` SCC, these charts (`elasticsearch`, `bitnami/keycloak`, and `bitnami/postgresql`) would fail to
-deploy. The simplest method is thus to allow the user/service account which will deploy your chart to use the `anyuid`
-or `nonroot` SCC. This will let sub-charts which define arbitrary UIDs/GIDs use these IDs.
-
-For example, if you will use the user `deployer` to deploy the chart but still want to restrict running to nonroot
-users:
-
-```shell
-oc adm policy add-scc-to-user nonroot deployer
-```
-
-When this is done, you do not need any special values file to install the charts.
-
-#### Using a post-renderer
-
-If you must use the `restricted` SCC and Helm 3.2.x, then you will need to use a post-renderer to install the charts. To
-do so, you'll need to use both values file, [openshift/values.yaml](/openshift/values.yaml) and
-[openshift/values-patch.yaml](/openshift/values-patch.yaml), and the companion script [patch.sh](/openshift/patch.sh),
-a Helm post renderer.
-
-> For this method, you will need to have `bash` and `sed` installed locally. After downloading the script, make sure it
-> is executable by your user, e.g. `chmod u+x patch.sh`.
-
-When everything is ready, you can now run the following:
-
-```shell
-helm install test camunda/camunda-platform --skip-crds -f values.yaml -f values-patch.yaml --post-renderer ./patch.sh
-```
-
-If you wanted to use this with your own values file, remember to place that one as the right most, but keeping the
-above order as is. For example, let's say you download the files as `openshift.yaml` and `openshift-patch.yaml`:
-
-```shell
-helm install test camunda/camunda-platform --skip-crds -f openshift.yaml -f openshift-patch.yaml -f values.yaml --post-renderer ./patch.sh
-```
-
-You can verify the installation as described in the [README.md](/README.md).
-
-##### Upgrade
-
-Note that if you use the post-renderer, you will _also_ need to use it when upgrading your chart. For example:
-
-```shell
-helm install test camunda/camunda-platform --skip-crds -f values.yaml -f values-patch.yaml --post-renderer ./patch.sh
-helm upgrade test camunda/camunda-platform --skip-crds --reuse-values -f values-patch.yaml --post-renderer ./patch.sh
-```
-
-Even if we use the flag `--reuse-values`, the default values from the sub-charts will be picked up again and need to be
-nullified by the post-renderer again.

@@ -1,4 +1,8 @@
 ##
+# NOTE (Oct 2023): Since Helm CI v3.13.0, this workaround is not needed anymore. Just use openshift/values.yaml file.
+##
+
+##
 # This is a minimal values file that is compatible with Helm versions >= 3.2.0. To circumvent the following bug in Helm,
 # https://github.com/helm/helm/issues/9136, we use the pattern '@@null@@' which will be replaced via a post-renderer by
 # an actual null value. This is hopefully a temporary workaround until the issue is fixed.

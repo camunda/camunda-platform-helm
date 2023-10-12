@@ -1,3 +1,7 @@
+##
+# NOTE (Oct 2023): Since Helm CI v3.13.0, this workaround is not needed anymore. Just use openshift/values.yaml file.
+##
+
 #!/bin/bash -eu
 # Expected usage is as an Helm post renderer.
 # Example usage:
