@@ -70,6 +70,13 @@ webModeler:
       runAsUser: null
 
 # omit the values below if identity.enabled is false
+connectors:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if identity.enabled is false
 identity:
   podSecurityContext:
     fsGroup: null
@@ -81,7 +88,7 @@ identity:
       runAsUser: null
     podSecurityContext:
       fsGroup: null
-      runAsUser: null
+      runAsUser: none
     # omit the values below if identity.keycloak.postgresql.enabled is false
     postgresql:
       # omit the values below if identity.keycloak.postgresql.primary.enabled is false
@@ -90,7 +97,7 @@ identity:
           runAsUser: null
         podSecurityContext:
           fsGroup: null
-          runAsUser: null
+          runAsUser: none
       # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
       readReplicas:
         containerSecurityContext:
@@ -110,11 +117,11 @@ identity:
 elasticsearch:
   master:
     podSecurityContext:
-      enabled: null
+      enabled: false
       fsGroup: null
     containerSecurityContext:
+      enabled: false
       runAsUser: null
-      runAsNonRoot: null
   # If needed, OpenShift TuneD operator will be used to set sysctl vm.max_map_count.
   # Apply the manifest "openshift-tuned.yaml" before install Camunda 8 chart.
   sysctlImage:
