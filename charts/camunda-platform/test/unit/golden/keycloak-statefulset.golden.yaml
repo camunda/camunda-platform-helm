@@ -56,26 +56,42 @@ spec:
         - command:
           - sh
           - -c
-          - 'cp -a /app/keycloak-theme/* /mnt '
+          - cp -a /app/keycloak-theme/* /mnt
           image: 'camunda/identity:8.3.0'
           imagePullPolicy: 'IfNotPresent'
           name: copy-camunda-theme
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1005
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
           - mountPath: /mnt
             name: camunda-theme
         - command:
           - sh
           - -c
-          - cp -ar /opt/bitnami/keycloak/conf/* /config  && cp -a /opt/bitnami/keycloak/lib/quarkus/*
+          - cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/*
             /quarkus
           image: bitnami/keycloak:22.0.4
           imagePullPolicy: Always
           name: copy-configs
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
           - mountPath: /config
             name: config
@@ -87,10 +103,15 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: KUBERNETES_NAMESPACE
               valueFrom:

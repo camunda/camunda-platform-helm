@@ -84,33 +84,37 @@ identity:
     runAsUser: null
   # omit the values below if identity.keycloak.enabled is false
   keycloak:
-    containerSecurityContext:
-      runAsUser: null
     podSecurityContext:
+      enabled: false
       fsGroup: null
+      runAsUser: null
+    containerSecurityContext:
+      enabled: false
       runAsUser: null
     # omit the values below if identity.keycloak.postgresql.enabled is false
     postgresql:
       # omit the values below if identity.keycloak.postgresql.primary.enabled is false
       primary:
-        containerSecurityContext:
-          runAsUser: null
         podSecurityContext:
+          enabled: false
           fsGroup: null
+          runAsUser: null
+        containerSecurityContext:
+          enabled: false
           runAsUser: null
       # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
       readReplicas:
-        containerSecurityContext:
-          runAsUser: null
         podSecurityContext:
           fsGroup: null
+          runAsUser: null
+        containerSecurityContext:
           runAsUser: null
       # omit the values below if identity.keycloak.postgresql.metrics.enabled is false
       metrics:
-        containerSecurityContext:
-          runAsUser: null
         podSecurityContext:
           fsGroup: null
+          runAsUser: null
+        containerSecurityContext:
           runAsUser: null
 
 # omit the values below if elasticsearch.enabled is false
@@ -119,6 +123,7 @@ elasticsearch:
     podSecurityContext:
       enabled: false
       fsGroup: null
+      runAsUser: null
     containerSecurityContext:
       enabled: false
       runAsUser: null
@@ -131,20 +136,22 @@ elasticsearch:
 
 postgresql:
   primary:
-    containerSecurityContext:
-      runAsUser: null
     podSecurityContext:
+      enabled: false
       fsGroup: null
+      runAsUser: null
+    containerSecurityContext:
+      enabled: false
       runAsUser: null
   readReplicas:
-    containerSecurityContext:
-      runAsUser: null
     podSecurityContext:
       fsGroup: null
+      runAsUser: null
+    containerSecurityContext:
       runAsUser: null
   metrics:
-    containerSecurityContext:
-      runAsUser: null
     podSecurityContext:
       fsGroup: null
+      runAsUser: null
+    containerSecurityContext:
       runAsUser: null

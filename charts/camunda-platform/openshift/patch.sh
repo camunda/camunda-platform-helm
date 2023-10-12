@@ -1,7 +1,3 @@
-##
-# NOTE (Oct 2023): Since Helm CI v3.13.0, this workaround is not needed anymore. Just use openshift/values.yaml file.
-##
-
 #!/bin/bash -eu
 # Expected usage is as an Helm post renderer.
 # Example usage:
@@ -18,11 +14,4 @@
 # from any working directory.
 
 set -o pipefail
-
-# Perform two passes: once for single quotes, once for double quotes, as it's not specified that string values are
-# always output with single or double quotes
-sed -e "s/'@@null@@'/null/g" -e 's/"@@null@@"/null/g' |
-
-# This is needed for bitnami/elasticsearch since the schema doesn't allow to have to apply the above workaround.
-# So we cannot use '@@null@@' as it's a string not an int.
-yq 'del(.. | select(has("runAsUser")).runAsUser) | del(.. | select(has("fsGroup")).fsGroup)'
+sed -e '/\srunAsUser:\s/d' -e '/\sfsGroup:\s/d'
