@@ -16,18 +16,6 @@ First, download the exact chart version you use and extract the OpenShift extra 
 helm pull camunda/camunda-platform --version CHART_VERSION --untar --untardir /tmp
 ```
 
-## Normal setup
-
-If you are using any Helm CLI before 3.1.4, which is not affected by the [nested null bug](https://github.com/helm/helm/issues/9136),
-then follow [normal installation flow](../README.md#installation) using OpenShift extra values file
-(you don't need to edit that file!).
-
-E.g.
-
-```shell
-helm install camunda camunda/camunda-platform --skip-crds \
-    --values /tmp/camunda-platform/openshift/values.yaml
-```
 
 ## Post-renderer setup
 
@@ -36,11 +24,27 @@ helm install camunda camunda/camunda-platform --skip-crds \
 > not only during the initial installation. If you do not, the default values will be used again,
 > which will prevent some services from starting.
 
-If you are using one of the Helm CLI version affected by the [nested null bug](https://github.com/helm/helm/issues/9136)
+If you are using one of the Helm CLI version affected by the nested null bug [1](https://github.com/helm/helm/issues/9136)
+[2](https://github.com/helm/helm/issues/12490)
 then you need to Helm post-render with a patch script as following:
 
 ```shell
 helm install camunda camunda/camunda-platform --skip-crds       \
     --values /tmp/camunda-platform/openshift/values.yaml        \
     --post-renderer bash --post-renderer-args /tmp/camunda-platform/openshift/patch.sh
+```
+
+
+## Normal setup
+
+If you are using any Helm CLI 3.1.4 or less, which is not affected by the nested null bug
+[1](https://github.com/helm/helm/issues/9136) [2](https://github.com/helm/helm/issues/12490),
+then follow [normal installation flow](../README.md#installation) using OpenShift extra values file
+(you don't need to edit that file!).
+
+E.g.
+
+```shell
+helm install camunda camunda/camunda-platform --skip-crds \
+    --values /tmp/camunda-platform/openshift/values.yaml
 ```

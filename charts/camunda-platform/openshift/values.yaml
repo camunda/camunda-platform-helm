@@ -85,35 +85,27 @@ identity:
   # omit the values below if identity.keycloak.enabled is false
   keycloak:
     podSecurityContext:
-      enabled: false
       fsGroup: null
-      runAsUser: null
     containerSecurityContext:
-      enabled: false
       runAsUser: null
     # omit the values below if identity.keycloak.postgresql.enabled is false
     postgresql:
       # omit the values below if identity.keycloak.postgresql.primary.enabled is false
       primary:
         podSecurityContext:
-          enabled: false
           fsGroup: null
-          runAsUser: null
         containerSecurityContext:
-          enabled: false
           runAsUser: null
       # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
       readReplicas:
         podSecurityContext:
           fsGroup: null
-          runAsUser: null
         containerSecurityContext:
           runAsUser: null
       # omit the values below if identity.keycloak.postgresql.metrics.enabled is false
       metrics:
         podSecurityContext:
           fsGroup: null
-          runAsUser: null
         containerSecurityContext:
           runAsUser: null
 
@@ -121,11 +113,8 @@ identity:
 elasticsearch:
   master:
     podSecurityContext:
-      enabled: false
       fsGroup: null
-      runAsUser: null
     containerSecurityContext:
-      enabled: false
       runAsUser: null
   # If needed, OpenShift TuneD operator will be used to set sysctl vm.max_map_count.
   # Apply the manifest "openshift-tuned.yaml" before install Camunda 8 chart.
@@ -137,21 +126,16 @@ elasticsearch:
 postgresql:
   primary:
     podSecurityContext:
-      enabled: false
       fsGroup: null
-      runAsUser: null
     containerSecurityContext:
-      enabled: false
       runAsUser: null
   readReplicas:
     podSecurityContext:
       fsGroup: null
-      runAsUser: null
     containerSecurityContext:
       runAsUser: null
   metrics:
     podSecurityContext:
       fsGroup: null
-      runAsUser: null
     containerSecurityContext:
       runAsUser: null
