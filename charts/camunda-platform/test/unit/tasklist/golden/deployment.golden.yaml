@@ -89,6 +89,8 @@ spec:
             value: "include"
           - name: HOME
             value: /parent
+          - name: ZEEBE_CLIENT_CONFIG_PATH
+            value: /tmp/zeebe_auth_cache
         resources:
           limits:
             cpu: 1000m
