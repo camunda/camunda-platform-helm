@@ -106,6 +106,8 @@ spec:
           - name: CAMUNDA_OPERATE_MULTITENANCY_ENABLED
             value: "true"
           {{- end }}
+          - name: ZEEBE_CLIENT_CONFIG_PATH
+            value: /tmp/zeebe_auth_cache
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
