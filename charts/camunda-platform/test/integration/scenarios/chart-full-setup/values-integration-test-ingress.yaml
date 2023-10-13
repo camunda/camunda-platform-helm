@@ -1,4 +1,6 @@
 global:
+  multitenancy:
+    enabled: true
   ingress:
     enabled: true
     className: nginx
@@ -25,6 +27,8 @@ global:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
 
 identity:
+  postgresql:
+    enabled: true
   contextPath: "/identity"
   fullURL: "https://{{ .Values.global.ingress.host }}/identity"
   firstUser:
