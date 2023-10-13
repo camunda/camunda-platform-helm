@@ -82,6 +82,8 @@ spec:
               value: "true"
             - name: ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED
               value: "true"
+            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL
+              value: "http://{{ .Release.Name }}-identity:80"
             {{- end }}
             {{- with .Values.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
