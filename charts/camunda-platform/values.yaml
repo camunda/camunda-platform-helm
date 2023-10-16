@@ -187,6 +187,9 @@ global:
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
       console:
+        ## @param global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        # The existing secret should contain an `console-secret` field, which will be used as secret for the identity-console communication.
+        existingSecret:
         ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.

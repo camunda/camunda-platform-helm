@@ -59,6 +59,13 @@ spec:
                 key: operate-secret
           - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
             value: "http://localhost:8081"
+          - name: KEYCLOAK_INIT_CONSOLE_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-console-identity-secret"
+                key: console-secret
+          - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
+            value: "http://localhost:8080"
           - name: KEYCLOAK_INIT_TASKLIST_SECRET
             valueFrom:
               secretKeyRef:
