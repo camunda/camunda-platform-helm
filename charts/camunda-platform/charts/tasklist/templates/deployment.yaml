@@ -108,6 +108,8 @@ spec:
             value: {{ default "include" .Values.graphqlPlaygroundRequestCredentials | quote }}
           - name: HOME
             value: /parent
+          - name: ZEEBE_CLIENT_CONFIG_PATH
+            value: /tmp/zeebe_auth_cache
           {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
           {{- end }}
