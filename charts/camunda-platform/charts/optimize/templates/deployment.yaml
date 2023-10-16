@@ -22,7 +22,7 @@ spec:
       {{- end }}
     spec:
       imagePullSecrets:
-        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+        {{- include "camundaPlatform.subChartImagePullSecrets" . | nindent 8 }}
       initContainers:
       {{- if .Values.initContainers }}
         {{- tpl (.Values.initContainers | toYaml | nindent 6) $ }}

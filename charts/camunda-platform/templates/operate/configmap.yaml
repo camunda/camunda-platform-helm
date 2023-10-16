@@ -1,8 +1,10 @@
+{{- if .Values.operate.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "operate.fullname" . }}
-  labels: {{- include "operate.labels" . | nindent 4 }}
+  labels:
+    {{- include "operate.labels" . | nindent 4 }}
 data:
   application.yml: |
     # Operate configuration file
@@ -37,14 +39,15 @@ data:
         # Elasticsearch full url
         url: {{ .Values.global.elasticsearch.url }}
         {{- end }}
-      {{- if .Values.retention.enabled }}
+      {{- if .Values.operate.retention.enabled }}
       archiver:
         ilmEnabled: true
-        ilmMinAgeForDeleteArchivedIndices: {{ .Values.retention.minimumAge }}
+        ilmMinAgeForDeleteArchivedIndices: {{ .Values.operate.retention.minimumAge }}
       {{- end }}
     logging:
-{{- with .Values.logging }}
+{{- with .Values.operate.logging }}
 {{ . | toYaml | indent 6 }}
 {{- end }}
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
+{{- end }}

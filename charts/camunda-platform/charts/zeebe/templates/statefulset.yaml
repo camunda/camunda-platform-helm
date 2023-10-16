@@ -32,7 +32,7 @@ spec:
       priorityClassName: {{ .Values.priorityClassName | quote }}
       {{- end }}
       imagePullSecrets:
-        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+        {{- include "camundaPlatform.subChartImagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- tpl ((coalesce .Values.initContainers .Values.extraInitContainers) | default list | toYaml | nindent 8) $ }}
       containers:

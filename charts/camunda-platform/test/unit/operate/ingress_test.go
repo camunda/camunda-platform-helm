@@ -37,7 +37,7 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress",
-		Templates:      []string{"charts/operate/templates/ingress.yaml"},
+		Templates:      []string{"templates/operate/ingress.yaml"},
 		SetValues:      map[string]string{"operate.ingress.enabled": "true"},
 	})
 }
@@ -53,7 +53,7 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress-all-enabled",
-		Templates:      []string{"charts/operate/templates/ingress.yaml"},
+		Templates:      []string{"templates/operate/ingress.yaml"},
 		SetValues: map[string]string{
 			"operate.ingress.enabled":        "true",
 			"operate.ingress.host":           "local",
