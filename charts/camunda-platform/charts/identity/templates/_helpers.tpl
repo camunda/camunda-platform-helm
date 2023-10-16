@@ -62,6 +62,14 @@ Defines match labels for identity, which are extended by sub-charts and should b
 {{- end }}
 
 {{/*
+[identity] Create the name of the console-identity secret
+*/}}
+{{- define "identity.secretNameConsoleIdentity" -}}
+{{- $name := .Release.Name -}}
+{{- printf "%s-console-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
+{{- end }}
+
+{{/*
 [identity] Create the name of the tasklist-identity secret
 */}}
 {{- define "identity.secretNameTasklistIdentity" -}}
