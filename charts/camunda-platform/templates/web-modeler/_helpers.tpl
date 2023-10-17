@@ -154,7 +154,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the image pull secrets.
 */}}
 {{- define "webModeler.imagePullSecrets" -}}
-{{- include "camundaPlatform.imagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.webModeler.image)) }}
+{{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.webModeler.image)) }}
 {{- end }}
 
 {{/*

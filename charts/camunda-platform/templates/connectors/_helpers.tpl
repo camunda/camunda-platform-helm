@@ -69,5 +69,5 @@ Defines match labels for connectors, which are extended by sub-charts and should
 [connectors] Get the image pull secrets.
 */}}
 {{- define "connectors.imagePullSecrets" -}}
-{{- include "camundaPlatform.imagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
+{{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
 {{- end }}

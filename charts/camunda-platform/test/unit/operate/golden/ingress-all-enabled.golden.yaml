@@ -1,12 +1,12 @@
 ---
-# Source: camunda-platform/charts/operate/templates/ingress.yaml
+# Source: camunda-platform/templates/operate/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: camunda-platform-test-operate
   labels: 
     app: camunda-platform
-    app.kubernetes.io/name: operate
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform

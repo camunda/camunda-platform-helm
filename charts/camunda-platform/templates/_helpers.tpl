@@ -25,6 +25,25 @@ by the DNS naming spec). If release name contains chart name it will be used as 
 {{- end -}}
 
 {{/*
+[camunda-platform] Create a default fully qualified app name for component.
+
+Example:
+{{ include "camundaPlatform.componentFullname" (dict "componentName" "foo" "componentValues" .Values.foo "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentFullname" -}}
+    {{- if (.componentValues).fullnameOverride -}}
+        {{- .componentValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+    {{- else -}}
+        {{- $name := default .componentName (.componentValues).nameOverride -}}
+        {{- if contains $name .context.Release.Name -}}
+            {{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+        {{- else -}}
+            {{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
 Define common labels, combining the match labels and transient labels, which might change on updating
 (version depending). These labels should not be used on matchLabels selector, since the selectors are immutable.
 */}}
@@ -40,7 +59,7 @@ app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
 {{- else }}
 app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
 {{- end }}
-{{- end -}}
+{{- end }}
 
 {{/*
 Common match labels, which are extended by sub-charts and should be used in matchLabels selectors.
@@ -81,14 +100,25 @@ Usage: {{ include "camundaPlatform.image" . }}
 {{/*
 Set imagePullSecrets according the values of global, subchart, or empty.
 */}}
-{{- define "camundaPlatform.imagePullSecrets" -}}
-{{- if (.Values.image.pullSecrets) -}}
-{{ .Values.image.pullSecrets | toYaml }}
-{{- else if (.Values.global.image.pullSecrets) -}}
-{{ .Values.global.image.pullSecrets | toYaml }}
-{{- else -}}
-[]
+{{- define "camundaPlatform.subChartImagePullSecrets" -}}
+    {{- if (.Values.image.pullSecrets) -}}
+        {{- .Values.image.pullSecrets | toYaml -}}
+    {{- else if (.Values.global.image.pullSecrets) -}}
+        {{- .Values.global.image.pullSecrets | toYaml -}}
+    {{- else -}}
+        {{- "[]" -}}
+    {{- end -}}
 {{- end -}}
+
+{{/*
+Set imagePullSecrets for top-level components.
+Usage:
+{{ include "camundaPlatform.imagePullSecrets" (dict "component" "zeebe" "context" $) }}
+*/}}
+{{- define "camundaPlatform.imagePullSecrets" -}}
+    {{- $componentValue := (index $.context.Values .component "image" "pullSecrets") -}}
+    {{- $globalValue := (index $.context.Values.global "image" "pullSecrets") -}}
+    {{- $componentValue | default $globalValue | default list | toYaml -}}
 {{- end -}}
 
 {{/*
@@ -150,7 +180,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 
 {{ define "camundaPlatform.operateURL" }}
   {{- if .Values.operate.enabled -}}
-    {{- print "http://" -}}{{- include "operate.fullname" .Subcharts.operate -}}:{{- .Values.operate.service.port -}}
+    {{- print "http://" -}}{{- include "operate.fullname" . -}}:{{- .Values.operate.service.port -}}
     {{- .Values.operate.contextPath -}}
   {{- end -}}
 {{- end -}}

@@ -46,7 +46,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/operate/templates/deployment.yaml"},
+		templates: []string{"templates/operate/deployment.yaml"},
 	})
 }
 

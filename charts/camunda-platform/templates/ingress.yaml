@@ -51,7 +51,7 @@ spec:
           {{- if and .Values.operate.enabled .Values.operate.contextPath }}
           - backend:
               service:
-                name: {{ template "operate.fullname" .Subcharts.operate }}
+                name: {{ template "operate.fullname" . }}
                 port:
                   number: {{ .Values.operate.service.port }}
             path: {{ .Values.operate.contextPath }}
