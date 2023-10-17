@@ -3,7 +3,7 @@
 {{/*
 [zeebe] Create a default fully qualified app name.
 */}}
-{{- define "zeebe.fullname" -}}
+{{- define "zeebe.fullname.borker" -}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "zeebe"
         "componentValues" .Values.zeebe
@@ -51,9 +51,9 @@ app.kubernetes.io/component: zeebe-broker
 {{/*
 [zeebe] Create the name of the service account to use.
 */}}
-{{- define "zeebe.serviceAccountName" -}}
+{{- define "zeebe.serviceAccountName.broker" -}}
     {{- if .Values.zeebe.serviceAccount.enabled }}
-        {{- default (include "zeebe.fullname" .) .Values.zeebe.serviceAccount.name }}
+        {{- default (include "zeebe.fullname.borker" .) .Values.zeebe.serviceAccount.name }}
     {{- else }}
         {{- default "default" .Values.zeebe.serviceAccount.name }}
     {{- end }}
@@ -62,7 +62,7 @@ app.kubernetes.io/component: zeebe-broker
 {{/*
 [zeebe] Get the image pull secrets.
 */}}
-{{- define "zeebe.imagePullSecrets" -}}
+{{- define "zeebe.imagePullSecrets.broker" -}}
     {{- include "camundaPlatform.imagePullSecrets" (dict
         "component" "zeebe"
         "context" $

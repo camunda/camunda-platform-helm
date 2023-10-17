@@ -1,7 +1,7 @@
 {{- if .Values.zeebe.enabled -}}
 kind: ConfigMap
 metadata:
-  name: {{ include "zeebe.fullname" . }}
+  name: {{ include "zeebe.fullname.borker" . }}
   labels:
     {{- include "zeebe.labels.broker" . | nindent 4 }}
 apiVersion: v1

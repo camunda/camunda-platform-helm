@@ -1,4 +1,5 @@
 {{/* vim: set filetype=mustache: */}}
+
 {{/*
 Expand the name of the chart.
 */}}
@@ -239,11 +240,9 @@ Usage:
     readiness: http://{{ include "webModeler.webapp.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.webModeler.webapp.service.port }}{{ .Values.webModeler.webapp.readinessProbe.probePath }}
   {{- end }}
 
-  {{- with dict "Template" .Template "Release" .Release "Chart" (dict "Name" "zeebe-gateway") "Values" (index .Values "zeebe-gateway") "zeebe" .Values.zeebe }}
-  {{ if .zeebe.enabled -}}
+  {{ if .Values.zeebe.enabled -}}
   - name: Zeebe Gateway
-    url: grpc://{{ tpl .Values.ingress.host $ }}
-    readiness: http://{{ include "zeebe.names.gateway" . | trimAll "\"" }}.{{ .Release.Namespace }}:{{ .Values.service.httpPort }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
-  {{- end }}
+    url: grpc://{{ tpl .Values.zeebeGateway.ingress.host $ }}
+    readiness: http://{{ include "zeebe.names.gateway" . | trimAll "\"" }}.{{ .Release.Namespace }}:{{ .Values.zeebeGateway.service.httpPort }}{{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.readinessProbe.probePath }}
   {{- end }}
 {{- end -}}

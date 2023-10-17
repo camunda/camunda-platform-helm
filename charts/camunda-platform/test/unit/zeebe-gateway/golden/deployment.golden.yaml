@@ -1,12 +1,12 @@
 ---
-# Source: camunda-platform/charts/zeebe-gateway/templates/gateway-deployment.yaml
+# Source: camunda-platform/templates/zeebe-gateway/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "camunda-platform-test-zeebe-gateway"
+  name: camunda-platform-test-zeebe-gateway
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: zeebe-gateway
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -19,7 +19,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: zeebe-gateway
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -28,7 +28,7 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: zeebe-gateway
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: "camunda/zeebe:8.3.0"
+          image: camunda/zeebe:8.3.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9600
@@ -120,7 +120,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-gateway-gateway
+            name: camunda-platform-test-zeebe-gateway
             defaultMode: 484
       securityContext:
         fsGroup: 1000

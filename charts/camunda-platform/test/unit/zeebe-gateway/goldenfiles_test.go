@@ -31,7 +31,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	templateNames := []string{"gateway-service", "gateway-serviceaccount", "gateway-deployment", "configmap"}
+	templateNames := []string{"service", "serviceaccount", "deployment", "configmap"}
 
 	for _, name := range templateNames {
 		suite.Run(t, &golden.TemplateGoldenTest{
@@ -39,7 +39,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Release:        "camunda-platform-test",
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
-			Templates:      []string{"charts/zeebe-gateway/templates/" + name + ".yaml"},
+			Templates:      []string{"templates/zeebe-gateway/" + name + ".yaml"},
 		})
 	}
 }

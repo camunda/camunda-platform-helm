@@ -46,7 +46,7 @@ func TestGatewayDeploymentTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/zeebe-gateway/templates/gateway-deployment.yaml"},
+		templates: []string{"templates/zeebe-gateway/deployment.yaml"},
 	})
 }
 

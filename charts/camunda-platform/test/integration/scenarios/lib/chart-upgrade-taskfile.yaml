@@ -24,6 +24,7 @@ tasks:
     - |
       kubectl -n {{ .TEST_NAMESPACE }} delete deployment integration-operate
       kubectl -n {{ .TEST_NAMESPACE }} delete deployment integration-tasklist
+      kubectl -n {{ .TEST_NAMESPACE }} delete deployment integration-zeebe-gateway
       kubectl -n {{ .TEST_NAMESPACE }} delete statefulset integration-zeebe
 
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/

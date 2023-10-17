@@ -34,7 +34,7 @@ spec:
       priorityClassName: {{ .Values.zeebe.priorityClassName | quote }}
       {{- end }}
       imagePullSecrets:
-        {{- include "operate.imagePullSecrets" . | nindent 8 }}
+        {{- include "zeebe.imagePullSecrets.broker" . | nindent 8 }}
       initContainers:
         {{- tpl ((coalesce .Values.zeebe.initContainers .Values.zeebe.extraInitContainers) | default list | toYaml | nindent 8) $ }}
       containers:
@@ -190,7 +190,7 @@ spec:
         {{- end }}
         - name: config
           configMap:
-            name: {{ include "zeebe.fullname" . }}
+            name: {{ include "zeebe.fullname.borker" . }}
             defaultMode: {{ .Values.zeebe.configMap.defaultMode }}
         - name: exporters
           emptyDir: {}

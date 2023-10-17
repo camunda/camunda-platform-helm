@@ -36,7 +36,7 @@ func TestGoldenServiceaccountWithAnnotations(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "serviceaccount-annotations",
-		Templates:      []string{"charts/zeebe-gateway/templates/gateway-serviceaccount.yaml"},
+		Templates:      []string{"templates/zeebe-gateway/serviceaccount.yaml"},
 		SetValues: map[string]string{
 			"zeebe-gateway.serviceAccount.annotations.foo":  "bar",
 			"zeebe-gateway.serviceAccount.annotations.lulz": "baz",
