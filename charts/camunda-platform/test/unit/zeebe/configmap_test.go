@@ -36,7 +36,7 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-log4j2",
-		Templates:      []string{"charts/zeebe/templates/configmap.yaml"},
+		Templates:      []string{"templates/zeebe/configmap.yaml"},
 		SetValues:      map[string]string{"zeebe.log4j2": "<xml>\n</xml>"},
 	})
 }

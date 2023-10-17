@@ -1,12 +1,12 @@
 ---
-# Source: camunda-platform/charts/zeebe/templates/service.yaml
+# Source: camunda-platform/templates/zeebe/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: "camunda-platform-test-zeebe"
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: zeebe
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -30,7 +30,7 @@ spec:
       name: command
   selector:
     app: camunda-platform
-    app.kubernetes.io/name: zeebe
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
