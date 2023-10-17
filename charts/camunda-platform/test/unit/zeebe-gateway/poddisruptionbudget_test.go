@@ -39,7 +39,7 @@ func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "poddisruptionbudget",
-		Templates:      []string{"charts/zeebe-gateway/templates/gateway-poddisruptionbudget.yaml"},
+		Templates:      []string{"templates/zeebe-gateway/poddisruptionbudget.yaml"},
 		SetValues:      map[string]string{"zeebe-gateway.podDisruptionBudget.enabled": "true"},
 	})
 }
@@ -62,7 +62,7 @@ func TestPodDisruptionBudgetTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/zeebe-gateway/templates/gateway-poddisruptionbudget.yaml"},
+		templates: []string{"templates/zeebe-gateway/poddisruptionbudget.yaml"},
 	})
 }
 
