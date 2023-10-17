@@ -69,7 +69,7 @@ spec:
           {{- if and .Values.tasklist.enabled .Values.tasklist.contextPath }}
           - backend:
               service:
-                name: {{ template "tasklist.fullname" .Subcharts.tasklist }}
+                name: {{ template "tasklist.fullname" . }}
                 port:
                   number: {{ .Values.tasklist.service.port }}
             path: {{ .Values.tasklist.contextPath }}
