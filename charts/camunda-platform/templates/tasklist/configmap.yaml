@@ -1,8 +1,10 @@
+{{- if .Values.tasklist.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "tasklist.fullname" . }}
-  labels: {{- include "tasklist.labels" . | nindent 4 }}
+  labels:
+    {{- include "tasklist.labels" . | nindent 4 }}
 data:
   application.yml: |
     # Tasklist configuration file
@@ -42,12 +44,13 @@ data:
         # Elasticsearch full url
         url: {{ .Values.global.elasticsearch.url }}
         {{- end }}
-      {{- if .Values.retention.enabled }}
+      {{- if .Values.tasklist.retention.enabled }}
       archiver:
         ilmEnabled: true
-        ilmMinAgeForDeleteArchivedIndices: {{ .Values.retention.minimumAge }}
+        ilmMinAgeForDeleteArchivedIndices: {{ .Values.tasklist.retention.minimumAge }}
       {{- end }}
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
     # Enable or disable metrics
     #management.metrics.export.prometheus.enabled: false
+{{- end }}

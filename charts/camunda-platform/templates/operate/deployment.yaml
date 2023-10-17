@@ -17,7 +17,7 @@ spec:
       labels: 
         {{- include "operate.labels" . | nindent 8 }}
         {{- if .Values.operate.podLabels }}
-        {{- toYaml .Values.operate.podLabels | nindent 8 }}
+          {{- toYaml .Values.operate.podLabels | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/operate/configmap.yaml") . | sha256sum }}
@@ -30,7 +30,7 @@ spec:
       initContainers:
         {{- tpl (.Values.operate.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
-      - name: {{ .Chart.Name }}
+      - name: tasklist
         image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         {{- if .Values.operate.containerSecurityContext }}

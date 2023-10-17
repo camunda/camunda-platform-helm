@@ -32,9 +32,6 @@ dependencies:
   - name: optimize
     version: 8.3.0
     condition: "optimize.enabled"
-  - name: tasklist
-    version: 8.3.0
-    condition: "tasklist.enabled"
   - name: zeebe
     version: 8.3.0
     condition: "zeebe.enabled"

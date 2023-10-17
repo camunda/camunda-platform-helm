@@ -1,9 +1,12 @@
+{{- if .Values.tasklist.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "tasklist.fullname" . }}
-  labels: {{- include "tasklist.labels" . | nindent 4 }}
-  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+  labels:
+    {{- include "tasklist.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -13,30 +16,30 @@ spec:
     metadata:
       labels: 
         {{- include "tasklist.labels" . | nindent 8 }}
-        {{- if .Values.podLabels }}
-        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- if .Values.tasklist.podLabels }}
+          {{- toYaml .Values.tasklist.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      {{- if .Values.podAnnotations }}
-        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+        checksum/config: {{ include (print $.Template.BasePath "/tasklist/configmap.yaml") . | sha256sum }}
+      {{- if .Values.tasklist.podAnnotations }}
+        {{- toYaml  .Values.tasklist.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
-        {{- include "camundaPlatform.subChartImagePullSecrets" . | nindent 8 }}
+        {{- include "tasklist.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- tpl (.Values.tasklist.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
-      - name: {{ .Chart.Name }}
-        image: {{ include "camundaPlatform.image" . | quote }}
+      - name: tasklist
+        image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-        {{- if .Values.containerSecurityContext }}
-        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- if .Values.tasklist.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 10 }}
         {{- end }}
         env:
-          {{- if .Values.contextPath }}
+          {{- if .Values.tasklist.contextPath }}
           - name: SERVER_SERVLET_CONTEXT_PATH
-            value: {{ .Values.contextPath | quote }}
+            value: {{ .Values.tasklist.contextPath | quote }}
           {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
           - name: SPRING_PROFILES_ACTIVE
@@ -103,60 +106,60 @@ spec:
             value: "true"
           {{- end }}
           - name: GRAPHQL_PLAYGROUND_ENABLED
-            value: {{ default "true" .Values.graphqlPlaygroundEnabled | quote }}
+            value: {{ default "true" .Values.tasklist.graphqlPlaygroundEnabled | quote }}
           - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
-            value: {{ default "include" .Values.graphqlPlaygroundRequestCredentials | quote }}
+            value: {{ default "include" .Values.tasklist.graphqlPlaygroundRequestCredentials | quote }}
           - name: HOME
             value: /parent
           - name: ZEEBE_CLIENT_CONFIG_PATH
             value: /tmp/zeebe_auth_cache
-          {{- with .Values.env }}
+          {{- with .Values.tasklist.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
           {{- end }}
-        {{- if .Values.command}}
-        command: {{ toYaml .Values.command | nindent 10 }}
+        {{- if .Values.tasklist.command}}
+        command: {{ toYaml .Values.tasklist.command | nindent 10 }}
         {{- end }}
         resources:
-          {{- toYaml .Values.resources | nindent 10 }}
+          {{- toYaml .Values.tasklist.resources | nindent 10 }}
         ports:
         - containerPort: 8080
           name: http
           protocol: TCP
-        {{- if .Values.startupProbe.enabled }}
+        {{- if .Values.tasklist.startupProbe.enabled }}
         startupProbe:
           httpGet:
-            path: {{ .Values.contextPath }}{{ .Values.startupProbe.probePath }}
-            scheme: {{ .Values.startupProbe.scheme }}
+            path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.startupProbe.probePath }}
+            scheme: {{ .Values.tasklist.startupProbe.scheme }}
             port: http
-          initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.startupProbe.periodSeconds }}
-          successThreshold: {{ .Values.startupProbe.successThreshold }}
-          failureThreshold: {{ .Values.startupProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+          initialDelaySeconds: {{ .Values.tasklist.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.tasklist.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.tasklist.startupProbe.successThreshold }}
+          failureThreshold: {{ .Values.tasklist.startupProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.tasklist.startupProbe.timeoutSeconds }}
         {{- end }}
-        {{- if .Values.readinessProbe.enabled }}
+        {{- if .Values.tasklist.readinessProbe.enabled }}
         readinessProbe:
           httpGet:
-            path: {{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
-            scheme: {{ .Values.readinessProbe.scheme }}
+            path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.readinessProbe.probePath }}
+            scheme: {{ .Values.tasklist.readinessProbe.scheme }}
             port: http
-          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
-          successThreshold: {{ .Values.readinessProbe.successThreshold }}
-          failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+          initialDelaySeconds: {{ .Values.tasklist.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.tasklist.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.tasklist.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.tasklist.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.tasklist.readinessProbe.timeoutSeconds }}
         {{- end }}
-        {{- if .Values.livenessProbe.enabled }}
+        {{- if .Values.tasklist.livenessProbe.enabled }}
         livenessProbe:
           httpGet:
-            path: {{ .Values.contextPath }}{{ .Values.livenessProbe.probePath }}
-            scheme: {{ .Values.livenessProbe.scheme }}
+            path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.livenessProbe.probePath }}
+            scheme: {{ .Values.tasklist.livenessProbe.scheme }}
             port: http
-          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
-          successThreshold: {{ .Values.livenessProbe.successThreshold }}
-          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+          initialDelaySeconds: {{ .Values.tasklist.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.tasklist.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.tasklist.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.tasklist.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.tasklist.livenessProbe.timeoutSeconds }}
         {{- end }}
         volumeMounts:
         - name: config
@@ -166,39 +169,40 @@ spec:
           name: tmp
         - mountPath: /camunda
           name: camunda
-        {{- if .Values.extraVolumeMounts}}
-        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- if .Values.tasklist.extraVolumeMounts}}
+        {{- .Values.tasklist.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.sidecars }}
-      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- if .Values.tasklist.sidecars }}
+      {{- .Values.tasklist.sidecars | toYaml | nindent 6 }}
       {{- end }}
       volumes:
       - name: config
         configMap:
           name: {{ include "tasklist.fullname" . }}
-          defaultMode: {{ .Values.configMap.defaultMode }}
+          defaultMode: {{ .Values.tasklist.configMap.defaultMode }}
       - name: tmp
         emptyDir: {}
       - name: camunda
         emptyDir: {}
-      {{- if .Values.extraVolumes}}
-      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- if .Values.tasklist.extraVolumes}}
+      {{- .Values.tasklist.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
-      {{- if .Values.serviceAccount.name}}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if .Values.tasklist.serviceAccount.name}}
+      serviceAccountName: {{ .Values.tasklist.serviceAccount.name }}
       {{- end }}
-      {{- if .Values.podSecurityContext }}
-      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.tasklist.podSecurityContext }}
+      securityContext: {{- toYaml .Values.tasklist.podSecurityContext | nindent 8 }}
       {{- end }}
-{{- with .Values.nodeSelector }}
+{{- with .Values.tasklist.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.affinity }}
+{{- with .Values.tasklist.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.tolerations }}
+{{- with .Values.tasklist.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
+{{- end }}
 {{- end }}

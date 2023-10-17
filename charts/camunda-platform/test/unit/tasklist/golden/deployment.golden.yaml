@@ -1,12 +1,12 @@
 ---
-# Source: camunda-platform/charts/tasklist/templates/deployment.yaml
+# Source: camunda-platform/templates/tasklist/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: camunda-platform-test-tasklist
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: tasklist
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -19,7 +19,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: tasklist
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -28,14 +28,14 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: tasklist
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: 6170697375a825d6c3e873d09c806ac9d31d795acd3a9b37c2ce04a2d4883c69
+        checksum/config: 9335baea293baa8b4043e37e092df0cad01ace5fdb1e9e5c12d8029600834790
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
       - name: tasklist
-        image: "camunda/tasklist:8.3.0"
+        image: camunda/tasklist:8.3.0
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
