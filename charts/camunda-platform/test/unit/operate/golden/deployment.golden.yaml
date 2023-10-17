@@ -57,6 +57,8 @@ spec:
             value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
             value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+          - name: CAMUNDA_OPERATE_IDENTITY_BASEURL
+            value: "http://camunda-platform-test-identity:80"
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
             value: "http://localhost:18080/auth/realms/camunda-platform"
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL

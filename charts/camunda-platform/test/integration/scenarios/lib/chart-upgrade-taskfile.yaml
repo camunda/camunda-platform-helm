@@ -63,5 +63,6 @@ tasks:
         --set global.identity.auth.console.existingSecret=$CONSOLE_SECRET \
         --set identity.keycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
         --set identity.keycloak.postgresql.auth.password=$KEYCLOAK_POSTGRESQL_SECRET \
+        --set identity.postgresql.auth.password=dummy \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}

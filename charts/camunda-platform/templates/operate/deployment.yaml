@@ -48,6 +48,8 @@ spec:
             value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
             value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+          - name: CAMUNDA_OPERATE_IDENTITY_BASEURL
+            value: {{ include "camundaPlatform.identityURL" . | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
             value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL

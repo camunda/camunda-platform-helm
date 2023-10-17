@@ -179,10 +179,26 @@ Usage:
     {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Operate internal URL.
+*/}}
 {{ define "camundaPlatform.operateURL" }}
   {{- if .Values.operate.enabled -}}
     {{- print "http://" -}}{{- include "operate.fullname" . -}}:{{- .Values.operate.service.port -}}
     {{- .Values.operate.contextPath -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Identity internal URL.
+*/}}
+{{ define "camundaPlatform.identityURL" }}
+  {{- if .Values.identity.enabled -}}
+    {{- printf "http://%s:%v%s"
+        (include "identity.fullname" .Subcharts.identity)
+        .Values.identity.service.port
+        (.Values.identity.contextPath | default "")
+    -}}
   {{- end -}}
 {{- end -}}
 
