@@ -210,28 +210,22 @@ Usage:
   {{- end }}
   {{- end }}
 
-  {{- with dict "Release" .Release "Chart" (dict "Name" "operate") "Values" .Values.operate }}
-  {{ if .Values.enabled -}}
+  {{ if .Values.operate.enabled -}}
   - name: Operate
-    url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness: http://{{ include "operate.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
-  {{- end }}
+    url: {{ $baseURL }}{{ .Values.operate.contextPath }}
+    readiness: http://{{ include "operate.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.operate.service.port }}{{ .Values.operate.contextPath }}{{ .Values.operate.readinessProbe.probePath }}
   {{- end }}
 
-  {{- with dict "Release" .Release "Chart" (dict "Name" "optimize") "Values" .Values.optimize }}
-  {{ if .Values.enabled -}}
+  {{ if .Values.optimize.enabled -}}
   - name: Optimize
-    url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness: http://{{ include "optimize.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
-  {{- end }}
+    url: {{ $baseURL }}{{ .Values.optimize.contextPath }}
+    readiness: http://{{ include "optimize.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.optimize.service.port }}{{ .Values.optimize.contextPath }}{{ .Values.optimize.readinessProbe.probePath }}
   {{- end }}
 
-  {{- with dict "Release" .Release "Chart" (dict "Name" "tasklist") "Values" .Values.tasklist }}
-  {{ if .Values.enabled -}}
+  {{ if .Values.tasklist.enabled -}}
   - name: Tasklist
-    url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness: http://{{ include "tasklist.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
-  {{- end }}
+    url: {{ $baseURL }}{{ .Values.tasklist.contextPath }}
+    readiness: http://{{ include "tasklist.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.tasklist.service.port }}{{ .Values.tasklist.contextPath }}{{ .Values.tasklist.readinessProbe.probePath }}
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
