@@ -43,7 +43,7 @@ dependencies:
     condition: "zeebe.enabled"
   - name: zeebe-gateway
     version: 8.2.6
-    condition: "zeebe.enabled"
+    condition: "zeebe-gateway.enabled"
   # Dependency charts.
   - name: elasticsearch
     repository: "https://helm.elastic.co"
