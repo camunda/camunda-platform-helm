@@ -48,3 +48,6 @@ jobs:
       - name: Run chart testing and lint
       #check to see if this works:
         run: ct lint --config .github/config/chart-testing.yaml
+      - name: Lint YAML Files
+        run: |
+          yamllint -c .github/config/yamllint.yaml ./charts
