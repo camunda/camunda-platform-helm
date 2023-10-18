@@ -41,6 +41,11 @@ spec:
       - name: migration
         image: camunda/optimize:3.11.0
         command: ['./upgrade/upgrade.sh', '--skip-warning']
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsUser: 100
         env:
         - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
           value: "true"
@@ -55,11 +60,6 @@ spec:
           name: tmp
         - mountPath: /camunda
           name: camunda
-        securityContext:
-          allowPrivilegeEscalation: false
-          privileged: false
-          readOnlyRootFilesystem: true
-          runAsUser: 100
       containers:
       - name: optimize
         image: camunda/optimize:3.11.0
