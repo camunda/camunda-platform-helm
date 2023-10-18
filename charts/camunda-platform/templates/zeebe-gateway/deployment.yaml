@@ -85,6 +85,10 @@ spec:
               value: "true"
             - name: ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED
               value: "true"
+            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
+            - name: ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
             {{- end }}
             {{- with .Values.zeebeGateway.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
