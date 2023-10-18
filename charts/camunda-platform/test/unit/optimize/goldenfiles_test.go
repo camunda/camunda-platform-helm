@@ -39,7 +39,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Release:        "camunda-platform-test",
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
-			Templates:      []string{"charts/optimize/templates/" + name + ".yaml"},
+			Templates:      []string{"templates/optimize/" + name + ".yaml"},
 		})
 	}
 }

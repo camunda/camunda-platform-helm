@@ -30,7 +30,7 @@ spec:
       initContainers:
         {{- tpl (.Values.operate.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
-      - name: tasklist
+      - name: operate
         image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         {{- if .Values.operate.containerSecurityContext }}

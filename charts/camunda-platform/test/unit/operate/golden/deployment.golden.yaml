@@ -42,7 +42,7 @@ spec:
       initContainers:
         []
       containers:
-      - name: tasklist
+      - name: operate
         image: camunda/operate:8.3.0
         imagePullPolicy: IfNotPresent
         securityContext:

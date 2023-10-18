@@ -29,9 +29,6 @@ dependencies:
       #       https://github.com/helm/helm/pull/10804
       - child: image
         parent: global.identity.image
-  - name: optimize
-    version: 8.3.0
-    condition: "optimize.enabled"
   # Dependency charts.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"

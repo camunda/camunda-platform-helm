@@ -60,7 +60,7 @@ spec:
           {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
           - backend:
               service:
-                name: {{ template "optimize.fullname" .Subcharts.optimize }}
+                name: {{ template "optimize.fullname" . }}
                 port:
                   number: {{ .Values.optimize.service.port }}
             path: {{ .Values.optimize.contextPath }}

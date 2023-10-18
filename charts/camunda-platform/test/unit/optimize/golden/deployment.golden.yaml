@@ -1,16 +1,16 @@
 ---
-# Source: camunda-platform/charts/optimize/templates/deployment.yaml
+# Source: camunda-platform/templates/optimize/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: camunda-platform-test-optimize
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: optimize
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "3.11.0"
+    app.kubernetes.io/version: "8.3.0"
     app.kubernetes.io/component: optimize
   annotations:
     {}
@@ -19,7 +19,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: optimize
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -28,18 +28,18 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: optimize
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "3.11.0"
+        app.kubernetes.io/version: "8.3.0"
         app.kubernetes.io/component: optimize
     spec:
       imagePullSecrets:
         []
       initContainers:
       - name: migration
-        image: "camunda/optimize:3.11.0"
+        image: camunda/optimize:3.11.0
         command: ['./upgrade/upgrade.sh', '--skip-warning']
         env:
         - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
@@ -62,7 +62,7 @@ spec:
           runAsUser: 100
       containers:
       - name: optimize
-        image: "camunda/optimize:3.11.0"
+        image: camunda/optimize:3.11.0
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
