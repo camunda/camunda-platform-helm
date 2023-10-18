@@ -1154,6 +1154,8 @@ optimize:
   migration:
     ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
     enabled: true
+    ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container
+    env: []
 
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
