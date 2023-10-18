@@ -447,7 +447,6 @@ $ make helm.dependency-update
 helm dependency update charts/camunda-platform
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
-...Successfully got an update from the "elastic" chart repository
 ...Successfully got an update from the "bitnami" chart repository
 Update Complete. ⎈Happy Helming!⎈
 Saving 6 charts
@@ -456,12 +455,10 @@ Dependency zeebe-gateway did not declare a repository. Assuming it exists in the
 Dependency operate did not declare a repository. Assuming it exists in the charts directory
 Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
 Dependency identity did not declare a repository. Assuming it exists in the charts directory
-Downloading elasticsearch from repo https://helm.elastic.co
 Deleting outdated charts
 helm dependency update charts/camunda-platform/charts/identity
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
-...Successfully got an update from the "elastic" chart repository
 ...Successfully got an update from the "bitnami" chart repository
 Update Complete. ⎈Happy Helming!⎈
 Saving 2 charts

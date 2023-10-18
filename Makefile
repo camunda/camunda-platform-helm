@@ -89,7 +89,6 @@ tools.zbctl-topology:
 .PHONY: helm.repos-add
 helm.repos-add:
 	helm repo add camunda https://helm.camunda.io
-	helm repo add elastic https://helm.elastic.co
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 
