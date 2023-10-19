@@ -15,14 +15,14 @@ metadata:
 spec:
   type: {{ .Values.optimize.service.type }}
   ports:
-  - port: {{ .Values.optimize.service.port }}
-    name: http
-    targetPort: 8090
-    protocol: TCP
-  - port: {{ .Values.optimize.service.managementPort }}
-    name: management
-    targetPort: 8092
-    protocol: TCP
+    - port: {{ .Values.optimize.service.port }}
+      name: http
+      targetPort: 8090
+      protocol: TCP
+    - port: {{ .Values.optimize.service.managementPort }}
+      name: management
+      targetPort: 8092
+      protocol: TCP
   selector:
     {{- include "optimize.matchLabels" . | nindent 4 }}
 {{- end }}

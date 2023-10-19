@@ -1,10 +1,6 @@
----
+ignore: charts/camunda-platform/test/unit/golden/keycloak-statefulset.golden.yaml
+
 rules:
-  braces:
-    min-spaces-inside: 0
-    max-spaces-inside: 0
-    min-spaces-inside-empty: -1
-    max-spaces-inside-empty: -1
   brackets:
     min-spaces-inside: 0
     max-spaces-inside: 0
@@ -30,11 +26,11 @@ rules:
     max-spaces-after: 1
   indentation:
     spaces: consistent
-    indent-sequences: whatever      # - list indentation will handle both indentation and without
+    indent-sequences: true
     check-multi-line-strings: false
   key-duplicates: enable
   line-length: disable              # Lines can be any length
-  # new-line-at-end-of-file: enable
+  new-line-at-end-of-file: disable
   new-lines:
     type: unix
   trailing-spaces: enable

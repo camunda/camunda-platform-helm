@@ -4,9 +4,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "connectors.fullname" . }}
-  labels: {{ include "connectors.labels" . | nindent 4 }}
+  labels:
+  {{- include "connectors.labels" . | nindent 4 }}
 {{- with .Values.connectors.ingress.annotations }}
-  annotations: {{ tpl (toYaml .) $ | nindent 4 }}
+  annotations:
+  {{- tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
 spec:
   ingressClassName: {{ .Values.connectors.ingress.className }}

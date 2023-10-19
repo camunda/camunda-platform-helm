@@ -5,7 +5,8 @@ metadata:
   name: {{ include "webModeler.fullname" . }}
   labels: {{- include "webModeler.labels" . | nindent 4 }}
 {{- with .Values.webModeler.ingress.annotations }}
-  annotations: {{- tpl (toYaml .) $ | nindent 4 }}
+  annotations:
+  {{- tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
 spec:
   ingressClassName: {{ .Values.webModeler.ingress.className }}

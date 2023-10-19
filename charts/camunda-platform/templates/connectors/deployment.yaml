@@ -105,7 +105,9 @@ spec:
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
+          {{- if .Values.connectors.command}}
           command: {{ toYaml .Values.connectors.command | nindent 12 }}
+          {{- end }}
           resources: {{- toYaml .Values.connectors.resources | nindent 12 }}
           {{- if .Values.connectors.startupProbe.enabled }}
           startupProbe:
@@ -140,7 +142,7 @@ spec:
             failureThreshold: {{ .Values.connectors.livenessProbe.failureThreshold }}
             timeoutSeconds: {{ .Values.connectors.livenessProbe.timeoutSeconds }}
           {{- end }}
-          volumeMounts: 
+          volumeMounts:
             - mountPath: /tmp
               name: tmp
           {{- if .Values.connectors.extraVolumeMounts }}

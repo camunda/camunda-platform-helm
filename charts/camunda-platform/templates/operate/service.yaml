@@ -14,10 +14,10 @@ metadata:
 spec:
   type: {{ .Values.operate.service.type }}
   ports:
-  - port: {{ .Values.operate.service.port }}
-    name: http
-    targetPort: 8080
-    protocol: TCP
+    - port: {{ .Values.operate.service.port }}
+      name: http
+      targetPort: 8080
+      protocol: TCP
   selector:
     {{- include "operate.matchLabels" . | nindent 4 }}
 {{- end }}

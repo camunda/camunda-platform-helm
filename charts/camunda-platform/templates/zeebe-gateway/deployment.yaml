@@ -94,7 +94,8 @@ spec:
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
           {{- if .Values.zeebeGateway.command}}
-          command: {{ toYaml .Values.zeebeGateway.command | nindent 12 }}
+          command:
+          {{- toYaml .Values.zeebeGateway.command | nindent 12 }}
           {{- end }}
           volumeMounts:
             - mountPath: /tmp

@@ -25,85 +25,86 @@ spec:
       initContainers:
         {{- tpl (.Values.webModeler.websockets.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
-      - name: {{ include "webModeler.name" . }}-websockets
-        image: {{ include "webModeler.websockets.image" . | quote }}
-        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-        {{- if .Values.webModeler.websockets.containerSecurityContext }}
-        securityContext: {{- toYaml .Values.webModeler.websockets.containerSecurityContext | nindent 10 }}
-        {{- end }}
-        env:
-          - name: APP_NAME
-            value: "Web Modeler WebSockets"
-          - name: PUSHER_APP_ID
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "webModeler.fullname" . }}
-                key: pusher-app-id
-          - name: PUSHER_APP_KEY
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "webModeler.fullname" . }}
-                key: pusher-app-key
-          - name: PUSHER_APP_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: {{ include "webModeler.fullname" . }}
-                key: pusher-app-secret
-          - name: PUSHER_APP_CLUSTER
-            value: "web-modeler"
-          {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-          - name: PUSHER_APP_PATH
-            value: {{ include "webModeler.websocketContextPath" . | quote }}
+        - name: {{ include "webModeler.name" . }}-websockets
+          image: {{ include "webModeler.websockets.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.webModeler.websockets.containerSecurityContext }}
+          securityContext:
+          {{- toYaml .Values.webModeler.websockets.containerSecurityContext | nindent 12 }}
           {{- end }}
-        {{- with .Values.webModeler.websockets.env }}
-            {{- tpl (toYaml .) $ | nindent 10 }}
+          env:
+            - name: APP_NAME
+              value: "Web Modeler WebSockets"
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-id
+            - name: PUSHER_APP_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-key
+            - name: PUSHER_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-secret
+            - name: PUSHER_APP_CLUSTER
+              value: "web-modeler"
+            {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+            - name: PUSHER_APP_PATH
+              value: {{ include "webModeler.websocketContextPath" . | quote }}
+            {{- end }}
+          {{- with .Values.webModeler.websockets.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          {{- if .Values.webModeler.websockets.command}}
+          command: {{ toYaml .Values.webModeler.websockets.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.webModeler.websockets.resources | nindent 10 }}
+          ports:
+            - containerPort: 8060
+              name: http
+              protocol: TCP
+          {{- if .Values.webModeler.websockets.startupProbe.enabled }}
+          startupProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.webModeler.websockets.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.websockets.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.websockets.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.websockets.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.websockets.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.websockets.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.webModeler.websockets.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.websockets.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.websockets.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.websockets.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.websockets.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.websockets.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.webModeler.websockets.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.websockets.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.websockets.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.websockets.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.websockets.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.websockets.extraVolumeMounts }}
+          volumeMounts:
+          {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+        {{- if .Values.webModeler.websockets.sidecars }}
+        {{- .Values.webModeler.websockets.sidecars | toYaml | nindent 8 }}
         {{- end }}
-        {{- if .Values.webModeler.websockets.command}}
-        command: {{ toYaml .Values.webModeler.websockets.command | nindent 10 }}
-        {{- end }}
-        resources:
-          {{- toYaml .Values.webModeler.websockets.resources | nindent 10 }}
-        ports:
-        - containerPort: 8060
-          name: http
-          protocol: TCP
-        {{- if .Values.webModeler.websockets.startupProbe.enabled }}
-        startupProbe:
-          tcpSocket:
-            port: http
-          initialDelaySeconds: {{ .Values.webModeler.websockets.startupProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.webModeler.websockets.startupProbe.periodSeconds }}
-          successThreshold: {{ .Values.webModeler.websockets.startupProbe.successThreshold }}
-          failureThreshold: {{ .Values.webModeler.websockets.startupProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.webModeler.websockets.startupProbe.timeoutSeconds }}
-        {{- end }}
-        {{- if .Values.webModeler.websockets.readinessProbe.enabled }}
-        readinessProbe:
-          tcpSocket:
-            port: http
-          initialDelaySeconds: {{ .Values.webModeler.websockets.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.webModeler.websockets.readinessProbe.periodSeconds }}
-          successThreshold: {{ .Values.webModeler.websockets.readinessProbe.successThreshold }}
-          failureThreshold: {{ .Values.webModeler.websockets.readinessProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.webModeler.websockets.readinessProbe.timeoutSeconds }}
-        {{- end }}
-        {{- if .Values.webModeler.websockets.livenessProbe.enabled }}
-        livenessProbe:
-          tcpSocket:
-            port: http
-          initialDelaySeconds: {{ .Values.webModeler.websockets.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.webModeler.websockets.livenessProbe.periodSeconds }}
-          successThreshold: {{ .Values.webModeler.websockets.livenessProbe.successThreshold }}
-          failureThreshold: {{ .Values.webModeler.websockets.livenessProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.webModeler.websockets.livenessProbe.timeoutSeconds }}
-        {{- end }}
-        {{- if .Values.webModeler.websockets.extraVolumeMounts }}
-        volumeMounts:
-        {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 8 }}
-        {{- end }}
-      {{- if .Values.webModeler.websockets.sidecars }}
-      {{- .Values.webModeler.websockets.sidecars | toYaml | nindent 6 }}
-      {{- end }}
       {{- if .Values.webModeler.websockets.extraVolumes }}
       volumes:
       {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 6 }}

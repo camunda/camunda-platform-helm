@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "8.3.0"
     app.kubernetes.io/component: tasklist
-  annotations: 
+  annotations:
     ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
