@@ -867,3 +867,29 @@ func (s *deploymentTemplateTest) TestContainerSetInitContainer() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+
+func (s *deploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.keycloak.url.protocol":	"https",
+			"global.identity.keycloak.url.host":    	"keycloak-ext",
+			"global.identity.keycloak.url.port":    	"443",
+			"global.identity.keycloak.contextPath":		"/authz",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL",
+			Value: "https://keycloak-ext:443",
+		})
+}
