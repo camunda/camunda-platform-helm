@@ -146,6 +146,13 @@ For more details, please check Camunda Helm chart documentation.
 {{- end -}}
 
 {{/*
+[identity] Keycloak default URL.
+*/}}
+{{- define "identity.keycloak.hostDefault" -}}
+    {{- template "common.names.fullname" .Subcharts.keycloak -}}
+{{- end -}}
+
+{{/*
 [identity] Get Keycloak URL protocol based on global value or Keycloak subchart.
 */}}
 {{- define "identity.keycloak.protocol" -}}
@@ -164,7 +171,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
         {{- printf "%s-keycloak-custom" .Release.Name | trunc 63 -}}
     {{- else -}}
-        {{- include "camundaPlatform.keycloakDefaultHost" . -}}
+        {{- include "identity.keycloak.hostDefault" . -}}
     {{- end -}}
 {{- end -}}
 
@@ -175,7 +182,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
         {{- .Values.global.identity.keycloak.url.host -}}
     {{- else -}}
-        {{- include "camundaPlatform.keycloakDefaultHost" . -}}
+        {{- include "identity.keycloak.hostDefault" . -}}
     {{- end -}}
 {{- end -}}
 
@@ -200,28 +207,47 @@ This is mainly used to access the external Keycloak service in the global Ingres
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak full URL (protocol, host, and port).
+[identity] Get Keycloak based URL: protocol, host, and port (without contextPath).
+Because some apps need the base without the context path.
+*/}}
+{{- define "identity.keycloak.urlBase" -}}
+    {{- include "identity.keycloak.isConfigured" . -}}
+    {{-
+      printf "%s://%s:%s"
+        (include "identity.keycloak.protocol" .)
+        (include "identity.keycloak.host" .)
+        (include "identity.keycloak.port" .)
+    -}}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak full URL (protocol, host, port, and contextPath).
 */}}
 {{- define "identity.keycloak.url" -}}
     {{- include "identity.keycloak.isConfigured" . -}}
     {{-
-      printf "%s://%s:%s%s"
-        (include "identity.keycloak.protocol" .)
-        (include "identity.keycloak.host" .)
-        (include "identity.keycloak.port" .)
+      printf "%s%s"
+        (include "identity.keycloak.urlBase" .)
         (include "identity.keycloak.contextPath" .)
     -}}
+{{- end -}}
+
+{{/*
+[identity] Keycloak issuer backend URL.
+*/}}
+{{- define "identity.issuerBackendUrl" -}}
+    {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
 {{- end -}}
 
 {{/*
 [identity] Get Keycloak auth admin user. For more details:
 */}}
 {{- define "identity.keycloak.authAdminUser" -}}
-{{- if .Values.global.identity.keycloak.auth }}
-    {{- .Values.global.identity.keycloak.auth.adminUser -}}
-{{- else }}
-    {{- .Values.keycloak.auth.adminUser -}}
-{{- end }}
+    {{- if .Values.global.identity.keycloak.auth }}
+        {{- .Values.global.identity.keycloak.auth.adminUser -}}
+    {{- else }}
+        {{- .Values.keycloak.auth.adminUser -}}
+    {{- end }}
 {{- end -}}
 
 {{/*
@@ -229,26 +255,26 @@ This is mainly used to access the external Keycloak service in the global Ingres
 https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
 */}}
 {{- define "identity.keycloak.authExistingSecret" -}}
-{{- if .Values.global.identity.keycloak.auth }}
-    {{- .Values.global.identity.keycloak.auth.existingSecret -}}
-{{- else if .Values.keycloak.auth.existingSecret }}
-    {{- .Values.keycloak.auth.existingSecret }}
-{{- else -}}
-    {{ .Release.Name }}-keycloak
-{{- end }}
+    {{- if .Values.global.identity.keycloak.auth }}
+        {{- .Values.global.identity.keycloak.auth.existingSecret -}}
+    {{- else if .Values.keycloak.auth.existingSecret }}
+        {{- .Values.keycloak.auth.existingSecret }}
+    {{- else -}}
+        {{ .Release.Name }}-keycloak
+    {{- end }}
 {{- end -}}
 
 {{/*
 [identity] Get Keycloak auth existing secret key.
 */}}
 {{- define "identity.keycloak.authExistingSecretKey" -}}
-{{- if .Values.global.identity.keycloak.auth }}
-    {{- .Values.global.identity.keycloak.auth.existingSecretKey -}}
-{{- else if .Values.keycloak.auth.passwordSecretKey }}
-    {{- .Values.keycloak.auth.passwordSecretKey }}
-{{- else -}}
-    admin-password
-{{- end }}
+    {{- if .Values.global.identity.keycloak.auth }}
+        {{- .Values.global.identity.keycloak.auth.existingSecretKey -}}
+    {{- else if .Values.keycloak.auth.passwordSecretKey }}
+        {{- .Values.keycloak.auth.passwordSecretKey }}
+    {{- else -}}
+        admin-password
+    {{- end }}
 {{- end -}}
 
 {{/*

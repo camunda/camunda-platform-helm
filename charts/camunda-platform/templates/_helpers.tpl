@@ -123,36 +123,10 @@ Usage:
 {{- end -}}
 
 {{/*
-[camunda-platform] Keycloak default URL.
-*/}}
-
-{{- define "camundaPlatform.keycloakDefaultHost" -}}
-    {{- $keycloakDefaultHost := include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" . "context" $) -}}
-    {{- $keycloakDefaultHost -}}
-{{- end -}}
-
-{{/*
-[camunda-platform] Keycloak URL which could be external.
-*/}}
-
-{{- define "camundaPlatform.keycloakURLBase" -}}
-    http://{{- include "camundaPlatform.keycloakDefaultHost" . -}}:80
-{{- end -}}
-
-{{- define "camundaPlatform.keycloakURL" -}}
-    {{- if .Values.global.identity.keycloak.url -}}
-        {{- include "identity.keycloak.url" . -}}
-    {{- else -}}
-        {{- include "camundaPlatform.keycloakURLBase" . -}}{{- include "identity.keycloak.contextPath" . -}}
-    {{- end -}}
-{{- end -}}
-
-{{/*
 [camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
 */}}
-
 {{- define "camundaPlatform.issuerBackendUrl" -}}
-    {{- include "camundaPlatform.keycloakURL" . -}}{{- .Values.global.identity.keycloak.realm -}}
+    {{- include "identity.keycloak.url" .Subcharts.identity -}}{{- .Values.global.identity.keycloak.realm -}}
 {{- end -}}
 
 {{/*
