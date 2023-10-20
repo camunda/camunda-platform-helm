@@ -46,4 +46,8 @@ jobs:
         run: |
           echo "check-version-increment: false" >> .github/config/chart-testing.yaml
       - name: Run chart testing and lint
+      #check to see if this works:
         run: ct lint --config .github/config/chart-testing.yaml
+      - name: Lint YAML Files
+        run: |
+          yamllint -c .github/config/yamllint.yaml ./charts/camunda-platform/test/unit

@@ -23,7 +23,7 @@ spec:
     {{- toYaml .Values.zeebeGateway.service.loadBalancerSourceRanges | nindent 6 }}
   {{- end }}
   selector:
-    {{- include "zeebe.matchLabels.gateway" . | nindent 6 }}
+    {{- include "zeebe.matchLabels.gateway" . | nindent 4 }}
   ports:
     - port: {{ .Values.zeebeGateway.service.httpPort }}
       protocol: TCP

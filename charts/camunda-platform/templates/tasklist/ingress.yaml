@@ -6,7 +6,8 @@ metadata:
   labels:
     {{- include "tasklist.labels" . | nindent 4 }}
 {{- with .Values.tasklist.ingress.annotations }}
-  annotations: {{ tpl (toYaml .) $ | nindent 4 }}
+  annotations:
+    {{- tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
 spec:
   ingressClassName: {{ .Values.tasklist.ingress.className }}

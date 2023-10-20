@@ -14,10 +14,10 @@ metadata:
 spec:
   type: {{ .Values.webModeler.websockets.service.type }}
   ports:
-  - port: {{ .Values.webModeler.websockets.service.port }}
-    name: http
-    targetPort: 8060
-    protocol: TCP
+    - port: {{ .Values.webModeler.websockets.service.port }}
+      name: http
+      targetPort: 8060
+      protocol: TCP
   selector:
     {{- include "webModeler.websockets.matchLabels" . | nindent 4 }}
 {{- end }}
