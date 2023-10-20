@@ -186,7 +186,7 @@ spec:
           - name: KEYCLOAK_URL
             value: {{ include "identity.keycloak.url" . | quote }}
           - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
-            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+            value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
           - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
             value: {{ include "identity.issuerBackendUrl" . | quote }}
           - name: KEYCLOAK_SETUP_USER

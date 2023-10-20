@@ -56,8 +56,8 @@ spec:
           env:
             - name: SERVER_PORT
               value: "8080"
-            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL
-              value: "http://camunda-platform-test-keycloak:80"
+            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL
+              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
               value: connectors
             - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
@@ -65,8 +65,6 @@ spec:
                 secretKeyRef:
                   name: "camunda-platform-test-connectors-identity-secret"
                   key: connectors-secret
-            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM
-              value: camunda-platform
             - name: CAMUNDA_OPERATE_CLIENT_URL
               value: "http://camunda-platform-test-operate:80"
             - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
