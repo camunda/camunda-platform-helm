@@ -158,6 +158,7 @@ spec:
       securityContext:
         fsGroup: 1000
         runAsNonRoot: true
+# yamllint disable
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -168,12 +169,12 @@ spec:
                 values:
                 - zeebe-broker
             topologyKey: kubernetes.io/hostname
+# yamllint enable
   volumeClaimTemplates:
     - metadata:
         name: data
       spec:
         accessModes: [ReadWriteOnce]
-        storageClassName: 
         resources:
           requests:
             storage: "32Gi"

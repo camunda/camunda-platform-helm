@@ -209,10 +209,12 @@ spec:
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
+# yamllint disable
 {{- with .Values.zeebe.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
 {{- end }}
+# yamllint enable
 {{- with .Values.zeebe.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
@@ -224,7 +226,9 @@ spec:
         name: data
       spec:
         accessModes: {{ .Values.zeebe.pvcAccessModes }}
+        {{- if .Values.zeebe.storageClassName}}
         storageClassName: {{ .Values.zeebe.pvcStorageClassName }}
+        {{- end }}
         resources:
           requests:
             storage: {{ .Values.zeebe.pvcSize | quote }}

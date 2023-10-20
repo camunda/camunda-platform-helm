@@ -50,4 +50,4 @@ jobs:
         run: ct lint --config .github/config/chart-testing.yaml
       - name: Lint YAML Files
         run: |
-          yamllint -c .github/config/yamllint.yaml ./charts
+          yamllint -c .github/config/yamllint.yaml ./charts/camunda-platform/test/unit

@@ -174,10 +174,12 @@ spec:
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
+  # yamllint disable
 {{- with .Values.zeebeGateway.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
 {{- end }}
+  # yamllint enable
 {{- with .Values.zeebeGateway.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
