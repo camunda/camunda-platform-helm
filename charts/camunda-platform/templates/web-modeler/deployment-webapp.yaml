@@ -25,69 +25,69 @@ spec:
       initContainers:
         {{- tpl (.Values.webModeler.webapp.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
-      - name: {{ include "webModeler.name" . }}-webapp
-        image: {{ include "webModeler.webapp.image" . | quote }}
-        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-        {{- if .Values.webModeler.webapp.containerSecurityContext }}
-        securityContext: {{- toYaml .Values.webModeler.webapp.containerSecurityContext | nindent 10 }}
-        {{- end }}
-        env:
-          - name: NODE_ENV
-            value: "production"
-          - name: NODE_OPTIONS
-            value: "--max-old-space-size=128"
-          - name: HTTP_WORKERS
-            value: "2"
-          - name: RESTAPI_HOST
-            value: {{ include "webModeler.restapi.fullname" . | quote }}
-          - name: RESTAPI_PORT
-            value: {{ .Values.webModeler.restapi.service.port | quote }}
-          - name: RESTAPI_MANAGEMENT_PORT
-            value: {{ .Values.webModeler.restapi.service.managementPort | quote }}
-          - name: SERVER_URL
-            value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-          - name: SERVER_HTTPS_ONLY
-            value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
-          - name: OAUTH2_CLIENT_ID
-            value: "web-modeler"
-          - name: OAUTH2_TOKEN_AUDIENCE
-            value: "web-modeler"
-          - name: OAUTH2_TOKEN_ISSUER
-            value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-          - name: KEYCLOAK_BASE_URL
-            value: {{ include "camundaPlatform.authIssuerUrl" . | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
-          - name: KEYCLOAK_CONTEXT_PATH
-            value: {{ .Values.global.identity.keycloak.contextPath | quote }}
-          - name: KEYCLOAK_REALM
-            value: {{ .Values.global.identity.keycloak.realm | trimPrefix "/realms/" | quote }}
-          - name: KEYCLOAK_JWKS_URL
-            value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-          - name: PUSHER_HOST
-            value: {{ include "webModeler.websockets.fullname" . | quote }}
-          - name: PUSHER_PORT
-            value: {{ .Values.webModeler.websockets.service.port | quote }}
-          - name: PUSHER_APP_ID
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "webModeler.fullname" . }}
-                key: pusher-app-id
-          - name: PUSHER_KEY
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "webModeler.fullname" . }}
-                key: pusher-app-key
-          - name: PUSHER_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: {{ include "webModeler.fullname" . }}
-                key: pusher-app-secret
-          - name: CLIENT_PUSHER_HOST
-            value: {{ include "webModeler.publicWebsocketHost" . | quote }}
-          - name: CLIENT_PUSHER_PORT
-            value: {{ include "webModeler.publicWebsocketPort" . | quote }}
-          {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-          - name: CLIENT_PUSHER_PATH
-            value: {{ include "webModeler.websocketContextPath" . | quote }}
+        - name: {{ include "webModeler.name" . }}-webapp
+          image: {{ include "webModeler.webapp.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.webModeler.webapp.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.webModeler.webapp.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=128"
+            - name: HTTP_WORKERS
+              value: "2"
+            - name: RESTAPI_HOST
+              value: {{ include "webModeler.restapi.fullname" . | quote }}
+            - name: RESTAPI_PORT
+              value: {{ .Values.webModeler.restapi.service.port | quote }}
+            - name: RESTAPI_MANAGEMENT_PORT
+              value: {{ .Values.webModeler.restapi.service.managementPort | quote }}
+            - name: SERVER_URL
+              value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+            - name: SERVER_HTTPS_ONLY
+              value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
+            - name: OAUTH2_CLIENT_ID
+              value: "web-modeler"
+            - name: OAUTH2_TOKEN_AUDIENCE
+              value: "web-modeler"
+            - name: OAUTH2_TOKEN_ISSUER
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            - name: KEYCLOAK_BASE_URL
+              value: {{ include "camundaPlatform.authIssuerUrl" . | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
+            - name: KEYCLOAK_CONTEXT_PATH
+              value: {{ .Values.global.identity.keycloak.contextPath | quote }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.global.identity.keycloak.realm | trimPrefix "/realms/" | quote }}
+            - name: KEYCLOAK_JWKS_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+            - name: PUSHER_HOST
+              value: {{ include "webModeler.websockets.fullname" . | quote }}
+            - name: PUSHER_PORT
+              value: {{ .Values.webModeler.websockets.service.port | quote }}
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-id
+            - name: PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-key
+            - name: PUSHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-secret
+            - name: CLIENT_PUSHER_HOST
+              value: {{ include "webModeler.publicWebsocketHost" . | quote }}
+            - name: CLIENT_PUSHER_PORT
+              value: {{ include "webModeler.publicWebsocketPort" . | quote }}
+            {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+            - name: CLIENT_PUSHER_PATH
+              value: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
             - name: CLIENT_PUSHER_FORCE_TLS
               value: {{ include "webModeler.websocketTlsEnabled" . | quote }}
@@ -98,9 +98,9 @@ spec:
                   key: pusher-app-key
             - name: IDENTITY_BASE_URL
               value: {{ include "webModeler.identityBaseUrl" . | quote }}
-          {{- with .Values.webModeler.webapp.env }}
-            {{- tpl (toYaml .) $ | nindent 12 }}
-          {{- end }}
+            {{- with .Values.webModeler.webapp.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
           {{- if .Values.webModeler.webapp.command }}
           command: {{ toYaml .Values.webModeler.webapp.command | nindent 10 }}
           {{- end }}
