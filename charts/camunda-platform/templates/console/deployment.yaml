@@ -36,9 +36,9 @@ spec:
             - name: NODE_ENV
               value: production
             - name: IDENTITY_BASE
-              value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             - name: IDENTITY_ISSUER_URL
-              value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             - name: IDENTITY_REALM
               value: camunda-platform
             - name: IDENTITY_AUDIENCE

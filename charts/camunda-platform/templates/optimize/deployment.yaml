@@ -79,9 +79,9 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "ccsm"
           - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
-            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+            value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
           - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL
-            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+            value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
           - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
             value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
           - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
@@ -110,7 +110,7 @@ spec:
           - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
             value: "optimize-api"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
-            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+            value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
           {{- end }}
           - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
             value: "false"

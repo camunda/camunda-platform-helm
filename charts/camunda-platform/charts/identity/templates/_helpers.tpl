@@ -207,27 +207,15 @@ This is mainly used to access the external Keycloak service in the global Ingres
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak based URL: protocol, host, and port (without contextPath).
-Because some apps need the base without the context path.
-*/}}
-{{- define "identity.keycloak.urlBase" -}}
-    {{- include "identity.keycloak.isConfigured" . -}}
-    {{-
-      printf "%s://%s:%s"
-        (include "identity.keycloak.protocol" .)
-        (include "identity.keycloak.host" .)
-        (include "identity.keycloak.port" .)
-    -}}
-{{- end -}}
-
-{{/*
 [identity] Get Keycloak full URL (protocol, host, port, and contextPath).
 */}}
 {{- define "identity.keycloak.url" -}}
     {{- include "identity.keycloak.isConfigured" . -}}
     {{-
-      printf "%s%s"
-        (include "identity.keycloak.urlBase" .)
+      printf "%s://%s:%s%s"
+        (include "identity.keycloak.protocol" .)
+        (include "identity.keycloak.host" .)
+        (include "identity.keycloak.port" .)
         (include "identity.keycloak.contextPath" .)
     -}}
 {{- end -}}

@@ -123,18 +123,32 @@ Usage:
 {{- end -}}
 
 {{/*
+[camunda-platform] Keycloak issuer public URL which used externally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerUrl" -}}
+    {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
+{{- end -}}
+
+
+{{/*
 [camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
 */}}
-{{- define "camundaPlatform.issuerBackendUrl" -}}
+{{- define "camundaPlatform.authIssuerBackendUrl" -}}
     {{- include "identity.keycloak.url" .Subcharts.identity -}}{{- .Values.global.identity.keycloak.realm -}}
 {{- end -}}
 
 {{/*
 [camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
 */}}
+{{- define "camundaPlatform.authIssuerBackendUrlTokenEndpoint" -}}
+    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
+{{- end -}}
 
-{{- define "camundaPlatform.authTokenUrl" -}}
-    {{- include "camundaPlatform.issuerBackendUrl" . -}}/protocol/openid-connect/token
+{{/*
+[camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerBackendUrlCertsEndpoint" -}}
+    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
 {{- end -}}
 
 {{/*

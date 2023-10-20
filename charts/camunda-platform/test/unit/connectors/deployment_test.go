@@ -701,14 +701,12 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeDisabled() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 
 	for _, envvar := range env {
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_URL", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_USERNAME", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_PASSWORD", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-ID", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_URL", envvar.Name)
 	}
 
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
@@ -738,11 +736,10 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
 	for _, envvar := range env {
 		s.Require().NotEqual("CAMUNDA_CONNECTOR_POLLING_ENABLED", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", envvar.Name)
-		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", envvar.Name)
+		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-ID", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", envvar.Name)
+		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
 	}
 
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
@@ -779,9 +776,8 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
 
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL", Value: "http://camunda-platform-test-keycloak:80"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_CLIENT-ID", Value: "connectors"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-REALM", Value: "camunda-platform"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
 
 }
@@ -872,10 +868,11 @@ func (s *deploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.identity.keycloak.url.protocol":	"https",
-			"global.identity.keycloak.url.host":    	"keycloak-ext",
-			"global.identity.keycloak.url.port":    	"443",
-			"global.identity.keycloak.contextPath":		"/authz",
+			"global.identity.keycloak.url.protocol":  "https",
+			"global.identity.keycloak.url.host":      "keycloak-ext",
+			"global.identity.keycloak.url.port":      "443",
+			"global.identity.keycloak.contextPath":   "/authz",
+			"global.identity.keycloak.realm":         "/realms/camunda-platform-test",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -889,7 +886,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name:  "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-URL",
-			Value: "https://keycloak-ext:443",
+			Name:  "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL",
+			Value: "https://keycloak-ext:443/authz/realms/camunda-platform-test/protocol/openid-connect/token",
 		})
 }

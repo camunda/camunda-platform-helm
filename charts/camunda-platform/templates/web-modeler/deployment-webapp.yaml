@@ -53,15 +53,15 @@ spec:
           - name: OAUTH2_TOKEN_AUDIENCE
             value: "web-modeler"
           - name: OAUTH2_TOKEN_ISSUER
-            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+            value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
           - name: KEYCLOAK_BASE_URL
-            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
+            value: {{ include "camundaPlatform.authIssuerUrl" . | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
           - name: KEYCLOAK_CONTEXT_PATH
             value: {{ .Values.global.identity.keycloak.contextPath | quote }}
           - name: KEYCLOAK_REALM
             value: {{ .Values.global.identity.keycloak.realm | trimPrefix "/realms/" | quote }}
           - name: KEYCLOAK_JWKS_URL
-            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+            value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
           - name: PUSHER_HOST
             value: {{ include "webModeler.websockets.fullname" . | quote }}
           - name: PUSHER_PORT

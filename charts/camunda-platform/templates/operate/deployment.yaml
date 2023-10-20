@@ -45,15 +45,15 @@ spec:
           - name: SPRING_PROFILES_ACTIVE
             value: "identity-auth"
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
-            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+            value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
           - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
-            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+            value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_BASEURL
             value: {{ include "camundaPlatform.identityURL" . | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
-            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+            value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
-            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+            value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
             value: "operate"
           - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET
@@ -101,7 +101,7 @@ spec:
                 key: zeebe-secret
             {{- end }}
           - name: ZEEBE_AUTHORIZATION_SERVER_URL
-            value: {{ include "camundaPlatform.authTokenUrl" . | quote }}
+            value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
           - name: ZEEBE_TOKEN_AUDIENCE
             value: zeebe-api
           {{- else }}
