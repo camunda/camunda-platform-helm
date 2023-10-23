@@ -3,6 +3,82 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "use the proper keycloak var for connectors"
+        - kind: fixed
+          description: "configure identity base url"
+        - kind: fixed
+          description: "readonly add zeebe cache path"
+        - kind: changed
+          description: "update accessing keycloak url"
+        - kind: changed
+          description: "allow customize optimize migration init container env vars"
+        - kind: changed
+          description: "allow toggle optimize migration init container"
+        - kind: changed
+          description: "move optimize to the main chart"
+        - kind: changed
+          description: "move zeebe/zeebe-gateway to the main chart"
+        - kind: changed
+          description: "move tasklist to the main chart"
+        - kind: changed
+          description: "move operate to the main chart"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.3.x
+    created: "2023-10-23T18:51:03.242250738Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.3.1
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.13.5
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: dff11dc7096092703f953553abad9cc9667d6187bbc8cc4ecad464ae046f08d1
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.1/camunda-platform-8.3.1.tgz
+    version: 8.3.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Support Multi-tenancy for all components"
         - kind: added
@@ -6820,4 +6896,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-10-23T17:04:48.240359755Z"
+generated: "2023-10-23T18:51:03.242624948Z"
