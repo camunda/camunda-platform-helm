@@ -57,23 +57,23 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support Multi-tenancy for all components"
-    - kind: added
-      description: "Support extra initContainers for all components"
-    - kind: added
-      description: "Upgrade Optimize via predefined initContainer"
-    - kind: changed
-      description: "Use read-only root file system for all components"
-    - kind: changed
-      description: "Upgrade Keycloak from v19 to v22"
-    - kind: changed
-      description: "Upgrade Elasticsearch from v7 to v8"
-    - kind: changed
-      description: "Use JDBC URL in Web-Modeler API config"
-    - kind: changed
-      description: "Increased Ingress proxy-buffer-size"
     - kind: fixed
-      description: "Correct command value for all components"
-    - kind: removed
-      description: "Removed Elasticsearch Curator"
+      description: "use the proper keycloak var for connectors"
+    - kind: fixed
+      description: "configure identity base url"
+    - kind: fixed
+      description: "readonly add zeebe cache path"
+    - kind: changed
+      description: "update accessing keycloak url"
+    - kind: changed
+      description: "allow customize optimize migration init container env vars"
+    - kind: changed
+      description: "allow toggle optimize migration init container"
+    - kind: changed
+      description: "move optimize to the main chart"
+    - kind: changed
+      description: "move zeebe/zeebe-gateway to the main chart"
+    - kind: changed
+      description: "move tasklist to the main chart"
+    - kind: changed
+      description: "move operate to the main chart"
