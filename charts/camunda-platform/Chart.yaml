@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.1.17
+version: 8.1.18
 appVersion: 8.1.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.1.17
+    version: 8.1.18
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.1.17
+    version: 8.1.18
     condition: "operate.enabled"
   - name: optimize
-    version: 8.1.17
+    version: 8.1.18
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.1.17
+    version: 8.1.18
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.1.17
+    version: 8.1.18
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.1.17
+    version: 8.1.18
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch
