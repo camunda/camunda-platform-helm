@@ -1686,7 +1686,7 @@ identity:
       ## @param identity.keycloak.image.repository image repo
       repository: bitnami/keycloak
       ## @param identity.keycloak.image.tag image tag
-      tag: 22.0.4
+      tag: 22.0.5
 
     # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
     # Docs: https://www.keycloak.org/server/reverseproxy
