@@ -10,7 +10,7 @@ helm repo update
 
 chart_main_version="$(yq '.version' charts/camunda-platform/Chart.yaml)"
 components_versions="$(helm template camunda/camunda-platform | grep -Po '(?<=helm.sh/chart: ).+' | sort | uniq)"
-components_count=7
+components_count=2
 
 print_components_versions() {
     echo "Current versions from Camunda Helm repo:"
