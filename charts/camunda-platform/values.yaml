@@ -37,6 +37,12 @@
 ## @section Global parameters
 ## @extra global
 global:
+  # number of regions that this Camunda Platform instance is stretched across
+  regions: 1
+  # unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+  regionId: 0
+  # mode of installation for multi-region disaster recovery: normal, failOver, failBack
+  installationType: normal
   ## Multitenancy configuration.
   ## @extra global.multitenancy
   multitenancy:
