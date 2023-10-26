@@ -11,9 +11,9 @@ metadata:
     {{- end }}
 spec:
   replicas: {{- if eq .Values.global.installationType "failOver" }}
-                {{ div (div .Values.clusterSize .Values.global.regions) 2 }}
+                {{ div (div .Values.zeebe.clusterSize .Values.global.regions) 2 }}
             {{- else }}
-                {{ div .Values.clusterSize .Values.global.regions }}
+                {{ div .Values.zeebe.clusterSize .Values.global.regions }}
             {{- end }}
   selector:
     matchLabels:
