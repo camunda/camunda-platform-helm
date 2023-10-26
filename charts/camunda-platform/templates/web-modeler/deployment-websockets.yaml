@@ -63,7 +63,7 @@ spec:
           command: {{ toYaml .Values.webModeler.websockets.command | nindent 10 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.webModeler.websockets.resources | nindent 10 }}
+            {{- toYaml .Values.webModeler.websockets.resources | nindent 12 }}
           ports:
             - containerPort: 8060
               name: http
