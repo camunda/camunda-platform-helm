@@ -65,6 +65,10 @@ spec:
               key: client-secret
               # Making it optional for debugging Venom where is no Camunda is deployed.
               optional: true
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         envFrom:
         - configMapRef:
             name: venom-env-vars
