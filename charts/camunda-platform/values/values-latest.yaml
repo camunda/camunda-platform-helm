@@ -47,4 +47,4 @@ webModeler:
 elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image: bitnami/elasticsearch
-  tag: 8.7.1
+  tag: 8.8.2
