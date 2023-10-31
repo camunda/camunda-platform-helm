@@ -40,7 +40,7 @@ jobs:
         with:
           python-version: 3.7
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
       - name: Don't check version increment if there is no release label
         if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
         run: |
