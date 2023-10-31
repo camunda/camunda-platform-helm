@@ -16,8 +16,7 @@ data:
   startup.sh: |
     #!/usr/bin/env bash
     set -eux -o pipefail
-
-    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-${K8S_NAME##*-}}
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}
 
     if [ "$(ls -A /exporters/)" ]; then
       mkdir /usr/local/zeebe/exporters/
@@ -25,7 +24,6 @@ data:
     else
       echo "No exporters available."
     fi
-
     exec /usr/local/zeebe/bin/broker
 
   broker-log4j2.xml: |

@@ -201,6 +201,17 @@ global:
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
         existingSecret: ""
 
+  # Multiregion Options for Zeebe
+  #
+  # In order to get your multi-region setup covered by Camunda enterprise support you MUST get your configuration and run books reviewed by Camunda before going to production. This is necessary for us to be able to help you in case of outages, due to the complexity of operating multi-region setups and the dependencies to the underlying Kubernetes prerequisites. If you operate this in the wrong way you risk corruption and complete loss of all data especially in the dual-region case. If you can, consider three regions. Please, contact your customer success manager as soon as you start planning a multi-region setup. Camunda reserves the right to limit support if no review was done prior to launch or the review showed significant risks.
+  multiregion:
+    # number of regions that this Camunda Platform instance is stretched across
+    regions: 1
+    # unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+    regionId: 0
+    # mode of installation for multi-region disaster recovery: normal, failOver, failBack
+    installationType: normal
+
 
 ###################################
 #######
