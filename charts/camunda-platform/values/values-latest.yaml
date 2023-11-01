@@ -32,7 +32,7 @@ optimize:
   image:
     repository: camunda/optimize
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.3.1
+    tag: 8.97.0
 
 webModeler:
   # Camunda Enterprise repository.
