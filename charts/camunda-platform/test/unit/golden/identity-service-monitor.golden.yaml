@@ -1,9 +1,9 @@
 ---
-# Source: camunda-platform/templates/service-monitor.yaml
+# Source: camunda-platform/templates/service-monitor/identity-service-monitor.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: camunda-platform-test
+  name: camunda-platform-test-identity
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -16,8 +16,9 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
+      app.kubernetes.io/component: identity
   endpoints:
     - honorLabels: true
       path: /actuator/prometheus
-      port: http
+      port: metrics
       interval: 10s
