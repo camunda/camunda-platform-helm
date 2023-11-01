@@ -239,7 +239,7 @@ spec:
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           envFrom:
-          {{- if .Values.postgresql.enabled }}
+          {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
             - configMapRef:
                 name: {{ include "identity.fullname" . }}-env-vars
           {{- end }}
