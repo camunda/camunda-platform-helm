@@ -209,11 +209,11 @@ global:
   # If you can, consider three regions. Please, contact your customer success manager as soon as you start planning a multi-region setup.
   # Camunda reserves the right to limit support if no review was done prior to launch or the review showed significant risks.
   multiregion:
-    # number of regions that this Camunda Platform instance is stretched across
+    ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
-    # unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
     regionId: 0
-    # mode of installation for multi-region disaster recovery: normal, failOver, failBack
+    ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
 
