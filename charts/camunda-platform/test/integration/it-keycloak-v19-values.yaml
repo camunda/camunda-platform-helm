@@ -1,6 +1,8 @@
 global:
   identity:
     keycloak:
+      auth:
+        adminUser: user
       legacy: false
 
 webModeler:
