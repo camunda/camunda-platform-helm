@@ -15,8 +15,14 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+    - component: Elasticsearch Zeebe
+      url: "{{ .preflightVars.baseURLs.elasticsearch.zeebe }}/_cluster/health?&timeout=1s"
+    - component: Elasticsearch Tasklist
+      url: "{{ .preflightVars.baseURLs.elasticsearch.tasklist }}/_cluster/health?&timeout=1s"
+    - component: Elasticsearch Operate
+      url: "{{ .preflightVars.baseURLs.elasticsearch.operate }}/_cluster/health?&timeout=1s"
+    - component: Elasticsearch Optimize
+      url: "{{ .preflightVars.baseURLs.elasticsearch.optimize }}/_cluster/health?&timeout=1s"
     - component: Keycloak
       url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
     # Camunda.
@@ -67,8 +73,14 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+    - component: Elasticsearch Zeebe
+      url: "{{ .preflightVars.baseURLs.elasticsearch.zeebe }}/_cluster/health?wait_for_status=green&timeout=1s"
+    - component: Elasticsearch Tasklist
+      url: "{{ .preflightVars.baseURLs.elasticsearch.tasklist }}/_cluster/health?wait_for_status=green&timeout=1s"
+    - component: Elasticsearch Operate
+      url: "{{ .preflightVars.baseURLs.elasticsearch.operate }}/_cluster/health?wait_for_status=green&timeout=1s"
+    - component: Elasticsearch Optimize
+      url: "{{ .preflightVars.baseURLs.elasticsearch.optimize }}/_cluster/health?wait_for_status=green&timeout=1s"
     - component: Keycloak
       url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
     # Camunda.

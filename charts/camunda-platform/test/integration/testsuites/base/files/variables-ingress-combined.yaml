@@ -1,6 +1,10 @@
 preflightVars:
   baseURLs:
-    elasticsearch: http://integration-elasticsearch:9200
+    elasticsearch:
+      zeebe: http://integration-elasticsearch-zeebe:9200
+      tasklist: http://integration-elasticsearch-tasklist:9200
+      operate: http://integration-elasticsearch-operate:9200
+      optimize: http://integration-elasticsearch-optimize:9200
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82
     optimize: http://integration-optimize/optimize
