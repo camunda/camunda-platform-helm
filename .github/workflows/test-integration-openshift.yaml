@@ -113,8 +113,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Set OpenShift authentication vars
       run: |
-        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.distro.version }} | tr -d '.')"
-        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_CLUSTER_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
+        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.openshift.version }} | tr -d '.')"
+        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
         echo "OPENSHIFT_CLUSTER_USERNAME=OPENSHIFT_CLUSTER_USERNAME_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
         echo "OPENSHIFT_CLUSTER_PASSWORD=OPENSHIFT_CLUSTER_PASSWORD_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
     - name: Authenticate to OpenShift
