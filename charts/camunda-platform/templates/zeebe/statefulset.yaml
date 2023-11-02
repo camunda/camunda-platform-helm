@@ -89,7 +89,7 @@ spec:
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+              value: {{ include "camundaPlatform.elasticsearchZeebeURL" . | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
               value: {{ .Values.global.elasticsearch.prefix | quote }}
             {{- if .Values.zeebe.retention.enabled }}

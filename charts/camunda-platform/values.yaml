@@ -86,18 +86,34 @@ global:
   elasticsearch:
     ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
-    ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
-    url:
     ## @param global.elasticsearch.protocol defines the elasticsearch access protocol, by default HTTP.
     protocol: http
     ## @param global.elasticsearch.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
     host: "{{ .Release.Name }}-elasticsearch"
     ## @param global.elasticsearch.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
     port: 9200
-    ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
-    clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
+    zeebe:
+      ## @param global.elasticsearch.zeebe.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
+      host: "{{ .Release.Name }}-elasticsearch-zeebe"
+      ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+      url:
+    tasklist:
+      ## @param global.elasticsearch.tasklist.host Elasticsearch.tasklist defines the elasticsearch host, ideally the service name inside the namespace
+      host: "{{ .Release.Name }}-elasticsearch-tasklist"
+      ## @param global.elasticsearch.tasklist.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+      url:
+    operate:
+      ## @param global.elasticsearch.operate.host Elasticsearch.tasklist defines the elasticsearch host, ideally the service name inside the namespace
+      host: "{{ .Release.Name }}-elasticsearch-operate"
+      ## @param global.elasticsearch.operate.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+      url:
+    optimize:
+      ## @param global.elasticsearch.optimize.host Elasticsearch.tasklist defines the elasticsearch host, ideally the service name inside the namespace
+      host: "{{ .Release.Name }}-elasticsearch-optimize"
+      ## @param global.elasticsearch.optimize.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+      url:
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
   ## @param global.zeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
@@ -2966,11 +2982,7 @@ console:
 #####################################################################################
 
 ## @section Elasticsearch Parameters
-
-## @extra elasticsearch
-elasticsearch:
-  ## @param elasticsearch.enabled
-  enabled: true
+commonEsConfig: &defaultElasticsearchConfig
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository
@@ -3040,6 +3052,37 @@ elasticsearch:
     ## @param elasticsearch.ingest.enabled
     enabled: false
 
+## @extra elasticsearch-zeebe
+elasticsearch-zeebe:
+  ## @param elasticsearch-zeebe.enabled
+  enabled: true
+  ## @param elasticsearch-zeebe.clusterName
+  clusterName: "zeebe-cluster"
+  <<: *defaultElasticsearchConfig
+
+## @extra elasticsearch-tasklist
+elasticsearch-tasklist:
+  ## @param elasticsearch-tasklist.enabled
+  enabled: true
+  ## @param elasticsearch-tasklist.clusterName
+  clusterName: "tasklist-cluster"
+  <<: *defaultElasticsearchConfig
+
+## @extra elasticsearch-operate
+elasticsearch-operate:
+  ## @param elasticsearch-operate.enabled
+  enabled: true
+  ## @param elasticsearch-operate.clusterName
+  clusterName: "operate-cluster"
+  <<: *defaultElasticsearchConfig
+
+## @extra elasticsearch-optimize
+elasticsearch-optimize:
+  ## @param elasticsearch-optimize.enabled
+  enabled: true
+  ## @param elasticsearch-optimize.clusterName
+  clusterName: "tasklist-cluster"
+  <<: *defaultElasticsearchConfig
 
 #####################################################################
 ######

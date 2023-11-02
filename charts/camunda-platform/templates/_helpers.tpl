@@ -155,15 +155,51 @@ Usage:
 [camunda-platform] Elasticsearch URL which could be external.
 */}}
 
-{{- define "camundaPlatform.elasticsearchHost" -}}
-    {{- tpl .Values.global.elasticsearch.host $ -}}
+{{- define "camundaPlatform.elasticsearchZeebeHost" -}}
+    {{- tpl .Values.global.elasticsearch.zeebe.host $ -}}
 {{- end -}}
 
-{{- define "camundaPlatform.elasticsearchURL" -}}
-    {{- if .Values.global.elasticsearch.url -}}
-        {{- .Values.global.elasticsearch.url -}}
+{{- define "camundaPlatform.elasticsearchZeebeURL" -}}
+    {{- if .Values.global.elasticsearch.zeebe.url -}}
+        {{- .Values.global.elasticsearch.zeebe.url -}}
     {{- else -}}
-        {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.port }}
+        {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchZeebeHost" . }}:{{ .Values.global.elasticsearch.port }}
+    {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.elasticsearchTasklistHost" -}}
+    {{- tpl .Values.global.elasticsearch.tasklist.host $ -}}
+{{- end -}}
+
+{{- define "camundaPlatform.elasticsearchTasklistURL" -}}
+    {{- if .Values.global.elasticsearch.tasklist.url -}}
+        {{- .Values.global.elasticsearch.tasklist.url -}}
+    {{- else -}}
+        {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchTasklistHost" . }}:{{ .Values.global.elasticsearch.port }}
+    {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.elasticsearchOperateHost" -}}
+    {{- tpl .Values.global.elasticsearch.operate.host $ -}}
+{{- end -}}
+
+{{- define "camundaPlatform.elasticsearchOperateURL" -}}
+    {{- if .Values.global.elasticsearch.operate.url -}}
+        {{- .Values.global.elasticsearch.operate.url -}}
+    {{- else -}}
+        {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchOperateHost" . }}:{{ .Values.global.elasticsearch.port }}
+    {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.elasticsearchOptimizeHost" -}}
+    {{- tpl .Values.global.elasticsearch.optimize.host $ -}}
+{{- end -}}
+
+{{- define "camundaPlatform.elasticsearchOptimizeURL" -}}
+    {{- if .Values.global.elasticsearch.optimize.url -}}
+        {{- .Values.global.elasticsearch.optimize.url -}}
+    {{- else -}}
+        {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchOptimizeHost" . }}:{{ .Values.global.elasticsearch.port }}
     {{- end -}}
 {{- end -}}
 

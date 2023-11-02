@@ -75,11 +75,53 @@
     - {{ include "webModeler.webapp.image" . }}
     - {{ include "webModeler.websockets.image" . }}
   {{- end }}
-- Elasticsearch:
-  - Enabled: {{ .Values.elasticsearch.enabled }}
-  {{- if .Values.elasticsearch.enabled }}
-  - Elasticsearch URL: {{ include "camundaPlatform.elasticsearchURL" . }}
+- Zeebe Elasticsearch:
+  - Enabled: {{ index .Values "elasticsearch-zeebe" "enabled" }}
+  {{- if index .Values "elasticsearch-zeebe" "enabled" }}
+  - Elasticsearch URL: {{ include "camundaPlatform.elasticsearchZeebeURL" . }}
   {{- end }}
+- Tasklist Elasticsearch:
+  - Enabled: {{ index .Values "elasticsearch-tasklist" "enabled" }}
+  {{- if index .Values "elasticsearch-tasklist" "enabled" }}
+  - Elasticsearch URL: {{ include "camundaPlatform.elasticsearchTasklistURL" . }}
+  {{- end }}
+- Operate Elasticsearch:
+  - Enabled: {{ index .Values "elasticsearch-operate" "enabled" }}
+  {{- if index .Values "elasticsearch-operate" "enabled" }}
+  - Elasticsearch URL: {{ include "camundaPlatform.elasticsearchOperateURL" . }}
+  {{- end }}
+- Optimize Elasticsearch:
+  - Enabled: {{ index .Values "elasticsearch-optimize" "enabled" }}
+  {{- if index .Values "elasticsearch-optimize" "enabled" }}
+  - Elasticsearch URL: {{ include "camundaPlatform.elasticsearchOptimizeURL" . }}
+  {{- end }}
+
+{{- if or (index .Values "elasticsearch-zeebe" "enabled") (index .Values "elasticsearch-tasklist" "enabled") (index .Values "elasticsearch-operate" "enabled") (index .Values "elasticsearch-optimize" "enabled")}}
+
+### Elasticsearch
+
+Use `kubectl port-forward` to connect to ES instance:
+{{- if index .Values "elasticsearch-zeebe" "enabled" }}
+- Zeebe Elasticsearch:
+  kubectl port-forward svc/{{ .Release.Namespace }}-elasticsearch-zeebe 9201:9200 -n {{ .Release.Namespace }}
+  Now you can connect Zeebe Elasticsearch via `localhost:9201`
+{{- end }}
+{{- if index .Values "elasticsearch-tasklist" "enabled" }}
+- Tasklist Elasticsearch:
+  kubectl port-forward svc/{{ .Release.Namespace }}-elasticsearch-tasklist 9202:9200 -n {{ .Release.Namespace }}
+  Now you can connect Zeebe Elasticsearch via `localhost:9202`
+{{- end }}
+{{- if index .Values "elasticsearch-operate" "enabled" }}
+- Operate Elasticsearch:
+  kubectl port-forward svc/{{ .Release.Namespace }}-elasticsearch-operate 9203:9200 -n {{ .Release.Namespace }}
+  Now you can connect Zeebe Elasticsearch via `localhost:9203`
+{{- end }}
+{{- if index .Values "elasticsearch-optimize" "enabled" }}
+- Optimize Elasticsearch:
+  kubectl port-forward svc/{{ .Release.Namespace }}-elasticsearch-optimize 9204:9200 -n {{ .Release.Namespace }}
+  Now you can connect Zeebe Elasticsearch via `localhost:9204`
+{{- end }}
+{{- end }}
 
 ### Zeebe
 
@@ -132,7 +174,7 @@ Authentication via Identity/Keycloak is enabled. To login into one of the servic
 as well, otherwise, a login will not be possible. Make sure you use `18080` as a port.
 
 {{ if .Values.identity.keycloak.enabled -}}
-> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
+> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 50 | trimSuffix "-" }} 18080:80
 {{- end }}
 {{- end }}
 
