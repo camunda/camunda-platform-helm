@@ -91,7 +91,7 @@ spec:
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-              value: "http://camunda-platform-test-elasticsearch:9200"
+              value: "http://camunda-platform-test-elasticsearch-zeebe:9200"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
               value: "zeebe-record"
             - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT

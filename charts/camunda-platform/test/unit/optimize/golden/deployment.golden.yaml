@@ -52,8 +52,12 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: "3"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "camunda-platform-test-elasticsearch"
+              value: "camunda-platform-test-elasticsearch-optimize"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HOST
+              value: "camunda-platform-test-elasticsearch-zeebe"
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
           volumeMounts:
             - mountPath: /tmp
@@ -75,8 +79,12 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: "3"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "camunda-platform-test-elasticsearch"
+              value: "camunda-platform-test-elasticsearch-optimize"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HOST
+              value: "camunda-platform-test-elasticsearch-zeebe"
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
             - name: SPRING_PROFILES_ACTIVE
               value: "ccsm"

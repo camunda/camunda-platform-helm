@@ -24,9 +24,9 @@ data:
       # ELS instance to store Tasklist data
       elasticsearch:
         # Cluster name
-        clusterName: elasticsearch
+        clusterName: tasklist-cluster
         # Host
-        host: camunda-platform-test-elasticsearch
+        host: camunda-platform-test-elasticsearch-tasklist
         # Transport port
         port: 9200
       # Zeebe instance
@@ -36,9 +36,9 @@ data:
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name
-        clusterName: elasticsearch
+        clusterName: zeebe-cluster
         # Host
-        host: camunda-platform-test-elasticsearch
+        host: camunda-platform-test-elasticsearch-zeebe
         # Transport port
         port: 9200
         # Index prefix, configured in Zeebe Elasticsearch exporter

@@ -1,0 +1,13 @@
+# Configuration for the `Optimize` application to use a custom image build.
+# This custom image is created from PR #9160 (https://github.com/camunda/camunda-optimize/pull/9160),
+# which adds support for configuring separate Zeebe Elasticsearch clients.
+# It introduces two new environment variables:
+# `OPTIMIZE_ZEEBE_ELASTICSEARCH_HOST` and `OPTIMIZE_ZEEBE_ELASTICSEARCH_HTTP_PORT`.
+
+optimize:
+  image:
+    repository: gcr.io/zeebe-io/optimize
+    tag: 3.12.0-SNAPSHOT-MULTY-ES-SETUP
+
+connectors:
+  enabled: false
