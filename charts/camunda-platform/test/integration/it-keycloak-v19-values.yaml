@@ -1,8 +1,6 @@
 global:
   identity:
     keycloak:
-      auth:
-        adminUser: user
       legacy: false
 
 webModeler:
@@ -20,3 +18,8 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
+
+identity:
+  keycloak:
+    auth:
+      adminUser: user
