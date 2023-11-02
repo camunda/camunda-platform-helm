@@ -111,11 +111,18 @@ jobs:
           description: Test Camunda Platform Helm chart with WebModeler enabled which is still beta
     steps:
     - uses: actions/checkout@v3
-    - name: Authenticate to Openshift
+    - name: Set OpenShift authentication vars
+      run: |
+        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.distro.version }} | tr -d '.')"
+        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_CLUSTER_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
+        echo "OPENSHIFT_CLUSTER_USERNAME=OPENSHIFT_CLUSTER_USERNAME_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
+        echo "OPENSHIFT_CLUSTER_PASSWORD=OPENSHIFT_CLUSTER_PASSWORD_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
+    - name: Authenticate to OpenShift
       uses: redhat-actions/oc-login@v1
       with:
-        openshift_server_url: ${{ secrets[matrix.openshift.server] }}
-        openshift_token: ${{ secrets[matrix.openshift.token] }}
+        openshift_server_url: ${{ secrets[env.OPENSHIFT_CLUSTER_URL] }}
+        openshift_username: ${{ secrets[env.OPENSHIFT_CLUSTER_USERNAME] }}
+        openshift_password: ${{ secrets[env.OPENSHIFT_CLUSTER_PASSWORD] }}
     - name: Set test vars
       id: vars
       run: |
