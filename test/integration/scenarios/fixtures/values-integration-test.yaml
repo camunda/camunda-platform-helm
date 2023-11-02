@@ -84,6 +84,10 @@ identity:
       - name: index-docker-io
 
 global:
+  identity:
+    keycloak:
+      auth:
+        adminUser: user
   image:
     pullSecrets:
     - name: index-docker-io
