@@ -19,7 +19,3 @@ webModeler:
 postgresql:
   enabled: true
 
-identity:
-  keycloak:
-    auth:
-      adminUser: user
