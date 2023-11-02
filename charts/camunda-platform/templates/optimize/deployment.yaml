@@ -43,8 +43,12 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: {{ .Values.optimize.partitionCount | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ include "camundaPlatform.elasticsearchZeebeHost" . | quote }}
+              value: {{ include "camundaPlatform.elasticsearchOptimizeHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.global.elasticsearch.port | quote }}
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchZeebeHost" . | quote }}
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.port | quote }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -72,8 +76,12 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: {{ .Values.optimize.partitionCount | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ include "camundaPlatform.elasticsearchZeebeHost" . | quote }}
+              value: {{ include "camundaPlatform.elasticsearchOptimizeHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.global.elasticsearch.port | quote }}
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchZeebeHost" . | quote }}
+            - name: OPTIMIZE_ZEEBE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.port | quote }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
