@@ -96,7 +96,7 @@ jobs:
       fail-fast: false
       matrix:
         openshift:
-        - version: "4.10"
+        - version: "4.13"
           server: OPENSHIFT_URL_410
           token: OPENSHIFT_TOKEN_410
         test:
@@ -114,7 +114,7 @@ jobs:
     - name: Set OpenShift authentication vars
       run: |
         OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.openshift.version }} | tr -d '.')"
-        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
+        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_CLUSTER_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
         echo "OPENSHIFT_CLUSTER_USERNAME=OPENSHIFT_CLUSTER_USERNAME_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
         echo "OPENSHIFT_CLUSTER_PASSWORD=OPENSHIFT_CLUSTER_PASSWORD_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
     - name: Authenticate to OpenShift
