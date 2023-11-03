@@ -54,6 +54,9 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            {{- if .Values.optimize.extraVolumeMounts}}
+            {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
         {{- end }}
       containers:
         - name: optimize
