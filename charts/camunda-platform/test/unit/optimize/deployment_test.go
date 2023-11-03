@@ -170,6 +170,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			"optimize.image.repository": "camunda/optimize",
 			"optimize.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -194,6 +195,7 @@ func (s *deploymentTemplateTest) TestContainerNotOverwriteGlobalImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+		    "optimize.image.repository": "camunda/optimize",
 			"global.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -216,6 +218,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+		    "optimize.image.repository": "camunda/optimize",
 			"global.image.tag":   "x.y.z",
 			"optimize.image.tag": "a.b.c",
 		},

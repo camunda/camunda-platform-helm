@@ -7,7 +7,7 @@
 optimize:
   image:
     repository: gcr.io/zeebe-io/optimize
-    tag: 3.12.0-SNAPSHOT-MULTY-ES-SETUP
+    tag: 8.3.2-SNAPSHOT-ES-SETUP
 
 connectors:
   enabled: false
