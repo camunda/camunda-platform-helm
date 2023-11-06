@@ -74,8 +74,6 @@ identity:
     value: optimize-api
   - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_6_DEFINITION
     value: "write:*"
-  - name: KEYCLOAK_SETUP_USER
-    value: user
   # TODO: Add WebModeler access when it's public.
 
 # Auth to avoid Docker download rate limit.
