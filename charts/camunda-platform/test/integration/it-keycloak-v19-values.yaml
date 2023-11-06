@@ -18,3 +18,4 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
+
