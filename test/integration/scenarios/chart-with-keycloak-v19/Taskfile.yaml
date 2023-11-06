@@ -32,6 +32,7 @@ tasks:
     - helm install integration {{ .CHART_DIR }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
+        --set identity.keycloak.image.tag=19.0.3-debian-11-r15
         --timeout 25m0s
         --wait
         {{ .HELM_EXTRA_ARGS }}
