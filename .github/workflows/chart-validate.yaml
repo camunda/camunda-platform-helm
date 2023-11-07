@@ -51,3 +51,5 @@ jobs:
       - name: Lint YAML Files
         run: |
           yamllint -c .github/config/yamllint.yaml ./charts/camunda-platform/test/unit
+  integration_tests:
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-main.yaml@main
