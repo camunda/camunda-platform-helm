@@ -52,7 +52,4 @@ jobs:
         run: |
           yamllint -c .github/config/yamllint.yaml ./charts/camunda-platform/test/unit
   integration_tests:
-    name: integration tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: camunda/camunda-platform-helm/.github/workflows/test-integration-main.yaml@main
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-main.yaml@main
