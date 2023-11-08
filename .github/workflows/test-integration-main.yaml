@@ -2,6 +2,10 @@
 name: "Test - Integration - Main"
 
 on:
+  workflow_run:
+    workflows: [Test - Unit]
+    types:
+      - completed
   workflow_call:
     inputs:
       persistent:
