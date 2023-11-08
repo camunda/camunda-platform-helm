@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "optimize.labels" . | nindent 4 }}
   annotations:
-    {{- toYaml  .Values.global.annotations | nindent 4 }}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -21,7 +21,7 @@ spec:
         {{- end }}
       {{- if .Values.optimize.podAnnotations }}
       annotations:
-        {{- toYaml  .Values.optimize.podAnnotations | nindent 8 }}
+        {{- toYaml .Values.optimize.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
