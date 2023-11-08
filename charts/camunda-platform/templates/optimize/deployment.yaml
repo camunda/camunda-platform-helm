@@ -54,7 +54,7 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.optimize.extraVolumeMounts}}
+            {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
         {{- end }}
@@ -128,7 +128,7 @@ spec:
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          {{- if .Values.optimize.command}}
+          {{- if .Values.optimize.command }}
           command: {{ toYaml .Values.optimize.command | nindent 10 }}
           {{- end }}
           resources:
@@ -181,7 +181,7 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.optimize.extraVolumeMounts}}
+            {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
         {{- if .Values.optimize.sidecars }}
@@ -192,10 +192,10 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.optimize.extraVolumes}}
+        {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.optimize.serviceAccount.name}}
+      {{- if .Values.optimize.serviceAccount.name }}
       serviceAccountName: {{ .Values.optimize.serviceAccount.name }}
       {{- end }}
       {{- if .Values.optimize.podSecurityContext }}
