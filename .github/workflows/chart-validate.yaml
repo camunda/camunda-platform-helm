@@ -55,4 +55,4 @@ jobs:
     name: integration tests
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/test-integration-main.yaml@main
+      - uses: camunda/camunda-platform-helm/.github/workflows/test-integration-main.yaml@main
