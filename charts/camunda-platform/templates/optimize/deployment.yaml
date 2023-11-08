@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "optimize.labels" . | nindent 4 }}
   annotations:
-    {{- toYaml  .Values.global.annotations | nindent 4 }}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -21,7 +21,7 @@ spec:
         {{- end }}
       {{- if .Values.optimize.podAnnotations }}
       annotations:
-        {{- toYaml  .Values.optimize.podAnnotations | nindent 8 }}
+        {{- toYaml .Values.optimize.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -54,6 +54,9 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            {{- if .Values.optimize.extraVolumeMounts }}
+            {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
         {{- end }}
       containers:
         - name: optimize
@@ -125,7 +128,7 @@ spec:
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          {{- if .Values.optimize.command}}
+          {{- if .Values.optimize.command }}
           command: {{ toYaml .Values.optimize.command | nindent 10 }}
           {{- end }}
           resources:
@@ -178,7 +181,7 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.optimize.extraVolumeMounts}}
+            {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
         {{- if .Values.optimize.sidecars }}
@@ -189,10 +192,10 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.optimize.extraVolumes}}
+        {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.optimize.serviceAccount.name}}
+      {{- if .Values.optimize.serviceAccount.name }}
       serviceAccountName: {{ .Values.optimize.serviceAccount.name }}
       {{- end }}
       {{- if .Values.optimize.podSecurityContext }}
