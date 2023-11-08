@@ -17,7 +17,7 @@ data:
       # ELS instance to store Tasklist data
       elasticsearch:
         # Cluster name
-        clusterName: {{ index .Values "elasticsearch-tasklist" "clusterName" }}
+        clusterName: {{ .Values.global.elasticsearch.tasklist.clusterName }}
         # Host
         host: {{ include "camundaPlatform.elasticsearchTasklistHost" . }}
         # Transport port
@@ -33,7 +33,7 @@ data:
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name
-        clusterName: {{ index .Values "elasticsearch-zeebe" "clusterName" }}
+        clusterName: {{ .Values.global.elasticsearch.zeebe.clusterName }}
         # Host
         host: {{ include "camundaPlatform.elasticsearchZeebeHost" . }}
         # Transport port

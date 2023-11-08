@@ -97,21 +97,25 @@ global:
     zeebe:
       ## @param global.elasticsearch.zeebe.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
       host: "{{ .Release.Name }}-elasticsearch-zeebe"
+      clusterName: "zeebe-cluster"
       ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
       url:
     tasklist:
       ## @param global.elasticsearch.tasklist.host Elasticsearch.tasklist defines the elasticsearch host, ideally the service name inside the namespace
       host: "{{ .Release.Name }}-elasticsearch-tasklist"
+      clusterName: "tasklist-cluster"
       ## @param global.elasticsearch.tasklist.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
       url:
     operate:
       ## @param global.elasticsearch.operate.host Elasticsearch.tasklist defines the elasticsearch host, ideally the service name inside the namespace
       host: "{{ .Release.Name }}-elasticsearch-operate"
+      clusterName: "operate-cluster"
       ## @param global.elasticsearch.operate.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
       url:
     optimize:
       ## @param global.elasticsearch.optimize.host Elasticsearch.tasklist defines the elasticsearch host, ideally the service name inside the namespace
       host: "{{ .Release.Name }}-elasticsearch-optimize"
+      clusterName: "optimize-cluster"
       ## @param global.elasticsearch.optimize.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
       url:
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
@@ -3052,6 +3056,14 @@ commonEsConfig: &defaultElasticsearchConfig
     ## @param elasticsearch.ingest.enabled
     enabled: false
 
+## @extra elasticsearch
+elasticsearch:
+  ## @param elasticsearch.enabled
+  enabled: false
+  ## @param elasticsearch.clusterName
+  clusterName: "elastic-cluster"
+  <<: *defaultElasticsearchConfig
+
 ## @extra elasticsearch-zeebe
 elasticsearch-zeebe:
   ## @param elasticsearch-zeebe.enabled
@@ -3081,7 +3093,7 @@ elasticsearch-optimize:
   ## @param elasticsearch-optimize.enabled
   enabled: true
   ## @param elasticsearch-optimize.clusterName
-  clusterName: "tasklist-cluster"
+  clusterName: "optimize-cluster"
   <<: *defaultElasticsearchConfig
 
 #####################################################################

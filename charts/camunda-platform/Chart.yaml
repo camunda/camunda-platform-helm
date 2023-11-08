@@ -36,6 +36,11 @@ dependencies:
     version: 19.13.5
     condition: "elasticsearch-zeebe.enabled"
     alias: elasticsearch-zeebe
+  # Elasticsearch for zeebe
+  - name: elasticsearch
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    version: 19.13.5
+    condition: "elasticsearch.enabled"
   # Elasticsearch for tasklist
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
