@@ -231,7 +231,7 @@ spec:
         name: data
       spec:
         accessModes: {{ .Values.zeebe.pvcAccessModes }}
-        {{- if .Values.zeebe.storageClassName}}
+        {{- if .Values.zeebe.pvcStorageClassName }}
         storageClassName: {{ .Values.zeebe.pvcStorageClassName }}
         {{- end }}
         resources:

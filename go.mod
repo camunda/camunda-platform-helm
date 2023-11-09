@@ -1,9 +1,9 @@
 module camunda-platform-helm
 
-go 1.21.1
+go 1.21.4
 
 require (
-	github.com/gruntwork-io/terratest v0.46.5
+	github.com/gruntwork-io/terratest v0.46.6
 	github.com/stretchr/testify v1.8.4
 	k8s.io/api v0.27.7
 )
