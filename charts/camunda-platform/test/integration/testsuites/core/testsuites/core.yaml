@@ -60,7 +60,7 @@ testcases:
       jwt:
         from: result.bodyjson.access_token
 
-# TODO: Use Venom "web" module to test actual login. It's easy but requires "PhantomJS"
+# TODO: Use Venom "web" module to test actual login. It's easy but requires "PhantomJS": in progress
 # which is not available on Alpine, so it needs to be installed first.
 - name: TEST - Interacting with Camunda login page
   steps:
