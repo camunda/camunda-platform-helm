@@ -59,7 +59,7 @@
       "matchDatasources": ["docker"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
       "matchPackageNames": ["bitnami/elasticsearch"],
-      "allowedVersions": "~8.6.0"
+      "allowedVersions": "~8.8.0"
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
