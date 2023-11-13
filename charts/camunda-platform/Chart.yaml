@@ -71,4 +71,4 @@ annotations:
     - name: Camunda Platform 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
+  artifacthub.io/changes: ""
