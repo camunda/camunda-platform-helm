@@ -9,6 +9,8 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 
 * loads env vars for external database when external database is enabled ([#1029](https://github.com/camunda/camunda-platform-helm/issues/1029))
 * optimize to use consistent versioning with other 8.3 components ([#1014](https://github.com/camunda/camunda-platform-helm/issues/1014))
+* set the correct name for zeebe pvcStorageClassName
+* fixes serviceMonitors for identity, connectors, and modeler
 
 ### Refactor
 

@@ -61,5 +61,9 @@ annotations:
       description: "loads env vars for external database when external database is enabled"
     - kind: fixed
       description: "optimize to use consistent versioning with other 8.3 components"
+    - kind: fixed
+      description: "set the correct name for zeebe pvcStorageClassName"
+    - kind: fixed
+      description: "fixes serviceMonitors for identity, connectors, and modeler"
     - kind: changed
       description: "add volume mounts for optimize migration init container"
