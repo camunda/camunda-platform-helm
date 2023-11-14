@@ -58,22 +58,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "use the proper keycloak var for connectors"
+      description: "loads env vars for external database when external database is enabled"
     - kind: fixed
-      description: "configure identity base url"
-    - kind: fixed
-      description: "readonly add zeebe cache path"
+      description: "optimize to use consistent versioning with other 8.3 components"
     - kind: changed
-      description: "update accessing keycloak url"
-    - kind: changed
-      description: "allow customize optimize migration init container env vars"
-    - kind: changed
-      description: "allow toggle optimize migration init container"
-    - kind: changed
-      description: "move optimize to the main chart"
-    - kind: changed
-      description: "move zeebe/zeebe-gateway to the main chart"
-    - kind: changed
-      description: "move tasklist to the main chart"
-    - kind: changed
-      description: "move operate to the main chart"
+      description: "add volume mounts for optimize migration init container"
