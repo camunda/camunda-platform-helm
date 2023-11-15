@@ -2,6 +2,7 @@
 
 - [x] Run `make release.chores`
 - [x] Create a PR with the printed URL
+- [x] [Trigger Renovate](https://developer.mend.io/github/camunda/camunda-platform-helm) to ensure that all deps are updated (to avoid any delayed sync from Renovate service).
 
 **After opening the PR:**
 
@@ -10,5 +11,5 @@
 - [ ] If everything in place, add `release` label to the PR
 - [ ] Follow up the release workflow and make sure it succeeded (double-check the [releases page](https://github.com/camunda/camunda-platform-helm/releases))
 
-If the release is a minor version bump:
+If the release is a minor version bump (e.g. from 8.2.x to 8.3.0):
 - [ ] Make sure the regression test matrix is updated: located at [.github/workflows/test-regression.yaml](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/test-regression.yaml#L33-L36)

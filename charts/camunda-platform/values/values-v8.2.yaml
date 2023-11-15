@@ -7,7 +7,7 @@ global:
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.2.16
+    tag: 8.2.17
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -38,7 +38,7 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.2.7
+    tag: 8.2.8
 
 #
 # Elasticsearch
@@ -48,7 +48,7 @@ elasticsearch:
   # https://hub.docker.com/r/elastic/elasticsearch/tags
   image: docker.elastic.co/elasticsearch/elasticsearch
   # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
-  imageTag: 7.17.14
+  imageTag: 7.17.15
 
 retentionPolicy:
   # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags

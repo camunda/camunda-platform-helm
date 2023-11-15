@@ -75,8 +75,11 @@ jobs:
           # The verify step happens in the "release" branch before merging to the "main" branch.
           ref: release
           fetch-depth: 0
+      # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
-        # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
-        run: |
-          sleep 30
-          make release.verify-components-version
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 10
+          command: make release.verify-components-version
