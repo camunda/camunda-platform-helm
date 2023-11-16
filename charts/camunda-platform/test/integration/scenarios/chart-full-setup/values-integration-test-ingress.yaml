@@ -60,6 +60,18 @@ webModeler:
 postgresql:
   enabled: true
 
+elasticsearch:
+  enabled: true
+  extraConfig:
+    node:
+      store:
+        allow_mmap: false
+    index:
+      store:
+        type: niofs
+  sysctlImage:
+    enabled: false
+
 zeebe-gateway:
   ingress:
     enabled: true
