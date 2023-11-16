@@ -20,6 +20,9 @@ on:
       platforms:
         default: gke
         type: string
+      flows:
+        default: install
+        type: string
       identifier:
         description: The unique identifier of used in the deployment hostname.
         required: true
@@ -76,11 +79,15 @@ jobs:
         - name: Chart Setup
           desc: Setup chart in production-like setup with Ingress and TLS.
           flow: install
+          if: ${{ github.event.pull_request.number || contains(inputs.flows, 'install') }}
         - name: Chart Upgrade
           desc: Upgrade chart from the latest released version to the current branch.
           flow: upgrade
+          if: ${{ github.event.pull_request.number || contains(inputs.flows, 'upgrade') }}
         exclude:
         - distro:
+            if: false
+        - scenario:
             if: false
     env:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
