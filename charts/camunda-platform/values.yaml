@@ -2988,7 +2988,7 @@ elasticsearch:
     emptyDir: {}
   - name: logs
     emptyDir: {}
-  - name: config
+  - name: config-dir
     emptyDir: {}
   ## @param elasticsearch.extraVolumeMounts[0].mountPath
   ## @param elasticsearch.extraVolumeMounts[0].name
@@ -3002,7 +3002,7 @@ elasticsearch:
   - mountPath: /usr/share/elasticsearch/logs
     name: logs
   - mountPath: /usr/share/elasticsearch/config
-    name: config
+    name: config-dir
   master:
     ## @param elasticsearch.master.masterOnly
     masterOnly: false
