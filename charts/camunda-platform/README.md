@@ -23,8 +23,6 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Web Modeler](#web-modeler)
   - [Elasticsearch](#elasticsearch)
   - [Keycloak](#keycloak)
-- [Guides](#guides)
-  - [Adding dynamic exporters to Zeebe Brokers](#adding-dynamic-exporters-to-zeebe-brokers)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
@@ -366,46 +364,6 @@ identity:
     - name: camunda-theme
       mountPath: /opt/bitnami/keycloak/themes/identity
 ```
-
-## Guides
-
-> **Note**
->
-> For full list of guides list, please visit
-> [Helm/Kubernetes Guides](https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/overview/)
-
-### Adding dynamic exporters to Zeebe Brokers
-
-This chart supports the addition of Zeebe Exporters by using `initContainer` as shown in the following example:
-
-```
-extraInitContainers:
-  - name: init-exporters-hazelcast
-    image: busybox:1.35
-    command: ['/bin/sh', '-c']
-    args: ['wget --no-check-certificate https://repo1.maven.org/maven2/io/zeebe/hazelcast/zeebe-hazelcast-exporter/0.8.0-alpha1/zeebe-hazelcast-exporter-0.8.0-alpha1-jar-with-dependencies.jar -O /exporters/zeebe-hazelcast-exporter.jar; ls -al /exporters']
-    volumeMounts:
-    - name: exporters
-      mountPath: /exporters/
-  - name: init-exporters-kafka
-    image: busybox:1.35
-    command: ['/bin/sh', '-c']
-    args: ['wget --no-check-certificate https://github.com/zeebe-io/zeebe-kafka-exporter/releases/download/1.1.0/zeebe-kafka-exporter-1.1.0-uber.jar -O /exporters/zeebe-kafka-exporter.jar; ls -al /exporters']
-    volumeMounts:
-    - name: exporters
-      mountPath: /exporters/
-env:
-  - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_JARPATH
-    value: /exporters/zeebe-hazelcast-exporter.jar
-  - name: ZEEBE_BROKER_EXPORTERS_HAZELCAST_CLASSNAME
-    value: io.zeebe.hazelcast.exporter.HazelcastExporter
-  - name: ZEEBE_HAZELCAST_REMOTE_ADDRESS
-    value: "{{ .Release.Name }}-hazelcast"
-```
-
-This example is downloading the exporters' Jar from a URL and adding the Jars to the `exporters` directory,
-which will be scanned for jars and added to the Zeebe broker classpath. Then with `environment variables`,
-you can configure the exporter parameters.
 
 ## Development
 

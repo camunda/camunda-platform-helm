@@ -17,7 +17,7 @@ data:
 {{- end }}
 
     if [ "$(ls -A /exporters/)" ]; then
-      mkdir /usr/local/zeebe/exporters/
+      mkdir -p /usr/local/zeebe/exporters/
       cp -a /exporters/*.jar /usr/local/zeebe/exporters/
     else
       echo "No exporters available."
