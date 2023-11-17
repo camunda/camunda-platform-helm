@@ -30,33 +30,34 @@ dependencies:
       - child: image
         parent: global.identity.image
   # Dependency charts.
-  # Elasticsearch for zeebe
-  - name: elasticsearch
-    repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.13.5
-    condition: "elasticsearch-zeebe.enabled"
-    alias: elasticsearch-zeebe
-  # Elasticsearch for zeebe
+  # Elasticsearch (common)
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
     version: 19.13.10
     condition: "elasticsearch.enabled"
+    alias: elasticsearch
+  # Elasticsearch for zeebe
+  - name: elasticsearch
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    version: 19.13.10
+    condition: "elasticsearch-zeebe.enabled"
+    alias: elasticsearch-zeebe
   # Elasticsearch for tasklist
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.13.5
+    version: 19.13.10
     condition: "elasticsearch-tasklist.enabled"
     alias: elasticsearch-tasklist
   # Elasticsearch for operate
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.13.5
+    version: 19.13.10
     condition: "elasticsearch-operate.enabled"
     alias: elasticsearch-operate
   # Elasticsearch for optimize
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.13.5
+    version: 19.13.10
     condition: "elasticsearch-optimize.enabled"
     alias: elasticsearch-optimize
   - name: postgresql
