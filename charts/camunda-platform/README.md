@@ -1495,14 +1495,14 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `elasticsearch.extraVolumes[0].emptyDir`         |              | `{}`                              |
 | `elasticsearch.extraVolumes[1].name`             |              | `logs`                            |
 | `elasticsearch.extraVolumes[1].emptyDir`         |              | `{}`                              |
-| `elasticsearch.extraVolumes[2].name`             |              | `config`                          |
+| `elasticsearch.extraVolumes[2].name`             |              | `config-dir`                      |
 | `elasticsearch.extraVolumes[2].emptyDir`         |              | `{}`                              |
 | `elasticsearch.extraVolumeMounts[0].mountPath`   |              | `/tmp`                            |
 | `elasticsearch.extraVolumeMounts[0].name`        |              | `tmp`                             |
 | `elasticsearch.extraVolumeMounts[1].mountPath`   |              | `/usr/share/elasticsearch/logs`   |
 | `elasticsearch.extraVolumeMounts[1].name`        |              | `logs`                            |
 | `elasticsearch.extraVolumeMounts[2].mountPath`   |              | `/usr/share/elasticsearch/config` |
-| `elasticsearch.extraVolumeMounts[2].name`        |              | `config`                          |
+| `elasticsearch.extraVolumeMounts[2].name`        |              | `config-dir`                      |
 | `elasticsearch.master.masterOnly`                |              | `false`                           |
 | `elasticsearch.master.heapSize`                  |              | `1024m`                           |
 | `elasticsearch.master.persistence.size`          |              | `64Gi`                            |
