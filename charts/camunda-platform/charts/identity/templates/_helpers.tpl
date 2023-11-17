@@ -54,54 +54,6 @@ Defines match labels for identity, which are extended by sub-charts and should b
 {{- end }}
 
 {{/*
-[identity] Create the name of the operate-identity secret
-*/}}
-{{- define "identity.secretNameOperateIdentity" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-operate-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
-[identity] Create the name of the console-identity secret
-*/}}
-{{- define "identity.secretNameConsoleIdentity" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-console-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
-[identity] Create the name of the tasklist-identity secret
-*/}}
-{{- define "identity.secretNameTasklistIdentity" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-tasklist-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
-[identity] Create the name of the optimize-identity secret
-*/}}
-{{- define "identity.secretNameOptimizeIdentity" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-optimize-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
-[identity] Create the name of the connectors-identity secret
-*/}}
-{{- define "identity.secretNameConnectorsIdentity" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-connectors-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
-[identity] Create the name of the zeebe-identity secret
-*/}}
-{{- define "identity.secretNameZeebeIdentity" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-zeebe-identity-secret" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
 Keycloak helpers
 */}}
 

@@ -56,7 +56,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameOperateIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: operate-secret
               {{- end }}
             - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
@@ -75,7 +75,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameConsoleIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "console") }}
                   key: console-secret
               {{- end }}
             - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
@@ -94,7 +94,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameTasklistIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: tasklist-secret
               {{- end }}
             - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
@@ -113,7 +113,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameOptimizeIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: optimize-secret
               {{- end }}
             - name: KEYCLOAK_INIT_OPTIMIZE_ROOT_URL
@@ -143,7 +143,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: connectors-secret
-                  name: {{ include "identity.secretNameConnectorsIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
               {{- end }}
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
               value: http://placeholder
@@ -171,7 +171,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameZeebeIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
                   key: zeebe-secret
               {{- end }}
             - name: KEYCLOAK_CLIENTS_1_TYPE

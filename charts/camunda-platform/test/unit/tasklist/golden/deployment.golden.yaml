@@ -68,7 +68,7 @@ spec:
             - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: "camunda-platform-test-tasklist-identity-secret"
+                  name: camunda-platform-test-tasklist-identity-secret
                   key: tasklist-secret
             - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
               value: "tasklist-api"
@@ -79,7 +79,7 @@ spec:
             - name: ZEEBE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: "camunda-platform-test-zeebe-identity-secret"
+                  name: camunda-platform-test-zeebe-identity-secret
                   key: zeebe-secret
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"

@@ -103,7 +103,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameOptimizeIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: optimize-secret
               {{- end }}
             - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE

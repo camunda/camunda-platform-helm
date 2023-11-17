@@ -70,7 +70,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameTasklistIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: tasklist-secret
               {{- end }}
             - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
@@ -92,7 +92,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "identity.secretNameZeebeIdentity" . }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
                   key: zeebe-secret
               {{- end }}
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
