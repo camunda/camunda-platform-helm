@@ -13,6 +13,25 @@ jobs:
         deployment:
           - id: management
             extra-values: |
+              global:
+                identity:
+                  auth:
+                    connectors:
+                      existingSecret: dummy
+                    console:
+                      existingSecret: dummy
+                      redirectUrl: "/"
+                    operate:
+                      existingSecret: dummy
+                      redirectUrl: '*'
+                    optimize:
+                      existingSecret: dummy
+                      redirectUrl: '*'
+                    tasklist:
+                      existingSecret: dummy
+                      redirectUrl: '*'
+                    zeebe:
+                      existingSecret: dummy
               zeebe:
                 enabled: false
               zeebe-gateway:
@@ -32,12 +51,26 @@ jobs:
               global:
                 identity:
                   service:
-                    url: "http://integration-identity.camunda-platform-id-pr-1084-test-main.svc.cluster.local:80/identity"
+                    url: "http://integration-identity.camunda-platform-id-pr-1084-test-management.svc.cluster.local:80/identity"
                   keycloak:
                     url:
                       protocol: "http"
-                      host: "integration-keycloak.camunda-platform-id-pr-1084-test-main.svc.cluster.local"
+                      host: "integration-keycloak.camunda-platform-id-pr-1084-test-management.svc.cluster.local"
                       port: "80"
+                  auth:
+                    publicIssuerUrl: "https://gke-pr-1084-test-management.ci.distro.ultrawombat.com/auth/realms/camunda-platform"
+                    connectors:
+                      existingSecret: dummy
+                    console:
+                      existingSecret: dummy
+                    operate:
+                      existingSecret: dummy
+                    optimize:
+                      existingSecret: dummy
+                    tasklist:
+                      existingSecret: dummy
+                    zeebe:
+                      existingSecret: dummy
               identity:
                 enabled: false
               webModeler:
@@ -51,12 +84,26 @@ jobs:
               global:
                 identity:
                   service:
-                    url: "http://integration-identity.camunda-platform-id-pr-1084-test-main.svc.cluster.local:80/identity"
+                    url: "http://integration-identity.camunda-platform-id-pr-1084-test-management.svc.cluster.local:80/identity"
                   keycloak:
                     url:
                       protocol: "http"
-                      host: "integration-keycloak.camunda-platform-id-pr-1084-test-main.svc.cluster.local"
+                      host: "integration-keycloak.camunda-platform-id-pr-1084-test-management.svc.cluster.local"
                       port: "80"
+                  auth:
+                    publicIssuerUrl: "https://gke-pr-1084-test-management.ci.distro.ultrawombat.com/auth/realms/camunda-platform"
+                    connectors:
+                      existingSecret: dummy
+                    console:
+                      existingSecret: dummy
+                    operate:
+                      existingSecret: dummy
+                    optimize:
+                      existingSecret: dummy
+                    tasklist:
+                      existingSecret: dummy
+                    zeebe:
+                      existingSecret: dummy
               identity:
                 enabled: false
               webModeler:

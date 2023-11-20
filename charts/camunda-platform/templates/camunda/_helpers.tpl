@@ -124,6 +124,32 @@ Usage:
 
 
 {{/*
+[camunda-platform] Create labels for secrets shared between Identity and other components.
+TODO: Should be removed and use "camundaPlatform.labels" before 8.4 release.
+*/}}
+{{- define "camundaPlatform.identityLabels" -}}
+{{- if .Values.global.labels -}}
+{{ toYaml .Values.global.labels }}
+{{- end }}
+app.kubernetes.io/name: identity
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: camunda-platform
+helm.sh/chart: identity-{{ .Chart.Version | replace "+" "_" }}
+{{- if .Values.identity.image }}
+{{- if .Values.identity.image.tag }}
+app.kubernetes.io/version: {{ .Values.identity.image.tag | quote }}
+{{- else }}
+app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+{{- end }}
+{{- else }}
+app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+{{- end }}
+app.kubernetes.io/component: identity
+{{- end }}
+
+
+{{/*
 ********************************************************************************
 Keycloak templates.
 ********************************************************************************
