@@ -1,0 +1,79 @@
+name: "Test - Integration"
+
+on:
+  push:
+    branches:
+    - 1046-aa-multi-namespace-deployment
+
+jobs:
+  helm-deploy:
+    strategy:
+      fail-fast: false
+      matrix:
+        deployment:
+          - id: management
+            extra-values: |
+              zeebe:
+                enabled: false
+              zeebe-gateway:
+                enabled: false
+              operate:
+                enabled: false
+              tasklist:
+                enabled: false
+              optimize:
+                enabled: false
+              connectors:
+                enabled: false
+              elasticsearch:
+                enabled: false
+          - id: team01
+            extra-values: |
+              global:
+                identity:
+                  service:
+                    url: "http://integration-identity.camunda-platform-id-pr-1084-test-main.svc.cluster.local:80/identity"
+                  keycloak:
+                    url:
+                      protocol: "http"
+                      host: "integration-keycloak.camunda-platform-id-pr-1084-test-main.svc.cluster.local"
+                      port: "80"
+              identity:
+                enabled: false
+              webModeler:
+                enabled: false
+              postgresql:
+                enabled: false
+              console:
+                enabled: false
+          - id: team02
+            extra-values: |
+              global:
+                identity:
+                  service:
+                    url: "http://integration-identity.camunda-platform-id-pr-1084-test-main.svc.cluster.local:80/identity"
+                  keycloak:
+                    url:
+                      protocol: "http"
+                      host: "integration-keycloak.camunda-platform-id-pr-1084-test-main.svc.cluster.local"
+                      port: "80"
+              identity:
+                enabled: false
+              webModeler:
+                enabled: false
+              postgresql:
+                enabled: false
+              console:
+                enabled: false
+    name: Helm integration tests - ${{ matrix.deployment.id }}
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-main.yaml@1046-aa-multi-namespace-deployment
+    secrets: inherit
+    with:
+      identifier: pr-1084-test-${{ matrix.deployment.id }}
+      git-ref: 1046-aa-multi-namespace-deployment
+      platforms: gke
+      flows: install
+      persistent: true
+      test-enabled: false
+      extra-values: |
+        ${{ matrix.deployment.extra-values }}
