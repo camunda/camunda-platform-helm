@@ -1173,6 +1173,24 @@ optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
   enabled: true
 
+  retention:
+    enabled: false
+    # https://crontab.guru/#*/15_*_*_*_*
+    cronTrigger: "*/15 * * * *"
+    # https://en.wikipedia.org/wiki/ISO_8601#Durations
+    ttl: "P1D"
+    processDataCleanup:
+      enabled: false
+    decisionDataCleanup:
+      enabled: false
+    ingestedEventCleanup:
+      enabled: false
+    externalVariableCleanup:
+      enabled: false
+
+  archiver:
+    enabled: false
+
   ## @extra optimize.image configuration to configure the Optimize image specifics
   # https://hub.docker.com/r/camunda/optimize/tags
   image:

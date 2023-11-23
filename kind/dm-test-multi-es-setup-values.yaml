@@ -3,6 +3,23 @@
 # which adds support for configuring separate Zeebe Elasticsearch clients.
 # It introduces two new environment variables:
 # `OPTIMIZE_ZEEBE_ELASTICSEARCH_HOST` and `OPTIMIZE_ZEEBE_ELASTICSEARCH_HTTP_PORT`.
+#
+#
+#
+# create namespace
+# => kubectl create namespace dm-test
+# switch namespace
+# => kubectl config set-context --current --namespace=dm-test
+#
+# install => make helm.install
+#
+# to uninstall charts invoke the following:
+# uninstall => make helm.uninstall
+#
+# delete namespace
+# => kubectl delete namespace dm-test
+#
+
 
 optimize:
   image:
