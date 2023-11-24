@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
@@ -34,7 +34,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 	templateNames := []string{"service", "deployment", "configmap"}
 
 	for _, name := range templateNames {
-		suite.Run(t, &golden.TemplateGoldenTest{
+		suite.Run(t, &utils.TemplateGoldenTest{
 			ChartPath:      chartPath,
 			Release:        "camunda-platform-test",
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),

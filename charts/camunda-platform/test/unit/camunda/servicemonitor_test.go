@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package test
+package camunda
 
 import (
-	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -28,10 +28,10 @@ import (
 func TestGoldenServiceMonitorOperateDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -44,10 +44,10 @@ func TestGoldenServiceMonitorOperateDefaults(t *testing.T) {
 func TestGoldenServiceMonitorOptimizeDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -60,10 +60,10 @@ func TestGoldenServiceMonitorOptimizeDefaults(t *testing.T) {
 func TestGoldenServiceMonitorTasklistDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -76,10 +76,10 @@ func TestGoldenServiceMonitorTasklistDefaults(t *testing.T) {
 func TestGoldenServiceMonitorModelerDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -95,10 +95,10 @@ func TestGoldenServiceMonitorModelerDefaults(t *testing.T) {
 func TestGoldenServiceMonitorConnectorsDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -111,10 +111,10 @@ func TestGoldenServiceMonitorConnectorsDefaults(t *testing.T) {
 func TestGoldenServiceMonitorIdentityDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -127,10 +127,10 @@ func TestGoldenServiceMonitorIdentityDefaults(t *testing.T) {
 func TestGoldenServiceMonitorZeebeDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -143,10 +143,10 @@ func TestGoldenServiceMonitorZeebeDefaults(t *testing.T) {
 func TestGoldenServiceMonitorZeebeGatewayDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),

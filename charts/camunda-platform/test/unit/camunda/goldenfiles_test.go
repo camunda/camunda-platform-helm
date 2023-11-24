@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zeebe
+package camunda
 
 import (
 	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
@@ -25,18 +25,28 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestGoldenConfigmapWithLog4j2(t *testing.T) {
+func TestGoldenDefaultsTemplateSecrets(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
+	templateNames := []string{
+		"secret-connectors",
+		"secret-console",
+		"secret-operate",
+		"secret-optimize",
+		"secret-tasklist",
+		"secret-zeebe",
+	}
 
-	suite.Run(t, &utils.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "camunda-platform-test",
-		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "configmap-log4j2",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
-		SetValues:      map[string]string{"zeebe.log4j2": "<xml>\n</xml>"},
-	})
+	for _, name := range templateNames {
+		suite.Run(t, &utils.TemplateGoldenTest{
+			ChartPath:      chartPath,
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+			GoldenFileName: name,
+			IgnoredLines:   []string{`\s+.*-secret:\s+.*`}, // secrets are auto-generated and need to be ignored.
+			Templates:      []string{"templates/camunda/" + name + ".yaml"},
+		})
+	}
 }

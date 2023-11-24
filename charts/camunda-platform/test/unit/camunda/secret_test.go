@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package identity
+package camunda
 
 import (
 	"path/filepath"
@@ -51,27 +51,40 @@ func TestSecretTemplate(t *testing.T) {
 	})
 }
 
-func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
+func (s *secretTest) TestContainerGenerateSecret() {
 	// given
 	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.postgresql.enabled":        "false",
-			"identity.externalDatabase.enabled":  "true",
-			"identity.externalDatabase.password": "super-secure-ext",
-		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
 	s.templates = []string{
-		"charts/identity/templates/postgresql-secret.yaml",
+		"templates/camunda/secret-connectors.yaml",
+		"templates/camunda/secret-console.yaml",
+		"templates/camunda/secret-operate.yaml",
+		"templates/camunda/secret-optimize.yaml",
+		"templates/camunda/secret-tasklist.yaml",
+		"templates/camunda/secret-zeebe.yaml",
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
+	s.secretName = []string{
+		"connectors-secret",
+		"console-secret",
+		"operate-secret",
+		"optimize-secret",
+		"tasklist-secret",
+		"zeebe-secret",
+	}
 
-	// then
-	s.NotEmpty(secret.Data)
-	s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
+	s.Require().GreaterOrEqual(6, len(s.templates))
+	for idx, template := range s.templates {
+		// when
+		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
+		var secret coreV1.Secret
+		helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+		// then
+		s.Require().NotNil(secret.Data)
+		s.Require().NotNil(secret.Data[s.secretName[idx]])
+		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
+	}
 }
