@@ -8,25 +8,7 @@ vars:
 tasks:
   pre:
     cmds:
-    # TODO: Remove it once 8.3.1 is released.
-    - |
-      helm template integration {{ .TEST_CHART_NAME }} \
-        --namespace {{ .TEST_NAMESPACE }} \
-        --show-only charts/identity/templates/console-secret.yaml |
-        kubectl -n {{ .TEST_NAMESPACE }} apply -f -
-      kubectl -n {{ .TEST_NAMESPACE }} annotate secret integration-console-identity-secret \
-        "meta.helm.sh/release-name"=integration
-      kubectl -n {{ .TEST_NAMESPACE }} annotate secret integration-console-identity-secret \
-        "meta.helm.sh/release-namespace"={{ .TEST_NAMESPACE }}
-    # TODO: Remove it once 8.3.1 is released.
-    # TODO: Add the the following steps to version update instructions.
-    # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions
-    - |
-      kubectl -n {{ .TEST_NAMESPACE }} delete deployment integration-operate
-      kubectl -n {{ .TEST_NAMESPACE }} delete deployment integration-tasklist
-      kubectl -n {{ .TEST_NAMESPACE }} delete deployment integration-optimize
-      kubectl -n {{ .TEST_NAMESPACE }} delete deployment integration-zeebe-gateway
-      kubectl -n {{ .TEST_NAMESPACE }} delete statefulset integration-zeebe
+    - echo "No pre task for this test."
 
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
   exec:
