@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package test
+package camunda
 
 import (
 	"path/filepath"
@@ -41,14 +41,14 @@ type ingressTemplateTest struct {
 func TestIngressTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	suite.Run(t, &ingressTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/ingress.yaml"},
+		templates: []string{"templates/camunda/ingress.yaml"},
 	})
 }
 

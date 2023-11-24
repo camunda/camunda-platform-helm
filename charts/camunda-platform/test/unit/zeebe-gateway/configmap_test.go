@@ -15,7 +15,7 @@
 package gateway
 
 import (
-	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -31,7 +31,7 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),

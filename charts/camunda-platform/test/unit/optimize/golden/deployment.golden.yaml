@@ -91,7 +91,7 @@ spec:
             - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
               valueFrom:
                 secretKeyRef:
-                  name: "camunda-platform-test-optimize-identity-secret"
+                  name: camunda-platform-test-optimize-identity-secret
                   key: optimize-secret
             - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
               value: "optimize-api"

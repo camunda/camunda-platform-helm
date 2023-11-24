@@ -1,4 +1,4 @@
-ignore: charts/camunda-platform/test/unit/golden/keycloak-statefulset.golden.yaml
+ignore: charts/camunda-platform/test/unit/camunda/golden/keycloak-statefulset.golden.yaml
 
 rules:
   brackets:

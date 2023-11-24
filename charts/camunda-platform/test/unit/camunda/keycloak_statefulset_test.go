@@ -18,10 +18,10 @@
 // TODO: Move this to Identity subchart once "export-values" is implemented.
 //       For more details: https://github.com/helm/helm/pull/10804
 
-package test
+package camunda
 
 import (
-	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
+	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
 	"path/filepath"
 	"testing"
 
@@ -32,10 +32,10 @@ import (
 func TestGoldenKeycloakDefaults(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda",

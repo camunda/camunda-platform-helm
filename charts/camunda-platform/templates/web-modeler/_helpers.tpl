@@ -228,7 +228,16 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Create the base URL of the Identity API (using backchannel communication)
 */}}
 {{- define "webModeler.identityBaseUrl" -}}
-http://{{ include "identity.fullname" .Subcharts.identity }}:{{ .Values.identity.service.port }}{{ default "" .Values.identity.contextPath }}
+  {{- if .Values.global.identity.service.url -}}
+    {{- .Values.global.identity.service.url -}}
+  {{- else -}}
+    {{-
+      printf "http://%s:%v%s"
+        (include "identity.fullname" .Subcharts.identity)
+        .Values.identity.service.port
+        (default "" .Values.identity.contextPath)
+    -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*

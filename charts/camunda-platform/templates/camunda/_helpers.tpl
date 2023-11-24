@@ -122,50 +122,109 @@ Usage:
     {{- $componentValue | default $globalValue | default list | toYaml -}}
 {{- end -}}
 
+
+{{/*
+[camunda-platform] Create labels for secrets shared between Identity and other components.
+TODO: Should be removed and use "camundaPlatform.labels" before 8.4 release.
+*/}}
+{{- define "camundaPlatform.identityLabels" -}}
+{{- if .Values.global.labels -}}
+{{ toYaml .Values.global.labels }}
+{{- end }}
+app.kubernetes.io/name: identity
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: camunda-platform
+helm.sh/chart: identity-{{ .Chart.Version | replace "+" "_" }}
+{{- if .Values.identity.image }}
+{{- if .Values.identity.image.tag }}
+app.kubernetes.io/version: {{ .Values.identity.image.tag | quote }}
+{{- else }}
+app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+{{- end }}
+{{- else }}
+app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+{{- end }}
+app.kubernetes.io/component: identity
+{{- end }}
+
+
+{{/*
+********************************************************************************
+Keycloak templates.
+********************************************************************************
+*/}}
+
 {{/*
 [camunda-platform] Keycloak issuer public URL which used externally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerUrl" -}}
-    {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
+  {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
 {{- end -}}
-
 
 {{/*
 [camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
+TODO: Refactor the Keycloak config once Console is production ready.
+      Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrl" -}}
+  {{- if .Values.global.identity.keycloak.url -}}
+    {{-
+      printf "%s://%s:%v%s%s"
+        .Values.global.identity.keycloak.url.protocol
+        .Values.global.identity.keycloak.url.host
+        .Values.global.identity.keycloak.url.port
+        .Values.global.identity.keycloak.contextPath
+        .Values.global.identity.keycloak.realm
+    -}}
+  {{- else -}}
     {{- include "identity.keycloak.url" .Subcharts.identity -}}{{- .Values.global.identity.keycloak.realm -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*
 [camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlTokenEndpoint" -}}
-    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
+  {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
 {{- end -}}
 
 {{/*
 [camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlCertsEndpoint" -}}
-    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
+  {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
 {{- end -}}
+
+
+{{/*
+********************************************************************************
+Elasticsearch templates.
+********************************************************************************
+*/}}
 
 {{/*
 [camunda-platform] Elasticsearch URL which could be external.
 */}}
 
 {{- define "camundaPlatform.elasticsearchHost" -}}
-    {{- tpl .Values.global.elasticsearch.host $ -}}
+  {{- tpl .Values.global.elasticsearch.host $ -}}
 {{- end -}}
 
 {{- define "camundaPlatform.elasticsearchURL" -}}
-    {{- if .Values.global.elasticsearch.url -}}
-        {{- .Values.global.elasticsearch.url -}}
-    {{- else -}}
-        {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.port }}
-    {{- end -}}
+  {{- if .Values.global.elasticsearch.url -}}
+    {{- .Values.global.elasticsearch.url -}}
+  {{- else -}}
+    {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.port }}
+  {{- end -}}
 {{- end -}}
+
+
+{{/*
+********************************************************************************
+Operate templates.
+********************************************************************************
+*/}}
 
 {{/*
 [camunda-platform] Operate internal URL.
@@ -177,12 +236,20 @@ Usage:
   {{- end -}}
 {{- end -}}
 
+
+{{/*
+********************************************************************************
+Identity templates.
+********************************************************************************
+*/}}
+
 {{/*
 [camunda-platform] Identity internal URL.
 */}}
 {{ define "camundaPlatform.identityURL" }}
   {{- if .Values.identity.enabled -}}
-    {{- printf "http://%s:%v%s"
+    {{-
+      printf "http://%s:%v%s"
         (include "identity.fullname" .Subcharts.identity)
         .Values.identity.service.port
         (.Values.identity.contextPath | default "")
@@ -190,6 +257,21 @@ Usage:
   {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Create the name of the Identity secret for components.
+Usage: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+*/}}
+{{- define "camundaPlatform.identitySecretName" -}}
+  {{- $releaseName := .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+  {{- printf "%s-%s-identity-secret" $releaseName .component -}}
+{{- end }}
+
+
+{{/*
+********************************************************************************
+Release templates.
+********************************************************************************
+*/}}
 
 {{ define "camundaPlatform.releaseInfo" -}}
 - name: {{ .Release.Name }}

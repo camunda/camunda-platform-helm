@@ -15,11 +15,10 @@
 package tasklist
 
 import (
+	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"camunda-platform-helm/charts/camunda-platform/test/unit/golden"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
@@ -32,7 +31,7 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -48,7 +47,7 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &golden.TemplateGoldenTest{
+	suite.Run(t, &utils.TemplateGoldenTest{
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
