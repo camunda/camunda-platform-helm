@@ -149,12 +149,17 @@ global:
 
       ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other sub-charts
       connectors:
+        ## @param global.identity.auth.connectors.enabled if true, enable auth for app in Identity.
+        enabled: true
         ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
         existingSecret: ""
+        auth: true
 
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
+        ## @param global.identity.auth.operate.enabled if true, enable auth for app in Identity.
+        enabled: true
         ## @param global.identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the identity-Operate communication.
         existingSecret:
@@ -162,9 +167,12 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Operate is created to 8081.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8081"
+        auth: true
 
       ## @extra global.identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
       tasklist:
+        ## @param global.identity.auth.tasklist.enabled if true, enable auth for app in Identity.
+        enabled: true
         ## @param global.identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the identity-Tasklist communication.
         existingSecret:
@@ -175,6 +183,8 @@ global:
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other sub-charts
       optimize:
+        ## @param global.identity.auth.optimize.enabled if true, enable auth for app in Identity.
+        enabled: true
         ## @param global.identity.auth.optimize.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `optimize-secret` field, which will be used as secret for the identity-Optimize communication.
         existingSecret:
@@ -185,6 +195,8 @@ global:
 
       ## @extra global.identity.auth.webModeler configuration to configure Web Modeler authentication specifics on global level, which can be accessed by other sub-charts
       webModeler:
+        ## @param global.identity.auth.console.enabled if true, enable auth for app in Identity.
+        enabled: true
         ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -192,6 +204,8 @@ global:
 
       ## global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
       console:
+        ## @param global.identity.auth.console.enabled if true, enable auth for app in Identity.
+        enabled: true
         ## @skip global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `console-secret` field, which will be used as secret for the identity-console communication.
         existingSecret:
@@ -202,6 +216,8 @@ global:
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
+        ## @param global.identity.auth.console.enabled if true, enable auth for app in Identity.
+        enabled: true
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
         existingSecret: ""
