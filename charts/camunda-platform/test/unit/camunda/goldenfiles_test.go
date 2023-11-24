@@ -32,7 +32,6 @@ func TestGoldenDefaultsTemplateSecrets(t *testing.T) {
 	require.NoError(t, err)
 	templateNames := []string{
 		"secret-connectors",
-		"secret-console",
 		"secret-operate",
 		"secret-optimize",
 		"secret-tasklist",
