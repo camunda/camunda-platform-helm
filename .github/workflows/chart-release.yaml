@@ -85,6 +85,15 @@ jobs:
             --bundle ./camunda-platform-${CHART_VERSION}-cosign.bundle \
             --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release.yaml@refs/heads/cosign-github-actions" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+          mkdir -p docs/bundles
+          cp ./camunda-platform-${CHART_VERSION}-cosign.bundle docs/bundles/camunda-platform-${CHART_VERSION}-cosign.bundle
+          # git config user.name "$GITHUB_ACTOR"
+          # git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          # git add docs/bundles/camunda-platform-${CHART_VERSION}-cosign.bundle
+          # git commit -m "Update Cosign bundle"
+          # # Push to the same branch; adjust if using a different branch for GitHub Pages
+          # git push origin HEAD:${{ github.ref }}
+
 
   verify:
     needs: release
