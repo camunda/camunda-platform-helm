@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.3.2
+version: 8.3.3
 appVersion: 8.3.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 8.3.2
+    version: 8.3.3
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
@@ -58,12 +58,10 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "loads env vars for external database when external database is enabled"
+      description: "correct a typo in identity-optimize secret"
     - kind: fixed
-      description: "optimize to use consistent versioning with other 8.3 components"
+      description: "allow mount zeebe exporters dir"
     - kind: fixed
-      description: "set the correct name for zeebe pvcStorageClassName"
-    - kind: fixed
-      description: "fixes serviceMonitors for identity, connectors, and modeler"
+      description: "set keycloak data tmp dir writable"
     - kind: changed
-      description: "add volume mounts for optimize migration init container"
+      description: "change operate default log level to INFO"
