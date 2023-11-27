@@ -82,7 +82,7 @@ jobs:
             --bundle camunda-platform-${CHART_VERSION}-cosign.bundle
           find . -name "*.bundle" -exec ls -lsa {} \;
           cosign verify-blob .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
-            --bundle camunda-platform-${CHART_VERSION}-cosign.bundle \
+            --bundle ./camunda-platform-${CHART_VERSION}-cosign.bundle \
             --certificate-identity "https://github.com/camunda/camunda-platform-helm/blob/cosign-github-actions/.github/workflows/chart-release.yaml" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
