@@ -774,7 +774,7 @@ operate:
   logging:
     level:
       ROOT: INFO
-      io.camunda.operate: DEBUG
+      io.camunda.operate: INFO
 
   ## @extra operate.service configuration to configure the Operate service.
   service:
