@@ -4,6 +4,70 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
+          description: "correct a typo in identity-optimize secret"
+        - kind: fixed
+          description: "allow mount zeebe exporters dir"
+        - kind: fixed
+          description: "set keycloak data tmp dir writable"
+        - kind: changed
+          description: "change operate default log level to INFO"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.3.x
+    created: "2023-11-27T18:06:04.150993219Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.3.3
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.13.11
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: af49790224ddfe37d5cf02808aadb199ac036a6b620ce4c13b1cbf5323a74dc1
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.3/camunda-platform-8.3.3.tgz
+    version: 8.3.3
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
           description: "loads env vars for external database when external database is enabled"
         - kind: fixed
           description: "optimize to use consistent versioning with other 8.3 components"
@@ -7266,4 +7330,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-11-27T15:43:10.02812678Z"
+generated: "2023-11-27T18:06:04.151378087Z"
