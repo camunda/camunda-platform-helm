@@ -789,7 +789,7 @@ operate:
   logging:
     level:
       ROOT: INFO
-      io.camunda.operate: DEBUG
+      io.camunda.operate: INFO
 
   ## @extra operate.service configuration to configure the Operate service.
   service:
@@ -1172,7 +1172,6 @@ tasklist:
 optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
   enabled: true
-
   retention:
     enabled: false
     # https://crontab.guru/#*/15_*_*_*_*
@@ -1187,6 +1186,8 @@ optimize:
       enabled: false
     externalVariableCleanup:
       enabled: false
+  elasticSearch:
+    indexNumberOfReplicas: 1
 
   archiver:
     enabled: false

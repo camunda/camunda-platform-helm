@@ -151,6 +151,8 @@ spec:
             - name: CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED
               value: "true"
             {{- end }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS
+              value: {{ .Values.optimize.elasticSearch.indexNumberOfReplicas | quote }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}

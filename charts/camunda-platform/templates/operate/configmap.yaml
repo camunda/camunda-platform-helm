@@ -43,6 +43,7 @@ data:
       archiver:
         ilmEnabled: true
         ilmMinAgeForDeleteArchivedIndices: {{ .Values.operate.retention.minimumAge }}
+        waitPeriodBeforeArchiving: 30m
       {{- end }}
     logging:
 {{- with .Values.operate.logging }}
