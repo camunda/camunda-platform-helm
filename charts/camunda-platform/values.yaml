@@ -1000,7 +1000,7 @@ tasklist:
   graphqlPlaygroundRequestCredentials: ""
 
   ## @param tasklist.identityUserAccessRestrictionsEnabled if true, enables the identity user access restrictions
-  identityUserAccessRestrictions:
+  userAccessRestrictions:
 
     ## @param tasklist.identityUserAccessRestrictionsEnabled if true, enables the identity user access restrictions
     enabled: true
