@@ -1000,7 +1000,10 @@ tasklist:
   graphqlPlaygroundRequestCredentials: ""
 
   ## @param tasklist.identityUserAccessRestrictionsEnabled if true, enables the identity user access restrictions
-  identityUserAccessRestrictionsEnabled: ""
+  identityUserAccessRestrictions:
+
+    ## @param tasklist.identityUserAccessRestrictionsEnabled if true, enables the identity user access restrictions
+    enabled: true
 
   ## @param tasklist.extraVolumes can be used to define extra volumes for the Tasklist pods, useful for tls and self-signed certificates
   extraVolumes: []

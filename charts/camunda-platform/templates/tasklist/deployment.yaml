@@ -75,13 +75,8 @@ spec:
               {{- end }}
             - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
               value: "tasklist-api"
-            {{- if .Values.tasklist.identityUserAccessRestrictionsEnabled }}
             - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
-              value: {{ .Values.tasklist.identityUserAccessRestrictionsEnabled | quote }}
-            {{- else }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
-              value: "true"
-            {{- end }}
+              value: {{ .Values.tasklist.identityUserAccessRestrictions.enabled | quote }}
             {{- /*
               TODO: Remove the trimSuffix when it's fixed in Tasklist.
               https://github.com/camunda/camunda-platform-helm/issues/714
