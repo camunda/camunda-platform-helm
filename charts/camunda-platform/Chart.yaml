@@ -58,12 +58,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "loads env vars for external database when external database is enabled"
+      description: "correct a typo in identity-optimize secret"
     - kind: fixed
-      description: "optimize to use consistent versioning with other 8.3 components"
-    - kind: fixed
-      description: "set the correct name for zeebe pvcStorageClassName"
-    - kind: fixed
-      description: "fixes serviceMonitors for identity, connectors, and modeler"
+      description: "allow mount zeebe exporters dir"
     - kind: changed
-      description: "add volume mounts for optimize migration init container"
+      description: "change operate default log level to INFO"
