@@ -72,6 +72,8 @@ spec:
                   key: tasklist-secret
             - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
               value: "tasklist-api"
+            - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
+              value: "true"
             - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
               value: "http://localhost:8082"
             - name: ZEEBE_CLIENT_ID
