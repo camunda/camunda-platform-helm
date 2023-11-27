@@ -1737,6 +1737,8 @@ identity:
       emptyDir: {}
     - name: tmp
       emptyDir: {}
+    - name: data-tmp
+      emptyDir: {}
     - name: camunda-theme
       emptyDir:
         sizeLimit: 10Mi
@@ -1824,6 +1826,8 @@ identity:
       mountPath: /opt/bitnami/keycloak/themes/identity
     - mountPath: /tmp
       name: tmp
+    - mountPath: /opt/bitnami/keycloak/data/tmp
+      name: data-tmp
 
     ## @param identity.keycloak.containerSecurityContext.privileged
     ## @param identity.keycloak.containerSecurityContext.readOnlyRootFilesystem

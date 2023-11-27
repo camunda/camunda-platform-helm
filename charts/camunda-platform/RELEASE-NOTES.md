@@ -13,6 +13,7 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 
 * correct a typo in identity-optimize secret ([#1090](https://github.com/camunda/camunda-platform-helm/issues/1090))
 * allow mount zeebe exporters dir ([#1080](https://github.com/camunda/camunda-platform-helm/issues/1080))
+* set keycloak data tmp dir writable
 
 ### Refactor
 

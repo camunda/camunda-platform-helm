@@ -61,5 +61,7 @@ annotations:
       description: "correct a typo in identity-optimize secret"
     - kind: fixed
       description: "allow mount zeebe exporters dir"
+    - kind: fixed
+      description: "set keycloak data tmp dir writable"
     - kind: changed
       description: "change operate default log level to INFO"
