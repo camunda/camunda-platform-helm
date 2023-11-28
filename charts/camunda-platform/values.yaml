@@ -1744,8 +1744,6 @@ identity:
     ## @skip identity.keycloak.extraVolumes[3].emptyDir.sizeLimit
     ## @skip identity.keycloak.extraVolumes[4].name
     ## @skip identity.keycloak.extraVolumes[4].emptyDir.sizeLimit
-    ## @skip identity.keycloak.extraVolumeMounts[4].mountPath
-    ## @skip identity.keycloak.extraVolumeMounts[4].name
     extraVolumes:
     - name: config
       emptyDir: {}
@@ -1833,6 +1831,8 @@ identity:
     ## @param identity.keycloak.extraVolumeMounts[2].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].name
+    ## @param identity.keycloak.extraVolumeMounts[4].mountPath
+    ## @param identity.keycloak.extraVolumeMounts[4].name
     extraVolumeMounts:
     - mountPath: /opt/bitnami/keycloak/conf/
       name: config
