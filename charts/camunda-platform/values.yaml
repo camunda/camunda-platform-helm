@@ -1834,16 +1834,16 @@ identity:
     ## @param identity.keycloak.extraVolumeMounts[4].mountPath
     ## @param identity.keycloak.extraVolumeMounts[4].name
     extraVolumeMounts:
-    - mountPath: /opt/bitnami/keycloak/conf/
-      name: config
-    - mountPath: /opt/bitnami/keycloak/lib/quarkus
-      name: quarkus
-    - name: camunda-theme
-      mountPath: /opt/bitnami/keycloak/themes/identity
-    - mountPath: /tmp
-      name: tmp
-    - mountPath: /opt/bitnami/keycloak/data/tmp
-      name: data-tmp
+      - mountPath: /opt/bitnami/keycloak/conf/
+        name: config
+      - mountPath: /opt/bitnami/keycloak/lib/quarkus
+        name: quarkus
+      - name: camunda-theme
+        mountPath: /opt/bitnami/keycloak/themes/identity
+      - mountPath: /tmp
+        name: tmp
+      - mountPath: /opt/bitnami/keycloak/data/tmp
+        name: data-tmp
 
     ## @param identity.keycloak.containerSecurityContext.privileged
     ## @param identity.keycloak.containerSecurityContext.readOnlyRootFilesystem
