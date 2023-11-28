@@ -1831,8 +1831,6 @@ identity:
     ## @param identity.keycloak.extraVolumeMounts[2].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].name
-    ## @param identity.keycloak.extraVolumeMounts[4].mountPath
-    ## @param identity.keycloak.extraVolumeMounts[4].name
 
     extraVolumeMounts:
       - mountPath: /opt/bitnami/keycloak/conf/
@@ -1843,8 +1841,6 @@ identity:
         mountPath: /opt/bitnami/keycloak/themes/identity
       - mountPath: /tmp
         name: tmp
-      - mountPath: /opt/bitnami/keycloak/data/tmp
-        name: data-tmp
 
     ## @param identity.keycloak.containerSecurityContext.privileged
     ## @param identity.keycloak.containerSecurityContext.readOnlyRootFilesystem
