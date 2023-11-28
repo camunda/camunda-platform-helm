@@ -1823,16 +1823,16 @@ identity:
         mountPath: /config
       - name: quarkus
         mountPath: /quarkus
-    ## @param identity.keycloak.extraVolumeMounts[0].name test test
-    ## @param identity.keycloak.extraVolumeMounts[0].mountPat test testh
-    ## @param identity.keycloak.extraVolumeMounts[1].mountPat test testh
-    ## @param identity.keycloak.extraVolumeMounts[1].nam test teste
-    ## @param identity.keycloak.extraVolumeMounts[2].nam test teste
-    ## @param identity.keycloak.extraVolumeMounts[2].mountPat test testh
-    ## @param identity.keycloak.extraVolumeMounts[3].mountPath test test
-    ## @param identity.keycloak.extraVolumeMounts[3].nam test teste
-    ## @param identity.keycloak.extraVolumeMounts[4].mountPath test test
-    ## @param identity.keycloak.extraVolumeMounts[4].nam test teste
+    ## @skip identity.keycloak.extraVolumeMounts[0].name
+    ## @skip identity.keycloak.extraVolumeMounts[0].mountPath
+    ## @skip identity.keycloak.extraVolumeMounts[1].mountPath
+    ## @skip identity.keycloak.extraVolumeMounts[1].name
+    ## @skip identity.keycloak.extraVolumeMounts[2].name
+    ## @skip identity.keycloak.extraVolumeMounts[2].mountPath
+    ## @skip identity.keycloak.extraVolumeMounts[3].mountPath
+    ## @skip identity.keycloak.extraVolumeMounts[3].name
+    ## @skip identity.keycloak.extraVolumeMounts[4].mountPath
+    ## @skip identity.keycloak.extraVolumeMounts[4].name
     extraVolumeMounts:
       - mountPath: /opt/bitnami/keycloak/conf/
         name: config
