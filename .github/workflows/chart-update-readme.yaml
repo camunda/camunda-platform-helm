@@ -20,7 +20,7 @@ jobs:
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
       - name: Install readme-generator-for-helm
-        run: npm install -g @bitnami/readme-generator-for-helm@2.5.1
+        run: npm install -g @bitnami/readme-generator-for-helm
       - name: Run readme generator
         run: |
           echo "Updating README.md"
