@@ -999,6 +999,12 @@ tasklist:
   ## @param tasklist.graphqlPlaygroundRequestCredentials can be set to include the credentials in each request, should be set to "include" if graphql playground is enabled
   graphqlPlaygroundRequestCredentials: ""
 
+  ## @extra tasklist.identity configures app user management.
+  identity:
+    userAccessRestrictions:
+      ## @param tasklist.identity.userAccessRestrictions.enabled if true, enables the identity user access restrictions
+      enabled: true
+
   ## @param tasklist.extraVolumes can be used to define extra volumes for the Tasklist pods, useful for tls and self-signed certificates
   extraVolumes: []
   ## @param tasklist.extraVolumeMounts can be used to mount extra volumes for the Tasklist pods, useful for tls and self-signed certificates
