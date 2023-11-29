@@ -26,6 +26,7 @@ jobs:
       - name: Run readme generator
         run: |
           echo "Updating README.md"
+          echo "version=$(cat charts/camunda-platform//values.yaml)" >> $GITHUB_OUTPUT
           make helm.readme-update
       - uses: EndBug/add-and-commit@v9.1.3
         with:
