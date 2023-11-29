@@ -23,7 +23,4 @@ jobs:
         run: cat charts/camunda-platform/values.yaml
       - name: Install readme-generator-for-helm
         run: npm install -g @bitnami/readme-generator-for-helm
-      - name: Run readme generator
-        run: |
-          echo "Updating README.md"
-          make helm.readme-update
+     
