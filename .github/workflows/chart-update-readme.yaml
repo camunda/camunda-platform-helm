@@ -20,7 +20,7 @@ jobs:
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
       - name: cat values file
-        run: cat charts/camunda-platform//values.yaml
+        run: echo "version=$(cat charts/camunda-platform//values.yaml)" >> $GITHUB_OUTPUT
       - name: Install readme-generator-for-helm
         run: npm install -g @bitnami/readme-generator-for-helm
       - name: Run readme generator
