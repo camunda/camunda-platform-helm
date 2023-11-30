@@ -120,12 +120,19 @@ spec:
             - name: config
               mountPath: /app/resources/application.yml
               subPath: application.yml
+            - name: config-tasklist
+              mountPath: /usr/local/tasklist/config/application.yml
+              subPath: application.yml
             - mountPath: /tmp
               name: tmp
             - mountPath: /camunda
               name: camunda
       volumes:
         - name: config
+          configMap:
+            name: camunda-platform-test-tasklist
+            defaultMode: 484
+        - name: config-tasklist
           configMap:
             name: camunda-platform-test-tasklist
             defaultMode: 484
