@@ -5,6 +5,8 @@ on:
   pull_request_target:
     paths:
     - '.github/workflows/test-integration-main.yaml'
+    - '.github/actions/gke-login/**'
+    - '.github/actions/workflow-vars/**'
     - '.tool-versions'
     - 'charts/**'
     types: [opened, closed, reopened, synchronize]
