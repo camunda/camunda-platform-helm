@@ -1,12 +1,12 @@
 ### Which problem does the PR fix?
 
-<!-- Which GitHub issues related to or fixed by this PR, if any. -->
+<!-- Which GitHub issues are related to or fixed by this PR, if any? -->
 
 ### What's in this PR?
 
 <!--
   Explain the contents of the PR.
-  Give an overview about the implementation, which decisions were made and why.
+  Give an overview of the implementation, which decisions were made, and why.
 -->
 
 ### Checklist
@@ -17,10 +17,9 @@ Please make sure to follow our [Contributing Guide](../blob/main/CONTRIBUTING.md
 
 **Before opening the PR:**
 
+- [ ] In the repo's root dir, run `make go.update-golden-only`.
 - [ ] There is no other open [pull request](../pulls) for the same update/change.
-- [ ] The commits follow our [Commit Guidelines](../blob/main/CONTRIBUTING.md#commit-guidelines).
 - [ ] Tests for charts are added (if needed).
-- [ ] The main Helm chart and sub-chart are updated (if needed).
 - [ ] In-repo [documentation](../blob/main/CONTRIBUTING.md#documentation) are updated (if needed).
 
 **After opening the PR:**
