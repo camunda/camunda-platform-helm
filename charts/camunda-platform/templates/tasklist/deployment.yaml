@@ -169,7 +169,7 @@ spec:
             - name: config
               mountPath: /app/resources/application.yml
               subPath: application.yml
-            - name: config-tasklist
+            - name: config
               mountPath: /usr/local/tasklist/config/application.yml
               subPath: application.yml
             - mountPath: /tmp
@@ -184,10 +184,6 @@ spec:
         {{- end }}
       volumes:
         - name: config
-          configMap:
-            name: {{ include "tasklist.fullname" . }}
-            defaultMode: {{ .Values.tasklist.configMap.defaultMode }}
-        - name: config-tasklist
           configMap:
             name: {{ include "tasklist.fullname" . }}
             defaultMode: {{ .Values.tasklist.configMap.defaultMode }}
