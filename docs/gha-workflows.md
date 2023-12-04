@@ -5,7 +5,7 @@ of the CI pipelines.
 
 ## Integration tests
 
-The most important workflow is the [main integration workflow](../.github/workflows/test-integration-main.yaml),
+The most important workflow is the [main integration workflow](../.github/workflows/test-integration-template.yaml),
 where each Camunda component can reuse that workflow in their CI pipelines to ensure that
 each component works as expected within the Camunda as a whole.
 
@@ -19,7 +19,7 @@ jobs:
   ...
   helm-deploy:
     name: Helm chart Integration Tests
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-main.yaml@main
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
       identifier: dev-console-sm
@@ -109,7 +109,7 @@ jobs:
               console:
                 enabled: false
     name: Helm integration tests - ${{ matrix.deployment.id }}
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-main.yaml@main
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
       identifier: dev-console-sm-${{ matrix.deployment.id }}
