@@ -12,9 +12,6 @@ on:
   pull_request:
     types:
       - labeled
-  push:
-    branches:
-      - cosign-github-actions
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -22,7 +19,7 @@ concurrency:
 
 jobs:
   wait-for-release-conditions:
-    # if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     steps:
       - name: Wait for all PR checks to succeed
@@ -73,26 +70,22 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
-      - name: cmd
+      - name: Create Cosign bundle, verify, and upload
         run: |
-          cd charts/camunda-platform
-          cr package .
-          CHART_VERSION="$(yq ".version" Chart.yaml)"
+          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
+          # Signing
           cosign sign-blob -y .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
-            --bundle camunda-platform-${CHART_VERSION}-cosign.bundle
-          find . -name "*.bundle" -exec ls -lsa {} \;
+            --bundle camunda-platform-${CHART_VERSION}.cosign.bundle
+          # Verifying
           cosign verify-blob .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
-            --bundle ./camunda-platform-${CHART_VERSION}-cosign.bundle \
-            --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release.yaml@refs/heads/cosign-github-actions" \
+            --bundle ./camunda-platform-${CHART_VERSION}.cosign.bundle \
+            --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-          mkdir -p docs/bundles
-          cp ./camunda-platform-${CHART_VERSION}-cosign.bundle docs/bundles/camunda-platform-${CHART_VERSION}-cosign.bundle
-          # git config user.name "$GITHUB_ACTOR"
-          # git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          # git add docs/bundles/camunda-platform-${CHART_VERSION}-cosign.bundle
-          # git commit -m "Update Cosign bundle"
-          # # Push to the same branch; adjust if using a different branch for GitHub Pages
-          # git push origin HEAD:${{ github.ref }}
+          # Uploading
+          gh release -R "${GITHUB_REPOSITORY}" upload "camunda-platform-${CHART_VERSION}" \ 
+            ./camunda-platform-${CHART_VERSION}.cosign.bundle
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
 
   verify:
