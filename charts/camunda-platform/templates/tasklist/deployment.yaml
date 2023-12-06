@@ -14,7 +14,7 @@ spec:
       {{- include "tasklist.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      labels: 
+      labels:
         {{- include "tasklist.labels" . | nindent 8 }}
         {{- if .Values.tasklist.podLabels }}
           {{- toYaml .Values.tasklist.podLabels | nindent 8 }}
@@ -82,7 +82,7 @@ spec:
               https://github.com/camunda/camunda-platform-helm/issues/714
             */}}
             - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix "/tasklist" | quote }}
+              value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix .Values.tasklist.contextPath | quote }}
             - name: ZEEBE_CLIENT_ID
               value: zeebe
             - name: ZEEBE_CLIENT_SECRET
