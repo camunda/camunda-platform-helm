@@ -38,4 +38,15 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 {{ end }}
 {{ end -}}
 {{ end -}}
+
+### Verification
+
+To verify integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
+
+```shell
+cosign verify-blob {{ .Tag.Name }}.tgz \
+  --bundle {{ .Tag.Name }}.cosign.bundle \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  --certificate-identity "https://github.com/_GITHUB_WORKFLOW_REF_"
+```
 {{ end -}}
