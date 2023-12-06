@@ -169,6 +169,9 @@ spec:
             - name: config
               mountPath: /app/resources/application.yml
               subPath: application.yml
+            - name: config
+              mountPath: /usr/local/tasklist/config/application.yml
+              subPath: application.yml
             - mountPath: /tmp
               name: tmp
             - mountPath: /camunda
