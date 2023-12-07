@@ -33,11 +33,19 @@ jobs:
   release:
     needs: wait-for-release-conditions
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           fetch-depth: 0
+      # TODO: Remove this step when we automate release chores as a pre-release workflow.
+      # Use Go Sprig Function which is supported by chglog like "{{ env GITHUB_WORKFLOW_REF }}".
+      - name: Substitute GITHUB_WORKFLOW_REF var.
+        run: |
+          sed -i "s/_GITHUB_WORKFLOW_REF_/${GITHUB_WORKFLOW_REF}/g" .chglog/CHANGELOG.tpl.md
       - name: Install env dependencies
         uses: asdf-vm/actions/install@v3
       - uses: actions/cache@v3
@@ -58,6 +66,8 @@ jobs:
       - name: Update Helm dependency
         run: |
           make helm.dependency-update
+      - name: cosign-installer
+        uses: sigstore/cosign-installer@v3.2.0
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.6.0
         with:
@@ -65,6 +75,27 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
+      - name: Set Helm chart version var
+        run: |
+          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
+          echo "CHART_VERSION=${CHART_VERSION}" | tee -a $GITHUB_ENV
+      - name: Sign Helm chart with Cosign
+        run: |
+          cosign sign-blob -y .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
+            --bundle camunda-platform-${CHART_VERSION}.cosign.bundle
+      - name: Verify signed Helm chart with Cosign
+        run: |
+          cosign verify-blob .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
+            --bundle ./camunda-platform-${CHART_VERSION}.cosign.bundle \
+            --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+      - name: Upload Helm chart signature bundle
+        run: |
+          gh release upload "camunda-platform-${CHART_VERSION}" \
+            ./camunda-platform-${CHART_VERSION}.cosign.bundle \
+            --repo "${GITHUB_REPOSITORY}"
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
   verify:
     needs: release
     runs-on: ubuntu-latest
