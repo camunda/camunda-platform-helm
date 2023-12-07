@@ -1,7 +1,7 @@
 helm 3.13.2
 # The kubectl version depends on the K8s CI cluster version
 kubectl 1.27.8
-kustomize 5.2.1
+kustomize 5.3.0
 golang 1.21.5
 # Task is mainly used to run tests locally or in the CI pipeline.
 task 3.30.1
