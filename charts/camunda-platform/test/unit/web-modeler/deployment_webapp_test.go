@@ -51,78 +51,6 @@ func TestWebappDeploymentTemplate(t *testing.T) {
 	})
 }
 
-func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakClientConfigWithRootPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                   "true",
-			"webModeler.restapi.mail.fromAddress":  "example@example.com",
-			"global.identity.auth.publicIssuerUrl": "http://localhost:18080/realms/test-realm",
-			"global.identity.keycloak.contextPath": "/",
-			"global.identity.keycloak.realm":       "/realms/test-realm",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_BASE_URL",
-			Value: "http://localhost:18080",
-		},
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_CONTEXT_PATH",
-			Value: "/",
-		},
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_REALM",
-			Value: "test-realm",
-		},
-	)
-}
-
-func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakClientConfigWithCustomPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                   "true",
-			"webModeler.restapi.mail.fromAddress":  "example@example.com",
-			"global.identity.auth.publicIssuerUrl": "http://localhost:18080/test-path/realms/test-realm",
-			"global.identity.keycloak.contextPath": "/test-path",
-			"global.identity.keycloak.realm":       "/realms/test-realm",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_BASE_URL",
-			Value: "http://localhost:18080",
-		},
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_CONTEXT_PATH",
-			Value: "/test-path",
-		},
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_REALM",
-			Value: "test-realm",
-		},
-	)
-}
-
 func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
 	// given
 	options := &helm.Options{
@@ -145,7 +73,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name:  "KEYCLOAK_JWKS_URL",
+			Name:  "OAUTH2_JWKS_URL",
 			Value: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs",
 		})
 }

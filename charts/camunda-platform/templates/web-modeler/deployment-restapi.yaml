@@ -34,6 +34,8 @@ spec:
           env:
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
+            - name: CAMUNDA_IDENTITY_BASE_URL
+              value: {{ include "webModeler.identityBaseUrl" . | quote }}
             - name: SPRING_DATASOURCE_URL
               value: {{ include "webModeler.restapi.databaseUrl" . | quote }}
             - name: SPRING_DATASOURCE_USERNAME
@@ -89,8 +91,6 @@ spec:
               value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: RESTAPI_IDENTITY_BASE_URL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
           {{- with .Values.webModeler.restapi.env }}
