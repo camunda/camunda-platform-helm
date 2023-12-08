@@ -48,7 +48,6 @@ data:
       archiver:
         ilmEnabled: true
         ilmMinAgeForDeleteArchivedIndices: {{ .Values.tasklist.retention.minimumAge }}
-        waitPeriodBeforeArchiving: 30m
       {{- end }}
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
