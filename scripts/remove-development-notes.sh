@@ -9,7 +9,7 @@ current_date=$(date +"%m-%d-%Y")
 # Path to the log file with the current date
 log_file="development_notes_cleanup_${current_date}.log"
 
-files_to_process=($(grep -Rl -e "TODO:" -e "NOTE:" --exclude-dir="$ignore_dirs" . | grep -v remove_notes_todo))
+files_to_process=($(grep -Rl -e "TODO:" -e "NOTE:" --exclude-dir="$ignore_dirs" . | grep -v remove-development-notes))
 
 # Define the awk command as a variable for readability
 awk_command='
