@@ -42,7 +42,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run Cleanup Script
-        run: ./scripts/remove_notes_todo_script.sh
+        run: ./scripts/remove-development-notes.sh
       - name: Upload Log File as Artifact
         uses: actions/upload-artifact@v3
         with:
