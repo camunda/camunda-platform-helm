@@ -728,6 +728,31 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 	)
 }
 
+func (s *deploymentTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.contextPath": "/camunda/tasklist",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL",
+			Value: "http://localhost:8082",
+		},
+	)
+}
+
 // readinessProbe is enabled by default so it's tested by golden files.
 
 func (s *deploymentTemplateTest) TestContainerStartupProbe() {
