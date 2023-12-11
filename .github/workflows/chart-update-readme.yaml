@@ -18,9 +18,16 @@ jobs:
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           token: '${{ steps.generate-github-token.outputs.token }}'
-      - name: Cat file content
-        run: cat charts/camunda-platform/values.yaml
       - name: Install readme-generator-for-helm
         run: npm install -g @bitnami/readme-generator-for-helm
-     
+      - name: Run readme generator
+        run: |
+          echo "Updating README.md"
+          make helm.readme-update
+      - uses: EndBug/add-and-commit@v9.1.3
+        with:
+          author_name: "renovate[bot]"
+          author_email: "29139614+renovate[bot]@users.noreply.github.com"
+          message: "chore: Update README.md using readme-generator-for-helm"
