@@ -4,6 +4,8 @@ on:
   pull_request_target:
     paths:
       - 'charts/camunda-platform/values.yaml'
+    branches:
+      - main
 jobs:
   update-readme-metadata:
     runs-on: ubuntu-latest
@@ -14,7 +16,7 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/checkout@v4
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
           ref: ${{ github.event.pull_request.head.sha }}
