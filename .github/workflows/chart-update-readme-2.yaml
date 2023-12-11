@@ -1,0 +1,25 @@
+name: "Chart - Update README TWO"
+
+on:
+  pull_request_target:
+    paths:
+      - 'charts/camunda-platform/values.yaml'
+    branches:
+      - main
+jobs:
+  update-readme-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          token: '${{ steps.generate-github-token.outputs.token }}'
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Cat file
+        run: |
+          cat charts/camunda-platform/README.md
