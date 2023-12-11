@@ -6,6 +6,9 @@ on:
   pull_request:
     paths:
       - '**/*'
+  push:
+    paths:
+      - '**/*'
 jobs:
   cat-file:
     runs-on: ubuntu-latest
