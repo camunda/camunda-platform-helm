@@ -52,6 +52,8 @@ global:
   image:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
+    ## @param global.image.test Can be used to set container image registry.
+    test: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
     tag: 8.3.3
