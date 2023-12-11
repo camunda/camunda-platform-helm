@@ -41,13 +41,6 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           fetch-depth: 0
-      - name: Run Cleanup Script
-        run: ./scripts/remove-development-notes.sh
-      - name: Upload Log File as Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: development_notes_cleanup.log
-          path: ./development_notes_cleanup_*.log
       # TODO: Remove this step when we automate release chores as a pre-release workflow.
       # Use Go Sprig Function which is supported by chglog like "{{ env GITHUB_WORKFLOW_REF }}".
       - name: Substitute GITHUB_WORKFLOW_REF var.
