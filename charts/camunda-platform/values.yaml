@@ -1774,7 +1774,9 @@ identity:
         readOnlyRootFilesystem: true
         allowPrivilegeEscalation: false
         runAsNonRoot: true
+        # START DEV NOTE
         # TODO: Remove the runAsUser when the numeric ID is used in the Identity Docker image.
+        # END DEV NOTE
         runAsUser: 1005
         capabilities:
           drop: ["ALL"]
@@ -2741,13 +2743,17 @@ connectors:
 ## Console Parameters
 ## console configuration.
 # NOTE: The values here are just placeholder and not all of them are active.
+# START DEV NOTE
 # TODO: Update Console template to match the values when the 1st dev iteration is done.
+# END DEV NOTE
 console:
   ## @skip console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
   ## @skip console.createReleaseInfo Create config that will be used in console controller deployment.
+  # START DEV NOTE
   # NOTE: This should be under global but we keep it here till console is ready for alpha.
+  # END DEV NOTE
   createReleaseInfo: true
 
   ## @skip console.managed Example for managed Camunda releases/deployments.

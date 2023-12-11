@@ -1,10 +1,11 @@
 #!/bin/bash
 set -x -e 
 # Define directories to ignore
-ignore_dirs="./test"
+ignore_dirs= "./charts/camunda-platform/test/ ./.github/workflows/"
+
 
 # Get the current date in MM-DD-YYYY format
-current_date=$(date +"%m-%d-%Y")
+current_date=$(date +"%m-%d-%Y")ß
 
 # Path to the log file with the current date
 log_file="development_notes_cleanup_${current_date}.log"

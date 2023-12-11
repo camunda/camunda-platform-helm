@@ -116,7 +116,7 @@ spec:
           {{- if .Values.webModeler.webapp.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              # NOTE: WebApp doesn't support contextPath for health endpoints.
+              {{/* # NOTE: WebApp doesn't support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.startupProbe.probePath }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.startupProbe.initialDelaySeconds }}
@@ -128,7 +128,7 @@ spec:
           {{- if .Values.webModeler.webapp.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              # NOTE: WebApp doesn't support contextPath for health endpoints.
+              {{/* # NOTE: WebApp doesn't support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.readinessProbe.probePath }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.readinessProbe.initialDelaySeconds }}
@@ -140,7 +140,7 @@ spec:
           {{- if .Values.webModeler.webapp.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              # NOTE: WebApp doesn't support contextPath for health endpoints.
+              {{/* # NOTE: WebApp doesn't support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.livenessProbe.probePath }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.livenessProbe.initialDelaySeconds }}
