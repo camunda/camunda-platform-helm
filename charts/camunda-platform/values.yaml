@@ -192,12 +192,10 @@ global:
 
       ## global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
       console:
-        ## @skip global.identity.auth.console.existingSecret
-        # can be used to use an own existing secret. If not set a random secret is generated.
+        ## @skip global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `console-secret` field, which will be used as secret for the identity-console communication.
         existingSecret:
-        ## @skip global.identity.auth.console.redirectUrl
-        ## defines the root URL which is used by Keycloak to access Web Modeler.
+        ## @skip global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
@@ -216,14 +214,11 @@ global:
   # If you can, consider three regions. Please, contact your customer success manager as soon as you start planning a multi-region setup.
   # Camunda reserves the right to limit support if no review was done prior to launch or the review showed significant risks.
   multiregion:
-    ## @skip global.multiregion.regions
-    ## number of regions that this Camunda Platform instance is stretched across
+    ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
-    ## @skip global.multiregion.regionId
-    ## unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
     regionId: 0
-    ## @skip global.multiregion.installationType
-    ## mode of installation for multi-region disaster recovery: normal, failOver, failBack
+    ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
 
@@ -1740,10 +1735,7 @@ identity:
     ## @skip identity.keycloak.extraVolumes[2].name
     ## @skip identity.keycloak.extraVolumes[2].emptyDir
     ## @skip identity.keycloak.extraVolumes[3].name
-    ## @skip identity.keycloak.extraVolumes[3].emptyDir
     ## @skip identity.keycloak.extraVolumes[3].emptyDir.sizeLimit
-    ## @skip identity.keycloak.extraVolumes[4].name
-    ## @skip identity.keycloak.extraVolumes[4].emptyDir.sizeLimit
     extraVolumes:
     - name: config
       emptyDir: {}
@@ -1831,20 +1823,17 @@ identity:
     ## @param identity.keycloak.extraVolumeMounts[2].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].name
-    ## @param identity.keycloak.extraVolumeMounts[4].mountPath
-    ## @param identity.keycloak.extraVolumeMounts[4].name
-
     extraVolumeMounts:
-      - mountPath: /opt/bitnami/keycloak/conf/
-        name: config
-      - mountPath: /opt/bitnami/keycloak/lib/quarkus
-        name: quarkus
-      - name: camunda-theme
-        mountPath: /opt/bitnami/keycloak/themes/identity
-      - mountPath: /tmp
-        name: tmp
-      - mountPath: /opt/bitnami/keycloak/data/tmp
-        name: data-tmp
+    - mountPath: /opt/bitnami/keycloak/conf/
+      name: config
+    - mountPath: /opt/bitnami/keycloak/lib/quarkus
+      name: quarkus
+    - name: camunda-theme
+      mountPath: /opt/bitnami/keycloak/themes/identity
+    - mountPath: /tmp
+      name: tmp
+    - mountPath: /opt/bitnami/keycloak/data/tmp
+      name: data-tmp
 
     ## @param identity.keycloak.containerSecurityContext.privileged
     ## @param identity.keycloak.containerSecurityContext.readOnlyRootFilesystem
@@ -2754,17 +2743,14 @@ connectors:
 # NOTE: The values here are just placeholder and not all of them are active.
 # TODO: Update Console template to match the values when the 1st dev iteration is done.
 console:
-  ## @skip console.enabled
-  ## if true, the Console deployment and its related resources are deployed via a helm release
+  ## @skip console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @skip console.createReleaseInfo
-  ## Create config that will be used in console controller deployment.
+  ## @skip console.createReleaseInfo Create config that will be used in console controller deployment.
   # NOTE: This should be under global but we keep it here till console is ready for alpha.
   createReleaseInfo: true
 
-  ## @skip console.managed
-   ##Example for managed Camunda releases/deployments.
+  ## @skip console.managed Example for managed Camunda releases/deployments.
   managed: {}
 
   # Method 01: Plain
@@ -2817,56 +2803,41 @@ console:
 
   ## console.image configuration to configure the Console image specifics
   image:
-    ## @skip console.image.registry
-     ##can be used to set container image registry.
+    ## @skip console.image.registry can be used to set container image registry.
     registry: registry.camunda.cloud
-    ## @skip console.image.repository
-     ##defines which image repository to use
+    ## @skip console.image.repository defines which image repository to use
     repository: console/console-sm
-    ## @skip console.image.tag
-     ##can be set to overwrite the global tag, which should be used in that chart
+    ## @skip console.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: latest
-    ## @skip console.image.pullSecrets
-     ##can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @skip console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  ## @skip console.sidecars
-   ##can be used to attach extra containers to the console deployment
+  ## @skip console.sidecars can be used to attach extra containers to the console deployment
   sidecars: []
 
-  ## @skip console.replicas
-   ##Number of Console replicas
+  ## @skip console.replicas Number of Console replicas
   replicas: 1
 
-  ## @skip console.contextPath
-   ##can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  ## @skip console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: "/"
 
-  ## @skip console.podAnnotations
-  ## can be used to define extra Console pod annotations
+  ## @skip console.podAnnotations can be used to define extra Console pod annotations
   podAnnotations: {}
-  ## @skip console.podLabels
-   ##can be used to define extra Console pod labels
+  ## @skip console.podLabels can be used to define extra Console pod labels
   podLabels: {}
 
-  ## @skip console.logging
-   ##configuration for the Console logging. This template will be directly included in the Operate configuration yaml file
+  ## @skip console.logging configuration for the Console logging. This template will be directly included in the Operate configuration yaml file
   logging: {}
 
-  ## console.service
-   ##configuration to configure the Console service.
+  ## console.service configuration to configure the Console service.
   service:
-    ## @skip console.service.type
-     #defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    ## @skip console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @skip console.service.annotations
-     #can be used to define annotations, which will be applied to the Console service
+    ## @skip console.service.annotations can be used to define annotations, which will be applied to the Console service
     annotations: {}
-    ## @skip console.service.port
-     #defines the port number where the web application will be available
+    ## @skip console.service.port defines the port number where the web application will be available
     port: 8080
-    ## @skip console.service.serverName
-     #defines the port name where the web application will be available
+    ## @skip console.service.serverName defines the port name where the web application will be available
     serverName: http
 
   ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -2882,125 +2853,90 @@ console:
       cpu: 2
       memory: 2Gi
 
-  ## @skip console.env
-   ##can be used to set extra environment variables in each app container
+  ## @skip console.env can be used to set extra environment variables in each app container
   env: []
-  ## @skip console.command
-   ##can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  ## @skip console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
-  ## @skip console.extraVolumes
-   ##can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
+  ## @skip console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
   extraVolumes: []
-  ## @skip console.extraVolumeMounts
-  ## can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
+  ## @skip console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
   extraVolumeMounts: []
 
   ## console.startupProbe configuration
   startupProbe:
-    ## @skip console.startupProbe.enabled
-     ##if true, the startup probe is enabled in app container
+    ## @skip console.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @skip console.startupProbe.scheme
-     ##defines the startup probe scheme used on calling the probePath
+    ## @skip console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
-    ## @skip console.startupProbe.probePath
-     ##defines the startup probe route used on the app
+    ## @skip console.startupProbe.probePath defines the startup probe route used on the app
     probePath: /health/readiness
-    ## @skip console.startupProbe.initialDelaySeconds
-     #defines the number of seconds after the container has started before
+    ## @skip console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @skip console.startupProbe.periodSeconds
-     #defines how often the probe is executed
+    ## @skip console.startupProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @skip console.startupProbe.successThreshold
-     #defines how often it needs to be true to be marked as ready, after failure
+    ## @skip console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @skip console.startupProbe.failureThreshold
-     #defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @skip console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @skip console.startupProbe.timeoutSeconds
-     #defines the seconds after the probe times out
+    ## @skip console.startupProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## console.readinessProbe configuration
   readinessProbe:
-    ## @skip console.readinessProbe.enabled
-     #if true, the readiness probe is enabled in app container
+    ## @skip console.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @skip console.readinessProbe.scheme
-     ##defines the startup probe scheme used on calling the probePath
+    ## @skip console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
-    ## @skip console.readinessProbe.probePath
-     ##defines the readiness probe route used on the app
+    ## @skip console.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /health/readiness
-    ## @skip console.readinessProbe.initialDelaySeconds
-     ##defines the number of seconds after the container has started before
+    ## @skip console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @skip console.readinessProbe.periodSeconds
-     ##defines how often the probe is executed
+    ## @skip console.readinessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @skip console.readinessProbe.successThreshold
-     ##defines how often it needs to be true to be marked as ready, after failure
+    ## @skip console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @skip console.readinessProbe.failureThreshold
-     ##defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @skip console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @skip console.readinessProbe.timeoutSeconds
-     ##defines the seconds after the probe times out
+    ## @skip console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## console.livenessProbe configuration
   livenessProbe:
-    ## @skip console.livenessProbe.enabled
-     ##if true, the liveness probe is enabled in app container
+    ## @skip console.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @skip console.livenessProbe.scheme
-     ##defines the startup probe scheme used on calling the probePath
+    ## @skip console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
-    ## @skip console.livenessProbe.probePath
-     ##defines the liveness probe route used on the app
+    ## @skip console.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health/liveness
-    ## @skip console.livenessProbe.initialDelaySeconds
-     ##defines the number of seconds after the container has started before
+    ## @skip console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @skip console.livenessProbe.periodSeconds
-     ##defines how often the probe is executed
+    ## @skip console.livenessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @skip console.livenessProbe.successThreshold
-     ##defines how often it needs to be true to be considered successful after having failed
+    ## @skip console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
     successThreshold: 1
-    ## @skip console.livenessProbe.failureThreshold
-     ##defines when the probe is considered as failed so the container will be restarted
+    ## @skip console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
     failureThreshold: 5
-    ## @skip console.livenessProbe.timeoutSeconds
-     ##defines the seconds after the probe times out
+    ## @skip console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## console.serviceAccount
-  # configuration for the service account where the Console pods are assigned to
+  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
   serviceAccount:
-    ## @skip console.serviceAccount.enabled
-     #if true, enables the Console service account
+    ## @skip console.serviceAccount.enabled if true, enables the Console service account
     enabled: false
-    ## @skip console.serviceAccount.name
-     #can be used to set the name of the Console service account
+    ## @skip console.serviceAccount.name can be used to set the name of the Console service account
     name: ""
-    ## @skip console.serviceAccount.annotations
-     #can be used to set the annotations of the Operate service account
+    ## @skip console.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
 
   ingress:
-    ## @skip console.ingress.enabled
-     #if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
+    ## @skip console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
-    ## @skip console.ingress.className
-     #defines the class or configuration of ingress which should be used by the controller
+    ## @skip console.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @skip console.ingress.annotations
-     #[object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @skip console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -3008,39 +2944,29 @@ console:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-    ## @skip console.ingress.path
-     ##defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## @skip console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
-    ## @skip console.ingress.host
-     ##can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## @skip console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
     host: ""
-    ## console.ingress.tls
-     ##configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
-      ## @skip console.ingress.tls.enabled
-       ##if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      ## @skip console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
-      ## @skip console.ingress.tls.secretName
-       ##defines the secret name which contains the TLS private key and certificate
+      ## @skip console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-console
 
-  ## @skip console.podSecurityContext
-   ##defines the security options the Console pod should be run with
+  ## @skip console.podSecurityContext defines the security options the Console pod should be run with
   podSecurityContext: {}
 
-  ## @skip console.containerSecurityContext
-   ##defines the security options the Console container should be run with
+  ## @skip console.containerSecurityContext defines the security options the Console container should be run with
   containerSecurityContext: {}
 
-  ## @skip console.nodeSelector
-   ##can be used to define on which nodes the Console pods should run
+  ## @skip console.nodeSelector can be used to define on which nodes the Console pods should run
   nodeSelector: {}
-  ## @skip console.tolerations
-   ##can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ## @skip console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @skip console.affinity
-   ##can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ## @skip console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
 
 
