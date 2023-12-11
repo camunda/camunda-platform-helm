@@ -84,8 +84,7 @@ spec:
               value: "http://localhost:8084"
             - name: KEYCLOAK_INIT_ZEEBE_NAME
               value: "Zeebe"
-            # TODO: Use ".Values.connectors.inbound.mode=oauth" as a condition when we migrate
-            # to flat chart structure. Also then remove the optional flag from the secret.
+            
             - name: KEYCLOAK_CLIENTS_0_NAME
               value: Connectors
             - name: KEYCLOAK_CLIENTS_0_ID
@@ -170,7 +169,7 @@ spec:
               protocol: TCP
           readinessProbe:
             httpGet:
-              # NOTE: Identity doesn't support contextPath for health endpoints.
+              
               path: /actuator/health
               scheme: HTTP
               port: metrics
