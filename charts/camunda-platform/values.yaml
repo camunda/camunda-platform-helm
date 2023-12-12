@@ -49,6 +49,7 @@ global:
     app: camunda-platform
     test-label: test
     test-label2: test
+    test-label3: test
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
   image:
