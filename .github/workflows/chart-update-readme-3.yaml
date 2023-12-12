@@ -2,10 +2,6 @@ name: "third readme update"
 
 on:
   pull_request:
-    branches:
-      - main
-    paths:
-      - 'charts/camunda-platform/values.yaml'
     types:
       - opened
       - synchronize
