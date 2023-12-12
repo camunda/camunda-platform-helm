@@ -1,11 +1,17 @@
 name: "Chart - Update README"
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
     paths:
       - 'charts/camunda-platform/values.yaml'
+    types:
+      - opened
+      - edited
+      - closed
+      - reopened
+      - synchronize
 jobs:
   update-readme-metadata:
     runs-on: ubuntu-latest
