@@ -2,13 +2,10 @@ name: "Chart - Update README"
 
 on:
   pull_request_target:
-    types: [opened, edited]
-  pull_request:
+    branches:
+      - main
     paths:
-      - '**/*'
-  push:
-    paths:
-      - '**/*'
+      - 'charts/camunda-platform/values.yaml'
 jobs:
   update-readme-metadata:
     runs-on: ubuntu-latest
@@ -19,9 +16,11 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
+      - name: cat file
+        run: cat charts/camunda-platform/values.yaml
       - name: Install readme-generator-for-helm
         run: npm install -g @bitnami/readme-generator-for-helm
       - name: Run readme generator
