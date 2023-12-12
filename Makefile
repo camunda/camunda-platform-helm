@@ -158,7 +158,7 @@ release.generate-notes-and-commit: .release.generate-notes
 release.generate-pr-url:
 	@echo "\n\n###################################\n"
 	@echo "Open the release PR using this URL:"
-	@echo "https://github.com/camunda/camunda-platform-helm/compare/release?expand=1&template=release_template.md&title=Release%20Camunda%20Platform%20Helm%20Chart%20v$(chartVersion)"
+	@echo "https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.1...release?expand=1&template=release_template.md&title=Release%20Camunda%20Platform%20Helm%20Chart%20v$(chartVersion)"
 	@echo "\n###################################\n\n"
 
 .PHONY: release.chores
