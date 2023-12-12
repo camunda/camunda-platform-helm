@@ -7,6 +7,7 @@ on:
     branches:
     - 'renovate/*'
     paths:
+    - 'charts/camunda-platform/Chart.yaml'
     - 'charts/camunda-platform/values.yaml'
     - 'charts/camunda-platform/templates/**'
     - 'charts/camunda-platform/charts/**'
