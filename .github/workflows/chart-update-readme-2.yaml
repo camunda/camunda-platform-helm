@@ -16,5 +16,9 @@ jobs:
     steps:
       - name: echo message
         run: echo "hello from hamza"
+      - uses: actions/checkout@v4
+        with:
+          token: '${{ steps.generate-github-token.outputs.token }}'
+          ref: "${{ github.event.pull_request.merge_commit_sha }}"
       - name: cat file
         run: cat charts/camunda-platform/values.yaml
