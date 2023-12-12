@@ -4,6 +4,70 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
+          description: "removed hardcoded contextPaths while trimming redirectRootUrl"
+        - kind: changed
+          description: "show error message for optimize requirements"
+        - kind: changed
+          description: "mount tasklist-configmap volume on a new path"
+        - kind: changed
+          description: "enable tasklist user access restrictions"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.3.x
+    created: "2023-12-12T18:04:31.737808895Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.3.4
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.13.13
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 8afa428285b4b655267603aab6f198d659b4ab27c71b56da67f964b914548dde
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.4/camunda-platform-8.3.4.tgz
+    version: 8.3.4
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
           description: "correct a typo in identity-optimize secret"
         - kind: fixed
           description: "allow mount zeebe exporters dir"
@@ -7482,4 +7546,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2023-12-12T17:19:40.212945874Z"
+generated: "2023-12-12T18:04:31.738172552Z"
