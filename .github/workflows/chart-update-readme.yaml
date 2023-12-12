@@ -1,9 +1,11 @@
 name: "Chart - Update README"
 
 on:
-  push:
+  pull_request:
+    branches:
+      - main
     paths:
-      - '**/*'
+      - 'charts/camunda-platform/values.yaml'
 jobs:
   update-readme-metadata:
     runs-on: ubuntu-latest
