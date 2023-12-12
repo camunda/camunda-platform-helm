@@ -58,10 +58,10 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "correct a typo in identity-optimize secret"
-    - kind: fixed
-      description: "allow mount zeebe exporters dir"
-    - kind: fixed
-      description: "set keycloak data tmp dir writable"
+      description: "removed hardcoded contextPaths while trimming redirectRootUrl"
     - kind: changed
-      description: "change operate default log level to INFO"
+      description: "show error message for optimize requirements"
+    - kind: changed
+      description: "mount tasklist-configmap volume on a new path"
+    - kind: changed
+      description: "enable tasklist user access restrictions"
