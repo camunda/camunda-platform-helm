@@ -61,12 +61,13 @@ jobs:
     - name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+        workload_identity_provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
     - name: 'Get GKE credentials'
       uses: 'google-github-actions/get-gke-credentials@v0'
       with:
-        cluster_name: ${{ secrets.GKE_CLUSTER }}
-        location: ${{ secrets.GKE_ZONE }}
+        cluster_name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+        location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
     # The KUBECONFIG env var is automatically exported and picked up by kubectl.
     - name: 'Check credentials'
       run: 'kubectl auth can-i create deployment'
