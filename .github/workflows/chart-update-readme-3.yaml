@@ -34,7 +34,7 @@
 #           author_email: "29139614+renovate[bot]@users.noreply.github.com"
 #           message: "chore: Update README.md using readme-generator-for-helm"
 
-name: test test test
+name: test test
 
 on:
   pull_request:
@@ -54,4 +54,4 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         
     - name: cat file
-    run: cat charts/camunda-platform/values.yaml
+      run: cat charts/camunda-platform/values.yaml
