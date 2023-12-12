@@ -11,7 +11,7 @@ on:
       - synchronize
       - reopened
 jobs:
-  update-readme-metadata:
+  update-readme-metadata2:
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub token
