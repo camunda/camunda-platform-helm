@@ -57,20 +57,20 @@ spec:
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            - name: CAMUNDA_TASKLIST_IDENTITY_BASEURL
+            - name: CAMUNDA_IDENTITY_BASE_URL
               value: "http://camunda-platform-test-identity:80"
-            - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL
+            - name: CAMUNDA_IDENTITY_ISSUER
               value: "http://localhost:18080/auth/realms/camunda-platform"
-            - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL
+            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
-            - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: "tasklist"
-            - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-tasklist-identity-secret
                   key: tasklist-secret
-            - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
+            - name: CAMUNDA_IDENTITY_AUDIENCE
               value: "tasklist-api"
             - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
               value: "true"
