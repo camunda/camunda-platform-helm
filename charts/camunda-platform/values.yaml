@@ -54,7 +54,7 @@ global:
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.3.3
+    tag: 8.3.4
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -760,8 +760,9 @@ operate:
   sidecars: []
   ## @param operate.initContainers can be used to set up extra init containers for the operate pods, useful for additional exporters
   initContainers: []
-  # ContextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   # contextPath: "/operate"
+  ## @param operate.contextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
 
   ## @param operate.podAnnotations can be used to define extra Operate pod annotations
   podAnnotations: {}
@@ -969,8 +970,9 @@ tasklist:
   sidecars: []
   ## @param tasklist.initContainers can be used to set up extra init containers for the taskList pods, useful for additional exporters
   initContainers: []
-  # tasklist.contextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   # contextPath: "/tasklist"
+  ## @param tasklist.contextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
 
   ## @param tasklist.env can be used to set extra environment variables on each Tasklist container
   env: []
@@ -1173,7 +1175,7 @@ optimize:
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.3.3
+    tag: 8.3.4
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1187,8 +1189,9 @@ optimize:
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
 
-  ## optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   # contextPath: "/optimize"
+  ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
 
   ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations
   podAnnotations: {}
@@ -1415,12 +1418,12 @@ identity:
   # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
   # fullURL: "https://camunda.example.com/identity"
 
-  # ContextPath can be used to make Identity web application works on a custom sub-path. This is mainly used
-  # to run Camunda web applications under a single domain.
   # Note: Identity cannot be accessed over HTTP if a "contextPath" is configured.
   #       Which means that Identity cannot be configured in combined Ingress without HTTPS.
   #       To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
   # contextPath: "/identity"
+  ## @param identity.contextPath can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
 
   ## @param identity.podAnnotations can be used to define extra Identity pod annotations
   podAnnotations: {}
@@ -1736,6 +1739,8 @@ identity:
     ## @skip identity.keycloak.extraVolumes[2].emptyDir
     ## @skip identity.keycloak.extraVolumes[3].name
     ## @skip identity.keycloak.extraVolumes[3].emptyDir.sizeLimit
+    ## @skip identity.keycloak.extraVolumes[4].name
+    ## @skip identity.keycloak.extraVolumes[4].emptyDir.sizeLimit
     extraVolumes:
     - name: config
       emptyDir: {}
@@ -1825,6 +1830,8 @@ identity:
     ## @param identity.keycloak.extraVolumeMounts[2].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].name
+    ## @param identity.keycloak.extraVolumeMounts[4].mountPath
+    ## @param identity.keycloak.extraVolumeMounts[4].name
     extraVolumeMounts:
     - mountPath: /opt/bitnami/keycloak/conf/
       name: config
@@ -1932,7 +1939,7 @@ webModeler:
     registry: registry.camunda.cloud
     ## @param webModeler.image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.3.1
+    tag: 8.3.2
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
@@ -1942,9 +1949,10 @@ webModeler:
     #   - name: registry-secret
     pullSecrets: []
 
-  # ContextPath can be used to make Web Modeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
   # contextPath: "/modeler"
+  ## @param webModeler.contextPath can be used to make Web Modeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
+  contextPath: ""
 
   # WebModeler.
   ######                         #    ######  ###
@@ -2551,7 +2559,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.3.1
+    tag: 8.3.2
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2563,8 +2571,9 @@ connectors:
   ## @param connectors.replicas number of Connectors replicas
   replicas: 1
 
-  # contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   # contextPath: "/connectors"
+  ## @param connectors.contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
 
   ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
   podAnnotations: {}

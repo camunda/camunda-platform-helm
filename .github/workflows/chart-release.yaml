@@ -58,7 +58,7 @@ jobs:
       # Use Go Sprig Function which is supported by chglog like "{{ env GITHUB_WORKFLOW_REF }}".
       - name: Substitute GITHUB_WORKFLOW_REF var.
         run: |
-          sed -i "s/_GITHUB_WORKFLOW_REF_/${GITHUB_WORKFLOW_REF}/g" .chglog/CHANGELOG.tpl.md
+          sed -i "s|_GITHUB_WORKFLOW_REF_|${GITHUB_WORKFLOW_REF}|g" charts/camunda-platform/RELEASE-NOTES.md
       - name: Install env dependencies
         uses: asdf-vm/actions/install@v3
       - uses: actions/cache@v3
@@ -80,7 +80,7 @@ jobs:
         run: |
           make helm.dependency-update
       - name: cosign-installer
-        uses: sigstore/cosign-installer@v3.2.0
+        uses: sigstore/cosign-installer@v3.3.0
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.6.0
         with:
