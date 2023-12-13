@@ -23,10 +23,12 @@ dependencies:
     version: 8.3.3
     condition: "identity.enabled"
     import-values:
-      #START DEV COMMENTS    
+      # START DEV COMMENT 
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
       #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
-      #END DEV COMMENTS
+      # TODO: Move this to Identity subchart once "export-values" is implemented.
+      #       https://github.com/helm/helm/pull/10804
+      # END DEV COMMENT
       - child: image
         parent: global.identity.image
   # Dependency charts.
