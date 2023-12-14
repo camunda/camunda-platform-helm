@@ -84,7 +84,6 @@ spec:
               value: "http://localhost:8084"
             - name: KEYCLOAK_INIT_ZEEBE_NAME
               value: "Zeebe"
-            
             - name: KEYCLOAK_CLIENTS_0_NAME
               value: Connectors
             - name: KEYCLOAK_CLIENTS_0_ID
@@ -169,7 +168,6 @@ spec:
               protocol: TCP
           readinessProbe:
             httpGet:
-              
               path: /actuator/health
               scheme: HTTP
               port: metrics

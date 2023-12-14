@@ -128,7 +128,6 @@ spec:
               protocol: TCP
           readinessProbe:
             httpGet:
-              
               path: /health/readiness
               port: http-management
             initialDelaySeconds: 15
