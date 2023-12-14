@@ -98,8 +98,10 @@ spec:
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: ZEEBE_TOKEN_AUDIENCE
               value: {{ include "zeebe.audience" . | quote }}
+            {{- if .Values.global.identity.auth.zeebe.tokenScope }}
             - name: ZEEBE_TOKEN_SCOPE
               value: {{ include "zeebe.tokenScope" . | quote }}
+            {{- end }}
             {{- else }}
             - name: SPRING_PROFILES_ACTIVE
               value: "auth"
