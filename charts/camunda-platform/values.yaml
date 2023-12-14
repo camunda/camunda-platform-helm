@@ -144,10 +144,11 @@ global:
 
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
-      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate
-      # the JWT tokens in a container to container context.
+      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
       issuerBackendUrl: ""
+      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens.
       tokenUrl: ""
+      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
       jwksUrl: ""
       # @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
       type: "KEYCLOAK"
@@ -165,7 +166,9 @@ global:
 
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
+        ## @param global.identity.auth.operate.clientId defines the client id, which is used by Operate in athentication flows.
         clientId: operate
+        ## @param global.identity.auth.operate.audience defines the audience, which is used by Operate.
         audience: operate-api
         ## @param global.identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the identity-Operate communication.
@@ -218,7 +221,9 @@ global:
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
         existingSecret: ""
+        ## @param global.identity.auth.zeebe.audience defines the audience, which is used by Zeebe.
         audience: zeebe-api
+        ## @param global.identity.auth.zeebe.tokenScope defines the token scope, which is used by Zeebe.
         tokenScope:
 
   # Multiregion options for Zeebe
@@ -1838,6 +1843,8 @@ identity:
     ## @param identity.keycloak.extraVolumeMounts[2].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].mountPath
     ## @param identity.keycloak.extraVolumeMounts[3].name
+    ## @param identity.keycloak.extraVolumeMounts[4].mountPath
+    ## @param identity.keycloak.extraVolumeMounts[4].name
     extraVolumeMounts:
     - mountPath: /opt/bitnami/keycloak/conf/
       name: config
