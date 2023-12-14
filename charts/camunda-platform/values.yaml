@@ -190,6 +190,10 @@ global:
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other sub-charts
       optimize:
+        ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in athentication flows.
+        clientId: optimize
+        ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
+        audience: optimize-api
         ## @param global.identity.auth.optimize.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `optimize-secret` field, which will be used as secret for the identity-Optimize communication.
         existingSecret:
