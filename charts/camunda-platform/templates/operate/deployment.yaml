@@ -48,15 +48,9 @@ spec:
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
               value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-            - name: CAMUNDA_OPERATE_IDENTITY_BASEURL
-              value: {{ include "camundaPlatform.identityURL" . | quote }}
-            - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
-              value: "operate"
-            - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ include "operate.authClientId" . | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -78,8 +72,8 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: operate-secret
               {{- end }}
-            - name: CAMUNDA_OPERATE_IDENTITY_AUDIENCE
-              value: "operate-api"
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ include "operate.authAudience" . | quote }}
             {{- /*
               TODO: Remove the trimSuffix when it's fixed in Operate.
               https://github.com/camunda/camunda-platform-helm/issues/714
@@ -87,7 +81,7 @@ spec:
             - name: CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | trimSuffix "/operate" | quote }}
             - name: ZEEBE_CLIENT_ID
-              value: zeebe
+              value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
             - name: ZEEBE_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
               valueFrom:
@@ -103,7 +97,9 @@ spec:
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: ZEEBE_TOKEN_AUDIENCE
-              value: zeebe-api
+              value: {{ include "zeebe.audience" . | quote }}
+            - name: ZEEBE_TOKEN_SCOPE
+              value: {{ include "zeebe.tokenScope" . | quote }}
             {{- else }}
             - name: SPRING_PROFILES_ACTIVE
               value: "auth"
@@ -116,6 +112,11 @@ spec:
               value: /tmp/zeebe_auth_cache
           {{- with .Values.operate.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          envFrom:
+          {{- if .Values.global.identity.auth.enabled }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
           {{- if .Values.operate.command}}
           command: {{ toYaml .Values.operate.command | nindent 10 }}

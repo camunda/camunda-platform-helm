@@ -142,6 +142,16 @@ global:
       ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
       enabled: true
 
+      ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
+      issuer: ""
+      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate
+      # the JWT tokens in a container to container context.
+      issuerBackendUrl: ""
+      tokenUrl: ""
+      jwksUrl: ""
+      # @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
+      type: "KEYCLOAK"
+
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
       # Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
       ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
@@ -155,6 +165,8 @@ global:
 
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
+        clientId: operate
+        audience: operate-api
         ## @param global.identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the identity-Operate communication.
         existingSecret:
@@ -202,9 +214,12 @@ global:
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
+        clientId: zeebe
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
         existingSecret: ""
+        audience: zeebe-api
+        tokenScope:
 
   # Multiregion options for Zeebe
   #

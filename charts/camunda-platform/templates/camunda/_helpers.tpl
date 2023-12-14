@@ -159,7 +159,11 @@ Keycloak templates.
 [camunda-platform] Keycloak issuer public URL which used externally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerUrl" -}}
-  {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
+  {{- if .Values.global.identity.auth.issuer -}}
+    {{- .Values.global.identity.auth.issuer -}}
+  {{- else -}}
+    {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*
@@ -168,32 +172,51 @@ TODO: Refactor the Keycloak config once Console is production ready.
       Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrl" -}}
-  {{- if .Values.global.identity.keycloak.url -}}
-    {{-
-      printf "%s://%s:%v%s%s"
-        .Values.global.identity.keycloak.url.protocol
-        .Values.global.identity.keycloak.url.host
-        .Values.global.identity.keycloak.url.port
-        .Values.global.identity.keycloak.contextPath
-        .Values.global.identity.keycloak.realm
-    -}}
+  {{- if .Values.global.identity.auth.issuerBackendUrl -}}
+    {{- .Values.global.identity.auth.issuerBackendUrl -}}
   {{- else -}}
-    {{- include "identity.keycloak.url" .Subcharts.identity -}}{{- .Values.global.identity.keycloak.realm -}}
+    {{- if .Values.global.identity.keycloak.url -}}
+      {{-
+        printf "%s://%s:%v%s%s"
+          .Values.global.identity.keycloak.url.protocol
+          .Values.global.identity.keycloak.url.host
+          .Values.global.identity.keycloak.url.port
+          .Values.global.identity.keycloak.contextPath
+          .Values.global.identity.keycloak.realm
+      -}}
+    {{- else -}}
+      {{- include "identity.keycloak.url" .Subcharts.identity -}}{{- .Values.global.identity.keycloak.realm -}}
+    {{- end -}}
   {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Identity auth type which used internally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authType" -}}
+  {{- .Values.global.identity.auth.type -}}
 {{- end -}}
 
 {{/*
 [camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlTokenEndpoint" -}}
-  {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
+  {{- if .Values.global.identity.auth.tokenUrl -}}
+    {{- .Values.global.identity.auth.tokenUrl -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
+  {{- end -}}
 {{- end -}}
 
 {{/*
 [camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlCertsEndpoint" -}}
-  {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
+  {{- if .Values.global.identity.auth.jwksUrl -}}
+    {{- .Values.global.identity.auth.jwksUrl -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
+  {{- end -}}
 {{- end -}}
 
 

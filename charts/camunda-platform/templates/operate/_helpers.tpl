@@ -58,3 +58,11 @@ Defines match labels for operate, which are extended by sub-charts and should be
         "context" $
     ) -}}
 {{- end }}
+
+{{- define "operate.authClientId" -}}
+  {{- .Values.global.identity.auth.operate.clientId -}}
+{{- end -}}
+
+{{- define "operate.authAudience" -}}
+  {{- .Values.global.identity.auth.operate.audience -}}
+{{- end -}}

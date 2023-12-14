@@ -71,14 +71,14 @@ spec:
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: {{  .Values.zeebeGateway.service.httpPort | quote }}
             {{- if .Values.global.identity.auth.enabled }}
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE
-              value: "keycloak"
+            - name: CAMUNDA_IDENTITY_TYPE
+              value: {{ include "camundaPlatform.authType" . | quote }}
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
               value: "identity"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL
+            - name: CAMUNDA_IDENTITY_ISSUERBACKENDURL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE
-              value: "zeebe-api"
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ include "zeebe.audience" . | quote }}
             {{- end }}
             {{- if .Values.global.multitenancy.enabled }}
             - name: ZEEBE_GATEWAY_MULTITENANCY_ENABLED
