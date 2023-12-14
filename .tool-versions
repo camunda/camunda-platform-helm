@@ -1,4 +1,4 @@
-helm 3.13.2
+helm 3.13.3
 # The kubectl version depends on the K8s CI cluster version
 kubectl 1.27.8
 kustomize 5.3.0
