@@ -150,7 +150,7 @@ global:
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
       jwksUrl: ""
-      # @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
+      ## @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
@@ -217,6 +217,7 @@ global:
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
+        ## @param global.identity.auth.zeebe.clientId defines the client id, which is used by Zeebe in athentication flows.
         clientId: zeebe
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.

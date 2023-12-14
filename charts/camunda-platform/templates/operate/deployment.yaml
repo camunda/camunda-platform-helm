@@ -113,8 +113,8 @@ spec:
           {{- with .Values.operate.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          envFrom:
           {{- if .Values.global.identity.auth.enabled }}
+          envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
