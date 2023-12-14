@@ -26,7 +26,7 @@ zeebe-gateway:
 connectors:
   enabled: true
   inbound:
-    mode: disabled
+    mode: ""
 
 # Configure elastic search to make it running for local development
 elasticsearch:
