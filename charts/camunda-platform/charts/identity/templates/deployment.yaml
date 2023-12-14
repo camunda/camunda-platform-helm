@@ -122,8 +122,8 @@ spec:
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_ZEEBE_NAME
               value: "Zeebe"
-            # TODO: Use ".Values.connectors.inbound.mode=oauth" as a condition when we migrate
-            # to flat chart structure. Also then remove the optional flag from the secret.
+            {{/* TODO: Use ".Values.connectors.inbound.mode=oauth" as a condition when we migrate
+                 to flat chart structure. Also then remove the optional flag from the secret. */}}
             - name: KEYCLOAK_CLIENTS_0_NAME
               value: Connectors
             - name: KEYCLOAK_CLIENTS_0_ID
@@ -258,7 +258,7 @@ spec:
           {{- if .Values.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              # NOTE: Identity doesn't support contextPath for health endpoints.
+              {{/* NOTE: Identity doesn't support contextPath for health endpoints. */}}
               path: {{ .Values.startupProbe.probePath }}
               scheme: {{ .Values.startupProbe.scheme }}
               port: metrics
@@ -271,7 +271,7 @@ spec:
           {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              # NOTE: Identity doesn't support contextPath for health endpoints.
+              {{/* NOTE: Identity doesn't support contextPath for health endpoints. */}}
               path: {{ .Values.readinessProbe.probePath }}
               scheme: {{ .Values.readinessProbe.scheme }}
               port: metrics
@@ -284,7 +284,7 @@ spec:
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              # NOTE: Identity doesn't support contextPath for health endpoints.
+              {{/* NOTE: Identity doesn't support contextPath for health endpoints. */}}
               path: {{ .Values.livenessProbe.probePath }}
               scheme: {{ .Values.livenessProbe.scheme }}
               port: metrics
