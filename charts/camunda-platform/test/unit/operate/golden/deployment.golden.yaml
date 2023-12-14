@@ -79,8 +79,6 @@ spec:
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
               value: "zeebe-api"
-            - name: ZEEBE_TOKEN_SCOPE
-              value: ""
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_auth_cache
           envFrom:
