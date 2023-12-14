@@ -60,3 +60,11 @@ Defines match labels for tasklist, which are extended by sub-charts and should b
         "context" $
     ) -}}
 {{- end }}
+
+{{- define "tasklist.authClientId" -}}
+  {{- .Values.global.identity.auth.tasklist.clientId -}}
+{{- end -}}
+
+{{- define "tasklist.authAudience" -}}
+  {{- .Values.global.identity.auth.tasklist.audience -}}
+{{- end -}}

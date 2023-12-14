@@ -180,6 +180,10 @@ global:
 
       ## @extra global.identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
       tasklist:
+        ## @param global.identity.auth.tasklist.clientId defines the client id, which is used by Tasklist in athentication flows.
+        clientId: tasklist
+        ## @param global.identity.auth.tasklist.audience defines the audience, which is used by Tasklist.
+        audience: tasklist-api
         ## @param global.identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the identity-Tasklist communication.
         existingSecret:

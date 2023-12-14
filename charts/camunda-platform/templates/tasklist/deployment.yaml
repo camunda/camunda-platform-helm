@@ -48,15 +48,9 @@ spec:
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
               value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_BASEURL
-              value: {{ include "camundaPlatform.identityURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID
-              value: "tasklist"
-            - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ include "tasklist.authClientId" . | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -73,8 +67,8 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: tasklist-secret
               {{- end }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
-              value: "tasklist-api"
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ include "tasklist.authAudience" . | quote }}
             - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
               value: {{ .Values.tasklist.identity.userAccessRestrictions.enabled | quote }}
             {{- /*
@@ -84,7 +78,7 @@ spec:
             - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix "/tasklist" | quote }}
             - name: ZEEBE_CLIENT_ID
-              value: zeebe
+              value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
             - name: ZEEBE_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
               valueFrom:
@@ -100,7 +94,9 @@ spec:
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: ZEEBE_TOKEN_AUDIENCE
-              value: zeebe-api
+              value: {{ include "zeebe.audience" . | quote }}
+            - name: ZEEBE_TOKEN_SCOPE
+              value: {{ include "zeebe.tokenScope" . | quote }}
             {{- else }}
             - name: SPRING_PROFILES_ACTIVE
               value: "auth"
@@ -120,6 +116,11 @@ spec:
             {{- with .Values.tasklist.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
           {{- if .Values.tasklist.command}}
           command: {{ toYaml .Values.tasklist.command | nindent 10 }}
           {{- end }}
