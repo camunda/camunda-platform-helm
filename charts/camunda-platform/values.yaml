@@ -2427,7 +2427,7 @@ webModeler:
     ## @extra webModeler.ingress.webapp configuration of the webapp ingress
     webapp:
       ## @param webModeler.ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the Web Modeler web application will be available
-      # webModeler.note: the value must be different from ingress.websockets.host
+      # Note: The value must be different from ingress.websockets.host
       host: ""
       ## @extra webModeler.ingress.webapp.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
@@ -2438,7 +2438,7 @@ webModeler:
     ## @extra webModeler.ingress.websockets configuration of the websockets ingress
     websockets:
       ## @param webModeler.ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the Web Modeler client in the browser will use to connect to the WebSockets server
-      # Note: the value must be different from ingress.webapp.host
+      # Note: The value must be different from ingress.webapp.host
       host: ""
       ## @extra webModeler.ingress.websockets.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
@@ -2458,10 +2458,10 @@ webModeler:
 ## @extra postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
 postgresql:
   ## @param postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
-  # Note: if set to false, a connection to an external database must be configured instead (see WebModeler.restapi.externalDatabase)
+  # Note: If WebModeler is enabled, and PostgreSQL is disabled, the external database configuration must be set under "WebModeler.restapi.externalDatabase".
   enabled: false
   ## @param postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
-  # Note: Must be different from the default value "postgresql" which is already used for Keycloak's database
+  # Note: Don't use "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
   ## @extra postgresql.auth configuration of the database authentication
   auth:
@@ -2738,7 +2738,6 @@ connectors:
 
 #
 # WARNING: Console is currently under development and should not be used yet.
-#
 #
 #################################################
  #####
