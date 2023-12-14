@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           fetch-depth: 0
-      - name: Remove Comments
+      - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
             "charts/camunda-platform/values/*"
@@ -52,7 +52,7 @@ jobs:
           for FILE in "${TARGET_FILES[@]}"; do
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
           done
-          echo "Changes made:"
+          echo "Dev comments removed:"
           git --no-pager diff
       # TODO: Remove this step when we automate release chores as a pre-release workflow.
       # Use Go Sprig Function which is supported by chglog like "{{ env GITHUB_WORKFLOW_REF }}".
