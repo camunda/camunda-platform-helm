@@ -17,7 +17,7 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{- define "connectors.fullname" -}}
-{{/* TODO: Refactor this when more sub-charts are flatten and moved to the main chart. */}}
+{{- /* TODO: Refactor this when more sub-charts are flatten and moved to the main chart. */}}
     {{- $connectorsValues := deepCopy . -}}
     {{- $_ := set $connectorsValues.Values "nameOverride" "connectors" -}}
     {{- include "camundaPlatform.fullname" $connectorsValues -}}
