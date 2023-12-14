@@ -53,7 +53,7 @@ jobs:
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
           done
           echo "Changes made:"
-          git diff
+          git --no-pager diff
       # TODO: Remove this step when we automate release chores as a pre-release workflow.
       # Use Go Sprig Function which is supported by chglog like "{{ env GITHUB_WORKFLOW_REF }}".
       - name: Substitute GITHUB_WORKFLOW_REF var.
