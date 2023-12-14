@@ -81,13 +81,13 @@ spec:
               value: 0.0.0.0
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: "9600"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE
-              value: "keycloak"
+            - name: CAMUNDA_IDENTITY_TYPE
+              value: "KEYCLOAK"
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
               value: "identity"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL
+            - name: CAMUNDA_IDENTITY_ISSUERBACKENDURL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE
+            - name: CAMUNDA_IDENTITY_AUDIENCE
               value: "zeebe-api"
           volumeMounts:
             - mountPath: /tmp
