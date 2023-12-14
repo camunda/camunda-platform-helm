@@ -47,12 +47,6 @@ spec:
             - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
               value: "false"
           {{- end }}
-          {{- if eq .Values.connectors.inbound.mode "" }}
-            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
-              value: "true"
-            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
-              value: "true"
-          {{- end }}
           {{- if eq .Values.connectors.inbound.mode "credentials" }}
             - name: CAMUNDA_OPERATE_CLIENT_URL
               value: {{ include "camundaPlatform.operateURL" . | quote }}
