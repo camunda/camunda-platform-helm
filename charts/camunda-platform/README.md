@@ -191,7 +191,7 @@ helm install camunda-platform camunda/camunda-platform --version 8.1 \
 You can remove these charts by running:
 
 ```sh
-helm uninstall YOUR_RELEASE_NAME
+helm uninstall camunda
 ```
 
 > **Note**
@@ -204,15 +204,15 @@ To free up the storage, you need to delete all the PVCs manually.
 First, view the PVCs:
 
 ```sh
-kubectl get pvc -l app.kubernetes.io/instance=YOUR_RELEASE_NAME
-kubectl get pvc -l release=YOUR_RELEASE_NAME
+kubectl get pvc -l app.kubernetes.io/instance=camunda
+kubectl get pvc -l release=camunda
 ```
 
 Then delete the ones that you don't want to keep:
 
 ```sh
-kubectl delete pvc -l app.kubernetes.io/instance=YOUR_RELEASE_NAME
-kubectl delete pvc -l release=YOUR_RELEASE_NAME
+kubectl delete pvc -l app.kubernetes.io/instance=camunda
+kubectl delete pvc -l release=camunda
 ```
 
 Or you can delete the related Kubernetes namespace, which contains all PVCs.
@@ -371,7 +371,7 @@ For development purposes, you might want to deploy and test the charts without c
 To do this you can run the following:
 
 ```sh
- helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
+ helm install camunda --atomic --debug ./charts/camunda-platform
 ```
 
  * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
