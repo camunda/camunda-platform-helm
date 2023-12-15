@@ -54,7 +54,7 @@
       "allowedVersions": "~0.8.0"
     },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda v8.9.
+      // Limit Elasticsearch version to latest supported version in Camunda v8.4.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
