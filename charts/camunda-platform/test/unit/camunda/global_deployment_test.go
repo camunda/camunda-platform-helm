@@ -15,6 +15,7 @@
 package camunda
 
 import (
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -22,6 +23,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
+	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -102,8 +104,8 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			"optimize.enabled":             "true",
 			"identity.enabled":             "false",
-			"optimize.enabled":             "false",
 			"global.identity.auth.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -111,10 +113,12 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 	}
 
 	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
+	errWithOutput, _ := err.(*shell.ErrWithCmdOutput)
+	
 	// then
-	s.Require().NotContains(output, "charts/identity")
+  s.ErrorIs(errWithOutput.Underlying, errWithOutput.Underlying.(*exec.ExitError))
+  s.ErrorContains(err, "[camunda][error]")
 }
 
 func (s *deploymentTemplateTest) TestContainerShouldNotRenderWebModelerIfDisabled() {
