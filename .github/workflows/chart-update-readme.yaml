@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'charts/camunda-platform/values.yaml'
+      - '.github/workflows/chart-update-readme.yaml'
 jobs:
   update-readme-metadata:
     runs-on: ubuntu-latest
