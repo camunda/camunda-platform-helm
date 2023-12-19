@@ -526,7 +526,7 @@ zeebe:
 ## @extra Gateway configuration to define properties related to the standalone gateway
 zeebe-gateway:
   ## @param zeebe-gateway.replicas defines how many standalone gateways are deployed
-  replicas: 2
+  replicas: 1
   ## @extra zeebe-gateway.image configuration to configure the zeebe-gateway image specifics
   image:
     ## @param zeebe-gateway.image.registry can be used to set container image registry.
