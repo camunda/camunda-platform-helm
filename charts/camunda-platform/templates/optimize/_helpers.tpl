@@ -58,3 +58,11 @@ Defines match labels for optimize, which are extended by sub-charts and should b
         "context" $
     ) -}}
 {{- end }}
+
+{{- define "optimize.authClientId" -}}
+  {{- .Values.global.identity.auth.optimize.clientId -}}
+{{- end -}}
+
+{{- define "optimize.authAudience" -}}
+  {{- .Values.global.identity.auth.optimize.audience -}}
+{{- end -}}

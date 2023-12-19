@@ -6,20 +6,6 @@ A template to handle constraints.
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 
 {{/*
-Fail with a message if Optimize is enabled but identity is disabled.
-Optimize requirements: https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
-*/}}
-{{- if .Values.optimize.enabled }}
-  {{- if not $identityAuthEnabled }}
-    {{- $errorMessage := printf "[camunda][error] %s %s"
-        "Optimize may only be used if Identity is enabled."
-        "Please set 'identity.enabled' to true or set 'optimize.enabled' to false"
-    -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-  {{- end }}
-{{- end }}
-
-{{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:
 - Identity chart/service.
 - Identity PostgreSQL chart/service.

@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.3.4"
+    app.kubernetes.io/version: "8.4.0-alpha2"
     app.kubernetes.io/component: zeebe-gateway
   annotations:
     {}
@@ -32,7 +32,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.3.4"
+        app.kubernetes.io/version: "8.4.0-alpha2"
         app.kubernetes.io/component: zeebe-gateway
       annotations:
         {}
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: camunda/zeebe:8.3.4
+          image: camunda/zeebe:8.4.0-alpha2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9600
@@ -81,13 +81,13 @@ spec:
               value: 0.0.0.0
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: "9600"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE
-              value: "keycloak"
+            - name: CAMUNDA_IDENTITY_TYPE
+              value: "KEYCLOAK"
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
               value: "identity"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL
+            - name: CAMUNDA_IDENTITY_ISSUERBACKENDURL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE
+            - name: CAMUNDA_IDENTITY_AUDIENCE
               value: "zeebe-api"
           volumeMounts:
             - mountPath: /tmp

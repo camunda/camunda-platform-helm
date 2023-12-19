@@ -69,3 +69,10 @@ app.kubernetes.io/component: zeebe-broker
     ) -}}
 {{- end }}
 
+{{- define "zeebe.audience"}}
+    {{- .Values.global.identity.auth.zeebe.audience -}}
+{{- end -}}
+
+{{- define "zeebe.tokenScope"}}
+    {{- .Values.global.identity.auth.zeebe.tokenScope -}}
+{{- end -}}

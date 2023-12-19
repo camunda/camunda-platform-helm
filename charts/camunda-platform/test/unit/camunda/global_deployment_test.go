@@ -15,7 +15,6 @@
 package camunda
 
 import (
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -23,7 +22,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
-	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -113,12 +111,10 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 	}
 
 	// when
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-	errWithOutput, _ := err.(*shell.ErrWithCmdOutput)
+	output, _ := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
 	
 	// then
-  s.ErrorIs(errWithOutput.Underlying, errWithOutput.Underlying.(*exec.ExitError))
-  s.ErrorContains(err, "[camunda][error]")
+	s.Require().NotContains(output, "charts/identity")
 }
 
 func (s *deploymentTemplateTest) TestContainerShouldNotRenderWebModelerIfDisabled() {

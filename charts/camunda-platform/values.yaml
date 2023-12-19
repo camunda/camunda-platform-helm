@@ -54,7 +54,7 @@ global:
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.3.4
+    tag: 8.4.0-alpha2
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -142,6 +142,17 @@ global:
       ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
       enabled: true
 
+      ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
+      issuer: ""
+      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
+      issuerBackendUrl: ""
+      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens.
+      tokenUrl: ""
+      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
+      jwksUrl: ""
+      ## @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
+      type: "KEYCLOAK"
+
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
       # Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
       ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
@@ -155,6 +166,10 @@ global:
 
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
+        ## @param global.identity.auth.operate.clientId defines the client id, which is used by Operate in athentication flows.
+        clientId: operate
+        ## @param global.identity.auth.operate.audience defines the audience, which is used by Operate.
+        audience: operate-api
         ## @param global.identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the identity-Operate communication.
         existingSecret:
@@ -165,6 +180,10 @@ global:
 
       ## @extra global.identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
       tasklist:
+        ## @param global.identity.auth.tasklist.clientId defines the client id, which is used by Tasklist in athentication flows.
+        clientId: tasklist
+        ## @param global.identity.auth.tasklist.audience defines the audience, which is used by Tasklist.
+        audience: tasklist-api
         ## @param global.identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the identity-Tasklist communication.
         existingSecret:
@@ -175,6 +194,10 @@ global:
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other sub-charts
       optimize:
+        ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in athentication flows.
+        clientId: optimize
+        ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
+        audience: optimize-api
         ## @param global.identity.auth.optimize.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `optimize-secret` field, which will be used as secret for the identity-Optimize communication.
         existingSecret:
@@ -202,9 +225,15 @@ global:
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
+        ## @param global.identity.auth.zeebe.clientId defines the client id, which is used by Zeebe in athentication flows.
+        clientId: zeebe
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
         existingSecret: ""
+        ## @param global.identity.auth.zeebe.audience defines the audience, which is used by Zeebe.
+        audience: zeebe-api
+        ## @param global.identity.auth.zeebe.tokenScope defines the token scope, which is used by Zeebe.
+        tokenScope:
 
   # Multiregion options for Zeebe
   #
@@ -1175,7 +1204,7 @@ optimize:
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.3.4
+    tag: 8.4.0-alpha2
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1939,7 +1968,7 @@ webModeler:
     registry: registry.camunda.cloud
     ## @param webModeler.image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.3.2
+    tag: 8.4.0-alpha2
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
@@ -2559,7 +2588,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.3.2
+    tag: 8.4.0-alpha2
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 

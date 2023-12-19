@@ -615,7 +615,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValu
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name: "CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET",
+			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-tasklist-identity-secret"},
@@ -644,40 +644,13 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name: "CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET",
+			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
 					Key:                  "tasklist-secret",
 				},
 			},
-		})
-}
-
-func (s *deploymentTemplateTest) TestContainerShouldSetTheRightKeycloakServiceUrl() {
-	// given
-
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.keycloak.url.protocol": "http",
-			"global.identity.keycloak.url.host":     "keycloak",
-			"global.identity.keycloak.url.port":     "80",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL",
-			Value: "http://keycloak:80/auth/realms/camunda-platform",
 		})
 }
 

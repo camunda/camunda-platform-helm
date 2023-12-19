@@ -81,15 +81,11 @@ spec:
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
               value: "ccsm"
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
-              value: "optimize"
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ include "optimize.authClientId" . | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -106,10 +102,8 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: optimize-secret
               {{- end }}
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
-              value: "optimize-api"
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ include "optimize.authAudience" . | quote }}
             - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
               value: "optimize-api"
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
@@ -127,6 +121,11 @@ spec:
             {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
           {{- if .Values.optimize.command }}
           command: {{ toYaml .Values.optimize.command | nindent 10 }}
