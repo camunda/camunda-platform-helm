@@ -124,7 +124,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentitySer
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		corev1.EnvVar{Name: "RESTAPI_IDENTITY_BASE_URL", Value: "http://custom-identity-fullname:80"})
+		corev1.EnvVar{Name: "CAMUNDA_IDENTITY_BASE_URL", Value: "http://custom-identity-fullname:80"})
 }
 
 func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
@@ -146,7 +146,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentitySer
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		corev1.EnvVar{Name: "RESTAPI_IDENTITY_BASE_URL", Value: "http://camunda-platform-test-custom-identity:80"})
+		corev1.EnvVar{Name: "CAMUNDA_IDENTITY_BASE_URL", Value: "http://camunda-platform-test-custom-identity:80"})
 }
 
 func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {

@@ -50,18 +50,12 @@ spec:
               value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
             - name: OAUTH2_CLIENT_ID
               value: "web-modeler"
+            - name: OAUTH2_JWKS_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
             - name: OAUTH2_TOKEN_AUDIENCE
               value: "web-modeler"
             - name: OAUTH2_TOKEN_ISSUER
               value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: KEYCLOAK_BASE_URL
-              value: {{ include "camundaPlatform.authIssuerUrl" . | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
-            - name: KEYCLOAK_CONTEXT_PATH
-              value: {{ .Values.global.identity.keycloak.contextPath | quote }}
-            - name: KEYCLOAK_REALM
-              value: {{ .Values.global.identity.keycloak.realm | trimPrefix "/realms/" | quote }}
-            - name: KEYCLOAK_JWKS_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
             - name: PUSHER_HOST
               value: {{ include "webModeler.websockets.fullname" . | quote }}
             - name: PUSHER_PORT
