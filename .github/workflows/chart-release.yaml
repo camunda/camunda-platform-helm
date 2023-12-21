@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for all PR checks to succeed
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.3.3
         with:
           ref: ${{ github.ref }}
           running-workflow-name: 'wait-for-release-conditions'
