@@ -35,7 +35,7 @@ jobs:
 Adding that will run Camunda Helm chart integration tests and add the deployment URL
 in your repo (the URL will show in the PR or in the GH deployment section).
 
-> **Note**
+> [!NOTE]
 > The default behavior in the integration tests workflow is to delete the test resources 
 > after the test is finished. To keep the deployment you need to set `persistent: true`.
 > **However**, even it's persistent, the resources will be deleted frequently to save costs

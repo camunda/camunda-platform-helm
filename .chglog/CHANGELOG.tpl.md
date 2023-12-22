@@ -39,6 +39,10 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 {{ end -}}
 {{ end -}}
 
+### Images
+
+<!-- _VERSION_MATRIX_PLACEHOLDER_ -->
+
 ### Verification
 
 To verify integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
