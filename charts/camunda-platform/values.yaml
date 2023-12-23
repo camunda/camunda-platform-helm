@@ -1025,11 +1025,6 @@ tasklist:
     ## @param tasklist.service.port defines the port of the service, where the tasklist web application will be available
     port: 80
 
-  ## @param tasklist.graphqlPlaygroundEnabled if true, enables the graphql playground
-  graphqlPlaygroundEnabled: ""
-  ## @param tasklist.graphqlPlaygroundRequestCredentials can be set to include the credentials in each request, should be set to "include" if graphql playground is enabled
-  graphqlPlaygroundRequestCredentials: ""
-
   ## @extra tasklist.identity configures app user management.
   identity:
     userAccessRestrictions:

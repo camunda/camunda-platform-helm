@@ -107,10 +107,6 @@ spec:
             - name: CAMUNDA_TASKLIST_MULTITENANCY_ENABLED
               value: "true"
             {{- end }}
-            - name: GRAPHQL_PLAYGROUND_ENABLED
-              value: {{ default "true" .Values.tasklist.graphqlPlaygroundEnabled | quote }}
-            - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
-              value: {{ default "include" .Values.tasklist.graphqlPlaygroundRequestCredentials | quote }}
             - name: HOME
               value: /parent
             - name: ZEEBE_CLIENT_CONFIG_PATH
