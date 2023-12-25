@@ -169,7 +169,7 @@ For more details, follow the Camunda 8
 
 ### OpenShift
 
-Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift. 
+Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift.
 
 ## Backporting
 
@@ -378,7 +378,7 @@ To do this you can run the following:
 
  * `--debug enable verbose output`
 
-To generate the resources/manifests without really installing them, you can use: 
+To generate the resources/manifests without really installing them, you can use:
 
  * `--dry-run simulate an install`
 
@@ -719,6 +719,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `operate.contextPath`                                       | can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.                           | `""`                         |
 | `operate.podAnnotations`                                    | can be used to define extra Operate pod annotations                                                                                                                          | `{}`                         |
 | `operate.podLabels`                                         | can be used to define extra Operate pod labels                                                                                                                               | `{}`                         |
+| `operate.extraConfig`                                       | additional configuration for the Operate. This template will be directly included in the Operate configuration yaml file                                                        | `[]`                         |
 | `operate.logging`                                           | configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file                                                        |                              |
 | `operate.logging.level.ROOT`                                |                                                                                                                                                                              | `INFO`                       |
 | `operate.logging.level.io.camunda.operate`                  |                                                                                                                                                                              | `INFO`                       |
