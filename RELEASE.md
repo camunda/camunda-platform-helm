@@ -14,7 +14,7 @@ When it's time to release, just do the following steps.
 
 Locally, run:
 
-```
+```shell
 make release.chores
 ```
 
@@ -29,7 +29,7 @@ This action will:
 
 Next, all that you need to open the PR using the generated link and follow th checklist there.
 
-> **Note**
+> [!NOTE]
 >
 > The release notes depend on git commit log, only the commits that follow
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format) will be added to
@@ -41,7 +41,7 @@ the release notes.
 Artifact Hub. Once the release workflow is done, Artifact Hub automatically scans Camunda Helm repo
 and the new release will show on Artifact Hub.
 
-> **Note**
+> [!NOTE]
 >
 > The charts could take some time till shown on Artifact Hub (up to 30 min).
 > But we sharing our Helm chart on Artifact Hub just for visibility. After successful release,

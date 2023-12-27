@@ -140,15 +140,19 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 	git add $(chartPath);\
 	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
+.PHONY: .release.generate-version-matrix
+.release.generate-version-matrix:
+	@bash scripts/generate-version-matrix.sh
+
 .PHONY: .release.generate-notes
 .release.generate-notes:
 	docker run --rm -w /data -v `pwd`:/data --entrypoint sh $(gitChglog) \
 		-c "apk add bash grep yq; bash scripts/generate-release-notes.sh"
 
-.PHONY: release.generate-notes-and-commit
-release.generate-notes-and-commit: .release.generate-notes
+.PHONY: release.generate-and-commit
+release.generate-and-commit: .release.generate-notes .release.generate-version-matrix
 	git add $(chartPath);\
-	git commit -m "chore: add release notes for camunda-platform $(chartVersion)"
+	git commit -m "chore: add generated files for camunda-platform $(chartVersion)"
 
 .PHONY: release.generate-pr-url
 release.generate-pr-url:
@@ -163,7 +167,7 @@ release.chores:
 	git pull --tags
 	git switch -C release
 	@$(MAKE) release.bump-chart-version-and-commit
-	@$(MAKE) release.generate-notes-and-commit
+	@$(MAKE) release.generate-and-commit
 	git push -fu origin release
 	@$(MAKE) release.generate-pr-url
 	git checkout main

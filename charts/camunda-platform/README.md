@@ -10,9 +10,6 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 - [Requirements](#requirements)
 - [Dependencies](#dependencies)
 - [Versioning](#versioning)
-  - [After July 2023](#after-july-2023)
-  - [Before July 2023](#before-july-2023)
-  - [Compatibility Matrix](#compatibility-matrix)
 - [Installation](#installation)
   - [Local Kubernetes](#local-kubernetes)
   - [OpenShift](#openshift)
@@ -55,12 +52,12 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 
 ## Requirements
 
-* [Helm](https://helm.sh/) >= 3.9.x
-* Kubernetes >= 1.20+
-* Minimum cluster requirements include the following to run this chart with default settings.
-  All of these settings are configurable.
-  * Three Kubernetes nodes to respect the default "hard" affinity settings
-  * 2GB of RAM for the JVM heap
+- [Helm](https://helm.sh/) >= 3.9.x
+- Kubernetes >= 1.20+
+- Minimum cluster requirements include the following to run this chart with default settings.
+  - All of these settings are configurable.
+  - Three Kubernetes nodes to respect the default "hard" affinity settings
+  - 2GB of RAM for the JVM heap
 
 ## Dependencies
 
@@ -69,7 +66,7 @@ and some are external (third-party). The dependency management is fully automate
 however, it's good to understand the dependency structure. This third-party dependency is reflected in the Helm chart
 as follows:
 
-```
+```text
 camunda-platform
   |_ elasticsearch
   |_ identity
@@ -82,7 +79,8 @@ camunda-platform
   |_ postgresql
 ```
 
-> :bulb: Please note that the Connectors and Web Modeler components are part of the main chart and not implemented as sub-charts.
+> [!NOTE]
+> Please note that the Connectors and Web Modeler components are part of the main chart and not implemented as sub-charts.
 
 For example, Camunda Identity utilizes Keycloak and allows you to manage users, roles, and permissions
 for Camunda 8 components.
@@ -106,35 +104,11 @@ postgresql:
 
 ## Versioning
 
-### After July 2023
+After the 8.4 release (January 2024), the Camunda Helm chart version is **decoupled** from the version of the application (e.g., the chart version is `9.0.0` and the application version is `8.4.x`).
 
-Starting from July 2023 (v8.2.8), the Camunda 8 **Helm chart** version follows the same unified schema
-and schedule as [Camunda 8 applications](https://github.com/camunda/camunda-platform).
+Before the 8.4 release, the Camunda Helm chart version was **coupled** with the applications version (e.g., chart version is `8.3.x` and applications version is `8.3.x`).
 
-Hence, if the Camunda 8 unified **applications** version is `8.2.8`, the Camunda 8 **Helm chart**
-will also be `8.2.8`.
-
-### Before July 2023
-
-Camunda 8 **Helm chart** versions are only aligned with the minor version of
-[Camunda 8](https://github.com/camunda/camunda-platform). In other words, the `Camunda 8 Helm chart`
-could have a different patch version than the `Camunda` Platform 8 Applications`.
-
-For example, the Camunda 8 **Helm chart** could be on version `8.1.1`, but Camunda 8 **applications**
-are on version `8.1.0`. Additionally, the Camunda 8 **Helm chart** could be on version `8.1.1`,
-but Camunda 8 **applications** are on version `8.1.2`.
-
-### Compatibility Matrix
-
-The core Camunda applications have a unified fixed release schedule (minor release twice a year and patch release
-every month). However, some of the applications have their own schedule. The following compatibility matrix gives
-an overview of the different versions.
-
-| Release Cycle | Helm chart | Zeebe, Operate, Tasklist | Optimize | Web Modeler  | Connectors |
-| ---           | ---        | ---                      | ---      | ---          | ---        |
-| Apr 2023      | 8.2.x      | 8.2.x                    | 3.10.x   | 8.2.x        | >= 0.18.0  |
-| Oct 2022      | 8.1.x      | 8.1.x                    | 3.9.x    | N/A          | N/A        |
-| Apr 2022      | 8.0.x      | 8.0.x                    | 3.9.x    | N/A          | N/A        |
+For more details, check out the [full version matrix](https://helm.camunda.io/camunda-platform/version-matrix.md).
 
 ## Installation
 
@@ -157,7 +131,7 @@ helm install camunda-platform camunda/camunda-platform \
     --values https://helm.camunda.io/camunda-platform/values/values-latest.yaml
 ```
 
-For previous version, you can get the latest applications patch version using our [backporting mechanism](#backporting).
+For the previous version, you can get the latest applications patch version using our [backporting mechanism](#backporting).
 
 ### Local Kubernetes
 
@@ -169,16 +143,16 @@ For more details, follow the Camunda 8
 
 ### OpenShift
 
-Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift. 
+Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift.
 
 ## Backporting
 
 Our Helm chart is highly customizable and constantly evolving.
-Hence, currently, we backport the older charts by providing extra values file per version.
+Hence, currently, we backport the older charts by providing an extra value file per version.
 That covers most backporting cases, like updating the application's image tags to the latest patch
 version, setting env var, etc.
 
-To install a previous chart version with the latest apps patch image tags for that version,
+To install a previous chart version with the latest app patch image tags for that version,
 use the values file for the minor release. For example (the values file could also be downloaded):
 
 ```shell
@@ -194,7 +168,7 @@ You can remove these charts by running:
 helm uninstall camunda
 ```
 
-> **Note**
+> [!NOTE]
 >
 > Notice that all the Services and Pods will be deleted, but not the PersistentVolumeClaims (PVC)
 > which are used to hold the storage for the data generated by the cluster and Elasticsearch.
@@ -224,7 +198,8 @@ via a separate `values.yaml` file.
 
 Check out the default [values.yaml](values.yaml) file, which contains the same content and documentation.
 
-> **Note**
+> [!NOTE]
+>
 > For more details about deploying Camunda 8 on Kubernetes, please visit the
 > [Helm/Kubernetes installation instructions docs](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/overview/).
 
@@ -232,33 +207,42 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 ### Web Modeler
 
-> :information_source: Web Modeler Self-Managed is available to Camunda enterprise customers only.
+> [!NOTE]
+>
+> Web Modeler Self-Managed is available to Camunda enterprise customers only.
 
 #### Docker registry
+
 The Docker images for Web Modeler are available in a private registry.
 Enterprise customers either already have credentials to this registry, or they can request access to this registry through their CSM contact at Camunda.
 To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
+
 - [create an image pull secret](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) using the provided credentials
 - configure the Web Modeler pods to use the secret:
+
   ```yaml
   webModeler:
     image:
       pullSecrets:
-        - name: <MY_SECRET_NAME>
+        - name: <SECRET_NAME>
    ```
 
 #### Database
+
 Web Modeler requires a PostgreSQL database to store the data.
 You can either:
-- deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the [`postgresql` chart dependency](#postgresql-for-web-modeler))
-- configure a connection to an (existing) external database by setting `postgresql.enabled` to `false` and providing the values under `restapi.externalDatabase`
+
+- Deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the [postgresql chart dependency](#webmodeler---postgresql-parameters)).
+- Configure a connection to an (existing) external database by setting `postgresql.enabled` to `false` and providing the values under `restapi.externalDatabase`.
 
 #### SMTP server
+
 Web Modeler requires an SMTP server to send (notification) emails to users.
 The SMTP connection can be configured with the values under `restapi.mail`.
 
 #### Updating Environment Variables
-When configuring the `env` options in the settings listed above, the environment variables you specify in values.yaml may show up twice when running `kubectl describe deployment <deployment>`. However, the environment variable specified in values.yaml will have precedence when the pod actually runs. To verify this, you can check the output from the following command:
+
+When configuring the `env` options in the settings listed above, the environment variables you specify in values.yaml may show up twice when running `kubectl describe deployment <deployment>`. However, the environment variable is specified in values.yaml will have precedence when the pod actually runs. To verify this, you can check the output from the following command:
 
 ```bash
 kubectl exec pod/<podName> -- env
@@ -293,10 +277,10 @@ Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/se
 
 Camunda 8 Helm chart has a dependency on the [Elasticsearch 8 Helm Chart](https://artifacthub.io/packages/helm/bitnami/elasticsearch). All variables related to Elasticsearch can be set under `elasticsearch`.
 
-> **Note**
+> [!NOTE]
 >
-> The default setup of the Elasticsearch 8 part of Camunda 8 uses nodes have all roles (master, data, coordinating, and ingest).
-> For high-demand deployments, it's recommended to deploy the Elasticsearch master-elegible nodes as master-only nodes.
+> The default setup of the Elasticsearch 8 part of Camunda 8 uses nodes that have all roles (master, data, coordinating, and ingest).
+> For high-demand deployments, it's recommended to deploy the Elasticsearch master-eligible nodes as master-only nodes.
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -374,13 +358,13 @@ To do this you can run the following:
  helm install camunda --atomic --debug ./charts/camunda-platform
 ```
 
- * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
+- `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
 
- * `--debug enable verbose output`
+- `--debug enable verbose output`
 
-To generate the resources/manifests without really installing them, you can use: 
+To generate the resources/manifests without really installing them, you can use:
 
- * `--dry-run simulate an install`
+- `--dry-run simulate an install`
 
 If you see errors like:
 
@@ -399,7 +383,8 @@ make helm.repos-add
 After this, you can run: `make helm.dependency-update`, which will update and download the dependencies for all charts.
 
 The execution should look like this:
-```
+
+```text
 $ make helm.dependency-update
 helm dependency update charts/camunda-platform
 Hang tight while we grab the latest from your chart repositories...

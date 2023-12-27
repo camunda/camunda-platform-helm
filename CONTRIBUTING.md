@@ -95,7 +95,7 @@ Available commit types:
 
 ### Tests
 
-> **Note**
+> [!NOTE]
 >
 > For more details about Helm chart testing read the following blog post:
 > [Advanced Test Practices For Helm Charts](https://medium.com/@zelldon91/advanced-test-practices-for-helm-charts-587caeeb4cb).

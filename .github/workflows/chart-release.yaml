@@ -59,6 +59,12 @@ jobs:
       - name: Substitute GITHUB_WORKFLOW_REF var.
         run: |
           sed -i "s|_GITHUB_WORKFLOW_REF_|${GITHUB_WORKFLOW_REF}|g" charts/camunda-platform/RELEASE-NOTES.md
+      - name: Substitute image versions var.
+        env:
+          INPUT_FILE: charts/camunda-platform/RELEASE-NOTES.md
+          OUTPUT_HEADER: false
+        run: |
+          bash scripts/generate-version-matrix.sh
       - name: Install env dependencies
         uses: asdf-vm/actions/install@v3
       - uses: actions/cache@v3
