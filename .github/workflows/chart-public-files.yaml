@@ -26,9 +26,9 @@ jobs:
           path: main
       - name: Copy the values files
         run: |
-          mkdir -p camunda-platform/values
+          mkdir -p camunda-platform/values camunda-platform/version-matrix
           cp -a main/charts/camunda-platform/values/*.yaml camunda-platform/values/
-          cp -a main/charts/camunda-platform/VERSION-MATRIX.md camunda-platform/version-matrix.md
+          cp -a main/charts/camunda-platform/VERSION-MATRIX.md camunda-platform/version-matrix/README.md
           rm -rf main
           find .
       - uses: EndBug/add-and-commit@v9.1.3

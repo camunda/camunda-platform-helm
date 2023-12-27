@@ -108,7 +108,7 @@ After the 8.4 release (January 2024), the Camunda Helm chart version is **decoup
 
 Before the 8.4 release, the Camunda Helm chart version was **coupled** with the applications version (e.g., chart version is `8.3.x` and applications version is `8.3.x`).
 
-For more details, check out the [full version matrix](https://helm.camunda.io/camunda-platform/version-matrix.md).
+For more details, check out the [full version matrix](https://helm.camunda.io/camunda-platform/version-matrix).
 
 ## Installation
 
