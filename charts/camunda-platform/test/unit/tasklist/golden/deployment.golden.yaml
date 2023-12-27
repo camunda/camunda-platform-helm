@@ -81,10 +81,6 @@ spec:
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
               value: "zeebe-api"
-            - name: GRAPHQL_PLAYGROUND_ENABLED
-              value: "true"
-            - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
-              value: "include"
             - name: HOME
               value: /parent
             - name: ZEEBE_CLIENT_CONFIG_PATH
