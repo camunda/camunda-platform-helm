@@ -41,9 +41,10 @@ jobs:
           ${{ runner.os }}-go-
     - name: Update golden files
       run: make go.update-golden-only
+    - name: Git pull
+      run: git pull --rebase --autostash .
     - uses: EndBug/add-and-commit@v9.1.3
       with:
         author_name: "renovate[bot]"
         author_email: "29139614+renovate[bot]@users.noreply.github.com"
-        pull: '--rebase --autostash ...'
         message: "chore(deps): post upgrade tasks - update golden files"
