@@ -66,6 +66,8 @@ spec:
               value: "http://localhost:8084"
             - name: SERVER_HTTPS_ONLY
               value: "false"
+            - name: OAUTH2_TYPE
+              value: "KEYCLOAK"
             - name: OAUTH2_CLIENT_ID
               value: "web-modeler"
             - name: OAUTH2_JWKS_URL

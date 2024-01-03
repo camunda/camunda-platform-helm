@@ -48,12 +48,14 @@ spec:
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
             - name: SERVER_HTTPS_ONLY
               value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
+            - name: OAUTH2_TYPE
+              value: {{ include "camundaPlatform.authType" . | quote }}
             - name: OAUTH2_CLIENT_ID
-              value: "web-modeler"
+              value: {{ include "webModeler.authClientId" . | quote }}
             - name: OAUTH2_JWKS_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
             - name: OAUTH2_TOKEN_AUDIENCE
-              value: "web-modeler"
+              value: {{ include "webModeler.authClientApiAudience" . | quote }}
             - name: OAUTH2_TOKEN_ISSUER
               value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             - name: PUSHER_HOST

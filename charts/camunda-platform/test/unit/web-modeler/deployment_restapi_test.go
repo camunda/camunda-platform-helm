@@ -105,6 +105,31 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakSer
 		})
 }
 
+func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityType() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "example@example.com",
+			"global.identity.auth.type":             "MICROSOFT",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "CAMUNDA_IDENTITY_TYPE",
+			Value: "MICROSOFT",
+		})
+}
+
 func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
 	// given
 	options := &helm.Options{
@@ -124,7 +149,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentitySer
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		corev1.EnvVar{Name: "CAMUNDA_IDENTITY_BASE_URL", Value: "http://custom-identity-fullname:80"})
+		corev1.EnvVar{Name: "CAMUNDA_IDENTITY_BASEURL", Value: "http://custom-identity-fullname:80"})
 }
 
 func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
@@ -146,7 +171,57 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectIdentitySer
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
-		corev1.EnvVar{Name: "CAMUNDA_IDENTITY_BASE_URL", Value: "http://camunda-platform-test-custom-identity:80"})
+		corev1.EnvVar{Name: "CAMUNDA_IDENTITY_BASEURL", Value: "http://camunda-platform-test-custom-identity:80"})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    			 "true",
+			"webModeler.restapi.mail.fromAddress":   			 "example@example.com",
+			"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_INTERNAL_API",
+			Value: "custom-audience",
+		})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    			 "true",
+			"webModeler.restapi.mail.fromAddress":   			 "example@example.com",
+			"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_PUBLIC_API",
+			Value: "custom-audience",
+		})
 }
 
 func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {

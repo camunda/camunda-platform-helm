@@ -52,8 +52,14 @@ spec:
           env:
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
-            - name: CAMUNDA_IDENTITY_BASE_URL
+            - name: CAMUNDA_IDENTITY_BASEURL
               value: "http://camunda-platform-test-identity:80"
+            - name: CAMUNDA_IDENTITY_TYPE
+              value: "KEYCLOAK"
+            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_PUBLIC_API
+              value: "web-modeler-api"
+            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_INTERNAL_API
+              value: "web-modeler"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"
             - name: SPRING_DATASOURCE_USERNAME
@@ -94,7 +100,7 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-web-modeler
                   key: pusher-app-secret
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
               value: "http://localhost:18080/auth/realms/camunda-platform"
             - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
