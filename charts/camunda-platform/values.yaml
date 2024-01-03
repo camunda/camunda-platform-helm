@@ -166,7 +166,7 @@ global:
 
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
-        ## @param global.identity.auth.operate.clientId defines the client id, which is used by Operate in athentication flows.
+        ## @param global.identity.auth.operate.clientId defines the client id, which is used by Operate in authentication flows.
         clientId: operate
         ## @param global.identity.auth.operate.audience defines the audience, which is used by Operate.
         audience: operate-api
@@ -180,7 +180,7 @@ global:
 
       ## @extra global.identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
       tasklist:
-        ## @param global.identity.auth.tasklist.clientId defines the client id, which is used by Tasklist in athentication flows.
+        ## @param global.identity.auth.tasklist.clientId defines the client id, which is used by Tasklist in authentication flows.
         clientId: tasklist
         ## @param global.identity.auth.tasklist.audience defines the audience, which is used by Tasklist.
         audience: tasklist-api
@@ -194,7 +194,7 @@ global:
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other sub-charts
       optimize:
-        ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in athentication flows.
+        ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in authentication flows.
         clientId: optimize
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
         audience: optimize-api
@@ -208,6 +208,12 @@ global:
 
       ## @extra global.identity.auth.webModeler configuration to configure Web Modeler authentication specifics on global level, which can be accessed by other sub-charts
       webModeler:
+        ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by Web Modeler in authentication flows.
+        clientId: web-modeler
+        ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by Web Modeler's client API.
+        clientApiAudience: web-modeler
+        ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by Web Modeler's public API.
+        publicApiAudience: web-modeler-api
         ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -225,7 +231,7 @@ global:
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
-        ## @param global.identity.auth.zeebe.clientId defines the client id, which is used by Zeebe in athentication flows.
+        ## @param global.identity.auth.zeebe.clientId defines the client id, which is used by Zeebe in authentication flows.
         clientId: zeebe
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.

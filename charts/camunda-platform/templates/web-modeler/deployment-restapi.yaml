@@ -34,8 +34,14 @@ spec:
           env:
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
-            - name: CAMUNDA_IDENTITY_BASE_URL
+            - name: CAMUNDA_IDENTITY_BASEURL
               value: {{ include "webModeler.identityBaseUrl" . | quote }}
+            - name: CAMUNDA_IDENTITY_TYPE
+              value: {{ include "camundaPlatform.authType" . | quote }}
+            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_PUBLIC_API
+              value: {{ include "webModeler.authPublicApiAudience" . | quote }}
+            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_INTERNAL_API
+              value: {{ include "webModeler.authClientApiAudience" . | quote }}
             - name: SPRING_DATASOURCE_URL
               value: {{ include "webModeler.restapi.databaseUrl" . | quote }}
             - name: SPRING_DATASOURCE_USERNAME
@@ -87,7 +93,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "webModeler.fullname" . }}
                   key: pusher-app-secret
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
               value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}

@@ -78,6 +78,31 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServ
 		})
 }
 
+func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityType() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "example@example.com",
+			"global.identity.auth.type":             "MICROSOFT",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "OAUTH2_TYPE",
+			Value: "MICROSOFT",
+		})
+}
+
 func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
 	// given
 	options := &helm.Options{
@@ -119,6 +144,56 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityServ
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{Name: "IDENTITY_BASE_URL", Value: "http://camunda-platform-test-custom-identity:80"})
+}
+
+func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectAuthClientId() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    	"true",
+			"webModeler.restapi.mail.fromAddress":   	"example@example.com",
+			"global.identity.auth.webModeler.clientId": "custom-clientId",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "OAUTH2_CLIENT_ID",
+			Value: "custom-clientId",
+		})
+}
+
+func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    			 "true",
+			"webModeler.restapi.mail.fromAddress":   			 "example@example.com",
+			"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name:  "OAUTH2_TOKEN_AUDIENCE",
+			Value: "custom-audience",
+		})
 }
 
 func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithIngressTlsEnabled() {

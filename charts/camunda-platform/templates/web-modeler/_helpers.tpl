@@ -283,3 +283,16 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- and .Values.webModeler.ingress.enabled .Values.webModeler.ingress.websockets.tls.enabled }}
 {{- end }}
 {{- end -}}
+
+{{/*
+[web-modeler] Define variables related to authentication.
+*/}}
+{{- define "webModeler.authClientId" -}}
+  {{- .Values.global.identity.auth.webModeler.clientId -}}
+{{- end -}}
+{{- define "webModeler.authClientApiAudience" -}}
+  {{- .Values.global.identity.auth.webModeler.clientApiAudience -}}
+{{- end -}}
+{{- define "webModeler.authPublicApiAudience" -}}
+  {{- .Values.global.identity.auth.webModeler.publicApiAudience -}}
+{{- end -}}
