@@ -73,7 +73,7 @@ spec:
             - name: OAUTH2_JWKS_URL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
             - name: OAUTH2_TOKEN_AUDIENCE
-              value: "web-modeler"
+              value: "web-modeler-api"
             - name: OAUTH2_TOKEN_ISSUER
               value: "http://localhost:18080/auth/realms/camunda-platform"
             - name: PUSHER_HOST

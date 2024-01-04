@@ -211,9 +211,9 @@ global:
         ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by Web Modeler in authentication flows.
         clientId: web-modeler
         ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by Web Modeler's client API.
-        clientApiAudience: web-modeler
+        clientApiAudience: web-modeler-api
         ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by Web Modeler's public API.
-        publicApiAudience: web-modeler-api
+        publicApiAudience: web-modeler-public-api
         ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
