@@ -18,20 +18,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  wait-for-release-conditions:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for all PR checks to succeed
-        uses: lewagon/wait-on-check-action@v1.1.2
-        with:
-          ref: ${{ github.ref }}
-          running-workflow-name: 'wait-for-release-conditions'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
+  # wait-for-release-conditions:
+  #   if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Wait for all PR checks to succeed
+  #       uses: lewagon/wait-on-check-action@v1.1.2
+  #       with:
+  #         ref: ${{ github.ref }}
+  #         running-workflow-name: 'wait-for-release-conditions'
+  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
+  #         wait-interval: 10
 
   release:
-    needs: wait-for-release-conditions
+    # needs: wait-for-release-conditions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
