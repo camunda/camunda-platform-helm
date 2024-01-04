@@ -58,13 +58,14 @@ jobs:
     #   with:
     #     workload_identity_provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
     #     service_account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
-    - name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
       with:
+        token_format: access_token
         workload_identity_provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
         service_account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
-    - name: 'Get GKE credentials'
-      uses: 'google-github-actions/get-gke-credentials@v0'
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v2
       with:
         cluster_name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
         location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}

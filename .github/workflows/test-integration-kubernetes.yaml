@@ -62,10 +62,10 @@ jobs:
     - name: Login to GKE
       uses: ./.github/actions/gke-login
       with:
-        cluster-name: ${{ secrets.GKE_CLUSTER }}
-        cluster-location: ${{ secrets.GKE_ZONE }}
-        workload-identity-provider: ${{ secrets.GCP_AUTH_WORKLOAD_IDENTITY_PROVIDER }}
-        service-account: ${{ secrets.GCP_AUTH_SERVICE_ACCOUNT }}
+        cluster-name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+        cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+        workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
     - name: Set test vars
       id: vars
       run: |
