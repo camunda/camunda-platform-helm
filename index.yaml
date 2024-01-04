@@ -1889,7 +1889,7 @@ entries:
           url: https://github.com/camunda/camunda-platform-helm
     apiVersion: v2
     appVersion: 8.1.x
-    created: "2024-01-04T20:57:41.059932363Z"
+    created: "2024-01-04T20:58:21.498121593Z"
     dependencies:
     - condition: identity.enabled
       import-values:
@@ -1931,7 +1931,7 @@ entries:
       version: 2.x.x
     description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
       automation platform allows developers to design, automate and improve processes. '
-    digest: 03a192dfe086d1175fad97592f75255daac3ed4ad6b103059a25641963eb7d5a
+    digest: 4ff4b89598bae75c6c94a14f7bf25ed4ba0d1e60b8dbf46b524c030e5e739ce7
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
@@ -7624,4 +7624,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-01-04T20:57:41.060661872Z"
+generated: "2024-01-04T20:58:21.499034167Z"
