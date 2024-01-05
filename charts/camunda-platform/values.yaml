@@ -1398,7 +1398,7 @@ optimize:
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: Identity is required by Optimize and Web Modeler. If Identity is disabled, both Optimize and Web Modeler will be unusable.
+  # Note: If using Keycloak, Identity is required by Optimize and Web Modeler.
   #       If you need neither Optimize nor Web Modeler, make sure to disable both the Identity authentication and the applications by setting:
   #         global.identity.auth.enabled=false
   #         optimize.enabled=false

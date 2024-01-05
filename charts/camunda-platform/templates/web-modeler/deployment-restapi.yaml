@@ -34,8 +34,10 @@ spec:
           env:
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
+            {{- if .Values.identity.enabled }}
             - name: CAMUNDA_IDENTITY_BASEURL
               value: {{ include "webModeler.identityBaseUrl" . | quote }}
+            {{- end }}
             - name: CAMUNDA_IDENTITY_TYPE
               value: {{ include "camundaPlatform.authType" . | quote }}
             - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_PUBLIC_API
