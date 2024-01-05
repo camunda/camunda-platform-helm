@@ -57,9 +57,9 @@ spec:
             - name: CAMUNDA_IDENTITY_TYPE
               value: "KEYCLOAK"
             - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_PUBLIC_API
-              value: "web-modeler-api"
+              value: "web-modeler-public-api"
             - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_INTERNAL_API
-              value: "web-modeler"
+              value: "web-modeler-api"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"
             - name: SPRING_DATASOURCE_USERNAME
