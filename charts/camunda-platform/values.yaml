@@ -56,7 +56,7 @@ global:
     # renovate: datasource=github-releases depName=camunda/camunda-platform
     tag: 8.4.0-alpha2
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
-    pullPolicy: IfNotPresent
+    pullPolicy: "Always"
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
   ## Ingress configuration to configure the ingress resource
