@@ -1835,7 +1835,7 @@ identity:
     ## @param identity.keycloak.initContainers[1].volumeMounts[1].name
     ## @param identity.keycloak.initContainers[1].volumeMounts[1].mountPath
     - name: copy-configs
-      image: bitnami/keycloak:{{ .Values.image.tag }}
+      image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
       imagePullPolicy: "Always"
       command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
       securityContext:

@@ -18,20 +18,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  wait-for-release-conditions:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for all PR checks to succeed
-        uses: lewagon/wait-on-check-action@v1.3.3
-        with:
-          ref: ${{ github.ref }}
-          running-workflow-name: 'wait-for-release-conditions'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
-
   release:
-    needs: wait-for-release-conditions
+    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -41,6 +29,8 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           fetch-depth: 0
+      - name: Install env dependencies
+        uses: asdf-vm/actions/install@v3
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
@@ -54,19 +44,6 @@ jobs:
           done
           echo "Dev comments removed:"
           git --no-pager diff
-      # TODO: Remove this step when we automate release chores as a pre-release workflow.
-      # Use Go Sprig Function which is supported by chglog like "{{ env GITHUB_WORKFLOW_REF }}".
-      - name: Substitute GITHUB_WORKFLOW_REF var.
-        run: |
-          sed -i "s|_GITHUB_WORKFLOW_REF_|${GITHUB_WORKFLOW_REF}|g" charts/camunda-platform/RELEASE-NOTES.md
-      - name: Substitute image versions var.
-        env:
-          INPUT_FILE: charts/camunda-platform/RELEASE-NOTES.md
-          OUTPUT_HEADER: false
-        run: |
-          bash scripts/generate-version-matrix.sh
-      - name: Install env dependencies
-        uses: asdf-vm/actions/install@v3
       - uses: actions/cache@v3
         with:
           path: |
@@ -87,6 +64,16 @@ jobs:
           make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@v3.3.0
+      # TODO: Move this step to pre-release workflow when we have it.
+      - name: Generate release note footer
+        run: |
+          export OUTPUT_VERSION_HEADER="## Images"
+          export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
+          gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
+            charts/camunda-platform/RELEASE-NOTES.md
+      - name: Clean up release readme
+        run: |
+          sed -ri '/Badge .+/d' charts/camunda-platform/README.md
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@v1.6.0
         with:
@@ -115,7 +102,7 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-  verify:
+  post-release:
     needs: release
     runs-on: ubuntu-latest
     steps:
@@ -133,3 +120,11 @@ jobs:
           timeout_minutes: 5
           retry_wait_seconds: 10
           command: make release.verify-components-version
+      - name: Generate version matrix
+        run: |
+          make release.generate-version-matrix-all > charts/camunda-platform/VERSION-MATRIX.md
+      - uses: EndBug/add-and-commit@v9.1.3
+        with:
+          author_name: "renovate[bot]"
+          author_email: "29139614+renovate[bot]@users.noreply.github.com"
+          message: "chore: Generate VERSION-MATRIX.md"
