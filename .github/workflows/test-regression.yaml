@@ -64,7 +64,7 @@ jobs:
         helm install camunda-platform charts/camunda-platform \
           --wait --timeout 15m0s \
           --namespace $TEST_NAMESPACE --create-namespace \
-          --values charts/camunda-platform/values/values-v${{ matrix.camundaChart }}.yaml
+          --values http://helm.camunda.io/camunda-platform/values/values-v${{ matrix.camundaChart }}.yaml
     - name: Check setup
       if: always()
       run: |
