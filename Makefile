@@ -154,19 +154,19 @@ release.generate-notes-and-commit: .release.generate-notes
 release.generate-pr-url:
 	@echo "\n\n###################################\n"
 	@echo "Open the release PR using this URL:"
-	@echo "https://github.com/camunda/camunda-platform-helm/compare/main...release?expand=1&template=release_template.md&title=Release%20Camunda%20Platform%20Helm%20Chart%20v$(chartVersion)&labels=camunda-platform,chore"
+	@echo "https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.3...release?expand=1&template=release_template.md&title=Release%20Camunda%20Platform%20Helm%20Chart%20v$(chartVersion)&labels=camunda-platform,chore"
 	@echo "\n###################################\n\n"
 
 .PHONY: release.chores
 release.chores:
-	git checkout main
+	git checkout camunda-platform-8.3
 	git pull --tags
 	git switch -C release
 	@$(MAKE) release.bump-chart-version-and-commit
 	@$(MAKE) release.generate-notes-and-commit
 	git push -fu origin release
 	@$(MAKE) release.generate-pr-url
-	git checkout main
+	git checkout camunda-platform-8.3
 
 .PHONY: release.verify-components-version
 release.verify-components-version:
