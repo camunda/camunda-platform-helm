@@ -36,6 +36,8 @@ jobs:
         - "8.1"
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      with:
+        ref: camunda-platform-${{ matrix.camundaChart }}
     - name: Login to GKE
       uses: ./.github/actions/gke-login
       with:
@@ -59,9 +61,8 @@ jobs:
     - name: Install Camunda 8 Helm chart v${{ matrix.camundaChart }}
       timeout-minutes: 15
       run: |
-        helm install camunda-platform camunda/camunda-platform \
+        helm install camunda-platform charts/camunda-platform \
           --wait --timeout 15m0s \
-          --version ${{ matrix.camundaChart }} \
           --namespace $TEST_NAMESPACE --create-namespace \
           --values charts/camunda-platform/values/values-v${{ matrix.camundaChart }}.yaml
     - name: Check setup
