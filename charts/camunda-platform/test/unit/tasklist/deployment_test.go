@@ -360,8 +360,8 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	s.Require().Equal(1, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(2, len(volumeMounts))
-	extraVolumeMount := volumeMounts[1]
+	s.Require().Equal(3, len(volumeMounts))
+	extraVolumeMount := volumeMounts[2]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
@@ -399,8 +399,8 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal(1, len(containers))
 
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-	s.Require().Equal(2, len(volumeMounts))
-	extraVolumeMount := volumeMounts[1]
+	s.Require().Equal(3, len(volumeMounts))
+	extraVolumeMount := volumeMounts[2]
 	s.Require().Equal("otherConfigMap", extraVolumeMount.Name)
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
