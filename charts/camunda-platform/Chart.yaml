@@ -56,12 +56,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "removed hardcoded contextPaths while trimming redirectRootUrl"
-    - kind: changed
-      description: "show error message for optimize requirements"
-    - kind: changed
-      description: "mount tasklist-configmap volume on a new path"
-    - kind: changed
-      description: "enable tasklist user access restrictions"
+  artifacthub.io/changes: ""
