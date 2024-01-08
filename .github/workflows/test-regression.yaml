@@ -55,9 +55,10 @@ jobs:
     - name: Cleanup any old namespace
       run: |
         kubectl delete ns $TEST_NAMESPACE --ignore-not-found=true
-    - name: Add Camunda 8 Helm chart repo
+    - name: Update Helm dependency
       run: |
-        helm repo add camunda https://helm.camunda.io
+        make helm.repos-add
+        make helm.dependency-update
     - name: Install Camunda 8 Helm chart v${{ matrix.camundaChart }}
       timeout-minutes: 15
       run: |
