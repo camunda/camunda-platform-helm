@@ -92,25 +92,25 @@ testcases:
     - result.statuscode ShouldEqual 200
     - result.body ShouldNotContainSubstring error
 
-# # Connectors Inbound doesn't have the same flow like the rest of the components.
-# # So it needs different check.
-# - name: TEST - Interacting with Camunda login page - Connectors
-#   steps:
-#   - name: "Check Inbound Connectors"
-#     skip:
-#     - skiptestingress ShouldBeFalse
-#     type: http
-#     method: GET
-#     url: "{{ .coreVars.baseURLs.connectors }}"
-#     retry: 3
-#     delay: 15
-#     info: |
-#       = Request Method: {{ .value.method }}
-#       = Request Body: {{ .result.request.body }}
-#       = Response Body: {{ .result.body }}
-#     assertions:
-#     - result.statuscode ShouldEqual 200
-#     - result.bodyjson.items.items0.health.status ShouldEqual UP
+# Connectors Inbound doesn't have the same flow like the rest of the components.
+# So it needs different check.
+- name: TEST - Interacting with Camunda login page - Connectors
+  steps:
+  - name: "Check Inbound Connectors"
+    skip:
+    - skiptestingress ShouldBeFalse
+    type: http
+    method: GET
+    url: "{{ .coreVars.baseURLs.connectors }}"
+    retry: 3
+    delay: 15
+    info: |
+      = Request Method: {{ .value.method }}
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    # - result.bodyjson.items.items0.health.status ShouldEqual UP
 
 # TODO: Add Optimize.
 - name: TEST - Interacting with Camunda web API
