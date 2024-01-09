@@ -38,7 +38,7 @@ print_version_matrix_all () {
 
     echo '<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->'
     echo -e "# Camunda 8 Helm Chart Version Matrix\n"
-    git tag -l camunda-platform-8* | sed 's/camunda-platform-//' | sort -Vr | while read CHART_VERSION; do
+    git tag -l camunda-platform-{8..100}* | sed 's/camunda-platform-//' | sort -Vr | while read CHART_VERSION; do
         print_version_matrix_single
     done
 }
