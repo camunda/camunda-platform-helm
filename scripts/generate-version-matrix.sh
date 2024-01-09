@@ -1,31 +1,26 @@
 #!/bin/bash
+# TODO: Use gomplate when it supports JQ filter expressions.
+# https://docs.gomplate.ca/functions/coll/
+
 set -euo pipefail
 
-INPUT_FILE="${INPUT_FILE:-charts/camunda-platform/VERSION-MATRIX.md}"
-TMP_FILE="$(mktemp)"
-OUTPUT_HEADER=${OUTPUT_HEADER:-true}
+CHART_VERSION="${CHART_VERSION:-latest}"
+CHART_SOURCE="${CHART_SOURCE:-charts/camunda-platform}"
 
-get_chart_version () {
-    awk '/^version: / {print $2}' charts/camunda-platform/Chart.yaml
+print_version_header () {
+    echo "${OUTPUT_VERSION_HEADER:-"## Chart version $CHART_VERSION"}"
 }
 
 get_chart_images () {
-    helm template camunda charts/camunda-platform/ 2> /dev/null | grep "image:" | tr -d "\"'" |
-    awk -F ": " '{gsub("docker.io/", "", $2); printf "- %s\n", $2}' | sort | uniq
+    helm template --skip-tests camunda "${CHART_SOURCE}" --version "${CHART_VERSION}" \
+      --set "webModeler.enabled=true,webModeler.restapi.mail.fromAddress=dummy" 2> /dev/null |
+    tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); print $2}' |
+    sort | uniq
 }
 
-get_version_matrix_header () {
-[[ ${OUTPUT_HEADER} == false ]] && exit
+print_version_matrix_single () {
 cat << EOF
-<!-- _VERSION_MATRIX_PLACEHOLDER_ -->
-
-## Chart version $(get_chart_version)
-EOF
-}
-
-get_version_matrix () {
-cat << EOF
-$(get_version_matrix_header)
+$(print_version_header)
 
 Camunda images:
 
@@ -38,8 +33,36 @@ $(get_chart_images | grep -v "camunda")
 EOF
 }
 
-awk -v version_matrix="$(get_version_matrix)" \
-    '{gsub(/<!-- _VERSION_MATRIX_PLACEHOLDER_ -->/, version_matrix, $0)}1' \
-    "${INPUT_FILE}" > "${TMP_FILE}"
+print_version_matrix_all () {
+    CHART_SOURCE="camunda/camunda-platform"
 
-cp -a "${TMP_FILE}" "${INPUT_FILE}"
+    echo '<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->'
+    echo -e "# Camunda 8 Helm Chart Version Matrix\n"
+    git tag -l camunda-platform-8* | sed 's/camunda-platform-//' | sort -Vr | while read CHART_VERSION; do
+        print_version_matrix_single
+    done
+}
+
+print_help () {
+    echo "[ERROR] No option provided, exit."
+    exit 1
+}
+
+# Parse script input args.
+while test -n "${1}"; do
+    case "${1}" in
+        --single)
+          print_version_matrix_single
+          ;;
+        --all)
+          print_version_matrix_all
+          ;;
+        *)
+          print_help
+          ;;
+    esac
+    shift
+
+    # Handling exit if no more script args to avoid "unbound variable" error.
+    test -z "${1:-}" && exit 0
+done
