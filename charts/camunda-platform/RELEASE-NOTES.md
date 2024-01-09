@@ -2,30 +2,37 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-8.3.4"></a>
-## [camunda-platform-8.3.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.3.3...camunda-platform-8.3.4) (2023-12-12)
+<a name="camunda-platform-9.0.0"></a>
+## [camunda-platform-9.0.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.3.5...camunda-platform-9.0.0) (2024-01-09)
 
-### Fix
+> [!IMPORTANT]
+> Starting from the 8.4 release (January 2024), the Camunda Helm chart version is decoupled from the version of the application (e.g., the chart version is 9.0.0 and the application version is 8.4.x).
+>
+> For more details about the applications' version included in the Helm chart, check out the [full version matrix](https://helm.camunda.io/camunda-platform/version-matrix/).
 
-*  removed hardcoded contextPaths while trimming redirectRootUrl ([#1118](https://github.com/camunda/camunda-platform-helm/issues/1118))
+### Ci
+
+* enhance version matrix and release notes generation ([#1204](https://github.com/camunda/camunda-platform-helm/issues/1204))
+* removing dev comments before the release ([#1127](https://github.com/camunda/camunda-platform-helm/issues/1127))
+
+### Docs
+
+* rename example deployment name ([#1159](https://github.com/camunda/camunda-platform-helm/issues/1159))
+
+### Feat
+
+* use new Identity variables for auth configuration ([#1155](https://github.com/camunda/camunda-platform-helm/issues/1155))
 
 ### Refactor
 
-* show error message for optimize requirements ([#1132](https://github.com/camunda/camunda-platform-helm/issues/1132))
-* mount tasklist-configmap volume on a new path ([#1101](https://github.com/camunda/camunda-platform-helm/issues/1101))
-* enable tasklist user access restrictions ([#1093](https://github.com/camunda/camunda-platform-helm/issues/1093))
+* update helm chart version schema ([#1171](https://github.com/camunda/camunda-platform-helm/issues/1171))
+* remove deprecated tasklist graphql playground ([#1172](https://github.com/camunda/camunda-platform-helm/issues/1172))
+* upgrade elasticsearch image from 8.8.2 to 8.9.2 ([#1130](https://github.com/camunda/camunda-platform-helm/issues/1130))
+* fail if Multi-Tenancy requirements are not met ([#1160](https://github.com/camunda/camunda-platform-helm/issues/1160))
+* upgrade keycloak chart from 16.1.7 to 17.3.5 ([#1143](https://github.com/camunda/camunda-platform-helm/issues/1143))
+* resolve issues with web modeler deployment when using OIDC ([#1189](https://github.com/camunda/camunda-platform-helm/issues/1189))
+* use correct web modeler audiences ([#1187](https://github.com/camunda/camunda-platform-helm/issues/1187))
 
-### Test
+### BREAKING CHANGE
 
-* re-enable prometheus tests ([#1107](https://github.com/camunda/camunda-platform-helm/issues/1107))
-
-### Verification
-
-To verify integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
-
-```shell
-cosign verify-blob camunda-platform-8.3.4.tgz \
-  --bundle camunda-platform-8.3.4.cosign.bundle \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/_GITHUB_WORKFLOW_REF_"
-```
+The new Identity variables for auth configuration may require an update to values.yaml, refer to https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/guides/connect-to-an-oidc-provider/ and https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions for more instructions.

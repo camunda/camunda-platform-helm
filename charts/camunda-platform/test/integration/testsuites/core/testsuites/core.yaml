@@ -60,8 +60,6 @@ testcases:
       jwt:
         from: result.bodyjson.access_token
 
-# TODO: Use Venom "web" module to test actual login. It's easy but requires "PhantomJS"
-# which is not available on Alpine, so it needs to be installed first.
 - name: TEST - Interacting with Camunda login page
   steps:
   - name: "{{ .value.component }}"
@@ -79,8 +77,6 @@ testcases:
       url: "{{ .coreVars.baseURLs.optimize }}"
     - component: Tasklist
       url: "{{ .coreVars.baseURLs.tasklist }}"
-    - component: Connectors
-      url: "{{ .coreVars.baseURLs.connectors }}"
     - component: WebModeler
       url: "{{ .coreVars.baseURLs.webModeler }}"
     method: GET
@@ -95,6 +91,26 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
     - result.body ShouldNotContainSubstring error
+
+# Connectors Inbound doesn't have the same flow like the rest of the components.
+# So it needs different check.
+- name: TEST - Interacting with Camunda login page - Connectors
+  steps:
+  - name: "Check Inbound Connectors"
+    skip:
+    - skiptestingress ShouldBeFalse
+    type: http
+    method: GET
+    url: "{{ .coreVars.baseURLs.connectors }}"
+    retry: 3
+    delay: 15
+    info: |
+      = Request Method: {{ .value.method }}
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    # - result.bodyjson.items.items0.health.status ShouldEqual UP
 
 # TODO: Add Optimize.
 - name: TEST - Interacting with Camunda web API
