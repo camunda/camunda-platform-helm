@@ -3,7 +3,6 @@
 chartPath=charts/camunda-platform
 chartVersion=$(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName=camunda-platform-test
-gitChglog=quay.io/git-chglog/git-chglog:0.15.1
 
 #########################################################
 ######### Go.
@@ -142,8 +141,7 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 
 .PHONY: .release.generate-notes
 .release.generate-notes:
-	docker run --rm -w /data -v `pwd`:/data --entrypoint sh $(gitChglog) \
-		-c "apk add bash grep yq; bash scripts/generate-release-notes.sh"
+	@bash scripts/generate-release-notes.sh
 
 .PHONY: release.generate-and-commit
 release.generate-and-commit: .release.generate-notes
