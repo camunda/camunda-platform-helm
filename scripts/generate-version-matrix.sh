@@ -14,7 +14,7 @@ print_version_header () {
 get_chart_images () {
     helm template --skip-tests camunda "${CHART_SOURCE}" --version "${CHART_VERSION}" \
       --set "webModeler.enabled=true,webModeler.restapi.mail.fromAddress=dummy" 2> /dev/null |
-    tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); print $2}' |
+    tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
     sort | uniq
 }
 
