@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.4.0"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: c7411b04a1d7db11d7446f7dd9a09e664884869dbd230bd8d1fec1f40a6d75fc
+        checksum/config: 79e856281f00df87f11a7eb0ed19cf766f2af4591d9ff8c83bae06f7c93e5ed0
     spec:
       imagePullSecrets:
         []
