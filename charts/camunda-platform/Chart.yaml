@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.0.0
+version: 9.0.1
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.0.0
+    version: 9.0.1
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT 
@@ -59,19 +59,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "use new Identity variables for auth configuration"
-    - kind: changed
-      description: "resolve issues with web modeler deployment when using OIDC"
-    - kind: changed
-      description: "use correct web modeler audiences"
-    - kind: changed
-      description: "update helm chart version schema"
-    - kind: changed
-      description: "remove deprecated tasklist graphql playground"
-    - kind: changed
-      description: "upgrade elasticsearch image from 8.8.2 to 8.9.2"
-    - kind: changed
-      description: "fail if Multi-Tenancy requirements are not met"
-    - kind: changed
-      description: "upgrade keycloak chart from 16.1.7 to 17.3.5"
+    - kind: fixed
+      description: "update camunda/connectors-bundle docker tag to v8.4.2"
+    - kind: fixed
+      description: "rename identity configmap id to avoid potential conflict"
