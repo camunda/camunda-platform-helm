@@ -60,6 +60,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "update camunda/connectors-bundle docker tag to v8.4.2"
-    - kind: fixed
-      description: "rename identity configmap id to avoid potential conflict"
+      description: "update camunda/connectors-bundle docker tag to v8.4.3"
