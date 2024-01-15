@@ -6,6 +6,5 @@ metadata:
     {{- include "camundaPlatform.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
-  {{- /* NOTE: the "info" config will be simplified when we fully moved to a flat-chart structure */}}
   info: |
     {{- include "camundaPlatform.releaseInfo" . | nindent 4 }}

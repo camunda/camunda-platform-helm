@@ -12,11 +12,7 @@ spec:
       app.kubernetes.io/component: connectors
   endpoints:
     - honorLabels: true
-      {{- if .Values.connectors.ingress.enabled }}
-      path: /actuator/prometheus
-      {{- else }}
-      path: {{ .Values.connectors.contextPath }}/actuator/prometheus
-      {{- end }}
+      path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.metrics.prometheus }}
       port: http
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}
