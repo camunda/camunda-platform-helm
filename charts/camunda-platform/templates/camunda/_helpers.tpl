@@ -308,7 +308,7 @@ Release templates.
   - name: Console
     url: {{ $baseURL }}{{ .Values.console.contextPath }}
   {{- end }}
-
+{{- "" }}
   {{- with dict "Release" .Release "Chart" (dict "Name" "identity") "Values" .Values.identity }}
   {{ if .Values.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.service.port -}}
@@ -320,7 +320,7 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.metrics.prometheus }}
   {{- end }}
   {{- end }}
-
+{{- "" }}
   {{ if .Values.operate.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.port -}}
   - name: Operate
@@ -328,7 +328,7 @@ Release templates.
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
   {{- end }}
-
+{{- "" }}
   {{ if .Values.optimize.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "optimize.fullname" .) .Release.Namespace .Values.optimize.service.port -}}
   - name: Optimize
@@ -336,7 +336,7 @@ Release templates.
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.optimize.metrics.prometheus }}
   {{- end }}
-
+{{- "" }}
   {{ if .Values.tasklist.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.port -}}
   - name: Tasklist
@@ -344,7 +344,7 @@ Release templates.
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
   {{- end }}
-
+{{- "" }}
   {{- if .Values.webModeler.enabled }}
   {{- $baseURLInternal := printf "http://%s.%s" (include "webModeler.webapp.fullname" .) .Release.Namespace -}}
   - name: WebModeler WebApp
@@ -352,7 +352,7 @@ Release templates.
     readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.webModeler.webapp.service.port .Values.webModeler.webapp.readinessProbe.probePath }}
     metrics: {{ printf "%s:8071%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
-
+{{- "" }}
   {{ if .Values.zeebe.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort -}}
   - name: Zeebe Gateway
