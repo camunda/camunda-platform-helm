@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: optimize
   endpoints:
     - honorLabels: true
-      path: /actuator/prometheus
+      path: {{ .Values.optimize.metrics.prometheus }}
       port: management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

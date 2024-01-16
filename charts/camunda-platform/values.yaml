@@ -488,6 +488,11 @@ zeebe:
      ## @param zeebe.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
+  ## Metrics configuration
+  metrics:
+    ## @param zeebe.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
+
   ## @param zeebe.nodeSelector can be used to define on which nodes the broker pods should run
   nodeSelector: {}
   ## @param zeebe.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
@@ -673,6 +678,11 @@ zeebe-gateway:
     failureThreshold: 5
     ## @param zeebe-gateway.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
+
+  ## Metrics configuration
+  metrics:
+    ## @param zeebe-gateway.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
 
   ## @param zeebe-gateway.nodeSelector can be used to define on which nodes the gateway pods should run
   nodeSelector: {}
@@ -960,6 +970,11 @@ operate:
     ## @param operate.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
+  ## Metrics configuration
+  metrics:
+    ## @param operate.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
+
   ## @param operate.nodeSelector can be used to define on which nodes the Operate pods should run
   nodeSelector: {}
   ## @param operate.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
@@ -1128,6 +1143,11 @@ tasklist:
     failureThreshold: 5
     ## @param tasklist.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
+
+  ## Metrics configuration
+  metrics:
+    ## @param tasklist.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
 
   ## @param tasklist.nodeSelector can be used to define on which nodes the Tasklist pods should run
   nodeSelector: {}
@@ -1337,6 +1357,11 @@ optimize:
     failureThreshold: 5
     ## @param optimize.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
+
+  ## Metrics configuration
+  metrics:
+    ## @param optimize.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
 
   ## @param optimize.nodeSelector can be used to define on which nodes the Optimize pods should run
   nodeSelector: {}
@@ -1548,6 +1573,11 @@ identity:
     failureThreshold: 5
     ## @param identity.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
+
+  ## Metrics configuration
+  metrics:
+    ## @param identity.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
 
   ## @param identity.nodeSelector can be used to define on which nodes the Identity pods should run
   nodeSelector: {}
@@ -2124,6 +2154,11 @@ webModeler:
       ## @param webModeler.restapi.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
       timeoutSeconds: 1
 
+    ## Metrics configuration
+    metrics:
+      ## @param webModeler.restapi.metrics.prometheus Prometheus metrics endpoint
+      prometheus: /metrics
+
     ## @param webModeler.restapi.nodeSelector can be used to select the nodes the restapi pods should run on
     nodeSelector: {}
     ## @param webModeler.restapi.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
@@ -2264,6 +2299,11 @@ webModeler:
       failureThreshold: 5
       ## @param webModeler.webapp.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
       timeoutSeconds: 1
+
+    ## Metrics configuration
+    metrics:
+      ## @param webModeler.webapp.metrics.prometheus Prometheus metrics endpoint
+      prometheus: /metrics
 
     ## @param webModeler.webapp.nodeSelector can be used to select the nodes the webapp pods should run on
     nodeSelector: {}
@@ -2707,6 +2747,11 @@ connectors:
     failureThreshold: 5
     ## @param connectors.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
+
+  ## Metrics configuration
+  metrics:
+    ## @param connectors.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
 
   ## @extra connectors.serviceAccount configuration for the service account where the Connectors pods are assigned to
   serviceAccount:

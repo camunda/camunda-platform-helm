@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: identity
   endpoints:
     - honorLabels: true
-      path: /actuator/prometheus
+      path: {{ .Values.identity.metrics.prometheus }}
       port: metrics
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

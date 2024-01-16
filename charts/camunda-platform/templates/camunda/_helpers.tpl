@@ -311,41 +311,53 @@ Release templates.
 
   {{- with dict "Release" .Release "Chart" (dict "Name" "identity") "Values" .Values.identity }}
   {{ if .Values.enabled -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.service.port -}}
   - name: Keycloak
     url: {{ $baseURL }}{{ .Values.global.identity.keycloak.contextPath }}
   - name: Identity
     url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness: http://{{ include "identity.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.port }}{{ .Values.readinessProbe.probePath }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.metrics.prometheus }}
   {{- end }}
   {{- end }}
 
   {{ if .Values.operate.enabled -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.port -}}
   - name: Operate
     url: {{ $baseURL }}{{ .Values.operate.contextPath }}
-    readiness: http://{{ include "operate.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.operate.service.port }}{{ .Values.operate.contextPath }}{{ .Values.operate.readinessProbe.probePath }}
+    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
   {{- end }}
 
   {{ if .Values.optimize.enabled -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "optimize.fullname" .) .Release.Namespace .Values.optimize.service.port -}}
   - name: Optimize
     url: {{ $baseURL }}{{ .Values.optimize.contextPath }}
-    readiness: http://{{ include "optimize.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.optimize.service.port }}{{ .Values.optimize.contextPath }}{{ .Values.optimize.readinessProbe.probePath }}
+    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.optimize.metrics.prometheus }}
   {{- end }}
 
   {{ if .Values.tasklist.enabled -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.port -}}
   - name: Tasklist
     url: {{ $baseURL }}{{ .Values.tasklist.contextPath }}
-    readiness: http://{{ include "tasklist.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.tasklist.service.port }}{{ .Values.tasklist.contextPath }}{{ .Values.tasklist.readinessProbe.probePath }}
+    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s" (include "webModeler.webapp.fullname" .) .Release.Namespace -}}
   - name: WebModeler WebApp
     url: {{ $baseURL }}{{ .Values.webModeler.contextPath }}
-    readiness: http://{{ include "webModeler.webapp.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.webModeler.webapp.service.port }}{{ .Values.webModeler.webapp.readinessProbe.probePath }}
+    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.webModeler.webapp.service.port .Values.webModeler.webapp.readinessProbe.probePath }}
+    metrics: {{ printf "%s:8071%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
 
   {{ if .Values.zeebe.enabled -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort -}}
   - name: Zeebe Gateway
     url: grpc://{{ tpl .Values.zeebeGateway.ingress.host $ }}
-    readiness: http://{{ include "zeebe.names.gateway" . | trimAll "\"" }}.{{ .Release.Namespace }}:{{ .Values.zeebeGateway.service.httpPort }}{{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.readinessProbe.probePath }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.metrics.prometheus }}
   {{- end }}
 {{- end -}}
