@@ -66,7 +66,7 @@ We value all feedback and contributions. To start contributing to this project, 
 
 ## Versioning
 
-For more details about the Camunda 8 Helm chart versioning, please read the [Camunda 8 Helm chart versioning](./charts/camunda-platform/#versioning).
+For more details about the Camunda 8 Helm chart versioning, please read the [versioning scheme](./charts/camunda-platform/#versioning).
 
 ## Releasing
 
