@@ -2,12 +2,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "console.fullname" . }}-admin
+  name: {{ include "console.fullname" . }}-configuration
   labels:
     {{ include "console.labels" . | nindent 4 }}
 data:
-  managed-resources.yaml: |
-    console:
-      managed:
-        {{- toYaml .Values.console.managed | nindent 8 }}
+  application.yaml: |-
+    {{- include "common.tplvalues.render" ( dict "value" .Values.console.configuration "context" $ ) | nindent 4 }}
 {{- end }}
