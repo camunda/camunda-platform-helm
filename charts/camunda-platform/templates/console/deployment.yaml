@@ -34,7 +34,7 @@ spec:
           imagePullPolicy: {{ .Values.console.image.pullPolicy }}
           env:
             - name: NODE_ENV
-              value: production
+              value: prod
             - name: IDENTITY_BASE
               value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             - name: IDENTITY_ISSUER_URL
@@ -63,15 +63,15 @@ spec:
           resources:
             {{- toYaml .Values.console.resources | nindent 12 }}
           volumeMounts:
-            - name: console-admin-config
+            - name: console-configuration
               mountPath: /var/run/config
           {{- if .Values.console.extraVolumeMounts }}
             {{- .Values.console.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
       volumes:
-        - name: console-admin-config
+        - name: console-configuration
           configMap:
-            name: {{ include "console.fullname" . }}-admin
+            name: {{ include "console.fullname" . }}-configuration
       {{- if .Values.console.extraVolumes }}
         {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
