@@ -8,10 +8,10 @@ metadata:
     {{- include "zeebe.labels.gateway" . | nindent 4 }}
   annotations:
     {{- if .Values.global.annotations}}
-    {{- toYaml  .Values.global.annotations | nindent 4 }}
+      {{- toYaml  .Values.global.annotations | nindent 4 }}
     {{- end }}
     {{- if .Values.zeebeGateway.service.annotations}}
-    {{ .Values.zeebeGateway.service.annotations | toYaml | nindent 4 }}
+      {{ .Values.zeebeGateway.service.annotations | toYaml | nindent 4 }}
     {{- end }}
 spec:
   type: {{ .Values.zeebeGateway.service.type }}
