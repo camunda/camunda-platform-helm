@@ -63,7 +63,7 @@ jobs:
       fail-fast: false
       matrix:
         distro:
-        - name: Kubernetes 1.24
+        - name: Kubernetes 1.27
           type: kubernetes
           platform: gke
           secret:
@@ -72,10 +72,14 @@ jobs:
             workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
             service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
           if: ${{ contains(inputs.platforms, 'gke') }}
-        - name: OpenShift 4.13
+        - name: OpenShift 4.14
           type: openshift
-          version: 4.13
+          version: 4.14
           platform: rosa
+          secret:
+            server-url: DISTRO_CI_OPENSHIFT_CLUSTER_URL
+            username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
           if: ${{ contains(inputs.platforms, 'rosa') }}
         scenario:
         - name: Chart Setup
@@ -108,20 +112,13 @@ jobs:
         cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
         workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
         service-account: ${{ secrets[matrix.distro.secret.service-account] }}
-    - name: Set OpenShift authentication vars
-      if: matrix.distro.type == 'openshift'
-      run: |
-        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.distro.version }} | tr -d '.')"
-        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_CLUSTER_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
-        echo "OPENSHIFT_CLUSTER_USERNAME=OPENSHIFT_CLUSTER_USERNAME_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
-        echo "OPENSHIFT_CLUSTER_PASSWORD=OPENSHIFT_CLUSTER_PASSWORD_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
     - name: Authenticate to OpenShift
       if: matrix.distro.platform == 'rosa'
       uses: redhat-actions/oc-login@v1
       with:
-        openshift_server_url: ${{ secrets[env.OPENSHIFT_CLUSTER_URL] }}
-        openshift_username: ${{ secrets[env.OPENSHIFT_CLUSTER_USERNAME] }}
-        openshift_password: ${{ secrets[env.OPENSHIFT_CLUSTER_PASSWORD] }}
+        openshift_server_url: ${{ secrets[matrix.distro.secret.server-url] }}
+        openshift_username: ${{ secrets[matrix.distro.secret.username] }}
+        openshift_password: ${{ secrets[matrix.distro.secret.password] }}
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
