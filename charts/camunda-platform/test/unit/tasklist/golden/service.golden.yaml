@@ -12,6 +12,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "8.4.0"
     app.kubernetes.io/component: tasklist
+  annotations:
 spec:
   type: ClusterIP
   ports:

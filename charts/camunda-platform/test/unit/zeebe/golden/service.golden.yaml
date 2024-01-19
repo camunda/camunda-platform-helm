@@ -13,7 +13,6 @@ metadata:
     app.kubernetes.io/version: "8.4.0"
     app.kubernetes.io/component: zeebe-broker
   annotations:
-    {}
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
