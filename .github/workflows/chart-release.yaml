@@ -124,7 +124,7 @@ jobs:
         run: |
           git pull --tags
           make release.generate-version-matrix-all > charts/camunda-platform/VERSION-MATRIX.md
-      - uses: EndBug/add-and-commit@v9.1.3
+      - uses: EndBug/add-and-commit@v9.1.4
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
