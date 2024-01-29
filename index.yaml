@@ -3,6 +3,64 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "add metrics endpoints to release info"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.4.x
+    created: "2024-01-29T21:02:01.656370592Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 9.1.0
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.15.0
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: b266420ab493c37adc71383fd352f00b1df203062317089205dbf54d2fb7d51a
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-9.1.0/camunda-platform-9.1.0.tgz
+    version: 9.1.0
+  - annotations:
+      artifacthub.io/changes: |
         - kind: fixed
           description: "update camunda/connectors-bundle docker tag to v8.4.3"
       artifacthub.io/containsSecurityUpdates: "false"
@@ -7948,4 +8006,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-01-10T20:16:06.997701037Z"
+generated: "2024-01-29T21:02:01.656698153Z"
