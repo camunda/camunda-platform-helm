@@ -75,7 +75,7 @@ spec:
               value: {{ include "camundaPlatform.authType" . | quote }}
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
               value: "identity"
-            - name: CAMUNDA_IDENTITY_ISSUERBACKENDURL
+            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: {{ include "zeebe.audience" . | quote }}
@@ -85,9 +85,7 @@ spec:
               value: "true"
             - name: ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED
               value: "true"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL
-              value: {{ include "camundaPlatform.identityURL" . | quote }}
-            - name: ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL
+            - name: CAMUNDA_IDENTITY_BASE_URL
               value: {{ include "camundaPlatform.identityURL" . | quote }}
             {{- end }}
             {{- with .Values.zeebeGateway.env }}

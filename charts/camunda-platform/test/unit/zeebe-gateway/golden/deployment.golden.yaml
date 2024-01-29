@@ -85,7 +85,7 @@ spec:
               value: "KEYCLOAK"
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
               value: "identity"
-            - name: CAMUNDA_IDENTITY_ISSUERBACKENDURL
+            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: "zeebe-api"
