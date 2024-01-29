@@ -59,5 +59,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "update camunda/connectors-bundle docker tag to v8.4.3"
+    - kind: added
+      description: "add metrics endpoints to release info"
+    - kind: changed
+      description: "ensure all components support service annotations"
