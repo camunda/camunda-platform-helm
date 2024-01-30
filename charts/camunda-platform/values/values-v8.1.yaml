@@ -14,21 +14,21 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe
   image:
     # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.1.22
+    tag: 8.1.21
     
 operate:
   # https://github.com/camunda/operate/releases
   # https://hub.docker.com/r/camunda/operate
   image:
     # renovate: datasource=docker depName=camunda/operate
-    tag: 8.1.22
+    tag: 8.1.21
 
 tasklist:
   # https://github.com/camunda/tasklist/blob/master/CHANGELOG.md
   # https://hub.docker.com/r/camunda/tasklist
   image:
     # renovate: datasource=docker depName=camunda/tasklist
-    tag: 8.1.22
+    tag: 8.1.21
 
 
 connectors:
@@ -42,7 +42,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity
   image:
     # renovate: datasource=docker depName=camunda/identity
-    tag: 8.1.22
+    tag: 8.1.21
 
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
