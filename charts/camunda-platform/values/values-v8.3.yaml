@@ -10,6 +10,27 @@ global:
     # renovate: datasource=docker depName=camunda/zeebe
     tag: 8.3.5
 
+zeebe:
+  # https://github.com/camunda/zeebe/releases
+  # https://hub.docker.com/r/camunda/zeebe
+  image:
+    # renovate: datasource=docker depName=camunda/zeebe
+    tag: 8.3.5
+    
+operate:
+  # https://github.com/camunda/operate/releases
+  # https://hub.docker.com/r/camunda/operate
+  image:
+    # renovate: datasource=docker depName=camunda/operate
+    tag: 8.3.5
+
+tasklist:
+  # https://github.com/camunda/tasklist/blob/master/CHANGELOG.md
+  # https://hub.docker.com/r/camunda/tasklist
+  image:
+    # renovate: datasource=docker depName=camunda/tasklist
+    tag: 8.3.5
+
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
@@ -17,6 +38,12 @@ connectors:
     tag: 8.3.6
 
 identity:
+  # https://github.com/camunda-cloud/identity/releases
+  # https://hub.docker.com/r/camunda/identity
+  image:
+    # renovate: datasource=docker depName=camunda/identity
+    tag: 8.3.5
+
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
