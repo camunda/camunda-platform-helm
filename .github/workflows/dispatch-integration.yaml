@@ -1,0 +1,35 @@
+name: "Dispatch - Integration - Main"
+
+on:
+  workflow_dispatch:
+    inputs:
+      persistent:
+        description: |
+          Keep test deployment after the workflow is done.
+          NOTE: All persistent deployments will be deleted frequently to save costs!
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: platform to test on
+        required: false
+        default: gke
+        type: string
+      identifier:
+        description: The unique identifier of used in the deployment hostname.
+        required: true
+        type: string
+      extra-values:
+        description: Pass extra values to the Helm chart.
+        required: false
+        type: string
+jobs:
+  helm-deploy:
+    name: Helm chart Integration Tests
+    uses: ./.github/workflows/test-integration-template.yaml
+    secrets: inherit
+    with:
+      identifier: ${{ github.event.inputs.identifier }}
+      extra-values: ${{ github.event.inputs.extra-values }}
+      platforms: ${{ github.event.inputs.platforms }}
+      persistent: ${{ github.event.inputs.persistent }}
