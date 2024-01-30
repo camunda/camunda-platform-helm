@@ -59,11 +59,11 @@ spec:
                   key: connectors-secret
           {{- end }}
           {{- if and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") }}
-            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
-            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
+            - name: CAMUNDA_IDENTITY_AUDIENCE
               value: connectors
-            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: connectors
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -104,6 +104,11 @@ spec:
           {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
           {{- if .Values.connectors.command}}
           command: {{ toYaml .Values.connectors.command | nindent 12 }}
