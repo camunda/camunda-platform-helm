@@ -7,7 +7,26 @@ on:
     - '.tool-versions'
     - 'charts/**'
     - 'go.*'
-  workflow_dispatch: { }
+  workflow_call:
+    inputs:
+      persistent:
+        description: |
+          Keep test deployment after the workflow is done.
+          NOTE: All persistent deployments will be deleted frequently to save costs!
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        default: gke
+        type: string
+      identifier:
+        description: The unique identifier of used in the deployment hostname.
+        required: true
+        type: string
+      extra-values:
+        description: Pass extra values to the Helm chart.
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -96,9 +115,13 @@ jobs:
       fail-fast: false
       matrix:
         openshift:
-        - version: "4.13"
+        - version: "4.14"
           server: OPENSHIFT_URL_410
           token: OPENSHIFT_TOKEN_410
+          secret:
+            server-url: DISTRO_CI_OPENSHIFT_CLUSTER_URL
+            username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
         test:
         - title: ChartWithDefaultValues
           dir: chart-with-default-values
@@ -111,18 +134,12 @@ jobs:
           description: Test Camunda Platform Helm chart with WebModeler enabled which is still beta
     steps:
     - uses: actions/checkout@v3
-    - name: Set OpenShift authentication vars
-      run: |
-        OPENSHIFT_CLUSTER_VERSION="$(echo ${{ matrix.openshift.version }} | tr -d '.')"
-        echo "OPENSHIFT_CLUSTER_URL=OPENSHIFT_CLUSTER_URL_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
-        echo "OPENSHIFT_CLUSTER_USERNAME=OPENSHIFT_CLUSTER_USERNAME_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
-        echo "OPENSHIFT_CLUSTER_PASSWORD=OPENSHIFT_CLUSTER_PASSWORD_${OPENSHIFT_CLUSTER_VERSION}" >> $GITHUB_ENV
     - name: Authenticate to OpenShift
       uses: redhat-actions/oc-login@v1
       with:
-        openshift_server_url: ${{ secrets[env.OPENSHIFT_CLUSTER_URL] }}
-        openshift_username: ${{ secrets[env.OPENSHIFT_CLUSTER_USERNAME] }}
-        openshift_password: ${{ secrets[env.OPENSHIFT_CLUSTER_PASSWORD] }}
+        openshift_server_url: ${{ secrets[matrix.openshift.secret.server-url] }}
+        openshift_username: ${{ secrets[matrix.openshift.secret.username] }}
+        openshift_password: ${{ secrets[matrix.openshift.secret.password] }}
     - name: Set test vars
       id: vars
       run: |

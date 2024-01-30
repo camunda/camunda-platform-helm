@@ -26,7 +26,7 @@ on:
 jobs:
   helm-deploy:
     name: Helm chart Integration Tests
-    uses: ./.github/workflows/test-integration-main.yaml
+    uses: ./.github/workflows/test-integration-openshift.yaml
     secrets: inherit
     with:
       identifier: ${{ github.event.inputs.identifier }}
