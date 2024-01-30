@@ -102,9 +102,9 @@ jobs:
       if: matrix.test.platform == 'rosa'
       uses: redhat-actions/oc-login@v1
       with:
-        openshift_server_url: ${{ secrets[env.OPENSHIFT_CLUSTER_URL] }}
-        openshift_username: ${{ secrets[env.OPENSHIFT_CLUSTER_USERNAME] }}
-        openshift_password: ${{ secrets[env.OPENSHIFT_CLUSTER_PASSWORD] }}
+        openshift_server_url: ${{ secrets[env.DISTRO_CI_OPENSHIFT_CLUSTER_URL] }}
+        openshift_username: ${{ secrets[env.DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME] }}
+        openshift_password: ${{ secrets[env.DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD] }}
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
