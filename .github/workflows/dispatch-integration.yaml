@@ -7,8 +7,13 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
-      git-ref:
-        description: Git ref
+      camunda-helm-git-ref:
+        description: Git ref of the helm chart repo
+        required: false
+        default: main
+        type: string
+      caller-git-ref:
+        description: Git ref of the repo calling the template
         required: false
         default: main
         type: string
@@ -44,7 +49,8 @@ jobs:
     secrets: inherit
     with:
       identifier: ${{ github.event.inputs.identifier }}
-      git-ref: ${{ github.event.inputs.git-ref }}
+      caller-git-ref: ${{ github.event.inputs.caller-git-ref }}
+      camunda-helm-git-ref: ${{ github.event.inputs.camunda-helm-git-ref }}
       persistent: ${{ github.event.inputs.persistent == 'true' }}
       platforms: ${{ github.event.inputs.platforms }}
       flows: ${{ github.event.inputs.flows }}
