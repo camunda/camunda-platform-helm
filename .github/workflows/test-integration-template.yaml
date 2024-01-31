@@ -7,7 +7,11 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
-      git-ref:
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      caller-git-ref:
         required: false
         default: main
         type: string
@@ -102,7 +106,7 @@ jobs:
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.camunda-helm-git-ref }}
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.distro.platform == 'gke'
@@ -155,7 +159,7 @@ jobs:
         step: start
         token: ${{ secrets.GITHUB_TOKEN }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: Pre setup
       timeout-minutes: 5
       env:
@@ -201,7 +205,7 @@ jobs:
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env_url: https://${{ steps.vars.outputs.ingress-host }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: ⭐️ Run Preflight TestSuite ⭐️
       if: inputs.test-enabled
       timeout-minutes: 10
@@ -225,7 +229,7 @@ jobs:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       run: |
@@ -265,7 +269,7 @@ jobs:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
       if: always()
       run: |
