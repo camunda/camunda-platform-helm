@@ -63,7 +63,7 @@ jobs:
         run: |
           make helm.dependency-update
       - name: cosign-installer
-        uses: sigstore/cosign-installer@v3.3.0
+        uses: sigstore/cosign-installer@v3.4.0
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
