@@ -5,6 +5,10 @@ on:
     types:
       - opened
       - transferred
+      
+permissions:
+  issues: write
+  contents: read
 
 jobs:
   add-to-project:

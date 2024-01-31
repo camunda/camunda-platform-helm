@@ -50,6 +50,9 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
 
+permissions:
+  contents: read
+  
 jobs:
   test:
     name: ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}

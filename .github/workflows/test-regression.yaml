@@ -21,6 +21,9 @@ env:
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
   KUBECONFIG: .github/config/kubeconfig
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Previous chart v${{ matrix.camundaChart }}.x

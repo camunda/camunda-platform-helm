@@ -17,6 +17,9 @@ on:
     - 'go.*'
   workflow_dispatch: { }
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Custom values - ${{ matrix.test.name }}
