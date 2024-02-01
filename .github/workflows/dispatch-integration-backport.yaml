@@ -23,9 +23,17 @@ on:
         description: Pass extra values to the Helm chart.
         required: false
         type: string
+
+permissions:
+      contents: read
+   
 jobs:
   helm-deploy:
     name: Helm chart Integration Tests
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
     uses: ./.github/workflows/test-integration-main.yaml
     secrets: inherit
     with:
