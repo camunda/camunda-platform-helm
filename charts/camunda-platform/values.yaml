@@ -54,7 +54,7 @@ global:
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.4.0
+    tag: 8.4.1
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -329,21 +329,23 @@ zeebe:
 
   ## @extra zeebe.service configuration for the broker service
   service:
-     ## @param zeebe.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    ## @param zeebe.service.annotations can be used to define annotations, which will be applied to the Zeebe service
+    annotations: {}
+    ## @param zeebe.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-     ## @param zeebe.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    ## @param zeebe.service.httpPort defines the port of the http endpoint, where for example metrics are provided
     httpPort: 9600
-     ## @param zeebe.service.httpName defines the name of the http endpoint, where for example metrics are provided
+    ## @param zeebe.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-     ## @param zeebe.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
+    ## @param zeebe.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
     commandPort: 26501
-     ## @param zeebe.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    ## @param zeebe.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
     commandName: "command"
-     ## @param zeebe.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    ## @param zeebe.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
     internalPort: 26502
-     ## @param zeebe.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    ## @param zeebe.service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
-     ## @param zeebe.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
+    ## @param zeebe.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
     extraPorts: []
       # - name: hazelcast
       #   protocol: TCP
@@ -352,11 +354,11 @@ zeebe:
 
   ## @extra global.zeebe.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
-     ## @param zeebe.serviceAccount.enabled if true, enables the broker service account
+    ## @param zeebe.serviceAccount.enabled if true, enables the broker service account
     enabled: true
-     ## @param zeebe.serviceAccount.name can be used to set the name of the broker service account
+    ## @param zeebe.serviceAccount.name can be used to set the name of the broker service account
     name: ""
-     ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
+    ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
 
   ## @param zeebe.cpuThreadCount defines how many threads can be used for the processing on each broker pod
@@ -404,11 +406,11 @@ zeebe:
   podLabels: {}
   ## @extra zeebe.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
-     ## @param zeebe.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
+    ## @param zeebe.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
-     ## @param zeebe.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    ## @param zeebe.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
     minAvailable:
-     ## @param zeebe.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    ## @param zeebe.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
   ## @extra zeebe.podSecurityContext defines the security options the Zeebe broker pod should be run with
@@ -431,61 +433,61 @@ zeebe:
 
   ## @extra zeebe.startupProbe configuration
   startupProbe:
-     ## @param zeebe.startupProbe.enabled if true, the startup probe is enabled in app container
+    ## @param zeebe.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-     ## @param zeebe.startupProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param zeebe.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-     ## @param zeebe.startupProbe.probePath defines the startup probe route used on the app
+    ## @param zeebe.startupProbe.probePath defines the startup probe route used on the app
     probePath: /ready
-     ## @param zeebe.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
+    ## @param zeebe.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
-     ## @param zeebe.startupProbe.periodSeconds defines how often the probe is executed
+    ## @param zeebe.startupProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-     ## @param zeebe.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param zeebe.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-     ## @param zeebe.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param zeebe.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-     ## @param zeebe.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param zeebe.startupProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## @extra zeebe.readinessProbe configuration
   readinessProbe:
-     ## @param zeebe.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    ## @param zeebe.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-     ## @param zeebe.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param zeebe.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-     ## @param zeebe.readinessProbe.probePath defines the readiness probe route used on the app
+    ## @param zeebe.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /ready
-     ## @param zeebe.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param zeebe.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-     ## @param zeebe.readinessProbe.periodSeconds defines how often the probe is executed
+    ## @param zeebe.readinessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-     ## @param zeebe.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param zeebe.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-     ## @param zeebe.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param zeebe.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-     ## @param zeebe.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param zeebe.readinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## @extra zeebe.livenessProbe configuration
   livenessProbe:
-     ## @param zeebe.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    ## @param zeebe.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-     ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-     ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
+    ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /health
-     ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-     ## @param zeebe.livenessProbe.periodSeconds defines how often the probe is executed
+    ## @param zeebe.livenessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-     ## @param zeebe.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    ## @param zeebe.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
     successThreshold: 1
-     ## @param zeebe.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    ## @param zeebe.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
     failureThreshold: 5
-     ## @param zeebe.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param zeebe.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## Metrics configuration
@@ -717,6 +719,8 @@ zeebe-gateway:
 
   ## @extra zeebe-gateway.service configuration for the gateway service
   service:
+    ## @param zeebe-gateway.service.annotations can be used to define annotations, which will be applied to the zeebe-gateway service
+    annotations: {}
     ## @param zeebe-gateway.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param zeebe-gateway.service.loadBalancerIP defines public ip of the load balancer if the type is LoadBalancer
@@ -735,8 +739,6 @@ zeebe-gateway:
     internalPort: 26502
     ## @param zeebe-gateway.service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
-    ## @param zeebe-gateway.service.annotations can be used to define annotations, which will be applied to the zeebe-gateway service
-    annotations: {}
 
   ## @extra zeebe-gateway.serviceAccount configuration for the service account where the gateway pods are assigned to
   serviceAccount:
@@ -824,12 +826,12 @@ operate:
 
   ## @extra operate.service configuration to configure the Operate service.
   service:
+    ## @param operate.service.annotations can be used to define annotations, which will be applied to the Operate service
+    annotations: {}
     ## @param operate.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param operate.service.port defines the port of the service, where the Operate web application will be available
     port: 80
-    ## @param operate.service.annotations can be used to define annotations, which will be applied to the Operate service
-    annotations: {}
 
   ## @extra operate.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param operate.resources.requests.cpu
@@ -1041,6 +1043,8 @@ tasklist:
   command: []
   ## @extra tasklist.service configuration to configure the tasklist service.
   service:
+    ## @param tasklist.service.annotations can be used to define annotations, which will be applied to the Tasklist service
+    annotations: {}
     ## @param tasklist.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param tasklist.service.port defines the port of the service, where the tasklist web application will be available
@@ -1271,12 +1275,12 @@ optimize:
 
   ## @extra optimize.service configuration to configure the Optimize service.
   service:
+    ## @param optimize.service.annotations can be used to define annotations, which will be applied to the Optimize service
+    annotations: {}
     ## @param optimize.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param optimize.service.port defines the port of the service, where the Optimize web application will be available
     port: 80
-    ## @param optimize.service.annotations can be used to define annotations, which will be applied to the Optimize service
-    annotations: {}
     ## @param optimize.service.managementPort defines the port where actuator will be available. Also required to reach backup API
     managementPort: 8092
 
@@ -1487,10 +1491,10 @@ identity:
 
   ## @extra identity.service configuration to configure the identity service.
   service:
-    ## @param identity.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
     ## @param identity.service.annotations can be used to define annotations, which will be applied to the identity service
     annotations: {}
+    ## @param identity.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
     ## @param identity.service.port defines the port of the service on which the identity application will be available
     port: 80
     ## @param identity.service.metricsPort defines the port of the service on which the identity metrics will be available
@@ -2181,14 +2185,14 @@ webModeler:
 
     ## @extra webModeler.restapi.service configuration of the Web Modeler restapi service
     service:
+      ## @param webModeler.restapi.service.annotations can be used to define annotations which will be applied to the service
+      annotations: {}
       ## @param webModeler.restapi.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
       type: ClusterIP
       ## @param webModeler.restapi.service.port defines the default port of the service
       port: 80
       ## @param webModeler.restapi.service.managementPort defines the management port of the service
       managementPort: 8091
-      ## @param webModeler.restapi.service.annotations can be used to define annotations which will be applied to the service
-      annotations: {}
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -2327,14 +2331,14 @@ webModeler:
 
     ## @extra webModeler.webapp.service configuration of the Web Modeler webapp service
     service:
+      ## @param webModeler.webapp.service.annotations can be used to define annotations which will be applied to the service
+      annotations: {}
       ## @param webModeler.webapp.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
       type: ClusterIP
       ## @param webModeler.webapp.service.port defines the port of the service
       port: 80
       ## @param webModeler.webapp.service.managementPort defines the management port of the service
       managementPort: 8071
-      ## @param webModeler.webapp.service.annotations can be used to define annotations which will be applied to the service
-      annotations: {}
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
@@ -2465,12 +2469,12 @@ webModeler:
 
     ## @extra webModeler.websockets.service configuration of the Web Modeler websockets service
     service:
+      ## @param webModeler.websockets.service.annotations can be used to define annotations which will be applied to the service
+      annotations: {}
       ## @param webModeler.websockets.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
       type: ClusterIP
       ## @param webModeler.websockets.service.port defines the port of the service
       port: 80
-      ## @param webModeler.websockets.service.annotations can be used to define annotations which will be applied to the service
-      annotations: {}
 
   ## @extra webModeler.serviceAccount configuration for the service account the Web Modeler pods are assigned to
   serviceAccount:
@@ -2658,10 +2662,10 @@ connectors:
 
   ## @extra connectors.service configuration to configure the Connectors service.
   service:
-    ## @param connectors.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
     ## @param connectors.service.annotations can be used to define annotations, which will be applied to the Connectors service
     annotations: {}
+    ## @param connectors.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
     ## @param connectors.service.serverPort defines the port number where the Connector web application will be available
     serverPort: 8080
     ## @param connectors.service.serverName defines the port name where the Connector web application will be available
@@ -2839,56 +2843,62 @@ console:
   # END DEV COMMENT
   createReleaseInfo: true
 
-  ## @skip console.managed Example for managed Camunda releases/deployments.
-  managed: {}
+  ## @skip console.configuration Configuration passed directly to Console as yaml file.
+  configuration: ""
 
   # Method 01: Plain
   # The full config is passed to Console as a ConfigMap.
 
-  # managed:
-  #   method: plain
-  #   releases:
-  #   - name: camunda-platform-dev
-  #     namespace: camunda-dev
-  #     version: 8.2.10
-  #     components:
-  #     - name: Console
-  #       url: "https://example-dev.camunda.com/"
-  #     - name: Optimize
-  #       url: "https://example-dev.camunda.com/optimize"
-  #     - name: Operate
-  #       url: "https://example-dev.camunda.com/operate"
-  #     - name: WebModeler WebApp
-  #       url: "https://example-dev.camunda.com/modeler"
-  #     - name: zeebeGateway
-  #       url: "grpc://zeebe-example-dev.camunda.com/"
-  #   - name: camunda-platform-stage
-  #     namespace: camunda-stage
-  #     version: 8.2.11
-  #     components:
-  #     - name: Console
-  #       url: "https://example-stage.camunda.com/"
-  #     - name: Optimize
-  #       url: "https://example-stage.camunda.com/optimize"
-  #     - name: Operate
-  #       url: "https://example-stage.camunda.com/operate"
-  #     - name: WebModeler WebApp
-  #       url: "https://example-stage.camunda.com/modeler"
-  #     - name: zeebeGateway
-  #       url: "grpc://zeebe-example-stage.camunda.com/"
+  # configuration: |-
+  #   camunda:
+  #     console:
+  #       managed:
+  #         method: plain
+  #         releases:
+  #         - name: camunda-platform-dev
+  #           namespace: camunda-dev
+  #           version: 8.2.10
+  #           components:
+  #           - name: Console
+  #             url: "https://example-dev.camunda.com/"
+  #           - name: Optimize
+  #             url: "https://example-dev.camunda.com/optimize"
+  #           - name: Operate
+  #             url: "https://example-dev.camunda.com/operate"
+  #           - name: WebModeler WebApp
+  #             url: "https://example-dev.camunda.com/modeler"
+  #           - name: zeebeGateway
+  #             url: "grpc://zeebe-example-dev.camunda.com/"
+  #         - name: camunda-platform-stage
+  #           namespace: camunda-stage
+  #           version: 8.2.11
+  #           components:
+  #           - name: Console
+  #             url: "https://example-stage.camunda.com/"
+  #           - name: Optimize
+  #             url: "https://example-stage.camunda.com/optimize"
+  #           - name: Operate
+  #             url: "https://example-stage.camunda.com/operate"
+  #           - name: WebModeler WebApp
+  #             url: "https://example-stage.camunda.com/modeler"
+  #           - name: zeebeGateway
+  #             url: "grpc://zeebe-example-stage.camunda.com/"
 
   # Method 02: Helm
   # With each Camunda there is a ConfigMap contains the release info.
   # Hence, only namespaces are passed as config to Console, then Console will retrieve
   # the Camunda deployment details from there.
 
-  # managed:
-  #   method: helm
-  #   releases:
-  #   - name: camunda-platform-dev
-  #     namespace: camunda-dev
-  #   - name: camunda-platform-dev
-  #     namespace: camunda-stage
+  # configuration: |-
+  #   camunda:
+  #     console:
+  #       managed:
+  #         method: helm
+  #         releases:
+  #         - name: camunda-platform-dev
+  #           namespace: camunda-dev
+  #         - name: camunda-platform-dev
+  #           namespace: camunda-stage
 
   ## console.image configuration to configure the Console image specifics
   image:
@@ -2920,10 +2930,10 @@ console:
 
   ## console.service configuration to configure the Console service.
   service:
-    ## @skip console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
     ## @skip console.service.annotations can be used to define annotations, which will be applied to the Console service
     annotations: {}
+    ## @skip console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
     ## @skip console.service.port defines the port number where the web application will be available
     port: 8080
     ## @skip console.service.serverName defines the port name where the web application will be available

@@ -47,7 +47,7 @@ jobs:
           done
           echo "Dev comments removed:"
           git --no-pager diff
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -66,7 +66,7 @@ jobs:
         run: |
           make helm.dependency-update
       - name: cosign-installer
-        uses: sigstore/cosign-installer@v3.3.0
+        uses: sigstore/cosign-installer@v3.4.0
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
@@ -127,7 +127,7 @@ jobs:
         run: |
           git pull --tags
           make release.generate-version-matrix-all > charts/camunda-platform/VERSION-MATRIX.md
-      - uses: EndBug/add-and-commit@v9.1.3
+      - uses: EndBug/add-and-commit@v9.1.4
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"

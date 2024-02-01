@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	coreV1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -102,6 +103,24 @@ func (s *statefulSetTest) TestContainerSetGlobalAnnotations() {
 
 	// then
 	s.Require().Equal("bar", statefulSet.ObjectMeta.Annotations["foo"])
+}
+
+func (s *serviceTest) TestContainerServiceAnnotations() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.service.annotations.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var service coreV1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+	// then
+	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 }
 
 func (s *statefulSetTest) TestContainerSetPriorityClassName() {

@@ -7,10 +7,10 @@ metadata:
     {{- include "optimize.labels" . | nindent 4 }}
   annotations:
     {{- if .Values.global.annotations}}
-    {{- toYaml .Values.global.annotations | nindent 4 }}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
     {{- if .Values.optimize.service.annotations}}
-    {{- toYaml .Values.optimize.service.annotations | nindent 4 }}
+      {{- toYaml .Values.optimize.service.annotations | nindent 4 }}
     {{- end }}
 spec:
   type: {{ .Values.optimize.service.type }}

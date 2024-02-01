@@ -7,11 +7,11 @@
 
 - [Overview](#overview)
 - [Documentation](#documentation)
+- [Versioning](#versioning)
 - [Installation](#installation)
 - [Guides](#guides)
 - [Issues](#issues)
 - [Contributing](#contributing)
-- [Versioning](#versioning)
 - [Releasing](#releasing)
 - [Deprecation](#deprecation)
 - [License](#license)
@@ -36,6 +36,10 @@ The dependency management is fully automated and managed by Helm itself.
 
 - Official docs (to install the platform via Helm chart): [Camunda 8 Self-Managed](https://docs.camunda.io/docs/self-managed/about-self-managed/).
 - This repo docs (e.g., tests, releases, etc.): [Camunda 8 Helm chart repo docs](./docs).
+
+## Versioning
+
+For more details about the Camunda 8 Helm chart versioning, please read the [versioning scheme](./charts/camunda-platform/#versioning).
 
 ## Installation
 
@@ -63,10 +67,6 @@ We value all feedback and contributions. To start contributing to this project, 
 [contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/CONTRIBUTING.md).
 - Find more information about configuring and deploying the Camunda 8
   [Helm chart](./charts/camunda-platform/README.md).
-
-## Versioning
-
-The Camunda 8 Helm chart version follows the same schema and schedule as the [Camunda 8 apps](https://github.com/camunda/camunda-platform). For more details, please read the [Camunda 8 Helm chart versioning](./charts/camunda-platform/README.md).
 
 ## Releasing
 

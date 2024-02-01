@@ -33,6 +33,6 @@ jobs:
           cp -a main/charts/camunda-platform/VERSION-MATRIX.md camunda-platform/version-matrix/README.md
           rm -rf main
           find .
-      - uses: EndBug/add-and-commit@v9.1.3
+      - uses: EndBug/add-and-commit@v9.1.4
         with:
           message: "chore: update camunda-platform public files"
