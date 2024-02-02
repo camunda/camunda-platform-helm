@@ -33,7 +33,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install env dependencies
-        uses: asdf-vm/actions/install@v3
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
@@ -47,7 +47,7 @@ jobs:
           done
           echo "Dev comments removed:"
           git --no-pager diff
-      - uses: actions/cache@v4
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -66,7 +66,7 @@ jobs:
         run: |
           make helm.dependency-update
       - name: cosign-installer
-        uses: sigstore/cosign-installer@v3.4.0
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
@@ -78,7 +78,7 @@ jobs:
         run: |
           sed -ri '/Badge .+/d' charts/camunda-platform/README.md
       - name: Run Chart Releaser
-        uses: helm/chart-releaser-action@v1.6.0
+        uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
         with:
           config: .github/config/chart-releaser.yaml
         env:
@@ -117,7 +117,7 @@ jobs:
           fetch-depth: 0
       # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@14672906e672a08bd6eeb15720e9ed3ce869cdd4 # v2
         with:
           max_attempts: 3
           timeout_minutes: 5
@@ -127,7 +127,7 @@ jobs:
         run: |
           git pull --tags
           make release.generate-version-matrix-all > charts/camunda-platform/VERSION-MATRIX.md
-      - uses: EndBug/add-and-commit@v9.1.4
+      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"

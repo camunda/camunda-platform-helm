@@ -18,13 +18,13 @@ jobs:
       contents: read
     steps:
       - name: Generate GitHub token
-        uses: tibdex/github-app-token@v2
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - name: Add to project
-        uses: actions/add-to-project@v0.5.0
+        uses: actions/add-to-project@31b3f3ccdc584546fc445612dec3f38ff5edb41c # v0.5.0
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: '${{ steps.generate-github-token.outputs.token }}'

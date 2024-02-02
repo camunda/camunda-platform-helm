@@ -117,7 +117,7 @@ jobs:
         service-account: ${{ secrets[matrix.distro.secret.service-account] }}
     - name: Authenticate to OpenShift
       if: matrix.distro.platform == 'rosa'
-      uses: redhat-actions/oc-login@v1
+      uses: redhat-actions/oc-login@56d1810bbb29d7a0ea9783f8b3ee790c15de7bde # v1
       with:
         openshift_server_url: ${{ secrets[matrix.distro.secret.server-url] }}
         openshift_username: ${{ secrets[matrix.distro.secret.username] }}
@@ -132,7 +132,7 @@ jobs:
         identifier-base: ${{ inputs.identifier }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
     - name: Install env dependencies
-      uses: asdf-vm/actions/install@v3
+      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
     - name: Add Helm repos and dependencies
       run: |
         make helm.repos-add
@@ -152,7 +152,7 @@ jobs:
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
     - name: Start GitHub deployment
-      uses: bobheadxi/deployments@v1
+      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
       id: deployment
       with:
         step: start
@@ -196,7 +196,7 @@ jobs:
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
     - name: Update GitHub deployment status
-      uses: bobheadxi/deployments@v1
+      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
       with:
         step: finish
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -223,7 +223,7 @@ jobs:
     # https://github.com/bobheadxi/deployments/issues/145
     - name: Cleanup GitHub deployment
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
-      uses: bobheadxi/deployments@v1
+      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
       with:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -263,7 +263,7 @@ jobs:
         service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
     - name: Cleanup GitHub deployment
       if: always()
-      uses: bobheadxi/deployments@v1
+      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
       with:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
