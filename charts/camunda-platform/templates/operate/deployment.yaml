@@ -46,6 +46,10 @@ spec:
               value: "identity-auth"
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            {{- if .Values.global.identity.auth.jwksUrl }}
+            - name: CAMUNDA_OPERATE_USE_SPRING_SECURITY_JWK_URI
+              value: "true"
+            {{- end }}
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
               value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_ID
