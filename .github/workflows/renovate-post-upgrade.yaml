@@ -23,7 +23,7 @@ jobs:
       id-token: write
     steps:
     - name: Generate GitHub token
-      uses: tibdex/github-app-token@v2
+      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
       id: generate-github-token
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
@@ -35,8 +35,8 @@ jobs:
       with:
         go-version-file: go.mod
         cache: false
-    - uses: asdf-vm/actions/setup@v3
-    - uses: actions/cache@v4
+    - uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+    - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4
       with:
         path: |
           ~/.cache/go-build
@@ -48,7 +48,7 @@ jobs:
       run: make go.update-golden-only
     - name: Git pull
       run: git pull --rebase --autostash .
-    - uses: EndBug/add-and-commit@v9.1.4
+    - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
       with:
         author_name: "renovate[bot]"
         author_email: "29139614+renovate[bot]@users.noreply.github.com"

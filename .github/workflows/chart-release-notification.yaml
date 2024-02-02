@@ -20,7 +20,7 @@ jobs:
         test -z "$LATEST_VERSION" && (echo "Cannot get chart latest version"; exit 1);
         echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT;
     - name: Post release notification on Slack
-      uses: slackapi/slack-github-action@v1.25.0
+      uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.RELEASE_SLACK_WEBHOOK_URL }}
         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

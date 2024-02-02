@@ -26,7 +26,7 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Install Helm
-        uses: asdf-vm/actions/install@v3
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Add helm repos
         run: |
           make helm.repos-add
@@ -36,11 +36,11 @@ jobs:
       - name: Run Helm lint 
         run: |
           helm lint --strict charts/*
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
         with:
           python-version: 3.7
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.6.1
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
       - name: Don't check version increment if there is no release label
         if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
         run: |
