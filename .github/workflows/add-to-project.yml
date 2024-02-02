@@ -5,11 +5,17 @@ on:
     types:
       - opened
       - transferred
+      
+permissions:
+  contents: read
 
 jobs:
   add-to-project:
     name: Add issue to project
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
     steps:
       - name: Generate GitHub token
         uses: tibdex/github-app-token@v2

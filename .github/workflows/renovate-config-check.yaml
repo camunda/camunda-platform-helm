@@ -6,6 +6,9 @@ on:
     - '.github/renovate.json5'
   workflow_dispatch: { }
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Check renovate config 

@@ -11,6 +11,9 @@ on:
     - 'charts/**'
     types: [opened, closed, reopened, synchronize]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Main

@@ -1,6 +1,6 @@
 {
   "extends": [
-    "config:base"
+    "config:base", "helpers:pinGitHubActionDigests"
   ],
   "labels": ["dependencies"],
   "dependencyDashboard": true,
@@ -13,6 +13,11 @@
   },
   "helm-values": {
     "fileMatch": ["(^|/).*?values.*?\\.yaml$"]
+  },
+  // GitHub Actions configuration
+  "github-actions": {
+    "enabled": true,
+    "fileMatch": ["^\\.github/workflows/[^/]+\\.ya?ml$"]
   },
   "packageRules": [
     {

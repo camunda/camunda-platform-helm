@@ -12,10 +12,15 @@ on:
     - 'charts/camunda-platform/templates/**'
     - 'charts/camunda-platform/charts/**'
 
+permissions:
+  contents: read
+
 jobs:
   run:
     name: Update golden files
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
     - name: Generate GitHub token
       uses: tibdex/github-app-token@v2
