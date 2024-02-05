@@ -82,9 +82,9 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityType
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                    "true",
-			"webModeler.restapi.mail.fromAddress":   "example@example.com",
-			"global.identity.auth.type":             "MICROSOFT",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"global.identity.auth.type":           "MICROSOFT",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -150,8 +150,8 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectAuthClientId
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                    	"true",
-			"webModeler.restapi.mail.fromAddress":   	"example@example.com",
+			"webModeler.enabled":                       "true",
+			"webModeler.restapi.mail.fromAddress":      "example@example.com",
 			"global.identity.auth.webModeler.clientId": "custom-clientId",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -175,8 +175,8 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectAuthClientAp
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                    			 "true",
-			"webModeler.restapi.mail.fromAddress":   			 "example@example.com",
+			"webModeler.enabled":                                "true",
+			"webModeler.restapi.mail.fromAddress":               "example@example.com",
 			"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

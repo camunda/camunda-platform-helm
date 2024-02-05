@@ -49,7 +49,6 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-
 func (s *configMapTemplateTest) TestConfigMapIdentityIssuerURL() {
 	// given
 	options := &helm.Options{
@@ -73,10 +72,10 @@ func (s *configMapTemplateTest) TestConfigMapIdentityIssuerURLWithKeycloakURLSyn
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.identity.keycloak.url.protocol": "http",
-			"global.identity.keycloak.url.host": "keycloak",
-			"global.identity.keycloak.url.port": "80",
-			"global.identity.keycloak.contextPath": "/auth/realms/",
-			"global.identity.keycloak.realm": "camunda-platform",
+			"global.identity.keycloak.url.host":     "keycloak",
+			"global.identity.keycloak.url.port":     "80",
+			"global.identity.keycloak.contextPath":  "/auth/realms/",
+			"global.identity.keycloak.realm":        "camunda-platform",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -89,4 +88,3 @@ func (s *configMapTemplateTest) TestConfigMapIdentityIssuerURLWithKeycloakURLSyn
 	// then
 	s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmap.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
 }
-

@@ -635,7 +635,6 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 		})
 }
 
-
 func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 	// given
 	options := &helm.Options{

@@ -66,6 +66,13 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- end }}
 
 {{/*
+[connectors] Defines the auth client
+*/}}
+{{- define "connectors.authClientId" -}}
+  {{- .Values.global.identity.auth.connectors.clientId -}}
+{{- end }}
+
+{{/*
 [connectors] Get the image pull secrets.
 */}}
 {{- define "connectors.imagePullSecrets" -}}

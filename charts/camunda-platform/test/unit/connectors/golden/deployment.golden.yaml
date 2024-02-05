@@ -57,9 +57,9 @@ spec:
             - name: SERVER_PORT
               value: "8080"
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: connectors
+              value: "operate-api"
             - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: connectors
+              value: "connectors"
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -67,12 +67,8 @@ spec:
                   key: connectors-secret
             - name: CAMUNDA_OPERATE_CLIENT_URL
               value: "http://camunda-platform-test-operate:80"
-            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
-              value: "camunda-platform-test-zeebe-gateway:26500"
-            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
-              value: "true"
             - name: ZEEBE_CLIENT_ID
-              value: zeebe
+              value: "zeebe"
             - name: ZEEBE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -81,7 +77,11 @@ spec:
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
-              value: zeebe-api
+              value: "zeebe-api"
+            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
+              value: "camunda-platform-test-zeebe-gateway:26500"
+            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
+              value: "true"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars

@@ -160,6 +160,8 @@ global:
 
       ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other sub-charts
       connectors:
+        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
+        clientId: connectors
         ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
         existingSecret: ""
@@ -2622,7 +2624,7 @@ connectors:
     mode: oauth
     ## @extra connectors.inbound.auth configuration of the credentials authentication.
     auth:
-      ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains connectors password
+      ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains Operate password (if inbound mode is credentials)
       existingSecret: ""
 
   ## @extra connectors.image configuration to configure the Connectors image specifics

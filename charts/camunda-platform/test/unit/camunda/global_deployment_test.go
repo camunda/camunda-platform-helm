@@ -112,7 +112,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 
 	// when
 	output, _ := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-	
+
 	// then
 	s.Require().NotContains(output, "charts/identity")
 }
