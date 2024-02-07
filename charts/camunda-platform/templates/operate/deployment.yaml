@@ -13,6 +13,7 @@ spec:
     matchLabels:
       {{- include "operate.matchLabels" . | nindent 6 }}
   template:
+  
     metadata:
       labels:
         {{- include "operate.labels" . | nindent 8 }}
