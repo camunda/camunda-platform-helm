@@ -866,3 +866,35 @@ es:
 	s.Require().Equal("/optimize/config/environment-config.yaml", volumeMount.MountPath)
 	s.Require().Equal("environment-config.yaml", volumeMount.SubPath)
 }
+
+func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"optimize.log4j2Configuration": `
+<configuration></configuration>
+			`,
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+
+	// find the volumeMount named environment-config
+	var volumeMount corev1.VolumeMount
+	for _, candidateVolumeMount := range volumeMounts {
+	    if candidateVolumeMount.Name == "log4j2-config" {
+	        volumeMount = candidateVolumeMount
+	        break
+	    }
+	}
+	s.Require().Equal("log4j2-config", volumeMount.Name)
+	s.Require().Equal("/optimize/config/environment-logback.xml", volumeMount.MountPath)
+	s.Require().Equal("environment-logback.xml", volumeMount.SubPath)
+}
