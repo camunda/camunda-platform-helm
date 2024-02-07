@@ -196,8 +196,8 @@ spec:
               name: environment-config
             {{- end }}
             {{- if .Values.optimize.log4j2Configuration }}
-            - mountPath: /optimize/config/log4j2.xml
-              subPath: log4j2.xml
+            - mountPath: /optimize/config/environment-logback.xml
+              subPath: environment-logback.xml
               name: log4j2-config
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
