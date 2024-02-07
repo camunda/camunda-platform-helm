@@ -57,7 +57,7 @@ spec:
             {{- if .Values.optimize.configuration }}
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
-              name: environmentConfig
+              name: environment-config
             {{- end }}
             {{- if .Values.optimize.log4j2Configuration }}
             - mountPath: /optimize/config/log4j2.xml
@@ -193,7 +193,7 @@ spec:
             {{- if .Values.optimize.configuration }}
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
-              name: environmentConfig
+              name: environment-config
             {{- end }}
             {{- if .Values.optimize.log4j2Configuration }}
             - mountPath: /optimize/config/log4j2.xml
@@ -212,7 +212,7 @@ spec:
         - name: camunda
           emptyDir: {}
         {{- if .Values.optimize.configuration }}
-        - name: environmentConfig
+        - name: environment-config
           configMap:
             name: {{ include "optimize.fullname" . }}
             defaultMode: 0400
