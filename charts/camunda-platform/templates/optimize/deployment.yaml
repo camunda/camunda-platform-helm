@@ -62,7 +62,7 @@ spec:
             {{- if .Values.optimize.log4j2Configuration }}
             - mountPath: /optimize/config/log4j2.xml
               subPath: log4j2.xml
-              name: log4j2Config
+              name: log4j2-config
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -198,7 +198,7 @@ spec:
             {{- if .Values.optimize.log4j2Configuration }}
             - mountPath: /optimize/config/log4j2.xml
               subPath: log4j2.xml
-              name: log4j2Config
+              name: log4j2-config
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -218,7 +218,7 @@ spec:
             defaultMode: 0400
         {{- end }}
         {{- if .Values.optimize.log4j2Configuration }}
-        - name: log4j2Config
+        - name: log4j2-config
           configMap:
             name: {{ include "optimize.fullname" . }}
             defaultMode: 0400
