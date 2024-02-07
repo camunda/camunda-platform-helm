@@ -951,6 +951,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `optimize.ingress.tls`                                       | configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls                                                           |                             |
 | `optimize.ingress.tls.enabled`                               | if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.                                                                     | `false`                     |
 | `optimize.ingress.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                   | `camunda-platform-optimize` |
+| `optimize.configuration`                                     | if specified, contents will be used as the application.yml                                                                                                                   | `""`                        |
+| `optimize.log4j2Configuration`                               | if specified, contents will be used as the environment-logback.xml                                                                                                           | `""`                        |
 
 ### Identity Parameters
 
