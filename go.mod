@@ -1,6 +1,6 @@
 module camunda-platform-helm
 
-go 1.21.7
+go 1.22.0
 
 require (
 	github.com/gruntwork-io/terratest v0.46.11
