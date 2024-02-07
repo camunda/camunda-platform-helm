@@ -1412,6 +1412,11 @@ optimize:
       ## @param optimize.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-optimize
 
+  ## @param optimize.configuration if specified, contents will be used as the application.yml
+  configuration: ""
+  ## @param optimize.log4j2Configuration if specified, contents will be used as the environment-logback.xml
+  log4j2Configuration: ""
+
 
 ############################################
 ###

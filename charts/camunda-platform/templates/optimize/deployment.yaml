@@ -54,6 +54,16 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            {{- if .Values.optimize.configuration }}
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environmentConfig
+            {{- end }}
+            {{- if .Values.optimize.log4j2Configuration }}
+            - mountPath: /optimize/config/log4j2.xml
+              subPath: log4j2.xml
+              name: log4j2Config
+            {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -180,6 +190,16 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            {{- if .Values.optimize.configuration }}
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environmentConfig
+            {{- end }}
+            {{- if .Values.optimize.log4j2Configuration }}
+            - mountPath: /optimize/config/log4j2.xml
+              subPath: log4j2.xml
+              name: log4j2Config
+            {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -191,6 +211,18 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
+        {{- if .Values.optimize.configuration }}
+        - name: environmentConfig
+          configMap:
+            name: {{ include "optimize.fullname" . }}
+            defaultMode: 0400
+        {{- end }}
+        {{- if .Values.optimize.log4j2Configuration }}
+        - name: log4j2Config
+          configMap:
+            name: {{ include "optimize.fullname" . }}
+            defaultMode: 0400
+        {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

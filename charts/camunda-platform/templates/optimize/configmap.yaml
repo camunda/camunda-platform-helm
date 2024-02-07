@@ -1,0 +1,17 @@
+{{- if .Values.optimize.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "optimize.fullname" . }}
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+apiVersion: v1
+data:
+  {{- if .Values.optimize.configuration }}
+  environment-config.yaml: |
+    {{ .Values.optimize.configuration | indent 4 | trim }}
+  {{- end }}
+  {{- if .Values.optimize.log4j2Configuration }}
+  environment-logback.xml: |
+    {{ .Values.optimize.log4j2Configuration | indent 4 | trim }}
+  {{- end }}
+{{- end }}
