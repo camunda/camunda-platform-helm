@@ -112,7 +112,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 
 	// when
 	output, _ := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-	
+
 	// then
 	s.Require().NotContains(output, "charts/identity")
 }
@@ -156,4 +156,35 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/zeebe:8.x.x")
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/optimize:3.x.x")
 	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/identity:8.x.x\"")
+}
+
+func (s *deploymentTemplateTest) TestMultiregionNormalMode() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.multiregion.regions":          "1",
+			"global.multiregion.regionId":         "0",
+			"global.multiregion.installationType": "normal",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	podContainers := deployment.Spec.Template.Spec.InitContainers
+	expectedContainer := corev1.Container{
+		Name:  "nginx",
+		Image: "nginx:latest",
+		Ports: []corev1.ContainerPort{
+			{
+				ContainerPort: 80,
+			},
+		},
+	}
+
+	s.Require().Contains(podContainers, expectedContainer)
 }
