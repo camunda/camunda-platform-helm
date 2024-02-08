@@ -1,36 +1,131 @@
 global:
+  image:
+    #version that will be deployed across all components.
+    tag: 8.4.1
   identity:
     auth:
-      # Disable the Identity authentication for local development
-      # it will fall back to basic-auth: demo/demo as default user
-      enabled: false
-
-# Disable identity as part of the Camunda core
+      enabled: true
+      type: "MICROSOFT"
+      issuer: "https://login.microsoftonline.com/ea952511-6a7f-40b8-af71-6c1be6f0dade/v2.0"
+      issuerBackendUrl: "https://login.microsoftonline.com/ea952511-6a7f-40b8-af71-6c1be6f0dade/v2.0"
+      tokenUrl: "https://login.microsoftonline.com/ea952511-6a7f-40b8-af71-6c1be6f0dade/oauth2/v2.0/token"
+      jwksUrl: "https://login.microsoftonline.com/ea952511-6a7f-40b8-af71-6c1be6f0dade/discovery/v2.0/keys"
+      operate:
+        clientId: "3a013a8c-a5c0-409b-ad39-f81d252e201a"
+        existingSecret: "0Ed8Q~NYvDtfg8UENTiGv0BOgDDiSXPCOvEklb21"
+        audience: "3a013a8c-a5c0-409b-ad39-f81d252e201a"
+        redirectUrl: "https://local.distro.ultrawombat.com/operate"
+      tasklist:
+        clientId: "fbc8a626-dde9-4b14-b835-988e5d9419d2"
+        existingSecret: "4mQ8Q~YHFnfAdaARJTsOmt_yXSNso4E3toCVlbWx"
+        audience: "fbc8a626-dde9-4b14-b835-988e5d9419d2"
+        redirectUrl: "https://local.distro.ultrawombat.com/tasklist"
+      optimize:
+        clientId: "caaa0fb0-f4ad-4fd1-be12-37d935db7d64"
+        existingSecret: "pAC8Q~-YL1HBKyuaoLLIVhv9yTArj7qxmPBe5c33"
+        audience: "caaa0fb0-f4ad-4fd1-be12-37d935db7d64"
+        redirectUrl: "https://local.distro.ultrawombat.com/optimize"
+      zeebe:
+        clientId: "721aa3ee-24c9-4ab5-95bc-d921ecafdc6d"
+        existingSecret: "XSl8Q~BBLcAn.gzeCAWii7nBFLhn~w2PjpTaCdg-"
+        audience: "721aa3ee-24c9-4ab5-95bc-d921ecafdc6d"
+        tokenScope: "721aa3ee-24c9-4ab5-95bc-d921ecafdc6d/.default"
+      webModeler:
+        clientId: "667dee4b-be72-431a-8c3a-2349ee0e14e7"
+        existingSecret: "bwA8Q~~xEu6iIXYTTv96VGpKODkTOeV6zQvO7aTY"
+        audience: "667dee4b-be72-431a-8c3a-2349ee0e14e7"
+        clientApiAudience: "667dee4b-be72-431a-8c3a-2349ee0e14e7"
+        redirectUrl: "https://local.distro.ultrawombat.com/modeler"
+      connectors:
+        clientId: "4393964b-2273-4b23-94fa-98c3d2396b1e"
+        existingSecret: "8Xv8Q~6ce6GdI1k1HY8~pHZdKAcBtqwbISgyuc_a"
+        audience: "4393964b-2273-4b23-94fa-98c3d2396b1e"
+        clientApiAudience: "4393964b-2273-4b23-94fa-98c3d2396b1e"
+  ingress:
+    enabled: true
+    className: ""
+    host: "local.distro.ultrawombat.com"
+    tls:
+      enabled: true
+      secretName: camunda-platform
+tasklist:
+  image:
+    #tasklist version that will be deployed.
+    tag: SNAPSHOT
+  enabled: false
 identity:
-  enabled: false
-
+  image:
+    #identity version that will be deployed.
+    tag: SNAPSHOT
+  enabled: true
+operate:
+  image:
+    #operate version that will be deployed.
+    tag: SNAPSHOT
+  enabled: true
+  contextPath: "/operate"
+  env:
+    - name: CAMUNDA_OPERATE_USE_SPRING_SECURITY_JWK_URI
+      value: "true"
 optimize:
+  image:
+    #operate version that will be deployed.
+    tag: SNAPSHOT
   enabled: false
+  contextPath: "/optimize"
+connectors:
+  image:
+    #operate version that will be deployed.
+    tag: SNAPSHOT
+  enabled: true
+  env:
+    - name: LOGGING_LEVEL_IO_CAMUNDA_CONNECTORS
+      value: "TRACE"
+    - name: ZEEBE_CLIENT_ID
+      value: 721aa3ee-24c9-4ab5-95bc-d921ecafdc6d
+    - name: ZEEBE_CLIENT_SECRET
+      value: XSl8Q~BBLcAn.gzeCAWii7nBFLhn~w2PjpTaCdg-
+    - name: ZEEBE_AUTHORIZATION_SERVER_URL
+      value: https://login.microsoftonline.com/ea952511-6a7f-40b8-af71-6c1be6f0dade/oauth2/v2.0/token
+    - name: ZEEBE_TOKEN_AUDIENCE
+      value: 721aa3ee-24c9-4ab5-95bc-d921ecafdc6d
+    - name: ZEEBE_TOKEN_SCOPE
+      value: "721aa3ee-24c9-4ab5-95bc-d921ecafdc6d/.default"
+    - name: CAMUNDA_IDENTITY_AUDIENCE
+      value: "3a013a8c-a5c0-409b-ad39-f81d252e201a"
+    - name: CAMUNDA_IDENTITY_CLIENT_ID
+      value: "4393964b-2273-4b23-94fa-98c3d2396b1e"
+elasticsearch:
+  # Request a single node with a persistent volume
+  master:
+    replicaCount: 1
+    persistence:
+      size: 15Gi
 
 # Reduce for Zeebe and Gateway the configured replicas and with that the required resources
 # to get it running locally
 zeebe:
-  clusterSize: 1
-  partitionCount: 1
-  replicationFactor: 1
-  pvcSize: 10Gi
-
-zeebe-gateway:
-  replicas: 1
-
-connectors:
+  image:
+    # zeebe version that will be deployed.
+    tag: SNAPSHOT
+zeebeGateway:
+  image:
+    # zeebe-gateway version that will be deployed.platform-test-web-modeler-restapi
+    tag: SNAPSHOT
+postgresql:
   enabled: true
-  inbound:
-    mode: disabled
-
-elasticsearch:
-  master:
-    replicaCount: 1
-    # Request smaller persistent volumes.
-    persistence:
-      size: 15Gi
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  image:
+    pullSecrets:
+      - name: registry-camunda-cloud
+  restapi:
+    env:
+      - name: ZEEBE_TOKEN_SCOPE
+        value: "721aa3ee-24c9-4ab5-95bc-d921ecafdc6d/.default"
+      - name: LOGGING_LEVEL_IO_CAMUNDA
+        value: "TRACE"
+    mail:
+      # This value is required, otherwise, the restapi pod won't start.
+      fromAddress: noreply@example.com

@@ -5,7 +5,7 @@
 
 Camunda images:
 
-- docker.io/camunda/connectors-bundle:8.4.3
+- docker.io/camunda/connectors-bundle:8.4.4
 - docker.io/camunda/identity:8.4.0
 - docker.io/camunda/operate:8.4.0
 - docker.io/camunda/optimize:8.4.0
