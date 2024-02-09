@@ -117,7 +117,7 @@ jobs:
           fetch-depth: 0
       # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
-        uses: nick-fields/retry@14672906e672a08bd6eeb15720e9ed3ce869cdd4 # v2
+        uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
         with:
           max_attempts: 3
           timeout_minutes: 5
