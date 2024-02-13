@@ -17,6 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+      
         {{- include "console.matchLabels" . | nindent 8 }}
     spec:
       {{- with .Values.console.image.pullSecrets }}
