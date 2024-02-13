@@ -67,10 +67,15 @@ jobs:
           make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
+      - name: Set Helm chart version var
+        run: |
+          CHART_NAME="$(yq ".name" charts/camunda-platform/Chart.yaml)"
+          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
+          echo "CHART_NAME_WITH_VERSION=${CHART_NAME}-${CHART_VERSION}" | tee -a $GITHUB_ENV
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
-          export OUTPUT_VERSION_HEADER="## Images"
+          export OUTPUT_VERSION_HEADER="### Images"
           export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
           gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
             charts/camunda-platform/RELEASE-NOTES.md
@@ -84,24 +89,20 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
-      - name: Set Helm chart version var
-        run: |
-          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
-          echo "CHART_VERSION=${CHART_VERSION}" | tee -a $GITHUB_ENV
       - name: Sign Helm chart with Cosign
         run: |
-          cosign sign-blob -y .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
-            --bundle camunda-platform-${CHART_VERSION}.cosign.bundle
+          cosign sign-blob -y .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
+            --bundle ${CHART_NAME_WITH_VERSION}.cosign.bundle
       - name: Verify signed Helm chart with Cosign
         run: |
-          cosign verify-blob .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
-            --bundle ./camunda-platform-${CHART_VERSION}.cosign.bundle \
+          cosign verify-blob .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
+            --bundle ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
             --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Upload Helm chart signature bundle
         run: |
-          gh release upload "camunda-platform-${CHART_VERSION}" \
-            ./camunda-platform-${CHART_VERSION}.cosign.bundle \
+          gh release upload "${CHART_NAME_WITH_VERSION}" \
+            ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
             --repo "${GITHUB_REPOSITORY}"
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
