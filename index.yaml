@@ -2258,6 +2258,82 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.2.0/camunda-platform-8.2.0.tgz
     version: 8.2.0
   - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.1.x
+    created: "2024-02-13T23:15:57.945469331Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.1.23
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.1.23
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.1.23
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.1.23
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.1.23
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.1.23
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.1
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: 2bbc4e80f5338d7547a74efa6b3ffa05bc70b387edc6b2ab06376545e1a478e4
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.1.23/camunda-platform-8.1.23.tgz
+    version: 8.1.23
+  - annotations:
       artifacthub.io/changes: |
         - kind: changed
           description: "mount tasklist-configmap volume on a new path"
@@ -8006,4 +8082,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-01-29T21:02:01.656698153Z"
+generated: "2024-02-13T23:15:57.946922936Z"
