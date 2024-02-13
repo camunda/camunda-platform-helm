@@ -179,38 +179,38 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) (.Values.identity.keycloak.ingress.enabled) }}
 ## Separated Ingress
 
-{{- if .Values.identity.keycloak.ingress.enabled }}
+{{ if .Values.identity.keycloak.ingress.enabled -}}
 {{- $proto := ternary "https" "http" .Values.identity.keycloak.ingress.tls -}}
 - Keycloak Authentication: {{ $proto }}://{{ .Values.identity.keycloak.ingress.hostname }}{{ .Values.identity.keycloak.httpRelativePath }}
 {{- end }}
 {{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) }}
 - Web Applications:
-  {{- $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
-  {{- if .Values.identity.ingress.enabled }}
+  {{ $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
+  {{ if .Values.identity.ingress.enabled -}}
   - Identity: {{ $proto }}://{{ .Values.identity.ingress.host }}
   {{- end }}
-  {{- if .Values.operate.ingress.enabled }}
+  {{ if .Values.operate.ingress.enabled -}}
   {{- $proto := ternary "https" "http" .Values.operate.ingress.tls.enabled -}}
   - Operate: {{ $proto }}://{{ .Values.operate.ingress.host }}
   {{- end }}
-  {{- if .Values.optimize.ingress.enabled }}
+  {{ if .Values.optimize.ingress.enabled -}}
   {{- $proto := ternary "https" "http" .Values.optimize.ingress.tls.enabled -}}
   - Optimize: {{ $proto }}://{{ .Values.optimize.ingress.host }}
   {{- end }}
-  {{- if .Values.tasklist.ingress.enabled }}
+  {{ if .Values.tasklist.ingress.enabled -}}
   {{- $proto := ternary "https" "http" .Values.tasklist.ingress.tls.enabled -}}
   - Tasklist: {{ $proto }}://{{ .Values.tasklist.ingress.host }}
   {{- end }}
-  {{- if .Values.webModeler.ingress.enabled }}
+  {{ if .Values.webModeler.ingress.enabled -}}
   {{- $proto := ternary "https" "http" .Values.webModeler.ingress.webapp.tls.enabled -}}
   - WebModeler WebApp: {{ $proto }}://{{ .Values.webModeler.ingress.webapp.host }}
-  {{- $proto := ternary "wss" "ws" .Values.webModeler.ingress.websockets.tls.enabled -}}
+  {{ $proto := ternary "wss" "ws" .Values.webModeler.ingress.websockets.tls.enabled -}}
   - WebModeler WebSockets: {{ $proto }}://{{ .Values.webModeler.ingress.websockets.host }}
   {{- end }}
 {{- end }}
 {{- end }}
 
-{{- if index .Values "zeebe-gateway" "ingress" "enabled" }}
+{{ if index .Values "zeebe-gateway" "ingress" "enabled" -}}
 - Zeebe Gateway: grpc://{{ tpl (index .Values "zeebe-gateway" "ingress" "host") $ }}
 {{- end }}
 
