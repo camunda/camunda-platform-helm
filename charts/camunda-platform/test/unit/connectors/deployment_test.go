@@ -719,8 +719,9 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":      "true",
-			"connectors.inbound.mode": "credentials",
+			"connectors.enabled":           "true",
+			"connectors.inbound.mode":      "credentials",
+			"global.identity.auth.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -746,14 +747,20 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_USERNAME", Value: "connectors"})
+	s.Require().Contains(
+		env,
+		corev1.EnvVar{
+			Name:      "CAMUNDA_OPERATE_CLIENT_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-connectors-auth-credentials"}, Key: "connectors-secret"}}})
 }
 
-func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
+func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":      "true",
-			"connectors.inbound.mode": "oauth",
+			"connectors.enabled":           "true",
+			"connectors.inbound.mode":      "oauth",
+			"global.identity.auth.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -776,10 +783,34 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauth() {
 
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_CLIENT-ID", Value: "connectors"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_ID", Value: "zeebe"})
+	s.Require().Contains(
+		env,
+		corev1.EnvVar{
+			Name: "ZEEBE_CLIENT_SECRET",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-zeebe-identity-secret"},
+					Key:                  "zeebe-secret",
+				},
+			},
+		})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_AUTHORIZATION_SERVER_URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_TOKEN_AUDIENCE", Value: "zeebe-api"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
-
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_IDENTITY_AUDIENCE", Value: "operate-api"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_IDENTITY_CLIENT_ID", Value: "connectors"})
+	s.Require().Contains(
+		env,
+		corev1.EnvVar{
+			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-connectors-identity-secret"},
+					Key:                  "connectors-secret",
+				},
+			},
+		})
 }
 
 func (s *deploymentTemplateTest) TestContainerSetContextPath() {
@@ -862,31 +893,4 @@ func (s *deploymentTemplateTest) TestContainerSetInitContainer() {
 	}
 
 	s.Require().Contains(podContainers, expectedContainer)
-}
-
-func (s *deploymentTemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.keycloak.url.protocol":  "https",
-			"global.identity.keycloak.url.host":      "keycloak-ext",
-			"global.identity.keycloak.url.port":      "443",
-			"global.identity.keycloak.contextPath":   "/authz",
-			"global.identity.keycloak.realm":         "/realms/camunda-platform-test",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL",
-			Value: "https://keycloak-ext:443/authz/realms/camunda-platform-test/protocol/openid-connect/token",
-		})
 }
