@@ -210,7 +210,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- end }}
 
-{{ if index .Values "zeebe-gateway" "ingress" "enabled" -}}
+{{- if index .Values "zeebe-gateway" "ingress" "enabled" }}
 - Zeebe Gateway: grpc://{{ tpl (index .Values "zeebe-gateway" "ingress" "host") $ }}
 {{- end }}
 
