@@ -21,94 +21,96 @@ permissions:
   contents: read
   
 jobs:
-  release:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+  # release:
+  #   if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     id-token: write
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Install env dependencies
+  #       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+  #     - name: Remove Dev Comments
+  #       run: |
+  #         TARGET_FILES=(
+  #           "charts/camunda-platform/values/*"
+  #           "charts/camunda-platform/values.yaml"
+  #           "charts/camunda-platform/Chart.yaml"
+  #           "charts/camunda-platform/charts/identity/Chart.yaml"
+  #         )
+  #         for FILE in "${TARGET_FILES[@]}"; do
+  #           sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
+  #         done
+  #         echo "Dev comments removed:"
+  #         git --no-pager diff
+  #     - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4
+  #       with:
+  #         path: |
+  #           ~/.cache/go-build
+  #           ~/go/pkg/mod
+  #         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-go-
+  #     - name: Configure Git
+  #       run: |
+  #         git config user.name "$GITHUB_ACTOR"
+  #         git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+  #     - name: Add Helm repos
+  #       run: |
+  #         make helm.repos-add
+  #     - name: Update Helm dependency
+  #       run: |
+  #         make helm.dependency-update
+  #     - name: cosign-installer
+  #       uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
+  #     - name: Set Helm chart version var
+  #       run: |
+  #         CHART_NAME="$(yq ".name" charts/camunda-platform/Chart.yaml)"
+  #         CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
+  #         echo "CHART_NAME_WITH_VERSION=${CHART_NAME}-${CHART_VERSION}" | tee -a $GITHUB_ENV
+  #     # TODO: Move this step to pre-release workflow when we have it.
+  #     - name: Generate release note footer
+  #       run: |
+  #         export OUTPUT_VERSION_HEADER="### Images"
+  #         export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
+  #         gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
+  #           charts/camunda-platform/RELEASE-NOTES.md
+  #     - name: Clean up release readme
+  #       run: |
+  #         sed -ri '/Badge .+/d' charts/camunda-platform/README.md
+  #     - name: Run Chart Releaser
+  #       uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
+  #       with:
+  #         config: .github/config/chart-releaser.yaml
+  #       env:
+  #         CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+  #         CR_SKIP_EXISTING: 'true'
+  #     - name: Sign Helm chart with Cosign
+  #       run: |
+  #         cosign sign-blob -y .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
+  #           --bundle ${CHART_NAME_WITH_VERSION}.cosign.bundle
+  #     - name: Verify signed Helm chart with Cosign
+  #       run: |
+  #         cosign verify-blob .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
+  #           --bundle ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
+  #           --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
+  #           --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+  #     - name: Upload Helm chart signature bundle
+  #       run: |
+  #         gh release upload "${CHART_NAME_WITH_VERSION}" \
+  #           ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
+  #           --repo "${GITHUB_REPOSITORY}"
+  #       env:
+  #         GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+  post-release:
+    # needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-        with:
-          fetch-depth: 0
-      - name: Install env dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-      - name: Remove Dev Comments
-        run: |
-          TARGET_FILES=(
-            "charts/camunda-platform/values/*"
-            "charts/camunda-platform/values.yaml"
-            "charts/camunda-platform/Chart.yaml"
-            "charts/camunda-platform/charts/identity/Chart.yaml"
-          )
-          for FILE in "${TARGET_FILES[@]}"; do
-            sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
-          done
-          echo "Dev comments removed:"
-          git --no-pager diff
-      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-      - name: Add Helm repos
-        run: |
-          make helm.repos-add
-      - name: Update Helm dependency
-        run: |
-          make helm.dependency-update
-      - name: cosign-installer
-        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
-      - name: Set Helm chart version var
-        run: |
-          CHART_NAME="$(yq ".name" charts/camunda-platform/Chart.yaml)"
-          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
-          echo "CHART_NAME_WITH_VERSION=${CHART_NAME}-${CHART_VERSION}" | tee -a $GITHUB_ENV
-      # TODO: Move this step to pre-release workflow when we have it.
-      - name: Generate release note footer
-        run: |
-          export OUTPUT_VERSION_HEADER="### Images"
-          export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
-          gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
-            charts/camunda-platform/RELEASE-NOTES.md
-      - name: Clean up release readme
-        run: |
-          sed -ri '/Badge .+/d' charts/camunda-platform/README.md
-      - name: Run Chart Releaser
-        uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
-        with:
-          config: .github/config/chart-releaser.yaml
-        env:
-          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-          CR_SKIP_EXISTING: 'true'
-      - name: Sign Helm chart with Cosign
-        run: |
-          cosign sign-blob -y .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
-            --bundle ${CHART_NAME_WITH_VERSION}.cosign.bundle
-      - name: Verify signed Helm chart with Cosign
-        run: |
-          cosign verify-blob .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
-            --bundle ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
-            --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-      - name: Upload Helm chart signature bundle
-        run: |
-          gh release upload "${CHART_NAME_WITH_VERSION}" \
-            ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
-            --repo "${GITHUB_REPOSITORY}"
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-  post-release:
-    needs: release
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
