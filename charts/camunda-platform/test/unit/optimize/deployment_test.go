@@ -858,19 +858,19 @@ es:
 	// find the volume named environment-config
 	var volume corev1.Volume
 	for _, candidateVolume := range volumes {
-        if candidateVolume.Name == "environment-config" {
-            volume = candidateVolume
-            break
-        }
-    }
+		if candidateVolume.Name == "environment-config" {
+			volume = candidateVolume
+			break
+		}
+	}
 
 	// find the volumeMount named environment-config
 	var volumeMount corev1.VolumeMount
 	for _, candidateVolumeMount := range volumeMounts {
-	    if candidateVolumeMount.Name == "environment-config" {
-	        volumeMount = candidateVolumeMount
-	        break
-	    }
+		if candidateVolumeMount.Name == "environment-config" {
+			volumeMount = candidateVolumeMount
+			break
+		}
 	}
 	s.Require().Equal("environment-config", volumeMount.Name)
 	s.Require().Equal("/optimize/config/environment-config.yaml", volumeMount.MountPath)
@@ -898,24 +898,24 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 
 	// then
 	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-    volumes := deployment.Spec.Template.Spec.Volumes
+	volumes := deployment.Spec.Template.Spec.Volumes
 
-    // find the volume named environment-config
-    var volume corev1.Volume
-    for _, candidateVolume := range volumes {
-        if candidateVolume.Name == "log4j2-config" {
-            volume = candidateVolume
-            break
-        }
-    }
+	// find the volume named environment-config
+	var volume corev1.Volume
+	for _, candidateVolume := range volumes {
+		if candidateVolume.Name == "log4j2-config" {
+			volume = candidateVolume
+			break
+		}
+	}
 
 	// find the volumeMount named environment-config
 	var volumeMount corev1.VolumeMount
 	for _, candidateVolumeMount := range volumeMounts {
-	    if candidateVolumeMount.Name == "log4j2-config" {
-	        volumeMount = candidateVolumeMount
-	        break
-	    }
+		if candidateVolumeMount.Name == "log4j2-config" {
+			volumeMount = candidateVolumeMount
+			break
+		}
 	}
 	s.Require().Equal("log4j2-config", volumeMount.Name)
 	s.Require().Equal("/optimize/config/environment-logback.xml", volumeMount.MountPath)
