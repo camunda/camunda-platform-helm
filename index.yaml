@@ -2,7 +2,11 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
-      artifacthub.io/changes: ""
+      artifacthub.io/changes: |
+        - kind: changed
+          description: "switch to Identity config for connectors"
+        - kind: fixed
+          description: "set correct identity conf env vars for zeebe"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
         - name: Camunda 8 docs
