@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.1.0
+version: 9.1.2
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.1.0
+    version: 9.1.2
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT 
@@ -34,7 +34,7 @@ dependencies:
   # Dependency charts.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.17.2
+    version: 19.18.0
     condition: "elasticsearch.enabled"
   - name: postgresql
     repository: https://charts.bitnami.com/bitnami
@@ -58,6 +58,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "add metrics endpoints to release info"
+  artifacthub.io/changes: ""

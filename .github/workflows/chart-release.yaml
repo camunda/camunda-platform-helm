@@ -67,10 +67,15 @@ jobs:
           make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
+      - name: Set Helm chart version var
+        run: |
+          CHART_NAME="$(yq ".name" charts/camunda-platform/Chart.yaml)"
+          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
+          echo "CHART_NAME_WITH_VERSION=${CHART_NAME}-${CHART_VERSION}" | tee -a $GITHUB_ENV
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
-          export OUTPUT_VERSION_HEADER="## Images"
+          export OUTPUT_VERSION_HEADER="### Images"
           export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
           gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
             charts/camunda-platform/RELEASE-NOTES.md
@@ -84,30 +89,28 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
-      - name: Set Helm chart version var
-        run: |
-          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
-          echo "CHART_VERSION=${CHART_VERSION}" | tee -a $GITHUB_ENV
       - name: Sign Helm chart with Cosign
         run: |
-          cosign sign-blob -y .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
-            --bundle camunda-platform-${CHART_VERSION}.cosign.bundle
+          cosign sign-blob -y .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
+            --bundle ${CHART_NAME_WITH_VERSION}.cosign.bundle
       - name: Verify signed Helm chart with Cosign
         run: |
-          cosign verify-blob .cr-release-packages/camunda-platform-${CHART_VERSION}.tgz \
-            --bundle ./camunda-platform-${CHART_VERSION}.cosign.bundle \
+          cosign verify-blob .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
+            --bundle ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
             --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Upload Helm chart signature bundle
         run: |
-          gh release upload "camunda-platform-${CHART_VERSION}" \
-            ./camunda-platform-${CHART_VERSION}.cosign.bundle \
+          gh release upload "${CHART_NAME_WITH_VERSION}" \
+            ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
             --repo "${GITHUB_REPOSITORY}"
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
   post-release:
     needs: release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
@@ -117,7 +120,7 @@ jobs:
           fetch-depth: 0
       # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
-        uses: nick-fields/retry@14672906e672a08bd6eeb15720e9ed3ce869cdd4 # v2
+        uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
         with:
           max_attempts: 3
           timeout_minutes: 5

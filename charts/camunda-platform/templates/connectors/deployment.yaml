@@ -58,12 +58,13 @@ spec:
                   name: {{ include "connectors.authCredentialsSecretName" . }}
                   key: connectors-secret
           {{- end }}
-          {{- if and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") }}
-            - name: CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
-            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-ID
-              value: connectors
-            - name: CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET
+          {{- if .Values.global.identity.auth.enabled }}
+            {{- if eq .Values.connectors.inbound.mode "oauth" }}
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ include "operate.authAudience" . | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ include "connectors.authClientId" . | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -77,14 +78,9 @@ spec:
               {{- end }}
             - name: CAMUNDA_OPERATE_CLIENT_URL
               value: {{ include "camundaPlatform.operateURL" . | quote }}
-          {{- end }}
-            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
-              value: {{ include "connectors.zeebeEndpoint" . | quote }}
-            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
-              value: "true"
-          {{- if .Values.global.identity.auth.enabled }}
+            {{- end }}
             - name: ZEEBE_CLIENT_ID
-              value: zeebe
+              value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
             - name: ZEEBE_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
               valueFrom:
@@ -100,10 +96,23 @@ spec:
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: ZEEBE_TOKEN_AUDIENCE
-              value: zeebe-api
+              value: {{ include "zeebe.audience" . | quote }}
+            {{- if .Values.global.identity.auth.zeebe.tokenScope }}
+            - name: ZEEBE_TOKEN_SCOPE
+              value: {{ include "zeebe.tokenScope" . | quote }}
+            {{- end }}
           {{- end }}
+            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
+              value: {{ include "connectors.zeebeEndpoint" . | quote }}
+            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
+              value: "true"
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
           {{- if .Values.connectors.command}}
           command: {{ toYaml .Values.connectors.command | nindent 12 }}
