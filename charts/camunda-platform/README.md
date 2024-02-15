@@ -782,6 +782,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `operate.affinity`                                          | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                      | `{}`                         |
 | `operate.retention.enabled`                                 | if true, the ILM Policy is created and applied to the index templates.                                                                                                       | `false`                      |
 | `operate.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
+| `operate.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
+| `operate.log4j2Configuration`                               | if specified, contents will be used as the log4j2.xml                                                                                                                        | `""`                         |
 
 ### Tasklist Parameters
 
