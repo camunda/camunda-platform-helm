@@ -258,6 +258,254 @@ global:
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
+#
+# WARNING: Console is still Alpha.
+#
+#################################################
+ #####
+#     #  ####  #    #  ####   ####  #      ######
+#       #    # ##   # #      #    # #      #
+#       #    # # #  #  ####  #    # #      #####
+#       #    # #  # #      # #    # #      #
+#     # #    # #   ## #    # #    # #      #
+ #####   ####  #    #  ####   ####  ###### ######
+#################################################
+## @section Console Parameters
+## @extra console configuration for the Console.
+console:
+  ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
+  enabled: false
+
+  ## @param console.createReleaseInfo Create config that will be used in console controller deployment.
+  # START DEV COMMENT
+  # NOTE: This should be under global but we keep it here till console is ready for alpha.
+  # END DEV COMMENT
+  createReleaseInfo: true
+
+  ## @param console.configuration Configuration passed directly to Console as yaml file.
+  configuration: ""
+
+  # Method 01: Plain
+  # The full config is passed to Console as a ConfigMap.
+
+  # configuration: |-
+  #   camunda:
+  #     console:
+  #       managed:
+  #         method: plain
+  #         releases:
+  #         - name: camunda-platform-dev
+  #           namespace: camunda-dev
+  #           version: 8.2.10
+  #           components:
+  #           - name: Console
+  #             url: "https://example-dev.camunda.com/"
+  #           - name: Optimize
+  #             url: "https://example-dev.camunda.com/optimize"
+  #           - name: Operate
+  #             url: "https://example-dev.camunda.com/operate"
+  #           - name: WebModeler WebApp
+  #             url: "https://example-dev.camunda.com/modeler"
+  #           - name: zeebeGateway
+  #             url: "grpc://zeebe-example-dev.camunda.com/"
+  #         - name: camunda-platform-stage
+  #           namespace: camunda-stage
+  #           version: 8.2.11
+  #           components:
+  #           - name: Console
+  #             url: "https://example-stage.camunda.com/"
+  #           - name: Optimize
+  #             url: "https://example-stage.camunda.com/optimize"
+  #           - name: Operate
+  #             url: "https://example-stage.camunda.com/operate"
+  #           - name: WebModeler WebApp
+  #             url: "https://example-stage.camunda.com/modeler"
+  #           - name: zeebeGateway
+  #             url: "grpc://zeebe-example-stage.camunda.com/"
+
+  # Method 02: Helm
+  # With each Camunda there is a ConfigMap contains the release info.
+  # Hence, only namespaces are passed as config to Console, then Console will retrieve
+  # the Camunda deployment details from there.
+
+  # configuration: |-
+  #   camunda:
+  #     console:
+  #       managed:
+  #         method: helm
+  #         releases:
+  #         - name: camunda-platform-dev
+  #           namespace: camunda-dev
+  #         - name: camunda-platform-dev
+  #           namespace: camunda-stage
+
+  ## console.image configuration to configure the Console image specifics
+  image:
+    ## @param console.image.registry can be used to set container image registry.
+    registry: registry.camunda.cloud
+    ## @param console.image.repository defines which image repository to use
+    repository: console/console-sm
+    ## @param console.image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag: latest
+    ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
+
+  ## @param console.sidecars can be used to attach extra containers to the console deployment
+  sidecars: []
+
+  ## @param console.replicas Number of Console replicas
+  replicas: 1
+
+  ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: "/"
+
+  ## @param console.podAnnotations can be used to define extra Console pod annotations
+  podAnnotations: {}
+  ## @param console.podLabels can be used to define extra Console pod labels
+  podLabels: {}
+
+  ## @param console.logging configuration for the Console logging. This template will be directly included in the Operate configuration yaml file
+  logging: {}
+
+  ## console.service configuration to configure the Console service.
+  service:
+    ## @param console.service.annotations can be used to define annotations, which will be applied to the Console service
+    annotations: {}
+    ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    ## @param console.service.port defines the port number where the web application will be available
+    port: 8080
+    ## @param console.service.serverName defines the port name where the web application will be available
+    serverName: http
+
+  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param console.resources.requests.memory
+  ## @param console.resources.limits.cpu
+  ## @param console.resources.limits.memory
+  ## @param console.resources.requests.cpu
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+
+  ## @param console.env can be used to set extra environment variables in each app container
+  env: []
+  ## @param console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  ## @param console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumes: []
+  ## @param console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumeMounts: []
+
+  ## console.startupProbe configuration
+  startupProbe:
+    ## @param console.startupProbe.enabled if true, the startup probe is enabled in app container
+    enabled: false
+    ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.startupProbe.probePath defines the startup probe route used on the app
+    probePath: /health/readiness
+    ## @param console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.startupProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.readinessProbe configuration
+  readinessProbe:
+    ## @param console.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    enabled: true
+    ## @param console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.readinessProbe.probePath defines the readiness probe route used on the app
+    probePath: /health/readiness
+    ## @param console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.readinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.livenessProbe configuration
+  livenessProbe:
+    ## @param console.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    enabled: false
+    ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
+    probePath: /actuator/health/liveness
+    ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.livenessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    successThreshold: 1
+    ## @param console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    failureThreshold: 5
+    ## @param console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
+  serviceAccount:
+    ## @param console.serviceAccount.enabled if true, enables the Console service account
+    enabled: false
+    ## @param console.serviceAccount.name can be used to set the name of the Console service account
+    name: ""
+    ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
+    annotations: {}
+
+  ingress:
+    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    ## @param console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
+    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    ## @param console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    ## @param console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
+    host: ""
+    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      ## @param console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: camunda-platform-console
+
+  ## @param console.podSecurityContext defines the security options the Console pod should be run with
+  podSecurityContext: {}
+
+  ## @param console.containerSecurityContext defines the security options the Console container should be run with
+  containerSecurityContext: {}
+
+  ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
+  nodeSelector: {}
+  ## @param console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: []
+  ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: {}
 
 ###################################
 #######
@@ -2816,260 +3064,6 @@ connectors:
   tolerations: []
   ## @param connectors.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
-
-#
-# WARNING: Console is currently under development and should not be used yet.
-#
-#################################################
- #####
-#     #  ####  #    #  ####   ####  #      ######
-#       #    # ##   # #      #    # #      #
-#       #    # # #  #  ####  #    # #      #####
-#       #    # #  # #      # #    # #      #
-#     # #    # #   ## #    # #    # #      #
- #####   ####  #    #  ####   ####  ###### ######
-#################################################
-## Console Parameters
-## console configuration.
-# NOTE: The values here are just placeholder and not all of them are active.
-# START DEV COMMENT
-# TODO: Update Console template to match the values when the 1st dev iteration is done.
-# END DEV COMMENT
-console:
-  ## @skip console.enabled if true, the Console deployment and its related resources are deployed via a helm release
-  enabled: false
-
-  ## @skip console.createReleaseInfo Create config that will be used in console controller deployment.
-  # START DEV COMMENT
-  # NOTE: This should be under global but we keep it here till console is ready for alpha.
-  # END DEV COMMENT
-  createReleaseInfo: true
-
-  ## @skip console.configuration Configuration passed directly to Console as yaml file.
-  configuration: ""
-
-  # Method 01: Plain
-  # The full config is passed to Console as a ConfigMap.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: plain
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #           version: 8.2.10
-  #           components:
-  #           - name: Console
-  #             url: "https://example-dev.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-dev.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-dev.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-dev.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-dev.camunda.com/"
-  #         - name: camunda-platform-stage
-  #           namespace: camunda-stage
-  #           version: 8.2.11
-  #           components:
-  #           - name: Console
-  #             url: "https://example-stage.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-stage.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-stage.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-stage.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-stage.camunda.com/"
-
-  # Method 02: Helm
-  # With each Camunda there is a ConfigMap contains the release info.
-  # Hence, only namespaces are passed as config to Console, then Console will retrieve
-  # the Camunda deployment details from there.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: helm
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-stage
-
-  ## console.image configuration to configure the Console image specifics
-  image:
-    ## @skip console.image.registry can be used to set container image registry.
-    registry: registry.camunda.cloud
-    ## @skip console.image.repository defines which image repository to use
-    repository: console/console-sm
-    ## @skip console.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: latest
-    ## @skip console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @skip console.sidecars can be used to attach extra containers to the console deployment
-  sidecars: []
-
-  ## @skip console.replicas Number of Console replicas
-  replicas: 1
-
-  ## @skip console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/"
-
-  ## @skip console.podAnnotations can be used to define extra Console pod annotations
-  podAnnotations: {}
-  ## @skip console.podLabels can be used to define extra Console pod labels
-  podLabels: {}
-
-  ## @skip console.logging configuration for the Console logging. This template will be directly included in the Operate configuration yaml file
-  logging: {}
-
-  ## console.service configuration to configure the Console service.
-  service:
-    ## @skip console.service.annotations can be used to define annotations, which will be applied to the Console service
-    annotations: {}
-    ## @skip console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @skip console.service.port defines the port number where the web application will be available
-    port: 8080
-    ## @skip console.service.serverName defines the port name where the web application will be available
-    serverName: http
-
-  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip console.resources.requests.memory
-  ## @skip console.resources.limits.cpu
-  ## @skip console.resources.limits.memory
-  ## @skip console.resources.requests.cpu
-  resources:
-    requests:
-      cpu: 1
-      memory: 1Gi
-    limits:
-      cpu: 2
-      memory: 2Gi
-
-  ## @skip console.env can be used to set extra environment variables in each app container
-  env: []
-  ## @skip console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @skip console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumes: []
-  ## @skip console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumeMounts: []
-
-  ## console.startupProbe configuration
-  startupProbe:
-    ## @skip console.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @skip console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @skip console.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /health/readiness
-    ## @skip console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @skip console.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @skip console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @skip console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @skip console.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.readinessProbe configuration
-  readinessProbe:
-    ## @skip console.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @skip console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @skip console.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /health/readiness
-    ## @skip console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @skip console.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @skip console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @skip console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @skip console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.livenessProbe configuration
-  livenessProbe:
-    ## @skip console.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @skip console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @skip console.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
-    ## @skip console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @skip console.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @skip console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @skip console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @skip console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
-  serviceAccount:
-    ## @skip console.serviceAccount.enabled if true, enables the Console service account
-    enabled: false
-    ## @skip console.serviceAccount.name can be used to set the name of the Console service account
-    name: ""
-    ## @skip console.serviceAccount.annotations can be used to set the annotations of the Operate service account
-    annotations: {}
-
-  ingress:
-    ## @skip console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: false
-    ## @skip console.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @skip console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-    ## @skip console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @skip console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
-    host: ""
-    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @skip console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @skip console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-console
-
-  ## @skip console.podSecurityContext defines the security options the Console pod should be run with
-  podSecurityContext: {}
-
-  ## @skip console.containerSecurityContext defines the security options the Console container should be run with
-  containerSecurityContext: {}
-
-  ## @skip console.nodeSelector can be used to define on which nodes the Console pods should run
-  nodeSelector: {}
-  ## @skip console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @skip console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
-
 
 #####################################################################################
 #######
