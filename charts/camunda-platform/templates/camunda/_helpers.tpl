@@ -311,13 +311,13 @@ Release templates.
 {{- "" }}
   {{- with dict "Release" .Release "Chart" (dict "Name" "identity") "Values" .Values.identity }}
   {{ if .Values.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s" (include "identity.fullname" .) .Release.Namespace -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.service.metricsPort -}}
   - name: Keycloak
     url: {{ $baseURL }}{{ .Values.global.identity.keycloak.contextPath }}
   - name: Identity
     url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.service.port .Values.readinessProbe.probePath }}
-    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.service.metricsPort .Values.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.metrics.prometheus }}
   {{- end }}
   {{- end }}
 {{- "" }}
@@ -345,12 +345,12 @@ Release templates.
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
   {{- end }}
 {{- "" }}
-  {{- if .Values.webModeler.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s" (include "webModeler.webapp.fullname" .) .Release.Namespace -}}
+  {{ if .Values.webModeler.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort -}}
   - name: WebModeler WebApp
     url: {{ $baseURL }}{{ .Values.webModeler.contextPath }}
-    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.webModeler.webapp.service.port .Values.webModeler.webapp.readinessProbe.probePath }}
-    metrics: {{ printf "%s:8071%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal  .Values.webModeler.webapp.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
 {{- "" }}
   {{ if .Values.zeebe.enabled -}}
