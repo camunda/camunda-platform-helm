@@ -409,7 +409,7 @@ console:
     ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param console.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /health/readiness
+    probePath: /readyz
     ## @param console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -429,7 +429,7 @@ console:
     ## @param console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param console.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /health/readiness
+    probePath: /readyz
     ## @param console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -449,7 +449,7 @@ console:
     ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health/readiness
+    probePath: /readyz
     ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -461,6 +461,11 @@ console:
     failureThreshold: 5
     ## @param console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
+
+  ## console.metrics configuration
+  metrics:
+    ## @param console.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /metrics
 
   ## console.serviceAccount configuration for the service account where the Console pods are assigned to
   serviceAccount:

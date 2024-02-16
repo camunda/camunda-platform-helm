@@ -302,11 +302,14 @@ Release templates.
   version: {{ .Chart.Version }}
   components:
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-  {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host -}}
-
-  {{- if .Values.console.enabled }}
+  {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
+{{- "" }}
+  {{ if .Values.console.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort -}}
   - name: Console
     url: {{ $baseURL }}{{ .Values.console.contextPath }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
 {{- "" }}
   {{- with dict "Release" .Release "Chart" (dict "Name" "identity") "Values" .Values.identity }}
