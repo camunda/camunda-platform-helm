@@ -35,6 +35,7 @@ spec:
           env:
             - name: NODE_ENV
               value: prod
+            # This will be removed once Console supports the new vars.
             - name: IDENTITY_BASE
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
             - name: IDENTITY_REALM
@@ -42,6 +43,15 @@ spec:
             - name: IDENTITY_AUDIENCE
               value: console
             - name: IDENTITY_CLIENT_ID
+              value: console
+            # The new vars.
+            - name: KEYCLOAK_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
+            - name: KEYCLOAK_REALM
+              value: camunda-platform
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: console
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
