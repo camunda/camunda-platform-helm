@@ -36,9 +36,7 @@ spec:
             - name: NODE_ENV
               value: prod
             - name: IDENTITY_BASE
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: IDENTITY_ISSUER_URL
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
             - name: IDENTITY_REALM
               value: camunda-platform
             - name: IDENTITY_AUDIENCE
