@@ -214,7 +214,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 - Zeebe Gateway: grpc://{{ tpl (index .Values "zeebe-gateway" "ingress" "host") $ }}
 {{- end }}
 
-{{ if .Values.console.createReleaseInfo -}}
+{{ if .Values.global.createReleaseInfo -}}
 
 ## Console config
 {{ include "camundaPlatform.releaseInfo" . }}

@@ -42,6 +42,10 @@ global:
   multitenancy:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
+
+  ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
+  createReleaseInfo: true
+
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   labels:
@@ -276,12 +280,6 @@ console:
   ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @param console.createReleaseInfo Create config that will be used in console controller deployment.
-  # START DEV COMMENT
-  # NOTE: This should be under global but we keep it here till console is ready for alpha.
-  # END DEV COMMENT
-  createReleaseInfo: true
-
   ## @param console.configuration Configuration passed directly to Console as yaml file.
   configuration: ""
 
@@ -358,6 +356,9 @@ console:
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: "/"
+
+  ## @param console.initContainers can be used to set up extra init containers for the application Pod
+  initContainers: []
 
   ## @param console.podAnnotations can be used to define extra Console pod annotations
   podAnnotations: {}
@@ -470,7 +471,7 @@ console:
   ## console.serviceAccount configuration for the service account where the Console pods are assigned to
   serviceAccount:
     ## @param console.serviceAccount.enabled if true, enables the Console service account
-    enabled: false
+    enabled: true
     ## @param console.serviceAccount.name can be used to set the name of the Console service account
     name: ""
     ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
@@ -654,7 +655,7 @@ zeebe:
   extraVolumeMounts: []
   ## @param zeebe.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
-  ## @param zeebe.initContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  ## @param zeebe.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
   ## @param zeebe.podAnnotations can be used to define extra broker pod annotations
@@ -971,7 +972,7 @@ zeebe-gateway:
   extraVolumes: []
   ## @param zeebe-gateway.extraInitContainers (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
-  ## @param zeebe-gateway.initContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  ## @param zeebe-gateway.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
   ## @extra zeebe-gateway.service configuration for the gateway service
@@ -1062,7 +1063,7 @@ operate:
 
   ## @param operate.sidecars can be used to attach extra containers to the operate deployment
   sidecars: []
-  ## @param operate.initContainers can be used to set up extra init containers for the operate pods, useful for additional exporters
+  ## @param operate.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   # contextPath: "/operate"
   ## @param operate.contextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
@@ -1277,7 +1278,7 @@ tasklist:
 
   ## @param tasklist.sidecars can be used to attach extra containers to the tasklist deployment
   sidecars: []
-  ## @param tasklist.initContainers can be used to set up extra init containers for the taskList pods, useful for additional exporters
+  ## @param tasklist.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   # contextPath: "/tasklist"
   ## @param tasklist.contextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
@@ -1519,7 +1520,7 @@ optimize:
   extraVolumes: []
   ## @param optimize.extraVolumeMounts can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
-  ## @param optimize.initContainers can be used to set up extra init containers for the optimize pods, useful for additional exporters
+  ## @param optimize.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   ## @extra optimize.serviceAccount configuration for the service account where the Optimize pods are assigned to
   serviceAccount:
@@ -1728,7 +1729,7 @@ identity:
 
   ## @param identity.sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
-  ## @param identity.initContainers can be used to set up extra init containers for the identity pods, useful for additional exporters
+  ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   # FullURL can be used when Ingress is configured (for both multi and single domain setup).
   # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
@@ -2293,7 +2294,7 @@ webModeler:
 
     ## @param webModeler.restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
-    ## @param webModeler.restapi.initContainers can be used to set up extra init containers to the restapi deployment
+    ## @param webModeler.restapi.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database. This will only be applied
@@ -2468,7 +2469,7 @@ webModeler:
 
     ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
-    ## @param webModeler.webapp.initContainers can be used to set up extra init containers to the modeler webapp deployment
+    ## @param webModeler.webapp.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
     ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations
@@ -2614,7 +2615,7 @@ webModeler:
 
     ## @param webModeler.websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
-    ## @param webModeler.websockets.initContainers can be used to set up extra init containers to the modeler websockets deployment
+    ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
     ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser.
@@ -2896,7 +2897,7 @@ connectors:
 
   ## @param connectors.sidecars can be used to attach extra containers to the connectors deployment
   sidecars: []
-  ## @param connectors.initContainers can be used to set up extra init containers to the connectors deployment
+  ## @param connectors.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
   ## @param connectors.replicas number of Connectors replicas

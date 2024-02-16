@@ -5,6 +5,8 @@ metadata:
   name: {{ include "console.fullname" . }}
   labels:
     {{- include "console.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: {{ .Values.console.replicaCount }}
   selector:
@@ -18,11 +20,14 @@ spec:
       {{- end }}
       labels:
         {{- include "console.matchLabels" . | nindent 8 }}
+        {{- if .Values.console.podLabels }}
+          {{- toYaml .Values.console.podLabels | nindent 8 }}
+        {{- end }}
     spec:
-      {{- with .Values.console.image.pullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- include "console.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.console.initContainers | default list | toYaml | nindent 8) $ }}
       serviceAccountName: {{ include "console.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.console.podSecurityContext | nindent 8 }}
@@ -31,7 +36,11 @@ spec:
           securityContext:
             {{- toYaml .Values.console.securityContext | nindent 12 }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
-          imagePullPolicy: {{ .Values.console.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.console.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.console.containerSecurityContext | nindent 12 }}
+          {{- end }}
           env:
             - name: NODE_ENV
               value: prod
@@ -89,6 +98,9 @@ spec:
             failureThreshold: {{ .Values.console.livenessProbe.failureThreshold }}
             timeoutSeconds: {{ .Values.console.livenessProbe.timeoutSeconds }}
           {{- end }}
+          {{- if .Values.console.command}}
+          command: {{ toYaml .Values.console.command | nindent 10 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.console.resources | nindent 12 }}
           volumeMounts:
@@ -97,6 +109,9 @@ spec:
           {{- if .Values.console.extraVolumeMounts }}
             {{- .Values.console.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
+      {{- if .Values.console.sidecars }}
+        {{- .Values.console.sidecars | toYaml | nindent 8 }}
+      {{- end }}
       volumes:
         - name: console-configuration
           configMap:
