@@ -72,7 +72,7 @@ spec:
             - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
               value: {{ .Values.tasklist.identity.userAccessRestrictions.enabled | quote }}
             {{- /*
-              TODO: Remove the trimSuffix when it's fixed in Tasklist.
+              TODO: Remove the trimSuffix when it is fixed in Tasklist.
               https://github.com/camunda/camunda-platform-helm/issues/714
             */}}
             - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
@@ -175,6 +175,11 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            {{- if .Values.operate.log4j2Configuration }}
+            - mountPath: /usr/local/operate/config/log4j2.xml
+              subPath: log4j2.xml
+              name: config
+            {{- end }}
             {{- if .Values.tasklist.extraVolumeMounts}}
             {{- .Values.tasklist.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}

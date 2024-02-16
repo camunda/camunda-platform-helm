@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "tasklist.labels" . | nindent 4 }}
 data:
+  {{- if .Values.tasklist.configuration }}
+  application.yml: |
+    {{ .Values.tasklist.configuration | indent 4 | trim }}
+  {{- else }}
   application.yml: |
     # Tasklist configuration file
     camunda.tasklist:
@@ -53,4 +57,9 @@ data:
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
     # Enable or disable metrics
     #management.metrics.export.prometheus.enabled: false
+  {{- end }}
+  {{- if .Values.tasklist.log4j2Configuration }}
+  log4j2.xml: |
+    {{ .Values.tasklist.log4j2Configuration | indent 4 | trim }}
+  {{- end }}
 {{- end }}
