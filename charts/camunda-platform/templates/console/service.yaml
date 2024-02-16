@@ -19,6 +19,10 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: {{ .Values.console.service.managementPort }}
+      name: management
+      targetPort: management
+      protocol: TCP
   selector:
     {{- include "console.matchLabels" . | nindent 4 }}
 {{- end }}

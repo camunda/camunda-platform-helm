@@ -377,6 +377,8 @@ console:
     port: 8080
     ## @param console.service.serverName defines the port name where the web application will be available
     serverName: http
+    ## @param console.service.managementPort defines the management port used to access metrics and app status
+    managementPort: 9100
 
   ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param console.resources.requests.memory
@@ -447,7 +449,7 @@ console:
     ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
+    probePath: /health/readiness
     ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
