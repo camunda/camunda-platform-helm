@@ -307,6 +307,7 @@ Release templates.
   {{ if .Values.console.enabled }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort -}}
   - name: Console
+    id: console
     url: {{ $baseURL }}{{ .Values.console.contextPath }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
@@ -316,8 +317,10 @@ Release templates.
   {{ if .Values.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.service.metricsPort -}}
   - name: Keycloak
+    id: keycloak
     url: {{ $baseURL }}{{ .Values.global.identity.keycloak.contextPath }}
   - name: Identity
+    id: identity
     url: {{ $baseURL }}{{ .Values.contextPath }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.metrics.prometheus }}
@@ -327,6 +330,7 @@ Release templates.
   {{ if .Values.operate.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.port -}}
   - name: Operate
+    id: operate
     url: {{ $baseURL }}{{ .Values.operate.contextPath }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
@@ -335,6 +339,7 @@ Release templates.
   {{ if .Values.optimize.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s" (include "optimize.fullname" .) .Release.Namespace -}}
   - name: Optimize
+    id: optimize
     url: {{ $baseURL }}{{ .Values.optimize.contextPath }}
     readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
@@ -343,6 +348,7 @@ Release templates.
   {{ if .Values.tasklist.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.port -}}
   - name: Tasklist
+    id: tasklist
     url: {{ $baseURL }}{{ .Values.tasklist.contextPath }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
@@ -351,6 +357,7 @@ Release templates.
   {{ if .Values.webModeler.enabled }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort -}}
   - name: WebModeler WebApp
+    id: webModelerWebApp
     url: {{ $baseURL }}{{ .Values.webModeler.contextPath }}
     readiness: {{ printf "%s%s" $baseURLInternal  .Values.webModeler.webapp.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
@@ -359,11 +366,13 @@ Release templates.
   {{ if .Values.zeebe.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort -}}
   - name: Zeebe Gateway
+    id: zeebeGateway
     url: grpc://{{ tpl .Values.zeebeGateway.ingress.host $ }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.metrics.prometheus }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.broker" . | trimAll "\"") .Release.Namespace .Values.zeebe.service.httpPort }}
   - name: Zeebe
+    id: zeebe
     readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebe.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebe.metrics.prometheus }}
   {{- end }}
