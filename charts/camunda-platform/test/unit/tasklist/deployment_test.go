@@ -902,3 +902,95 @@ func (s *deploymentTemplateTest) TestTasklistMultiTenancyEnabled() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_MULTITENANCY_ENABLED", Value: "true"})
 }
+
+func (s *deploymentTemplateTest) TestTasklistWithConfiguration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.configuration": `
+camunda.tasklist:
+  elasticsearch:
+    numberOfShards: 3
+			`,
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	volumes := deployment.Spec.Template.Spec.Volumes
+
+	// find the volume named config
+	var volume corev1.Volume
+	for _, candidateVolume := range volumes {
+		if candidateVolume.Name == "config" {
+			volume = candidateVolume
+			break
+		}
+	}
+
+	// find the volumeMount named environment-config
+	var volumeMount corev1.VolumeMount
+	for _, candidateVolumeMount := range volumeMounts {
+		if candidateVolumeMount.Name == "config" && strings.Contains(candidateVolumeMount.MountPath, "config/application") {
+			volumeMount = candidateVolumeMount
+			break
+		}
+	}
+	s.Require().Equal("config", volumeMount.Name)
+	s.Require().Equal("/usr/local/tasklist/config/application.yml", volumeMount.MountPath)
+	s.Require().Equal("application.yml", volumeMount.SubPath)
+
+	s.Require().Equal("config", volume.Name)
+	s.Require().Equal("camunda-platform-test-tasklist", volume.ConfigMap.Name)
+}
+
+func (s *deploymentTemplateTest) TestTasklistWithLog4j2Configuration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.log4j2Configuration": `
+<configuration></configuration>
+			`,
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	volumes := deployment.Spec.Template.Spec.Volumes
+
+	// find the volume named environment-config
+	var volume corev1.Volume
+	for _, candidateVolume := range volumes {
+		if candidateVolume.Name == "config" {
+			volume = candidateVolume
+			break
+		}
+	}
+
+	// find the volumeMount named environment-config
+	var volumeMount corev1.VolumeMount
+	for _, candidateVolumeMount := range volumeMounts {
+		if candidateVolumeMount.Name == "config" && strings.Contains(candidateVolumeMount.MountPath, "log4j2") {
+			volumeMount = candidateVolumeMount
+			break
+		}
+	}
+	s.Require().Equal("config", volumeMount.Name)
+	s.Require().Equal("/usr/local/tasklist/config/log4j2.xml", volumeMount.MountPath)
+	s.Require().Equal("log4j2.xml", volumeMount.SubPath)
+
+	s.Require().Equal("config", volume.Name)
+	s.Require().Equal("camunda-platform-test-tasklist", volume.ConfigMap.Name)
+}
