@@ -1211,6 +1211,11 @@ tasklist:
     ## @param tasklist.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
 
+  ## @param tasklist.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param tasklist.log4j2Configuration if specified, contents will be used as the log4j2.xml
+  log4j2Configuration: ""
+
 #############################################
  #####
 #     # #####  ##### # #    # # ###### ######
