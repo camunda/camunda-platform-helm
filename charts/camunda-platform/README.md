@@ -869,6 +869,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `tasklist.ingress.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                   | `camunda-platform-tasklist`  |
 | `tasklist.retention.enabled`                                 | if true, the ILM Policy is created and applied to the index templates.                                                                                                       | `false`                      |
 | `tasklist.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
+| `tasklist.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
+| `tasklist.log4j2Configuration`                               | if specified, contents will be used as the log4j2.xml                                                                                                                        | `""`                         |
 
 ### Optimize Parameters
 
