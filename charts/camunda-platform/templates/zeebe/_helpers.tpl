@@ -76,3 +76,12 @@ app.kubernetes.io/component: zeebe-broker
 {{- define "zeebe.tokenScope"}}
     {{- .Values.global.identity.auth.zeebe.tokenScope -}}
 {{- end -}}
+
+{{- define "zeebe.log4j2"}}
+    {{- if .Values.zeebe.log4j2Configuration }}
+        {{- .Values.zeebe.log4j2Configuration }}
+    {{- else }}
+        {{- .Values.zeebe.log4j2 }}
+    {{- end }}
+{{- end -}}
+

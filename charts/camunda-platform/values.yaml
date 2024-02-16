@@ -530,6 +530,11 @@ zeebe:
     ## @param zeebe.retention.policyName defines the name of the created and applied ILM policy.
     policyName: zeebe-record-retention-policy
 
+  ## @param zeebe.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param zeebe.log4j2Configuration if specified, contents will be used as the log4j2.xml  This option will take precedence over zeebe.log4j2
+  log4j2Configuration: ""
+
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
 #    #  #  #    #   #      #    #  #  #   # #
