@@ -76,9 +76,18 @@ app.kubernetes.io/part-of: camunda-platform
 {{- end -}}
 
 {{/*
-Set image according the values of "base" or "overlay" values.
+Get image tag according the values of "base" or "overlay" values.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
-Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.retentionPolicy) }}
+Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+*/}}
+{{- define "camundaPlatform.imageTagByParams" -}}
+    {{- .overlay.image.tag | default .base.image.tag -}}
+{{- end -}}
+
+{{/*
+Get image according the values of "base" or "overlay" values.
+If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
+Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 */}}
 {{- define "camundaPlatform.imageByParams" -}}
     {{- $imageRegistry := .overlay.image.registry | default .base.image.registry -}}
@@ -86,12 +95,12 @@ Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "o
         $imageRegistry
         (empty $imageRegistry | ternary "" "/")
         (.overlay.image.repository | default .base.image.repository)
-        (.overlay.image.tag | default .base.image.tag)
+        (include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay))
     -}}
 {{- end -}}
 
 {{/*
-Set image according the values of "global" or "subchart" values.
+Get image according the values of "global" or "subchart" values.
 Usage: {{ include "camundaPlatform.image" . }}
 */}}
 {{- define "camundaPlatform.image" -}}
@@ -99,7 +108,7 @@ Usage: {{ include "camundaPlatform.image" . }}
 {{- end -}}
 
 {{/*
-Set imagePullSecrets according the values of global, subchart, or empty.
+Get imagePullSecrets according the values of global, subchart, or empty.
 */}}
 {{- define "camundaPlatform.subChartImagePullSecrets" -}}
     {{- if (.Values.image.pullSecrets) -}}
@@ -112,7 +121,7 @@ Set imagePullSecrets according the values of global, subchart, or empty.
 {{- end -}}
 
 {{/*
-Set imagePullSecrets for top-level components.
+Get imagePullSecrets for top-level components.
 Usage:
 {{ include "camundaPlatform.imagePullSecrets" (dict "component" "zeebe" "context" $) }}
 */}}
@@ -302,28 +311,39 @@ Release templates.
   version: {{ .Chart.Version }}
   components:
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-  {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host -}}
-
-  {{- if .Values.console.enabled }}
+  {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
+{{- "" }}
+  {{ if .Values.console.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort -}}
   - name: Console
+    id: console
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
     url: {{ $baseURL }}{{ .Values.console.contextPath }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
 {{- "" }}
   {{- with dict "Release" .Release "Chart" (dict "Name" "identity") "Values" .Values.identity }}
   {{ if .Values.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s" (include "identity.fullname" .) .Release.Namespace -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.service.metricsPort -}}
   - name: Keycloak
+    id: keycloak
+    version: {{ .Values.keycloak.image.tag }}
     url: {{ $baseURL }}{{ .Values.global.identity.keycloak.contextPath }}
   - name: Identity
+    id: identity
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values) }}
     url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.service.port .Values.readinessProbe.probePath }}
-    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.service.metricsPort .Values.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.metrics.prometheus }}
   {{- end }}
   {{- end }}
 {{- "" }}
   {{ if .Values.operate.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.port -}}
   - name: Operate
+    id: operate
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
     url: {{ $baseURL }}{{ .Values.operate.contextPath }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
@@ -332,6 +352,8 @@ Release templates.
   {{ if .Values.optimize.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s" (include "optimize.fullname" .) .Release.Namespace -}}
   - name: Optimize
+    id: optimize
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
     url: {{ $baseURL }}{{ .Values.optimize.contextPath }}
     readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
@@ -340,27 +362,35 @@ Release templates.
   {{ if .Values.tasklist.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.port -}}
   - name: Tasklist
+    id: tasklist
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
     url: {{ $baseURL }}{{ .Values.tasklist.contextPath }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
   {{- end }}
 {{- "" }}
-  {{- if .Values.webModeler.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s" (include "webModeler.webapp.fullname" .) .Release.Namespace -}}
+  {{ if .Values.webModeler.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort -}}
   - name: WebModeler WebApp
+    id: webModelerWebApp
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
     url: {{ $baseURL }}{{ .Values.webModeler.contextPath }}
-    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.webModeler.webapp.service.port .Values.webModeler.webapp.readinessProbe.probePath }}
-    metrics: {{ printf "%s:8071%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal  .Values.webModeler.webapp.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
 {{- "" }}
   {{ if .Values.zeebe.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort -}}
   - name: Zeebe Gateway
+    id: zeebeGateway
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}
     url: grpc://{{ tpl .Values.zeebeGateway.ingress.host $ }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.metrics.prometheus }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.broker" . | trimAll "\"") .Release.Namespace .Values.zeebe.service.httpPort }}
   - name: Zeebe
+    id: zeebe
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebe.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebe.metrics.prometheus }}
   {{- end }}
