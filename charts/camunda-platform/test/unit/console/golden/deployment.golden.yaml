@@ -58,6 +58,8 @@ spec:
               value: console
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: 
           ports:
             - name: http
               containerPort: 8080

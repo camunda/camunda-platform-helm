@@ -52,6 +52,8 @@ spec:
               value: console
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: {{ .Values.console.contextPath }}
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
