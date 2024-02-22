@@ -40,13 +40,17 @@ spec:
         []
       serviceAccountName: camunda-platform-test-console
       securityContext:
-        {}
+        fsGroup: 1001
+        runAsNonRoot: true
       containers:
         - name: camunda-platform
-          securityContext:
-            null
           image: registry.camunda.cloud/console/console-sm:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsUser: 1001
           env:
             - name: NODE_ENV
               value: prod
@@ -87,7 +91,11 @@ spec:
           volumeMounts:
             - name: console-configuration
               mountPath: /var/run/config
+            - name: console-frontend
+              mountPath: /app/apps/console-sm-backend/dist/frontend
       volumes:
         - name: console-configuration
           configMap:
             name: camunda-platform-test-console-configuration
+        - name: console-frontend
+          emptyDir: {}
