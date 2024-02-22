@@ -85,6 +85,15 @@ spec:
               value: {{ .Values.zeebe.ioThreadCount  | quote }}
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
+            {{- if not .Values.global.elasticsearch.internal }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_USERNAME
+              value: {{ .Values.global.elasticsearch.username | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+            {{- end }}
             {{- if not .Values.global.elasticsearch.disableExporter }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"

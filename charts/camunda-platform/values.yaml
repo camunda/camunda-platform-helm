@@ -88,10 +88,14 @@ global:
   # Elasticsearch configuration which is shared between the sub charts
   ## @extra global.elasticsearch
   elasticsearch:
+    internal: false
+    opensearch: false
+    username: elastic
+    password: password
     ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
     ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
-    url:
+    url: https://test.com
     ## @param global.elasticsearch.protocol defines the elasticsearch access protocol, by default HTTP.
     protocol: http
     ## @param global.elasticsearch.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
