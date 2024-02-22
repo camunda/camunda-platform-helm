@@ -38,6 +38,19 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if not .Values.global.elasticsearch.internal }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
+              value: "true"
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: {{ .Values.global.elasticsearch.host | quote }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
+              value: {{ .Values.global.elasticsearch.username | quote }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+            {{- end }}
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
@@ -66,6 +79,19 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if not .Values.global.elasticsearch.internal }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
+              value: "true"
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: {{ .Values.global.elasticsearch.host | quote }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
+              value: {{ .Values.global.elasticsearch.username | quote }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+            {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
               value: {{ .Values.optimize.contextPath | quote }}
