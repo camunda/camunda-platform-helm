@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "console.fullname" . }}-configuration
   labels:
-    {{ include "console.labels" . | nindent 4 }}
+    {{- include "console.labels" . | nindent 4 }}
 data:
   application.yaml: |-
     {{- include "common.tplvalues.render" ( dict "value" .Values.console.configuration "context" $ ) | nindent 4 }}

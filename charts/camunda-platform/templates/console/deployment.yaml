@@ -8,7 +8,7 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: {{ .Values.console.replicaCount }}
+  replicas: {{ .Values.console.replicas }}
   selector:
     matchLabels:
       {{- include "console.matchLabels" . | nindent 6 }}
