@@ -54,7 +54,7 @@ spec:
               value: {{ .Values.zeebeGateway.logLevel | quote }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebeGateway.javaOpts | quote }}
-            - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
             - name: ZEEBE_GATEWAY_NETWORK_HOST
               value: 0.0.0.0

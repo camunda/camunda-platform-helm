@@ -65,7 +65,7 @@ spec:
               value: "info"
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+ExitOnOutOfMemoryError"
-            - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: camunda-platform-test-zeebe:26502
             - name: ZEEBE_GATEWAY_NETWORK_HOST
               value: 0.0.0.0
