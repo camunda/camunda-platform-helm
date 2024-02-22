@@ -502,11 +502,23 @@ console:
       ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-console
 
-  ## @param console.podSecurityContext defines the security options the Console pod should be run with
-  podSecurityContext: {}
+  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
+  podSecurityContext:
+    ## @param console.podSecurityContext.runAsNonRoot run as non root
+    runAsNonRoot: true
+    ## @param console.podSecurityContext.fsGroup
+    fsGroup: 1001
 
-  ## @param console.containerSecurityContext defines the security options the Console container should be run with
-  containerSecurityContext: {}
+  # ContainerSecurityContext defines the security options the Console broker container should be run with
+  containerSecurityContext:
+    ## @param console.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param console.containerSecurityContext.privileged
+    privileged: false
+    ## @param console.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param console.containerSecurityContext.runAsUser
+    runAsUser: 1001
 
   ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
   nodeSelector: {}
