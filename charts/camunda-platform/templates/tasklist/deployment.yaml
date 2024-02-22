@@ -41,6 +41,26 @@ spec:
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.tasklist.contextPath | quote }}
             {{- end }}
+            {{- if not .Values.global.elasticsearch.internal }}
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
+              value: {{ .Values.global.elasticsearch.url | quote }}
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.username | quote }}
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_URL
+              value: {{ .Values.global.elasticsearch.url | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.username | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
               value: "identity-auth"
