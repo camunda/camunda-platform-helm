@@ -295,6 +295,26 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:11-debian-11-r89
 - docker.io/bitnami/postgresql:15.4.0
 
+## Chart version 8.2.23
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:0.23.2
+- docker.io/camunda/identity:8.2.23
+- docker.io/camunda/operate:8.2.23
+- docker.io/camunda/optimize:8.2.7
+- docker.io/camunda/tasklist:8.2.23
+- docker.io/camunda/zeebe:8.2.23
+- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.2.11
+- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.2.11
+- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.2.11
+
+Non-Camunda images:
+
+- docker.elastic.co/elasticsearch/elasticsearch:7.17.18
+- docker.io/bitnami/keycloak:19.0.3
+- docker.io/bitnami/postgresql:15.4.0
+
 ## Chart version 8.2.22
 
 Camunda images:
@@ -434,6 +454,16 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.10
 - docker.io/bitnami/keycloak:19.0.3
 - docker.io/bitnami/postgresql:15.4.0
+
+## Chart version 8.2.14
+
+Camunda images:
+
+
+
+Non-Camunda images:
+
+
 
 ## Chart version 8.2.13
 
@@ -714,6 +744,25 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.1
 - docker.io/bitnami/keycloak:19.0.3-debian-11-r15
 - docker.io/bitnami/postgresql:15.1.0-debian-11-r0
+
+## Chart version 8.1.24
+
+Camunda images:
+
+- docker.io/camunda/identity:8.1.24
+- docker.io/camunda/operate:8.1.24
+- docker.io/camunda/optimize:3.9.5
+- docker.io/camunda/tasklist:8.1.24
+- docker.io/camunda/zeebe:8.1.24
+- registry.camunda.cloud/web-modeler-ee/modeler-restapi:0.8.0-beta
+- registry.camunda.cloud/web-modeler-ee/modeler-webapp:0.8.0-beta
+- registry.camunda.cloud/web-modeler-ee/modeler-websockets:0.8.0-beta
+
+Non-Camunda images:
+
+- docker.elastic.co/elasticsearch/elasticsearch:7.17.18
+- docker.io/bitnami/keycloak:16.1.1
+- docker.io/bitnami/postgresql:14.5.0
 
 ## Chart version 8.1.23
 
