@@ -280,7 +280,7 @@ console:
   ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @param console.configuration Configuration passed directly to Console as yaml file.
+  ## @param console.configuration Configuration passed directly to Console as yaml file
   configuration: ""
 
   # Method 01: Plain

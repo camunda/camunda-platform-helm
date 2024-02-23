@@ -17,8 +17,8 @@ data:
     camunda:
       console:
         stage:
-        customerId:
-        installationId: "camunda-platform-test"
+        customerId: "camunda-platform-test.camunda-platform"
+        installationId: "camunda-platform-test.camunda-platform"
         telemetry:
           enabled: false
           token:

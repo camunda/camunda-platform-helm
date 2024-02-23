@@ -1,6 +1,7 @@
 preflightVars:
   baseURLs:
     elasticsearch: http://integration-elasticsearch:9200
+    console: http://integration-console:9100
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82
     optimize: http://integration-optimize
@@ -14,6 +15,7 @@ preflightVars:
 coreVars:
   authURL: "http://integration-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
   baseURLs:
+    console: http://integration-console
     keycloak: http://integration-keycloak
     identity: http://integration-identity
     optimize: http://integration-optimize

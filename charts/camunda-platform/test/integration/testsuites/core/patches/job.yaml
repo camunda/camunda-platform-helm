@@ -9,6 +9,11 @@ spec:
       - name: venom
         # All env vars here assume that the Helm deployment is called "integration".
         env:
+        - name: VENOM_VAR_CONSOLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-console-identity-secret
+              key: console-secret
         - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
