@@ -38,13 +38,13 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.global.elasticsearch.internal }}
+            {{- if .Values.global.elasticsearch.external }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ .Values.global.elasticsearch.host | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: {{ .Values.global.elasticsearch.username | quote }}
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -79,13 +79,13 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.global.elasticsearch.internal }}
+            {{- if .Values.global.elasticsearch.external }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ .Values.global.elasticsearch.host | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: {{ .Values.global.elasticsearch.username | quote }}
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:

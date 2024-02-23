@@ -41,11 +41,11 @@ spec:
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.operate.contextPath | quote }}
             {{- end }}
-            {{- if not .Values.global.elasticsearch.internal }}
+            {{- if .Values.global.elasticsearch.external }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_URL
               value: {{ .Values.global.elasticsearch.url | quote }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.username | quote }}
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -54,7 +54,7 @@ spec:
             - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_URL
               value: {{ .Values.global.elasticsearch.url | quote }}
             - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.username | quote }}
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
