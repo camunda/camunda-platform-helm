@@ -516,7 +516,7 @@ console:
     ## @param console.containerSecurityContext.privileged
     privileged: false
     ## @param console.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: false
+    readOnlyRootFilesystem: true
     ## @param console.containerSecurityContext.runAsUser
     runAsUser: 1001
 
