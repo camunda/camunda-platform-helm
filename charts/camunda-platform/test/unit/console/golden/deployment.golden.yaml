@@ -49,7 +49,7 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
             runAsUser: 1001
           env:
             - name: NODE_ENV
@@ -91,11 +91,7 @@ spec:
           volumeMounts:
             - name: console-configuration
               mountPath: /var/run/config
-            - name: console-frontend
-              mountPath: /app/apps/console-sm-backend/dist/frontend
       volumes:
         - name: console-configuration
           configMap:
             name: camunda-platform-test-console-configuration
-        - name: console-frontend
-          emptyDir: {}
