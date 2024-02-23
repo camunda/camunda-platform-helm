@@ -173,6 +173,8 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
+        annotations:
+          {}
       spec:
         accessModes: [ReadWriteOnce]
         resources:
