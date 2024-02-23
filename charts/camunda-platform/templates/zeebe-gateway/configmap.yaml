@@ -11,4 +11,12 @@ data:
 {{- if .Values.zeebeGateway.log4j2 }}
     {{ .Values.zeebeGateway.log4j2 | indent 4 | trim }}
 {{- end }}
+{{- if .Values.zeebeGateway.configuration }}
+  application.yaml: |
+    {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
+{{- end }}
+{{- range $key, $val := .Values.zeebeGateway.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+{{- end }}
 {{- end }}

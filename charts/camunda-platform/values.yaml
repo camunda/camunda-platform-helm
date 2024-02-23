@@ -783,6 +783,10 @@ zeebe-gateway:
       ## @param zeebe-gateway.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-zeebe-gateway
 
+  ## @param zeebe-gateway.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param zeebe-gateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
 
 ################################################
  #####
