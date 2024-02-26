@@ -240,15 +240,12 @@ Elasticsearch templates.
 */}}
 
 {{- define "camundaPlatform.elasticsearchHost" -}}
-  {{- tpl .Values.global.elasticsearch.host $ -}}
+  {{- tpl .Values.global.elasticsearch.url.host $ -}}
 {{- end -}}
 
 {{- define "camundaPlatform.elasticsearchURL" -}}
-  {{- if .Values.global.elasticsearch.url -}}
-    {{- .Values.global.elasticsearch.url -}}
-  {{- else -}}
-    {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.port }}
-  {{- end -}}
+    {{ .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.url.port }}
+
 {{- end -}}
 
 

@@ -87,6 +87,11 @@ global:
 
   # Elasticsearch configuration which is shared between the sub charts
   ## @extra global.elasticsearch
+  ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
+  ## @param global.elasticsearch.openSearch if true, tries to connect to an external openSearch
+  ## @extra global.elasticsearch.auth
+  ## @param global.elasticsearch.auth.username the username for external elasticsearch
+  ## @param global.elasticsearch.auth.password the password for external elasticsearch
   elasticsearch:
     external: false
     openSearch: false
@@ -95,14 +100,14 @@ global:
       password: 
     ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
-    ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
-    url: 
-    ## @param global.elasticsearch.protocol defines the elasticsearch access protocol, by default HTTP.
-    protocol: http
-    ## @param global.elasticsearch.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
-    host: "{{ .Release.Name }}-elasticsearch"
-    ## @param global.elasticsearch.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
-    port: 9200
+    ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+    ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol, by default HTTP.
+    ## @param global.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
+    ## @param global.elasticsearch.url.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
+    url:
+      protocol: http
+      host: "{{ .Release.Name }}-elasticsearch"
+      port: 9200
     ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes

@@ -42,7 +42,7 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ .Values.global.elasticsearch.host | quote }}
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
@@ -58,7 +58,7 @@ spec:
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-              value: {{ .Values.global.elasticsearch.port | quote }}
+              value: {{ .Values.global.elasticsearch.url.port | quote }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -83,7 +83,7 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ .Values.global.elasticsearch.host | quote }}
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
@@ -103,7 +103,7 @@ spec:
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-              value: {{ .Values.global.elasticsearch.port | quote }}
+              value: {{ .Values.global.elasticsearch.url.port | quote }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
               value: "ccsm"

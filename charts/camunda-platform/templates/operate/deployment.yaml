@@ -43,7 +43,7 @@ spec:
             {{- end }}
             {{- if .Values.global.elasticsearch.external }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_URL
-              value: {{ .Values.global.elasticsearch.url | quote }}
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
@@ -52,7 +52,7 @@ spec:
                   name: elastic-password
                   key: password
             - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_URL
-              value: {{ .Values.global.elasticsearch.url | quote }}
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD
