@@ -595,7 +595,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `zeebe.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                                                                   | `30d`                                                                                                                                                      |
 | `zeebe.retention.policyName`                              | defines the name of the created and applied ILM policy.                                                                                                                                                                       | `zeebe-record-retention-policy`                                                                                                                            |
 | `zeebe.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                                                                   | `""`                                                                                                                                                       |
-| `zeebe.log4j2Configuration`                               | if specified, contents will be used as the log4j2.xml  This option will take precedence over zeebe.log4j2                                                                                                                     | `""`                                                                                                                                                       |
+| `zeebe.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                                                                      | `{}`                                                                                                                                                       |
 
 ### Zeebe Gateway Parameters
 
@@ -696,6 +696,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `zeebe-gateway.ingress.tls`                                       | configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls                                                           |                                  |
 | `zeebe-gateway.ingress.tls.enabled`                               | if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.                                                                     | `false`                          |
 | `zeebe-gateway.ingress.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                   | `camunda-platform-zeebe-gateway` |
+| `zeebe-gateway.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                             |
+| `zeebe-gateway.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                             |
 
 ### Operate Parameters
 
@@ -785,7 +787,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `operate.retention.enabled`                                 | if true, the ILM Policy is created and applied to the index templates.                                                                                                       | `false`                      |
 | `operate.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `operate.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
-| `operate.log4j2Configuration`                               | if specified, contents will be used as the log4j2.xml                                                                                                                        | `""`                         |
+| `operate.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                 | `{}`                         |
 
 ### Tasklist Parameters
 
@@ -872,7 +874,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `tasklist.retention.enabled`                                 | if true, the ILM Policy is created and applied to the index templates.                                                                                                       | `false`                      |
 | `tasklist.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `tasklist.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
-| `tasklist.log4j2Configuration`                               | if specified, contents will be used as the log4j2.xml                                                                                                                        | `""`                         |
+| `tasklist.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                         |
 
 ### Optimize Parameters
 
@@ -959,7 +961,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `optimize.ingress.tls.enabled`                               | if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.                                                                     | `false`                     |
 | `optimize.ingress.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                   | `camunda-platform-optimize` |
 | `optimize.configuration`                                     | if specified, contents will be used as the environment-config.yaml                                                                                                           | `""`                        |
-| `optimize.log4j2Configuration`                               | if specified, contents will be used as the environment-logback.xml                                                                                                           | `""`                        |
+| `optimize.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as environment-logback.xml                                                                        | `{}`                        |
 
 ### Identity Parameters
 
