@@ -257,7 +257,7 @@ global:
   multiregion:
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
-    ## @skip global.multiregion.regionId unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
     regionId: 0
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
