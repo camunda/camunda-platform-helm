@@ -176,8 +176,7 @@ spec:
               mountPath: /exporters
             - mountPath: /tmp
               name: tmp
-            {{- $zeebeLog4j2 := include "zeebe.log4j2" . }}
-            {{- if $zeebeLog4j2 }}
+            {{- if .Values.zeebe.log4j2 }}
             - name: config
               mountPath: /usr/local/zeebe/config/log4j2.xml
               subPath: broker-log4j2.xml

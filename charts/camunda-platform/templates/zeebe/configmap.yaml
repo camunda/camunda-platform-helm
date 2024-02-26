@@ -43,8 +43,7 @@ data:
 {{- end }}
 
   broker-log4j2.xml: |
-{{- $zeebeLog4j2 := include "zeebe.log4j2" . }}
-{{- if $zeebeLog4j2 }}
-    {{ $zeebeLog4j2 | indent 4 | trim }}
+{{- if .Values.zeebe.log4j2 }}
+    {{ .Values.zeebe.log4j2 | indent 4 | trim }}
 {{- end }}
 {{- end }}

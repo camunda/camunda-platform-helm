@@ -59,10 +59,10 @@ spec:
               subPath: environment-config.yaml
               name: environment-config
             {{- end }}
-            {{- if .Values.optimize.log4j2Configuration }}
-            - mountPath: /optimize/config/log4j2.xml
-              subPath: log4j2.xml
-              name: log4j2-config
+            {{- range $key, $val := .Values.optimize.extraConfiguration }}
+            - name: environment-config
+              mountPath: /optimize/config/{{ $key }}
+              subPath: {{ $key }}
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -195,10 +195,10 @@ spec:
               subPath: environment-config.yaml
               name: environment-config
             {{- end }}
-            {{- if .Values.optimize.log4j2Configuration }}
-            - mountPath: /optimize/config/environment-logback.xml
-              subPath: environment-logback.xml
-              name: log4j2-config
+            {{- range $key, $val := .Values.optimize.extraConfiguration }}
+            - name: environment-config
+              mountPath: /optimize/config/{{ $key }}
+              subPath: {{ $key }}
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -211,14 +211,8 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.optimize.configuration }}
+        {{- if or .Values.optimize.configuration .Values.optimize.extraConfiguration }}
         - name: environment-config
-          configMap:
-            name: {{ include "optimize.fullname" . }}
-            defaultMode: 0400
-        {{- end }}
-        {{- if .Values.optimize.log4j2Configuration }}
-        - name: log4j2-config
           configMap:
             name: {{ include "optimize.fullname" . }}
             defaultMode: 0400

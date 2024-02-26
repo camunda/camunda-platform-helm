@@ -110,11 +110,11 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.registry":	"global.custom.registry.io",
-			"global.image.tag":		 "8.x.x",
+			"global.image.registry":    "global.custom.registry.io",
+			"global.image.tag":         "8.x.x",
 			"operate.image.registry":   "subchart.custom.registry.io",
 			"operate.image.repository": "camunda/operate-test",
-			"operate.image.tag":		"snapshot",
+			"operate.image.tag":        "snapshot",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -173,7 +173,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 			"operate.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -196,7 +196,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 			"operate.image.tag": "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -219,7 +219,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 			"operate.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -241,7 +241,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 			"operate.command[0]": "printenv",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -265,12 +265,12 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.extraVolumes[0].name":				  "extraVolume",
-			"operate.extraVolumes[0].configMap.name":		"otherConfigMap",
+			"operate.extraVolumes[0].name":                  "extraVolume",
+			"operate.extraVolumes[0].configMap.name":        "otherConfigMap",
 			"operate.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -299,11 +299,11 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.extraVolumeMounts[0].name":	  "otherConfigMap",
+			"operate.extraVolumeMounts[0].name":      "otherConfigMap",
 			"operate.extraVolumeMounts[0].mountPath": "/usr/local/config",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -333,14 +333,14 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.extraVolumeMounts[0].name":			 "otherConfigMap",
-			"operate.extraVolumeMounts[0].mountPath":		"/usr/local/config",
-			"operate.extraVolumes[0].name":				  "extraVolume",
-			"operate.extraVolumes[0].configMap.name":		"otherConfigMap",
+			"operate.extraVolumeMounts[0].name":             "otherConfigMap",
+			"operate.extraVolumeMounts[0].mountPath":        "/usr/local/config",
+			"operate.extraVolumes[0].name":                  "extraVolume",
+			"operate.extraVolumes[0].configMap.name":        "otherConfigMap",
 			"operate.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -375,7 +375,7 @@ func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 			"operate.serviceAccount.name": "accName",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -411,7 +411,7 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.containerSecurityContext.privileged":		  "true",
+			"operate.containerSecurityContext.privileged":          "true",
 			"operate.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -474,14 +474,14 @@ func (s *deploymentTemplateTest) TestContainerSetAffinity() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":	   "kubernetes.io/e2e-az-name",
+			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
 			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
 			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
 			"operate.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
-			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":										 "1",
-			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":			 "another-node-label-key",
-			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":		"In",
-			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":	   "another-node-label-value",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+			"operate.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -525,9 +525,9 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.tolerations[0].key":	  "key1",
+			"operate.tolerations[0].key":      "key1",
 			"operate.tolerations[0].operator": "Equal",
-			"operate.tolerations[0].value":	"Value1",
+			"operate.tolerations[0].value":    "Value1",
 			"operate.tolerations[0].effect":   "NoSchedule",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -556,7 +556,7 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() 
 			"global.identity.auth.enabled": "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -584,7 +584,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValu
 			"global.identity.auth.operate.existingSecret": "secretValue",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -600,7 +600,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValu
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-operate-identity-secret"},
-					Key:				  "operate-secret",
+					Key:                  "operate-secret",
 				},
 			},
 		})
@@ -613,7 +613,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 			"global.identity.auth.operate.existingSecret.name": "ownExistingSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -629,7 +629,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretViaR
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
-					Key:				  "operate-secret",
+					Key:                  "operate-secret",
 				},
 			},
 		})
@@ -664,7 +664,7 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 			"operate.contextPath": "/operate",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -689,7 +689,7 @@ func (s *deploymentTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
 			"operate.contextPath": "/camunda/operate",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -713,16 +713,16 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.startupProbe.enabled":			 "true",
-			"operate.startupProbe.probePath":		   "/healthz",
+			"operate.startupProbe.enabled":             "true",
+			"operate.startupProbe.probePath":           "/healthz",
 			"operate.startupProbe.initialDelaySeconds": "5",
-			"operate.startupProbe.periodSeconds":	   "10",
-			"operate.startupProbe.successThreshold":	"1",
-			"operate.startupProbe.failureThreshold":	"5",
-			"operate.startupProbe.timeoutSeconds":	  "1",
+			"operate.startupProbe.periodSeconds":       "10",
+			"operate.startupProbe.successThreshold":    "1",
+			"operate.startupProbe.failureThreshold":    "5",
+			"operate.startupProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -745,16 +745,16 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.livenessProbe.enabled":			 "true",
-			"operate.livenessProbe.probePath":		   "/healthz",
+			"operate.livenessProbe.enabled":             "true",
+			"operate.livenessProbe.probePath":           "/healthz",
 			"operate.livenessProbe.initialDelaySeconds": "5",
-			"operate.livenessProbe.periodSeconds":	   "10",
-			"operate.livenessProbe.successThreshold":	"1",
-			"operate.livenessProbe.failureThreshold":	"5",
-			"operate.livenessProbe.timeoutSeconds":	  "1",
+			"operate.livenessProbe.periodSeconds":       "10",
+			"operate.livenessProbe.successThreshold":    "1",
+			"operate.livenessProbe.failureThreshold":    "5",
+			"operate.livenessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -777,16 +777,16 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.contextPath":			  "/test",
-			"operate.startupProbe.enabled":	 "true",
+			"operate.contextPath":              "/test",
+			"operate.startupProbe.enabled":     "true",
 			"operate.startupProbe.probePath":   "/start",
 			"operate.readinessProbe.enabled":   "true",
 			"operate.readinessProbe.probePath": "/ready",
-			"operate.livenessProbe.enabled":	"true",
+			"operate.livenessProbe.enabled":    "true",
 			"operate.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:	  map[string][]string{"install": {"--debug"}},
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
 	// when
@@ -806,8 +806,8 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.sidecars[0].name":				   "nginx",
-			"operate.sidecars[0].image":				  "nginx:latest",
+			"operate.sidecars[0].name":                   "nginx",
+			"operate.sidecars[0].image":                  "nginx:latest",
 			"operate.sidecars[0].ports[0].containerPort": "80",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -837,8 +837,8 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.initContainers[0].name":				   "nginx",
-			"operate.initContainers[0].image":				  "nginx:latest",
+			"operate.initContainers[0].name":                   "nginx",
+			"operate.initContainers[0].image":                  "nginx:latest",
 			"operate.initContainers[0].ports[0].containerPort": "80",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -883,8 +883,6 @@ func (s *deploymentTemplateTest) TestOperateMultiTenancyEnabled() {
 	env := statefulSet.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_MULTITENANCY_ENABLED", Value: "true"})
 }
-
-
 
 func (s *deploymentTemplateTest) TestOperateWithConfiguration() {
 	// given
@@ -937,7 +935,9 @@ func (s *deploymentTemplateTest) TestOperateWithLog4j2Configuration() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"operate.log4j2Configuration": `
+			// unfortunately, this testing library does not accept periods in the keys so I had to leave
+			// out a period here.
+			"operate.extraConfiguration.log4j2xml": `
 <configuration></configuration>
 			`,
 		},
@@ -971,8 +971,8 @@ func (s *deploymentTemplateTest) TestOperateWithLog4j2Configuration() {
 		}
 	}
 	s.Require().Equal("config", volumeMount.Name)
-	s.Require().Equal("/usr/local/operate/config/log4j2.xml", volumeMount.MountPath)
-	s.Require().Equal("log4j2.xml", volumeMount.SubPath)
+	s.Require().Equal("/usr/local/operate/config/log4j2xml", volumeMount.MountPath)
+	s.Require().Equal("log4j2xml", volumeMount.SubPath)
 
 	s.Require().Equal("config", volume.Name)
 	s.Require().Equal("camunda-platform-test-operate", volume.ConfigMap.Name)

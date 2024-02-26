@@ -10,8 +10,9 @@ data:
   environment-config.yaml: |
     {{ .Values.optimize.configuration | indent 4 | trim }}
   {{- end }}
-  {{- if .Values.optimize.log4j2Configuration }}
-  environment-logback.xml: |
-    {{ .Values.optimize.log4j2Configuration | indent 4 | trim }}
+
+  {{- range $key, $val := .Values.optimize.extraConfiguration }}
+    {{ $key }}: |
+      {{ $val | indent 4 | trim }}
   {{- end }}
 {{- end }}

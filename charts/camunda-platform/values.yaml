@@ -532,8 +532,8 @@ zeebe:
 
   ## @param zeebe.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param zeebe.log4j2Configuration if specified, contents will be used as the log4j2.xml  This option will take precedence over zeebe.log4j2
-  log4j2Configuration: ""
+  ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
 
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
@@ -1004,8 +1004,8 @@ operate:
 
   ## @param operate.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param operate.log4j2Configuration if specified, contents will be used as the log4j2.xml
-  log4j2Configuration: ""
+  ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  extraConfiguration: {}
 
 ##################################################
 #######
@@ -1222,8 +1222,8 @@ tasklist:
 
   ## @param tasklist.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param tasklist.log4j2Configuration if specified, contents will be used as the log4j2.xml
-  log4j2Configuration: ""
+  ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
 
 #############################################
  #####
@@ -1434,8 +1434,8 @@ optimize:
 
   ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
   configuration: ""
-  ## @param optimize.log4j2Configuration if specified, contents will be used as the environment-logback.xml
-  log4j2Configuration: ""
+  ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
+  extraConfiguration: {}
 
 
 ############################################

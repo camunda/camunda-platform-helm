@@ -954,9 +954,9 @@ func (s *deploymentTemplateTest) TestTasklistWithLog4j2Configuration() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"tasklist.log4j2Configuration": `
+			"tasklist.extraConfiguration.log4j2xml": `
 <configuration></configuration>
-			`,
+`,
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -988,8 +988,8 @@ func (s *deploymentTemplateTest) TestTasklistWithLog4j2Configuration() {
 		}
 	}
 	s.Require().Equal("config", volumeMount.Name)
-	s.Require().Equal("/usr/local/tasklist/config/log4j2.xml", volumeMount.MountPath)
-	s.Require().Equal("log4j2.xml", volumeMount.SubPath)
+	s.Require().Equal("/usr/local/tasklist/config/log4j2xml", volumeMount.MountPath)
+	s.Require().Equal("log4j2xml", volumeMount.SubPath)
 
 	s.Require().Equal("config", volume.Name)
 	s.Require().Equal("camunda-platform-test-tasklist", volume.ConfigMap.Name)

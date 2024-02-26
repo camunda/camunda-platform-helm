@@ -58,8 +58,8 @@ data:
     # Enable or disable metrics
     #management.metrics.export.prometheus.enabled: false
   {{- end }}
-  {{- if .Values.tasklist.log4j2Configuration }}
-  log4j2.xml: |
-    {{ .Values.tasklist.log4j2Configuration | indent 4 | trim }}
+  {{- range $key, $val := .Values.tasklist.extraConfiguration }}
+    {{ $key }}: |
+      {{ $val | indent 4 | trim }}
   {{- end }}
 {{- end }}

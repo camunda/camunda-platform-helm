@@ -884,10 +884,9 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"optimize.log4j2Configuration": `
+			"optimize.extraConfiguration.environment-logbackxml": `
 <configuration></configuration>
-			`,
-		},
+			`},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
@@ -903,7 +902,7 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 	// find the volume named environment-config
 	var volume corev1.Volume
 	for _, candidateVolume := range volumes {
-		if candidateVolume.Name == "log4j2-config" {
+		if candidateVolume.Name == "environment-config" {
 			volume = candidateVolume
 			break
 		}
@@ -912,15 +911,15 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 	// find the volumeMount named environment-config
 	var volumeMount corev1.VolumeMount
 	for _, candidateVolumeMount := range volumeMounts {
-		if candidateVolumeMount.Name == "log4j2-config" {
+		if candidateVolumeMount.Name == "environment-config" {
 			volumeMount = candidateVolumeMount
 			break
 		}
 	}
-	s.Require().Equal("log4j2-config", volumeMount.Name)
-	s.Require().Equal("/optimize/config/environment-logback.xml", volumeMount.MountPath)
-	s.Require().Equal("environment-logback.xml", volumeMount.SubPath)
+	s.Require().Equal("environment-config", volumeMount.Name)
+	s.Require().Equal("/optimize/config/environment-logbackxml", volumeMount.MountPath)
+	s.Require().Equal("environment-logbackxml", volumeMount.SubPath)
 
-	s.Require().Equal("log4j2-config", volume.Name)
+	s.Require().Equal("environment-config", volume.Name)
 	s.Require().Equal("camunda-platform-test-optimize", volume.ConfigMap.Name)
 }

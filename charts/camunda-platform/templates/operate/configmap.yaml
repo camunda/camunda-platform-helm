@@ -55,8 +55,8 @@ data:
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
   {{- end }}
-  {{- if .Values.operate.log4j2Configuration }}
-  log4j2.xml: |
-    {{ .Values.operate.log4j2Configuration | indent 4 | trim }}
+  {{- range $key, $val := .Values.operate.extraConfiguration }}
+    {{ $key }}: |
+      {{ $val | indent 4 | trim }}
   {{- end }}
 {{- end }}

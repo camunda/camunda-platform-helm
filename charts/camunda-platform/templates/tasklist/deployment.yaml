@@ -175,10 +175,10 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.tasklist.log4j2Configuration }}
-            - mountPath: /usr/local/tasklist/config/log4j2.xml
-              subPath: log4j2.xml
-              name: config
+            {{- range $key, $val := .Values.tasklist.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/tasklist/config/{{ $key }}
+              subPath: {{ $key }}
             {{- end }}
             {{- if .Values.tasklist.extraVolumeMounts}}
             {{- .Values.tasklist.extraVolumeMounts | toYaml | nindent 12 }}

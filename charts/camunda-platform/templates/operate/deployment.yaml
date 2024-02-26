@@ -173,10 +173,10 @@ spec:
               mountPath: /tmp
             - name: camunda
               mountPath: /camunda
-            {{- if .Values.operate.log4j2Configuration }}
-            - mountPath: /usr/local/operate/config/log4j2.xml
-              subPath: log4j2.xml
-              name: config
+            {{- range $key, $val := .Values.operate.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/operate/config/{{ $key }}
+              subPath: {{ $key }}
             {{- end }}
             {{- if .Values.operate.extraVolumeMounts}}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
