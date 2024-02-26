@@ -43,7 +43,12 @@ data:
 {{- end }}
 
   broker-log4j2.xml: |
-{{- if .Values.zeebe.log4j2 }}
+  {{- if .Values.zeebe.log4j2 }}
     {{ .Values.zeebe.log4j2 | indent 4 | trim }}
-{{- end }}
+  {{- end }}
+
+  {{- range $key, $val := .Values.zeebe.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
 {{- end }}

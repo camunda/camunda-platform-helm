@@ -186,6 +186,11 @@ spec:
               mountPath: /usr/local/zeebe/config/application.yaml
               subPath: application.yaml
             {{- end }}
+            {{- range $key, $val := .Values.zeebe.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
             {{- if .Values.zeebe.extraVolumeMounts}}
             {{ .Values.zeebe.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
