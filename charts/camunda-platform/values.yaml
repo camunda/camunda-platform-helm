@@ -375,7 +375,7 @@ console:
     ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param console.service.port defines the port number where the web application will be available
-    port: 8080
+    port: 80
     ## @param console.service.serverName defines the port name where the web application will be available
     serverName: http
     ## @param console.service.managementPort defines the management port used to access metrics and app status
@@ -708,7 +708,7 @@ zeebe:
     ## @param zeebe.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/startup
     ## @param zeebe.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
     ## @param zeebe.startupProbe.periodSeconds defines how often the probe is executed
@@ -727,7 +727,7 @@ zeebe:
     ## @param zeebe.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/readiness
     ## @param zeebe.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -747,7 +747,7 @@ zeebe:
     ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health
+    probePath: /actuator/health/liveness
     ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30

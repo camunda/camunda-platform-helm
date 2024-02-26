@@ -14,13 +14,14 @@ testcases:
 
 # https://docs.camunda.io/docs/self-managed/identity/user-guide/generating-m2m-tokens/
 - name: TEST - Generating machine-to-machine token
+  description: |
+    Test generating tokens from Keycloak for components that use client type "CONFIDENTIAL".
+    This test will not work with type "PUBLIC" because "Public client not allowed to retrieve service account".
+    https://datatracker.ietf.org/doc/html/rfc6749#section-2.1
   steps:
   - name: "{{ .value.component }}"
     type: http
     range:
-    - component: Console
-      clientID: console
-      clientSecret: "{{ .CONSOLE_CLIENT_SECRET }}"
     - component: Tasklist
       clientID: tasklist
       clientSecret: "{{ .TASKLIST_CLIENT_SECRET }}"

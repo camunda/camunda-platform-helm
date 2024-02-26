@@ -47,7 +47,7 @@ spec:
             - name: KEYCLOAK_REALM
               value: camunda-platform
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: console
+              value: console-api
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
@@ -57,10 +57,10 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.console.service.port }}
+              containerPort: 8080
               protocol: TCP
             - name: management
-              containerPort: {{ .Values.console.service.managementPort }}
+              containerPort: 9100
               protocol: TCP
           {{- if .Values.console.startupProbe.enabled }}
           startupProbe:
