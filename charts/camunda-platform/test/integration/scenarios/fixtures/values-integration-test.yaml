@@ -2,7 +2,7 @@ test:
   integration: true
 
 identity:
-  # Keycloak client seed which is used to query Camunda APIs. 
+  # Keycloak client seed which is used to query Camunda APIs.
   env:
   - name: KEYCLOAK_CLIENTS_2_ID
     value: venom
