@@ -152,6 +152,16 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+          {{- if .Values.webModeler.configuration }}
+            - name: config
+              mountPath: /home/webapp/config/application.yaml
+              subPath: application.yaml
+          {{- end }}
+          {{- range $key, $val := .Values.webModeler.extraConfiguration }}
+            - name: config
+              mountPath: /home/webapp/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
             {{- if .Values.webModeler.restapi.extraVolumeMounts }}
             {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -161,6 +171,9 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "webModeler.fullname" . }}
         {{- if .Values.webModeler.restapi.extraVolumes }}
         {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

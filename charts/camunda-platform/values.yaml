@@ -2043,6 +2043,11 @@ webModeler:
   ## @param webModeler.contextPath can be used to make Web Modeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
   contextPath: ""
 
+  ## @param webModeler.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param webModeler.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
+
   # WebModeler.
   ######                         #    ######  ###
   #     # ######  ####  #####   # #   #     #  #
@@ -2218,6 +2223,7 @@ webModeler:
       port: 80
       ## @param webModeler.restapi.service.managementPort defines the management port of the service
       managementPort: 8091
+
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
