@@ -10,11 +10,12 @@ data:
     {{- if .Values.console.configuration }}
       {{- include "common.tplvalues.render" ( dict "value" .Values.console.configuration "context" $ ) | nindent 4 }}
     {{- else }}
+    # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
     camunda:
       console:
         stage:
-        customerId: "{{ .Release.Name }}.{{ .Release.Namespace }}"
-        installationId: "{{ .Release.Name }}.{{ .Release.Namespace }}"
+        customerId:
+        installationId:
         telemetry:
           enabled: false
           token:

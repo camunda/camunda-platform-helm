@@ -14,11 +14,12 @@ metadata:
     app.kubernetes.io/component: console
 data:
   application.yaml: |-
+    # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
     camunda:
       console:
         stage:
-        customerId: "camunda-platform-test.camunda-platform"
-        installationId: "camunda-platform-test.camunda-platform"
+        customerId:
+        installationId:
         telemetry:
           enabled: false
           token:
