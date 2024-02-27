@@ -312,9 +312,9 @@ Release templates.
   components:
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
-{{- "" }}
-  {{ if .Values.console.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort -}}
+
+  {{- if .Values.console.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
   - name: Console
     id: console
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
@@ -322,7 +322,7 @@ Release templates.
     readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
-{{- "" }}
+
   {{- with dict "Release" .Release "Chart" (dict "Name" "identity") "Values" .Values.identity }}
   {{ if .Values.enabled -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.service.metricsPort -}}
@@ -338,9 +338,9 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.metrics.prometheus }}
   {{- end }}
   {{- end }}
-{{- "" }}
-  {{ if .Values.operate.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.port -}}
+
+  {{- if .Values.operate.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.port }}
   - name: Operate
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
@@ -348,9 +348,9 @@ Release templates.
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
   {{- end }}
-{{- "" }}
-  {{ if .Values.optimize.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s" (include "optimize.fullname" .) .Release.Namespace -}}
+
+  {{- if .Values.optimize.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s" (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
     id: optimize
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
@@ -358,9 +358,9 @@ Release templates.
     readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
   {{- end }}
-{{- "" }}
-  {{ if .Values.tasklist.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.port -}}
+
+  {{- if .Values.tasklist.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.port }}
   - name: Tasklist
     id: tasklist
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
@@ -368,9 +368,9 @@ Release templates.
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
   {{- end }}
-{{- "" }}
-  {{ if .Values.webModeler.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort -}}
+
+  {{- if .Values.webModeler.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
   - name: WebModeler WebApp
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
@@ -378,9 +378,9 @@ Release templates.
     readiness: {{ printf "%s%s" $baseURLInternal  .Values.webModeler.webapp.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
-{{- "" }}
-  {{ if .Values.zeebe.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort -}}
+
+  {{- if .Values.zeebe.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort }}
   - name: Zeebe Gateway
     id: zeebeGateway
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}

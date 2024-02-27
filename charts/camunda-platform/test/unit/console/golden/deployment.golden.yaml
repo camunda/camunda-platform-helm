@@ -40,13 +40,17 @@ spec:
         []
       serviceAccountName: camunda-platform-test-console
       securityContext:
-        {}
+        fsGroup: 1001
+        runAsNonRoot: true
       containers:
         - name: camunda-platform
-          securityContext:
-            null
           image: registry.camunda.cloud/console/console-sm:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsUser: 1001
           env:
             - name: NODE_ENV
               value: prod
@@ -55,9 +59,11 @@ spec:
             - name: KEYCLOAK_REALM
               value: camunda-platform
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: console
+              value: console-api
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: ""
           ports:
             - name: http
               containerPort: 8080

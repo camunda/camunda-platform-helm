@@ -226,6 +226,8 @@ spec:
               value: "Optimize"
             - name: KEYCLOAK_USERS_0_ROLES_4
               value: "Web Modeler"
+            - name: KEYCLOAK_USERS_0_ROLES_5
+              value: "Console"
             {{- end }}
             {{- end }}
             {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}

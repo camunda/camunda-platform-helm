@@ -263,7 +263,7 @@ global:
     installationType: normal
 
 #
-# WARNING: Console is still Alpha.
+# CAUTION: Console is under development and not available yet. We plan to release it with 8.5 in April.
 #
 #################################################
  #####
@@ -280,7 +280,7 @@ console:
   ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @param console.configuration Configuration passed directly to Console as yaml file.
+  ## @param console.configuration Configuration passed directly to Console as yaml file
   configuration: ""
 
   # Method 01: Plain
@@ -355,7 +355,7 @@ console:
   replicas: 1
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/"
+  contextPath: ""
 
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
@@ -375,7 +375,7 @@ console:
     ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param console.service.port defines the port number where the web application will be available
-    port: 8080
+    port: 80
     ## @param console.service.serverName defines the port name where the web application will be available
     serverName: http
     ## @param console.service.managementPort defines the management port used to access metrics and app status
@@ -502,11 +502,23 @@ console:
       ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-console
 
-  ## @param console.podSecurityContext defines the security options the Console pod should be run with
-  podSecurityContext: {}
+  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
+  podSecurityContext:
+    ## @param console.podSecurityContext.runAsNonRoot run as non root
+    runAsNonRoot: true
+    ## @param console.podSecurityContext.fsGroup
+    fsGroup: 1001
 
-  ## @param console.containerSecurityContext defines the security options the Console container should be run with
-  containerSecurityContext: {}
+  # ContainerSecurityContext defines the security options the Console broker container should be run with
+  containerSecurityContext:
+    ## @param console.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param console.containerSecurityContext.privileged
+    privileged: false
+    ## @param console.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param console.containerSecurityContext.runAsUser
+    runAsUser: 1001
 
   ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
   nodeSelector: {}
@@ -697,7 +709,7 @@ zeebe:
     ## @param zeebe.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/startup
     ## @param zeebe.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
     ## @param zeebe.startupProbe.periodSeconds defines how often the probe is executed
@@ -716,7 +728,7 @@ zeebe:
     ## @param zeebe.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/readiness
     ## @param zeebe.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -736,7 +748,7 @@ zeebe:
     ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health
+    probePath: /actuator/health/liveness
     ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
