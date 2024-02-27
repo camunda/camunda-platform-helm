@@ -28,4 +28,5 @@ jobs:
       persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
       platforms: "gke,rosa"
       flows: "install,upgrade"
-      git-ref: ${{ github.event.pull_request.head.sha }}
+      caller-git-ref: ${{ github.event.pull_request.head.sha }}
+      camunda-helm-git-ref: ${{ github.event.pull_request.head.sha }}
