@@ -44,6 +44,9 @@ data:
         ilmEnabled: true
         ilmMinAgeForDeleteArchivedIndices: {{ .Values.operate.retention.minimumAge }}
       {{- end }}
+{{- with .Values.operate.extraConfig }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
     logging:
 {{- with .Values.operate.logging }}
 {{ . | toYaml | indent 6 }}
