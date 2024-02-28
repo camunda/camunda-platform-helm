@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.1.2
+version: 9.1.3
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.1.2
+    version: 9.1.3
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT
@@ -58,4 +58,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: "- kind: added\n  description: \"support custom pvc annotations for Zeebe\"\n- kind: added\n  description: \"console sm alpha\"\n- kind: fixed\n  description: \"moves ccsm spring profile outside of conditional\"\n- kind: fixed\n  description: \"update to use initialContactPoints for Zeebe Gateway\"\n- kind: fixed\n  description: \"update version matrix after latest bugfix releases\"\n- kind: fixed\n  description: \"separated ingress status in helm notes\"\n"
