@@ -491,6 +491,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Console Parameters
 
+**CAUTION:** Console is under development and not available yet. We plan to release it with 8.5 in April.
+
 | Name                                                        | Description                                                                                                                                                                  | Value                      |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
 | `console`                                                   | configuration for the Console.                                                                                                                                               |                            |
