@@ -262,9 +262,6 @@ global:
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
-#
-# CAUTION: Console is under development and not available yet. We plan to release it with 8.5 in April.
-#
 #################################################
  #####
 #     #  ####  #    #  ####   ####  #      ######
@@ -274,7 +271,12 @@ global:
 #     # #    # #   ## #    # #    # #      #
  #####   ####  #    #  ####   ####  ###### ######
 #################################################
+
 ## @section Console Parameters
+## @descriptionStart
+## **CAUTION:** Console is under development and not available yet. We plan to release it with 8.5 in April.
+## @descriptionEnd
+
 ## @extra console configuration for the Console.
 console:
   ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
