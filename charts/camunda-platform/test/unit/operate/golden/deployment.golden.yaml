@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.4"
     app.kubernetes.io/component: operate
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.4"
         app.kubernetes.io/component: operate
       annotations:
-        checksum/config: c5dc16d9242ca46e3a7b34e2c1755a2fad00509e6aa8efcbd266b477fe86996f
+        checksum/config: 32ffcd900aaa9c374f179c26e7ba001c91d2e9c3e89c5f0cfc4afa15b43fa8d6
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: operate
-          image: camunda/operate:8.4.3
+          image: camunda/operate:8.4.4
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
