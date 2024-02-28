@@ -154,12 +154,12 @@ spec:
               mountPath: /tmp
           {{- if .Values.webModeler.configuration }}
             - name: config
-              mountPath: /home/webapp/config/application.yaml
+              mountPath: /home/runner/config/application.yaml
               subPath: application.yaml
           {{- end }}
           {{- range $key, $val := .Values.webModeler.extraConfiguration }}
             - name: config
-              mountPath: /home/webapp/config/{{ $key }}
+              mountPath: /home/runner/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
             {{- if .Values.webModeler.restapi.extraVolumeMounts }}

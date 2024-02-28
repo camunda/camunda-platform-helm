@@ -2846,6 +2846,11 @@ connectors:
   ## @param connectors.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
 
+  ## @param connectors.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  extraConfiguration: {}
+
 #
 # WARNING: Console is currently under development and should not be used yet.
 #
