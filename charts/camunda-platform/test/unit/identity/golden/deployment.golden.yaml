@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.4"
     app.kubernetes.io/component: identity
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.4"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: ccf71a59ceb57a2edf89433e4206337c32bfa8c795c7b11af42907c16894dc6d
+        checksum/configmap-env-vars: 8ffc993f0ec25ddcd7bdf02364c5e0a8056ea6c48d9a72805ee4bfaed3c405f0
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: identity
-          image: "camunda/identity:8.4.3"
+          image: "camunda/identity:8.4.4"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
