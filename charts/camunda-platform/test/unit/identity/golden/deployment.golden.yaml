@@ -52,6 +52,8 @@ spec:
             runAsNonRoot: true
             runAsUser: 1005
           env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: keycloak
             - name: KEYCLOAK_INIT_OPERATE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -116,8 +118,6 @@ spec:
               value: "zeebe-api"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
-            - name: SERVER_PORT
-              value: "8080"
             - name: KEYCLOAK_URL
               value: "http://camunda-platform-test-keycloak:80/auth"
             - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
@@ -153,7 +153,11 @@ spec:
               value: "Web Modeler"
             - name: KEYCLOAK_USERS_0_ROLES_5
               value: "Console"
+            - name: SERVER_PORT
+              value: "8080"
           envFrom:
+            - configMapRef:
+                name: camunda-platform-test-identity-env-vars
           resources:
             limits:
               cpu: 2000m
