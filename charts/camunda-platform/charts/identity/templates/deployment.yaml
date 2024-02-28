@@ -275,7 +275,8 @@ spec:
                 name: {{ include "identity.fullname" . }}-config-env-vars
           {{- end }}
             - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-env-vars
+              {{- /* TODO: Use the "camundaPlatform.fullname" when Identity is moved to top-level chart. */}}
+                name: {{ .Release.Name }}-camunda-platform-identity-env-vars
           {{- if .Values.command}}
           command: {{ toYaml .Values.command | nindent 10 }}
           {{- end }}
