@@ -18,6 +18,23 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
+{{- define "identity.externalUrl" -}}
+    {{- if .Values.fullURL -}}
+        {{ tpl .Values.fullURL $ | quote }}
+    {{- else -}}
+        {{- if .Values.global.ingress.enabled -}}
+            {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+            {{ $host := .Values.global.ingress.host }}
+            {{ $path := .Values.contextPath | default "" -}}
+            {{- printf "%s://%s%s" $proto $host $path -}}
+        {{- else -}}
+            {{ $proto := ternary "https" "http" .Values.ingress.tls.enabled -}}
+            {{ $host := .Values.ingress.host -}}
+            {{- printf "%s://%s" $proto $host -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+
 {{/*
 Defines extra labels for identity.
 */}}
@@ -188,6 +205,18 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- else }}
         {{- .Values.keycloak.auth.adminUser -}}
     {{- end }}
+{{- end -}}
+
+{{- define "identity.authClientId" -}}
+  {{- .Values.global.identity.auth.identity.clientId -}}
+{{- end -}}
+
+{{- define "identity.authAudience" -}}
+  {{- .Values.global.identity.auth.identity.audience -}}
+{{- end -}}
+
+{{- define "identity.authClientSecret" -}}
+  {{- .Values.global.identity.auth.identity.existingSecret -}}
 {{- end -}}
 
 {{/*
