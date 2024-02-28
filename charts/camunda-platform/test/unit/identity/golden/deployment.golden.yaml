@@ -157,7 +157,7 @@ spec:
               value: "8080"
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-identity-env-vars
+                name: camunda-platform-test-camunda-platform-identity-env-vars
           resources:
             limits:
               cpu: 2000m
