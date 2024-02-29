@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.4.4"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: d441592672b413d2af4bb257f4d364b2bb66b79a85888368dcacfffafeb71799
+        checksum/configmap-env-vars: 653a14631fb96db18ac7ba68c4bc63c97f60726c1caae9d5714f6a69d2d25198
     spec:
       imagePullSecrets:
         []
@@ -157,7 +157,7 @@ spec:
               value: "8080"
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-camunda-platform-identity-env-vars
+                name: camunda-platform-test-identity-config-env-vars
           resources:
             limits:
               cpu: 2000m
