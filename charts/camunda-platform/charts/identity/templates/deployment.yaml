@@ -234,7 +234,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: oidc
             - name: CAMUNDA_IDENTITY_BASEURL
-              value: {{ include "camundaPlatform.identityURL" . | quote }}
+              value: {{ include "identity.internalUrl" . | quote }}
             - name: CAMUNDA_IDENTITY_TYPE
               value: {{ include "camundaPlatform.authType" . | quote }}
             - name: CAMUNDA_IDENTITY_ISSUER
