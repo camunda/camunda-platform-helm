@@ -1721,6 +1721,11 @@ identity:
     existingSecret:
     existingSecretPasswordKey:
 
+  ## @param identity.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  extraConfiguration: {}
+
   # Identity.
   #    # ###### #   #  ####  #       ####    ##   #    #
   #   #  #       # #  #    # #      #    #  #  #  #   #

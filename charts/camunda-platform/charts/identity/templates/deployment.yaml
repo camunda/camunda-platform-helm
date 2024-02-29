@@ -258,7 +258,7 @@ spec:
           {{- if .Values.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
               path: {{ .Values.startupProbe.probePath }}
               scheme: {{ .Values.startupProbe.scheme }}
               port: metrics
@@ -271,7 +271,7 @@ spec:
           {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
               path: {{ .Values.readinessProbe.probePath }}
               scheme: {{ .Values.readinessProbe.scheme }}
               port: metrics
@@ -284,7 +284,7 @@ spec:
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
               path: {{ .Values.livenessProbe.probePath }}
               scheme: {{ .Values.livenessProbe.scheme }}
               port: metrics
@@ -297,6 +297,16 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+          {{- if .Values.configuration }}
+            - name: config
+              mountPath: /app/config/application.yaml
+              subPath: application.yaml
+          {{- end }}
+          {{- range $key, $val := .Values.extraConfiguration }}
+            - name: config
+              mountPath: /app/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
             {{- if .Values.extraVolumeMounts}}
               {{- .Values.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -307,6 +317,9 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "identity.fullname" . }}-spring-config
         {{- if .Values.extraVolumes}}
         {{- .Values.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
