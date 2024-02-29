@@ -18,6 +18,17 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
+{{ define "identity.internalUrl" }}
+  {{- if .Values.enabled -}}
+    {{-
+      printf "http://%s:%v%s"
+        (include "identity.fullname" .)
+        .Values.service.port
+        (.Values.contextPath | default "")
+    -}}
+  {{- end -}}
+{{- end -}}
+
 {{- define "identity.externalUrl" -}}
     {{- if .Values.fullURL -}}
         {{ tpl .Values.fullURL $ | quote }}

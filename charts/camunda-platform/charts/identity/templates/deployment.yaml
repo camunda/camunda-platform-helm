@@ -233,6 +233,14 @@ spec:
             {{- else }}
             - name: SPRING_PROFILES_ACTIVE
               value: oidc
+            - name: CAMUNDA_IDENTITY_BASEURL
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
+            - name: CAMUNDA_IDENTITY_TYPE
+              value: {{ include "camundaPlatform.authType" . | quote }}
+            - name: CAMUNDA_IDENTITY_ISSUER
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: IDENTITY_INITIAL_USER_ID
               value: {{ .Values.global.identity.auth.identity.initialUserId }}
             - name: CAMUNDA_IDENTITY_CLIENT_ID

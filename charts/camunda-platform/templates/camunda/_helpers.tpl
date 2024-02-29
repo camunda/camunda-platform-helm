@@ -279,14 +279,7 @@ Identity templates.
 [camunda-platform] Identity internal URL.
 */}}
 {{ define "camundaPlatform.identityURL" }}
-  {{- if .Values.identity.enabled -}}
-    {{-
-      printf "http://%s:%v%s"
-        (include "identity.fullname" .Subcharts.identity)
-        .Values.identity.service.port
-        (.Values.identity.contextPath | default "")
-    -}}
-  {{- end -}}
+  {{- (include "identity.internalUrl" .) -}}
 {{- end -}}
 
 {{/*
