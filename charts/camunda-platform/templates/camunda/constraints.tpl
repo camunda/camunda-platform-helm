@@ -24,3 +24,17 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
 {{- end }}
+
+{{/*
+Fail with a message if the auth type is set and its requirements are not met which are:
+- Identity issuerBackendUrl is set.
+*/}}
+{{- if not (eq (upper .Values.global.identity.auth.type) "KEYCLOAK") }}
+  {{- if not .Values.global.identity.auth.issuerBackendUrl }}
+    {{- $errorMessage := printf "[camunda][error] %s %s"
+        "The Identity auth type is set but the issuerBackendUrl is not configured."
+        "Ensure that \"global.identity.auth.issuerBackendUrl\" is set."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end }}
