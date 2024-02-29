@@ -36,7 +36,7 @@ jobs:
         go-version-file: go.mod
         cache: false
     - uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-    - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4
+    - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4
       with:
         path: |
           ~/.cache/go-build
