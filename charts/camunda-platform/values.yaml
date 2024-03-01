@@ -170,6 +170,23 @@ global:
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
         existingSecret: ""
 
+      ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other sub-charts
+      identity:
+        ## @param global.identity.auth.identity.clientId defines the client id, which is used by Identity in authentication flows.
+        clientId: identity
+        ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
+        audience: camunda-identity-resource-server
+        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+        # The existing secret should contain an `identity-secret` field, which will be used as secret for the identity-identity communication.
+        existingSecret:
+        ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
+        # Should be publicly accessible, the default value works if a port-forward to Identity is created to 8085.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8085"
+        ## @param global.identity.auth.identity.initialUserId defines the initial user id, which is used by Identity to configure mapping rules for the
+        # initial user.
+        initialUserId: ""
+
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
         ## @param global.identity.auth.operate.clientId defines the client id, which is used by Operate in authentication flows.
@@ -234,6 +251,8 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
+        ## @skip global.identity.auth.console.audience can be used to Console audience in Identity.
+        audience: console-api
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
