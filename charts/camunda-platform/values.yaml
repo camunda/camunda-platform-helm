@@ -98,6 +98,7 @@ global:
     auth:
       username: 
       password: 
+      certificateSecret:
     ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
     ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration

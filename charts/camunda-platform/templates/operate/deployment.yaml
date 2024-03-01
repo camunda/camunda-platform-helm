@@ -60,6 +60,10 @@ spec:
                 secretKeyRef:
                   name: elastic-password
                   key: password
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- end }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
@@ -193,6 +197,11 @@ spec:
               mountPath: /tmp
             - name: camunda
               mountPath: /camunda
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: keystore
+              mountPath: /usr/local/operate/certificates/elasticsearch.jks
+              subPath: elasticsearch.jks
+            {{- end }}
             {{- if .Values.operate.extraVolumeMounts}}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -210,6 +219,12 @@ spec:
           emptyDir: {}
         {{- if .Values.operate.extraVolumes}}
         {{- .Values.operate.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+        {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+        - name: keystore
+          secret:
+            secretName: elasticsearch-jks
+            optional: false
         {{- end }}
       {{- if .Values.operate.serviceAccount.name}}
       serviceAccountName: {{ .Values.operate.serviceAccount.name }}

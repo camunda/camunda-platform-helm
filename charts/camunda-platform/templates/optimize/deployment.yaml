@@ -51,6 +51,10 @@ spec:
                   name: elastic-password
                   key: password
             {{- end }}
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- end }}
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
@@ -63,6 +67,11 @@ spec:
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
           volumeMounts:
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: keystore
+              mountPath: /optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- end }}
             - mountPath: /tmp
               name: tmp
             - mountPath: /camunda
@@ -79,6 +88,10 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- end }}
             {{- if .Values.global.elasticsearch.external }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
@@ -206,6 +219,11 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: keystore
+              mountPath: /optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -217,6 +235,12 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
+        {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+        - name: keystore
+          secret:
+            secretName: elasticsearch-jks
+            optional: false
+        {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

@@ -120,8 +120,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: "{{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}"
+            {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebe.javaOpts | quote }}
+            {{- end }}
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -177,6 +182,11 @@ spec:
             - name: config
               mountPath: /usr/local/bin/startup.sh
               subPath: startup.sh
+            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            - name: keystore
+              mountPath: /usr/local/zeebe/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- end }}
             {{- if not ( eq .Values.zeebe.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/zeebe/data
@@ -197,6 +207,12 @@ spec:
       {{- .Values.zeebe.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
+        {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+            optional: false
+        {{- end }}
         {{- if eq .Values.zeebe.persistenceType "memory" }}
         - name: data
           emptyDir:
