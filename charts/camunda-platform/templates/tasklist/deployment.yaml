@@ -191,8 +191,8 @@ spec:
           volumeMounts:
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: keystore
-              mountPath: /app/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
+              mountPath: /app/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
             {{- end }}
             - name: config
               mountPath: /app/resources/application.yml
@@ -214,7 +214,7 @@ spec:
         {{- if .Values.global.elasticsearch.auth.certificateSecret }}
         - name: keystore
           secret:
-            secretName: elasticsearch-jks
+            secretName: {{ .Values.global.elasticsearch.auth.certificateSecret }}
             optional: false
         {{- end }}
         - name: config

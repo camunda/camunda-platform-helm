@@ -199,8 +199,8 @@ spec:
               mountPath: /camunda
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: keystore
-              mountPath: /usr/local/operate/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
+              mountPath: /usr/local/operate/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
             {{- end }}
             {{- if .Values.operate.extraVolumeMounts}}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
@@ -223,7 +223,7 @@ spec:
         {{- if .Values.global.elasticsearch.auth.certificateSecret }}
         - name: keystore
           secret:
-            secretName: elasticsearch-jks
+            secretName: {{ .Values.global.elasticsearch.auth.certificateSecret }}
             optional: false
         {{- end }}
       {{- if .Values.operate.serviceAccount.name}}
