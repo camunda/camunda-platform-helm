@@ -62,7 +62,7 @@ spec:
                   key: password
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/elasticsearch.jks
             {{- end }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
@@ -199,8 +199,8 @@ spec:
               mountPath: /camunda
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: keystore
-              mountPath: /usr/local/operate/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
-              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+              mountPath: /usr/local/operate/certificates/elasticsearch.jks
+              subPath: elasticsearch.jks
             {{- end }}
             {{- if .Values.operate.extraVolumeMounts}}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}

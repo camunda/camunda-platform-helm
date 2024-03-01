@@ -39,7 +39,7 @@ spec:
           env:
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/app/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              value: -Djavax.net.ssl.trustStore=/app/certificates/elasticsearch.jks
             {{- end }}
             {{- if .Values.tasklist.contextPath }}
             - name: SERVER_SERVLET_CONTEXT_PATH
@@ -191,8 +191,8 @@ spec:
           volumeMounts:
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: keystore
-              mountPath: /app/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
-              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+              mountPath: /app/certificates/elasticsearch.jks
+              subPath: elasticsearch.jks
             {{- end }}
             - name: config
               mountPath: /app/resources/application.yml

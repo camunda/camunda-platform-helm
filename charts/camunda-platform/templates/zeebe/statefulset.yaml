@@ -122,7 +122,7 @@ spec:
                   fieldPath: metadata.name
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: "{{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}"
+              value: {{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/elasticsearch.jks
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebe.javaOpts | quote }}
@@ -184,8 +184,8 @@ spec:
               subPath: startup.sh
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: keystore
-              mountPath: /usr/local/zeebe/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
-              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+              mountPath: /usr/local/zeebe/certificates/elasticsearch.jks
+              subPath: elasticsearch.jks
             {{- end }}
             {{- if not ( eq .Values.zeebe.persistenceType "local" ) }}
             - name: data

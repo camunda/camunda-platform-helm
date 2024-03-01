@@ -53,7 +53,7 @@ spec:
             {{- end }}
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/elasticsearch.jks
             {{- end }}
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
@@ -69,8 +69,8 @@ spec:
           volumeMounts:
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: keystore
-              mountPath: /optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
-              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+              mountPath: /optimize/certificates/elasticsearch.jks
+              subPath: elasticsearch.jks
             {{- end }}
             - mountPath: /tmp
               name: tmp
@@ -90,7 +90,7 @@ spec:
           env:
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/elasticsearch.jks
             {{- end }}
             {{- if .Values.global.elasticsearch.external }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
@@ -221,8 +221,8 @@ spec:
               name: camunda
             {{- if .Values.global.elasticsearch.auth.certificateSecret }}
             - name: keystore
-              mountPath: /optimize/certificates/{{ .Values.global.elasticsearch.auth.certificateSecret }}
-              subPath: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+              mountPath: /optimize/certificates/elasticsearch.jks
+              subPath: elasticsearch.jks
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
