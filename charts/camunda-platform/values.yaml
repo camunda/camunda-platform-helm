@@ -301,62 +301,8 @@ console:
   ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @param console.configuration Configuration passed directly to Console as yaml file
+  ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
   configuration: ""
-
-  # Method 01: Plain
-  # The full config is passed to Console as a ConfigMap.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: plain
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #           version: 8.2.10
-  #           components:
-  #           - name: Console
-  #             url: "https://example-dev.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-dev.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-dev.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-dev.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-dev.camunda.com/"
-  #         - name: camunda-platform-stage
-  #           namespace: camunda-stage
-  #           version: 8.2.11
-  #           components:
-  #           - name: Console
-  #             url: "https://example-stage.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-stage.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-stage.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-stage.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-stage.camunda.com/"
-
-  # Method 02: Helm
-  # With each Camunda there is a ConfigMap contains the release info.
-  # Hence, only namespaces are passed as config to Console, then Console will retrieve
-  # the Camunda deployment details from there.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: helm
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-stage
 
   ## console.image configuration to configure the Console image specifics
   image:
@@ -386,7 +332,7 @@ console:
   ## @param console.podLabels can be used to define extra Console pod labels
   podLabels: {}
 
-  ## @param console.logging configuration for the Console logging. This template will be directly included in the Operate configuration yaml file
+  ## @param console.logging configuration for the Console logging. This template will be directly included in the Operate configuration YAML file
   logging: {}
 
   ## console.service configuration to configure the Console service.
@@ -1108,7 +1054,7 @@ operate:
   ## @param operate.podLabels can be used to define extra Operate pod labels
   podLabels: {}
 
-  ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file
+  ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration YAML file
   ## @param operate.logging.level.ROOT
   ## @param operate.logging.level.io.camunda.operate
   logging:
@@ -2946,7 +2892,7 @@ connectors:
   ## @param connectors.podLabels can be used to define extra Connectors pod labels
   podLabels: {}
 
-  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration yaml file
+  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration YAML file
   ## @param connectors.logging.level.io.camunda.connector
   logging:
     level:
