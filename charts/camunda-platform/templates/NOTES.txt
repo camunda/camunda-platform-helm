@@ -12,6 +12,15 @@
 
 ## Installed Services:
 
+- Console:
+  - Enabled: {{ .Values.console.enabled }}
+  {{- if .Values.console.enabled }}
+    {{- if .Values.console.image.tag }}
+  - Docker Image used for Console: {{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}
+    {{- else }}
+  - Docker Image used for Console: {{ .Values.console.image.repository }}:{{ .Values.global.image.tag }}
+    {{- end }}
+  {{- end }}
 - Zeebe:
   - Enabled: {{ .Values.zeebe.enabled }}
   {{- if .Values.zeebe.enabled }}
@@ -78,7 +87,7 @@
 - Elasticsearch:
   - Enabled: {{ .Values.elasticsearch.enabled }}
   {{- if .Values.elasticsearch.enabled }}
-  - Elasticsearch URL: {{ include "camundaPlatform.elasticsearchURL" . }}
+  - Docker Image used for Elasticsearch: {{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}
   {{- end }}
 
 ### Zeebe
@@ -114,14 +123,18 @@ Tasklist:
 Optimize:
 > kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
-{{ if .Values.connectors.enabled -}}
-Connectors:
-> kubectl port-forward svc/{{ .Release.Name }}-connectors 8088:8080
-{{- end }}
 {{ if .Values.webModeler.enabled -}}
 Web Modeler:
 > kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8084:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
+{{- end }}
+{{ if .Values.connectors.enabled -}}
+Connectors:
+> kubectl port-forward svc/{{ .Release.Name }}-connectors 8086:8080
+{{- end }}
+{{ if .Values.console.enabled -}}
+Console:
+> kubectl port-forward svc/{{ .Release.Name }}-console 8087:80
 {{- end }}
 
 {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
@@ -157,6 +170,9 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- if or (.Values.identity.enabled) (.Values.operate.enabled) (.Values.optimize.enabled) (.Values.tasklist.enabled) (.Values.webModeler.enabled) }}
 - Web Applications:
+  {{ if .Values.console.enabled -}}
+  - Console: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}
+  {{- end }}
   {{ if .Values.identity.enabled -}}
   - Identity: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.identity.contextPath }}
   {{- end }}
@@ -185,6 +201,10 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) }}
 - Web Applications:
+  {{ if .Values.console.ingress.enabled -}}
+  {{- $proto := ternary "https" "http" .Values.console.ingress.tls.enabled -}}
+  - Console: {{ $proto }}://{{ .Values.console.ingress.host }}
+  {{- end }}
   {{ $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
   {{ if .Values.identity.ingress.enabled -}}
   - Identity: {{ $proto }}://{{ .Values.identity.ingress.host }}
@@ -216,7 +236,8 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 
 {{ if .Values.global.createReleaseInfo -}}
 
-## Console config
+## Console configuration
+
 {{ include "camundaPlatform.releaseInfo" . }}
 
 {{- end }}
