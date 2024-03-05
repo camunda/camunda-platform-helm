@@ -217,6 +217,7 @@ TODO: Refactor the Keycloak config once Console is production ready.
   {{- end -}}
 {{- end -}}
 
+
 {{/*
 [camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
 */}}
@@ -270,6 +271,30 @@ Operate templates.
 
 
 {{/*
+Get the external url for a given component.
+If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
+Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "context" .) }}
+*/}}
+{{- define "camundaPlatform.getExternalURL" -}}
+  {{- if (index .context.Values .component "enabled") -}}
+    {{- if or (index .context.Values .component "ingress" "enabled") }}
+      {{- $proto := ternary "https" "http" (index .context.Values .component "ingress" "tls" "enabled") -}}
+      {{- printf "%s://%s" $proto (index .context.Values .component "ingress" "host") -}} 
+    {{- else if $.context.Values.global.ingress.enabled -}}
+      {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
+      {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values .component "contextPath") -}} 
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Operate external URL.
+*/}}
+{{- define "camundaPlatform.operateExternalURL" }}
+  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "operate" "context" .)) -}}
+{{- end -}}
+
+{{/*
 ********************************************************************************
 Identity templates.
 ********************************************************************************
@@ -298,6 +323,14 @@ Usage: {{ include "camundaPlatform.identitySecretName" (dict "context" . "compon
   {{- printf "%s-%s-identity-secret" $releaseName .component -}}
 {{- end }}
 
+{{/*
+[camunda-platform] Identity external URL.
+*/}}
+{{- define "camundaPlatform.identityExternalURL" }}
+  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "identity" "context" .)) -}}
+{{- end -}}
+
+
 
 {{/*
 ********************************************************************************
@@ -323,20 +356,18 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
 
-  {{- with dict "Release" .Release "Chart" (dict "Name" "identity") "Values" .Values.identity }}
-  {{ if .Values.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.service.metricsPort -}}
+  {{ if .Values.identity.enabled -}}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
     id: keycloak
-    version: {{ .Values.keycloak.image.tag }}
+    version: {{ .Values.identity.keycloak.image.tag }}
     url: {{ $baseURL }}{{ .Values.global.identity.keycloak.contextPath }}
   - name: Identity
     id: identity
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values) }}
-    url: {{ $baseURL }}{{ .Values.contextPath }}
-    readiness: {{ printf "%s%s" $baseURLInternal .Values.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s" $baseURLInternal .Values.metrics.prometheus }}
-  {{- end }}
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+    url: {{ include "camundaPlatform.identityExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.identity.metrics.prometheus }}
   {{- end }}
 
   {{- if .Values.operate.enabled }}
@@ -344,7 +375,7 @@ Release templates.
   - name: Operate
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
-    url: {{ $baseURL }}{{ .Values.operate.contextPath }}
+    url: {{ include "camundaPlatform.operateExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
   {{- end }}

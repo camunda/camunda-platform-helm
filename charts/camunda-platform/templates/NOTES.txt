@@ -174,10 +174,10 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
   - Console: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
-  - Identity: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.identity.contextPath }}
+  - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
   {{ if .Values.operate.enabled -}}
-  - Operate: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.operate.contextPath }}
+  - Operate: {{ include "camundaPlatform.operateExternalURL" . }}
   {{- end }}
   {{ if .Values.optimize.enabled -}}
   - Optimize: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.optimize.contextPath }}
@@ -205,13 +205,11 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
   {{- $proto := ternary "https" "http" .Values.console.ingress.tls.enabled -}}
   - Console: {{ $proto }}://{{ .Values.console.ingress.host }}
   {{- end }}
-  {{ $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
   {{ if .Values.identity.ingress.enabled -}}
-  - Identity: {{ $proto }}://{{ .Values.identity.ingress.host }}
+  - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
   {{ if .Values.operate.ingress.enabled -}}
-  {{- $proto := ternary "https" "http" .Values.operate.ingress.tls.enabled -}}
-  - Operate: {{ $proto }}://{{ .Values.operate.ingress.host }}
+  - Operate: {{ include "camundaPlatform.operateExternalURL" . }}
   {{- end }}
   {{ if .Values.optimize.ingress.enabled -}}
   {{- $proto := ternary "https" "http" .Values.optimize.ingress.tls.enabled -}}
