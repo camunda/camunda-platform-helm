@@ -241,8 +241,10 @@ spec:
               value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: IDENTITY_INITIAL_USER_ID
-              value: {{ .Values.global.identity.auth.identity.initialUserId }}
+            - name: IDENTITY_INITIAL_CLAIM_NAME
+              value: {{ .Values.global.identity.auth.identity.initialClaimName }}
+            - name: IDENTITY_INITIAL_CLAIM_VALUE
+              value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: {{ include "identity.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET

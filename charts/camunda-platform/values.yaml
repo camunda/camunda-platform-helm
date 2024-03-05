@@ -183,9 +183,11 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Identity is created to 8085.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8085"
-        ## @param global.identity.auth.identity.initialUserId defines the initial user id, which is used by Identity to configure mapping rules for the
-        # initial user.
-        initialUserId: ""
+        ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Identity to configure initial mapping rules,
+        # defaults to "oid".
+        initialClaimName: "oid"
+        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Identity to configure initial mapping rules.
+        initialClaimValue:
 
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
