@@ -352,7 +352,11 @@ Web Modeler templates.
       {{- printf "%s://%s" $proto (index $ingress .component "host") -}} 
     {{- else if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values.webModeler "contextPath") -}} 
+      {{- if eq .component "websockets" }}
+        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (include "webModeler.websocketContextPath" .context) -}} 
+      {{- else -}}
+        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values.webModeler "contextPath") -}} 
+      {{- end -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
