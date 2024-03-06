@@ -164,30 +164,29 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- if .Values.global.ingress.enabled }}
 ## Combined Ingress
 
-{{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
 {{ if .Values.identity.keycloak.enabled -}}
-- Keycloak Authentication: https://{{ .Values.global.ingress.host }}{{ .Values.global.identity.keycloak.contextPath }}
+- Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
 {{- end }}
 {{- if or (.Values.identity.enabled) (.Values.operate.enabled) (.Values.optimize.enabled) (.Values.tasklist.enabled) (.Values.webModeler.enabled) }}
 - Web Applications:
   {{ if .Values.console.enabled -}}
-  - Console: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}
+  - Console: {{ include "camundaPlatform.consoleExternalURL" . }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
-  - Identity: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.identity.contextPath }}
+  - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
   {{ if .Values.operate.enabled -}}
-  - Operate: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.operate.contextPath }}
+  - Operate: {{ include "camundaPlatform.operateExternalURL" . }}
   {{- end }}
   {{ if .Values.optimize.enabled -}}
-  - Optimize: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.optimize.contextPath }}
+  - Optimize: {{ include "camundaPlatform.optimizeExternalURL" . }}
   {{- end }}
   {{ if .Values.tasklist.enabled -}}
-  - Tasklist: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.tasklist.contextPath }}
+  - Tasklist: {{ include "camundaPlatform.tasklistExternalURL" . }}
   {{- end }}
   {{ if .Values.webModeler.enabled -}}
-  - WebModeler WebApp: {{ $proto }}://{{ .Values.global.ingress.host }}{{ .Values.webModeler.contextPath }}
-  - WebModeler WebSockets: {{ $proto }}://{{ .Values.global.ingress.host }}{{ include "webModeler.websocketContextPath" . }}
+  - WebModeler WebApp: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
+  - WebModeler WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
   {{- end }}
 {{- end }}
 {{- end }}
@@ -196,36 +195,28 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 ## Separated Ingress
 
 {{ if .Values.identity.keycloak.ingress.enabled -}}
-{{- $proto := ternary "https" "http" .Values.identity.keycloak.ingress.tls -}}
-- Keycloak Authentication: {{ $proto }}://{{ .Values.identity.keycloak.ingress.hostname }}{{ .Values.identity.keycloak.httpRelativePath }}
+- Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
 {{- end }}
 {{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) }}
 - Web Applications:
   {{ if .Values.console.ingress.enabled -}}
-  {{- $proto := ternary "https" "http" .Values.console.ingress.tls.enabled -}}
-  - Console: {{ $proto }}://{{ .Values.console.ingress.host }}
+  - Console: {{ include "camundaPlatform.consoleExternalURL" . }}
   {{- end }}
-  {{ $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
   {{ if .Values.identity.ingress.enabled -}}
-  - Identity: {{ $proto }}://{{ .Values.identity.ingress.host }}
+  - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
   {{ if .Values.operate.ingress.enabled -}}
-  {{- $proto := ternary "https" "http" .Values.operate.ingress.tls.enabled -}}
-  - Operate: {{ $proto }}://{{ .Values.operate.ingress.host }}
+  - Operate: {{ include "camundaPlatform.operateExternalURL" . }}
   {{- end }}
   {{ if .Values.optimize.ingress.enabled -}}
-  {{- $proto := ternary "https" "http" .Values.optimize.ingress.tls.enabled -}}
-  - Optimize: {{ $proto }}://{{ .Values.optimize.ingress.host }}
+  - Optimize: {{ include "camundaPlatform.optimizeExternalURL" . }}
   {{- end }}
   {{ if .Values.tasklist.ingress.enabled -}}
-  {{- $proto := ternary "https" "http" .Values.tasklist.ingress.tls.enabled -}}
-  - Tasklist: {{ $proto }}://{{ .Values.tasklist.ingress.host }}
+  - Tasklist: {{ include "camundaPlatform.tasklistExternalURL" . }}
   {{- end }}
   {{ if .Values.webModeler.ingress.enabled -}}
-  {{- $proto := ternary "https" "http" .Values.webModeler.ingress.webapp.tls.enabled -}}
-  - WebModeler WebApp: {{ $proto }}://{{ .Values.webModeler.ingress.webapp.host }}
-  {{ $proto := ternary "wss" "ws" .Values.webModeler.ingress.websockets.tls.enabled -}}
-  - WebModeler WebSockets: {{ $proto }}://{{ .Values.webModeler.ingress.websockets.host }}
+  - WebModeler WebApp: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
+  - WebModeler WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
   {{- end }}
 {{- end }}
 {{- end }}
