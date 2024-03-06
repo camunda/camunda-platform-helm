@@ -44,7 +44,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: camunda-platform
-          image: registry.camunda.cloud/console/console-sm:latest
+          image: registry.camunda.cloud/console/console-sm:SNAPSHOT
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
