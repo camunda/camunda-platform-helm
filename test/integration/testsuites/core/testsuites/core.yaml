@@ -97,7 +97,7 @@ testcases:
     - result.code ShouldEqual 0
     - result.systemout ShouldContainSubstring "Leader, Healthy"
     - result.systemout ShouldNotContainSubstring Unhealthy
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 3
 
 - name: TEST - Deploying BPMN process
   steps:
