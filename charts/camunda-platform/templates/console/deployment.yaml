@@ -42,6 +42,8 @@ spec:
           env:
             - name: NODE_ENV
               value: prod
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
             - name: KEYCLOAK_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
             - name: KEYCLOAK_REALM

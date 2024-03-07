@@ -13,3 +13,4 @@ data:
   IDENTITY_DATABASE_NAME: {{ include "identity.postgresql.database" . | quote }}
   IDENTITY_DATABASE_USERNAME: {{ include "identity.postgresql.username" . | quote }}
 {{- end }}
+  IDENTITY_URL: {{ include "identity.externalUrl" . | quote }}

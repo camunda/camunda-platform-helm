@@ -2,8 +2,8 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-9.1.3"></a>
-## [camunda-platform-9.1.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-9.1.2...camunda-platform-9.1.3) (2024-02-28)
+<a name="camunda-platform-9.2.0"></a>
+## [camunda-platform-9.2.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-9.1.2...camunda-platform-9.2.0) (2024-02-29)
 
 ### Feat
 
@@ -22,4 +22,3 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 * remove old console test config
 * disable prometheus tests until prometheus Completed issue is resolved ([#1350](https://github.com/camunda/camunda-platform-helm/issues/1350))
 * fix yamllint errors ([#1345](https://github.com/camunda/camunda-platform-helm/issues/1345))
-

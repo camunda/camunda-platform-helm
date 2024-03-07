@@ -1,7 +1,7 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8 Helm Chart Version Matrix
 
-## Chart version 9.1.3
+## Chart version 9.2.0
 
 Camunda images:
 

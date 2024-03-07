@@ -17,51 +17,45 @@ data:
     # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
     camunda:
       console:
-        stage:
-        customerId:
-        installationId:
-        telemetry:
-          enabled: false
-          token:
         managed:
           method: plain
           releases:
           - name: camunda-platform-test
             namespace: camunda-platform
-            version: 9.1.3
+            version: 9.2.0
             components:
             - name: Console
               id: console
-              version: latest
-              url: http://
+              version: SNAPSHOT
+              url:
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
             - name: Keycloak
               id: keycloak
               version: 22.0.5
-              url: http:///auth
+              url:http:///auth
             - name: Identity
               id: identity
               version: 8.4.4
-              url: http://
-              readiness: http://camunda-platform-test-identity.camunda-platform:82/actuator/health
-              metrics: http://camunda-platform-test-identity.camunda-platform:82/actuator/prometheus
+              url:
+              readiness: http://camunda-platform-test.camunda-platform:82/actuator/health
+              metrics: http://camunda-platform-test.camunda-platform:82/actuator/prometheus
             - name: Operate
               id: operate
               version: 8.4.4
-              url: http://
+              url:
               readiness: http://camunda-platform-test-operate.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
             - name: Optimize
               id: optimize
               version: 8.4.1
-              url: http://
+              url:
               readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
             - name: Tasklist
               id: tasklist
               version: 8.4.4
-              url: http://
+              url:
               readiness: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/prometheus
             - name: Zeebe Gateway

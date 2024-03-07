@@ -44,7 +44,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: camunda-platform
-          image: registry.camunda.cloud/console/console-sm:latest
+          image: registry.camunda.cloud/console/console-sm:SNAPSHOT
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -54,6 +54,8 @@ spec:
           env:
             - name: NODE_ENV
               value: prod
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: "http://camunda-platform-test-keycloak:80/auth"
             - name: KEYCLOAK_BASE_URL
               value: "http://localhost:18080/auth"
             - name: KEYCLOAK_REALM

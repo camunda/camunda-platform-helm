@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.4.4"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: 374112154c9cfefb3156a7b59f4b19bc5c61cb0444a07aafc4bb08f669e5acd8
+        checksum/configmap-env-vars: a707a5106560365165b1c5347ab59a9795c1ac3e1609686093aeafd7a62cebc4
     spec:
       imagePullSecrets:
         []
@@ -52,6 +52,8 @@ spec:
             runAsNonRoot: true
             runAsUser: 1005
           env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: keycloak
             - name: KEYCLOAK_INIT_OPERATE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -116,8 +118,6 @@ spec:
               value: "zeebe-api"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
-            - name: SERVER_PORT
-              value: "8080"
             - name: KEYCLOAK_URL
               value: "http://camunda-platform-test-keycloak:80/auth"
             - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
@@ -153,7 +153,11 @@ spec:
               value: "Web Modeler"
             - name: KEYCLOAK_USERS_0_ROLES_5
               value: "Console"
+            - name: SERVER_PORT
+              value: "8080"
           envFrom:
+            - configMapRef:
+                name: camunda-platform-test-identity-config-env-vars
           resources:
             limits:
               cpu: 2000m
