@@ -445,6 +445,8 @@ console:
     name: ""
     ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
@@ -599,6 +601,8 @@ zeebe:
     name: ""
     ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
+    ## @param zeebe.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @param zeebe.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
@@ -988,6 +992,8 @@ zeebe-gateway:
     name: ""
     ## @param zeebe-gateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: {}
+    ## @param zeebe-gateway.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param zeebe-gateway.ingress.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
@@ -1108,6 +1114,8 @@ operate:
     name: ""
     ## @param operate.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param operate.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
@@ -1309,6 +1317,8 @@ tasklist:
     name: ""
     ## @param tasklist.serviceAccount.annotations can be used to set the annotations of the Tasklist service account
     annotations: {}
+    ## @param tasklist.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @extra tasklist.podSecurityContext defines the security options the Tasklist pod should be run with
   podSecurityContext:
@@ -1512,6 +1522,8 @@ optimize:
     name: ""
     ## @param optimize.serviceAccount.annotations can be used to set the annotations of the Optimize service account
     annotations: {}
+    ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @extra optimize.service configuration to configure the Optimize service.
   service:
@@ -1860,6 +1872,8 @@ identity:
     name: ""
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
+    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: True
 
   ingress:
     ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
@@ -2724,6 +2738,8 @@ webModeler:
     name: ""
     ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the Web Modeler service account
     annotations: {}
+    ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the Web Modeler deployment. Only useful if an Ingress controller like NGINX is available.
@@ -3005,6 +3021,8 @@ connectors:
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
