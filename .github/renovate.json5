@@ -66,6 +66,12 @@
       "matchPackageNames": ["bitnami/elasticsearch"],
       "allowedVersions": "~8.9.0"
     },
+    {
+      // Disable helm chart upgrades from bitnami/elasticsearch
+      "matchPackageNames": ["elasticsearch"],
+      "matchPaths": ["charts/camunda-platform/Chart.yaml"],
+      "enabled": false
+    },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
       "matchPackagePatterns": ["kubectl"],
