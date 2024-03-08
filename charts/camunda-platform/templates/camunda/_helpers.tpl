@@ -437,7 +437,7 @@ Release templates.
   - name: Console
     id: console
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
-    url: {{- include "camundaPlatform.consoleExternalURL" . }}
+    url: {{ include "camundaPlatform.consoleExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
@@ -446,11 +446,11 @@ Release templates.
   - name: Keycloak
     id: keycloak
     version: {{ .Values.identity.keycloak.image.tag }}
-    url: {{- include "camundaPlatform.keycloakExternalURL" . }}
+    url: {{ include "camundaPlatform.keycloakExternalURL" . }}
   - name: Identity
     id: identity
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
-    url: {{- include "camundaPlatform.identityExternalURL" . }}
+    url: {{ include "camundaPlatform.identityExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.identity.metrics.prometheus }}
   {{- end }}
@@ -460,7 +460,7 @@ Release templates.
   - name: Operate
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
-    url: {{- include "camundaPlatform.operateExternalURL" . }}
+    url: {{ include "camundaPlatform.operateExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
   {{- end }}
@@ -470,7 +470,7 @@ Release templates.
   - name: Optimize
     id: optimize
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
-    url: {{- include "camundaPlatform.optimizeExternalURL" . }}
+    url: {{ include "camundaPlatform.optimizeExternalURL" . }}
     readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
   {{- end }}
@@ -480,7 +480,7 @@ Release templates.
   - name: Tasklist
     id: tasklist
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
-    url: {{- include "camundaPlatform.tasklistExternalURL" . }}
+    url: {{ include "camundaPlatform.tasklistExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
   {{- end }}
@@ -490,7 +490,7 @@ Release templates.
   - name: WebModeler WebApp
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
-    url: {{- include "camundaPlatform.webModelerWebAppExternalURL" . }}
+    url: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal  .Values.webModeler.webapp.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
