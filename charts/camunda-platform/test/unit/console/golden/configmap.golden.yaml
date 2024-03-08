@@ -27,35 +27,35 @@ data:
             - name: Console
               id: console
               version: SNAPSHOT
-              url:
+              url: 
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
             - name: Keycloak
               id: keycloak
               version: 22.0.5
-              url:http:///auth
+              url: http:///auth
             - name: Identity
               id: identity
               version: 8.4.4
-              url:
+              url: 
               readiness: http://camunda-platform-test.camunda-platform:82/actuator/health
               metrics: http://camunda-platform-test.camunda-platform:82/actuator/prometheus
             - name: Operate
               id: operate
               version: 8.4.4
-              url:
+              url: 
               readiness: http://camunda-platform-test-operate.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
             - name: Optimize
               id: optimize
               version: 8.4.2
-              url:
+              url: 
               readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
             - name: Tasklist
               id: tasklist
               version: 8.4.4
-              url:
+              url: 
               readiness: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/prometheus
             - name: Zeebe Gateway
