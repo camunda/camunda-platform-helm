@@ -2,16 +2,16 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-8.3.9"></a>
-## [camunda-platform-8.3.9](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.3.8...camunda-platform-8.3.9) (2024-03-07)
+<a name="camunda-platform-8.3.8"></a>
+## [camunda-platform-8.3.8](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.3.7...camunda-platform-8.3.8) (2024-02-28)
 
 ### Verification
 
 To verify integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-8.3.9.tgz \
-  --bundle camunda-platform-8.3.9.cosign.bundle \
+cosign verify-blob camunda-platform-8.3.8.tgz \
+  --bundle camunda-platform-8.3.8.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   --certificate-identity "https://github.com/_GITHUB_WORKFLOW_REF_"
 ```
