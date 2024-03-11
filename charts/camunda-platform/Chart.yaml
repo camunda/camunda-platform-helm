@@ -1,7 +1,7 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.2.0
-appVersion: 8.4.x
+version: 9.3.0
+appVersion: 9.3.x
 description: |
   Camunda 8 Self-Managed Helm charts.
   Camunda's process automation platform allows developers to design, automate and improve processes.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.2.0
+    version: 9.3.0
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT
