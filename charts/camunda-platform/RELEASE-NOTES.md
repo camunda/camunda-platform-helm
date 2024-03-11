@@ -2,23 +2,29 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-9.2.0"></a>
-## [camunda-platform-9.2.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-9.1.2...camunda-platform-9.2.0) (2024-02-29)
+<a name="camunda-platform-9.3.0"></a>
+## camunda-platform-9.3.0 (2024-03-11)
 
 ### Feat
 
-* support custom pvc annotations for Zeebe ([#1359](https://github.com/camunda/camunda-platform-helm/issues/1359))
-* console sm alpha ([#1334](https://github.com/camunda/camunda-platform-helm/issues/1334))
+* support OIDC in identity ([#1377](https://github.com/camunda/camunda-platform-helm/issues/1377))
 
 ### Fix
 
-* moves ccsm spring profile outside of conditional ([#1337](https://github.com/camunda/camunda-platform-helm/issues/1337))
-* update to use initialContactPoints for Zeebe Gateway ([#1353](https://github.com/camunda/camunda-platform-helm/issues/1353))
-* update version matrix after latest bugfix releases ([#1358](https://github.com/camunda/camunda-platform-helm/issues/1358))
-* separated ingress status in helm notes ([#1318](https://github.com/camunda/camunda-platform-helm/issues/1318))
+* add support for automountServiceAccountToken ([#1391](https://github.com/camunda/camunda-platform-helm/issues/1391))
 
-### Test
 
-* remove old console test config
-* disable prometheus tests until prometheus Completed issue is resolved ([#1350](https://github.com/camunda/camunda-platform-helm/issues/1350))
-* fix yamllint errors ([#1345](https://github.com/camunda/camunda-platform-helm/issues/1345))
+---------
+
+If you are using Camunda 8.2.x Helm chart, please follow the Camunda 8.3 upgrade guide.
+
+https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions
+
+configuration key "web-modeler" renamed to "webModeler"; postgresql chart dependency disabled by default
+
+2 vars have been changed as following:
+- The var ".global.identity.keycloak.fullname" is deprecated
+  in favour of ".global.identity.keycloak.url".
+- The var ".global.identity.keycloak.url" is now a dict/map instead of
+  string value.
+
