@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "console.name" -}}
-{{- default .Chart.Name .Values.console.nameOverride | trunc 63 | trimSuffix "-" }}
+    {{- default .Chart.Name .Values.console.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "console.fullname" -}}
@@ -16,7 +16,7 @@ Expand the name of the chart.
 Create chart name and version as used by the chart label.
 */}}
 {{- define "console.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+    {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -46,9 +46,19 @@ Selector labels
 Create the name of the service account to use
 */}}
 {{- define "console.serviceAccountName" -}}
-{{- if .Values.console.serviceAccount.create }}
-{{- default (include "console.fullname" .) .Values.console.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.console.serviceAccount.name }}
+    {{- if .Values.console.serviceAccount.enabled }}
+        {{- default (include "console.fullname" .) .Values.console.serviceAccount.name }}
+    {{- else }}
+        {{- default "default" .Values.console.serviceAccount.name }}
+    {{- end }}
 {{- end }}
+
+{{/*
+Get the image pull secrets.
+*/}}
+{{- define "console.imagePullSecrets" -}}
+    {{- include "camundaPlatform.imagePullSecrets" (dict
+        "component" "console"
+        "context" $
+    ) -}}
 {{- end }}

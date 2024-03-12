@@ -42,6 +42,10 @@ global:
   multitenancy:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
+
+  ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
+  createReleaseInfo: true
+
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   labels:
@@ -54,7 +58,7 @@ global:
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.4.3
+    tag: 8.4.5
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -166,6 +170,25 @@ global:
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
         existingSecret: ""
 
+      ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other sub-charts
+      identity:
+        ## @param global.identity.auth.identity.clientId defines the client id, which is used by Identity in authentication flows.
+        clientId: identity
+        ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
+        audience: camunda-identity-resource-server
+        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+        # The existing secret should contain an `identity-secret` field, which will be used as secret for the identity-identity communication.
+        existingSecret:
+        ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
+        # Should be publicly accessible, the default value works if a port-forward to Identity is created to 8085.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8085"
+        ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Identity to configure initial mapping rules,
+        # defaults to "oid".
+        initialClaimName: "oid"
+        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Identity to configure initial mapping rules.
+        initialClaimValue:
+
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
         ## @param global.identity.auth.operate.clientId defines the client id, which is used by Operate in authentication flows.
@@ -230,6 +253,8 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
+        ## @skip global.identity.auth.console.audience can be used to Console audience in Identity.
+        audience: console-api
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
@@ -253,11 +278,225 @@ global:
   multiregion:
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
-    ## @skip global.multiregion.regionId unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
     regionId: 0
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
+#################################################
+ #####
+#     #  ####  #    #  ####   ####  #      ######
+#       #    # ##   # #      #    # #      #
+#       #    # # #  #  ####  #    # #      #####
+#       #    # #  # #      # #    # #      #
+#     # #    # #   ## #    # #    # #      #
+ #####   ####  #    #  ####   ####  ###### ######
+#################################################
+
+## @section Console Parameters
+## @descriptionStart
+## **CAUTION:** Console is under development and not available yet. We plan to release it with 8.5 in April.
+## @descriptionEnd
+
+## @extra console configuration for the Console.
+console:
+  ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
+  enabled: false
+
+  ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
+  configuration: ""
+
+  ## console.image configuration to configure the Console image specifics
+  image:
+    ## @param console.image.registry can be used to set container image registry.
+    registry: registry.camunda.cloud
+    ## @param console.image.repository defines which image repository to use
+    repository: console/console-sm
+    ## @param console.image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag: SNAPSHOT
+    ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
+
+  ## @param console.sidecars can be used to attach extra containers to the console deployment
+  sidecars: []
+
+  ## @param console.replicas Number of Console replicas
+  replicas: 1
+
+  ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
+
+  ## @param console.initContainers can be used to set up extra init containers for the application Pod
+  initContainers: []
+
+  ## @param console.podAnnotations can be used to define extra Console pod annotations
+  podAnnotations: {}
+  ## @param console.podLabels can be used to define extra Console pod labels
+  podLabels: {}
+
+  ## @param console.logging configuration for the Console logging. This template will be directly included in the Operate configuration YAML file
+  logging: {}
+
+  ## console.service configuration to configure the Console service.
+  service:
+    ## @param console.service.annotations can be used to define annotations, which will be applied to the Console service
+    annotations: {}
+    ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    ## @param console.service.port defines the port number where the web application will be available
+    port: 80
+    ## @param console.service.serverName defines the port name where the web application will be available
+    serverName: http
+    ## @param console.service.managementPort defines the management port used to access metrics and app status
+    managementPort: 9100
+
+  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param console.resources.requests.memory
+  ## @param console.resources.limits.cpu
+  ## @param console.resources.limits.memory
+  ## @param console.resources.requests.cpu
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+
+  ## @param console.env can be used to set extra environment variables in each app container
+  env: []
+  ## @param console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  ## @param console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumes: []
+  ## @param console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumeMounts: []
+
+  ## console.startupProbe configuration
+  startupProbe:
+    ## @param console.startupProbe.enabled if true, the startup probe is enabled in app container
+    enabled: false
+    ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.startupProbe.probePath defines the startup probe route used on the app
+    probePath: /health/readiness
+    ## @param console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.startupProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.readinessProbe configuration
+  readinessProbe:
+    ## @param console.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    enabled: true
+    ## @param console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.readinessProbe.probePath defines the readiness probe route used on the app
+    probePath: /health/readiness
+    ## @param console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.readinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.livenessProbe configuration
+  livenessProbe:
+    ## @param console.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    enabled: false
+    ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
+    probePath: /health/liveness
+    ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.livenessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    successThreshold: 1
+    ## @param console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    failureThreshold: 5
+    ## @param console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.metrics configuration
+  metrics:
+    ## @param console.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /prometheus
+
+  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
+  serviceAccount:
+    ## @param console.serviceAccount.enabled if true, enables the Console service account
+    enabled: true
+    ## @param console.serviceAccount.name can be used to set the name of the Console service account
+    name: ""
+    ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
+    annotations: {}
+    ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
+
+  ingress:
+    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    ## @param console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
+    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+    annotations:
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    ## @param console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    ## @param console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
+    host: ""
+    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      ## @param console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: camunda-platform-console
+
+  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
+  podSecurityContext:
+    ## @param console.podSecurityContext.runAsNonRoot run as non root
+    runAsNonRoot: true
+    ## @param console.podSecurityContext.fsGroup
+    fsGroup: 1001
+
+  # ContainerSecurityContext defines the security options the Console broker container should be run with
+  containerSecurityContext:
+    ## @param console.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param console.containerSecurityContext.privileged
+    privileged: false
+    ## @param console.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param console.containerSecurityContext.runAsUser
+    runAsUser: 1001
+
+  ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
+  nodeSelector: {}
+  ## @param console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: []
+  ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: {}
 
 ###################################
 #######
@@ -362,6 +601,8 @@ zeebe:
     name: ""
     ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
+    ## @param zeebe.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @param zeebe.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
@@ -392,14 +633,15 @@ zeebe:
   pvcAccessModes: ["ReadWriteOnce"]
   ## @param zeebe.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
   pvcStorageClassName: ''
-
+  ## @param zeebe.pvcAnnotations can be used to specify custom annotations for Zeebe's persistent volume claims, enhancing storage configuration flexibility.
+  pvcAnnotations: {}
   ## @param zeebe.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
   ## @param zeebe.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
   ## @param zeebe.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
-  ## @param zeebe.initContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  ## @param zeebe.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
   ## @param zeebe.podAnnotations can be used to define extra broker pod annotations
@@ -440,7 +682,7 @@ zeebe:
     ## @param zeebe.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/startup
     ## @param zeebe.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
     ## @param zeebe.startupProbe.periodSeconds defines how often the probe is executed
@@ -459,7 +701,7 @@ zeebe:
     ## @param zeebe.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/readiness
     ## @param zeebe.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -479,7 +721,7 @@ zeebe:
     ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health
+    probePath: /actuator/health/liveness
     ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -721,7 +963,7 @@ zeebe-gateway:
   extraVolumes: []
   ## @param zeebe-gateway.extraInitContainers (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
-  ## @param zeebe-gateway.initContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  ## @param zeebe-gateway.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
   ## @extra zeebe-gateway.service configuration for the gateway service
@@ -755,6 +997,8 @@ zeebe-gateway:
     name: ""
     ## @param zeebe-gateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: {}
+    ## @param zeebe-gateway.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param zeebe-gateway.ingress.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
@@ -816,7 +1060,7 @@ operate:
 
   ## @param operate.sidecars can be used to attach extra containers to the operate deployment
   sidecars: []
-  ## @param operate.initContainers can be used to set up extra init containers for the operate pods, useful for additional exporters
+  ## @param operate.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   # contextPath: "/operate"
   ## @param operate.contextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
@@ -827,7 +1071,7 @@ operate:
   ## @param operate.podLabels can be used to define extra Operate pod labels
   podLabels: {}
 
-  ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file
+  ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration YAML file
   ## @param operate.logging.level.ROOT
   ## @param operate.logging.level.io.camunda.operate
   logging:
@@ -879,6 +1123,8 @@ operate:
     name: ""
     ## @param operate.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param operate.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
@@ -1035,7 +1281,7 @@ tasklist:
 
   ## @param tasklist.sidecars can be used to attach extra containers to the tasklist deployment
   sidecars: []
-  ## @param tasklist.initContainers can be used to set up extra init containers for the taskList pods, useful for additional exporters
+  ## @param tasklist.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   # contextPath: "/tasklist"
   ## @param tasklist.contextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
@@ -1084,6 +1330,8 @@ tasklist:
     name: ""
     ## @param tasklist.serviceAccount.annotations can be used to set the annotations of the Tasklist service account
     annotations: {}
+    ## @param tasklist.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @extra tasklist.podSecurityContext defines the security options the Tasklist pod should be run with
   podSecurityContext:
@@ -1249,7 +1497,7 @@ optimize:
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.4.1
+    tag: 8.4.2
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1282,7 +1530,7 @@ optimize:
   extraVolumes: []
   ## @param optimize.extraVolumeMounts can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates
   extraVolumeMounts: []
-  ## @param optimize.initContainers can be used to set up extra init containers for the optimize pods, useful for additional exporters
+  ## @param optimize.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   ## @extra optimize.serviceAccount configuration for the service account where the Optimize pods are assigned to
   serviceAccount:
@@ -1292,6 +1540,8 @@ optimize:
     name: ""
     ## @param optimize.serviceAccount.annotations can be used to set the annotations of the Optimize service account
     annotations: {}
+    ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @extra optimize.service configuration to configure the Optimize service.
   service:
@@ -1496,7 +1746,7 @@ identity:
 
   ## @param identity.sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
-  ## @param identity.initContainers can be used to set up extra init containers for the identity pods, useful for additional exporters
+  ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   # FullURL can be used when Ingress is configured (for both multi and single domain setup).
   # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
@@ -1645,6 +1895,8 @@ identity:
     name: ""
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
+    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: True
 
   ingress:
     ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
@@ -2033,7 +2285,7 @@ webModeler:
     registry: registry.camunda.cloud
     ## @param webModeler.image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.4.2
+    tag: 8.4.3
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
@@ -2071,7 +2323,7 @@ webModeler:
 
     ## @param webModeler.restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
-    ## @param webModeler.restapi.initContainers can be used to set up extra init containers to the restapi deployment
+    ## @param webModeler.restapi.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database. This will only be applied
@@ -2247,7 +2499,7 @@ webModeler:
 
     ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
-    ## @param webModeler.webapp.initContainers can be used to set up extra init containers to the modeler webapp deployment
+    ## @param webModeler.webapp.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
     ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations
@@ -2393,7 +2645,7 @@ webModeler:
 
     ## @param webModeler.websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
-    ## @param webModeler.websockets.initContainers can be used to set up extra init containers to the modeler websockets deployment
+    ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
     ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser.
@@ -2520,6 +2772,8 @@ webModeler:
     name: ""
     ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the Web Modeler service account
     annotations: {}
+    ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the Web Modeler deployment. Only useful if an Ingress controller like NGINX is available.
@@ -2669,13 +2923,13 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.4.4
+    tag: 8.4.5
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
   ## @param connectors.sidecars can be used to attach extra containers to the connectors deployment
   sidecars: []
-  ## @param connectors.initContainers can be used to set up extra init containers to the connectors deployment
+  ## @param connectors.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
   ## @param connectors.replicas number of Connectors replicas
@@ -2690,7 +2944,7 @@ connectors:
   ## @param connectors.podLabels can be used to define extra Connectors pod labels
   podLabels: {}
 
-  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration yaml file
+  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration YAML file
   ## @param connectors.logging.level.io.camunda.connector
   logging:
     level:
@@ -2801,6 +3055,8 @@ connectors:
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
@@ -2850,264 +3106,10 @@ connectors:
   tolerations: []
   ## @param connectors.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
-
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
-
-#
-# WARNING: Console is currently under development and should not be used yet.
-#
-#################################################
- #####
-#     #  ####  #    #  ####   ####  #      ######
-#       #    # ##   # #      #    # #      #
-#       #    # # #  #  ####  #    # #      #####
-#       #    # #  # #      # #    # #      #
-#     # #    # #   ## #    # #    # #      #
- #####   ####  #    #  ####   ####  ###### ######
-#################################################
-## Console Parameters
-## console configuration.
-# NOTE: The values here are just placeholder and not all of them are active.
-# START DEV COMMENT
-# TODO: Update Console template to match the values when the 1st dev iteration is done.
-# END DEV COMMENT
-console:
-  ## @skip console.enabled if true, the Console deployment and its related resources are deployed via a helm release
-  enabled: false
-
-  ## @skip console.createReleaseInfo Create config that will be used in console controller deployment.
-  # START DEV COMMENT
-  # NOTE: This should be under global but we keep it here till console is ready for alpha.
-  # END DEV COMMENT
-  createReleaseInfo: true
-
-  ## @skip console.configuration Configuration passed directly to Console as yaml file.
-  configuration: ""
-
-  # Method 01: Plain
-  # The full config is passed to Console as a ConfigMap.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: plain
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #           version: 8.2.10
-  #           components:
-  #           - name: Console
-  #             url: "https://example-dev.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-dev.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-dev.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-dev.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-dev.camunda.com/"
-  #         - name: camunda-platform-stage
-  #           namespace: camunda-stage
-  #           version: 8.2.11
-  #           components:
-  #           - name: Console
-  #             url: "https://example-stage.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-stage.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-stage.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-stage.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-stage.camunda.com/"
-
-  # Method 02: Helm
-  # With each Camunda there is a ConfigMap contains the release info.
-  # Hence, only namespaces are passed as config to Console, then Console will retrieve
-  # the Camunda deployment details from there.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: helm
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-stage
-
-  ## console.image configuration to configure the Console image specifics
-  image:
-    ## @skip console.image.registry can be used to set container image registry.
-    registry: registry.camunda.cloud
-    ## @skip console.image.repository defines which image repository to use
-    repository: console/console-sm
-    ## @skip console.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: latest
-    ## @skip console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @skip console.sidecars can be used to attach extra containers to the console deployment
-  sidecars: []
-
-  ## @skip console.replicas Number of Console replicas
-  replicas: 1
-
-  ## @skip console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/"
-
-  ## @skip console.podAnnotations can be used to define extra Console pod annotations
-  podAnnotations: {}
-  ## @skip console.podLabels can be used to define extra Console pod labels
-  podLabels: {}
-
-  ## @skip console.logging configuration for the Console logging. This template will be directly included in the Operate configuration yaml file
-  logging: {}
-
-  ## console.service configuration to configure the Console service.
-  service:
-    ## @skip console.service.annotations can be used to define annotations, which will be applied to the Console service
-    annotations: {}
-    ## @skip console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @skip console.service.port defines the port number where the web application will be available
-    port: 8080
-    ## @skip console.service.serverName defines the port name where the web application will be available
-    serverName: http
-
-  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip console.resources.requests.memory
-  ## @skip console.resources.limits.cpu
-  ## @skip console.resources.limits.memory
-  ## @skip console.resources.requests.cpu
-  resources:
-    requests:
-      cpu: 1
-      memory: 1Gi
-    limits:
-      cpu: 2
-      memory: 2Gi
-
-  ## @skip console.env can be used to set extra environment variables in each app container
-  env: []
-  ## @skip console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @skip console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumes: []
-  ## @skip console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumeMounts: []
-
-  ## console.startupProbe configuration
-  startupProbe:
-    ## @skip console.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @skip console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @skip console.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /health/readiness
-    ## @skip console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @skip console.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @skip console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @skip console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @skip console.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.readinessProbe configuration
-  readinessProbe:
-    ## @skip console.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @skip console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @skip console.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /health/readiness
-    ## @skip console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @skip console.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @skip console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @skip console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @skip console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.livenessProbe configuration
-  livenessProbe:
-    ## @skip console.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @skip console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @skip console.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
-    ## @skip console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @skip console.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @skip console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @skip console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @skip console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
-  serviceAccount:
-    ## @skip console.serviceAccount.enabled if true, enables the Console service account
-    enabled: false
-    ## @skip console.serviceAccount.name can be used to set the name of the Console service account
-    name: ""
-    ## @skip console.serviceAccount.annotations can be used to set the annotations of the Operate service account
-    annotations: {}
-
-  ingress:
-    ## @skip console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: false
-    ## @skip console.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @skip console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-    ## @skip console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @skip console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
-    host: ""
-    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @skip console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @skip console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-console
-
-  ## @skip console.podSecurityContext defines the security options the Console pod should be run with
-  podSecurityContext: {}
-
-  ## @skip console.containerSecurityContext defines the security options the Console container should be run with
-  containerSecurityContext: {}
-
-  ## @skip console.nodeSelector can be used to define on which nodes the Console pods should run
-  nodeSelector: {}
-  ## @skip console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @skip console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
 
 
 #####################################################################################

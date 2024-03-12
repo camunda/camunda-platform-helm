@@ -7,7 +7,11 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
-      git-ref:
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      caller-git-ref:
         required: false
         default: main
         type: string
@@ -101,11 +105,11 @@ jobs:
     env:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.camunda-helm-git-ref }}
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.distro.platform == 'gke'
@@ -158,7 +162,7 @@ jobs:
         step: start
         token: ${{ secrets.GITHUB_TOKEN }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: Pre setup
       timeout-minutes: 5
       env:
@@ -204,7 +208,7 @@ jobs:
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env_url: https://${{ steps.vars.outputs.ingress-host }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: ⭐️ Run Preflight TestSuite ⭐️
       if: inputs.test-enabled
       timeout-minutes: 10
@@ -228,7 +232,7 @@ jobs:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       run: |
@@ -245,7 +249,7 @@ jobs:
       id-token: write
       deployments: write
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4
     - name: Set PR vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -268,7 +272,7 @@ jobs:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
         env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.git-ref }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
       if: always()
       run: |

@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.5"
     app.kubernetes.io/component: identity
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: ccf71a59ceb57a2edf89433e4206337c32bfa8c795c7b11af42907c16894dc6d
+        checksum/configmap-env-vars: 080682cdd122ca33f7b97327972bf8ff57bdc32c456e0ff6f1a1db703a1d2505
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: identity
-          image: "camunda/identity:8.4.3"
+          image: "camunda/identity:8.4.5"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -52,6 +52,8 @@ spec:
             runAsNonRoot: true
             runAsUser: 1005
           env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: keycloak
             - name: KEYCLOAK_INIT_OPERATE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -116,8 +118,6 @@ spec:
               value: "zeebe-api"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
-            - name: SERVER_PORT
-              value: "8080"
             - name: KEYCLOAK_URL
               value: "http://camunda-platform-test-keycloak:80/auth"
             - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
@@ -151,7 +151,13 @@ spec:
               value: "Optimize"
             - name: KEYCLOAK_USERS_0_ROLES_4
               value: "Web Modeler"
+            - name: KEYCLOAK_USERS_0_ROLES_5
+              value: "Console"
+            - name: SERVER_PORT
+              value: "8080"
           envFrom:
+            - configMapRef:
+                name: camunda-platform-test-identity-config-env-vars
           resources:
             limits:
               cpu: 2000m

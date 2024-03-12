@@ -1,6 +1,7 @@
 preflightVars:
   baseURLs:
     elasticsearch: http://integration-elasticsearch:9200
+    console: http://integration-console:9100
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82
     optimize: http://integration-optimize/optimize
@@ -15,6 +16,7 @@ coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
   testNamespace: "{{ .K8S_NAMESPACE }}"
   baseURLs:
+    console: "https://{{ .TEST_INGRESS_HOST }}"
     keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth"
     identity: "https://{{ .TEST_INGRESS_HOST }}/identity"
     operate: "https://{{ .TEST_INGRESS_HOST }}/operate"

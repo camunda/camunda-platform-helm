@@ -28,7 +28,7 @@ jobs:
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4
       with:
         token: '${{ steps.generate-github-token.outputs.token }}'
     - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
@@ -36,7 +36,7 @@ jobs:
         go-version-file: go.mod
         cache: false
     - uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-    - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4
+    - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4
       with:
         path: |
           ~/.cache/go-build

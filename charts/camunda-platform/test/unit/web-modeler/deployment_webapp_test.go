@@ -85,6 +85,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetCorrectIdentityType
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
 			"global.identity.auth.type":           "MICROSOFT",
+			"global.identity.auth.issuerBackendUrl": "https://example.com",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

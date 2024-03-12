@@ -88,9 +88,9 @@ spec:
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.port | quote }}
-            {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
               value: "ccsm"
+            {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_ID
