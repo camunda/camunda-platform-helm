@@ -65,6 +65,7 @@ tasks:
         --timeout 20m0s
         --wait
         {{ .TEST_HELM_EXTRA_ARGS }}
+    - helm list -n {{ .TEST_NAMESPACE }}
 
   setup.post:
     cmds:

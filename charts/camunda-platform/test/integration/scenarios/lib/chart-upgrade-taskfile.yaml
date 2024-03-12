@@ -48,3 +48,5 @@ tasks:
         --set identity.postgresql.auth.password=dummy \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
+
+      helm list -n {{ .TEST_NAMESPACE }}
