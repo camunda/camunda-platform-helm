@@ -32,6 +32,7 @@ spec:
           securityContext: {{- toYaml .Values.webModeler.restapi.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if not .Values.webModeler.configuration }}
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
             {{- if .Values.identity.enabled }}
@@ -101,6 +102,7 @@ spec:
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
+            {{- end }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

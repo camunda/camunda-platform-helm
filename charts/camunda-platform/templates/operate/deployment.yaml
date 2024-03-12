@@ -37,6 +37,7 @@ spec:
           securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if not .Values.operate.configuration }}
             {{- if .Values.operate.contextPath }}
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.operate.contextPath | quote }}
@@ -112,6 +113,7 @@ spec:
             {{- end }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_auth_cache
+            {{- end }}
           {{- with .Values.operate.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}

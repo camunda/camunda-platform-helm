@@ -50,6 +50,7 @@ spec:
           securityContext: {{- toYaml .Values.zeebe.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if not .Values.zeebe.configuration }}
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -113,6 +114,7 @@ spec:
                   fieldPath: metadata.name
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebe.javaOpts | quote }}
+            {{- end }}
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

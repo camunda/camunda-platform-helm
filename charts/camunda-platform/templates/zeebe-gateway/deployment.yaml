@@ -42,6 +42,7 @@ spec:
             - containerPort: {{  .Values.zeebeGateway.service.internalPort }}
               name: {{ default "internal" .Values.zeebeGateway.service.internalName  }}
           env:
+            {{- if not .Values.zeebeGateway.configuration }}
             - name: ZEEBE_STANDALONE_GATEWAY
               value: "true"
             - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
@@ -87,6 +88,7 @@ spec:
               value: "true"
             - name: CAMUNDA_IDENTITY_BASE_URL
               value: {{ include "camundaPlatform.identityURL" . | quote }}
+            {{- end }}
             {{- end }}
             {{- with .Values.zeebeGateway.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}

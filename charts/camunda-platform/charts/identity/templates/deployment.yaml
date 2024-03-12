@@ -33,6 +33,7 @@ spec:
           securityContext: {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if not .Values.configuration }}
             {{- if .Values.fullURL }}
             - name: IDENTITY_URL
               value: {{ tpl .Values.fullURL $ | quote }}
@@ -275,6 +276,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
+            {{- end }}
             {{- end }}
           {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}

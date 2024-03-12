@@ -35,6 +35,7 @@ spec:
               name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
+            {{- if not .Values.connectors.configuration }}
             - name: SERVER_PORT
               value: {{ .Values.connectors.service.serverPort | quote }}
             {{- if .Values.connectors.contextPath }}
@@ -106,6 +107,7 @@ spec:
               value: {{ include "connectors.zeebeEndpoint" . | quote }}
             - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
               value: "true"
+            {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}

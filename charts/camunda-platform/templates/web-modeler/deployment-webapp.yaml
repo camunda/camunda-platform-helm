@@ -32,6 +32,7 @@ spec:
           securityContext: {{- toYaml .Values.webModeler.webapp.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if not .Values.webModeler.configuration }}
             - name: NODE_ENV
               value: "production"
             - name: NODE_OPTIONS
@@ -95,6 +96,7 @@ spec:
             {{- if .Values.identity.enabled }}
             - name: IDENTITY_BASE_URL
               value: {{ include "webModeler.identityBaseUrl" . | quote }}
+            {{- end }}
             {{- end }}
             {{- with .Values.webModeler.webapp.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
