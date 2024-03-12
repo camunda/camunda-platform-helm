@@ -105,7 +105,7 @@ jobs:
     env:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
     steps:
-    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
@@ -249,7 +249,7 @@ jobs:
       id-token: write
       deployments: write
     steps:
-    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Set PR vars
       id: vars
       uses: ./.github/actions/workflow-vars
