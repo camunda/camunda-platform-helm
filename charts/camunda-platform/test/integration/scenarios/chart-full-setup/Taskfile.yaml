@@ -52,7 +52,7 @@ tasks:
     - |
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
-        helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }}
+        helm pull {{ .TEST_CHART_NAME }} --version 8.2 --untar --untardir {{ .TEST_TMP_DIR }}
       fi
 
   setup.exec:
