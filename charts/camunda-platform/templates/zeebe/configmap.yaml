@@ -32,7 +32,8 @@ data:
     then
       trap : TERM INT; sleep infinity & wait
     else
-      exec /usr/local/zeebe/bin/broker    fi
+      exec /usr/local/zeebe/bin/broker
+    fi
 {{- else }}
     exec /usr/local/zeebe/bin/broker
 {{- end }}
