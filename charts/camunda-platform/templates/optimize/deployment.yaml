@@ -51,7 +51,7 @@ spec:
                   name: elastic-password
                   key: password
             {{- end }}
-            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/optimize/certificates/elasticsearch.jks
             {{- end }}
@@ -67,7 +67,7 @@ spec:
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
           volumeMounts:
-            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
             - name: keystore
               mountPath: /optimize/certificates/elasticsearch.jks
               subPath: elasticsearch.jks
@@ -88,7 +88,7 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/optimize/certificates/elasticsearch.jks
             {{- end }}
@@ -219,7 +219,7 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
             - name: keystore
               mountPath: /optimize/certificates/elasticsearch.jks
               subPath: elasticsearch.jks
@@ -235,10 +235,10 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore
           secret:
-            secretName: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
             optional: false
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}

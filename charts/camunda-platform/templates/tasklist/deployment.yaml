@@ -37,7 +37,7 @@ spec:
           securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/app/certificates/elasticsearch.jks
             {{- end }}
@@ -189,7 +189,7 @@ spec:
             timeoutSeconds: {{ .Values.tasklist.livenessProbe.timeoutSeconds }}
           {{- end }}
           volumeMounts:
-            {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
             - name: keystore
               mountPath: /app/certificates/elasticsearch.jks
               subPath: elasticsearch.jks
@@ -211,10 +211,10 @@ spec:
         {{- .Values.tasklist.sidecars | toYaml | nindent 8 }}
         {{- end }}
       volumes:
-        {{- if .Values.global.elasticsearch.auth.certificateSecret }}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore
           secret:
-            secretName: {{ .Values.global.elasticsearch.auth.certificateSecret }}
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
             optional: false
         {{- end }}
         - name: config
