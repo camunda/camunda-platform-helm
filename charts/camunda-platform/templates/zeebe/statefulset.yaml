@@ -62,7 +62,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            {{- if not .Values.zeebe.configuration }}
             - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
               value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
             - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
@@ -70,51 +69,16 @@ spec:
               {{- range (untilStep 0 (int .Values.zeebe.clusterSize) 1) }}
                 $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:{{$.Values.zeebe.service.internalPort}},
               {{- end }}
-            - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
-              value: {{ tpl .Values.global.zeebeClusterName . }}
             - name: ZEEBE_LOG_LEVEL
               value: {{ .Values.zeebe.logLevel | quote }}
-            - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-              value: {{ .Values.zeebe.partitionCount | quote }}
-            - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
-              value: {{ .Values.zeebe.clusterSize | quote }}
-            - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
-              value: {{ .Values.zeebe.replicationFactor | quote }}
-            - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
-              value: {{ .Values.zeebe.cpuThreadCount  | quote }}
-            - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
-              value: {{ .Values.zeebe.ioThreadCount  | quote }}
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
-            {{- if not .Values.global.elasticsearch.disableExporter }}
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-              value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
-              value: {{ .Values.global.elasticsearch.prefix | quote }}
-            {{- if .Values.zeebe.retention.enabled }}
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_ENABLED
-              value: "true"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_MINIMUMAGE
-              value: {{ .Values.zeebe.retention.minimumAge | quote }}
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_POLICYNAME
-              value: {{ .Values.zeebe.retention.policyName | quote }}
-            {{- end }}
-            {{- end }}
-            - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
-              value: {{ .Values.zeebe.service.commandPort  | quote }}
-            - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
-              value: {{  .Values.zeebe.service.internalPort | quote }}
-            - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
-              value: {{  .Values.zeebe.service.httpPort | quote }}
             - name: K8S_POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebe.javaOpts | quote }}
-            {{- end }}
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

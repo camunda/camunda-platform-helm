@@ -9,6 +9,49 @@ data:
   {{- if .Values.zeebe.configuration }}
   application.yaml: |
     {{ .Values.zeebe.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    zeebe:
+      broker:
+        {{- if not .Values.global.elasticsearch.disableExporter }}
+        exporters:
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+              index:
+                prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+              {{- if .Values.zeebe.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
+                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+              {{- end }}
+        {{- end }}
+        gateway:
+          enable: true
+          network:
+            port: 26500
+          security:
+            enabled: false
+            authentication:
+              mode: none
+        network:
+          host: 0.0.0.0
+          commandApi:
+            port: {{ .Values.zeebe.service.commandPort }}
+          internalApi:
+            port: {{ .Values.zeebe.service.internalPort }}
+          monitoringApi:
+            port: {{  .Values.zeebe.service.httpPort | quote }}
+        cluster:
+          clusterSize: {{ .Values.zeebe.clusterSize | quote }}
+          replicationFactor: {{ .Values.zeebe.replicationFactor | quote }}
+          partitionsCount: {{ .Values.zeebe.partitionCount | quote }}
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+        threads:
+          cpuThreadCount: {{ .Values.zeebe.cpuThreadCount  | quote }}
+          ioThreadCount: {{ .Values.zeebe.ioThreadCount  | quote }}
   {{- end }}
   startup.sh: |
     #!/usr/bin/env bash
