@@ -50,7 +50,6 @@ spec:
           securityContext: {{- toYaml .Values.zeebe.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.zeebe.configuration }}
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -63,6 +62,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            {{- if not .Values.zeebe.configuration }}
             - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
               value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
             - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
