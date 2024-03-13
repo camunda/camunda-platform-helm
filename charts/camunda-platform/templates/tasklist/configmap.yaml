@@ -11,8 +11,45 @@ data:
     {{ .Values.tasklist.configuration | indent 4 | trim }}
   {{- else }}
   application.yml: |
+    {{- if .Values.tasklist.contextPath }}
+    server:
+      servlet:
+        contextPath: {{ .Values.tasklist.contextPath | quote }}
+    {{- end }}
+  
+    {{- if .Values.global.identity.auth.enabled }}
+    spring:
+      profiles:
+        active: identity-auth
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+
+    camunda:
+      identity:
+        clientId: {{ include "tasklist.authClientId" . | quote }}
+        audience: {{ include "tasklist.authAudience" . | quote }}
+    {{- else }}
+    spring:
+      profiles:
+        active: auth
+    {{- end }}
+
     # Tasklist configuration file
     camunda.tasklist:
+      {{- if .Values.global.multitenancy.enabled }}
+      multiTenancy:
+        enabled: true
+      {{- end }}
+
+      identity:
+        redirectRootUrl: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix .Values.tasklist.contextPath | quote }}
+        userAccessRestrictions:
+          enabled: {{ .Values.tasklist.identity.userAccessRestrictions.enabled | quote }}
+
       # Set Tasklist username and password.
       # If user with <username> does not exists it will be created.
       # Default: demo/demo

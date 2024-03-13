@@ -37,20 +37,7 @@ spec:
           securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.tasklist.configuration }}
-            {{- if .Values.tasklist.contextPath }}
-            - name: SERVER_SERVLET_CONTEXT_PATH
-              value: {{ .Values.tasklist.contextPath | quote }}
-            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "identity-auth"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
-              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "tasklist.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
@@ -68,16 +55,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: tasklist-secret
               {{- end }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "tasklist.authAudience" . | quote }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
-              value: {{ .Values.tasklist.identity.userAccessRestrictions.enabled | quote }}
-            {{- /*
-              TODO: Remove the trimSuffix when it is fixed in Tasklist.
-              https://github.com/camunda/camunda-platform-helm/issues/714
-            */}}
-            - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix .Values.tasklist.contextPath | quote }}
             - name: ZEEBE_CLIENT_ID
               value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
             - name: ZEEBE_CLIENT_SECRET
@@ -99,14 +76,6 @@ spec:
             {{- if .Values.global.identity.auth.zeebe.tokenScope }}
             - name: ZEEBE_TOKEN_SCOPE
               value: {{ include "zeebe.tokenScope" . | quote }}
-            {{- end }}
-            {{- else }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "auth"
-            {{- end }}
-            {{- if .Values.global.multitenancy.enabled }}
-            - name: CAMUNDA_TASKLIST_MULTITENANCY_ENABLED
-              value: "true"
             {{- end }}
             - name: HOME
               value: /parent
