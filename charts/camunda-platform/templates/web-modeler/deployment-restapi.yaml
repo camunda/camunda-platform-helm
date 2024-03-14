@@ -32,36 +32,13 @@ spec:
           securityContext: {{- toYaml .Values.webModeler.restapi.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.webModeler.configuration }}
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
-            {{- if .Values.identity.enabled }}
-            - name: CAMUNDA_IDENTITY_BASEURL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
-            {{- end }}
-            - name: CAMUNDA_IDENTITY_TYPE
-              value: {{ include "camundaPlatform.authType" . | quote }}
-            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_PUBLIC_API
-              value: {{ include "webModeler.authPublicApiAudience" . | quote }}
-            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_INTERNAL_API
-              value: {{ include "webModeler.authClientApiAudience" . | quote }}
-            - name: SPRING_DATASOURCE_URL
-              value: {{ include "webModeler.restapi.databaseUrl" . | quote }}
-            - name: SPRING_DATASOURCE_USERNAME
-              value: {{ include "webModeler.restapi.databaseUser" . | quote }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "webModeler.restapi.databaseSecretName" . }}
                   key: {{ include "webModeler.restapi.databaseSecretKey" . }}
-            - name: RESTAPI_MAIL_HOST
-              value: {{ .Values.webModeler.restapi.mail.smtpHost | quote }}
-            - name: RESTAPI_MAIL_PORT
-              value: {{ .Values.webModeler.restapi.mail.smtpPort | quote }}
-            {{- if .Values.webModeler.restapi.mail.smtpUser }}
-            - name: RESTAPI_MAIL_USER
-              value: {{ .Values.webModeler.restapi.mail.smtpUser | quote }}
-            {{- end }}
             {{- if .Values.webModeler.restapi.mail.smtpPassword }}
             - name: RESTAPI_MAIL_PASSWORD
               valueFrom:
@@ -69,18 +46,6 @@ spec:
                   name: {{ include "webModeler.restapi.fullname" . }}
                   key: smtp-password
             {{- end }}
-            - name: RESTAPI_MAIL_ENABLE_TLS
-              value: {{ .Values.webModeler.restapi.mail.smtpTlsEnabled | quote }}
-            - name: RESTAPI_MAIL_FROM_ADDRESS
-              value: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" .Values.webModeler.restapi.mail.fromAddress | quote }}
-            - name: RESTAPI_MAIL_FROM_NAME
-              value: {{ .Values.webModeler.restapi.mail.fromName | quote }}
-            - name: RESTAPI_SERVER_URL
-              value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-            - name: RESTAPI_PUSHER_HOST
-              value: {{ include "webModeler.websockets.fullname" . | quote }}
-            - name: RESTAPI_PUSHER_PORT
-              value: {{ .Values.webModeler.websockets.service.port | quote }}
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
@@ -96,13 +61,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "webModeler.fullname" . }}
                   key: pusher-app-secret
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
-            {{- end }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -175,7 +135,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "webModeler.fullname" . }}
+            name: {{ include "webModeler.fullname" . }}-restapi
         {{- if .Values.webModeler.restapi.extraVolumes }}
         {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

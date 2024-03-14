@@ -170,7 +170,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "webModeler.fullname" . }}
+            name: {{ include "webModeler.fullname" . }}-webapp
         {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
         {{- if .Values.webModeler.serviceAccount.name }}

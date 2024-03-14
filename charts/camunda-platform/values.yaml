@@ -2300,11 +2300,6 @@ webModeler:
   ## @param webModeler.contextPath can be used to make Web Modeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param webModeler.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
-  ## @param webModeler.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
-
   # WebModeler.
   ######                         #    ######  ###
   #     # ######  ####  #####   # #   #     #  #
@@ -2481,6 +2476,11 @@ webModeler:
       ## @param webModeler.restapi.service.managementPort defines the management port of the service
       managementPort: 8091
 
+    ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
+    configuration: ""
+    ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    extraConfiguration: {}
+
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -2628,6 +2628,11 @@ webModeler:
       ## @param webModeler.webapp.service.managementPort defines the management port of the service
       managementPort: 8071
 
+    ## @param webModeler.webapp.configuration if specified, contents will be used as the application.yaml
+    configuration: ""
+    ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    extraConfiguration: {}
+
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
   #    # #      #    # #      #    # #    # #   #  #        #   #
@@ -2763,6 +2768,10 @@ webModeler:
       type: ClusterIP
       ## @param webModeler.websockets.service.port defines the port of the service
       port: 80
+    ## @param webModeler.websockets.configuration if specified, contents will be used as the application.yaml
+    configuration: ""
+    ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    extraConfiguration: {}
 
   ## @extra webModeler.serviceAccount configuration for the service account the Web Modeler pods are assigned to
   serviceAccount:

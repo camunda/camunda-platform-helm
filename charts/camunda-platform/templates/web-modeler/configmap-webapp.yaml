@@ -1,0 +1,22 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webModeler.fullname" . }}-webapp
+  labels: {{- include "webModeler.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  pusher-app-id: web-modeler
+  pusher-app-key: {{ randAlphaNum 20 }}
+  {{- if .Values.webModeler.webapp.configuration }}
+  application.yaml: |
+    {{ .Values.webModeler.webapp.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+  ----
+  {{- end }}
+  {{- range $key, $val := .Values.webModeler.webapp.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

@@ -121,7 +121,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "webModeler.fullname" . }}
+            name: {{ include "webModeler.fullname" . }}-websockets
       {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 6 }}
       {{- end }}
       {{- if .Values.webModeler.serviceAccount.name}}
