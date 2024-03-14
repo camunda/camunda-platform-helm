@@ -41,7 +41,22 @@ spec:
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.operate.contextPath | quote }}
             {{- end }}
-            {{- if .Values.global.elasticsearch.external }}
+            {{- if .Values.global.elasticsearch.external  }}
+              {{- if .Values.global.elasticsearch.openSearch}}
+            - name: CAMUNDA_OPERATE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPERATE_OPENSEARCH_URL
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: CAMUNDA_OPERATE_OPENSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+              {{- else}}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_USERNAME
@@ -60,10 +75,11 @@ spec:
                 secretKeyRef:
                   name: elastic-password
                   key: password
+              {{- end}}
+            {{- end }}
             {{- if .Values.global.elasticsearch.tls.existingSecret}}
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/elasticsearch.jks
-            {{- end }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE

@@ -38,11 +38,24 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.external }}
+            {{- if .Values.global.elasticsearch.external  }}
+              {{- if .Values.global.elasticsearch.openSearch}}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
+              value: "true"
+            - name: OPTIMIZE_OPENSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+              {{- else}}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
-            - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            # - name: OPTIMIZE_ELASTICSEARCH_HOST
+            #   value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
@@ -50,6 +63,7 @@ spec:
                 secretKeyRef:
                   name: elastic-password
                   key: password
+              {{- end}}
             {{- end }}
             {{- if .Values.global.elasticsearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
@@ -92,11 +106,24 @@ spec:
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/optimize/certificates/elasticsearch.jks
             {{- end }}
-            {{- if .Values.global.elasticsearch.external }}
+            {{- if .Values.global.elasticsearch.external  }}
+              {{- if .Values.global.elasticsearch.openSearch}}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
+              value: "true"
+            - name: OPTIMIZE_OPENSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
+              {{- else}}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
-            - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            # - name: OPTIMIZE_ELASTICSEARCH_HOST
+            #   value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
@@ -104,6 +131,7 @@ spec:
                 secretKeyRef:
                   name: elastic-password
                   key: password
+              {{- end}}
             {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
