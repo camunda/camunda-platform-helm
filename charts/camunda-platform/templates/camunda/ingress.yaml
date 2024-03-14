@@ -28,20 +28,20 @@ spec:
             pathType: Prefix
           {{- end }}
           {{- if .Values.identity.enabled }}
-          {{- if or .Values.identity.keycloak.enabled .Values.global.identity.keycloak.internal }}
+          {{- if or .Values.identityKeycloak.enabled .Values.global.identity.keycloak.internal }}
           - backend:
               service:
-                name: {{ include "identity.keycloak.service" .Subcharts.identity }}
+                name: {{ include "identity.keycloak.service" . }}
                 port:
-                  number: {{ include "identity.keycloak.port" .Subcharts.identity }}
-            path: {{ include "identity.keycloak.contextPath" .Subcharts.identity }}
+                  number: {{ include "identity.keycloak.port" . }}
+            path: {{ include "identity.keycloak.contextPath" . }}
             pathType: Prefix
           {{- end }}
           {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
           {{- if and .Values.identity.contextPath (not .Values.identity.ingress.enabled) }}
           - backend:
               service:
-                name: {{ template "identity.fullname" .Subcharts.identity }}
+                name: {{ template "identity.fullname" . }}
                 port:
                   number: {{ .Values.identity.service.port }}
             path: {{ .Values.identity.contextPath }}

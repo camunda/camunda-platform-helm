@@ -233,7 +233,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- else -}}
     {{-
       printf "http://%s:%v%s"
-        (include "identity.fullname" .Subcharts.identity)
+        (include "identity.fullname" .)
         .Values.identity.service.port
         (default "" .Values.identity.contextPath)
     -}}
