@@ -38,16 +38,12 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.optimize.configuration }}
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-              value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: {{ .Values.optimize.partitionCount | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.port | quote }}
-            {{- end }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -79,25 +75,7 @@ spec:
           {{- end }}
           env:
             {{- if not .Values.optimize.configuration }}
-            {{- if .Values.optimize.contextPath }}
-            - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
-              value: {{ .Values.optimize.contextPath | quote }}
-            {{- end }}
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-              value: "true"
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-              value: {{ .Values.optimize.partitionCount | quote }}
-            - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
-            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-              value: {{ .Values.global.elasticsearch.port | quote }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "ccsm"
             {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "optimize.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
@@ -115,15 +93,7 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: optimize-secret
               {{- end }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "optimize.authAudience" . | quote }}
-            - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
-              value: "optimize-api"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
-              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
               {{- end }}
-            - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
-              value: "false"
             {{- if .Values.global.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
               value: "true"

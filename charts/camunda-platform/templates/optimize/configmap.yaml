@@ -9,8 +9,42 @@ data:
   {{- if .Values.optimize.configuration }}
   environment-config.yaml: |
     {{ .Values.optimize.configuration | indent 4 | trim }}
-  {{- end }}
+  {{- else }}
+  environment-config.yaml: |
+    {{- if .Values.optimize.contextPath }}
+    container:
+      contextPath: {{ .Values.optimize.contextPath | quote }}
+    {{- end }}
 
+    zeebe:
+      enabled: true
+      partitionCount: {{ .Values.optimize.partitionCount }}
+
+    es:
+      connection:
+        nodes:
+          - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            httpPort: {{ .Values.global.elasticsearch.port }}
+
+    spring:
+      profiles:
+        active: "ccsm"
+
+    security:
+      auth:
+        cookie:
+          same-site:
+            enabled: false
+    {{- if .Values.global.identity.auth.enabled }}
+        ccsm:
+          redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+          clientId: {{ include "optimize.authClientId" . | quote }}
+          audience: {{ include "optimize.authAudience" . | quote }}
+    api:
+      audience: "optimize-api"
+      jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+    {{- end }}
+  {{- end }}
   {{- range $key, $val := .Values.optimize.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
