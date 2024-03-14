@@ -32,37 +32,10 @@ spec:
           securityContext: {{- toYaml .Values.webModeler.webapp.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.webModeler.configuration }}
             - name: NODE_ENV
               value: "production"
             - name: NODE_OPTIONS
               value: "--max-old-space-size=128"
-            - name: HTTP_WORKERS
-              value: "2"
-            - name: RESTAPI_HOST
-              value: {{ include "webModeler.restapi.fullname" . | quote }}
-            - name: RESTAPI_PORT
-              value: {{ .Values.webModeler.restapi.service.port | quote }}
-            - name: RESTAPI_MANAGEMENT_PORT
-              value: {{ .Values.webModeler.restapi.service.managementPort | quote }}
-            - name: SERVER_URL
-              value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-            - name: SERVER_HTTPS_ONLY
-              value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
-            - name: OAUTH2_TYPE
-              value: {{ include "camundaPlatform.authType" . | quote }}
-            - name: OAUTH2_CLIENT_ID
-              value: {{ include "webModeler.authClientId" . | quote }}
-            - name: OAUTH2_JWKS_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-            - name: OAUTH2_TOKEN_AUDIENCE
-              value: {{ include "webModeler.authClientApiAudience" . | quote }}
-            - name: OAUTH2_TOKEN_ISSUER
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: PUSHER_HOST
-              value: {{ include "webModeler.websockets.fullname" . | quote }}
-            - name: PUSHER_PORT
-              value: {{ .Values.webModeler.websockets.service.port | quote }}
             - name: PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
@@ -78,26 +51,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "webModeler.fullname" . }}
                   key: pusher-app-secret
-            - name: CLIENT_PUSHER_HOST
-              value: {{ include "webModeler.publicWebsocketHost" . | quote }}
-            - name: CLIENT_PUSHER_PORT
-              value: {{ include "webModeler.publicWebsocketPort" . | quote }}
-            {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-            - name: CLIENT_PUSHER_PATH
-              value: {{ include "webModeler.websocketContextPath" . | quote }}
-            {{- end }}
-            - name: CLIENT_PUSHER_FORCE_TLS
-              value: {{ include "webModeler.websocketTlsEnabled" . | quote }}
             - name: CLIENT_PUSHER_KEY
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "webModeler.fullname" . }}
                   key: pusher-app-key
-            {{- if .Values.identity.enabled }}
-            - name: IDENTITY_BASE_URL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
-            {{- end }}
-            {{- end }}
             {{- with .Values.webModeler.webapp.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
