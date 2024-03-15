@@ -19,6 +19,6 @@ webModeler:
       # the value is required, otherwise the restapi pod wouldn't start
       fromAddress: noreply@example.com
 
-# database used by Web Modeler
-postgresql:
+# WebModeler Database.
+webModelerPostgresql:
   enabled: true
