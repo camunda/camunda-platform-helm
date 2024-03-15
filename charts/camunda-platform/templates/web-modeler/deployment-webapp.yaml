@@ -107,7 +107,6 @@ spec:
             failureThreshold: {{ .Values.webModeler.webapp.livenessProbe.failureThreshold }}
             timeoutSeconds: {{ .Values.webModeler.webapp.livenessProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.webModeler.extraVolumeMounts }}
           volumeMounts:
             - name: config
               mountPath: /home/webapp/config/application.yaml
@@ -117,6 +116,7 @@ spec:
               mountPath: /home/webapp/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
+          {{- if .Values.webModeler.extraVolumeMounts }}
           {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
         {{- if .Values.webModeler.webapp.sidecars }}
