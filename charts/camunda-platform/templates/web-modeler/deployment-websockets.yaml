@@ -33,7 +33,6 @@ spec:
           {{- toYaml .Values.webModeler.websockets.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.webModeler.configuration }}
             - name: APP_NAME
               value: "Web Modeler WebSockets"
             - name: PUSHER_APP_ID
@@ -56,7 +55,6 @@ spec:
             {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
             - name: PUSHER_APP_PATH
               value: {{ include "webModeler.websocketContextPath" . | quote }}
-            {{- end }}
             {{- end }}
           {{- with .Values.webModeler.websockets.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -102,11 +100,9 @@ spec:
           {{- end }}
           {{- if .Values.webModeler.websockets.extraVolumeMounts }}
           volumeMounts:
-          {{- if .Values.webModeler.configuration }}
             - name: config
               mountPath: /home/webapp/config/application.yaml
               subPath: application.yaml
-          {{- end }}
           {{- range $key, $val := .Values.webModeler.extraConfiguration }}
             - name: config
               mountPath: /home/webapp/config/{{ $key }}

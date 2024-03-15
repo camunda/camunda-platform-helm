@@ -109,11 +109,9 @@ spec:
           {{- end }}
           {{- if .Values.webModeler.extraVolumeMounts }}
           volumeMounts:
-          {{- if .Values.webModeler.configuration }}
             - name: config
               mountPath: /home/webapp/config/application.yaml
               subPath: application.yaml
-          {{- end }}
           {{- range $key, $val := .Values.webModeler.extraConfiguration }}
             - name: config
               mountPath: /home/webapp/config/{{ $key }}
