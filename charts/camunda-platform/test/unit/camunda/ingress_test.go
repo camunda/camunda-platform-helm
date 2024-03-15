@@ -58,7 +58,7 @@ func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingE
 		SetValues: map[string]string{
 			"global.ingress.tls.enabled": "true",
 			"identity.contextPath":       "/identity",
-			"identity.keycloak.enabled":  "true",
+			"identityKeycloak.enabled":  "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -66,7 +66,7 @@ func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingE
 
 	// NOTE: helm.Options.ExtraArgs doesn't support passing args to Helm "template" command.
 	// TODO: Remove "template" from all helm.Options.ExtraArgs since it doesn't have any effect.
-	s.extraArgs = []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
+	s.extraArgs = []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"}
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, s.extraArgs...)
@@ -89,8 +89,8 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 		SetValues: map[string]string{
 			"global.ingress.enabled":               "true",
 			"global.identity.keycloak.contextPath": "/custom",
-			"identity.keycloak.enabled":            "true",
-			"identity.keycloak.httpRelativePath":   "/custom",
+			"identityKeycloak.enabled":            "true",
+			"identityKeycloak.httpRelativePath":   "/custom",
 			"identity.contextPath":                 "/identity",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -109,7 +109,7 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 	s.Require().Equal("camunda-platform-test-keycloak", path.Backend.Service.Name)
 
 	// when
-	extraArgs := []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"}
+	extraArgs := []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"}
 	stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
 
 	var statefulSet appsv1.StatefulSet
@@ -131,7 +131,7 @@ func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {
 			"global.ingress.enabled": "true",
 			"identity.contextPath":   "/identity",
 			// Disable Identity Keycloak chart.
-			"identity.keycloak.enabled": "false",
+			"identityKeycloak.enabled": "false",
 			// Set vars to use existing Keycloak.
 			"global.identity.keycloak.url.protocol": "https",
 			"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",

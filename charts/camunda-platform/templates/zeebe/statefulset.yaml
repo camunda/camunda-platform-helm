@@ -104,9 +104,9 @@ spec:
             - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
               value: {{ .Values.zeebe.service.commandPort  | quote }}
             - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
-              value: {{  .Values.zeebe.service.internalPort | quote }}
+              value: {{ .Values.zeebe.service.internalPort | quote }}
             - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
-              value: {{  .Values.zeebe.service.httpPort | quote }}
+              value: {{ .Values.zeebe.service.httpPort | quote }}
             - name: K8S_POD_NAME
               valueFrom:
                 fieldRef:
