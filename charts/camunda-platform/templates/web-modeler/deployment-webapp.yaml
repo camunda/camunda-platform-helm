@@ -122,11 +122,11 @@ spec:
         {{- if .Values.webModeler.webapp.sidecars }}
         {{- .Values.webModeler.webapp.sidecars | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.webModeler.webapp.extraVolumes }}
       volumes:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-webapp
+        {{- if .Values.webModeler.webapp.extraVolumes }}
         {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
         {{- if .Values.webModeler.serviceAccount.name }}
