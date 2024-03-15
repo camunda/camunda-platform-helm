@@ -23,7 +23,6 @@ data:
         {{- end }}
         issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         backend-url: {{ include "identity.issuerBackendUrl" . | quote }}
-        client-id: {{ include "identity.authClientId" . | default "camunda-identity"  | quote }}
 
       {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
       component-presets:
@@ -217,13 +216,14 @@ data:
         active: {{ eq .Values.global.identity.auth.type "KEYCLOAK" | ternary "keycloak" "oidc" }}
     {{- end }}
 
-    {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
     camunda:
       identity:
+        client-id: {{ include "identity.authClientId" . | default "camunda-identity"  | quote }}
+        {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-    {{- end }}
+        {{- end }}
         
   {{- end }}
   {{- range $key, $val := .Values.extraConfiguration }}
