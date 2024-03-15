@@ -147,11 +147,9 @@ spec:
               mountPath: /usr/local/zeebe/config/log4j2.xml
               subPath: broker-log4j2.xml
             {{- end }}
-            {{- if .Values.zeebe.configuration }}
             - name: config
               mountPath: /usr/local/zeebe/config/application.yaml
               subPath: application.yaml
-            {{- end }}
             {{- range $key, $val := .Values.zeebe.extraConfiguration }}
             - name: config
               mountPath: /usr/local/zeebe/config/{{ $key }}

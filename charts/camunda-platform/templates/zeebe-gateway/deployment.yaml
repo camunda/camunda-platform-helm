@@ -73,11 +73,9 @@ spec:
               mountPath: /usr/local/zeebe/config/log4j2.xml
               subPath: gateway-log4j2.xml
             {{- end }}
-            {{- if .Values.zeebeGateway.configuration }}
             - name: config
               mountPath: /usr/local/zeebe/config/application.yaml
               subPath: application.yaml
-            {{- end }}
             {{- range $key, $val := .Values.zeebeGateway.extraConfiguration }}
             - name: config
               mountPath: /usr/local/zeebe/config/{{ $key }}

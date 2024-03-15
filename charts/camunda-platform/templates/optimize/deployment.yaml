@@ -38,6 +38,14 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+              value: "true"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+              value: {{ .Values.optimize.partitionCount | quote }}
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.global.elasticsearch.port | quote }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -46,11 +54,9 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.optimize.configuration }}
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
-            {{- end }}
             {{- range $key, $val := .Values.optimize.extraConfiguration }}
             - name: environment-config
               mountPath: /optimize/config/{{ $key }}
@@ -68,7 +74,6 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.optimize.configuration }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
@@ -95,7 +100,6 @@ spec:
               value: "10000"
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
               value: "600000"
-            {{- end }}
             {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -158,11 +162,9 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.optimize.configuration }}
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
-            {{- end }}
             {{- range $key, $val := .Values.optimize.extraConfiguration }}
             - name: environment-config
               mountPath: /optimize/config/{{ $key }}
@@ -179,12 +181,10 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if or .Values.optimize.configuration .Values.optimize.extraConfiguration }}
         - name: environment-config
           configMap:
             name: {{ include "optimize.fullname" . }}
             defaultMode: 0400
-        {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

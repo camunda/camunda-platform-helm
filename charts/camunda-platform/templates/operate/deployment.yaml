@@ -37,7 +37,6 @@ spec:
           securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.operate.configuration }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
@@ -86,7 +85,6 @@ spec:
             {{- end }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_auth_cache
-            {{- end }}
           {{- with .Values.operate.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}

@@ -157,7 +157,11 @@ data:
           id: {{ include "identity.authClientId" . | default "camunda-identity" | quote }}
           type: CONFIDENTIAL
           secret: {{ include "identity.authClientSecret" . | quote }}
-          root-url: {{ tpl .Values.fullURL $ | default (cat "${IDENTITY_URL:http://localhost:${SERVER_PORT:8080}" .Values.contextPath) | quote }}
+          {{- if .Values.fullURL }}
+          root-url: {{ tpl .Values.fullURL $ | quote }}
+          {{- else }}
+          root-url: {{ printf "%s%s" "${IDENTITY_URL:http://localhost:${SERVER_PORT:8080}" .Values.contextPath }}
+          {{- end }}
           redirect-uris:
             - "/auth/login-callback"
       presets:
@@ -212,13 +216,13 @@ data:
         active: {{ eq .Values.global.identity.auth.type "KEYCLOAK" | ternary "keycloak" "oidc" }}
     {{- end }}
 
+    {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
     camunda:
       identity:
-        {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-        {{- end }}
+    {{- end }}
         
   {{- end }}
   {{- range $key, $val := .Values.extraConfiguration }}
