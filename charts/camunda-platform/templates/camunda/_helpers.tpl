@@ -194,7 +194,7 @@ TODO: Refactor the Keycloak config once Console is production ready.
           .Values.global.identity.keycloak.realm
       -}}
     {{- else -}}
-      {{- include "identity.keycloak.url" .Subcharts.identity -}}{{- .Values.global.identity.keycloak.realm -}}
+      {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
@@ -233,10 +233,10 @@ TODO: Refactor the Keycloak config once Console is production ready.
 Get the external url for keycloak
 */}}
 {{- define "camundaPlatform.keycloakExternalURL" -}}
-  {{ if .Values.identity.keycloak.ingress.enabled -}}
-    {{- $proto := ternary "https" "http" .Values.identity.keycloak.ingress.tls -}}
-    {{- printf "%s://%s%s" $proto .Values.identity.keycloak.ingress.hostname .Values.identity.keycloak.httpRelativePath -}}
-  {{ else if .Values.identity.keycloak.enabled -}}
+  {{ if .Values.identityKeycloak.ingress.enabled -}}
+    {{- $proto := ternary "https" "http" .Values.identityKeycloak.ingress.tls -}}
+    {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
+  {{ else if .Values.identityKeycloak.enabled -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
@@ -382,7 +382,7 @@ Identity templates.
   {{- if .Values.identity.enabled -}}
     {{-
       printf "http://%s:%v%s"
-        (include "identity.fullname" .Subcharts.identity)
+        (include "identity.fullname" .)
         .Values.identity.service.port
         (.Values.identity.contextPath | default "")
     -}}
@@ -445,7 +445,7 @@ Release templates.
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
     id: keycloak
-    version: {{ .Values.identity.keycloak.image.tag }}
+    version: {{ .Values.identityKeycloak.image.tag }}
     url: {{ include "camundaPlatform.keycloakExternalURL" . }}
   - name: Identity
     id: identity
@@ -491,7 +491,7 @@ Release templates.
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
     url: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal  .Values.webModeler.webapp.readinessProbe.probePath }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
 

@@ -1,12 +1,12 @@
 ---
-# Source: camunda-platform/charts/identity/templates/deployment.yaml
+# Source: camunda-platform/templates/identity/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: camunda-platform-test-identity
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: identity
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -19,7 +19,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: identity
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -28,22 +28,22 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: identity
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: f1ff78cc8890bd10675b12006f4dcb9f2fac173a5fcabb4c4341f3b76fcae190
+        checksum/configmap-env-vars: 8fb51ee0a9584dbb0420946dd6a742b6a6173654ac2f5056f0f0e1e193ed103c
     spec:
       imagePullSecrets:
         []
       initContainers:
         []
       containers:
-        - name: identity
-          image: "camunda/identity:8.4.5"
+        - name: camunda-platform
+          image: camunda/identity:8.4.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

@@ -26,7 +26,7 @@ data:
             components:
             - name: Console
               id: console
-              version: 8.4.53
+              version: 8.4.54
               url: 
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
@@ -38,8 +38,8 @@ data:
               id: identity
               version: 8.4.5
               url: 
-              readiness: http://camunda-platform-test.camunda-platform:82/actuator/health
-              metrics: http://camunda-platform-test.camunda-platform:82/actuator/prometheus
+              readiness: http://camunda-platform-test-identity.camunda-platform:82/actuator/health
+              metrics: http://camunda-platform-test-identity.camunda-platform:82/actuator/prometheus
             - name: Operate
               id: operate
               version: 8.4.5

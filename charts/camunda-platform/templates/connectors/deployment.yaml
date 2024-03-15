@@ -17,7 +17,7 @@ spec:
         {{- toYaml .Values.connectors.podLabels | nindent 8 }}
         {{- end }}
       {{- if .Values.connectors.podAnnotations }}
-      annotations: {{- toYaml  .Values.connectors.podAnnotations | nindent 8 }}
+      annotations: {{- toYaml .Values.connectors.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}

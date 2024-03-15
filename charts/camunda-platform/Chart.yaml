@@ -18,20 +18,18 @@ keywords:
   - process-engine
   - workflow
 dependencies:
-  # Camunda charts.
-  - name: identity
-    version: 9.3.1
-    condition: "identity.enabled"
-    import-values:
-      # START DEV COMMENT
-      # NOTE: This is used to share Identity image details with its subchart Keycloak.
-      #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
-      # TODO: Move this to Identity subchart once "export-values" is implemented.
-      #       https://github.com/helm/helm/pull/10804
-      # END DEV COMMENT
-      - child: image
-        parent: global.identity.image
-  # Dependency charts.
+  # Identity Dependencies.
+  - name: keycloak
+    alias: identityKeycloak
+    repository: https://charts.bitnami.com/bitnami
+    version: 17.3.6
+    condition: "identityKeycloak.enabled"
+  - name: postgresql
+    alias: identityPostgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 12.x.x
+    condition: "identityPostgresql.enabled"
+  # Shared Dependencies.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
     version: 19.19.4
@@ -40,7 +38,7 @@ dependencies:
     repository: https://charts.bitnami.com/bitnami
     version: 11.x.x
     condition: "postgresql.enabled"
-  # Helpers charts.
+  # Helpers Dependencies.
   - name: common
     repository: https://charts.bitnami.com/bitnami
     version: 2.x.x
