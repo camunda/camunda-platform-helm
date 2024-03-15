@@ -33,19 +33,8 @@ spec:
           securityContext: {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if not .Values.configuration }}
-            {{- if .Values.fullURL }}
-            - name: IDENTITY_URL
-              value: {{ tpl .Values.fullURL $ | quote }}
-            {{- end }}
-            {{- if .Values.contextPath }}
-            - name: IDENTITY_BASE_PATH
-              value: {{ .Values.contextPath | quote }}
-            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
-            - name: SPRING_PROFILES_ACTIVE
-              value: keycloak
             - name: KEYCLOAK_INIT_OPERATE_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
               valueFrom:
@@ -63,8 +52,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: operate-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_CONSOLE_SECRET
               {{- if and .Values.global.identity.auth.console.existingSecret (not (typeIs "string" .Values.global.identity.auth.console.existingSecret)) }}
               valueFrom:
@@ -82,8 +69,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "console") }}
                   key: console-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_TASKLIST_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
@@ -101,8 +86,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: tasklist-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
@@ -120,8 +103,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: optimize-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_OPTIMIZE_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_ZEEBE_NAME
@@ -186,10 +167,6 @@ spec:
               value: "write:*"
             - name: KEYCLOAK_URL
               value: {{ include "identity.keycloak.url" . | quote }}
-            - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
-              value: {{ include "identity.issuerBackendUrl" . | quote }}
             - name: KEYCLOAK_SETUP_USER
               value: {{ include "identity.keycloak.authAdminUser" . | quote }}
             - name: KEYCLOAK_SETUP_PASSWORD
@@ -232,51 +209,18 @@ spec:
             {{- end }}
             {{- end }}
             {{- else }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: oidc
-            - name: CAMUNDA_IDENTITY_BASEURL
-              value: {{ include "identity.internalUrl" . | quote }}
-            - name: CAMUNDA_IDENTITY_TYPE
-              value: {{ include "camundaPlatform.authType" . | quote }}
-            - name: CAMUNDA_IDENTITY_ISSUER
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: IDENTITY_INITIAL_CLAIM_NAME
               value: {{ .Values.global.identity.auth.identity.initialClaimName }}
             - name: IDENTITY_INITIAL_CLAIM_VALUE
               value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "identity.authClientId" . | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              value: {{ include "identity.authClientSecret" . | quote }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "identity.authAudience" . | quote }}
-            - name: CAMUNDA_OPERATE_AUDIENCE
-              value: {{ include "operate.authAudience" . | quote }}
-            - name: CAMUNDA_TASKLIST_AUDIENCE
-              value: {{ include "tasklist.authAudience" . | quote }}
-            - name: CAMUNDA_OPTIMIZE_AUDIENCE
-              value: {{ include "optimize.authAudience" . | quote }}
-            - name: CAMUNDA_WEBMODELER_AUDIENCE
-              value: {{ .Values.global.identity.auth.webModeler.clientApiAudience }}
-            - name: CAMUNDA_WEBMODELER_PUBLIC_AUDIENCE
-              value: {{ .Values.global.identity.auth.webModeler.publicApiAudience }}
-            - name: CAMUNDA_ZEEBE_AUDIENCE
-              value: {{ .Values.global.identity.auth.zeebe.audience }}
-            - name: CAMUNDA_CONSOLE_AUDIENCE
-              value: {{ .Values.global.identity.auth.console.audience }}
             {{- end }}
             {{- end }}
-            - name: SERVER_PORT
-              value: "8080"
             {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
-            {{- end }}
             {{- end }}
           {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
