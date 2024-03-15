@@ -61,3 +61,5 @@ annotations:
   artifacthub.io/changes: |
     - kind: fixed
       description: "use the correct console.image.tag instead of SNAPSHOT"
+    - kind: fixed
+      description: "set identity automountServiceAccountToken to true instead of True"

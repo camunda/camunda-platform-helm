@@ -1876,7 +1876,7 @@ identity:
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: True
+    automountServiceAccountToken: true
 
   ingress:
     ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.

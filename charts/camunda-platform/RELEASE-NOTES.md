@@ -8,4 +8,4 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 ### Fix
 
 * use the correct console.image.tag instead of SNAPSHOT
-
+* fix: set identity automountServiceAccountToken to true instead of True
