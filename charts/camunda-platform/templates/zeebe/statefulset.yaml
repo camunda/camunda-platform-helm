@@ -98,10 +98,10 @@ spec:
               value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE
-              value: "1"
-            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PROCESSMESSAGESUBSCRIPTION
-              value: "true"
+            # - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE
+            #   value: "1"
+            # - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PROCESSMESSAGESUBSCRIPTION
+            #   value: "true"
               {{- else}}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
@@ -112,8 +112,6 @@ spec:
                   key: password
               {{- end}}
             {{- end }}
-            # {{- if and .Values.global.elasticsearch.external (not .Values.global.elasticsearch.openSearch)}}
-            # {{- end }}
             {{- if not .Values.global.elasticsearch.disableExporter }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
