@@ -50,7 +50,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1005
+            runAsUser: 1001
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: keycloak
@@ -190,4 +190,5 @@ spec:
         - name: tmp
           emptyDir: {}
       securityContext:
-        fsGroup: 1005
+        fsGroup: 1001
+        runAsNonRoot: true

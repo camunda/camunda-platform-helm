@@ -48,7 +48,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1003
+            runAsUser: 1001
           ports:
             - containerPort: 8080
               name: http
@@ -108,4 +108,5 @@ spec:
         - name: tmp
           emptyDir: {}
       securityContext:
-        fsGroup: 1003
+        fsGroup: 1001
+        runAsNonRoot: true
