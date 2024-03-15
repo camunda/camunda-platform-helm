@@ -50,6 +50,7 @@ spec:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
+            runAsNonRoot: true
             runAsUser: 1001
           env:
             - name: NODE_ENV

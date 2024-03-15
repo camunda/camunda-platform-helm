@@ -51,6 +51,7 @@ spec:
           
       securityContext:
         fsGroup: 1001
+        runAsNonRoot: true
       enableServiceLinks: true
       initContainers:
         - command:
@@ -68,7 +69,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1005
+            runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
           volumeMounts:

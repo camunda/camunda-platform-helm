@@ -51,7 +51,8 @@ spec:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 1000
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: LC_ALL
               value: C.UTF-8
@@ -156,7 +157,7 @@ spec:
         - name: tmp
           emptyDir: {}
       securityContext:
-        fsGroup: 1000
+        fsGroup: 1001
         runAsNonRoot: true
 # yamllint disable
       affinity:

@@ -45,7 +45,8 @@ spec:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 100
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
@@ -68,7 +69,8 @@ spec:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 100
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
@@ -135,5 +137,5 @@ spec:
         - name: camunda
           emptyDir: {}
       securityContext:
-        fsGroup: 100
+        fsGroup: 1001
         runAsNonRoot: true

@@ -48,7 +48,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 1001
           env:
             - name: APP_NAME
               value: "Web Modeler WebSockets"
@@ -89,5 +89,5 @@ spec:
             failureThreshold: 5
             timeoutSeconds: 1
       securityContext:
-        fsGroup: 1000
+        fsGroup: 1001
         runAsNonRoot: true
