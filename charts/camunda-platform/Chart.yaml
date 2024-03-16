@@ -35,10 +35,11 @@ dependencies:
     version: 19.19.4
     condition: "elasticsearch.enabled"
   - name: postgresql
+    alias: webModelerPostgresql
     repository: https://charts.bitnami.com/bitnami
     version: 11.x.x
-    condition: "postgresql.enabled"
-  # Helpers Dependencies.
+    condition: "webModelerPostgresql.enabled"
+  # Helpers charts.
   - name: common
     repository: https://charts.bitnami.com/bitnami
     version: 2.x.x

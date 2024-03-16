@@ -8,42 +8,35 @@ web-modeler
 {{- end -}}
 
 {{/*
-Create the default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
+Create a default fully qualified app name.
 */}}
 {{- define "webModeler.fullname" -}}
-{{- if .Values.webModeler.fullnameOverride -}}
-{{- .Values.webModeler.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default (include "webModeler.name" .) .Values.webModeler.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
+  {{- include "camundaPlatform.componentFullname" (dict
+      "componentName" "web-modeler"
+      "componentValues" .Values.webModeler
+      "context" $
+  ) -}}
 {{- end -}}
 
 {{/*
 Create a fully qualified name for the restapi objects.
 */}}
 {{- define "webModeler.restapi.fullname" -}}
-{{- (include "webModeler.fullname" .) | trunc 55 | trimSuffix "-" -}}-restapi
+  {{- (include "webModeler.fullname" .) | trunc 55 | trimSuffix "-" -}}-restapi
 {{- end -}}
 
 {{/*
 Create a fully qualified name for the webapp objects.
 */}}
 {{- define "webModeler.webapp.fullname" -}}
-{{- (include "webModeler.fullname" .) | trunc 56 | trimSuffix "-" -}}-webapp
+  {{- (include "webModeler.fullname" .) | trunc 56 | trimSuffix "-" -}}-webapp
 {{- end -}}
 
 {{/*
 Create a fully qualified name for the websockets objects.
 */}}
 {{- define "webModeler.websockets.fullname" -}}
-{{- (include "webModeler.fullname" .) | trunc 52 | trimSuffix "-" -}}-websockets
+  {{- (include "webModeler.fullname" .) | trunc 52 | trimSuffix "-" -}}-websockets
 {{- end -}}
 
 {{/*
@@ -154,74 +147,74 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the image pull secrets.
 */}}
 {{- define "webModeler.imagePullSecrets" -}}
-{{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.webModeler.image)) }}
+  {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.webModeler.image)) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the restapi Docker image
 */}}
 {{- define "webModeler.restapi.image" -}}
-{{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.restapi.image))) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.restapi.image))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the webapp Docker image
 */}}
 {{- define "webModeler.webapp.image" -}}
-{{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.webapp.image))) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.webapp.image))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the websockets Docker image
 */}}
 {{- define "webModeler.websockets.image" -}}
-{{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.websockets.image))) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.websockets.image))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Create the name of the service account to use
 */}}
 {{- define "webModeler.serviceAccountName" -}}
-{{- if .Values.webModeler.serviceAccount.enabled }}
-{{- default (include "webModeler.fullname" .) .Values.webModeler.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.webModeler.serviceAccount.name }}
-{{- end }}
+  {{- if .Values.webModeler.serviceAccount.enabled }}
+    {{- default (include "webModeler.fullname" .) .Values.webModeler.serviceAccount.name }}
+  {{- else }}
+    {{- default "default" .Values.webModeler.serviceAccount.name }}
+  {{- end }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-{{- .Values.postgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
+  {{- .Values.webModelerPostgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUser" -}}
-{{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.username .Values.webModeler.restapi.externalDatabase.user -}}
+  {{- .Values.webModelerPostgresql.enabled | ternary .Values.webModelerPostgresql.auth.username .Values.webModeler.restapi.externalDatabase.user -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the name of the secret that contains the database password, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretName" -}}
-{{- .Values.postgresql.enabled | ternary (include "webModeler.postgresql.fullname" .) (include "webModeler.restapi.fullname" .) -}}
+  {{- .Values.webModelerPostgresql.enabled | ternary (include "webModeler.postgresql.fullname" .) (include "webModeler.restapi.fullname" .) -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the name of the database password key in the secret, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretKey" -}}
-{{- .Values.postgresql.enabled | ternary "password" "database-password" -}}
+  {{- .Values.webModelerPostgresql.enabled | ternary "password" "database-password" -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the full name of the Kubernetes objects from the postgresql dependency chart
 */}}
 {{- define "webModeler.postgresql.fullname" -}}
-{{- include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" $) -}}
+  {{- include "common.names.dependency.fullname" (dict "chartName" "webModelerPostgresql" "chartValues" .Values.webModelerPostgresql "context" $) -}}
 {{- end -}}
 
 {{/*
@@ -244,44 +237,44 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Create the context path for the WebSocket app (= configured context path for the webapp + suffix "-ws").
 */}}
 {{- define "webModeler.websocketContextPath" -}}
-{{ .Values.webModeler.contextPath }}-ws
+  {{- .Values.webModeler.contextPath }}-ws
 {{- end -}}
 
 {{/*
 [web-modeler] Get the host name on which the WebSocket server is reachable from the client.
 */}}
 {{- define "webModeler.publicWebsocketHost" -}}
-{{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-  {{- .Values.global.ingress.host }}
-{{- else }}
-  {{- .Values.webModeler.ingress.enabled | ternary .Values.webModeler.ingress.websockets.host .Values.webModeler.websockets.publicHost }}
-{{- end }}
+  {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+    {{- .Values.global.ingress.host }}
+  {{- else }}
+    {{- .Values.webModeler.ingress.enabled | ternary .Values.webModeler.ingress.websockets.host .Values.webModeler.websockets.publicHost }}
+  {{- end }}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the port number on which the WebSocket server is reachable from the client.
 */}}
 {{- define "webModeler.publicWebsocketPort" -}}
-{{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-  {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
-{{- else }}
-  {{- if .Values.webModeler.ingress.enabled }}
-    {{- .Values.webModeler.ingress.websockets.tls.enabled | ternary "443" "80" }}
+  {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+    {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
   {{- else }}
-    {{- .Values.webModeler.websockets.publicPort }}
+    {{- if .Values.webModeler.ingress.enabled }}
+      {{- .Values.webModeler.ingress.websockets.tls.enabled | ternary "443" "80" }}
+    {{- else }}
+      {{- .Values.webModeler.websockets.publicPort }}
+    {{- end }}
   {{- end }}
-{{- end }}
 {{- end -}}
 
 {{/*
 [web-modeler] Check if TLS must be enabled for WebSocket connections from the client.
 */}}
 {{- define "webModeler.websocketTlsEnabled" -}}
-{{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-  {{- .Values.global.ingress.tls.enabled }}
-{{- else }}
-  {{- and .Values.webModeler.ingress.enabled .Values.webModeler.ingress.websockets.tls.enabled }}
-{{- end }}
+  {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+    {{- .Values.global.ingress.tls.enabled }}
+  {{- else }}
+    {{- and .Values.webModeler.ingress.enabled .Values.webModeler.ingress.websockets.tls.enabled }}
+  {{- end }}
 {{- end -}}
 
 {{/*
@@ -290,9 +283,11 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.authClientId" -}}
   {{- .Values.global.identity.auth.webModeler.clientId -}}
 {{- end -}}
+
 {{- define "webModeler.authClientApiAudience" -}}
   {{- .Values.global.identity.auth.webModeler.clientApiAudience -}}
 {{- end -}}
+
 {{- define "webModeler.authPublicApiAudience" -}}
   {{- .Values.global.identity.auth.webModeler.publicApiAudience -}}
 {{- end -}}
