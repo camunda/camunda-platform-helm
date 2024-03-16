@@ -123,7 +123,7 @@ resources:
 
 > **Be aware** you need to disable tasklist and operate, since they are enabled per default.
 
-As described earlier the gateway object was moved into an own chart, called now `zeebe-gateway`.
+As described earlier the gateway object was moved into an own chart, called now `zeebeGateway`.
 
 ```yaml
 global:
@@ -161,7 +161,7 @@ zeebe:
       cpu: 5
       memory: 12Gi
 
-zeebe-gateway:
+zeebeGateway:
   replicas: 1
   logLevel: debug
   env:

@@ -13,7 +13,7 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{ define "connectors.zeebeEndpoint" }}
-  {{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- index .Values "zeebe-gateway" "service" "gatewayPort" -}}
+  {{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- .Values.zeebeGateway.service.gatewayPort -}}
 {{- end -}}
 
 {{- define "connectors.fullname" -}}

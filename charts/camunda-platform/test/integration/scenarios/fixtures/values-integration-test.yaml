@@ -70,8 +70,8 @@ identity:
   - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
     value: "write:*"
 
-# Auth to avoid Docker download rate limit.
-# https://docs.docker.com/docker-hub/download-rate-limit/
+  # Auth to avoid Docker download rate limit.
+  # https://docs.docker.com/docker-hub/download-rate-limit/
   keycloak:
     image:
       pullSecrets:

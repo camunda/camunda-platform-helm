@@ -71,7 +71,7 @@ func (s *serviceTest) TestContainerServiceAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.service.annotations.foo": "bar",
+			"zeebeGateway.service.annotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -89,7 +89,7 @@ func (s *serviceTest) TestContainerShouldSetServiceLoadBalancerIp() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.service.loadBalancerIP": "bar",
+			"zeebeGateway.service.loadBalancerIP": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -107,8 +107,8 @@ func (s *serviceTest) TestContainerShouldSetServiceLoadBalancerSourceRanges() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.service.loadBalancerSourceRanges[0]": "foo",
-			"zeebe-gateway.service.loadBalancerSourceRanges[1]": "bar",
+			"zeebeGateway.service.loadBalancerSourceRanges[0]": "foo",
+			"zeebeGateway.service.loadBalancerSourceRanges[1]": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

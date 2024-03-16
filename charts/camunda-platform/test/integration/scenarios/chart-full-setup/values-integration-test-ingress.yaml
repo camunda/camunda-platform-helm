@@ -64,7 +64,7 @@ postgresql:
 webModelerPostgresql:
   enabled: true
 
-zeebe-gateway:
+zeebeGateway:
   ingress:
     enabled: true
     className: nginx
