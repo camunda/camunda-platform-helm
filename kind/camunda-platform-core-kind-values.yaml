@@ -20,7 +20,7 @@ zeebe:
   replicationFactor: 1
   pvcSize: 10Gi
 
-zeebe-gateway:
+zeebeGateway:
   replicas: 1
 
 connectors:

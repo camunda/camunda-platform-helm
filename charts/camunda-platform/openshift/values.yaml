@@ -169,7 +169,7 @@ zeebe:
     runAsUser: null
 
 # omit the values below if zeebe-gateway.enabled is false
-zeebe-gateway:
+zeebeGateway:
   configMap:
     defaultMode: 0444
   podSecurityContext:

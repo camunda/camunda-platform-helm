@@ -63,7 +63,7 @@ jobs:
             extra-values: |
               zeebe:
                 enabled: false
-              zeebe-gateway:
+              zeebeGateway:
                 enabled: false
               operate:
                 enabled: false
