@@ -10,6 +10,7 @@ data:
   application.yml: |
     {{ .Values.connectors.configuration | indent 4 | trim }}
   {{- else }}
+  application.yml: |
     server:
       port: {{ .Values.connectors.service.serverPort }}
     {{- if .Values.connectors.contextPath }}
