@@ -1,6 +1,27 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8 Helm Chart Version Matrix
 
+## Chart version 9.3.2
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:8.4.5
+- docker.io/camunda/identity:8.4.5
+- docker.io/camunda/operate:8.4.5
+- docker.io/camunda/optimize:8.4.2
+- docker.io/camunda/tasklist:8.4.5
+- docker.io/camunda/zeebe:8.4.5
+- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3
+- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.3
+- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.3
+
+Non-Camunda images:
+
+- docker.io/bitnami/elasticsearch:8.9.2
+- docker.io/bitnami/keycloak:22.0.5
+- docker.io/bitnami/os-shell:12-debian-12-r16
+- docker.io/bitnami/postgresql:15.6.0
+
 ## Chart version 9.3.1
 
 Camunda images:
