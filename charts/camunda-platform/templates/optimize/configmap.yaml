@@ -11,6 +11,12 @@ data:
     {{ .Values.optimize.configuration | indent 4 | trim }}
   {{- else }}
   environment-config.yaml: |
+    {{- if .Values.global.identity.auth.enabled }}
+    camunda:
+      identity:
+        clientId: {{ include "optimize.authClientId" . | quote }}
+    {{- end }}
+
     {{- if .Values.optimize.contextPath }}
     container:
       contextPath: {{ .Values.optimize.contextPath | quote }}
@@ -40,6 +46,8 @@ data:
           redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
           clientId: {{ include "optimize.authClientId" . | quote }}
           audience: {{ include "optimize.authAudience" . | quote }}
+          issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
+          issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
     api:
       audience: "optimize-api"
       jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
