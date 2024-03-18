@@ -17,6 +17,11 @@ data:
     {{- else }}
       url: {{ include "identity.internalUrl" . | quote }}
     {{- end }}
+
+    {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+      client-id: {{ include "identity.authClientId" . | default "camunda-identity" | quote }}
+      client-secret: {{ include "identity.authClientSecret" . | quote }}
+    {{- end }}
       authProvider:
         {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         type: {{ include "camundaPlatform.authType" . | quote }}
@@ -218,7 +223,10 @@ data:
 
     camunda:
       identity:
+        {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
         client-id: {{ include "identity.authClientId" . | default "camunda-identity"  | quote }}
+        client-secret: {{ include "identity.authClientSecret" . | quote }}
+        {{- end }}
         {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
