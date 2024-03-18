@@ -51,7 +51,7 @@ spec:
               value: opensearch
             - name: CAMUNDA_TASKLIST_OPENSEARCH_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBE_OPENSEARCH_URL
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
@@ -60,9 +60,9 @@ spec:
                 secretKeyRef:
                   name: elastic-password
                   key: password
-            - name: CAMUNDA_TASKLIST_ZEEBE_OPENSEARCH_USERNAME
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBE_OPENSEARCH_PASSWORD
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: elastic-password
