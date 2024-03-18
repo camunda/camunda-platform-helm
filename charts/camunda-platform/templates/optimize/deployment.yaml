@@ -38,14 +38,6 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-              value: "true"
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-              value: {{ .Values.optimize.partitionCount | quote }}
-            - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
-            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-              value: {{ .Values.global.elasticsearch.port | quote }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
