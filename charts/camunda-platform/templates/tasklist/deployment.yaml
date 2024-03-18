@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "tasklist.labels" . | nindent 4 }}
   annotations:
-    {{- toYaml  .Values.global.annotations | nindent 4 }}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -22,7 +22,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/tasklist/configmap.yaml") . | sha256sum }}
       {{- if .Values.tasklist.podAnnotations }}
-        {{- toYaml  .Values.tasklist.podAnnotations | nindent 8 }}
+        {{- toYaml .Values.tasklist.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:

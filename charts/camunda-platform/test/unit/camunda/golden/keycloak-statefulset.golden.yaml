@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/charts/identity/charts/keycloak/templates/statefulset.yaml
+# Source: camunda-platform/charts/identityKeycloak/templates/statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -51,14 +51,15 @@ spec:
           
       securityContext:
         fsGroup: 1001
+        runAsNonRoot: true
       enableServiceLinks: true
       initContainers:
         - command:
           - sh
           - -c
           - cp -a /app/keycloak-theme/* /mnt
-          image: 'camunda/identity:8.4.5'
-          imagePullPolicy: 'IfNotPresent'
+          image: 'camunda/identity:latest'
+          imagePullPolicy: 'Always'
           name: copy-camunda-theme
           securityContext:
             allowPrivilegeEscalation: false
@@ -68,7 +69,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1005
+            runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
           volumeMounts:

@@ -63,7 +63,7 @@ jobs:
             extra-values: |
               zeebe:
                 enabled: false
-              zeebe-gateway:
+              zeebeGateway:
                 enabled: false
               operate:
                 enabled: false
@@ -90,7 +90,7 @@ jobs:
                 enabled: false
               webModeler:
                 enabled: false
-              postgresql:
+              webModelerPostgresql:
                 enabled: false
               console:
                 enabled: false
@@ -109,7 +109,7 @@ jobs:
                 enabled: false
               webModeler:
                 enabled: false
-              postgresql:
+              webModelerPostgresql:
                 enabled: false
               console:
                 enabled: false

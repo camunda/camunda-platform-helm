@@ -1,5 +1,5 @@
 # Gateway configuration to define properties related to the standalone gateway
-zeebe-gateway:
+zeebeGateway:
   # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers:
     - name: "init-container"

@@ -3,7 +3,6 @@
 {{/*
 Create a default fully qualified app name.
 */}}
-
 {{- define "operate.fullname" -}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "operate"

@@ -1,4 +1,4 @@
-{{- if .Values.enabled }}
+{{- if .Values.identity.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,14 +6,14 @@ metadata:
   labels: {{- include "identity.labels" . | nindent 4 }}
   annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
 data:
-  {{- if .Values.configuration }}
+  {{- if .Values.identity.configuration }}
   application.yaml: |
-    {{ .Values.configuration | indent 4 | trim }}
+    {{ .Values.identity.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     identity:
-    {{- if .Values.fullURL }}
-      url: {{ tpl .Values.fullURL $ | quote }}
+    {{- if .Values.identity.fullURL }}
+      url: {{ tpl .Values.identity.fullURL $ | quote }}
     {{- else }}
       url: {{ include "identity.internalUrl" . | quote }}
     {{- end }}
@@ -197,9 +197,9 @@ data:
     {{- end }}
     server:
       port: 8080
-    {{- if .Values.contextPath }}
+    {{- if .Values.identity.contextPath }}
       servlet:
-        context-path: {{ .Values.contextPath | quote }}
+        context-path: {{ .Values.identity.contextPath | quote }}
     {{- end }}
 
     spring:
@@ -221,7 +221,7 @@ data:
         {{- end }}
         
   {{- end }}
-  {{- range $key, $val := .Values.extraConfiguration }}
+  {{- range $key, $val := .Values.identity.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
   {{- end }}

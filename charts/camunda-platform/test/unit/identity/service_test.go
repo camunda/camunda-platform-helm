@@ -45,7 +45,7 @@ func TestServiceTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/identity/templates/service.yaml"},
+		templates: []string{"templates/identity/service.yaml"},
 	})
 }
 
@@ -98,7 +98,7 @@ func (s *serviceTest) TestKeycloakExternalService() {
 	}
 
 	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"charts/identity/templates/keycloak-service.yaml"})
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"templates/identity/keycloak-service.yaml"})
 	var service coreV1.Service
 	helm.UnmarshalK8SYaml(s.T(), output, &service)
 

@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: 983009a1140da08a9b8e01de9a3333a42be4e59cceb572df1f00e40f854d5035
+        checksum/config: 27bb2d3f0933ddb6db044dff2b49bbc045895b681d998f5acaff2c8cb42bf728
     spec:
       imagePullSecrets:
         []
@@ -49,7 +49,8 @@ spec:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 1002
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "identity-auth"
@@ -130,5 +131,5 @@ spec:
         - name: camunda
           emptyDir: {}
       securityContext:
-        fsGroup: 1002
+        fsGroup: 1001
         runAsNonRoot: true

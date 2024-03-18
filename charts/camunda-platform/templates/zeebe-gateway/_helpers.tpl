@@ -1,13 +1,6 @@
 {{/* vim: set filetype=mustache: */}}
 
 {{/*
-Rename Zeebe Gateway key since it has dash which needs different syntax to handle.
-*/}}
-{{- define "zeebeGatewayRename" -}}
-    {{- $_ := set .Values "zeebeGateway" (deepCopy (index .Values "zeebe-gateway")) -}}
-{{- end -}}
-
-{{/*
 [zeebe-gateway] Create a default fully qualified app name.
 */}}
 {{- define "zeebe.fullname.gateway" -}}

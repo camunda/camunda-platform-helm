@@ -72,10 +72,10 @@ identity:
 
 # Auth to avoid Docker download rate limit.
 # https://docs.docker.com/docker-hub/download-rate-limit/
-  keycloak:
-    image:
-      pullSecrets:
-      - name: index-docker-io
+identityKeycloak:
+  image:
+    pullSecrets:
+    - name: index-docker-io
 
 global:
   image:

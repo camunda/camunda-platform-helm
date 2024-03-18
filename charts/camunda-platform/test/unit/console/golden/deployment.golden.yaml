@@ -44,12 +44,13 @@ spec:
         runAsNonRoot: true
       containers:
         - name: camunda-platform
-          image: registry.camunda.cloud/console/console-sm:SNAPSHOT
+          image: registry.camunda.cloud/console/console-sm:8.4.54
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
+            runAsNonRoot: true
             runAsUser: 1001
           env:
             - name: NODE_ENV

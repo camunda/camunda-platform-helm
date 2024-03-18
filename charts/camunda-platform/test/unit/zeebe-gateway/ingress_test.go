@@ -37,7 +37,7 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "ingress",
 		Templates:      []string{"templates/zeebe-gateway/ingress.yaml"},
-		SetValues:      map[string]string{"zeebe-gateway.ingress.enabled": "true"},
+		SetValues:      map[string]string{"zeebeGateway.ingress.enabled": "true"},
 	})
 }
 
@@ -54,10 +54,10 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 		GoldenFileName: "ingress-all-enabled",
 		Templates:      []string{"templates/zeebe-gateway/ingress.yaml"},
 		SetValues: map[string]string{
-			"zeebe-gateway.ingress.enabled":        "true",
-			"zeebe-gateway.ingress.host":           "local",
-			"zeebe-gateway.ingress.tls.enabled":    "true",
-			"zeebe-gateway.ingress.tls.secretName": "my-secret",
+			"zeebeGateway.ingress.enabled":        "true",
+			"zeebeGateway.ingress.host":           "local",
+			"zeebeGateway.ingress.tls.enabled":    "true",
+			"zeebeGateway.ingress.tls.secretName": "my-secret",
 		},
 	})
 }

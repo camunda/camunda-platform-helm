@@ -72,8 +72,8 @@
     {{- else }}
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
-  {{- if .Values.identity.keycloak.enabled }}
-  - Keycloak: {{ .Values.identity.keycloak.image.repository }}:{{ .Values.identity.keycloak.image.tag }}
+  {{- if .Values.identityKeycloak.enabled }}
+  - Keycloak: {{ .Values.identityKeycloak.image.repository }}:{{ .Values.identityKeycloak.image.tag }}
   {{- end }}
   {{- end }}
 - Web Modeler:
@@ -144,8 +144,8 @@ If you want to use different ports for the services, please adjust the related c
 Authentication via Identity/Keycloak is enabled. To login into one of the services please port-forward to Keycloak
 as well, otherwise, a login will not be possible. Make sure you use `18080` as a port.
 
-{{ if .Values.identity.keycloak.enabled -}}
-> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identity.keycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
+{{ if .Values.identityKeycloak.enabled -}}
+> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identityKeycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
 {{- end }}
 {{- end }}
 
@@ -164,7 +164,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- if .Values.global.ingress.enabled }}
 ## Combined Ingress
 
-{{ if .Values.identity.keycloak.enabled -}}
+{{ if .Values.identityKeycloak.enabled -}}
 - Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
 {{- end }}
 {{- if or (.Values.identity.enabled) (.Values.operate.enabled) (.Values.optimize.enabled) (.Values.tasklist.enabled) (.Values.webModeler.enabled) }}
@@ -191,10 +191,10 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- end }}
 
-{{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) (.Values.identity.keycloak.ingress.enabled) }}
+{{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) (.Values.identityKeycloak.ingress.enabled) }}
 ## Separated Ingress
 
-{{ if .Values.identity.keycloak.ingress.enabled -}}
+{{ if .Values.identityKeycloak.ingress.enabled -}}
 - Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
 {{- end }}
 {{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) }}
@@ -221,8 +221,8 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- end }}
 
-{{- if index .Values "zeebe-gateway" "ingress" "enabled" }}
-- Zeebe Gateway: grpc://{{ tpl (index .Values "zeebe-gateway" "ingress" "host") $ }}
+{{- if .Values.zeebeGateway.ingress.enabled }}
+- Zeebe Gateway: grpc://{{ tpl .Values.zeebeGateway.ingress.host $ }}
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}
