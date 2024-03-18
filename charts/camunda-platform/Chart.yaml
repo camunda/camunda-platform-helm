@@ -60,6 +60,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "use the correct console.image.tag instead of SNAPSHOT"
-    - kind: fixed
-      description: "set identity automountServiceAccountToken to true instead of True"
+      description: "correct chart appVersion to 8.4.x"
