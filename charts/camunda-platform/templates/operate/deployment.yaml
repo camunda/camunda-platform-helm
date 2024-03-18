@@ -49,6 +49,13 @@ spec:
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-password
+                  key: password
             - name: CAMUNDA_OPERATE_OPENSEARCH_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
