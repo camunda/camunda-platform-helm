@@ -1524,6 +1524,12 @@ optimize:
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
+  ## @extra optimize.configMap configuration which will be applied to the mounted config map.
+  configMap:
+    ## @param optimize.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0754
+
   ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations
   podAnnotations: {}
   ## @param optimize.podLabels can be used to define extra Optimize pod labels

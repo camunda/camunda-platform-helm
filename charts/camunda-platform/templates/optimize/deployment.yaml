@@ -77,7 +77,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+            - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -186,7 +186,7 @@ spec:
         - name: environment-config
           configMap:
             name: {{ include "optimize.fullname" . }}
-            defaultMode: 0400
+            defaultMode: {{ .Values.optimize.configMap.defaultMode }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
