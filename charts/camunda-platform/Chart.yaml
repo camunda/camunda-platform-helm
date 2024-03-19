@@ -29,17 +29,18 @@ dependencies:
     repository: https://charts.bitnami.com/bitnami
     version: 12.x.x
     condition: "identityPostgresql.enabled"
-  # Shared Dependencies.
-  - name: elasticsearch
-    repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.19.4
-    condition: "elasticsearch.enabled"
+  # WebModeler Dependencies.
   - name: postgresql
     alias: webModelerPostgresql
     repository: https://charts.bitnami.com/bitnami
     version: 11.x.x
     condition: "webModelerPostgresql.enabled"
-  # Helpers charts.
+  # Shared Dependencies.
+  - name: elasticsearch
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    version: 20.0.0
+    condition: "elasticsearch.enabled"
+  # Helpers.
   - name: common
     repository: https://charts.bitnami.com/bitnami
     version: 2.x.x

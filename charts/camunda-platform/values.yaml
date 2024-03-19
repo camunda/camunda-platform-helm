@@ -3113,34 +3113,11 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.9.2
-  ## @param elasticsearch.extraVolumes[0].name
-  ## @param elasticsearch.extraVolumes[0].emptyDir
-  ## @param elasticsearch.extraVolumes[1].name
-  ## @param elasticsearch.extraVolumes[1].emptyDir
-  ## @param elasticsearch.extraVolumes[2].name
-  ## @param elasticsearch.extraVolumes[2].emptyDir
-  extraVolumes:
-  - name: tmp
-    emptyDir: {}
-  - name: logs
-    emptyDir: {}
-  - name: config-dir
-    emptyDir: {}
-  ## @param elasticsearch.extraVolumeMounts[0].mountPath
-  ## @param elasticsearch.extraVolumeMounts[0].name
-  ## @param elasticsearch.extraVolumeMounts[1].mountPath
-  ## @param elasticsearch.extraVolumeMounts[1].name
-  ## @param elasticsearch.extraVolumeMounts[2].mountPath
-  ## @param elasticsearch.extraVolumeMounts[2].name
-  extraVolumeMounts:
-  - mountPath: /tmp
-    name: tmp
-  - mountPath: /usr/share/elasticsearch/logs
-    name: logs
-  - mountPath: /usr/share/elasticsearch/config
-    name: config-dir
+    tag: 8.12.2
   master:
+    containerSecurityContext:
+    ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem
+      readOnlyRootFilesystem: true
     ## @param elasticsearch.master.masterOnly
     masterOnly: false
     ## @param elasticsearch.master.heapSize
