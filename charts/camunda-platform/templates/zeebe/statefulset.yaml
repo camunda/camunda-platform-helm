@@ -86,19 +86,6 @@ spec:
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
             {{- if .Values.global.elasticsearch.external  }}
-              {{- if .Values.global.elasticsearch.openSearch}}
-            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elastic-password
-                  key: password
-            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
-              value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
-            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-              {{- else}}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
@@ -106,9 +93,21 @@ spec:
                 secretKeyRef:
                   name: elastic-password
                   key: password
-              {{- end}}
             {{- end }}
-            {{- if not .Values.global.elasticsearch.disableExporter }}
+            {{- if .Values.global.opensearch.enabled}}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-password
+                  key: password
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
+              value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            {{- end}}
+            {{- if and (not .Values.global.elasticsearch.disableExporter) (not .Values.global.opensearch.enabled) }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
@@ -201,6 +200,7 @@ spec:
               mountPath: /usr/local/zeebe/certificates/elasticsearch.jks
               subPath: elasticsearch.jks
             {{- end }}
+            # TODO: Add opensearch tls env var
             {{- if not ( eq .Values.zeebe.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/zeebe/data

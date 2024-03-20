@@ -88,14 +88,16 @@ global:
   # Elasticsearch configuration which is shared between the sub charts
   ## @extra global.elasticsearch
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
-  ## @param global.elasticsearch.openSearch if true, tries to connect to an external openSearch
+  ## @extra global.elasticsearch.tls 
+  ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
   ## @param global.elasticsearch.auth.password the password for external elasticsearch
   elasticsearch:
     external: false
-    openSearch: false
     tls:
+      enabled: false
       existingSecret:
     auth:
       username:
@@ -114,6 +116,31 @@ global:
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
+  # Opensearch configuration which is shared between the sub charts
+  ## @extra global.opensearch
+  ## @extra global.opensearch.enabled enabled external opensearch
+  ## @extra global.opensearch.tls 
+  ## @param global.opensearch.tls.enabled enable tls for external opensearch
+  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
+  ## @extra global.opensearch.auth
+  ## @param global.opensearch.auth.username the username for external opensearch
+  ## @param global.opensearch.auth.password the password for external opensearch
+  opensearch:
+    enabled: false
+    tls:
+      enabled: false
+      existingSecret:
+    auth:
+      username:
+      password:
+    ## @extra global.opensearch.url can be used to configure the URL to access opensearch, if not set services fallback to host and port configuration
+    ## @param global.opensearch.url.protocol defines the external opensearch access protocol, by default HTTPS.
+    ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
+    ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
+    url:
+      protocol: https
+      host:
+      port: 443
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
   ## @param global.zeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.

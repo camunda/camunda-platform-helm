@@ -46,28 +46,6 @@ spec:
               value: {{ .Values.tasklist.contextPath | quote }}
             {{- end }}
             {{- if .Values.global.elasticsearch.external  }}
-              {{- if .Values.global.elasticsearch.openSearch}}
-            - name: CAMUNDA_TASKLIST_DATABASE
-              value: opensearch
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elastic-password
-                  key: password
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elastic-password
-                  key: password
-              {{- else}}
             - name: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
@@ -86,7 +64,28 @@ spec:
                 secretKeyRef:
                   name: elastic-password
                   key: password
-              {{- end}}
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled}}
+            - name: CAMUNDA_TASKLIST_DATABASE
+              value: opensearch
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-password
+                  key: password
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-password
+                  key: password
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
@@ -217,6 +216,7 @@ spec:
               mountPath: /app/certificates/elasticsearch.jks
               subPath: elasticsearch.jks
             {{- end }}
+            # TODO: Add opensearch tls env var
             - name: config
               mountPath: /app/resources/application.yml
               subPath: application.yml

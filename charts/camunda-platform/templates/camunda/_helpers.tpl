@@ -231,7 +231,7 @@ TODO: Refactor the Keycloak config once Console is production ready.
 
 {{/*
 ********************************************************************************
-Elasticsearch templates.
+Elasticsearch and Opensearch templates.
 ********************************************************************************
 */}}
 
@@ -245,7 +245,14 @@ Elasticsearch templates.
 
 {{- define "camundaPlatform.elasticsearchURL" -}}
     {{ .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.url.port }}
+{{- end -}}
 
+{{- define "camundaPlatform.opensearchHost" -}}
+  {{- tpl .Values.global.opensearch.url.host $ -}}
+{{- end -}}
+
+{{- define "camundaPlatform.opensearchURL" -}}
+    {{ .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.global.opensearch.url.port }}
 {{- end -}}
 
 
