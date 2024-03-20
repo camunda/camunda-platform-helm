@@ -8,9 +8,9 @@ preflightVars:
     operate: http://integration-operate/operate
     tasklist: http://integration-tasklist/tasklist
     connectors: http://integration-connectors:8080/connectors
-    zeebeGateway: http://integration-zeebe-gateway:9600
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
+    zeebeGateway: http://integration-zeebe-gateway:9600
 
 coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
@@ -25,7 +25,8 @@ coreVars:
     connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
-    zeebeGateway: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
+    zeebeGatewayGrpc: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
+    zeebeGatewayRest: "https://{{ .TEST_INGRESS_HOST }}/zeebe"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""
