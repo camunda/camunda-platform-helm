@@ -95,6 +95,7 @@ global:
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
   ## @param global.elasticsearch.auth.password the password for external elasticsearch
   elasticsearch:
+    enabled: true
     external: false
     tls:
       enabled: false
@@ -105,7 +106,7 @@ global:
     ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
     ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
-    ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol, by default HTTP.
+    ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
     ## @param global.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
     ## @param global.elasticsearch.url.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
     url:
@@ -134,7 +135,7 @@ global:
       username:
       password:
     ## @extra global.opensearch.url can be used to configure the URL to access opensearch, if not set services fallback to host and port configuration
-    ## @param global.opensearch.url.protocol defines the external opensearch access protocol, by default HTTPS.
+    ## @param global.opensearch.url.protocol defines the external opensearch access protocol
     ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
     ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
     url:

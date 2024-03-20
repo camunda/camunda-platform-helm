@@ -107,21 +107,21 @@ spec:
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL
               value: {{ include "camundaPlatform.opensearchURL" . | quote }}
             {{- end}}
-            {{- if and (not .Values.global.elasticsearch.disableExporter) (not .Values.global.opensearch.enabled) }}
+            {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
               value: {{ .Values.global.elasticsearch.prefix | quote }}
-            {{- if .Values.zeebe.retention.enabled }}
+              {{- if .Values.zeebe.retention.enabled }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_ENABLED
               value: "true"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_MINIMUMAGE
               value: {{ .Values.zeebe.retention.minimumAge | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_POLICYNAME
               value: {{ .Values.zeebe.retention.policyName | quote }}
-            {{- end }}
+              {{- end }}
             {{- end }}
             - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
               value: {{ .Values.zeebe.service.commandPort  | quote }}
