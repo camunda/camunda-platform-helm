@@ -24,3 +24,45 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
 {{- end }}
+
+{{/*
+********************************************************************************
+elasticsearch and opensearch constraints
+********************************************************************************
+*/}}
+
+{{/*
+forcing external elasticsearch and external opensearch to be mutually exclusive
+*/}}
+{{- if and .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+  {{- $errorMessage := "Error: global.elasticsearch.enabled and global.opensearch.enabled cannot both be true." -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+
+{{/*
+when external elasticsearch is enabled then global elasticsearch should be enabled
+*/}}
+{{- if and .Values.global.elasticsearch.external ( not .Values.global.elasticsearch.enabled ) }}
+  {{- $errorMessage := "global.elasticsearch should be enabled with global.elasticsearch.external" -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+
+{{/*
+forcing internal and external elasticsearch to be mutually exclusive
+*/}}
+{{- if and .Values.global.elasticsearch.external .Values.elasticsearch.enabled }}
+  {{- $errorMessage := "Error: global.elasticsearch.external and elasticsearch.enabled cannot both be true." -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+when global elasticsearch is enabled then either external elasticsearch should be enabled or internal elasticsearch should be enabled
+*/}}
+{{- if .Values.global.elasticsearch.enabled -}}
+  {{- if and (not .Values.global.elasticsearch.external) (not .Values.elasticsearch.enabled) -}}
+  {{- $errorMessage := "global.elasticsearch.enabled is true, but neither global.elasticsearch.external.enabled nor elasticsearch.enabled is true" -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end -}}
+{{- end -}}
