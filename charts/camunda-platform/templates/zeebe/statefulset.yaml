@@ -100,6 +100,7 @@ spec:
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_POLICYNAME
               value: {{ .Values.zeebe.retention.policyName | quote }}
             {{- end }}
+
             {{- end }}
             - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
               value: {{ .Values.zeebe.service.commandPort  | quote }}
