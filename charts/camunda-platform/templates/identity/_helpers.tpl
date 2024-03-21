@@ -28,13 +28,13 @@ Create a default fully qualified app name.
         {{ tpl .Values.identity.fullURL $ | quote }}
     {{- else -}}
         {{- if .Values.global.ingress.enabled -}}
-            {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-            {{ $host := .Values.global.ingress.host }}
-            {{ $path := .Values.identity.contextPath | default "" -}}
+            {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+            {{- $host := .Values.global.ingress.host -}}
+            {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
         {{- else -}}
-            {{ $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
-            {{ $host := .Values.identity.ingress.host -}}
+            {{- $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
+            {{- $host := .Values.identity.ingress.host -}}
             {{- printf "%s://%s" $proto $host -}}
         {{- end -}}
     {{- end -}}

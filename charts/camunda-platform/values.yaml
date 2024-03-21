@@ -1771,9 +1771,8 @@ identity:
   sidecars: []
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
-  # FullURL can be used when Ingress is configured (for both multi and single domain setup).
-  # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
-  # fullURL: "https://camunda.example.com/identity"
+  ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
+  fullURL: ""
 
   # Note: Identity cannot be accessed over HTTP if a "contextPath" is configured.
   #       Which means that Identity cannot be configured in combined Ingress without HTTPS.
