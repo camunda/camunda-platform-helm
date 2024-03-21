@@ -221,8 +221,13 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- end }}
 
-{{- if .Values.zeebeGateway.ingress.enabled }}
-- Zeebe Gateway: grpc://{{ tpl .Values.zeebeGateway.ingress.host $ }}
+{{- if .Values.zeebeGateway.ingress.grpc.enabled }}
+- Zeebe Gateway gRPC: grpc://{{ tpl .Values.zeebeGateway.ingress.grpc.host $ }}
+{{- end }}
+
+{{- if .Values.zeebeGateway.ingress.rest.enabled }}
+{{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.rest.tls.enabled -}}
+- Zeebe Gateway REST: {{ $proto }}://{{ tpl .Values.zeebeGateway.ingress.rest.host $ }}
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}

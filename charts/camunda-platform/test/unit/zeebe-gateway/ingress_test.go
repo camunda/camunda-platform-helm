@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestGoldenIngressDefaultTemplate(t *testing.T) {
+func TestGoldenIngressGrpcDefaultTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
@@ -35,13 +35,13 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "ingress",
-		Templates:      []string{"templates/zeebe-gateway/ingress.yaml"},
-		SetValues:      map[string]string{"zeebeGateway.ingress.enabled": "true"},
+		GoldenFileName: "ingress-grpc",
+		Templates:      []string{"templates/zeebe-gateway/ingress-grpc.yaml"},
+		SetValues:      map[string]string{"zeebeGateway.ingress.grpc.enabled": "true"},
 	})
 }
 
-func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
+func TestGoldenIngressGrpcAllEnabledTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
@@ -51,13 +51,50 @@ func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "ingress-all-enabled",
-		Templates:      []string{"templates/zeebe-gateway/ingress.yaml"},
+		GoldenFileName: "ingress-grpc-all-enabled",
+		Templates:      []string{"templates/zeebe-gateway/ingress-grpc.yaml"},
 		SetValues: map[string]string{
-			"zeebeGateway.ingress.enabled":        "true",
-			"zeebeGateway.ingress.host":           "local",
-			"zeebeGateway.ingress.tls.enabled":    "true",
-			"zeebeGateway.ingress.tls.secretName": "my-secret",
+			"zeebeGateway.ingress.grpc.enabled":        "true",
+			"zeebeGateway.ingress.grpc.host":           "local",
+			"zeebeGateway.ingress.grpc.tls.enabled":    "true",
+			"zeebeGateway.ingress.grpc.tls.secretName": "my-secret",
+		},
+	})
+}
+
+func TestGoldenIngressRestDefaultTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "ingress-rest",
+		Templates:      []string{"templates/zeebe-gateway/ingress-rest.yaml"},
+		SetValues:      map[string]string{"zeebeGateway.ingress.rest.enabled": "true"},
+	})
+}
+
+func TestGoldenIngressRestAllEnabledTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "ingress-rest-all-enabled",
+		Templates:      []string{"templates/zeebe-gateway/ingress-rest.yaml"},
+		SetValues: map[string]string{
+			"zeebeGateway.ingress.rest.enabled":        "true",
+			"zeebeGateway.ingress.rest.host":           "local",
+			"zeebeGateway.ingress.rest.tls.enabled":    "true",
+			"zeebeGateway.ingress.rest.tls.secretName": "my-secret",
 		},
 	})
 }

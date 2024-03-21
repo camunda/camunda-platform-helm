@@ -41,7 +41,6 @@ testcases:
     #   Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-
   - name: "WebModeler - {{ .value.component }}"
     skip:
     - skiptestwebmodeler ShouldBeFalse
