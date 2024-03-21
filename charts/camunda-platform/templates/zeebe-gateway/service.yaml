@@ -27,7 +27,10 @@ spec:
     - port: {{ .Values.zeebeGateway.service.httpPort }}
       protocol: TCP
       name: {{ default "http" .Values.zeebeGateway.service.httpName  }}
-    - port: {{ .Values.zeebeGateway.service.gatewayPort }}
+    - port: {{ .Values.zeebeGateway.service.grpcPort }}
       protocol: TCP
-      name: {{ default "gateway" .Values.zeebeGateway.service.gatewayName }}
+      name: {{ default "gateway" .Values.zeebeGateway.service.grpcName }}
+    - port: {{ .Values.zeebeGateway.service.restPort }}
+      protocol: TCP
+      name: {{ default "gateway" .Values.zeebeGateway.service.restName }}
 {{- end }}

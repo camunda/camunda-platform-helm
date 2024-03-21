@@ -100,6 +100,15 @@ spec:
             path: {{ .Values.connectors.contextPath }}
             pathType: Prefix
           {{- end }}
+          {{- if and .Values.zeebe.enabled .Values.zeebeGateway.contextPath }}
+          - backend:
+              service:
+                name: {{ template "zeebe.fullname.gateway" . }}
+                port:
+                  number: {{ .Values.zeebeGateway.service.restPort }}
+            path: {{ .Values.zeebeGateway.contextPath }}
+            pathType: Prefix
+          {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
   tls:
     - hosts:

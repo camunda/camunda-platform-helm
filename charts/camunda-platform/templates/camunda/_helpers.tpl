@@ -308,8 +308,6 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
 {{- end -}}
 
 
-
-
 {{/*
 ********************************************************************************
 Optimize templates.
@@ -334,6 +332,7 @@ Tasklist templates.
 {{- define "camundaPlatform.tasklistExternalURL" }}
   {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "tasklist" "context" .)) -}}
 {{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -368,6 +367,7 @@ Web Modeler templates.
 {{- define "camundaPlatform.webModelerWebAppExternalURL" }}
   {{- printf "%s" (include "camundaPlatform.getExternalURLModeler" (dict "component" "webapp" "context" .)) -}}
 {{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -405,6 +405,7 @@ Usage: {{ include "camundaPlatform.identitySecretName" (dict "context" . "compon
   {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "identity" "context" .)) -}}
 {{- end -}}
 
+
 {{/*
 ********************************************************************************
 Console templates.
@@ -415,6 +416,25 @@ Console templates.
 */}}
 {{- define "camundaPlatform.consoleExternalURL" }}
   {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "console" "context" .)) -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Zeebe templates.
+********************************************************************************
+*/}}
+{{/*
+[camunda-platform] Zeebe Gateway external URL.
+*/}}
+{{- define "camundaPlatform.zeebeGatewayExternalURL" }}
+  {{- if .Values.global.ingress.enabled -}}
+    {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+    {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.zeebeGateway.contextPath -}}
+  {{- else -}}
+    {{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.rest.tls.enabled -}}
+    {{- printf "%s://%s%s" $proto .Values.zeebeGateway.ingress.rest.host .Values.zeebeGateway.contextPath -}} 
+  {{- end -}}
 {{- end -}}
 
 
@@ -500,7 +520,9 @@ Release templates.
   - name: Zeebe Gateway
     id: zeebeGateway
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}
-    url: grpc://{{ tpl .Values.zeebeGateway.ingress.host $ }}
+    urls:
+      grpc: grpc://{{ tpl .Values.zeebeGateway.ingress.grpc.host $ }}
+      http: {{ include "camundaPlatform.zeebeGatewayExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.metrics.prometheus }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.broker" . | trimAll "\"") .Release.Namespace .Values.zeebe.service.httpPort }}

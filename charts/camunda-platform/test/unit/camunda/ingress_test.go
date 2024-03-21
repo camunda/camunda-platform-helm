@@ -163,6 +163,7 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
 			"webModeler.contextPath":              "/modeler",
+			"zeebeGateway.contextPath":            "/zeebe",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -180,6 +181,7 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 	s.Require().Contains(output, "path: /tasklist")
 	s.Require().Contains(output, "path: /modeler")
 	s.Require().Contains(output, "path: /modeler-ws")
+	s.Require().Contains(output, "path: /zeebe")
 }
 
 func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
@@ -209,6 +211,7 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
+	s.Require().NotContains(output, "name: camunda-platform-test-zeebe-gateway")
 }
 
 func (s *ingressTemplateTest) TestIngressComponentDisabled() {
@@ -221,6 +224,7 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 			"optimize.enabled":       "false",
 			"tasklist.enabled":       "false",
 			"webModeler.enabled":     "false",
+			"zeebe.enabled":          "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -236,4 +240,5 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
+	s.Require().NotContains(output, "name: camunda-platform-test-zeebe-gateway")
 }
