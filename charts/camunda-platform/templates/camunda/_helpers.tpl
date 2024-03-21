@@ -245,7 +245,7 @@ Get the external url for keycloak
 
 {{/*
 ********************************************************************************
-Elasticsearch templates.
+Elasticsearch and Opensearch templates.
 ********************************************************************************
 */}}
 
@@ -254,15 +254,19 @@ Elasticsearch templates.
 */}}
 
 {{- define "camundaPlatform.elasticsearchHost" -}}
-  {{- tpl .Values.global.elasticsearch.host $ -}}
+  {{- tpl .Values.global.elasticsearch.url.host $ -}}
 {{- end -}}
 
 {{- define "camundaPlatform.elasticsearchURL" -}}
-  {{- if .Values.global.elasticsearch.url -}}
-    {{- .Values.global.elasticsearch.url -}}
-  {{- else -}}
-    {{ .Values.global.elasticsearch.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.port }}
-  {{- end -}}
+    {{ .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.url.port }}
+{{- end -}}
+
+{{- define "camundaPlatform.opensearchHost" -}}
+  {{- tpl .Values.global.opensearch.url.host $ -}}
+{{- end -}}
+
+{{- define "camundaPlatform.opensearchURL" -}}
+    {{ .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.global.opensearch.url.port }}
 {{- end -}}
 
 

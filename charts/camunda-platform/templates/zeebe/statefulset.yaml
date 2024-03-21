@@ -85,21 +85,50 @@ spec:
               value: {{ .Values.zeebe.ioThreadCount  | quote }}
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
-            {{- if not .Values.global.elasticsearch.disableExporter }}
+            {{- if .Values.global.elasticsearch.external  }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.fullname" . }}-elasticsearch
+                  key: password
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled}}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.fullname" . }}-opensearch
+                  key: password
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
+              value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            {{- end}}
+            {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
               value: {{ .Values.global.elasticsearch.prefix | quote }}
-            {{- if .Values.zeebe.retention.enabled }}
+              {{- if .Values.zeebe.retention.enabled }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_ENABLED
               value: "true"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_MINIMUMAGE
               value: {{ .Values.zeebe.retention.minimumAge | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_POLICYNAME
               value: {{ .Values.zeebe.retention.policyName | quote }}
+              {{- end }}
             {{- end }}
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/elasticsearch.jks
+            {{- else }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.zeebe.javaOpts | quote }}
             {{- end }}
             - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
               value: {{ .Values.zeebe.service.commandPort  | quote }}
@@ -111,8 +140,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.zeebe.javaOpts | quote }}
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -165,6 +192,11 @@ spec:
           resources:
             {{- toYaml .Values.zeebe.resources | nindent 12 }}
           volumeMounts:
+            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/zeebe/certificates/elasticsearch.jks
+              subPath: elasticsearch.jks
+            {{- end }}
             - name: config
               mountPath: /usr/local/bin/startup.sh
               subPath: startup.sh
@@ -188,6 +220,12 @@ spec:
       {{- .Values.zeebe.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
         {{- if eq .Values.zeebe.persistenceType "memory" }}
         - name: data
           emptyDir:
