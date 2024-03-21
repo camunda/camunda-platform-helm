@@ -2,20 +2,42 @@
 
 {{/*
 Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
 */}}
+
 {{- define "identity.fullname" -}}
-{{- if .Values.fullnameOverride -}}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+    {{- include "camundaPlatform.componentFullname" (dict
+        "componentName" "identity"
+        "componentValues" .Values.identity
+        "context" $
+    ) -}}
 {{- end -}}
+
+{{ define "identity.internalUrl" }}
+  {{- if .Values.identity.enabled -}}
+    {{-
+      printf "http://%s:%v%s"
+        (include "identity.fullname" .)
+        .Values.identity.service.port
+        (.Values.identity.contextPath | default "")
+    -}}
+  {{- end -}}
 {{- end -}}
+
+{{- define "identity.externalUrl" -}}
+    {{- if .Values.identity.fullURL -}}
+        {{ tpl .Values.identity.fullURL $ | quote }}
+    {{- else -}}
+        {{- if .Values.global.ingress.enabled -}}
+            {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+            {{ $host := .Values.global.ingress.host }}
+            {{ $path := .Values.identity.contextPath | default "" -}}
+            {{- printf "%s://%s%s" $proto $host $path -}}
+        {{- else -}}
+            {{ $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
+            {{ $host := .Values.identity.ingress.host -}}
+            {{- printf "%s://%s" $proto $host -}}
+        {{- end -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*
@@ -46,10 +68,10 @@ Defines match labels for identity, which are extended by sub-charts and should b
 [identity] Create the name of the service account to use
 */}}
 {{- define "identity.serviceAccountName" -}}
-{{- if .Values.serviceAccount.enabled }}
-{{- default (include "identity.fullname" .) .Values.serviceAccount.name }}
+{{- if .Values.identity.serviceAccount.enabled }}
+{{- default (include "identity.fullname" .) .Values.identity.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- default "default" .Values.identity.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -101,7 +123,7 @@ For more details, please check Camunda Helm chart documentation.
 [identity] Keycloak default URL.
 */}}
 {{- define "identity.keycloak.hostDefault" -}}
-    {{- template "common.names.fullname" .Subcharts.keycloak -}}
+    {{- template "common.names.fullname" .Subcharts.identityKeycloak -}}
 {{- end -}}
 
 {{/*
@@ -111,7 +133,7 @@ For more details, please check Camunda Helm chart documentation.
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.protocol -}}
         {{- .Values.global.identity.keycloak.url.protocol -}}
     {{- else -}}
-        {{- ternary "https" "http" (.Values.keycloak.tls.enabled) -}}
+        {{- ternary "https" "http" (.Values.identityKeycloak.tls.enabled) -}}
     {{- end -}}
 {{- end -}}
 
@@ -147,7 +169,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
         {{- .Values.global.identity.keycloak.url.port -}}
     {{- else -}}
         {{- $keycloakProtocol := (include "identity.keycloak.protocol" .) -}}
-        {{- get .Values.keycloak.service.ports $keycloakProtocol -}}
+        {{- get .Values.identityKeycloak.service.ports $keycloakProtocol -}}
     {{- end -}}
 {{- end -}}
 
@@ -186,8 +208,20 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- if .Values.global.identity.keycloak.auth }}
         {{- .Values.global.identity.keycloak.auth.adminUser -}}
     {{- else }}
-        {{- .Values.keycloak.auth.adminUser -}}
+        {{- .Values.identityKeycloak.auth.adminUser -}}
     {{- end }}
+{{- end -}}
+
+{{- define "identity.authClientId" -}}
+  {{- .Values.global.identity.auth.identity.clientId -}}
+{{- end -}}
+
+{{- define "identity.authAudience" -}}
+  {{- .Values.global.identity.auth.identity.audience -}}
+{{- end -}}
+
+{{- define "identity.authClientSecret" -}}
+  {{- .Values.global.identity.auth.identity.existingSecret -}}
 {{- end -}}
 
 {{/*
@@ -197,8 +231,8 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- define "identity.keycloak.authExistingSecret" -}}
     {{- if .Values.global.identity.keycloak.auth }}
         {{- .Values.global.identity.keycloak.auth.existingSecret -}}
-    {{- else if .Values.keycloak.auth.existingSecret }}
-        {{- .Values.keycloak.auth.existingSecret }}
+    {{- else if .Values.identityKeycloak.auth.existingSecret }}
+        {{- .Values.identityKeycloak.auth.existingSecret }}
     {{- else -}}
         {{ .Release.Name }}-keycloak
     {{- end }}
@@ -210,8 +244,8 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- define "identity.keycloak.authExistingSecretKey" -}}
     {{- if .Values.global.identity.keycloak.auth }}
         {{- .Values.global.identity.keycloak.auth.existingSecretKey -}}
-    {{- else if .Values.keycloak.auth.passwordSecretKey }}
-        {{- .Values.keycloak.auth.passwordSecretKey }}
+    {{- else if .Values.identityKeycloak.auth.passwordSecretKey }}
+        {{- .Values.identityKeycloak.auth.passwordSecretKey }}
     {{- else -}}
         admin-password
     {{- end }}
@@ -222,39 +256,46 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 */}}
 
 {{- define "identity.postgresql.id" -}}
-    {{- (printf "%s-%s" .Release.Name .Values.postgresql.nameOverride) | trunc 63 | trimSuffix "-" }}
+    {{- (printf "%s-%s" .Release.Name .Values.identityPostgresql.nameOverride) | trunc 63 | trimSuffix "-" }}
 {{- end -}}
 
 {{- define "identity.postgresql.secretName" -}}
     {{- $defaultExistingSecret := (include "identity.postgresql.id" .) -}}
-    {{- $autExistingSecret := (.Values.postgresql.auth.existingSecret | default $defaultExistingSecret) -}}
-    {{- $externalDatabaseExistingSecret := (.Values.externalDatabase.existingSecret | default $defaultExistingSecret) -}}
-    {{- .Values.externalDatabase.enabled | ternary $externalDatabaseExistingSecret $autExistingSecret }}
+    {{- $autExistingSecret := (.Values.identityPostgresql.auth.existingSecret | default $defaultExistingSecret) -}}
+    {{- $externalDatabaseExistingSecret := (.Values.identity.externalDatabase.existingSecret | default $defaultExistingSecret) -}}
+    {{- .Values.identity.externalDatabase.enabled | ternary $externalDatabaseExistingSecret $autExistingSecret }}
 {{- end -}}
 
 {{- define "identity.postgresql.secretKey" -}}
     {{- $defaultSecretKey := "password" -}}
-    {{- $externalDatabaseSecretKey := (.Values.externalDatabase.existingSecretPasswordKey | default $defaultSecretKey) -}}
-    {{- .Values.externalDatabase.enabled | ternary $externalDatabaseSecretKey $defaultSecretKey }}
+    {{- $externalDatabaseSecretKey := (.Values.identity.externalDatabase.existingSecretPasswordKey | default $defaultSecretKey) -}}
+    {{- .Values.identity.externalDatabase.enabled | ternary $externalDatabaseSecretKey $defaultSecretKey }}
 {{- end -}}
 
 {{- define "identity.postgresql.secretPassword" -}}
-    {{- $authPassword := .Values.postgresql.auth.password -}}
-    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.password $authPassword }}
+    {{- $authPassword := .Values.identityPostgresql.auth.password -}}
+    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.password $authPassword }}
 {{- end -}}
 
 {{- define "identity.postgresql.host" -}}
-    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.host (include "identity.postgresql.id" .) }}
+    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.host (include "identity.postgresql.id" .) }}
 {{- end -}}
 
 {{- define "identity.postgresql.port" -}}
-    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.port "5432" }}
+    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.port "5432" }}
 {{- end -}}
 
 {{- define "identity.postgresql.username" -}}
-    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.username .Values.postgresql.auth.username }}
+    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.username .Values.identityPostgresql.auth.username }}
 {{- end -}}
 
 {{- define "identity.postgresql.database" -}}
-    {{- .Values.externalDatabase.enabled | ternary .Values.externalDatabase.database .Values.postgresql.auth.database }}
+    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.database .Values.identityPostgresql.auth.database }}
 {{- end -}}
+
+{{/*
+[identity] Get the image pull secrets.
+*/}}
+{{- define "identity.imagePullSecrets" -}}
+    {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.identity.image)) }}
+{{- end }}

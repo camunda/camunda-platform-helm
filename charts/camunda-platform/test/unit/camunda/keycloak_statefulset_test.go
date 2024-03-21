@@ -46,6 +46,6 @@ func TestGoldenKeycloakDefaults(t *testing.T) {
 			`\s+checksum/secrets:\s+.*`,
 		},
 		// ExtraHelmArgs is used instead of Templates here because Keycloak is a dependency chart.
-		ExtraHelmArgs: []string{"--show-only", "charts/identity/charts/keycloak/templates/statefulset.yaml"},
+		ExtraHelmArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
 	})
 }

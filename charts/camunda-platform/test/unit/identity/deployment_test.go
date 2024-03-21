@@ -46,7 +46,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/identity/templates/deployment.yaml"},
+		templates: []string{"templates/identity/deployment.yaml"},
 	})
 }
 
@@ -54,7 +54,7 @@ func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.keycloak.enabled":                       "false",
+			"identityKeycloak.enabled":                       "false",
 			"global.identity.keycloak.url.protocol":           "https",
 			"global.identity.keycloak.url.host":               "keycloak.prod.svc.cluster.local",
 			"global.identity.keycloak.url.port":               "8443",
@@ -615,9 +615,9 @@ func (s *deploymentTemplateTest) TestContainerShouldSetCorrectSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.keycloak.enabled":                "true",
-			"identity.keycloak.auth.existingSecret":    "ownExistingSecret",
-			"identity.keycloak.auth.passwordSecretKey": "test-admin",
+			"identityKeycloak.enabled":                "true",
+			"identityKeycloak.auth.existingSecret":    "ownExistingSecret",
+			"identityKeycloak.auth.passwordSecretKey": "test-admin",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -1087,7 +1087,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetExternalDatabaseExistingS
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.postgresql.enabled":                         "false",
+			"identityPostgresql.enabled":                         "false",
 			"identity.externalDatabase.enabled":                   "true",
 			"identity.externalDatabase.existingSecret":            "postgres-secret-ext",
 			"identity.externalDatabase.existingSecretPasswordKey": "identity-password-ext",

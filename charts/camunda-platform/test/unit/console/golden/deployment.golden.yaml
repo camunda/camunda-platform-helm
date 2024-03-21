@@ -10,12 +10,12 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.5"
     app.kubernetes.io/component: console
   annotations:
     {}
 spec:
-  replicas: 
+  replicas: 1
   selector:
     matchLabels:
       app: camunda-platform
@@ -40,24 +40,33 @@ spec:
         []
       serviceAccountName: camunda-platform-test-console
       securityContext:
-        {}
+        fsGroup: 1001
+        runAsNonRoot: true
       containers:
         - name: camunda-platform
-          securityContext:
-            null
-          image: registry.camunda.cloud/console/console-sm:latest
+          image: registry.camunda.cloud/console/console-sm:8.4.57
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: NODE_ENV
               value: prod
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: "http://camunda-platform-test-keycloak:80/auth"
             - name: KEYCLOAK_BASE_URL
               value: "http://localhost:18080/auth"
             - name: KEYCLOAK_REALM
               value: camunda-platform
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: console
+              value: console-api
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: ""
           ports:
             - name: http
               containerPort: 8080

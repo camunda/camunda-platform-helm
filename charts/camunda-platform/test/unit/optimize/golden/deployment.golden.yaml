@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.5"
     app.kubernetes.io/component: optimize
   annotations:
     {}
@@ -32,20 +32,21 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: optimize
     spec:
       imagePullSecrets:
         []
       initContainers:
         - name: migration
-          image: camunda/optimize:8.4.1
+          image: camunda/optimize:8.4.2
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 100
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
@@ -62,13 +63,14 @@ spec:
               name: camunda
       containers:
         - name: optimize
-          image: camunda/optimize:8.4.1
+          image: camunda/optimize:8.4.2
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 100
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
@@ -135,5 +137,5 @@ spec:
         - name: camunda
           emptyDir: {}
       securityContext:
-        fsGroup: 100
+        fsGroup: 1001
         runAsNonRoot: true

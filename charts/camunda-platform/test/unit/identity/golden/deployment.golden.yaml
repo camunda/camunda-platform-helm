@@ -1,16 +1,16 @@
 ---
-# Source: camunda-platform/charts/identity/templates/deployment.yaml
+# Source: camunda-platform/templates/identity/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: camunda-platform-test-identity
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: identity
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.5"
     app.kubernetes.io/component: identity
   annotations:
     {}
@@ -19,7 +19,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: identity
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -28,30 +28,32 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: identity
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: ccf71a59ceb57a2edf89433e4206337c32bfa8c795c7b11af42907c16894dc6d
+        checksum/configmap-env-vars: 8fb51ee0a9584dbb0420946dd6a742b6a6173654ac2f5056f0f0e1e193ed103c
     spec:
       imagePullSecrets:
         []
       initContainers:
         []
       containers:
-        - name: identity
-          image: "camunda/identity:8.4.3"
+        - name: camunda-platform
+          image: camunda/identity:8.4.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1005
+            runAsUser: 1001
           env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: keycloak
             - name: KEYCLOAK_INIT_OPERATE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -116,8 +118,6 @@ spec:
               value: "zeebe-api"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
-            - name: SERVER_PORT
-              value: "8080"
             - name: KEYCLOAK_URL
               value: "http://camunda-platform-test-keycloak:80/auth"
             - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
@@ -151,7 +151,13 @@ spec:
               value: "Optimize"
             - name: KEYCLOAK_USERS_0_ROLES_4
               value: "Web Modeler"
+            - name: KEYCLOAK_USERS_0_ROLES_5
+              value: "Console"
+            - name: SERVER_PORT
+              value: "8080"
           envFrom:
+            - configMapRef:
+                name: camunda-platform-test-identity-config-env-vars
           resources:
             limits:
               cpu: 2000m
@@ -184,4 +190,5 @@ spec:
         - name: tmp
           emptyDir: {}
       securityContext:
-        fsGroup: 1005
+        fsGroup: 1001
+        runAsNonRoot: true

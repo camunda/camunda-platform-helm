@@ -45,7 +45,7 @@ func TestConfigMapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"charts/identity/templates/configmap-env-vars.yaml"},
+		templates: []string{"templates/identity/configmap-env-vars.yaml"},
 	})
 }
 
@@ -54,7 +54,7 @@ func (s *configMapTemplateTest) TestConfigMapBuiltinDatabaseEnabled() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled": "true",
-			"identity.postgresql.enabled": "true",
+			"identityPostgresql.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -78,7 +78,7 @@ func (s *configMapTemplateTest) TestConfigMapExternalDatabaseEnabled() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled":        "true",
-			"identity.postgresql.enabled":        "false",
+			"identityPostgresql.enabled":        "false",
 			"identity.externalDatabase.enabled":  "true",
 			"identity.externalDatabase.host":     "my-database-host",
 			"identity.externalDatabase.port":     "2345",

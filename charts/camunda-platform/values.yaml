@@ -58,7 +58,7 @@ global:
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.4.3
+    tag: 8.4.5
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -87,65 +87,24 @@ global:
 
   # Elasticsearch configuration which is shared between the sub charts
   ## @extra global.elasticsearch
-  ## @param global.elasticsearch.enabled if true, enables elasticsearch for all components
-  ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
-  ## @extra global.elasticsearch.tls 
-  ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
-  ## @extra global.elasticsearch.auth
-  ## @param global.elasticsearch.auth.username the username for external elasticsearch
-  ## @param global.elasticsearch.auth.password the password for external elasticsearch
   elasticsearch:
-    enabled: true
-    external: false
-    tls:
-      enabled: false
-      existingSecret:
-    auth:
-      username:
-      password:
     ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
-    ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
-    ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
-    ## @param global.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
-    ## @param global.elasticsearch.url.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
+    ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
     url:
-      protocol: http
-      host: "{{ .Release.Name }}-elasticsearch"
-      port: 9200
+    ## @param global.elasticsearch.protocol defines the elasticsearch access protocol, by default HTTP.
+    protocol: http
+    ## @param global.elasticsearch.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
+    host: "{{ .Release.Name }}-elasticsearch"
+    ## @param global.elasticsearch.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
+    port: 9200
     ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
-  # Opensearch configuration which is shared between the sub charts
-  ## @extra global.opensearch
-  ## @extra global.opensearch.enabled enabled external opensearch
-  ## @extra global.opensearch.tls 
-  ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
-  ## @extra global.opensearch.auth
-  ## @param global.opensearch.auth.username the username for external opensearch
-  ## @param global.opensearch.auth.password the password for external opensearch
-  opensearch:
-    enabled: false
-    # tls:
-    #   enabled: false
-    #   existingSecret:
-    auth:
-      username:
-      password:
-    ## @extra global.opensearch.url can be used to configure the URL to access opensearch, if not set services fallback to host and port configuration
-    ## @param global.opensearch.url.protocol defines the external opensearch access protocol
-    ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
-    ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
-    url:
-      protocol: https
-      host:
-      port: 443
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
-  ## @param global.zeebePort defines the port which is used for the Zeebe Gateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
+  ## @param global.zeebePort defines the port which is used for the ZeebeGateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
@@ -156,10 +115,10 @@ global:
       ## @skip global.identity.service.url
       url:
     keycloak:
-      # Identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
+      # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       internal: false
-      ## @param global.identity.keycloak.url can be used incorporate with "identity.keycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart.
+      ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart.
       url: {}
         # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
         # url:
@@ -171,7 +130,7 @@ global:
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
       realm: "/realms/camunda-platform"
-      ## @param global.identity.keycloak.auth same as "identity.keycloak.auth" but it's used for existing Keycloak.
+      ## @param global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
       auth: {}
         # identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
         # adminUser: ""
@@ -210,6 +169,25 @@ global:
         ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
         existingSecret: ""
+
+      ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other sub-charts
+      identity:
+        ## @param global.identity.auth.identity.clientId defines the client id, which is used by Identity in authentication flows.
+        clientId: identity
+        ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
+        audience: camunda-identity-resource-server
+        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+        # The existing secret should contain an `identity-secret` field, which will be used as secret for the identity-identity communication.
+        existingSecret:
+        ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
+        # Should be publicly accessible, the default value works if a port-forward to Identity is created to 8085.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8085"
+        ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Identity to configure initial mapping rules,
+        # defaults to "oid".
+        initialClaimName: "oid"
+        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Identity to configure initial mapping rules.
+        initialClaimValue:
 
       ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
       operate:
@@ -253,16 +231,16 @@ global:
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8083"
 
-      ## @extra global.identity.auth.webModeler configuration to configure Web Modeler authentication specifics on global level, which can be accessed by other sub-charts
+      ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other sub-charts
       webModeler:
-        ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by Web Modeler in authentication flows.
+        ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
         clientId: web-modeler
-        ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by Web Modeler's client API.
+        ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by WebModeler's client API.
         clientApiAudience: web-modeler-api
-        ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by Web Modeler's public API.
+        ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by WebModeler's public API.
         publicApiAudience: web-modeler-public-api
-        ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
-        # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8084.
+        ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
+        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8084"
 
@@ -271,10 +249,12 @@ global:
         ## @skip global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `console-secret` field, which will be used as secret for the identity-console communication.
         existingSecret:
-        ## @skip global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access Web Modeler.
-        # Should be publicly accessible, the default value works if a port-forward to Web Modeler is created to 8080.
+        ## @skip global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
+        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
+        ## @skip global.identity.auth.console.audience can be used to Console audience in Identity.
+        audience: console-api
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
@@ -298,14 +278,11 @@ global:
   multiregion:
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
-    ## @skip global.multiregion.regionId unique id of the region. Should start at 0 for easy computation. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
     regionId: 0
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
-#
-# WARNING: Console is still Alpha.
-#
 #################################################
  #####
 #     #  ####  #    #  ####   ####  #      ######
@@ -315,68 +292,19 @@ global:
 #     # #    # #   ## #    # #    # #      #
  #####   ####  #    #  ####   ####  ###### ######
 #################################################
+
 ## @section Console Parameters
+## @descriptionStart
+## **CAUTION:** Console is under development and not available yet. We plan to release it with 8.5 in April.
+## @descriptionEnd
+
 ## @extra console configuration for the Console.
 console:
   ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @param console.configuration Configuration passed directly to Console as yaml file.
+  ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
   configuration: ""
-
-  # Method 01: Plain
-  # The full config is passed to Console as a ConfigMap.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: plain
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #           version: 8.2.10
-  #           components:
-  #           - name: Console
-  #             url: "https://example-dev.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-dev.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-dev.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-dev.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-dev.camunda.com/"
-  #         - name: camunda-platform-stage
-  #           namespace: camunda-stage
-  #           version: 8.2.11
-  #           components:
-  #           - name: Console
-  #             url: "https://example-stage.camunda.com/"
-  #           - name: Optimize
-  #             url: "https://example-stage.camunda.com/optimize"
-  #           - name: Operate
-  #             url: "https://example-stage.camunda.com/operate"
-  #           - name: WebModeler WebApp
-  #             url: "https://example-stage.camunda.com/modeler"
-  #           - name: zeebeGateway
-  #             url: "grpc://zeebe-example-stage.camunda.com/"
-
-  # Method 02: Helm
-  # With each Camunda there is a ConfigMap contains the release info.
-  # Hence, only namespaces are passed as config to Console, then Console will retrieve
-  # the Camunda deployment details from there.
-
-  # configuration: |-
-  #   camunda:
-  #     console:
-  #       managed:
-  #         method: helm
-  #         releases:
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-dev
-  #         - name: camunda-platform-dev
-  #           namespace: camunda-stage
 
   ## console.image configuration to configure the Console image specifics
   image:
@@ -384,8 +312,9 @@ console:
     registry: registry.camunda.cloud
     ## @param console.image.repository defines which image repository to use
     repository: console/console-sm
-    ## @param console.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: latest
+    ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
+    # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
+    tag: 8.4.57
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -396,7 +325,7 @@ console:
   replicas: 1
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/"
+  contextPath: ""
 
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
@@ -406,7 +335,7 @@ console:
   ## @param console.podLabels can be used to define extra Console pod labels
   podLabels: {}
 
-  ## @param console.logging configuration for the Console logging. This template will be directly included in the Operate configuration yaml file
+  ## @param console.logging configuration for the Console logging. This template will be directly included in the Operate configuration YAML file
   logging: {}
 
   ## console.service configuration to configure the Console service.
@@ -416,7 +345,7 @@ console:
     ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param console.service.port defines the port number where the web application will be available
-    port: 8080
+    port: 80
     ## @param console.service.serverName defines the port name where the web application will be available
     serverName: http
     ## @param console.service.managementPort defines the management port used to access metrics and app status
@@ -517,6 +446,8 @@ console:
     name: ""
     ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
@@ -543,11 +474,25 @@ console:
       ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-console
 
-  ## @param console.podSecurityContext defines the security options the Console pod should be run with
-  podSecurityContext: {}
+  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
+  podSecurityContext:
+    ## @param console.podSecurityContext.runAsNonRoot run as non root
+    runAsNonRoot: true
+    ## @param console.podSecurityContext.fsGroup
+    fsGroup: 1001
 
-  ## @param console.containerSecurityContext defines the security options the Console container should be run with
-  containerSecurityContext: {}
+  # ContainerSecurityContext defines the security options the Console broker container should be run with
+  containerSecurityContext:
+    ## @param console.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param console.containerSecurityContext.privileged
+    privileged: false
+    ## @param console.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param console.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param console.containerSecurityContext.runAsUser
+    runAsUser: 1001
 
   ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
   nodeSelector: {}
@@ -659,6 +604,8 @@ zeebe:
     name: ""
     ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
+    ## @param zeebe.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @param zeebe.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
@@ -689,7 +636,8 @@ zeebe:
   pvcAccessModes: ["ReadWriteOnce"]
   ## @param zeebe.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
   pvcStorageClassName: ''
-
+  ## @param zeebe.pvcAnnotations can be used to specify custom annotations for Zeebe's persistent volume claims, enhancing storage configuration flexibility.
+  pvcAnnotations: {}
   ## @param zeebe.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
   ## @param zeebe.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
@@ -717,9 +665,9 @@ zeebe:
     ## @param zeebe.podSecurityContext.runAsNonRoot run as non root
     runAsNonRoot: true
     ## @param zeebe.podSecurityContext.fsGroup
-    fsGroup: 1000
+    fsGroup: 1001
 
-  # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
+  ## @extra zeebe.containerSecurityContext defines the security options the Zeebe broker container should be run with
   containerSecurityContext:
     ## @param zeebe.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
@@ -727,8 +675,10 @@ zeebe:
     privileged: false
     ## @param zeebe.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
+    ## @param zeebe.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
     ## @param zeebe.containerSecurityContext.runAsUser
-    runAsUser: 1000
+    runAsUser: 1001
 
   ## @extra zeebe.startupProbe configuration
   startupProbe:
@@ -737,7 +687,7 @@ zeebe:
     ## @param zeebe.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/startup
     ## @param zeebe.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
     ## @param zeebe.startupProbe.periodSeconds defines how often the probe is executed
@@ -756,7 +706,7 @@ zeebe:
     ## @param zeebe.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /ready
+    probePath: /actuator/health/readiness
     ## @param zeebe.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -776,7 +726,7 @@ zeebe:
     ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health
+    probePath: /actuator/health/liveness
     ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -834,62 +784,62 @@ zeebe:
 #  ### ######   #   #      # ## # ######   #
 #    # #    #   #   #      ##  ## #    #   #
  ####  #    #   #   ###### #    # #    #   #
-## @section Zeebe Gateway Parameters
+## @section ZeebeGateway Parameters
 ## @extra Gateway configuration to define properties related to the standalone gateway
-zeebe-gateway:
-  ## @param zeebe-gateway.replicas defines how many standalone gateways are deployed
+zeebeGateway:
+  ## @param zeebeGateway.replicas defines how many standalone gateways are deployed
   replicas: 2
-  ## @extra zeebe-gateway.image configuration to configure the zeebe-gateway image specifics
+  ## @extra zeebeGateway.image configuration to configure the ZeebeGateway image specifics
   image:
-    ## @param zeebe-gateway.image.registry can be used to set container image registry.
+    ## @param zeebeGateway.image.registry can be used to set container image registry.
     registry: ""
-    ## @param zeebe-gateway.image.repository defines which image repository to use
+    ## @param zeebeGateway.image.repository defines which image repository to use
     repository: camunda/zeebe
-    ## @param zeebe-gateway.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag:
-    ## @param zeebe-gateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  ## @param zeebe-gateway.sidecars can be used to attach extra containers to the zeebe gateway deployment
+  ## @param zeebeGateway.sidecars can be used to attach extra containers to the ZeebeGateway deployment
   sidecars: []
 
-  ## @param zeebe-gateway.podAnnotations can be used to define extra gateway pod annotations
+  ## @param zeebeGateway.podAnnotations can be used to define extra gateway pod annotations
   podAnnotations: {}
-  ## @param zeebe-gateway.podLabels can be used to define extra gateway pod labels
+  ## @param zeebeGateway.podLabels can be used to define extra gateway pod labels
   podLabels: {}
 
-  ## @param zeebe-gateway.logLevel defines the log level which is used by the gateway
+  ## @param zeebeGateway.logLevel defines the log level which is used by the gateway
   logLevel: info
-  ## @param zeebe-gateway.log4j2 can be used to overwrite the log4j2 configuration of the gateway
+  ## @param zeebeGateway.log4j2 can be used to overwrite the log4j2 configuration of the gateway
   log4j2: ''
-  ## @param zeebe-gateway.javaOpts can be used to set java options for the zeebe gateways
+  ## @param zeebeGateway.javaOpts can be used to set java options for the ZeebeGateway
   javaOpts: >-
     -XX:+ExitOnOutOfMemoryError
 
-  ## @param zeebe-gateway.env can be used to set extra environment variables in each gateway container
+  ## @param zeebeGateway.env can be used to set extra environment variables in each gateway container
   env: []
-  ## @extra zeebe-gateway.configMap configuration which will be applied to the mounted config map.
+  ## @extra zeebeGateway.configMap configuration which will be applied to the mounted config map.
   configMap:
-    ## @param zeebe-gateway.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    ## @param zeebeGateway.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0744
-  ## @param zeebe-gateway.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  ## @param zeebeGateway.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
-  ## @extra zeebe-gateway.podDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  ## @extra zeebeGateway.podDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
-    ## @param zeebe-gateway.podDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
+    ## @param zeebeGateway.podDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
     enabled: false
-    ## @param zeebe-gateway.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    ## @param zeebeGateway.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
     minAvailable: 1
-    ## @param zeebe-gateway.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    ## @param zeebeGateway.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable:
 
-  ## @extra zeebe-gateway.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param zeebe-gateway.resources.requests.cpu
-  ## @param zeebe-gateway.resources.requests.memory
-  ## @param zeebe-gateway.resources.limits.cpu
-  ## @param zeebe-gateway.resources.limits.memory
+  ## @extra zeebeGateway.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param zeebeGateway.resources.requests.cpu
+  ## @param zeebeGateway.resources.requests.memory
+  ## @param zeebeGateway.resources.limits.cpu
+  ## @param zeebeGateway.resources.limits.memory
   resources:
     requests:
       cpu: 400m
@@ -898,104 +848,104 @@ zeebe-gateway:
       cpu: 400m
       memory: 450Mi
 
-  ## @param zeebe-gateway.priorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  ## @param zeebeGateway.priorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
-  ## @extra zeebe-gateway.podSecurityContext defines the security options the gateway pod should be run wit
+  ## @extra zeebeGateway.podSecurityContext defines the security options the gateway pod should be run wit
   podSecurityContext:
-  ## @param zeebe-gateway.podSecurityContext.runAsNonRoot
+    ## @param zeebeGateway.podSecurityContext.runAsNonRoot
     runAsNonRoot: true
-  ## @param zeebe-gateway.podSecurityContext.fsGroup
-    fsGroup: 1000
+    ## @param zeebeGateway.podSecurityContext.fsGroup
+    fsGroup: 1001
 
-  ## @extra zeebe-gateway.containerSecurityContext defines the security options the gateway container should be run with
+  ## @extra zeebeGateway.containerSecurityContext defines the security options the gateway container should be run with
   containerSecurityContext:
-    ## @param zeebe-gateway.containerSecurityContext.privileged
-    privileged: false
-    ## @param zeebe-gateway.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param zeebe-gateway.containerSecurityContext.allowPrivilegeEscalation
+    ## @param zeebeGateway.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
-    ## @param zeebe-gateway.containerSecurityContext.runAsNonRoot
+    ## @param zeebeGateway.containerSecurityContext.privileged
+    privileged: false
+    ## @param zeebeGateway.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param zeebeGateway.containerSecurityContext.runAsNonRoot
     runAsNonRoot: true
-    ## @param zeebe-gateway.containerSecurityContext.runAsUser
-    runAsUser: 1000
+    ## @param zeebeGateway.containerSecurityContext.runAsUser
+    runAsUser: 1001
 
-  ## @extra zeebe-gateway.startupProbe configuration
+  ## @extra zeebeGateway.startupProbe configuration
   startupProbe:
-    ## @param zeebe-gateway.startupProbe.enabled if true, the startup probe is enabled in app container
+    ## @param zeebeGateway.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param zeebe-gateway.startupProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param zeebeGateway.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param zeebe-gateway.startupProbe.probePath defines the startup probe route used on the app
+    ## @param zeebeGateway.startupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/startup
-    ## @param zeebe-gateway.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param zeebeGateway.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param zeebe-gateway.startupProbe.periodSeconds defines how often the probe is executed
+    ## @param zeebeGateway.startupProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param zeebe-gateway.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param zeebeGateway.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param zeebe-gateway.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param zeebeGateway.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param zeebe-gateway.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param zeebeGateway.startupProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## @extra zeebe-gateway.readinessProbe configuration
+  ## @extra zeebeGateway.readinessProbe configuration
   readinessProbe:
-    ## @param zeebe-gateway.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    ## @param zeebeGateway.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param zeebe-gateway.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param zeebeGateway.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param zeebe-gateway.readinessProbe.probePath defines the readiness probe route used on the app
+    ## @param zeebeGateway.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
-    ## @param zeebe-gateway.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    ## @extra zeebe-gateway.the probe is initiated.
+    ## @param zeebeGateway.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @extra zeebeGateway.the probe is initiated.
     initialDelaySeconds: 30
-    ## @param zeebe-gateway.readinessProbe.periodSeconds defines how often the probe is executed
+    ## @param zeebeGateway.readinessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param zeebe-gateway.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param zeebeGateway.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param zeebe-gateway.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param zeebeGateway.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param zeebe-gateway.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param zeebeGateway.readinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## @extra zeebe-gateway.livenessProbe configuration
+  ## @extra zeebeGateway.livenessProbe configuration
   livenessProbe:
-    ## @param zeebe-gateway.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    ## @param zeebeGateway.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param zeebe-gateway.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param zeebeGateway.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param zeebe-gateway.livenessProbe.probePath defines the liveness probe route used on the app
+    ## @param zeebeGateway.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health/liveness
-    ## @param zeebe-gateway.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param zeebeGateway.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     initialDelaySeconds: 30
-    ## @param zeebe-gateway.livenessProbe.periodSeconds defines how often the probe is executed
+    ## @param zeebeGateway.livenessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param zeebe-gateway.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    ## @param zeebeGateway.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
     successThreshold: 1
-    ## @param zeebe-gateway.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    ## @param zeebeGateway.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
     failureThreshold: 5
-    ## @param zeebe-gateway.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param zeebeGateway.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## Metrics configuration
   metrics:
-    ## @param zeebe-gateway.metrics.prometheus Prometheus metrics endpoint
+    ## @param zeebeGateway.metrics.prometheus Prometheus metrics endpoint
     prometheus: /actuator/prometheus
 
-  ## @param zeebe-gateway.nodeSelector can be used to define on which nodes the gateway pods should run
+  ## @param zeebeGateway.nodeSelector can be used to define on which nodes the gateway pods should run
   nodeSelector: {}
-  ## @param zeebe-gateway.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ## @param zeebeGateway.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @extra zeebe-gateway.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe gateway pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
-  # It uses a hard requirement for scheduling and works based on the Zeebe gateway pod labels
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @skip zeebe-gateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+  ## @extra zeebeGateway.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  # The default defined PodAntiAffinity allows constraining on which nodes the ZeebeGateway pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  # It uses a hard requirement for scheduling and works based on the ZeebeGateway pod labels
+  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -1007,72 +957,74 @@ zeebe-gateway:
                   - zeebe-gateway
           topologyKey: "kubernetes.io/hostname"
 
-  ## @param zeebe-gateway.extraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+  ## @param zeebeGateway.extraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
   extraVolumeMounts: []
-  ## @param zeebe-gateway.extraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+  ## @param zeebeGateway.extraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
   extraVolumes: []
-  ## @param zeebe-gateway.extraInitContainers (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  ## @param zeebeGateway.extraInitContainers (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
-  ## @param zeebe-gateway.initContainers can be used to set up extra init containers for the application Pod
+  ## @param zeebeGateway.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @extra zeebe-gateway.service configuration for the gateway service
+  ## @extra zeebeGateway.service configuration for the gateway service
   service:
-    ## @param zeebe-gateway.service.annotations can be used to define annotations, which will be applied to the zeebe-gateway service
+    ## @param zeebeGateway.service.annotations can be used to define annotations, which will be applied to the zeebe-gateway service
     annotations: {}
-    ## @param zeebe-gateway.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    ## @param zeebeGateway.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @param zeebe-gateway.service.loadBalancerIP defines public ip of the load balancer if the type is LoadBalancer
+    ## @param zeebeGateway.service.loadBalancerIP defines public ip of the load balancer if the type is LoadBalancer
     loadBalancerIP: ""
-    ## @param zeebe-gateway.service.loadBalancerSourceRanges defines list of allowed source ip address ranges if the type is LoadBalancer
+    ## @param zeebeGateway.service.loadBalancerSourceRanges defines list of allowed source ip address ranges if the type is LoadBalancer
     loadBalancerSourceRanges: []
-    ## @param zeebe-gateway.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    ## @param zeebeGateway.service.httpPort defines the port of the http endpoint, where for example metrics are provided
     httpPort: 9600
-    ## @param zeebe-gateway.service.httpName defines the name of the http endpoint, where for example metrics are provided
+    ## @param zeebeGateway.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-    ## @param zeebe-gateway.service.gatewayPort defines the port of the gateway endpoint, where client commands (grpc) are sent to
+    ## @param zeebeGateway.service.gatewayPort defines the port of the gateway endpoint, where client commands (grpc) are sent to
     gatewayPort: 26500
-    ## @param zeebe-gateway.service.gatewayName defines the name of the gateway endpoint, where client commands (grpc) are sent to
+    ## @param zeebeGateway.service.gatewayName defines the name of the gateway endpoint, where client commands (grpc) are sent to
     gatewayName: "gateway"
-    ## @param zeebe-gateway.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    ## @param zeebeGateway.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
     internalPort: 26502
-    ## @param zeebe-gateway.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    ## @param zeebeGateway.service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
 
-  ## @extra zeebe-gateway.serviceAccount configuration for the service account where the gateway pods are assigned to
+  ## @extra zeebeGateway.serviceAccount configuration for the service account where the gateway pods are assigned to
   serviceAccount:
-    ## @param zeebe-gateway.serviceAccount.enabled if true, enables the gateway service account
+    ## @param zeebeGateway.serviceAccount.enabled if true, enables the gateway service account
     enabled: true
-    ## @param zeebe-gateway.serviceAccount.name can be used to set the name of the gateway service account
+    ## @param zeebeGateway.serviceAccount.name can be used to set the name of the gateway service account
     name: ""
-    ## @param zeebe-gateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
+    ## @param zeebeGateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: {}
+    ## @param zeebeGateway.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
-    ## @param zeebe-gateway.ingress.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param zeebeGateway.ingress.enabled if true, an ingress resource is deployed with the ZeebeGateway deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
-    ## @param zeebe-gateway.ingress.className defines the class or configuration of ingress which should be used by the controller
+    ## @param zeebeGateway.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @param zeebe-gateway.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip zeebe-gateway.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip zeebe-gateway.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip zeebe-gateway.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
-    ## @skip zeebe-gateway.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+    ## @param zeebeGateway.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @skip zeebeGateway.ingress.annotations.ingress.kubernetes.io/rewrite-target
+    ## @skip zeebeGateway.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+    ## @skip zeebeGateway.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
+    ## @skip zeebeGateway.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-    ## @param zeebe-gateway.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## @param zeebeGateway.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
-    ## @param zeebe-gateway.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## @param zeebeGateway.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
-    ## @extra zeebe-gateway.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    ## @extra zeebeGateway.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
-      ## @param zeebe-gateway.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      ## @param zeebeGateway.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
-      ## @param zeebe-gateway.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      ## @param zeebeGateway.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-zeebe-gateway
 
 
@@ -1115,7 +1067,7 @@ operate:
   ## @param operate.podLabels can be used to define extra Operate pod labels
   podLabels: {}
 
-  ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration yaml file
+  ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration YAML file
   ## @param operate.logging.level.ROOT
   ## @param operate.logging.level.io.camunda.operate
   logging:
@@ -1167,6 +1119,8 @@ operate:
     name: ""
     ## @param operate.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param operate.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
@@ -1195,21 +1149,23 @@ operate:
 
   ## @extra operate.podSecurityContext defines the security options the Operate pod should be run with
   podSecurityContext:
-  ## @param operate.podSecurityContext.runAsNonRoot
+    ## @param operate.podSecurityContext.runAsNonRoot
     runAsNonRoot: true
     ## @param operate.podSecurityContext.fsGroup
-    fsGroup: 1000
+    fsGroup: 1001
 
   ## @extra operate.containerSecurityContext defines the security options the Operate container should be run with
   containerSecurityContext:
-  ## @param operate.containerSecurityContext.allowPrivilegeEscalation
+    ## @param operate.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
     ## @param operate.containerSecurityContext.privileged
     privileged: false
     ## @param operate.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
+    ## @param operate.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
     ## @param operate.containerSecurityContext.runAsUser
-    runAsUser: 1004
+    runAsUser: 1001
 
   ## @extra operate.startupProbe configuration
   startupProbe:
@@ -1368,13 +1324,15 @@ tasklist:
     name: ""
     ## @param tasklist.serviceAccount.annotations can be used to set the annotations of the Tasklist service account
     annotations: {}
+    ## @param tasklist.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @extra tasklist.podSecurityContext defines the security options the Tasklist pod should be run with
   podSecurityContext:
-  ## @param tasklist.podSecurityContext.runAsNonRoot
+    ## @param tasklist.podSecurityContext.runAsNonRoot
     runAsNonRoot: true
     ## @param tasklist.podSecurityContext.fsGroup
-    fsGroup: 1002
+    fsGroup: 1001
 
   ## @extra tasklist.containerSecurityContext defines the security options the Tasklist container should be run with
   containerSecurityContext:
@@ -1384,8 +1342,10 @@ tasklist:
     privileged: false
     ## @param tasklist.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
+    ## @param tasklist.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
     ## @param tasklist.containerSecurityContext.runAsUser
-    runAsUser: 1002
+    runAsUser: 1001
 
   ## @extra tasklist.startupProbe configuration
   startupProbe:
@@ -1528,7 +1488,7 @@ optimize:
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.4.1
+    tag: 8.4.2
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1571,6 +1531,8 @@ optimize:
     name: ""
     ## @param optimize.serviceAccount.annotations can be used to set the annotations of the Optimize service account
     annotations: {}
+    ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ## @extra optimize.service configuration to configure the Optimize service.
   service:
@@ -1585,21 +1547,23 @@ optimize:
 
   ## @extra optimize.podSecurityContext defines the security options the Optimize pod should be run with
   podSecurityContext:
-  ## @param optimize.podSecurityContext.runAsNonRoot
+    ## @param optimize.podSecurityContext.runAsNonRoot
     runAsNonRoot: true
     ## @param optimize.podSecurityContext.fsGroup
-    fsGroup: 100
+    fsGroup: 1001
 
- ## @extra optimize.containerSecurityContext defines the security options the Optimize container should be run with
+  ## @extra optimize.containerSecurityContext defines the security options the Optimize container should be run with
   containerSecurityContext:
-  ## @param optimize.containerSecurityContext.allowPrivilegeEscalation
+    ## @param optimize.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
     ## @param optimize.containerSecurityContext.privileged
     privileged: false
-     ## @param optimize.containerSecurityContext.readOnlyRootFilesystem
+    ## @param optimize.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
+    ## @param optimize.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
     ## @param optimize.containerSecurityContext.runAsUser
-    runAsUser: 100
+    runAsUser: 1001
 
   ## @extra optimize.startupProbe configuration
   startupProbe:
@@ -1726,8 +1690,8 @@ optimize:
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: If using Keycloak, Identity is required by Optimize and Web Modeler.
-  #       If you need neither Optimize nor Web Modeler, make sure to disable both the Identity authentication and the applications by setting:
+  # Note: If using Keycloak, Identity is required by Optimize and WebModeler.
+  #       If you need neither Optimize nor WebModeler, make sure to disable both the Identity authentication and the applications by setting:
   #         global.identity.auth.enabled=false
   #         optimize.enabled=false
   #         webModeler.enabled=false
@@ -1747,11 +1711,11 @@ identity:
     username: demo
     ## @param identity.firstUser.password defines the password of the first user, needed to log in into the web applications
     password: demo
-    ## @param identity.firstUser.email defines the email address of the first user; a valid email address is required to use Web Modeler
+    ## @param identity.firstUser.email defines the email address of the first user; a valid email address is required to use WebModeler
     email: demo@example.org
-    ## @param identity.firstUser.firstName defines the first name of the first user; a name is required to use Web Modeler
+    ## @param identity.firstUser.firstName defines the first name of the first user; a name is required to use WebModeler
     firstName: Demo
-    ## @param identity.firstUser.lastName defines the last name of the first user; a name is required to use Web Modeler
+    ## @param identity.firstUser.lastName defines the last name of the first user; a name is required to use WebModeler
     lastName: User
     ## @param identity.firstUser.existingSecret can be used to use an own existing secret for Identity first user.
     # Currently, only password field is supported via "identity-firstuser-password" key in the secret resource.
@@ -1801,23 +1765,25 @@ identity:
     ## @param identity.service.metricsName defines the name of the service on which the identity metrics will be available
     metricsName: metrics
 
- ## @extra identity.podSecurityContext defines the security options the Identity pod should be run with
+  ## @extra identity.podSecurityContext defines the security options the Identity pod should be run with
   podSecurityContext:
-  ## @param identity.podSecurityContext.fsGroup
-    fsGroup: 1005
+    ## @param identity.podSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param identity.podSecurityContext.fsGroup
+    fsGroup: 1001
 
   ## @extra identity.containerSecurityContext defines the security options the Identity container should be run with
   containerSecurityContext:
-  ## @param identity.containerSecurityContext.privileged
+    ## @param identity.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param identity.containerSecurityContext.privileged
     privileged: false
     ## @param identity.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
-    ## @param identity.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
     ## @param identity.containerSecurityContext.runAsNonRoot
     runAsNonRoot: true
     ## @param identity.containerSecurityContext.runAsUser
-    runAsUser: 1005
+    runAsUser: 1001
 
   ## @extra identity.startupProbe configuration
   startupProbe:
@@ -1919,6 +1885,8 @@ identity:
     name: ""
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
+    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: true
 
   ingress:
     ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
@@ -1945,35 +1913,6 @@ identity:
       ## @param identity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-identity
 
-  ## PostgreSQL chart configuration
-  postgresql:
-    ## @param identity.postgresql.enabled Enable PostgreSQL Helm chart. Required for Multi-Tenancy.
-    ##
-    enabled: false
-    # https://hub.docker.com/r/bitnami/postgresql/tags
-    ## @param identity.postgresql.image.repository PostgreSQL repo
-    ## @param identity.postgresql.image.tag PostgreSQL image tag
-    ##
-    image:
-      repository: bitnami/postgresql
-      tag: 15.6.0
-    ## @param identity.postgresql.nameOverride the name used for Identity PostgreSQL.
-    ##
-    nameOverride: identity-postgresql
-    auth:
-      ## @param identity.postgresql.auth.username Non-root username
-      ##
-      username: identity
-      ## @param identity.postgresql.auth.database The database name
-      ##
-      database: identity
-      ## @param identity.postgresql.auth.password Password for the non-root username
-      ##
-      password:
-      ## @param identity.postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
-      ##
-      existingSecret:
-
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
   ## @param identity.externalDatabase.enabled
@@ -1995,226 +1934,183 @@ identity:
     existingSecret:
     existingSecretPasswordKey:
 
-  # Identity.
-  #    # ###### #   #  ####  #       ####    ##   #    #
-  #   #  #       # #  #    # #      #    #  #  #  #   #
-  ####   #####    #   #      #      #    # #    # ####
-  #  #   #        #   #      #      #    # ###### #  #
-  #   #  #        #   #    # #      #    # #    # #   #
-  #    # ######   #    ####  ######  ####  #    # #    #
-  ## @section Identity - Keycloak Parameters
-  # Identity.keycloak
-  ## @extra identity.keycloak configuration, for the keycloak dependency chart which is used by identity.
-  # For more details: https://github.com/bitnami/charts/tree/master/bitnami/keycloak#parameters
-  keycloak:
-    ## @extra identity.keycloak.postgresql configuration.
-    postgresql:
-      # https://hub.docker.com/r/bitnami/postgresql/tags
-      image:
-        ## @param identity.keycloak.postgresql.image.repository image repo
-        repository: bitnami/postgresql
-        ## @param identity.keycloak.postgresql.image.tag image tag
-        tag: 15.6.0
-      primary:
-        ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].name
-        ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].emptyDir
-        ## @skip identity.keycloak.postgresql.primary.extraVolumes[1].name
-        ## @skip identity.keycloak.postgresql.primary.extraVolumes[1].emptyDir
-        ## @skip identity.keycloak.postgresql.primary.extraVolumes[2].name
-        ## @skip identity.keycloak.postgresql.primary.extraVolumes[2].emptyDir
-        extraVolumes:
-        - name: tmp
-          emptyDir: {}
-        - name: config
-          emptyDir: {}
-        - name: postgresql-tmp
-          emptyDir: {}
-        ## identity.keycloak.postgresql.primary.extraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
-        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[0].mountPath
-        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[0].name
-        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[1].mountPath
-        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[1].name
-        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[2].mountPath
-        ## @skip identity.keycloak.postgresql.primary.extraVolumeMounts[2].name
-        extraVolumeMounts:
-        - mountPath: /tmp
-          name: tmp
-        - mountPath: /opt/bitnami/postgresql/conf
-          name: config
-        - mountPath: /opt/bitnami/postgresql/tmp
-          name: postgresql-tmp
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.enabled
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.privileged
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.runAsNonRoot
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.runAsUser
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.capabilities.drop
-        ## @param identity.keycloak.postgresql.primary.containerSecurityContext.seccompProfile.type
-        containerSecurityContext:
-          enabled: true
-          privileged: false
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          runAsUser: 1001
-          capabilities:
-            drop: ["ALL"]
-          seccompProfile:
-            type: RuntimeDefault
-        ## @param identity.keycloak.postgresql.primary.podSecurityContext.enabled
-        ## @param identity.keycloak.postgresql.primary.podSecurityContext.runAsNonRoot
-        ## @param identity.keycloak.postgresql.primary.podSecurityContext.fsGroup
-        podSecurityContext:
-          enabled: true
-          runAsNonRoot: true
-          fsGroup: 1001
+# Identity.
+#####   ####   ####  #####  ####  #####  ######  ####   ####  #
+#    # #    # #        #   #    # #    # #      #      #    # #
+#    # #    #  ####    #   #      #    # #####   ####  #    # #
+#####  #    #      #   #   #  ### #####  #           # #  # # #
+#      #    # #    #   #   #    # #   #  #      #    # #   #  #
+#       ####   ####    #    ####  #    # ######  ####   ### # ######
+## @section Identity - PostgreSQL Parameters
+## @extra identityPostgresql configuration for the PostgreSQL dependency chart used by Identity. For more details, check [Bitnami package for PostgreSQL](https://artifacthub.io/packages/helm/bitnami/postgresql#parameters) documentation.
+identityPostgresql:
+  ## @param identityPostgresql.enabled Enable Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
+  ##
+  enabled: false
+  # https://hub.docker.com/r/bitnami/postgresql/tags
+  ## @param identityPostgresql.image.repository PostgreSQL repo
+  ## @param identityPostgresql.image.tag PostgreSQL image tag
+  ##
+  image:
+    repository: bitnami/postgresql
+    tag: 15.6.0
+  ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
+  ##
+  nameOverride: identity-postgresql
+  auth:
+    ## @param identityPostgresql.auth.username Non-root username
+    ##
+    username: identity
+    ## @param identityPostgresql.auth.database The database name
+    ##
+    database: identity
+    ## @param identityPostgresql.auth.password Password for the non-root username
+    ##
+    password:
+    ## @param identityPostgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
+    ##
+    existingSecret:
 
-    ## @param identity.keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
-    enabled: true
+# Identity.
+#    # ###### #   #  ####  #       ####    ##   #    #
+#   #  #       # #  #    # #      #    #  #  #  #   #
+####   #####    #   #      #      #    # #    # ####
+#  #   #        #   #      #      #    # ###### #  #
+#   #  #        #   #    # #      #    # #    # #   #
+#    # ######   #    ####  ######  ####  #    # #    #
+## @section Identity - Keycloak Parameters
+## @extra identityKeycloak configuration, for the Keycloak dependency chart which is used by Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
+identityKeycloak:
+  ## @param identityKeycloak.enabled Enable Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
+  enabled: true
+  ## @param identityKeycloak.nameOverride the name used for Keycloak.
+  nameOverride: "keycloak"
 
-    ## @extra identity.keycloak.image configuration.
-    # https://hub.docker.com/r/bitnami/keycloak/tags
+  ## @extra identityKeycloak.image configuration.
+  # https://hub.docker.com/r/bitnami/keycloak/tags
+  image:
+    ## @param identityKeycloak.image.repository image repo
+    repository: bitnami/keycloak
+    ## @param identityKeycloak.image.tag image tag
+    tag: 22.0.5
+
+  ## @extra identityKeycloak.postgresql configuration.
+  postgresql:
+    # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
-      ## @param identity.keycloak.image.repository image repo
-      repository: bitnami/keycloak
-      ## @param identity.keycloak.image.tag image tag
-      tag: 22.0.5
-
-    # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
-    # Docs: https://www.keycloak.org/server/reverseproxy
-    ## @param identity.keycloak.proxy keycloak proxy
-    proxy: edge
-
-    ## @extra identity.keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
-    tls:
-    ## @param identity.keycloak.tls.enabled enabling tls
-      enabled: false
-
-    # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
-    # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
-    ## @skip identity.keycloak.extraVolumes [object] Extra volumes for keycloak
-    ## @skip identity.keycloak.extraVolumes[0].name
-    ## @skip identity.keycloak.extraVolumes[0].emptyDir
-    ## @skip identity.keycloak.extraVolumes[1].name
-    ## @skip identity.keycloak.extraVolumes[1].emptyDir
-    ## @skip identity.keycloak.extraVolumes[2].name
-    ## @skip identity.keycloak.extraVolumes[2].emptyDir
-    ## @skip identity.keycloak.extraVolumes[3].name
-    ## @skip identity.keycloak.extraVolumes[3].emptyDir.sizeLimit
-    ## @skip identity.keycloak.extraVolumes[4].name
-    ## @skip identity.keycloak.extraVolumes[4].emptyDir.sizeLimit
-    extraVolumes:
-    - name: config
-      emptyDir: {}
-    - name: quarkus
-      emptyDir: {}
-    - name: tmp
-      emptyDir: {}
-    - name: data-tmp
-      emptyDir: {}
-    - name: camunda-theme
-      emptyDir:
-        sizeLimit: 10Mi
-
-    initContainers:
-    ## @param identity.keycloak.initContainers[0].name
-    ## @param identity.keycloak.initContainers[0].image
-    ## @param identity.keycloak.initContainers[0].imagePullPolicy
-    ## @param identity.keycloak.initContainers[0].command
-    ## @param identity.keycloak.initContainers[0].securityContext.privileged
-    ## @param identity.keycloak.initContainers[0].securityContext.readOnlyRootFilesystem
-    ## @param identity.keycloak.initContainers[0].securityContext.allowPrivilegeEscalation
-    ## @param identity.keycloak.initContainers[0].securityContext.runAsNonRoot
-    ## @param identity.keycloak.initContainers[0].securityContext.runAsUser
-    ## @param identity.keycloak.initContainers[0].securityContext.capabilities.drop
-    ## @param identity.keycloak.initContainers[0].securityContext.seccompProfile.type
-    ## @param identity.keycloak.initContainers[0].volumeMounts[0].name
-    ## @param identity.keycloak.initContainers[0].volumeMounts[0].mountPath
-    - name: copy-camunda-theme
-      image: >-
-        {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
-        {{- include "camundaPlatform.imageByParams" $identityImageParams }}
-      imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
-      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
-      securityContext:
-        privileged: false
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
-        runAsNonRoot: true
-        # START DEV COMMENT
-        # TODO: Remove the runAsUser when the numeric ID is used in the Identity Docker image.
-        # END DEV COMMENT
-        runAsUser: 1005
-        capabilities:
-          drop: ["ALL"]
-        seccompProfile:
-          type: RuntimeDefault
-      volumeMounts:
-      - name: camunda-theme
-        mountPath: /mnt
-    ## @param identity.keycloak.initContainers[1].name
-    ## @param identity.keycloak.initContainers[1].image
-    ## @param identity.keycloak.initContainers[1].imagePullPolicy
-    ## @param identity.keycloak.initContainers[1].command
-    ## @param identity.keycloak.initContainers[1].securityContext.privileged
-    ## @param identity.keycloak.initContainers[1].securityContext.readOnlyRootFilesystem
-    ## @param identity.keycloak.initContainers[1].securityContext.allowPrivilegeEscalation
-    ## @param identity.keycloak.initContainers[1].securityContext.runAsNonRoot
-    ## @param identity.keycloak.initContainers[1].securityContext.capabilities.drop
-    ## @param identity.keycloak.initContainers[1].securityContext.seccompProfile.type
-    ## @param identity.keycloak.initContainers[1].volumeMounts[0].name
-    ## @param identity.keycloak.initContainers[1].volumeMounts[0].mountPath
-    ## @param identity.keycloak.initContainers[1].volumeMounts[1].name
-    ## @param identity.keycloak.initContainers[1].volumeMounts[1].mountPath
-    - name: copy-configs
-      image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-      imagePullPolicy: "Always"
-      command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
-      securityContext:
-        privileged: false
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
-        runAsNonRoot: true
-        capabilities:
-          drop: ["ALL"]
-        seccompProfile:
-          type: RuntimeDefault
-      volumeMounts:
+      ## @param identityKeycloak.postgresql.image.repository image repo
+      repository: bitnami/postgresql
+      ## @param identityKeycloak.postgresql.image.tag image tag
+      tag: 15.6.0
+    primary:
+      ## @skip identityKeycloak.postgresql.primary.extraVolumes[0].name
+      ## @skip identityKeycloak.postgresql.primary.extraVolumes[0].emptyDir
+      ## @skip identityKeycloak.postgresql.primary.extraVolumes[1].name
+      ## @skip identityKeycloak.postgresql.primary.extraVolumes[1].emptyDir
+      ## @skip identityKeycloak.postgresql.primary.extraVolumes[2].name
+      ## @skip identityKeycloak.postgresql.primary.extraVolumes[2].emptyDir
+      extraVolumes:
+      - name: tmp
+        emptyDir: {}
       - name: config
-        mountPath: /config
-      - name: quarkus
-        mountPath: /quarkus
-    ## @param identity.keycloak.extraVolumeMounts[0].name
-    ## @param identity.keycloak.extraVolumeMounts[0].mountPath
-    ## @param identity.keycloak.extraVolumeMounts[1].mountPath
-    ## @param identity.keycloak.extraVolumeMounts[1].name
-    ## @param identity.keycloak.extraVolumeMounts[2].name
-    ## @param identity.keycloak.extraVolumeMounts[2].mountPath
-    ## @param identity.keycloak.extraVolumeMounts[3].mountPath
-    ## @param identity.keycloak.extraVolumeMounts[3].name
-    ## @param identity.keycloak.extraVolumeMounts[4].mountPath
-    ## @param identity.keycloak.extraVolumeMounts[4].name
-    extraVolumeMounts:
-    - mountPath: /opt/bitnami/keycloak/conf/
-      name: config
-    - mountPath: /opt/bitnami/keycloak/lib/quarkus
-      name: quarkus
-    - name: camunda-theme
-      mountPath: /opt/bitnami/keycloak/themes/identity
-    - mountPath: /tmp
-      name: tmp
-    - mountPath: /opt/bitnami/keycloak/data/tmp
-      name: data-tmp
+        emptyDir: {}
+      - name: postgresql-tmp
+        emptyDir: {}
+      ## identityKeycloak.postgresql.primary.extraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
+      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[0].mountPath
+      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[0].name
+      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[1].mountPath
+      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[1].name
+      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[2].mountPath
+      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[2].name
+      extraVolumeMounts:
+      - mountPath: /tmp
+        name: tmp
+      - mountPath: /opt/bitnami/postgresql/conf
+        name: config
+      - mountPath: /opt/bitnami/postgresql/tmp
+        name: postgresql-tmp
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsNonRoot
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsUser
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.capabilities.drop
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.seccompProfile.type
+      containerSecurityContext:
+        enabled: true
+        privileged: false
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 1001
+        capabilities:
+          drop: ["ALL"]
+        seccompProfile:
+          type: RuntimeDefault
+      ## @param identityKeycloak.postgresql.primary.podSecurityContext.enabled
+      ## @param identityKeycloak.postgresql.primary.podSecurityContext.runAsNonRoot
+      ## @param identityKeycloak.postgresql.primary.podSecurityContext.fsGroup
+      podSecurityContext:
+        enabled: true
+        runAsNonRoot: true
+        fsGroup: 1001
+  # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
+  # Docs: https://www.keycloak.org/server/reverseproxy
+  ## @param identityKeycloak.proxy keycloak proxy
+  proxy: edge
 
-    ## @param identity.keycloak.containerSecurityContext.privileged
-    ## @param identity.keycloak.containerSecurityContext.readOnlyRootFilesystem
-    ## @param identity.keycloak.containerSecurityContext.allowPrivilegeEscalation
-    ## @param identity.keycloak.containerSecurityContext.runAsNonRoot
-    ## @param identity.keycloak.containerSecurityContext.runAsUser
-    ## @param identity.keycloak.containerSecurityContext.capabilities.drop
-    ## @param identity.keycloak.containerSecurityContext.seccompProfile.type
-    containerSecurityContext:
+  ## @extra identityKeycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
+  tls:
+  ## @param identityKeycloak.tls.enabled enabling tls
+    enabled: false
+
+  # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
+  # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
+  ## @skip identityKeycloak.extraVolumes [object] Extra volumes for keycloak
+  ## @skip identityKeycloak.extraVolumes[0].name
+  ## @skip identityKeycloak.extraVolumes[0].emptyDir
+  ## @skip identityKeycloak.extraVolumes[1].name
+  ## @skip identityKeycloak.extraVolumes[1].emptyDir
+  ## @skip identityKeycloak.extraVolumes[2].name
+  ## @skip identityKeycloak.extraVolumes[2].emptyDir
+  ## @skip identityKeycloak.extraVolumes[3].name
+  ## @skip identityKeycloak.extraVolumes[3].emptyDir.sizeLimit
+  ## @skip identityKeycloak.extraVolumes[4].name
+  ## @skip identityKeycloak.extraVolumes[4].emptyDir.sizeLimit
+  extraVolumes:
+  - name: config
+    emptyDir: {}
+  - name: quarkus
+    emptyDir: {}
+  - name: tmp
+    emptyDir: {}
+  - name: data-tmp
+    emptyDir: {}
+  - name: camunda-theme
+    emptyDir:
+      sizeLimit: 10Mi
+
+  initContainers:
+  ## @param identityKeycloak.initContainers[0].name
+  ## @param identityKeycloak.initContainers[0].image
+  ## @param identityKeycloak.initContainers[0].imagePullPolicy
+  ## @param identityKeycloak.initContainers[0].command
+  ## @param identityKeycloak.initContainers[0].securityContext.privileged
+  ## @param identityKeycloak.initContainers[0].securityContext.readOnlyRootFilesystem
+  ## @param identityKeycloak.initContainers[0].securityContext.allowPrivilegeEscalation
+  ## @param identityKeycloak.initContainers[0].securityContext.runAsNonRoot
+  ## @param identityKeycloak.initContainers[0].securityContext.runAsUser
+  ## @param identityKeycloak.initContainers[0].securityContext.capabilities.drop
+  ## @param identityKeycloak.initContainers[0].securityContext.seccompProfile.type
+  ## @param identityKeycloak.initContainers[0].volumeMounts[0].name
+  ## @param identityKeycloak.initContainers[0].volumeMounts[0].mountPath
+  - name: copy-camunda-theme
+    image: "{{ .Values.global.identity.image | default \"camunda/identity:latest\" }}"
+    imagePullPolicy: "{{ .Values.global.identity.imagePullPolicy | default \"Always\" }}"
+    command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
+    securityContext:
       privileged: false
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
@@ -2224,53 +2120,129 @@ identity:
         drop: ["ALL"]
       seccompProfile:
         type: RuntimeDefault
-    ## @param identity.keycloak.podSecurityContext.fsGroup
-    podSecurityContext:
-      fsGroup: 1001
-    ## @param identity.keycloak.httpRelativePath defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
-    # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
-    # NOTE: This should be the same as ".Values.global.identity.keycloak.contextPath" plus a trailing slash,
-    # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
-    httpRelativePath: /auth/
-    ## @extra identity.extraEnvVars
-    ## @param identity.keycloak.extraEnvVars[0].name
-    ## @param identity.keycloak.extraEnvVars[0].value
-    extraEnvVars:
-    # KEYCLOAK_PROXY_ADDRESS_FORWARDING can be used with Ingress that has SSL Termination. It will be "true" if the TLS
-    # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
-    - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
-      value: "{{ .Values.global.ingress.tls.enabled }}"
+    volumeMounts:
+    - name: camunda-theme
+      mountPath: /mnt
+  ## @param identityKeycloak.initContainers[1].name
+  ## @param identityKeycloak.initContainers[1].image
+  ## @param identityKeycloak.initContainers[1].imagePullPolicy
+  ## @param identityKeycloak.initContainers[1].command
+  ## @param identityKeycloak.initContainers[1].securityContext.privileged
+  ## @param identityKeycloak.initContainers[1].securityContext.readOnlyRootFilesystem
+  ## @param identityKeycloak.initContainers[1].securityContext.allowPrivilegeEscalation
+  ## @param identityKeycloak.initContainers[1].securityContext.runAsNonRoot
+  ## @param identityKeycloak.initContainers[1].securityContext.capabilities.drop
+  ## @param identityKeycloak.initContainers[1].securityContext.seccompProfile.type
+  ## @param identityKeycloak.initContainers[1].volumeMounts[0].name
+  ## @param identityKeycloak.initContainers[1].volumeMounts[0].mountPath
+  ## @param identityKeycloak.initContainers[1].volumeMounts[1].name
+  ## @param identityKeycloak.initContainers[1].volumeMounts[1].mountPath
+  - name: copy-configs
+    image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+    imagePullPolicy: "Always"
+    command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
+    securityContext:
+      privileged: false
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
+    volumeMounts:
+    - name: config
+      mountPath: /config
+    - name: quarkus
+      mountPath: /quarkus
+  ## @param identityKeycloak.extraVolumeMounts[0].name
+  ## @param identityKeycloak.extraVolumeMounts[0].mountPath
+  ## @param identityKeycloak.extraVolumeMounts[1].mountPath
+  ## @param identityKeycloak.extraVolumeMounts[1].name
+  ## @param identityKeycloak.extraVolumeMounts[2].name
+  ## @param identityKeycloak.extraVolumeMounts[2].mountPath
+  ## @param identityKeycloak.extraVolumeMounts[3].mountPath
+  ## @param identityKeycloak.extraVolumeMounts[3].name
+  ## @param identityKeycloak.extraVolumeMounts[4].mountPath
+  ## @param identityKeycloak.extraVolumeMounts[4].name
+  extraVolumeMounts:
+  - mountPath: /opt/bitnami/keycloak/conf/
+    name: config
+  - mountPath: /opt/bitnami/keycloak/lib/quarkus
+    name: quarkus
+  - name: camunda-theme
+    mountPath: /opt/bitnami/keycloak/themes/identity
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /opt/bitnami/keycloak/data/tmp
+    name: data-tmp
 
-    # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
-    # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
-    ingress:
-      ## @param identity.keycloak.ingress.enabled can be used enable ingress record generation for Keycloak.
-      enabled: false
-      ## @param identity.keycloak.ingress.tls can be used to enable TLS configuration for the host defined at ingress.hostname parameter.
-      tls: false
-      ## @param identity.keycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
-      extraTls: []
-      ## @param identity.keycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
-      annotations:
-      ## @skip identity.keycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+  ## @param identityKeycloak.containerSecurityContext.privileged
+  ## @param identityKeycloak.containerSecurityContext.readOnlyRootFilesystem
+  ## @param identityKeycloak.containerSecurityContext.allowPrivilegeEscalation
+  ## @param identityKeycloak.containerSecurityContext.runAsNonRoot
+  ## @param identityKeycloak.containerSecurityContext.runAsUser
+  ## @param identityKeycloak.containerSecurityContext.capabilities.drop
+  ## @param identityKeycloak.containerSecurityContext.seccompProfile.type
+  containerSecurityContext:
+    privileged: false
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1001
+    capabilities:
+      drop: ["ALL"]
+    seccompProfile:
+      type: RuntimeDefault
+  ## @param identityKeycloak.podSecurityContext.runAsNonRoot
+  ## @param identityKeycloak.podSecurityContext.fsGroup
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1001
+  ## @param identityKeycloak.httpRelativePath defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
+  # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
+  # NOTE: This should be the same as ".Values.global.identityKeycloak.contextPath" plus a trailing slash,
+  # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
+  httpRelativePath: /auth/
+  ## @extra identityKeycloak.extraEnvVars
+  ## @param identityKeycloak.extraEnvVars[0].name
+  ## @param identityKeycloak.extraEnvVars[0].value
+  extraEnvVars:
+  # KEYCLOAK_PROXY_ADDRESS_FORWARDING can be used with Ingress that has SSL Termination. It will be "true" if the TLS
+  # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
+  - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+    value: "{{ .Values.global.ingress.tls.enabled }}"
 
-    ## @extra identity.keycloak.service configuration, to configure the service which is deployed along with keycloak
-    service:
-      ## @param identity.keycloak.service.type can be set to change the service type.
-      # We use clusterIP for keycloak service, since per default LoadBalancer is used, which is not supported on all cloud providers.
-      # This might prevent scheduling of the service.
-      type: ClusterIP
-    ## Keycloak authentication parameters
-    ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
-    ##
-    ## @extra identity.keycloak.auth uses the secrets generated by keycloak, to access keycloak.
-    auth:
-      ## @param identity.keycloak.auth.adminUser defines the keycloak administrator user
-      adminUser: admin
-      ## @param identity.keycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
-      # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
-      existingSecret: ""
+  # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
+  # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
+  ingress:
+    ## @param identityKeycloak.ingress.enabled can be used enable ingress record generation for Keycloak.
+    enabled: false
+    ## @param identityKeycloak.ingress.tls can be used to enable TLS configuration for the host defined at ingress.hostname parameter.
+    tls: false
+    ## @param identityKeycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
+    extraTls: []
+    ## @param identityKeycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
+    annotations:
+    ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+
+  ## @extra identityKeycloak.service configuration, to configure the service which is deployed along with keycloak
+  service:
+    ## @param identityKeycloak.service.type can be set to change the service type.
+    # We use clusterIP for keycloak service, since per default LoadBalancer is used, which is not supported on all cloud providers.
+    # This might prevent scheduling of the service.
+    type: ClusterIP
+  ## Keycloak authentication parameters
+  ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
+  ##
+  ## @extra identityKeycloak.auth uses the secrets generated by keycloak, to access keycloak.
+  auth:
+    ## @param identityKeycloak.auth.adminUser defines the keycloak administrator user
+    adminUser: admin
+    ## @param identityKeycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
+    # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
+    existingSecret: ""
 
 
 #######################################################################
@@ -2283,28 +2255,28 @@ identity:
  ## ##  ###### #####  #     #  ####  #####  ###### ###### ###### #    #
 #######################################################################
 ## @section WebModeler Parameters
-# WebModeler configuration of the Web Modeler deployment
+# WebModeler configuration of the WebModeler deployment
 webModeler:
-  ## @param webModeler.enabled if true, the Web Modeler deployment and its related resources are deployed via a helm release
+  ## @param webModeler.enabled if true, the WebModeler deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @param webModeler.fullnameOverride can be used to override the full name of the Web Modeler resources
+  ## @param webModeler.fullnameOverride can be used to override the full name of the WebModeler resources
   fullnameOverride: ""
-  ## @param webModeler.nameOverride can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name)
+  ## @param webModeler.nameOverride can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)
   nameOverride: ""
 
-  ## @extra webModeler.image configuration of the Web Modeler Docker images
+  ## @extra webModeler.image configuration of the WebModeler Docker images
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
   image:
-    ## @param webModeler.image.registry can be used to set the Docker registry for the Web Modeler images (overwrites global.image.registry)
+    ## @param webModeler.image.registry can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)
     # Note: The images are not publicly available on Docker Hub, but only from Camunda's private registry.
     registry: registry.camunda.cloud
-    ## @param webModeler.image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
+    ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.4.2
+    tag: 8.4.3
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
+    # Note: A secret will be required, if the WebModeler images are pulled directly from Camunda's private registry.
     #
     # Example:
     #
@@ -2314,7 +2286,7 @@ webModeler:
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
   # contextPath: "/modeler"
-  ## @param webModeler.contextPath can be used to make Web Modeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
+  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
   contextPath: ""
 
   # WebModeler.
@@ -2326,7 +2298,7 @@ webModeler:
   #    #  #      #    #   #   #     # #        #
   #     # ######  ####    #   #     # #       ###
   ## @section WebModeler - RestAPI Parameters
-  ## @extra webModeler.restapi configuration of the Web Modeler restapi component
+  ## @extra webModeler.restapi configuration of the WebModeler restapi component
   restapi:
     ## @extra webModeler.restapi.image configuration of the restapi Docker image
     image:
@@ -2349,9 +2321,9 @@ webModeler:
       ## @param webModeler.restapi.externalDatabase.password defines the database user's password
       password: ""
 
-    ## @extra webModeler.restapi.mail configuration for emails sent by Web Modeler
+    ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
     mail:
-      ## @param webModeler.restapi.mail.smtpHost defines the host name of the SMTP server to be used by Web Modeler
+      ## @param webModeler.restapi.mail.smtpHost defines the host name of the SMTP server to be used by WebModeler
       smtpHost: ""
       ## @param webModeler.restapi.mail.smtpPort defines the port number of the SMTP server
       smtpPort: 587
@@ -2361,10 +2333,10 @@ webModeler:
       smtpPassword: ""
       ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
-      ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by Web Modeler
+      ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
       # NOTE: This value is mandatory.
       fromAddress: ""
-      ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by Web Modeler
+      ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
@@ -2386,7 +2358,7 @@ webModeler:
       ## @param webModeler.restapi.podSecurityContext.runAsNonRoot
       ## @param webModeler.restapi.podSecurityContext.fsGroup
       runAsNonRoot: true
-      fsGroup: 1000
+      fsGroup: 1001
     ## @extra webModeler.restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
     ## @param webModeler.restapi.containerSecurityContext.privileged
     ## @param webModeler.restapi.containerSecurityContext.readOnlyRootFilesystem
@@ -2394,11 +2366,11 @@ webModeler:
     ## @param webModeler.restapi.containerSecurityContext.runAsNonRoot
     ## @param webModeler.restapi.containerSecurityContext.runAsUser
     containerSecurityContext:
+      allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
       runAsNonRoot: true
-      runAsUser: 1000
+      runAsUser: 1001
 
     ## @extra webModeler.restapi.startupProbe configuration of the restapi startup probe
     startupProbe:
@@ -2482,7 +2454,7 @@ webModeler:
         cpu: 1000m
         memory: 2Gi
 
-    ## @extra webModeler.restapi.service configuration of the Web Modeler restapi service
+    ## @extra webModeler.restapi.service configuration of the WebModeler restapi service
     service:
       ## @param webModeler.restapi.service.annotations can be used to define annotations which will be applied to the service
       annotations: {}
@@ -2501,7 +2473,7 @@ webModeler:
   ##  ## #      #    # #    # #      #
   #    # ###### #####  #    # #      #
   ## @section WebModeler - WebApp Parameters
-  ## @extra webModeler.webapp. configuration of the Web Modeler webapp component
+  ## @extra webModeler.webapp. configuration of the WebModeler webapp component
   webapp:
     ## @extra webModeler.webapp.image configuration of the webapp Docker image
     image:
@@ -2532,7 +2504,7 @@ webModeler:
     ## @param webModeler.webapp.podSecurityContext.fsGroup
     podSecurityContext:
       runAsNonRoot: true
-      fsGroup: 1000
+      fsGroup: 1001
     ## @extra webModeler.webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
     ## @param webModeler.webapp.containerSecurityContext.privileged
     ## @param webModeler.webapp.containerSecurityContext.readOnlyRootFilesystem
@@ -2540,11 +2512,11 @@ webModeler:
     ## @param webModeler.webapp.containerSecurityContext.runAsNonRoot
     ## @param webModeler.webapp.containerSecurityContext.runAsUser
     containerSecurityContext:
+      allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
       runAsNonRoot: true
-      runAsUser: 1000
+      runAsUser: 1001
 
     ## @extra webModeler.webapp.startupProbe configuration of the webapp startup probe
     startupProbe:
@@ -2628,7 +2600,7 @@ webModeler:
         cpu: 800m
         memory: 512Mi
 
-    ## @extra webModeler.webapp.service configuration of the Web Modeler webapp service
+    ## @extra webModeler.webapp.service configuration of the WebModeler webapp service
     service:
       ## @param webModeler.webapp.service.annotations can be used to define annotations which will be applied to the service
       annotations: {}
@@ -2647,7 +2619,7 @@ webModeler:
   ##  ## #      #    # #    # #    # #    # #   #  #        #   #    #
   #    # ###### #####   ####   ####   ####  #    # ######   #    ####
   ## @section WebModeler - WebSockets Parameters
-  ## @extra webModeler.websockets configuration of the Web Modeler websockets component
+  ## @extra webModeler.websockets configuration of the WebModeler websockets component
   websockets:
     ## @extra webModeler.websockets.image configuration of the websockets Docker image
     image:
@@ -2659,13 +2631,13 @@ webModeler:
     ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the Web Modeler client in the browser.
+    ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.
     # The default value assumes that a port-forwarding to the websockets service has been created.
-    # Note: The host will only be used if the Ingress resource for Web Modeler is disabled.
+    # Note: The host will only be used if the Ingress resource for WebModeler is disabled.
     publicHost: localhost
-    ## @param webModeler.websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the Web Modeler client in the browser.
+    ## @param webModeler.websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.
     # The default value assumes that a port-forwarding to the websockets service on port 8085 has been created.
-    # Note: The port will only be used if the Ingress resource for Web Modeler is disabled.
+    # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
     publicPort: 8085
 
     ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations
@@ -2687,7 +2659,7 @@ webModeler:
     ## @param webModeler.websockets.podSecurityContext.fsGroup
     podSecurityContext:
       runAsNonRoot: true
-      fsGroup: 1000
+      fsGroup: 1001
     ## @extra webModeler.websockets.containerSecurityContext can be used to define the security options the websockets container should be run with
     ## @param webModeler.websockets.containerSecurityContext.privileged
     ## @param webModeler.websockets.containerSecurityContext.readOnlyRootFilesystem
@@ -2695,11 +2667,11 @@ webModeler:
     ## @param webModeler.websockets.containerSecurityContext.runAsNonRoot
     ## @param webModeler.websockets.containerSecurityContext.runAsUser
     containerSecurityContext:
+      allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
       runAsNonRoot: true
-      runAsUser: 1000
+      runAsUser: 1001
 
     ## @extra webModeler.websockets.startupProbe configuration of the websockets startup probe
     startupProbe:
@@ -2766,7 +2738,7 @@ webModeler:
         cpu: 200m
         memory: 128Mi
 
-    ## @extra webModeler.websockets.service configuration of the Web Modeler websockets service
+    ## @extra webModeler.websockets.service configuration of the WebModeler websockets service
     service:
       ## @param webModeler.websockets.service.annotations can be used to define annotations which will be applied to the service
       annotations: {}
@@ -2775,17 +2747,19 @@ webModeler:
       ## @param webModeler.websockets.service.port defines the port of the service
       port: 80
 
-  ## @extra webModeler.serviceAccount configuration for the service account the Web Modeler pods are assigned to
+  ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
   serviceAccount:
-    ## @param webModeler.serviceAccount.enabled if true, enables the Web Modeler service account
+    ## @param webModeler.serviceAccount.enabled if true, enables the WebModeler service account
     enabled: true
-    ## @param webModeler.serviceAccount.name can be used to set the name of the Web Modeler service account
+    ## @param webModeler.serviceAccount.name can be used to set the name of the WebModeler service account
     name: ""
-    ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the Web Modeler service account
+    ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the WebModeler service account
     annotations: {}
+    ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
-    ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the Web Modeler deployment. Only useful if an Ingress controller like NGINX is available.
+    ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the WebModeler deployment. Only useful if an Ingress controller like NGINX is available.
     enabled: false
     ## @param webModeler.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -2799,7 +2773,7 @@ webModeler:
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     ## @extra webModeler.ingress.webapp configuration of the webapp ingress
     webapp:
-      ## @param webModeler.ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the Web Modeler web application will be available
+      ## @param webModeler.ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the WebModeler web application will be available
       # Note: The value must be different from ingress.websockets.host
       host: ""
       ## @extra webModeler.ingress.webapp.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
@@ -2810,7 +2784,7 @@ webModeler:
         secretName: camunda-platform-webmodeler-webapp
     ## @extra webModeler.ingress.websockets configuration of the websockets ingress
     websockets:
-      ## @param webModeler.ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the Web Modeler client in the browser will use to connect to the WebSockets server
+      ## @param webModeler.ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the WebModeler client in the browser will use to connect to the WebSockets server
       # Note: The value must be different from ingress.webapp.host
       host: ""
       ## @extra webModeler.ingress.websockets.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
@@ -2828,30 +2802,30 @@ webModeler:
 #      #    # #    #   #   #    # #   #  #      #    # #   #  #
 #       ####   ####    #    ####  #    # ######  ####   ### # ######
 ## @section WebModeler - PostgreSQL Parameters
-## @extra postgresql configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
-postgresql:
-  ## @param postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
-  # Note: If WebModeler is enabled, and PostgreSQL is disabled, the external database configuration must be set under "WebModeler.restapi.externalDatabase".
+## @extra webModelerPostgresql configuration for the postgresql dependency chart used by WebModeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
+webModelerPostgresql:
+  ## @param webModelerPostgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
+  # Note: If WebModeler is enabled, and WebModeler Postgresql is disabled, the external database configuration must be set under "webModeler.restapi.externalDatabase".
   enabled: false
-  ## @param postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
+  ## @param webModelerPostgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
   ## @extra postgresql.auth configuration of the database authentication
   auth:
-    ## @param postgresql.auth.username defines the name of the database user to be created for Web Modeler
+    ## @param webModelerPostgresql.auth.username defines the name of the database user to be created for WebModeler
     username: web-modeler
-    ## @param postgresql.auth.password defines the database user's password; a random password will be generated if left empty
+    ## @param webModelerPostgresql.auth.password defines the database user's password; a random password will be generated if left empty
     password: ""
-    ## @param postgresql.auth.database defines the name of the database to be created for Web Modeler
+    ## @param webModelerPostgresql.auth.database defines the name of the database to be created for WebModeler
     database: web-modeler
 
   primary:
-    ## @param postgresql.primary.extraVolumes[0].name
-    ## @param postgresql.primary.extraVolumes[0].emptyDir
-    ## @param postgresql.primary.extraVolumes[1].name
-    ## @param postgresql.primary.extraVolumes[1].emptyDir
-    ## @param postgresql.primary.extraVolumes[2].name
-    ## @param postgresql.primary.extraVolumes[2].emptyDir
+    ## @param webModelerPostgresql.primary.extraVolumes[0].name
+    ## @param webModelerPostgresql.primary.extraVolumes[0].emptyDir
+    ## @param webModelerPostgresql.primary.extraVolumes[1].name
+    ## @param webModelerPostgresql.primary.extraVolumes[1].emptyDir
+    ## @param webModelerPostgresql.primary.extraVolumes[2].name
+    ## @param webModelerPostgresql.primary.extraVolumes[2].emptyDir
     extraVolumes:
     - name: tmp
       emptyDir: {}
@@ -2859,12 +2833,12 @@ postgresql:
       emptyDir: {}
     - name: postgresql-tmp
       emptyDir: {}
-    ## @param postgresql.primary.extraVolumeMounts[0].mountPath
-    ## @param postgresql.primary.extraVolumeMounts[0].name
-    ## @param postgresql.primary.extraVolumeMounts[1].mountPath
-    ## @param postgresql.primary.extraVolumeMounts[1].name
-    ## @param postgresql.primary.extraVolumeMounts[2].mountPath
-    ## @param postgresql.primary.extraVolumeMounts[2].name
+    ## @param webModelerPostgresql.primary.extraVolumeMounts[0].mountPath
+    ## @param webModelerPostgresql.primary.extraVolumeMounts[0].name
+    ## @param webModelerPostgresql.primary.extraVolumeMounts[1].mountPath
+    ## @param webModelerPostgresql.primary.extraVolumeMounts[1].name
+    ## @param webModelerPostgresql.primary.extraVolumeMounts[2].mountPath
+    ## @param webModelerPostgresql.primary.extraVolumeMounts[2].name
     extraVolumeMounts:
     - mountPath: /tmp
       name: tmp
@@ -2872,29 +2846,28 @@ postgresql:
       name: config
     - mountPath: /opt/bitnami/postgresql/tmp
       name: postgresql-tmp
-    ## @param postgresql.primary.containerSecurityContext.enabled
-    ## @param postgresql.primary.containerSecurityContext.privileged
-    ## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-    ## @param postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-    ## @param postgresql.primary.containerSecurityContext.runAsNonRoot
-    ## @param postgresql.primary.containerSecurityContext.runAsUser
-    ## @param postgresql.primary.containerSecurityContext.capabilities.drop
-    ## @param postgresql.primary.containerSecurityContext.seccompProfile.type
+    ## @param webModelerPostgresql.primary.containerSecurityContext.enabled
+    ## @param webModelerPostgresql.primary.containerSecurityContext.privileged
+    ## @param webModelerPostgresql.primary.containerSecurityContext.readOnlyRootFilesystem
+    ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation
+    ## @param webModelerPostgresql.primary.containerSecurityContext.runAsNonRoot
+    ## @param webModelerPostgresql.primary.containerSecurityContext.runAsUser
+    ## @param webModelerPostgresql.primary.containerSecurityContext.capabilities.drop
+    ## @param webModelerPostgresql.primary.containerSecurityContext.seccompProfile.type
     containerSecurityContext:
       enabled: true
+      allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
       runAsNonRoot: true
       runAsUser: 1001
       capabilities:
         drop: ["ALL"]
       seccompProfile:
         type: RuntimeDefault
-    ## @param postgresql.primary.podSecurityContext.enabled
-    ## @param postgresql.primary.podSecurityContext.runAsNonRoot
-    ## @param postgresql.primary.podSecurityContext.fsGroup
-    ## @param connectors.podSecurityContext.fsGroup
+    ## @param webModelerPostgresql.primary.podSecurityContext.enabled
+    ## @param webModelerPostgresql.primary.podSecurityContext.runAsNonRoot
+    ## @param webModelerPostgresql.primary.podSecurityContext.fsGroup
     podSecurityContext:
       enabled: true
       runAsNonRoot: true
@@ -2932,7 +2905,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.4.4
+    tag: 8.4.5
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2953,7 +2926,7 @@ connectors:
   ## @param connectors.podLabels can be used to define extra Connectors pod labels
   podLabels: {}
 
-  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration yaml file
+  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration YAML file
   ## @param connectors.logging.level.io.camunda.connector
   logging:
     level:
@@ -3064,6 +3037,8 @@ connectors:
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
 
   ingress:
     ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
@@ -3092,7 +3067,10 @@ connectors:
 
   ## @extra connectors.podSecurityContext defines the security options the Connectors pod should be run with
   podSecurityContext:
-    fsGroup: 1003
+    ## @param connectors.podSecurityContext.runAsNonRoot run as non root
+    runAsNonRoot: true
+    ## @param connectors.podSecurityContext.fsGroup
+    fsGroup: 1001
 
   ## @extra connectors.containerSecurityContext defines the security options the Connectors container should be run with
   ## @param connectors.containerSecurityContext.privileged
@@ -3101,11 +3079,11 @@ connectors:
   ## @param connectors.containerSecurityContext.runAsNonRoot
   ## @param connectors.containerSecurityContext.runAsUser
   containerSecurityContext:
+    allowPrivilegeEscalation: false
     privileged: false
     readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
     runAsNonRoot: true
-    runAsUser: 1003
+    runAsUser: 1001
 
   ## @param connectors.nodeSelector can be used to define on which nodes the Connectors pods should run
   nodeSelector: {}
@@ -3135,34 +3113,11 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.9.2
-  ## @param elasticsearch.extraVolumes[0].name
-  ## @param elasticsearch.extraVolumes[0].emptyDir
-  ## @param elasticsearch.extraVolumes[1].name
-  ## @param elasticsearch.extraVolumes[1].emptyDir
-  ## @param elasticsearch.extraVolumes[2].name
-  ## @param elasticsearch.extraVolumes[2].emptyDir
-  extraVolumes:
-  - name: tmp
-    emptyDir: {}
-  - name: logs
-    emptyDir: {}
-  - name: config-dir
-    emptyDir: {}
-  ## @param elasticsearch.extraVolumeMounts[0].mountPath
-  ## @param elasticsearch.extraVolumeMounts[0].name
-  ## @param elasticsearch.extraVolumeMounts[1].mountPath
-  ## @param elasticsearch.extraVolumeMounts[1].name
-  ## @param elasticsearch.extraVolumeMounts[2].mountPath
-  ## @param elasticsearch.extraVolumeMounts[2].name
-  extraVolumeMounts:
-  - mountPath: /tmp
-    name: tmp
-  - mountPath: /usr/share/elasticsearch/logs
-    name: logs
-  - mountPath: /usr/share/elasticsearch/config
-    name: config-dir
+    tag: 8.12.2
   master:
+    containerSecurityContext:
+    ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem
+      readOnlyRootFilesystem: true
     ## @param elasticsearch.master.masterOnly
     masterOnly: false
     ## @param elasticsearch.master.heapSize

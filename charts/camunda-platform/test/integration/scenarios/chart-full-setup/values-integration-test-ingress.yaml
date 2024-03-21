@@ -11,7 +11,6 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-
   identity:
     auth:
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
@@ -56,11 +55,15 @@ webModeler:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
 
-# database used by Web Modeler
+# TODO: Remove it once the 8.5 cycle is done.
 postgresql:
   enabled: true
 
-zeebe-gateway:
+# WebModeler Database.
+webModelerPostgresql:
+  enabled: true
+
+zeebeGateway:
   ingress:
     enabled: true
     className: nginx
@@ -80,36 +83,6 @@ console:
     pullSecrets:
     - name: index-docker-io
     - name: registry-camunda-cloud
-  managed:
-    releases:
-    - name: camunda-platform-dev
-      namespace: camunda-dev
-      version: 8.2.10
-      components:
-      - name: Console
-        url: "https://example-dev.camunda.com/"
-      - name: Optimize
-        url: "https://example-dev.camunda.com/optimize"
-      - name: Operate
-        url: "https://example-dev.camunda.com/operate"
-      - name: WebModeler WebApp
-        url: "https://example-dev.camunda.com/modeler"
-      - name: zeebeGateway
-        url: "grpc://zeebe-example-dev.camunda.com/"
-    - name: camunda-platform-stage
-      namespace: camunda-stage
-      version: 8.2.11
-      components:
-      - name: Console
-        url: "https://example-stage.camunda.com/"
-      - name: Optimize
-        url: "https://example-stage.camunda.com/optimize"
-      - name: Operate
-        url: "https://example-stage.camunda.com/operate"
-      - name: WebModeler WebApp
-        url: "https://example-stage.camunda.com/modeler"
-      - name: zeebeGateway
-        url: "grpc://zeebe-example-stage.camunda.com/"
 
 elasticsearch:
   maxUnavailable: 0

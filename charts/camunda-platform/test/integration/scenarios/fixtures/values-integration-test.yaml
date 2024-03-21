@@ -2,7 +2,7 @@ test:
   integration: true
 
 identity:
-  # Keycloak client seed which is used to query Camunda APIs. 
+  # Keycloak client seed which is used to query Camunda APIs.
   env:
   - name: KEYCLOAK_CLIENTS_2_ID
     value: venom
@@ -64,13 +64,18 @@ identity:
     value: web-modeler-api
   - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_DEFINITION
     value: "write:*"
+  # Console access.
+  - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_RESOURCE_SERVER_ID
+    value: console-api
+  - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
+    value: "write:*"
 
 # Auth to avoid Docker download rate limit.
 # https://docs.docker.com/docker-hub/download-rate-limit/
-  keycloak:
-    image:
-      pullSecrets:
-      - name: index-docker-io
+identityKeycloak:
+  image:
+    pullSecrets:
+    - name: index-docker-io
 
 global:
   image:

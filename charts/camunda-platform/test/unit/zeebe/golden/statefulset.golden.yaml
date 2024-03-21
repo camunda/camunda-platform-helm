@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.5"
     app.kubernetes.io/component: zeebe-broker
   annotations:
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: zeebe-broker
       annotations:
     spec:
@@ -45,13 +45,14 @@ spec:
         []
       containers:
         - name: zeebe
-          image: camunda/zeebe:8.4.3
+          image: camunda/zeebe:8.4.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 1000
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: LC_ALL
               value: C.UTF-8
@@ -121,7 +122,7 @@ spec:
               name: internal
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /actuator/health/readiness
               scheme: HTTP
               port: 9600
             initialDelaySeconds: 30
@@ -156,7 +157,7 @@ spec:
         - name: tmp
           emptyDir: {}
       securityContext:
-        fsGroup: 1000
+        fsGroup: 1001
         runAsNonRoot: true
 # yamllint disable
       affinity:
@@ -173,6 +174,8 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
+        annotations:
+          {}
       spec:
         accessModes: [ReadWriteOnce]
         resources:

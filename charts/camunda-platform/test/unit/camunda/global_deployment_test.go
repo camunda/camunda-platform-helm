@@ -114,7 +114,7 @@ func (s *deploymentTemplateTest) TestContainerShouldNotRenderIdentityIfDisabled(
 	output, _ := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
 
 	// then
-	s.Require().NotContains(output, "charts/identity")
+	s.Require().NotContains(output, "/templates/identity/")
 }
 
 func (s *deploymentTemplateTest) TestContainerShouldNotRenderWebModelerIfDisabled() {
@@ -155,5 +155,5 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/tasklist:8.x.x")
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/zeebe:8.x.x")
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/optimize:3.x.x")
-	s.Require().Contains(output, "image: \"global.custom.registry.io/camunda/identity:8.x.x\"")
+	s.Require().Contains(output, "image: global.custom.registry.io/camunda/identity:8.x.x")
 }

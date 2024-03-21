@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: console
   endpoints:
     - honorLabels: true
-      path: {{ .Values.console.metrics.prometheus }}
+      path: {{ .Values.console.contextPath }}{{ .Values.console.metrics.prometheus }}
       port: metrics
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

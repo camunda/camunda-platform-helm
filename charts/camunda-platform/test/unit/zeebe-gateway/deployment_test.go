@@ -54,7 +54,7 @@ func (s *deploymentTemplateTest) TestContainerSetPodLabels() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.podLabels.foo": "bar",
+			"zeebeGateway.podLabels.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -72,7 +72,7 @@ func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.podAnnotations.foo": "bar",
+			"zeebeGateway.podAnnotations.foo": "bar",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -108,7 +108,7 @@ func (s *deploymentTemplateTest) TestContainerSetPriorityClassName() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.priorityClassName": "PRIO",
+			"zeebeGateway.priorityClassName": "PRIO",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -128,9 +128,9 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
 		SetValues: map[string]string{
 			"global.image.registry":          "global.custom.registry.io",
 			"global.image.tag":               "8.x.x",
-			"zeebe-gateway.image.registry":   "subchart.custom.registry.io",
-			"zeebe-gateway.image.repository": "camunda/zeebe-test",
-			"zeebe-gateway.image.tag":        "snapshot",
+			"zeebeGateway.image.registry":   "subchart.custom.registry.io",
+			"zeebeGateway.image.repository": "camunda/zeebe-test",
+			"zeebeGateway.image.tag":        "snapshot",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -168,7 +168,7 @@ func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsSubChart() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.pullSecrets[0].name":        "SecretName",
-			"zeebe-gateway.image.pullSecrets[0].name": "SecretNameSubChart",
+			"zeebeGateway.image.pullSecrets[0].name": "SecretNameSubChart",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -186,7 +186,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.image.tag": "a.b.c",
+			"zeebeGateway.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -208,7 +208,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.tag":        "a.b.c",
-			"zeebe-gateway.image.tag": "",
+			"zeebeGateway.image.tag": "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -230,7 +230,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.tag":        "x.y.z",
-			"zeebe-gateway.image.tag": "a.b.c",
+			"zeebeGateway.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -251,10 +251,10 @@ func (s *deploymentTemplateTest) TestContainerShouldSetTemplateEnvVars() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.env[0].name":  "RELEASE_NAME",
-			"zeebe-gateway.env[0].value": "test-{{ .Release.Name }}",
-			"zeebe-gateway.env[1].name":  "OTHER_ENV",
-			"zeebe-gateway.env[1].value": "nothingToSeeHere",
+			"zeebeGateway.env[0].name":  "RELEASE_NAME",
+			"zeebeGateway.env[0].value": "test-{{ .Release.Name }}",
+			"zeebeGateway.env[1].name":  "OTHER_ENV",
+			"zeebeGateway.env[1].value": "nothingToSeeHere",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -274,7 +274,7 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.command[0]": "printenv",
+			"zeebeGateway.command[0]": "printenv",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -295,7 +295,7 @@ func (s *deploymentTemplateTest) TestContainerSetLog4j2() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.log4j2": "<xml>\n</xml>",
+			"zeebeGateway.log4j2": "<xml>\n</xml>",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -322,9 +322,9 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.extraVolumes[0].name":                  "extraVolume",
-			"zeebe-gateway.extraVolumes[0].configMap.name":        "otherConfigMap",
-			"zeebe-gateway.extraVolumes[0].configMap.defaultMode": "744",
+			"zeebeGateway.extraVolumes[0].name":                  "extraVolume",
+			"zeebeGateway.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"zeebeGateway.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -354,8 +354,8 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.extraVolumeMounts[0].name":      "otherConfigMap",
-			"zeebe-gateway.extraVolumeMounts[0].mountPath": "/usr/local/config",
+			"zeebeGateway.extraVolumeMounts[0].name":      "otherConfigMap",
+			"zeebeGateway.extraVolumeMounts[0].mountPath": "/usr/local/config",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -383,11 +383,11 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.extraVolumeMounts[0].name":             "otherConfigMap",
-			"zeebe-gateway.extraVolumeMounts[0].mountPath":        "/usr/local/config",
-			"zeebe-gateway.extraVolumes[0].name":                  "extraVolume",
-			"zeebe-gateway.extraVolumes[0].configMap.name":        "otherConfigMap",
-			"zeebe-gateway.extraVolumes[0].configMap.defaultMode": "744",
+			"zeebeGateway.extraVolumeMounts[0].name":             "otherConfigMap",
+			"zeebeGateway.extraVolumeMounts[0].mountPath":        "/usr/local/config",
+			"zeebeGateway.extraVolumes[0].name":                  "extraVolume",
+			"zeebeGateway.extraVolumes[0].configMap.name":        "otherConfigMap",
+			"zeebeGateway.extraVolumes[0].configMap.defaultMode": "744",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -418,7 +418,7 @@ func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.podSecurityContext.runAsUser": "1000",
+			"zeebeGateway.podSecurityContext.runAsUser": "1000",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -437,8 +437,8 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.containerSecurityContext.privileged":          "true",
-			"zeebe-gateway.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
+			"zeebeGateway.containerSecurityContext.privileged":          "true",
+			"zeebeGateway.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -458,7 +458,7 @@ func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.serviceAccount.name": "serviceaccount",
+			"zeebeGateway.serviceAccount.name": "serviceaccount",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -477,8 +477,8 @@ func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.nodeSelector.disktype": "ssd",
-			"zeebe-gateway.nodeSelector.cputype":  "arm",
+			"zeebeGateway.nodeSelector.disktype": "ssd",
+			"zeebeGateway.nodeSelector.cputype":  "arm",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -518,14 +518,14 @@ func (s *deploymentTemplateTest) TestContainerSetAffinity() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
-			"zeebe-gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
-			"zeebe-gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
-			"zeebe-gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
-			"zeebe-gateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
-			"zeebe-gateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
-			"zeebe-gateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
-			"zeebe-gateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+			"zeebeGateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+			"zeebeGateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
+			"zeebeGateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+			"zeebeGateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+			"zeebeGateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+			"zeebeGateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+			"zeebeGateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+			"zeebeGateway.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -569,10 +569,10 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.tolerations[0].key":      "key1",
-			"zeebe-gateway.tolerations[0].operator": "Equal",
-			"zeebe-gateway.tolerations[0].value":    "Value1",
-			"zeebe-gateway.tolerations[0].effect":   "NoSchedule",
+			"zeebeGateway.tolerations[0].key":      "key1",
+			"zeebeGateway.tolerations[0].operator": "Equal",
+			"zeebeGateway.tolerations[0].value":    "Value1",
+			"zeebeGateway.tolerations[0].effect":   "NoSchedule",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -597,11 +597,11 @@ func (s *deploymentTemplateTest) TestContainerSetExtraInitContainers() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.extraInitContainers[0].name":       "init-container-{{ .Release.Name }}",
-			"zeebe-gateway.extraInitContainers[0].image":      "busybox:1.28",
-			"zeebe-gateway.extraInitContainers[0].command[0]": "sh",
-			"zeebe-gateway.extraInitContainers[0].command[1]": "-c",
-			"zeebe-gateway.extraInitContainers[0].command[2]": "top",
+			"zeebeGateway.extraInitContainers[0].name":       "init-container-{{ .Release.Name }}",
+			"zeebeGateway.extraInitContainers[0].image":      "busybox:1.28",
+			"zeebeGateway.extraInitContainers[0].command[0]": "sh",
+			"zeebeGateway.extraInitContainers[0].command[1]": "-c",
+			"zeebeGateway.extraInitContainers[0].command[2]": "top",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -622,9 +622,9 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.initContainers[0].name":                   "nginx",
-			"zeebe-gateway.initContainers[0].image":                  "nginx:latest",
-			"zeebe-gateway.initContainers[0].ports[0].containerPort": "80",
+			"zeebeGateway.initContainers[0].name":                   "nginx",
+			"zeebeGateway.initContainers[0].image":                  "nginx:latest",
+			"zeebeGateway.initContainers[0].ports[0].containerPort": "80",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -677,13 +677,13 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.startupProbe.enabled":             "true",
-			"zeebe-gateway.startupProbe.probePath":           "/healthz",
-			"zeebe-gateway.startupProbe.initialDelaySeconds": "5",
-			"zeebe-gateway.startupProbe.periodSeconds":       "10",
-			"zeebe-gateway.startupProbe.successThreshold":    "1",
-			"zeebe-gateway.startupProbe.failureThreshold":    "5",
-			"zeebe-gateway.startupProbe.timeoutSeconds":      "1",
+			"zeebeGateway.startupProbe.enabled":             "true",
+			"zeebeGateway.startupProbe.probePath":           "/healthz",
+			"zeebeGateway.startupProbe.initialDelaySeconds": "5",
+			"zeebeGateway.startupProbe.periodSeconds":       "10",
+			"zeebeGateway.startupProbe.successThreshold":    "1",
+			"zeebeGateway.startupProbe.failureThreshold":    "5",
+			"zeebeGateway.startupProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -709,13 +709,13 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.livenessProbe.enabled":             "true",
-			"zeebe-gateway.livenessProbe.probePath":           "/healthz",
-			"zeebe-gateway.livenessProbe.initialDelaySeconds": "5",
-			"zeebe-gateway.livenessProbe.periodSeconds":       "10",
-			"zeebe-gateway.livenessProbe.successThreshold":    "1",
-			"zeebe-gateway.livenessProbe.failureThreshold":    "5",
-			"zeebe-gateway.livenessProbe.timeoutSeconds":      "1",
+			"zeebeGateway.livenessProbe.enabled":             "true",
+			"zeebeGateway.livenessProbe.probePath":           "/healthz",
+			"zeebeGateway.livenessProbe.initialDelaySeconds": "5",
+			"zeebeGateway.livenessProbe.periodSeconds":       "10",
+			"zeebeGateway.livenessProbe.successThreshold":    "1",
+			"zeebeGateway.livenessProbe.failureThreshold":    "5",
+			"zeebeGateway.livenessProbe.timeoutSeconds":      "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -741,13 +741,13 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.contextPath":              "/test",
-			"zeebe-gateway.startupProbe.enabled":     "true",
-			"zeebe-gateway.startupProbe.probePath":   "/start",
-			"zeebe-gateway.readinessProbe.enabled":   "true",
-			"zeebe-gateway.readinessProbe.probePath": "/ready",
-			"zeebe-gateway.livenessProbe.enabled":    "true",
-			"zeebe-gateway.livenessProbe.probePath":  "/live",
+			"zeebeGateway.contextPath":              "/test",
+			"zeebeGateway.startupProbe.enabled":     "true",
+			"zeebeGateway.startupProbe.probePath":   "/start",
+			"zeebeGateway.readinessProbe.enabled":   "true",
+			"zeebeGateway.readinessProbe.probePath": "/ready",
+			"zeebeGateway.livenessProbe.enabled":    "true",
+			"zeebeGateway.livenessProbe.probePath":  "/live",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -770,9 +770,9 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.sidecars[0].name":                   "nginx",
-			"zeebe-gateway.sidecars[0].image":                  "nginx:latest",
-			"zeebe-gateway.sidecars[0].ports[0].containerPort": "80",
+			"zeebeGateway.sidecars[0].name":                   "nginx",
+			"zeebeGateway.sidecars[0].image":                  "nginx:latest",
+			"zeebeGateway.sidecars[0].ports[0].containerPort": "80",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -802,7 +802,7 @@ func (s *deploymentTemplateTest) TestZeebeMultiTenancyEnabled() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled": "true",
-			"identity.postgresql.enabled": "true",
+			"identityPostgresql.enabled": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

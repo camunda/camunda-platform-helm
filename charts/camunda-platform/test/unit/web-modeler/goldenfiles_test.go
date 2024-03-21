@@ -53,7 +53,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			SetValues: map[string]string{
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"postgresql.enabled":                  "true",
+				"webModelerPostgresql.enabled":        "true",
 			},
 		})
 	}

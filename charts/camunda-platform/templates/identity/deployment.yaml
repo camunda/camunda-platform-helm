@@ -1,9 +1,10 @@
+{{- if .Values.identity.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "identity.fullname" . }}
   labels: {{- include "identity.labels" . | nindent 4 }}
-  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -12,36 +13,39 @@ spec:
     metadata:
       labels:
         {{- include "identity.labels" . | nindent 8 }}
-        {{- if .Values.podLabels }}
-        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- if .Values.identity.podLabels }}
+        {{- toYaml .Values.identity.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/configmap-env-vars: {{ include (print $.Template.BasePath "/configmap-env-vars.yaml") . | sha256sum }}
-      {{- if .Values.podAnnotations }}
-        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+        checksum/configmap-env-vars: {{ include (print $.Template.BasePath "/identity/configmap-env-vars.yaml") . | sha256sum }}
+      {{- if .Values.identity.podAnnotations }}
+        {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
-        {{- include "camundaPlatform.subChartImagePullSecrets" . | nindent 8 }}
+        {{- include "identity.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- tpl (.Values.identity.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "camundaPlatform.image" . | quote }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-          {{- if .Values.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{- if .Values.identity.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.identity.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.fullURL }}
+            {{- if .Values.identity.fullURL }}
             - name: IDENTITY_URL
-              value: {{ tpl .Values.fullURL $ | quote }}
+              value: {{ tpl .Values.identity.fullURL $ | quote }}
             {{- end }}
-            {{- if .Values.contextPath }}
+            {{- if .Values.identity.contextPath }}
             - name: IDENTITY_BASE_PATH
-              value: {{ .Values.contextPath | quote }}
+              value: {{ .Values.identity.contextPath | quote }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
+            {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
+            - name: SPRING_PROFILES_ACTIVE
+              value: keycloak
             - name: KEYCLOAK_INIT_OPERATE_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
               valueFrom:
@@ -122,7 +126,7 @@ spec:
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_ZEEBE_NAME
               value: "Zeebe"
-            {{- /* TODO: Use ".Values.connectors.inbound.mode=oauth" as a condition when we migrate
+            {{- /* TODO: Use ".Values.identity.connectors.inbound.mode=oauth" as a condition when we migrate
                  to flat chart structure. Also then remove the optional flag from the secret. */}}
             - name: KEYCLOAK_CLIENTS_0_NAME
               value: Connectors
@@ -180,9 +184,6 @@ spec:
               value: "zeebe-api"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
-            {{- end }}
-            - name: SERVER_PORT
-              value: "8080"
             - name: KEYCLOAK_URL
               value: {{ include "identity.keycloak.url" . | quote }}
             - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
@@ -196,25 +197,25 @@ spec:
                 secretKeyRef:
                   name: {{ include "identity.keycloak.authExistingSecret" . }}
                   key: {{ include "identity.keycloak.authExistingSecretKey" . }}
-            {{- if .Values.firstUser.enabled }}
+            {{- if .Values.identity.firstUser.enabled }}
             - name: KEYCLOAK_USERS_0_USERNAME
-              value: {{ .Values.firstUser.username | quote }}
-            {{- if .Values.firstUser.existingSecret }}
+              value: {{ .Values.identity.firstUser.username | quote }}
+            {{- if .Values.identity.firstUser.existingSecret }}
             - name: KEYCLOAK_USERS_0_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.firstUser.existingSecret }}
+                  name: {{ .Values.identity.firstUser.existingSecret }}
                   key: "identity-firstuser-password"
             {{- else }}
             - name: KEYCLOAK_USERS_0_PASSWORD
-              value: {{ .Values.firstUser.password | quote }}
+              value: {{ .Values.identity.firstUser.password | quote }}
             {{- end }}
             - name: KEYCLOAK_USERS_0_EMAIL
-              value: {{ .Values.firstUser.email | quote }}
+              value: {{ .Values.identity.firstUser.email | quote }}
             - name: KEYCLOAK_USERS_0_FIRST_NAME
-              value: {{ .Values.firstUser.firstName | quote }}
+              value: {{ .Values.identity.firstUser.firstName | quote }}
             - name: KEYCLOAK_USERS_0_LAST_NAME
-              value: {{ .Values.firstUser.lastName | quote }}
+              value: {{ .Values.identity.firstUser.lastName | quote }}
             - name: KEYCLOAK_USERS_0_ROLES_0
               value: "Identity"
             {{- if .Values.global.identity.auth.enabled }}
@@ -226,28 +227,67 @@ spec:
               value: "Optimize"
             - name: KEYCLOAK_USERS_0_ROLES_4
               value: "Web Modeler"
+            - name: KEYCLOAK_USERS_0_ROLES_5
+              value: "Console"
             {{- end }}
             {{- end }}
-            {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
+            {{- else }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: oidc
+            - name: CAMUNDA_IDENTITY_BASEURL
+              value: {{ include "identity.internalUrl" . | quote }}
+            - name: CAMUNDA_IDENTITY_TYPE
+              value: {{ include "camundaPlatform.authType" . | quote }}
+            - name: CAMUNDA_IDENTITY_ISSUER
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            - name: IDENTITY_INITIAL_CLAIM_NAME
+              value: {{ .Values.global.identity.auth.identity.initialClaimName }}
+            - name: IDENTITY_INITIAL_CLAIM_VALUE
+              value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ include "identity.authClientId" . | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              value: {{ include "identity.authClientSecret" . | quote }}
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ include "identity.authAudience" . | quote }}
+            - name: CAMUNDA_OPERATE_AUDIENCE
+              value: {{ include "operate.authAudience" . | quote }}
+            - name: CAMUNDA_TASKLIST_AUDIENCE
+              value: {{ include "tasklist.authAudience" . | quote }}
+            - name: CAMUNDA_OPTIMIZE_AUDIENCE
+              value: {{ include "optimize.authAudience" . | quote }}
+            - name: CAMUNDA_WEBMODELER_AUDIENCE
+              value: {{ .Values.global.identity.auth.webModeler.clientApiAudience }}
+            - name: CAMUNDA_WEBMODELER_PUBLIC_AUDIENCE
+              value: {{ .Values.global.identity.auth.webModeler.publicApiAudience }}
+            - name: CAMUNDA_ZEEBE_AUDIENCE
+              value: {{ .Values.global.identity.auth.zeebe.audience }}
+            - name: CAMUNDA_CONSOLE_AUDIENCE
+              value: {{ .Values.global.identity.auth.console.audience }}
+            {{- end }}
+            {{- end }}
+            - name: SERVER_PORT
+              value: "8080"
+            {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
             {{- end }}
-          {{- with .Values.env }}
+          {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           envFrom:
-          {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled }}
             - configMapRef:
                 name: {{ include "identity.fullname" . }}-config-env-vars
-          {{- end }}
-          {{- if .Values.command}}
-          command: {{ toYaml .Values.command | nindent 10 }}
+          {{- if .Values.identity.command}}
+          command: {{ toYaml .Values.identity.command | nindent 10 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.identity.resources | nindent 12 }}
           ports:
             - containerPort: 8080
               name: http
@@ -255,76 +295,77 @@ spec:
             - containerPort: 8082
               name: metrics
               protocol: TCP
-          {{- if .Values.startupProbe.enabled }}
+          {{- if .Values.identity.startupProbe.enabled }}
           startupProbe:
             httpGet:
               {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
-              path: {{ .Values.startupProbe.probePath }}
-              scheme: {{ .Values.startupProbe.scheme }}
+              path: {{ .Values.identity.startupProbe.probePath }}
+              scheme: {{ .Values.identity.startupProbe.scheme }}
               port: metrics
-            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
-            successThreshold: {{ .Values.startupProbe.successThreshold }}
-            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ .Values.identity.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.startupProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.readinessProbe.enabled }}
+          {{- if .Values.identity.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
               {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
-              path: {{ .Values.readinessProbe.probePath }}
-              scheme: {{ .Values.readinessProbe.scheme }}
+              path: {{ .Values.identity.readinessProbe.probePath }}
+              scheme: {{ .Values.identity.readinessProbe.scheme }}
               port: metrics
-            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
-            successThreshold: {{ .Values.readinessProbe.successThreshold }}
-            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.livenessProbe.enabled }}
+          {{- if .Values.identity.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
-              path: {{ .Values.livenessProbe.probePath }}
-              scheme: {{ .Values.livenessProbe.scheme }}
+              path: {{ .Values.identity.livenessProbe.probePath }}
+              scheme: {{ .Values.identity.livenessProbe.scheme }}
               port: metrics
-            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
-            successThreshold: {{ .Values.livenessProbe.successThreshold }}
-            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds }}
           {{- end }}
           volumeMounts:
             - mountPath: /tmp
               name: tmp
-            {{- if .Values.extraVolumeMounts}}
-              {{- .Values.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- if .Values.identity.extraVolumeMounts}}
+              {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
-        {{- if .Values.sidecars }}
-        {{- .Values.sidecars | toYaml | nindent 8 }}
+        {{- if .Values.identity.sidecars }}
+        {{- .Values.identity.sidecars | toYaml | nindent 8 }}
         {{- end }}
 
       volumes:
         - name: tmp
           emptyDir: {}
-        {{- if .Values.extraVolumes}}
-        {{- .Values.extraVolumes | toYaml | nindent 8 }}
+        {{- if .Values.identity.extraVolumes}}
+        {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-        {{- if .Values.serviceAccount.name}}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+        {{- if .Values.identity.serviceAccount.name}}
+      serviceAccountName: {{ .Values.identity.serviceAccount.name }}
       {{- end }}
-      {{- if .Values.podSecurityContext }}
-      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.identity.podSecurityContext }}
+      securityContext: {{- toYaml .Values.identity.podSecurityContext | nindent 8 }}
       {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.identity.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.identity.affinity }}
       affinity:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with .Values.identity.tolerations }}
       tolerations:
         {{ toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

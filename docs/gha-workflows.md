@@ -3,6 +3,11 @@
 In this repo, we have many [GitHub Actions workflows](../.github/workflows) for different aspects
 of the CI pipelines.
 
+- [Integration tests](#integration-tests)
+  - [Single Namespace](#single-namespace)
+  - [Multi Namespace](#multi-namespace)
+  - [Persistent namespace deletion](#persistent-namespace-deletion)
+
 ## Integration tests
 
 The most important workflow is the [main integration workflow](../.github/workflows/test-integration-template.yaml),
@@ -58,7 +63,7 @@ jobs:
             extra-values: |
               zeebe:
                 enabled: false
-              zeebe-gateway:
+              zeebeGateway:
                 enabled: false
               operate:
                 enabled: false
@@ -85,7 +90,7 @@ jobs:
                 enabled: false
               webModeler:
                 enabled: false
-              postgresql:
+              webModelerPostgresql:
                 enabled: false
               console:
                 enabled: false
@@ -104,7 +109,7 @@ jobs:
                 enabled: false
               webModeler:
                 enabled: false
-              postgresql:
+              webModelerPostgresql:
                 enabled: false
               console:
                 enabled: false
@@ -116,4 +121,27 @@ jobs:
       persistent: true
       extra-values: |
         ${{ matrix.deployment.extra-values }}
+```
+
+### Persistent namespace deletion
+
+If you have long-running workflows with multiple jobs, you can set `persistent: true` which will keep the deployment namespace and not delete it after the workflow is done. But you need to add the following workflow to delete the namespace once the main workflow is finished.
+
+```yaml
+name: Helm Deployment Cleanup
+
+on: 
+  workflow_run:
+    workflows: 
+      - "*"
+    types:
+      - completed
+
+jobs:
+  cleaup:
+    name: Delete Namespace
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-cleanup-template.yaml@main
+    secrets: inherit
+    with:
+      github-run-id: "${{ github.event.workflow_run.id }}"
 ```

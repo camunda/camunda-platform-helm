@@ -13,7 +13,7 @@ Fail with a message if Multi-Tenancy is enabled and its requirements are not met
 Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/multi-tenancy/
 */}}
 {{- if .Values.global.multitenancy.enabled }}
-  {{- $identityDatabaseEnabled := (or .Values.identity.postgresql.enabled .Values.identity.externalDatabase.enabled) }}
+  {{- $identityDatabaseEnabled := (or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled) }}
   {{- if has false (list $identityAuthEnabled $identityDatabaseEnabled) }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
         "The Multi-Tenancy feature \"global.multitenancy\" requires Identity enabled and configured with database."
@@ -26,43 +26,15 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 {{- end }}
 
 {{/*
-********************************************************************************
-elasticsearch and opensearch constraints
-********************************************************************************
+Fail with a message if the auth type is set to non-Keycloak and its requirements are not met which are:
+- Global Identity issuerBackendUrl.
 */}}
-
-{{/*
-forcing external elasticsearch and external opensearch to be mutually exclusive
-*/}}
-{{- if and .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
-  {{- $errorMessage := "Error: global.elasticsearch.enabled and global.opensearch.enabled cannot both be true." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- if not (eq (upper .Values.global.identity.auth.type) "KEYCLOAK") }}
+  {{- if not .Values.global.identity.auth.issuerBackendUrl }}
+    {{- $errorMessage := printf "[camunda][error] %s %s"
+        "The Identity auth type is set to non-Keycloak but the issuerBackendUrl is not configured."
+        "Ensure that \"global.identity.auth.issuerBackendUrl\" is set."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
 {{- end }}
-
-
-{{/*
-when external elasticsearch is enabled then global elasticsearch should be enabled
-*/}}
-{{- if and .Values.global.elasticsearch.external ( not .Values.global.elasticsearch.enabled ) }}
-  {{- $errorMessage := "global.elasticsearch should be enabled with global.elasticsearch.external" -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-
-
-{{/*
-forcing internal and external elasticsearch to be mutually exclusive
-*/}}
-{{- if and .Values.global.elasticsearch.external .Values.elasticsearch.enabled }}
-  {{- $errorMessage := "Error: global.elasticsearch.external and elasticsearch.enabled cannot both be true." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-
-{{/*
-when global elasticsearch is enabled then either external elasticsearch should be enabled or internal elasticsearch should be enabled
-*/}}
-{{- if .Values.global.elasticsearch.enabled -}}
-  {{- if and (not .Values.global.elasticsearch.external) (not .Values.elasticsearch.enabled) -}}
-  {{- $errorMessage := "global.elasticsearch.enabled is true, but neither global.elasticsearch.external.enabled nor elasticsearch.enabled is true" -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-  {{- end -}}
-{{- end -}}

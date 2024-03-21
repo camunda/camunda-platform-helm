@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.5"
     app.kubernetes.io/component: connectors
   annotations:
     {}
@@ -32,7 +32,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: connectors
     spec:
       imagePullSecrets:
@@ -41,14 +41,14 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.4.4
+          image: camunda/connectors-bundle:8.4.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1003
+            runAsUser: 1001
           ports:
             - containerPort: 8080
               name: http
@@ -108,4 +108,5 @@ spec:
         - name: tmp
           emptyDir: {}
       securityContext:
-        fsGroup: 1003
+        fsGroup: 1001
+        runAsNonRoot: true

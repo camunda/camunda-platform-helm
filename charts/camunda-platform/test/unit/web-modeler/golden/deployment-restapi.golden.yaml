@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.2"
+    app.kubernetes.io/version: "8.4.3"
     app.kubernetes.io/component: restapi
   annotations:
     {}
@@ -32,7 +32,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.2"
+        app.kubernetes.io/version: "8.4.3"
         app.kubernetes.io/component: restapi
     spec:
       imagePullSecrets:
@@ -41,14 +41,14 @@ spec:
         []
       containers:
         - name: web-modeler-restapi
-          image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.2"
+          image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 1001
           env:
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
@@ -136,5 +136,5 @@ spec:
         - name: tmp
           emptyDir: {}
       securityContext:
-        fsGroup: 1000
+        fsGroup: 1001
         runAsNonRoot: true

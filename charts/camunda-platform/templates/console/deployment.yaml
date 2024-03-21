@@ -8,7 +8,7 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: {{ .Values.console.replicaCount }}
+  replicas: {{ .Values.console.replicas }}
   selector:
     matchLabels:
       {{- include "console.matchLabels" . | nindent 6 }}
@@ -33,8 +33,6 @@ spec:
         {{- toYaml .Values.console.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.console.securityContext | nindent 12 }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.console.containerSecurityContext }}
@@ -44,23 +42,27 @@ spec:
           env:
             - name: NODE_ENV
               value: prod
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
             - name: KEYCLOAK_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
             - name: KEYCLOAK_REALM
               value: camunda-platform
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: console
+              value: console-api
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: {{ .Values.console.contextPath | quote }}
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.console.service.port }}
+              containerPort: 8080
               protocol: TCP
             - name: management
-              containerPort: {{ .Values.console.service.managementPort }}
+              containerPort: 9100
               protocol: TCP
           {{- if .Values.console.startupProbe.enabled }}
           startupProbe:

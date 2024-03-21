@@ -16,9 +16,11 @@ data:
         # Host
         host: {{ include "camundaPlatform.elasticsearchHost" . }}
         # Transport port
-        port: {{ .Values.global.elasticsearch.url.port }}
+        port: {{ .Values.global.elasticsearch.port }}
+        {{- if .Values.global.elasticsearch.url }}
         # Elasticsearch full url
-        url: {{ include "camundaPlatform.elasticsearchURL" . }}
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
       # Zeebe instance
       zeebe:
         # Broker contact point
@@ -30,11 +32,13 @@ data:
         # Host
         host: {{ include "camundaPlatform.elasticsearchHost" . }}
         # Transport port
-        port: {{ .Values.global.elasticsearch.url.port }}
+        port: {{ .Values.global.elasticsearch.port }}
         # Index prefix, configured in Zeebe Elasticsearch exporter
         prefix: {{ .Values.global.elasticsearch.prefix }}
+        {{- if .Values.global.elasticsearch.url }}
         # Elasticsearch full url
-        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
       {{- if .Values.operate.retention.enabled }}
       archiver:
         ilmEnabled: true

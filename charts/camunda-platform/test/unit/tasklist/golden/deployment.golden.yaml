@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.3"
+    app.kubernetes.io/version: "8.4.5"
     app.kubernetes.io/component: tasklist
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.3"
+        app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: c761ee7ac9bca27aa4d36badafe20b3267bc85bae7208690563c1527325a9f16
+        checksum/config: 27bb2d3f0933ddb6db044dff2b49bbc045895b681d998f5acaff2c8cb42bf728
     spec:
       imagePullSecrets:
         []
@@ -43,13 +43,14 @@ spec:
         []
       containers:
         - name: tasklist
-          image: camunda/tasklist:8.4.3
+          image: camunda/tasklist:8.4.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-            runAsUser: 1002
+            runAsNonRoot: true
+            runAsUser: 1001
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "identity-auth"
@@ -130,5 +131,5 @@ spec:
         - name: camunda
           emptyDir: {}
       securityContext:
-        fsGroup: 1002
+        fsGroup: 1001
         runAsNonRoot: true

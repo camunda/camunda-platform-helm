@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.1.2
+version: 9.3.1
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -18,29 +18,29 @@ keywords:
   - process-engine
   - workflow
 dependencies:
-  # Camunda charts.
-  - name: identity
-    version: 9.1.2
-    condition: "identity.enabled"
-    import-values:
-      # START DEV COMMENT 
-      # NOTE: This is used to share Identity image details with its subchart Keycloak.
-      #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
-      # TODO: Move this to Identity subchart once "export-values" is implemented.
-      #       https://github.com/helm/helm/pull/10804
-      # END DEV COMMENT
-      - child: image
-        parent: global.identity.image
-  # Dependency charts.
-  - name: elasticsearch
-    repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 19.18.11
-    condition: "elasticsearch.enabled"
+  # Identity Dependencies.
+  - name: keycloak
+    alias: identityKeycloak
+    repository: https://charts.bitnami.com/bitnami
+    version: 17.3.6
+    condition: "identityKeycloak.enabled"
   - name: postgresql
+    alias: identityPostgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 12.x.x
+    condition: "identityPostgresql.enabled"
+  # WebModeler Dependencies.
+  - name: postgresql
+    alias: webModelerPostgresql
     repository: https://charts.bitnami.com/bitnami
     version: 11.x.x
-    condition: "postgresql.enabled"
-  # Helpers charts.
+    condition: "webModelerPostgresql.enabled"
+  # Shared Dependencies.
+  - name: elasticsearch
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    version: 20.0.0
+    condition: "elasticsearch.enabled"
+  # Helpers.
   - name: common
     repository: https://charts.bitnami.com/bitnami
     version: 2.x.x
@@ -58,4 +58,8 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "use the correct console.image.tag instead of SNAPSHOT"
+    - kind: fixed
+      description: "set identity automountServiceAccountToken to true instead of True"

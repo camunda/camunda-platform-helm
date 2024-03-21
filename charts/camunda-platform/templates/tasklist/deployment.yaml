@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "tasklist.labels" . | nindent 4 }}
   annotations:
-    {{- toYaml  .Values.global.annotations | nindent 4 }}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -22,7 +22,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/tasklist/configmap.yaml") . | sha256sum }}
       {{- if .Values.tasklist.podAnnotations }}
-        {{- toYaml  .Values.tasklist.podAnnotations | nindent 8 }}
+        {{- toYaml .Values.tasklist.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -37,55 +37,9 @@ spec:
           securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/app/certificates/elasticsearch.jks
-            {{- end }}
             {{- if .Values.tasklist.contextPath }}
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.tasklist.contextPath | quote }}
-            {{- end }}
-            {{- if .Values.global.elasticsearch.external  }}
-            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elastic-password
-                  key: password
-            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elastic-password
-                  key: password
-            {{- end }}
-            {{- if .Values.global.opensearch.enabled}}
-            - name: CAMUNDA_TASKLIST_DATABASE
-              value: opensearch
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: opensearch-password
-                  key: password
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: opensearch-password
-                  key: password
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
@@ -211,12 +165,6 @@ spec:
             timeoutSeconds: {{ .Values.tasklist.livenessProbe.timeoutSeconds }}
           {{- end }}
           volumeMounts:
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
-            - name: keystore
-              mountPath: /app/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
-            {{- end }}
-            # TODO: Add opensearch tls env var
             - name: config
               mountPath: /app/resources/application.yml
               subPath: application.yml
@@ -234,12 +182,6 @@ spec:
         {{- .Values.tasklist.sidecars | toYaml | nindent 8 }}
         {{- end }}
       volumes:
-        {{- if .Values.global.elasticsearch.tls.existingSecret }}
-        - name: keystore
-          secret:
-            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
-            optional: false
-        {{- end }}
         - name: config
           configMap:
             name: {{ include "tasklist.fullname" . }}

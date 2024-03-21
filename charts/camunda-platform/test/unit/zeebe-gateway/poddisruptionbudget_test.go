@@ -40,7 +40,7 @@ func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "poddisruptionbudget",
 		Templates:      []string{"templates/zeebe-gateway/poddisruptionbudget.yaml"},
-		SetValues:      map[string]string{"zeebe-gateway.podDisruptionBudget.enabled": "true"},
+		SetValues:      map[string]string{"zeebeGateway.podDisruptionBudget.enabled": "true"},
 	})
 }
 
@@ -70,8 +70,8 @@ func (s *podDisruptionBudgetTest) TestContainerMinAvailableMutualExclusiveWithMa
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe-gateway.podDisruptionBudget.enabled":      "true",
-			"zeebe-gateway.podDisruptionBudget.minAvailable": "1",
+			"zeebeGateway.podDisruptionBudget.enabled":      "true",
+			"zeebeGateway.podDisruptionBudget.minAvailable": "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

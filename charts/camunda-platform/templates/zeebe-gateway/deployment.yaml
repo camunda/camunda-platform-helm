@@ -1,4 +1,3 @@
-{{- include "zeebeGatewayRename" $ -}}
 {{- if .Values.zeebe.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -7,7 +6,7 @@ metadata:
   labels:
     {{- include "zeebe.labels.gateway" . | nindent 4 }}
   annotations:
-    {{- toYaml  .Values.global.annotations | nindent 4 }}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: {{ .Values.zeebeGateway.replicas  }}
   selector:
@@ -21,7 +20,7 @@ spec:
           {{- toYaml .Values.zeebeGateway.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        {{- toYaml  .Values.zeebeGateway.podAnnotations | nindent 8 }}
+        {{- toYaml .Values.zeebeGateway.podAnnotations | nindent 8 }}
     spec:
       {{- if .Values.zeebeGateway.priorityClassName }}
       priorityClassName: {{ .Values.zeebeGateway.priorityClassName | quote }}
@@ -35,11 +34,11 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           ports:
-            - containerPort: {{  .Values.zeebeGateway.service.httpPort }}
+            - containerPort: {{ .Values.zeebeGateway.service.httpPort }}
               name: {{  default "http" .Values.zeebeGateway.service.httpName }}
-            - containerPort: {{  .Values.zeebeGateway.service.gatewayPort }}
+            - containerPort: {{ .Values.zeebeGateway.service.gatewayPort }}
               name: {{ default "gateway" .Values.zeebeGateway.service.gatewayName  }}
-            - containerPort: {{  .Values.zeebeGateway.service.internalPort }}
+            - containerPort: {{ .Values.zeebeGateway.service.internalPort }}
               name: {{ default "internal" .Values.zeebeGateway.service.internalName  }}
           env:
             - name: ZEEBE_STANDALONE_GATEWAY
@@ -54,22 +53,22 @@ spec:
               value: {{ .Values.zeebeGateway.logLevel | quote }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebeGateway.javaOpts | quote }}
-            - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
             - name: ZEEBE_GATEWAY_NETWORK_HOST
               value: 0.0.0.0
             - name: ZEEBE_GATEWAY_NETWORK_PORT
-              value: {{  .Values.zeebeGateway.service.gatewayPort | quote }}
+              value: {{ .Values.zeebeGateway.service.gatewayPort | quote }}
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
             - name: ZEEBE_GATEWAY_CLUSTER_PORT
-              value: {{  .Values.zeebeGateway.service.internalPort | quote }}
+              value: {{ .Values.zeebeGateway.service.internalPort | quote }}
             - name: ZEEBE_GATEWAY_MONITORING_HOST
               value: 0.0.0.0
             - name: ZEEBE_GATEWAY_MONITORING_PORT
-              value: {{  .Values.zeebeGateway.service.httpPort | quote }}
+              value: {{ .Values.zeebeGateway.service.httpPort | quote }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_TYPE
               value: {{ include "camundaPlatform.authType" . | quote }}

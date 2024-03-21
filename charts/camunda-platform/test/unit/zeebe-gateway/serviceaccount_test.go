@@ -38,8 +38,8 @@ func TestGoldenServiceaccountWithAnnotations(t *testing.T) {
 		GoldenFileName: "serviceaccount-annotations",
 		Templates:      []string{"templates/zeebe-gateway/serviceaccount.yaml"},
 		SetValues: map[string]string{
-			"zeebe-gateway.serviceAccount.annotations.foo":  "bar",
-			"zeebe-gateway.serviceAccount.annotations.lulz": "baz",
+			"zeebeGateway.serviceAccount.annotations.foo":  "bar",
+			"zeebeGateway.serviceAccount.annotations.lulz": "baz",
 		},
 	})
 }

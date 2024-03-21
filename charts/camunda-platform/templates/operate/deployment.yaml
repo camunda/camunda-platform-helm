@@ -22,7 +22,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/operate/configmap.yaml") . | sha256sum }}
       {{- if .Values.operate.podAnnotations }}
-        {{- toYaml  .Values.operate.podAnnotations | nindent 8 }}
+        {{- toYaml .Values.operate.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -41,53 +41,6 @@ spec:
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.operate.contextPath | quote }}
             {{- end }}
-            {{- if .Values.global.elasticsearch.external  }}
-            - name: CAMUNDA_OPERATE_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elastic-password
-                  key: password
-            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elastic-password
-                  key: password
-            {{- end }}
-            {{- if .Values.global.opensearch.enabled}}
-            - name: CAMUNDA_OPERATE_DATABASE
-              value: opensearch
-            - name: CAMUNDA_OPERATE_OPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: opensearch-password
-                  key: password
-            - name: CAMUNDA_OPERATE_OPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
-            - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: opensearch-password
-                  key: password
-            {{- end }}
-            {{- if .Values.global.elasticsearch.tls.existingSecret}}
-            - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/elasticsearch.jks
-            {{- end }}
-            # TODO: Add opensearch tls env var
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
               value: "identity-auth"
@@ -220,11 +173,6 @@ spec:
               mountPath: /tmp
             - name: camunda
               mountPath: /camunda
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
-            - name: keystore
-              mountPath: /usr/local/operate/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
-            {{- end }}
             {{- if .Values.operate.extraVolumeMounts}}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -242,12 +190,6 @@ spec:
           emptyDir: {}
         {{- if .Values.operate.extraVolumes}}
         {{- .Values.operate.extraVolumes | toYaml | nindent 8 }}
-        {{- end }}
-        {{- if .Values.global.elasticsearch.tls.existingSecret }}
-        - name: keystore
-          secret:
-            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
-            optional: false
         {{- end }}
       {{- if .Values.operate.serviceAccount.name}}
       serviceAccountName: {{ .Values.operate.serviceAccount.name }}
