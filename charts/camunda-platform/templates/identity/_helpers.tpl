@@ -32,7 +32,7 @@ Create a default fully qualified app name.
             {{- $host := .Values.global.ingress.host -}}
             {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
-        {{- else -}}
+        {{- else if .Values.identity.ingress.enabled -}}
             {{- $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
             {{- $host := .Values.identity.ingress.host -}}
             {{- printf "%s://%s" $proto $host -}}
