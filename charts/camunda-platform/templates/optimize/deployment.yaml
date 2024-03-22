@@ -68,9 +68,9 @@ spec:
                   name: {{ include "camundaPlatform.fullname" . }}-opensearch
                   key: password
             {{- end }}
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/elasticsearch.jks
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
             {{- end }}
             - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
               value: "true"
@@ -92,10 +92,10 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
-              mountPath: /optimize/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
+              mountPath: /optimize/certificates/externaldb.jks
+              subPath: externaldb.jks
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -139,9 +139,9 @@ spec:
                   name: {{ include "camundaPlatform.fullname" . }}-opensearch
                   key: password
             {{- end }}
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/elasticsearch.jks
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
             {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
@@ -259,10 +259,10 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
-              mountPath: /optimize/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
+              mountPath: /optimize/certificates/externaldb.jks
+              subPath: externaldb.jks
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -275,7 +275,7 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
         - name: keystore
           secret:
             secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}

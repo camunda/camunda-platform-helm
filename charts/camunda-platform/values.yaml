@@ -106,7 +106,7 @@ global:
     auth:
       username:
       password:
-    ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
+    ## @param DEPRICATED global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
     ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
@@ -131,9 +131,9 @@ global:
   ## @param global.opensearch.auth.password the password for external opensearch
   opensearch:
     enabled: false
-    # tls:
-    #   enabled: false
-    #   existingSecret:
+    tls:
+      enabled: false
+      existingSecret:
     auth:
       username:
       password:

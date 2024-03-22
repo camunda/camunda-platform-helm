@@ -83,9 +83,9 @@ spec:
                   name: {{ include "camundaPlatform.fullname" . }}-opensearch
                   key: password
             {{- end }}
-            {{- if .Values.global.elasticsearch.tls.existingSecret}}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret}}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/elasticsearch.jks
+              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: SPRING_PROFILES_ACTIVE
@@ -219,10 +219,10 @@ spec:
               mountPath: /tmp
             - name: camunda
               mountPath: /camunda
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
-              mountPath: /usr/local/operate/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
+              mountPath: /usr/local/operate/certificates/externaldb.jks
+              subPath: externaldb.jks
             {{- end }}
             {{- if .Values.operate.extraVolumeMounts}}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
@@ -239,7 +239,7 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
         - name: keystore
           secret:
             secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}

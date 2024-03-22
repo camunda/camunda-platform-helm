@@ -123,9 +123,9 @@ spec:
               value: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
             {{- end }}
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/elasticsearch.jks
+              value: {{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/externaldb.jks
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebe.javaOpts | quote }}
@@ -192,10 +192,10 @@ spec:
           resources:
             {{- toYaml .Values.zeebe.resources | nindent 12 }}
           volumeMounts:
-            {{- if .Values.global.elasticsearch.tls.existingSecret }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
-              mountPath: /usr/local/zeebe/certificates/elasticsearch.jks
-              subPath: elasticsearch.jks
+              mountPath: /usr/local/zeebe/certificates/externaldb.jks
+              subPath: externaldb.jks
             {{- end }}
             - name: config
               mountPath: /usr/local/bin/startup.sh
@@ -220,7 +220,7 @@ spec:
       {{- .Values.zeebe.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
-        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
         - name: keystore
           secret:
             secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
