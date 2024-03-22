@@ -20,6 +20,7 @@ spec:
             - image: {{ include "camundaPlatform.imageByParams" $curatorImageParams | quote }}
               name: curator
               args: ["--config", "/etc/config/config.yml", "/etc/config/action_file.yml"]
+              resources: {{ toYaml .Values.retentionPolicy.resources | nindent 16 }}
               volumeMounts:
                 - name: config
                   mountPath: /etc/config
