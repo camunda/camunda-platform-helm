@@ -56,6 +56,13 @@ spec:
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
           volumeMounts:
             - mountPath: /tmp
               name: tmp
