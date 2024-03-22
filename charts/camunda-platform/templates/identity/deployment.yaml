@@ -34,10 +34,6 @@ spec:
           securityContext: {{- toYaml .Values.identity.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.identity.fullURL }}
-            - name: IDENTITY_URL
-              value: {{ tpl .Values.identity.fullURL $ | quote }}
-            {{- end }}
             {{- if .Values.identity.contextPath }}
             - name: IDENTITY_BASE_PATH
               value: {{ .Values.identity.contextPath | quote }}

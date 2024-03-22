@@ -884,12 +884,6 @@ func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name:  "IDENTITY_URL",
-			Value: "https://mydomain.com/identity",
-		},
-	)
-	s.Require().Contains(env,
-		corev1.EnvVar{
 			Name:  "IDENTITY_BASE_PATH",
 			Value: "/identity",
 		},
