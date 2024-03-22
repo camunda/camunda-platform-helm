@@ -58,7 +58,7 @@ forcing external elasticsearch and external opensearch to be mutually exclusive
 when external elasticsearch is enabled then global elasticsearch should be enabled
 */}}
 {{- if and .Values.global.elasticsearch.external ( not .Values.global.elasticsearch.enabled ) }}
-  {{- $errorMessage := "global.elasticsearch should be enabled with global.elasticsearch.external" -}}
+  {{- $errorMessage := "Error: global.elasticsearch should be enabled with global.elasticsearch.external" -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
@@ -84,7 +84,24 @@ when global elasticsearch is enabled then either external elasticsearch should b
 */}}
 {{- if .Values.global.elasticsearch.enabled -}}
   {{- if and (not .Values.global.elasticsearch.external) (not .Values.elasticsearch.enabled) -}}
-  {{- $errorMessage := "global.elasticsearch.enabled is true, but neither global.elasticsearch.external.enabled nor elasticsearch.enabled is true" -}}
+  {{- $errorMessage := "Error: global.elasticsearch.enabled is true, but neither global.elasticsearch.external.enabled nor elasticsearch.enabled is true" -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end -}}
 {{- end -}}
+
+{{/*
+[elasticsearch] when existingSecret is provided for elasticsearch then password field should be empty
+*/}}
+{{- if and .Values.global.elasticsearch.auth.existingSecret .Values.global.elasticsearch.auth.password }}
+  {{- $errorMessage := "Error: global.elasticsearch.auth.existingSecret and global.elasticsearch.auth.password cannot both be set." -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+{{/*
+
+{{/*
+[opensearch] when existingSecret is provided for opensearch then password field should be empty
+*/}}
+{{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
+  {{- $errorMessage := "Error: global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set." -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}

@@ -46,8 +46,8 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-elasticsearch
-                  key: password
+                  name: {{include "elasticsearch.authExistingSecret" . | quote}}
+                  key: {{include "elasticsearch.authExistingSecretKey" . | quote}}
             {{- end }}
             {{- if .Values.global.opensearch.enabled}}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
@@ -65,8 +65,8 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-opensearch
-                  key: password
+                  name: {{include "opensearch.authExistingSecret" . | quote}}
+                  key: {{include "opensearch.authExistingSecretKey" . | quote}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
@@ -117,8 +117,8 @@ spec:
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-elasticsearch
-                  key: password
+                  name: {{include "elasticsearch.authExistingSecret" . | quote}}
+                  key: {{include "elasticsearch.authExistingSecretKey" . | quote}}
             {{- end }}
             {{- if .Values.global.opensearch.enabled}}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
@@ -136,8 +136,8 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-opensearch
-                  key: password
+                  name: {{include "opensearch.authExistingSecret" . | quote}}
+                  key: {{include "opensearch.authExistingSecretKey" . | quote}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS

@@ -106,6 +106,8 @@ global:
     auth:
       username:
       password:
+      existingSecret:
+      existingSecretKey:
     ## @param DEPRICATED global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
     disableExporter: false
     ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
@@ -137,6 +139,8 @@ global:
     auth:
       username:
       password:
+      existingSecret:
+      existingSecretKey:
     ## @extra global.opensearch.url can be used to configure the URL to access opensearch, if not set services fallback to host and port configuration
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
     ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
