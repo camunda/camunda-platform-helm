@@ -1046,6 +1046,14 @@ retentionPolicy:
   operateIndexTTL: 30
   # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
   tasklistIndexTTL: 30
+  # Resources configuration to set request and limit configuration for the retentionPolicy container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 600m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
 
   # Image configuration for the elasticsearch curator cronjob
   image:
