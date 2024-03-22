@@ -1534,6 +1534,19 @@ optimize:
     ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container
     env: []
 
+    ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+    ## @param optimize.migration.resources.requests.cpu
+    ## @param optimize.migration.resources.requests.memory
+    ## @param optimize.migration.resources.limits.cpu
+    ## @param optimize.migration.resources.limits.memory
+    resources:
+      requests:
+        cpu: 600m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
 
