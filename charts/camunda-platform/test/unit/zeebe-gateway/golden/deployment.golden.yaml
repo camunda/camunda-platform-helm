@@ -55,8 +55,6 @@ spec:
           env:
             - name: ZEEBE_STANDALONE_GATEWAY
               value: "true"
-            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
-              value: camunda-platform-test-zeebe
             - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
               valueFrom:
                 fieldRef:
@@ -67,31 +65,16 @@ spec:
               value: "-XX:+ExitOnOutOfMemoryError"
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: camunda-platform-test-zeebe:26502
-            - name: ZEEBE_GATEWAY_NETWORK_HOST
-              value: 0.0.0.0
-            - name: ZEEBE_GATEWAY_NETWORK_PORT
-              value: "26500"
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: ZEEBE_GATEWAY_CLUSTER_PORT
-              value: "26502"
-            - name: ZEEBE_GATEWAY_MONITORING_HOST
-              value: 0.0.0.0
-            - name: ZEEBE_GATEWAY_MONITORING_PORT
-              value: "9600"
-            - name: CAMUNDA_IDENTITY_TYPE
-              value: "KEYCLOAK"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
-              value: "identity"
-            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: "zeebe-api"
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

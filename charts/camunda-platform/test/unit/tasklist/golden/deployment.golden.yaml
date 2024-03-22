@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.4.5"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: 27bb2d3f0933ddb6db044dff2b49bbc045895b681d998f5acaff2c8cb42bf728
+        checksum/config: f2f4864f34f0bcc541d0b8dcc4afb23eae3f0fba332fa6397bcf472418b01058
     spec:
       imagePullSecrets:
         []
@@ -52,25 +52,11 @@ spec:
             runAsNonRoot: true
             runAsUser: 1001
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "identity-auth"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: "tasklist"
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-tasklist-identity-secret
                   key: tasklist-secret
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: "tasklist-api"
-            - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
-              value: "true"
-            - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
-              value: "http://localhost:8082"
             - name: ZEEBE_CLIENT_ID
               value: "zeebe"
             - name: ZEEBE_CLIENT_SECRET

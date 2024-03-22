@@ -52,39 +52,11 @@ spec:
           env:
             - name: JAVA_OPTIONS
               value: "-Xmx1536m"
-            - name: CAMUNDA_IDENTITY_BASEURL
-              value: "http://camunda-platform-test-identity:80"
-            - name: CAMUNDA_IDENTITY_TYPE
-              value: "KEYCLOAK"
-            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_PUBLIC_API
-              value: "web-modeler-public-api"
-            - name: CAMUNDA_MODELER_SECURITY_JWT_AUDIENCE_INTERNAL_API
-              value: "web-modeler-api"
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"
-            - name: SPRING_DATASOURCE_USERNAME
-              value: "web-modeler"
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-postgresql-web-modeler
                   key: password
-            - name: RESTAPI_MAIL_HOST
-              value: ""
-            - name: RESTAPI_MAIL_PORT
-              value: "587"
-            - name: RESTAPI_MAIL_ENABLE_TLS
-              value: "true"
-            - name: RESTAPI_MAIL_FROM_ADDRESS
-              value: "example@example.com"
-            - name: RESTAPI_MAIL_FROM_NAME
-              value: "Camunda 8"
-            - name: RESTAPI_SERVER_URL
-              value: "http://localhost:8084"
-            - name: RESTAPI_PUSHER_HOST
-              value: "camunda-platform-test-web-modeler-websockets"
-            - name: RESTAPI_PUSHER_PORT
-              value: "80"
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
@@ -100,10 +72,6 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-web-modeler
                   key: pusher-app-secret
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
-              value: "http://localhost:18080/auth/realms/camunda-platform"
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
           resources:
@@ -132,9 +100,15 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: config
+              mountPath: /home/runner/config/application.yaml
+              subPath: application.yaml
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: camunda-platform-test-web-modeler-restapi
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

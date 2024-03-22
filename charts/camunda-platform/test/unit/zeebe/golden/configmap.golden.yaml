@@ -13,6 +13,40 @@ metadata:
     app.kubernetes.io/component: zeebe-broker
 apiVersion: v1
 data:
+  application.yaml: |
+    zeebe:
+      broker:
+        exporters:
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              url: "http://camunda-platform-test-elasticsearch:9200"
+              index:
+                prefix: "zeebe-record"
+        gateway:
+          enable: true
+          network:
+            port: 26500
+          security:
+            enabled: false
+            authentication:
+              mode: none
+        network:
+          host: 0.0.0.0
+          commandApi:
+            port: 26501
+          internalApi:
+            port: 26502
+          monitoringApi:
+            port: "9600"
+        cluster:
+          clusterSize: "3"
+          replicationFactor: "3"
+          partitionsCount: "3"
+          clusterName: camunda-platform-test-zeebe
+        threads:
+          cpuThreadCount: "3"
+          ioThreadCount: "3"
   startup.sh: |
     #!/usr/bin/env bash
     set -eux -o pipefail

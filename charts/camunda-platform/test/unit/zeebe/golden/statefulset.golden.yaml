@@ -73,34 +73,10 @@ spec:
                 $(K8S_SERVICE_NAME)-0.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
                 $(K8S_SERVICE_NAME)-1.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
                 $(K8S_SERVICE_NAME)-2.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
-            - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
-              value: camunda-platform-test-zeebe
             - name: ZEEBE_LOG_LEVEL
               value: "info"
-            - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-              value: "3"
-            - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
-              value: "3"
-            - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
-              value: "3"
-            - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
-              value: "3"
-            - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
-              value: "3"
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-              value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-              value: "http://camunda-platform-test-elasticsearch:9200"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
-              value: "zeebe-record"
-            - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
-              value: "26501"
-            - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
-              value: "26502"
-            - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
-              value: "9600"
             - name: K8S_POD_NAME
               valueFrom:
                 fieldRef:
@@ -147,6 +123,9 @@ spec:
               mountPath: /exporters
             - mountPath: /tmp
               name: tmp
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
       volumes:
         - name: config
           configMap:

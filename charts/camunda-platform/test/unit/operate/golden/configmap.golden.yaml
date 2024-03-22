@@ -14,8 +14,26 @@ metadata:
     app.kubernetes.io/component: operate
 data:
   application.yml: |
+    spring:
+      profiles:
+        active: "identity-auth"
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+              jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+    camunda:
+      identity:
+        clientId: "operate"
+        audience: "operate-api"
+    
     # Operate configuration file
     camunda.operate:
+      identity:
+        redirectRootUrl: "http://localhost:8081"
+    
       # ELS instance to store Operate data
       elasticsearch:
         # Cluster name

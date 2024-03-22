@@ -14,3 +14,23 @@ metadata:
 apiVersion: v1
 data:
   gateway-log4j2.xml: |
+  application.yaml: |
+    camunda:
+      identity:
+        type: "KEYCLOAK"
+        issuerBackendUrl: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+        audience: "zeebe-api"
+    zeebe:
+      gateway:
+        security:
+          authentication:
+            mode: identity
+        monitoring:
+          host: 0.0.0.0
+          port: "9600"
+        cluster:
+          clusterName: camunda-platform-test-zeebe
+          port: "26502"
+        network:
+          host: 0.0.0.0
+          port: "26500"
