@@ -27,6 +27,8 @@ global:
 
 identity:
   contextPath: "/identity"
+  # TODO: Remove it once the 8.5 cycle is done.
+  fullURL: "https://{{ .Values.global.ingress.host }}/identity"
   firstUser:
     existingSecret: "integration-test"
 
@@ -53,10 +55,6 @@ webModeler:
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
-
-# TODO: Remove it once the 8.5 cycle is done.
-postgresql:
-  enabled: true
 
 # WebModeler Database.
 webModelerPostgresql:
