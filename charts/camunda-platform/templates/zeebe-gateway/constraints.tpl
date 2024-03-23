@@ -5,10 +5,19 @@ A template to handel constraints.
 */}}
 
 {{/*
-Fail if "zeebeGateway.ingress" is used and "zeebeGateway.ingress.grpc" is not defined.
+Fail with a message if the old refactored keys are still used and the new keys are not used.
+Chart Version: 10.0.0
 */}}
+{{- if (index .Values "zeebe-gateway") }}
+    {{- $errorMessage := printf "[zeebe-gateway] %s %s %s"
+        "The Zeebe Gatway key changed from \"zeebe-gateway\" to \"zeebeGateway\"."
+        "For more details, please check Camunda Helm chart documentation."
+        "https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions"
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
 
-{{- if and .Values.zeebeGateway.ingress.enabled (not (.Values.zeebeGateway.ingress.grpc.enabled)) }}
+{{- if (.Values.zeebeGateway.ingress.enabled) }}
     {{- $errorMessage := printf "[zeebe-gateway] %s %s %s"
         "The gRPC Ingress key changed from \"zeebeGateway.ingress\" to \"zeebeGateway.ingress.grpc\"."
         "For more details, please check Camunda Helm chart documentation."
