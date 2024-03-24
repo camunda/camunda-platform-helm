@@ -587,13 +587,8 @@ func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() 
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 
 	for _, envvar := range env {
-		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET", envvar.Name)
 	}
-
-	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
 }
 
 func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValue() {
@@ -674,56 +669,6 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
-}
-
-func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"tasklist.contextPath": "/tasklist",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "SERVER_SERVLET_CONTEXT_PATH",
-			Value: "/tasklist",
-		},
-	)
-}
-
-func (s *deploymentTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"tasklist.contextPath": "/camunda/tasklist",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL",
-			Value: "http://localhost:8082",
-		},
-	)
 }
 
 // readinessProbe is enabled by default so it's tested by golden files.
@@ -881,26 +826,6 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 	}
 
 	s.Require().Contains(podContainers, expectedContainer)
-}
-
-func (s *deploymentTemplateTest) TestTasklistMultiTenancyEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled": "true",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_MULTITENANCY_ENABLED", Value: "true"})
 }
 
 func (s *deploymentTemplateTest) TestTasklistWithConfiguration() {

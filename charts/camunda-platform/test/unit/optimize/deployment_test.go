@@ -630,31 +630,6 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"optimize.contextPath": "/optimize",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "CAMUNDA_OPTIMIZE_CONTEXT_PATH",
-			Value: "/optimize",
-		},
-	)
-}
-
 // readinessProbe is enabled by default so it's tested by golden files.
 
 func (s *deploymentTemplateTest) TestContainerStartupProbe() {
@@ -817,7 +792,7 @@ func (s *deploymentTemplateTest) TestOptimizeMultiTenancyEnabled() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled": "true",
+			"identityPostgresql.enabled":  "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -911,7 +886,7 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 	// find the volumeMount named environment-config
 	var volumeMount corev1.VolumeMount
 	for _, candidateVolumeMount := range volumeMounts {
-		if candidateVolumeMount.Name == "environment-config" {
+		if candidateVolumeMount.Name == "environment-config" && candidateVolumeMount.MountPath != "/optimize/config/environment-config.yaml" {
 			volumeMount = candidateVolumeMount
 			break
 		}

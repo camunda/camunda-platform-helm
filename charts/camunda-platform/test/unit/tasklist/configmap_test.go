@@ -15,6 +15,7 @@
 package tasklist
 
 import (
+	"gopkg.in/yaml.v2"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -70,4 +71,103 @@ func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
 
 	// then
 	s.Require().Equal("elasticsearch-test", elasticsearchURL)
+}
+func (s *configMapTemplateTest) TestContainerShouldAddContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.contextPath": "/tasklist",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication TasklistConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("/tasklist", configmapApplication.Server.Servlet.ContextPath)
+}
+func (s *configMapTemplateTest) TestContainerShouldDisableOperateIntegration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication TasklistConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Empty(configmapApplication.Camunda.Identity.ClientId)
+	s.Require().Empty(configmapApplication.Security.OAuth2.ResourceServer.JWT.IssuerURI)
+	s.Require().Equal("auth", configmapApplication.Spring.Profiles.Active)
+}
+
+func (s *configMapTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"tasklist.contextPath": "/camunda/tasklist",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication TasklistConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("http://localhost:8082", configmapApplication.CamundaTasklist.Identity.RedirectRootURL)
+}
+func (s *configMapTemplateTest) TestTasklistMultiTenancyEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.multitenancy.enabled": "true",
+			"identityPostgresql.enabled":  "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication TasklistConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("true", configmapApplication.CamundaTasklist.MultiTenancy.Enabled)
 }

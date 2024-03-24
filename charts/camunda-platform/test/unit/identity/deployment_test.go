@@ -54,7 +54,7 @@ func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identityKeycloak.enabled":                       "false",
+			"identityKeycloak.enabled":                        "false",
 			"global.identity.keycloak.url.protocol":           "https",
 			"global.identity.keycloak.url.host":               "keycloak.prod.svc.cluster.local",
 			"global.identity.keycloak.url.port":               "8443",
@@ -864,38 +864,6 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.fullURL":     "https://mydomain.com/identity",
-			"identity.contextPath": "/identity",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "IDENTITY_URL",
-			Value: "https://mydomain.com/identity",
-		},
-	)
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "IDENTITY_BASE_PATH",
-			Value: "/identity",
-		},
-	)
-}
-
 // readinessProbe is enabled by default so it's tested by golden files.
 
 func (s *deploymentTemplateTest) TestContainerStartupProbe() {
@@ -1087,7 +1055,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetExternalDatabaseExistingS
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identityPostgresql.enabled":                         "false",
+			"identityPostgresql.enabled":                          "false",
 			"identity.externalDatabase.enabled":                   "true",
 			"identity.externalDatabase.existingSecret":            "postgres-secret-ext",
 			"identity.externalDatabase.existingSecretPasswordKey": "identity-password-ext",
