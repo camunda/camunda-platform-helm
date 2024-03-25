@@ -97,6 +97,8 @@ global:
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
   ## @param global.elasticsearch.auth.password the password for external elasticsearch
+  ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
+  ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
     enabled: true
     external: false
@@ -108,7 +110,7 @@ global:
       password:
       existingSecret:
       existingSecretKey:
-    ## @param DEPRICATED global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
+      ## @param  global.elasticsearch.disableExporter DEPRICATED: this value is not needed anymore. Use global.elasticsearch.enabled. if true, disables the elastic exporter in zeebe
     disableExporter: false
     ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
@@ -124,13 +126,15 @@ global:
     prefix: zeebe-record
   # Opensearch configuration which is shared between the sub charts
   ## @extra global.opensearch
-  ## @extra global.opensearch.enabled enabled external opensearch
+  ## @param global.opensearch.enabled enabled external opensearch
   ## @extra global.opensearch.tls 
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
   ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
   ## @param global.opensearch.auth.username the username for external opensearch
   ## @param global.opensearch.auth.password the password for external opensearch
+  ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
+  ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
   opensearch:
     enabled: false
     tls:
