@@ -11,15 +11,6 @@ data:
     {{ .Values.optimize.configuration | indent 4 | trim }}
   {{- else }}
   environment-config.yaml: |
-    {{- if .Values.global.identity.auth.enabled }}
-    camunda:
-      identity:
-        clientId: {{ include "optimize.authClientId" . | quote }}
-        audience: {{ include "optimize.authAudience" . | quote }}
-        issuerUrl: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-    {{- end }}
-
     {{- if .Values.optimize.contextPath }}
     container:
       contextPath: {{ .Values.optimize.contextPath | quote }}
@@ -47,15 +38,23 @@ data:
     {{- if .Values.global.identity.auth.enabled }}
         ccsm:
           redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
-          clientId: {{ include "optimize.authClientId" . | quote }}
-          audience: {{ include "optimize.authAudience" . | quote }}
-          issuerUrl: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-          issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
     api:
       audience: "optimize-api"
       jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
     {{- end }}
   {{- end }}
+
+
+  {{- if .Values.global.identity.auth.enabled }}
+  application-ccsm.yaml: |
+    camunda:
+      identity:
+        clientId: {{ include "optimize.authClientId" . | quote }}
+        audience: {{ include "optimize.authAudience" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+  {{- end }}
+
   {{- range $key, $val := .Values.optimize.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}

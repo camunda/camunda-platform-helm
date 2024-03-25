@@ -49,6 +49,11 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
+            {{- if .Values.global.identity.auth.enabled }}
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            {{- end }}
             {{- range $key, $val := .Values.optimize.extraConfiguration }}
             - name: environment-config
               mountPath: /optimize/config/{{ $key }}
@@ -69,7 +74,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENT_SECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -159,6 +164,11 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
+            {{- if .Values.global.identity.auth.enabled }}
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            {{- end }}
             {{- range $key, $val := .Values.optimize.extraConfiguration }}
             - name: environment-config
               mountPath: /optimize/config/{{ $key }}
