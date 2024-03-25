@@ -12,6 +12,7 @@ spec:
   template:
     metadata:
       labels:
+      
         {{- include "connectors.labels" . | nindent 8 }}
         {{- if .Values.connectors.podLabels }}
         {{- toYaml .Values.connectors.podLabels | nindent 8 }}
