@@ -69,7 +69,7 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-optimize-identity-secret
