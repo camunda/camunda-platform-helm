@@ -569,7 +569,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVal
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			Name: "CAMUNDA_OPTIMIZE_IDENTITY_CLIENT_SECRET",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
@@ -598,7 +598,7 @@ func (s *deploymentTemplateTest) TestContainerShouldSetOptimizeIdentitySecretVia
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			Name: "CAMUNDA_OPTIMIZE_IDENTITY_CLIENT_SECRET",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
