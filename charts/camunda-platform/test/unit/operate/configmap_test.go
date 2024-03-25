@@ -53,7 +53,9 @@ func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.elasticsearch.url": "elasticsearch-test",
+			"global.elasticsearch.url.protocol": "https",
+			"global.elasticsearch.url.host":     "elasticsearch-test.com",
+			"global.elasticsearch.url.port":     "443",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -69,5 +71,5 @@ func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
 	elasticsearchURL := configmapApplication["camunda.operate"].(map[string]interface{})["elasticsearch"].(map[string]interface{})["url"]
 
 	// then
-	s.Require().Equal("elasticsearch-test", elasticsearchURL)
+	s.Require().Equal("https://elasticsearch-test.com:443", elasticsearchURL)
 }
