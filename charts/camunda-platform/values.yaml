@@ -58,7 +58,7 @@ global:
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.4.5
+    tag: 8.5.0-alpha2
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -314,7 +314,7 @@ console:
     repository: console/console-sm
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.4.55
+    tag: 8.4.59
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -526,7 +526,7 @@ zeebe:
      ## @param zeebe.image.repository defines which image repository to use
     repository: camunda/zeebe
      ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag:
+    tag: 8.5.0-RC1
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -801,7 +801,7 @@ zeebeGateway:
     ## @param zeebeGateway.image.repository defines which image repository to use
     repository: camunda/zeebe
     ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag:
+    tag: 8.5.0-RC1
     ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -985,10 +985,14 @@ zeebeGateway:
     httpPort: 9600
     ## @param zeebeGateway.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-    ## @param zeebeGateway.service.gatewayPort defines the port of the gateway endpoint, where client commands (grpc) are sent to
-    gatewayPort: 26500
-    ## @param zeebeGateway.service.gatewayName defines the name of the gateway endpoint, where client commands (grpc) are sent to
-    gatewayName: "gateway"
+    ## @param zeebeGateway.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcPort: 26500
+    ## @param zeebeGateway.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcName: "gateway"
+    ## @param zeebeGateway.service.restPort defines the REST port of the gateway REST endpoint, where client commands (REST) are sent to
+    restPort: 8080
+    ## @param zeebeGateway.service.restName defines the name of the gateway REST endpoint, where client commands (REST) are sent to
+    restName: "rest"
     ## @param zeebeGateway.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
     internalPort: 26502
     ## @param zeebeGateway.service.internalName defines the name of the internal api endpoint, which is used for internal communication
@@ -1006,31 +1010,62 @@ zeebeGateway:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param zeebeGateway.ingress.enabled if true, an ingress resource is deployed with the ZeebeGateway deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: false
-    ## @param zeebeGateway.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param zeebeGateway.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip zeebeGateway.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip zeebeGateway.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip zeebeGateway.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
-    ## @skip zeebeGateway.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-    ## @param zeebeGateway.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param zeebeGateway.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    ## @extra zeebeGateway.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param zeebeGateway.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+    grpc:
+      ## @param zeebeGateway.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
       enabled: false
-      ## @param zeebeGateway.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-zeebe-gateway
+      ## @param zeebeGateway.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
+      className: nginx
+      ## @param zeebeGateway.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+      ## @skip zeebeGateway.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
+      ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+      ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      annotations:
+        ingress.kubernetes.io/rewrite-target: "/"
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ## @param zeebeGateway.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      path: /
+      ## @param zeebeGateway.ingress.grpc.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
+      host: ""
+      ## @extra zeebeGateway.ingress.grpc.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      tls:
+        ## @param zeebeGateway.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+        enabled: false
+        ## @param zeebeGateway.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
+        secretName: camunda-platform-zeebe-gateway-grpc
+    rest:
+      ## @param zeebeGateway.ingress.rest.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
+      enabled: false
+      ## @param zeebeGateway.ingress.rest.className defines the class or configuration of ingress which should be used by the controller
+      className: nginx
+      ## @param zeebeGateway.ingress.rest.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+      ## @skip zeebeGateway.ingress.rest.annotations.ingress.kubernetes.io/rewrite-target
+      ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+      ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      annotations:
+        ingress.kubernetes.io/rewrite-target: "/"
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ## @param zeebeGateway.ingress.rest.path defines the path which is associated with the Zeebe gateway's REST service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      path: /
+      ## @param zeebeGateway.ingress.rest.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
+      host: ""
+      ## @extra zeebeGateway.ingress.rest.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      tls:
+        ## @param zeebeGateway.ingress.rest.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+        enabled: false
+        ## @param zeebeGateway.ingress.rest.tls.secretName defines the secret name which contains the TLS private key and certificate
+        secretName: camunda-platform-zeebe-gateway-rest
+  
+  # contextPath: "/zeebe"
+  ## @param zeebeGateway.contextPath can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
 
   ## @param zeebeGateway.configuration if specified, contents will be used as the application.yaml
   configuration: ""
@@ -1765,9 +1800,8 @@ identity:
   sidecars: []
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
-  # FullURL can be used when Ingress is configured (for both multi and single domain setup).
-  # Note: If the `ContextPath` is configured, then value of `ContextPath` should be included in the URL too.
-  # fullURL: "https://camunda.example.com/identity"
+  ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
+  fullURL: ""
 
   # Note: Identity cannot be accessed over HTTP if a "contextPath" is configured.
   #       Which means that Identity cannot be configured in combined Ingress without HTTPS.
@@ -3167,34 +3201,11 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.9.2
-  ## @param elasticsearch.extraVolumes[0].name
-  ## @param elasticsearch.extraVolumes[0].emptyDir
-  ## @param elasticsearch.extraVolumes[1].name
-  ## @param elasticsearch.extraVolumes[1].emptyDir
-  ## @param elasticsearch.extraVolumes[2].name
-  ## @param elasticsearch.extraVolumes[2].emptyDir
-  extraVolumes:
-  - name: tmp
-    emptyDir: {}
-  - name: logs
-    emptyDir: {}
-  - name: config-dir
-    emptyDir: {}
-  ## @param elasticsearch.extraVolumeMounts[0].mountPath
-  ## @param elasticsearch.extraVolumeMounts[0].name
-  ## @param elasticsearch.extraVolumeMounts[1].mountPath
-  ## @param elasticsearch.extraVolumeMounts[1].name
-  ## @param elasticsearch.extraVolumeMounts[2].mountPath
-  ## @param elasticsearch.extraVolumeMounts[2].name
-  extraVolumeMounts:
-  - mountPath: /tmp
-    name: tmp
-  - mountPath: /usr/share/elasticsearch/logs
-    name: logs
-  - mountPath: /usr/share/elasticsearch/config
-    name: config-dir
+    tag: 8.12.2
   master:
+    containerSecurityContext:
+    ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem
+      readOnlyRootFilesystem: true
     ## @param elasticsearch.master.masterOnly
     masterOnly: false
     ## @param elasticsearch.master.heapSize

@@ -1,9 +1,9 @@
 ---
-# Source: camunda-platform/templates/zeebe-gateway/serviceaccount.yaml
+# Source: camunda-platform/templates/identity/configmap-env-vars.yaml
 apiVersion: v1
-kind: ServiceAccount
+kind: ConfigMap
 metadata:
-  name: camunda-platform-test-zeebe-gateway
+  name: camunda-platform-test-identity-config-env-vars
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/version: "8.5.0-alpha2"
-    app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/component: identity
   annotations:
-    foo: bar
-    lulz: baz
-automountServiceAccountToken: false
+    {}
+data:
+  IDENTITY_URL: ""

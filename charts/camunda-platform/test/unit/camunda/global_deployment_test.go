@@ -142,6 +142,7 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 			"global.image.tag":      "8.x.x",
 			"optimize.image.tag":    "3.x.x",
 			"connectors.image.tag":  "8.x.x",
+			"zeebe.image.tag":       "8.x.x",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

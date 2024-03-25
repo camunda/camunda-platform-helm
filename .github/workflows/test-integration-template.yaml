@@ -163,6 +163,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
+    # TODO: Remove all logic for extra-values-file-setup-only.yaml after Camunda 8.5 cycle is done.
     - name: Pre setup
       timeout-minutes: 5
       env:
@@ -174,6 +175,7 @@ jobs:
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
+    # TODO: Remove "postgresql.enabled" when Camunda 8.5 release is done.
     - name: 🌟 Setup Camunda chart 🌟
       env:
         TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
@@ -182,6 +184,9 @@ jobs:
           --values /tmp/extra-values-file.yaml
         TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.ingress.outputs.host }}"
       run: |
+        if [[ ${{ matrix.scenario.flow }} == 'upgrade' ]]; then
+          TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} --set postgresql.enabled=true"
+        fi
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
     - name: Post setup
       timeout-minutes: 5

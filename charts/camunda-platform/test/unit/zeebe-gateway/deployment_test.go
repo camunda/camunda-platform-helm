@@ -761,9 +761,9 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0]
 
-	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
-	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
-	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+	s.Require().Equal("/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/live", probe.LivenessProbe.HTTPGet.Path)
 }
 
 func (s *deploymentTemplateTest) TestContainerSetSidecar() {

@@ -15,6 +15,15 @@ data:
     {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
 {{- else }}
   application.yaml: |
+    {{- if .Values.zeebeGateway.contextPath }}
+    spring:
+      webflux:
+        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
+    {{- end }}
+
+    server:
+      address: "0.0.0.0"
+      port: {{  .Values.zeebeGateway.service.restPort | quote }}
     {{- if or .Values.global.identity.auth.enabled .Values.global.multitenancy.enabled }}
     camunda:
       identity:
@@ -42,7 +51,7 @@ data:
           port: {{ .Values.zeebeGateway.service.internalPort | quote }}
         network:
           host: 0.0.0.0
-          port: {{ .Values.zeebeGateway.service.gatewayPort | quote }}
+          port: {{ .Values.zeebeGateway.service.grpcPort | quote }}
         {{- if .Values.global.multitenancy.enabled }}
         multitenancy:
           enabled: true

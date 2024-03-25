@@ -36,7 +36,6 @@ tasks:
       export KEYCLOAK_POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
 
-      # TODO: Remove the keys "identity.keycloak" and "identity.postgresql" once 8.5 cycle is done.
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml \
@@ -50,8 +49,5 @@ tasks:
         --set identityKeycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
         --set identityKeycloak.postgresql.auth.password=$KEYCLOAK_POSTGRESQL_SECRET \
         --set identityPostgresql.auth.password=dummy \
-        --set identity.keycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
-        --set identity.keycloak.postgresql.auth.password=$KEYCLOAK_POSTGRESQL_SECRET \
-        --set identity.postgresql.auth.password=dummy \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}

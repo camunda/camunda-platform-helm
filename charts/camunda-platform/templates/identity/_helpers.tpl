@@ -25,17 +25,19 @@ Create a default fully qualified app name.
 
 {{- define "identity.externalUrl" -}}
     {{- if .Values.identity.fullURL -}}
-        {{ tpl .Values.identity.fullURL $ | quote }}
+        {{ tpl .Values.identity.fullURL $ }}
     {{- else -}}
         {{- if .Values.global.ingress.enabled -}}
-            {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-            {{ $host := .Values.global.ingress.host }}
-            {{ $path := .Values.identity.contextPath | default "" -}}
+            {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+            {{- $host := .Values.global.ingress.host -}}
+            {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
-        {{- else -}}
-            {{ $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
-            {{ $host := .Values.identity.ingress.host -}}
+        {{- else if .Values.identity.ingress.enabled -}}
+            {{- $proto := ternary "https" "http" .Values.identity.ingress.tls.enabled -}}
+            {{- $host := .Values.identity.ingress.host -}}
             {{- printf "%s://%s" $proto $host -}}
+        {{- else -}}
+            {{- "" -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}

@@ -27,6 +27,7 @@ global:
 
 identity:
   contextPath: "/identity"
+  # TODO: Remove it once the 8.5 cycle is done.
   fullURL: "https://{{ .Values.global.ingress.host }}/identity"
   firstUser:
     existingSecret: "integration-test"
@@ -55,26 +56,24 @@ webModeler:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
 
-# TODO: Remove it once the 8.5 cycle is done.
-postgresql:
-  enabled: true
-
 # WebModeler Database.
 webModelerPostgresql:
   enabled: true
 
 zeebeGateway:
+  contextPath: "/zeebe"
   ingress:
-    enabled: true
-    className: nginx
-    host: "zeebe-{{ .Values.global.ingress.host }}"
-    tls:
+    grpc:
       enabled: true
-      # A wildcard certificate will be used.
-      secretName: camunda-platform-zeebe-gateway
-    annotations:
-      external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
-      external-dns.alpha.kubernetes.io/ttl: "60"
+      className: nginx
+      host: "zeebe-{{ .Values.global.ingress.host }}"
+      tls:
+        enabled: true
+        # A wildcard certificate will be used.
+        secretName: camunda-platform-zeebe-gateway
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
   enabled: true
