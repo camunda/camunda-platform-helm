@@ -28,9 +28,7 @@ data:
       {{- if or (eq .Values.connectors.inbound.mode "credentials") (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") ) }}
       operate:
         client:
-          {{- if and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") }}
           url: {{ include "camundaPlatform.operateURL" . | quote }}
-          {{- end }}
           {{- if eq .Values.connectors.inbound.mode "credentials" }}
           username: connectors
           {{- end }}
