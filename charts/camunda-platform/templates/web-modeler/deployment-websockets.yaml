@@ -98,27 +98,27 @@ spec:
             failureThreshold: {{ .Values.webModeler.websockets.livenessProbe.failureThreshold }}
             timeoutSeconds: {{ .Values.webModeler.websockets.livenessProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.webModeler.websockets.extraVolumeMounts }}
           volumeMounts:
             - name: config
               mountPath: /home/webapp/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.webModeler.extraConfiguration }}
+          {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
             - name: config
               mountPath: /home/webapp/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
+          {{- if .Values.webModeler.websockets.extraVolumeMounts }}
           {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
         {{- if .Values.webModeler.websockets.sidecars }}
         {{- .Values.webModeler.websockets.sidecars | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.webModeler.websockets.extraVolumes }}
       volumes:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-websockets
-      {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 6 }}
+      {{- if .Values.webModeler.websockets.extraVolumes }}
+      {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       {{- if .Values.webModeler.serviceAccount.name}}
       serviceAccountName: {{ .Values.webModeler.serviceAccount.name }}

@@ -118,7 +118,7 @@ spec:
               mountPath: /home/webapp/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
-          {{- if .Values.webModeler.extraVolumeMounts }}
+          {{- if .Values.webModeler.webapp.extraVolumeMounts }}
           {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
         {{- if .Values.webModeler.webapp.sidecars }}

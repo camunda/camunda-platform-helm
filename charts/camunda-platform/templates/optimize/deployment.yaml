@@ -69,7 +69,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:

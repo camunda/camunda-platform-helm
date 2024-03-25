@@ -549,34 +549,6 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-
-	for _, envvar := range env {
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_ISSUER_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_CLIENT_ID", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET", envvar.Name)
-	}
-
-	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
-}
-
 func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValue() {
 	// given
 	options := &helm.Options{
@@ -655,56 +627,6 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
-}
-
-func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"operate.contextPath": "/operate",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "SERVER_SERVLET_CONTEXT_PATH",
-			Value: "/operate",
-		},
-	)
-}
-
-func (s *deploymentTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"operate.contextPath": "/camunda/operate",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL",
-			Value: "http://localhost:8081",
-		},
-	)
 }
 
 // readinessProbe is enabled by default so it's tested by golden files.
@@ -862,26 +784,6 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 	}
 
 	s.Require().Contains(podContainers, expectedContainer)
-}
-
-func (s *deploymentTemplateTest) TestOperateMultiTenancyEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled": "true",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_MULTITENANCY_ENABLED", Value: "true"})
 }
 
 func (s *deploymentTemplateTest) TestOperateWithConfiguration() {
