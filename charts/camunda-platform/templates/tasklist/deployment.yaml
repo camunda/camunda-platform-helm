@@ -41,7 +41,7 @@ spec:
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.tasklist.contextPath | quote }}
             {{- end }}
-            {{- if .Values.global.elasticsearch.external  }}
+            {{- if .Values.global.elasticsearch.external }}
             - name: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
@@ -61,7 +61,7 @@ spec:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if .Values.global.opensearch.enabled}}
+            {{- if .Values.global.opensearch.enabled }}
             - name: CAMUNDA_TASKLIST_DATABASE
               value: opensearch
             - name: CAMUNDA_TASKLIST_OPENSEARCH_URL
@@ -165,7 +165,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.tasklist.command}}
+          {{- if .Values.tasklist.command }}
           command: {{ toYaml .Values.tasklist.command | nindent 10 }}
           {{- end }}
           resources:
@@ -247,10 +247,10 @@ spec:
             secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
             optional: false
         {{- end }}
-        {{- if .Values.tasklist.extraVolumes}}
+        {{- if .Values.tasklist.extraVolumes }}
         {{- .Values.tasklist.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.tasklist.serviceAccount.name}}
+      {{- if .Values.tasklist.serviceAccount.name }}
       serviceAccountName: {{ .Values.tasklist.serviceAccount.name }}
       {{- end }}
       {{- if .Values.tasklist.podSecurityContext }}

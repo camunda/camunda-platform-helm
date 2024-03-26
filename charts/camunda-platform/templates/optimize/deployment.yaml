@@ -38,7 +38,7 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.external  }}
+            {{- if .Values.global.elasticsearch.external }}
               {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
@@ -51,7 +51,7 @@ spec:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if .Values.global.opensearch.enabled}}
+            {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
               value: "true"
@@ -78,7 +78,7 @@ spec:
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: {{ .Values.optimize.partitionCount | quote }}
-            {{- if .Values.global.elasticsearch.enabled}}
+            {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
@@ -111,7 +111,7 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.external  }}
+            {{- if .Values.global.elasticsearch.external }}
               {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
               value: "true"
@@ -155,7 +155,7 @@ spec:
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: {{ .Values.optimize.partitionCount | quote }}
-            {{- if .Values.global.elasticsearch.enabled}}
+            {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT

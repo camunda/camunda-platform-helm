@@ -85,7 +85,7 @@ spec:
               value: {{ .Values.zeebe.ioThreadCount  | quote }}
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
-            {{- if .Values.global.elasticsearch.external  }}
+            {{- if .Values.global.elasticsearch.external }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_USERNAME
               value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
@@ -143,7 +143,7 @@ spec:
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-          {{- if .Values.zeebe.command}}
+          {{- if .Values.zeebe.command }}
           command: {{ toYaml .Values.zeebe.command | nindent 10 }}
           {{- end }}
           ports:
@@ -213,7 +213,7 @@ spec:
               mountPath: /usr/local/zeebe/config/log4j2.xml
               subPath: broker-log4j2.xml
             {{- end }}
-            {{- if .Values.zeebe.extraVolumeMounts}}
+            {{- if .Values.zeebe.extraVolumeMounts }}
             {{ .Values.zeebe.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
       {{- if .Values.zeebe.sidecars }}
@@ -239,7 +239,7 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
-        {{- if .Values.zeebe.extraVolumes}}
+        {{- if .Values.zeebe.extraVolumes }}
           {{ .Values.zeebe.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.zeebe.serviceAccount.name }}

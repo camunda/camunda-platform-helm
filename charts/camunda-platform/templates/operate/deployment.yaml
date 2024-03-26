@@ -61,7 +61,7 @@ spec:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if .Values.global.opensearch.enabled}}
+            {{- if .Values.global.opensearch.enabled }}
             - name: CAMUNDA_OPERATE_DATABASE
               value: opensearch
             - name: CAMUNDA_OPERATE_OPENSEARCH_URL
@@ -83,7 +83,7 @@ spec:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret}}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
             {{- end }}
@@ -166,7 +166,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.operate.command}}
+          {{- if .Values.operate.command }}
           command: {{ toYaml .Values.operate.command | nindent 10 }}
           {{- end }}
           resources:
@@ -224,7 +224,7 @@ spec:
               mountPath: /usr/local/operate/certificates/externaldb.jks
               subPath: externaldb.jks
             {{- end }}
-            {{- if .Values.operate.extraVolumeMounts}}
+            {{- if .Values.operate.extraVolumeMounts }}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
         {{- if .Values.operate.sidecars }}
@@ -245,10 +245,10 @@ spec:
             secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
             optional: false
         {{- end }}
-        {{- if .Values.operate.extraVolumes}}
+        {{- if .Values.operate.extraVolumes }}
         {{- .Values.operate.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.operate.serviceAccount.name}}
+      {{- if .Values.operate.serviceAccount.name }}
       serviceAccountName: {{ .Values.operate.serviceAccount.name }}
       {{- end }}
       {{- if .Values.operate.podSecurityContext }}
