@@ -114,14 +114,14 @@ spec:
               value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
               value: {{ .Values.global.elasticsearch.prefix | quote }}
-              {{- if .Values.zeebe.retention.enabled }}
+            {{- if .Values.zeebe.retention.enabled }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_ENABLED
               value: "true"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_MINIMUMAGE
               value: {{ .Values.zeebe.retention.minimumAge | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_POLICYNAME
               value: {{ .Values.zeebe.retention.policyName | quote }}
-              {{- end }}
+            {{- end }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
