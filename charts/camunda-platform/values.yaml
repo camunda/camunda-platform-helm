@@ -87,7 +87,7 @@ global:
       ## @param global.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform
 
-# Elasticsearch configuration which is shared between the sub charts
+  # Elasticsearch configuration which is shared between the sub charts
   ## @extra global.elasticsearch
   ## @param global.elasticsearch.enabled if true, enables elasticsearch for all components
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
