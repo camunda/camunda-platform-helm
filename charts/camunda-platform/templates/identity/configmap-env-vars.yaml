@@ -15,4 +15,7 @@ data:
   IDENTITY_DATABASE_USERNAME: {{ include "identity.postgresql.username" . | quote }}
 {{- end }}
   IDENTITY_URL: {{ include "identity.externalUrl" . | quote }}
+{{- if and .Values.identityKeycloak.enabled  (hasPrefix "23" .Values.identityKeycloak.image.tag) }}
+  KEYCLOAK_EXTRA_ARGS: --hostname={{ .Values.identityKeycloak.ingress.hostname }} --hostname-strict-backchannel=false
+{{- end }}
 {{- end }}

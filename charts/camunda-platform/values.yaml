@@ -2027,7 +2027,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: bitnami/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 22.0.5
+    tag: 23.0.4
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
@@ -2100,6 +2100,11 @@ identityKeycloak:
   tls:
   ## @param identityKeycloak.tls.enabled enabling tls
     enabled: false
+  # identityKeycloak.extraEnvVarsCM defines the name of configmap which store keycloak extra configuration,
+  # it's required for keycloak 23+ to set the extra startup args.
+  ## @param identityKeycloak.extraEnvVarsCM keycloak extra configmap
+  extraEnvVarsCM: >-
+    {{ include "identity.fullname" . | replace "keycloak" "identity"}}-config-env-vars
 
   # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
   # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
@@ -2247,6 +2252,8 @@ identityKeycloak:
   # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
   - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
     value: "{{ .Values.global.ingress.tls.enabled }}"
+  - name: KEYCLOAK_EXTRA_ARGS
+    value: "--hostname={{ .Values.identityKeycloak.ingress.hostname }} --hostname-strict-backchannel=false"
 
   # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
   # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
