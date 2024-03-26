@@ -220,10 +220,16 @@ spec:
       {{- .Values.zeebe.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
-        {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore
           secret:
             secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
             optional: false
         {{- end }}
         {{- if eq .Values.zeebe.persistenceType "memory" }}

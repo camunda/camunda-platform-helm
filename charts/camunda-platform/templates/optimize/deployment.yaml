@@ -279,10 +279,16 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore
           secret:
             secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
             optional: false
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
