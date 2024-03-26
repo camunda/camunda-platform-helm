@@ -156,7 +156,7 @@ jobs:
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
     - name: Start GitHub deployment
-      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       id: deployment
       with:
         step: start
@@ -205,7 +205,7 @@ jobs:
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
     - name: Update GitHub deployment status
-      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: finish
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -232,7 +232,7 @@ jobs:
     # https://github.com/bobheadxi/deployments/issues/145
     - name: Cleanup GitHub deployment
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
-      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -272,7 +272,7 @@ jobs:
         service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
     - name: Cleanup GitHub deployment
       if: always()
-      uses: bobheadxi/deployments@88ce5600046c82542f8246ac287d0a53c461bca3 # v1
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: deactivate-env
         token: ${{ secrets.GITHUB_TOKEN }}
