@@ -214,21 +214,20 @@ testcases:
     - result.systemout ShouldContainSubstring "Leader, Healthy"
     - result.systemout ShouldNotContainSubstring Unhealthy
     - result.timeseconds ShouldBeLessThan 1
-  # TODO: Enable with Zeebe Gateway REST is ready.
-  # - name: Check Zeebe Gateway status - REST
-  #   type: http
-  #   method: GET
-  #   url: "{{ .coreVars.baseURLs.zeebeGatewayRest }}/api/v1/topology"
-  #   headers:
-  #     Content-Type: application/json
-  #   retry: 2
-  #   delay: 10
-  #   # info: |
-  #   #  = Request Body: {{ .result.request.body }}
-  #   #  = Response Body: {{ .result.body }}
-  #   assertions:
-  #   - result.statuscode ShouldEqual 200
-  #   - result.bodyjson ShouldContainKey brokers
+  - name: Check Zeebe Gateway status - REST
+    type: http
+    method: GET
+    url: "{{ .coreVars.baseURLs.zeebeGatewayRest }}/v1/topology"
+    headers:
+      Content-Type: application/json
+    retry: 2
+    delay: 10
+    # info: |
+    #  = Request Body: {{ .result.request.body }}
+    #  = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson ShouldContainKey brokers
 
 - name: TEST - Deploying BPMN process
   steps:
