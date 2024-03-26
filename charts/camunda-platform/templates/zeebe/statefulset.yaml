@@ -91,8 +91,8 @@ spec:
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{include "elasticsearch.authExistingSecret" . | quote}}
-                  key: {{include "elasticsearch.authExistingSecretKey" . | quote}}
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
             {{- if .Values.global.opensearch.enabled}}
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_USERNAME
@@ -100,8 +100,8 @@ spec:
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{include "opensearch.authExistingSecret" . | quote}}
-                  key: {{include "opensearch.authExistingSecretKey" . | quote}}
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL
