@@ -112,7 +112,7 @@ global:
       existingSecretKey:
       ## @param  global.elasticsearch.disableExporter DEPRICATED: this value is not needed anymore. Use global.elasticsearch.enabled. if true, disables the elastic exporter in zeebe
     disableExporter: false
-    ## @extra global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+    ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
     ## @param global.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
     ## @param global.elasticsearch.url.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
@@ -145,7 +145,7 @@ global:
       password:
       existingSecret:
       existingSecretKey:
-    ## @extra global.opensearch.url can be used to configure the URL to access opensearch, if not set services fallback to host and port configuration
+    ## @extra global.opensearch.url Configuration to configure opensearch url
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
     ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
     ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
