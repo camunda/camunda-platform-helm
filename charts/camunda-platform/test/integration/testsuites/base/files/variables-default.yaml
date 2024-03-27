@@ -23,7 +23,7 @@ coreVars:
     tasklist: http://integration-tasklist
     connectors: http://integration-connectors:8080/inbound
     webModelerRestapi: http://integration-web-modeler-restapi
-    zeebeGatewayGrpc: http://integration-zeebe-gateway:9600
-    zeebeGatewayRest: http://integration-zeebe-gateway:8080
+    zeebeGatewayGRPC: http://integration-zeebe-gateway:9600
+    zeebeGatewayREST: http://integration-zeebe-gateway:8080
   zbctl:
     extraArgs: "--insecure"

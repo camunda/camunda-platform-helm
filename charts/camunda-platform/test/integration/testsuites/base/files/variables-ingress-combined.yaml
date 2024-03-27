@@ -25,8 +25,8 @@ coreVars:
     connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
-    zeebeGatewayGrpc: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
-    zeebeGatewayRest: "https://{{ .TEST_INGRESS_HOST }}/zeebe"
+    zeebeGatewayGRPC: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
+    zeebeGatewayREST: "https://{{ .TEST_INGRESS_HOST }}/zeebe"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""

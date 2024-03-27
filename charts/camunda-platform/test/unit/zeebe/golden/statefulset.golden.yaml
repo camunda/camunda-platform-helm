@@ -45,7 +45,7 @@ spec:
         []
       containers:
         - name: zeebe
-          image: camunda/zeebe:8.5.0-RC1
+          image: camunda/zeebe:8.5.0-RC2
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
