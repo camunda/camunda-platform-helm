@@ -32,7 +32,7 @@ data:
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
             - name: Keycloak
               id: keycloak
-              version: 22.0.5
+              version: 23.0.7
               url: http:///auth
             - name: Identity
               id: identity
