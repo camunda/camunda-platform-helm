@@ -2026,7 +2026,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: bitnami/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 22.0.5
+    tag: 23.0.7
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
@@ -2037,33 +2037,6 @@ identityKeycloak:
       ## @param identityKeycloak.postgresql.image.tag image tag
       tag: 15.6.0
     primary:
-      ## @skip identityKeycloak.postgresql.primary.extraVolumes[0].name
-      ## @skip identityKeycloak.postgresql.primary.extraVolumes[0].emptyDir
-      ## @skip identityKeycloak.postgresql.primary.extraVolumes[1].name
-      ## @skip identityKeycloak.postgresql.primary.extraVolumes[1].emptyDir
-      ## @skip identityKeycloak.postgresql.primary.extraVolumes[2].name
-      ## @skip identityKeycloak.postgresql.primary.extraVolumes[2].emptyDir
-      extraVolumes:
-      - name: tmp
-        emptyDir: {}
-      - name: config
-        emptyDir: {}
-      - name: postgresql-tmp
-        emptyDir: {}
-      ## identityKeycloak.postgresql.primary.extraVolumeMounts can be used to mount extra volumes for the identity pods, useful for tls and self-signed certificates
-      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[0].mountPath
-      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[0].name
-      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[1].mountPath
-      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[1].name
-      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[2].mountPath
-      ## @skip identityKeycloak.postgresql.primary.extraVolumeMounts[2].name
-      extraVolumeMounts:
-      - mountPath: /tmp
-        name: tmp
-      - mountPath: /opt/bitnami/postgresql/conf
-        name: config
-      - mountPath: /opt/bitnami/postgresql/tmp
-        name: postgresql-tmp
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
@@ -2107,19 +2080,7 @@ identityKeycloak:
   ## @skip identityKeycloak.extraVolumes[0].emptyDir
   ## @skip identityKeycloak.extraVolumes[1].name
   ## @skip identityKeycloak.extraVolumes[1].emptyDir
-  ## @skip identityKeycloak.extraVolumes[2].name
-  ## @skip identityKeycloak.extraVolumes[2].emptyDir
-  ## @skip identityKeycloak.extraVolumes[3].name
-  ## @skip identityKeycloak.extraVolumes[3].emptyDir.sizeLimit
-  ## @skip identityKeycloak.extraVolumes[4].name
-  ## @skip identityKeycloak.extraVolumes[4].emptyDir.sizeLimit
   extraVolumes:
-  - name: config
-    emptyDir: {}
-  - name: quarkus
-    emptyDir: {}
-  - name: tmp
-    emptyDir: {}
   - name: data-tmp
     emptyDir: {}
   - name: camunda-theme
@@ -2157,59 +2118,15 @@ identityKeycloak:
     volumeMounts:
     - name: camunda-theme
       mountPath: /mnt
-  ## @param identityKeycloak.initContainers[1].name
-  ## @param identityKeycloak.initContainers[1].image
-  ## @param identityKeycloak.initContainers[1].imagePullPolicy
-  ## @param identityKeycloak.initContainers[1].command
-  ## @param identityKeycloak.initContainers[1].securityContext.privileged
-  ## @param identityKeycloak.initContainers[1].securityContext.readOnlyRootFilesystem
-  ## @param identityKeycloak.initContainers[1].securityContext.allowPrivilegeEscalation
-  ## @param identityKeycloak.initContainers[1].securityContext.runAsNonRoot
-  ## @param identityKeycloak.initContainers[1].securityContext.capabilities.drop
-  ## @param identityKeycloak.initContainers[1].securityContext.seccompProfile.type
-  ## @param identityKeycloak.initContainers[1].volumeMounts[0].name
-  ## @param identityKeycloak.initContainers[1].volumeMounts[0].mountPath
-  ## @param identityKeycloak.initContainers[1].volumeMounts[1].name
-  ## @param identityKeycloak.initContainers[1].volumeMounts[1].mountPath
-  - name: copy-configs
-    image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-    imagePullPolicy: "Always"
-    command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
-    securityContext:
-      privileged: false
-      readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      capabilities:
-        drop: ["ALL"]
-      seccompProfile:
-        type: RuntimeDefault
-    volumeMounts:
-    - name: config
-      mountPath: /config
-    - name: quarkus
-      mountPath: /quarkus
   ## @param identityKeycloak.extraVolumeMounts[0].name
   ## @param identityKeycloak.extraVolumeMounts[0].mountPath
   ## @param identityKeycloak.extraVolumeMounts[1].mountPath
   ## @param identityKeycloak.extraVolumeMounts[1].name
-  ## @param identityKeycloak.extraVolumeMounts[2].name
-  ## @param identityKeycloak.extraVolumeMounts[2].mountPath
-  ## @param identityKeycloak.extraVolumeMounts[3].mountPath
-  ## @param identityKeycloak.extraVolumeMounts[3].name
-  ## @param identityKeycloak.extraVolumeMounts[4].mountPath
-  ## @param identityKeycloak.extraVolumeMounts[4].name
   extraVolumeMounts:
-  - mountPath: /opt/bitnami/keycloak/conf/
-    name: config
-  - mountPath: /opt/bitnami/keycloak/lib/quarkus
-    name: quarkus
   - name: camunda-theme
     mountPath: /opt/bitnami/keycloak/themes/identity
-  - mountPath: /tmp
-    name: tmp
-  - mountPath: /opt/bitnami/keycloak/data/tmp
-    name: data-tmp
+  - name: data-tmp
+    mountPath: /opt/bitnami/keycloak/data/tmp
 
   ## @param identityKeycloak.containerSecurityContext.privileged
   ## @param identityKeycloak.containerSecurityContext.readOnlyRootFilesystem
@@ -2235,8 +2152,9 @@ identityKeycloak:
     fsGroup: 1001
   ## @param identityKeycloak.httpRelativePath defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
   # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
-  # NOTE: This should be the same as ".Values.global.identityKeycloak.contextPath" plus a trailing slash,
+  # NOTE: This should be the same as ".Values.global.identity.keycloak.contextPath" plus a trailing slash,
   # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
+  # NOTE: In Keycloak v23, accessing this path without the trailing slash will return "Internal Server Error".
   httpRelativePath: /auth/
   ## @extra identityKeycloak.extraEnvVars
   ## @param identityKeycloak.extraEnvVars[0].name
