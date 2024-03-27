@@ -110,7 +110,7 @@ global:
       password:
       existingSecret:
       existingSecretKey:
-      ## @param  global.elasticsearch.disableExporter (Deprecated: this value is not needed anymore. Use global.elasticsearch.enabled.) if true, disables the elastic exporter in zeebe
+      ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
     disableExporter: false
     ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
