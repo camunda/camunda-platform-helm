@@ -76,7 +76,9 @@ spec:
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: {{ .Values.zeebeGateway.service.httpPort | quote }}
             {{- if .Values.zeebeGateway.contextPath }}
-            - name: SPRING_WEBFLUX_BASE_PATH
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.zeebeGateway.contextPath | quote }}
+            - name: MANAGEMENT_SERVER_BASEPATH
               value: {{ .Values.zeebeGateway.contextPath | quote }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
@@ -121,10 +123,9 @@ spec:
           securityContext: {{- toYaml .Values.zeebeGateway.containerSecurityContext | nindent 12 }}
           {{- end }}
           {{- if .Values.zeebeGateway.startupProbe.enabled }}
-          {{- /* NOTE: ZeebeGateway doesn't support contextPath for health endpoints. */}}
           startupProbe:
             httpGet:
-              path: {{ .Values.zeebeGateway.startupProbe.probePath }}
+              path: {{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.startupProbe.probePath }}
               scheme: {{ .Values.zeebeGateway.startupProbe.scheme }}
               port: {{ .Values.zeebeGateway.service.httpPort }}
             initialDelaySeconds: {{ .Values.zeebeGateway.startupProbe.initialDelaySeconds }}
@@ -134,10 +135,9 @@ spec:
             timeoutSeconds: {{ .Values.zeebeGateway.startupProbe.timeoutSeconds }}
           {{- end }}
           {{- if .Values.zeebeGateway.readinessProbe.enabled }}
-          {{- /* NOTE: ZeebeGateway doesn't support contextPath for health endpoints. */}}
           readinessProbe:
             httpGet:
-              path: {{ .Values.zeebeGateway.readinessProbe.probePath }}
+              path: {{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.readinessProbe.probePath }}
               scheme: {{ .Values.zeebeGateway.readinessProbe.scheme }}
               port: {{ .Values.zeebeGateway.service.httpPort }}
             initialDelaySeconds: {{ .Values.zeebeGateway.readinessProbe.initialDelaySeconds }}
@@ -147,10 +147,9 @@ spec:
             timeoutSeconds: {{ .Values.zeebeGateway.readinessProbe.timeoutSeconds }}
           {{- end }}
           {{- if .Values.zeebeGateway.livenessProbe.enabled }}
-          {{- /* NOTE: ZeebeGateway doesn't support contextPath for health endpoints. */}}
           livenessProbe:
             httpGet:
-              path: {{ .Values.zeebeGateway.livenessProbe.probePath }}
+              path: {{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.livenessProbe.probePath }}
               scheme: {{ .Values.zeebeGateway.livenessProbe.scheme }}
               port: {{ .Values.zeebeGateway.service.httpPort }}
             initialDelaySeconds: {{ .Values.zeebeGateway.livenessProbe.initialDelaySeconds }}
