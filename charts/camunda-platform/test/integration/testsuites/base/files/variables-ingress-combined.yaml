@@ -17,7 +17,7 @@ coreVars:
   testNamespace: "{{ .K8S_NAMESPACE }}"
   baseURLs:
     console: "https://{{ .TEST_INGRESS_HOST }}"
-    keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth"
+    keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth/"
     identity: "https://{{ .TEST_INGRESS_HOST }}/identity"
     operate: "https://{{ .TEST_INGRESS_HOST }}/operate"
     optimize: "https://{{ .TEST_INGRESS_HOST }}/optimize"

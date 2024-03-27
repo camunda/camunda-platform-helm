@@ -49,6 +49,8 @@ spec:
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+          resources:
+            {{- toYaml .Values.optimize.migration.resources | nindent 12 }}
           volumeMounts:
             - mountPath: /tmp
               name: tmp
