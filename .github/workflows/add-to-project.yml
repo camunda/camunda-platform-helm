@@ -24,7 +24,7 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - name: Add to project
-        uses: actions/add-to-project@1b844f0c5ac6446a402e0cb3693f9be5eca188c5 # v0.6.1
+        uses: actions/add-to-project@2e5cc851ca7162e9eb510e6da6a5c64022e606a7 # v1.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: '${{ steps.generate-github-token.outputs.token }}'
