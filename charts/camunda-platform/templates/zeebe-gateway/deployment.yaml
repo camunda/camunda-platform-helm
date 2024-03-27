@@ -84,6 +84,8 @@ spec:
               value: {{ include "camundaPlatform.authType" . | quote }}
             - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
               value: "identity"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "identity-auth"
             - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: CAMUNDA_IDENTITY_AUDIENCE

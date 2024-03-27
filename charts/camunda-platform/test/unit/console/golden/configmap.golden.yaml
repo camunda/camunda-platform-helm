@@ -60,7 +60,7 @@ data:
               metrics: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/prometheus
             - name: Zeebe Gateway
               id: zeebeGateway
-              version: 8.5.0-RC1
+              version: 8.5.0-RC2
               urls:
                 grpc: grpc://
                 http: http://
@@ -68,6 +68,6 @@ data:
               metrics: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/prometheus
             - name: Zeebe
               id: zeebe
-              version: 8.5.0-RC1
+              version: 8.5.0-RC2
               readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
