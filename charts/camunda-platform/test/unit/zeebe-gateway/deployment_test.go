@@ -817,3 +817,25 @@ func (s *deploymentTemplateTest) TestZeebeMultiTenancyEnabled() {
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_GATEWAY_MULTITENANCY_ENABLED", Value: "true"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED", Value: "true"})
 }
+
+func (s *deploymentTemplateTest) TestZeebeIdentityAuthenticationEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.enabled": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE", Value: "identity"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "identity-auth"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_IDENTITY_AUDIENCE", Value: "zeebe-api"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"})
+}
