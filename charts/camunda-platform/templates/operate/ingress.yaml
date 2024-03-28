@@ -20,7 +20,7 @@ spec:
     {{- end }}
         paths:
           - path: {{ .Values.operate.ingress.path }}
-            pathType: Prefix
+            pathType: {{ .Values.operate.ingress.pathType }}
             backend:
               service:
                 name: {{ include "operate.fullname" . }}

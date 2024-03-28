@@ -21,7 +21,7 @@ spec:
     {{- end }}
         paths:
           - path: {{ .Values.identity.ingress.path }}
-            pathType: Prefix
+            pathType: {{ .Values.identity.ingress.pathType }}
             backend:
               service:
                 name: {{ include "identity.fullname" . }}
