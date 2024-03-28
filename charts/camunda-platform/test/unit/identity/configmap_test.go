@@ -31,7 +31,7 @@ func TestSpringConfigMapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/identity/configmap-spring-config.yaml"},
+		templates: []string{"templates/identity/configmap.yaml"},
 	})
 }
 
