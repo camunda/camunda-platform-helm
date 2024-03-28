@@ -73,12 +73,31 @@ spec:
               value: {{ .Values.zeebe.logLevel | quote }}
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
+            {{- if .Values.global.elasticsearch.external }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled}}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end}}
             - name: K8S_POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/externaldb.jks
+            {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebe.javaOpts | quote }}
+            {{- end }}
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -134,6 +153,11 @@ spec:
             - name: config
               mountPath: /usr/local/bin/startup.sh
               subPath: startup.sh
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/zeebe/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }} subPath: startup.sh
             {{- if not ( eq .Values.zeebe.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/zeebe/data
@@ -175,6 +199,18 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
         {{- if .Values.zeebe.extraVolumes}}
           {{ .Values.zeebe.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
