@@ -3,7 +3,7 @@
 {{/*
 [zeebe] Create a default fully qualified app name.
 */}}
-{{- define "zeebe.fullname.borker" -}}
+{{- define "zeebe.fullname.broker" -}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "zeebe"
         "componentValues" .Values.zeebe
