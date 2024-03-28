@@ -157,6 +157,7 @@ global:
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
   ## @param global.zeebePort defines the port which is used for the ZeebeGateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
   zeebePort: 26500
+  zeebeRestPort: 8080
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
@@ -1114,7 +1115,7 @@ zeebeGateway:
         enabled: false
         ## @param zeebeGateway.ingress.rest.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: camunda-platform-zeebe-gateway-rest
-  
+
   # contextPath: "/zeebe"
   ## @param zeebeGateway.contextPath can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
