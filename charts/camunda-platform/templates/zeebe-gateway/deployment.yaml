@@ -78,6 +78,8 @@ spec:
             {{- if .Values.zeebeGateway.contextPath }}
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.zeebeGateway.contextPath | quote }}
+            - name: SPRING_WEBFLUX_BASEPATH
+              value: {{ .Values.zeebeGateway.contextPath | quote }}              
             - name: MANAGEMENT_SERVER_BASEPATH
               value: {{ .Values.zeebeGateway.contextPath | quote }}
             {{- end }}
