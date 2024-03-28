@@ -174,7 +174,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: camunda-platform-test-identity-spring-config
+            name: camunda-platform-test-identity
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

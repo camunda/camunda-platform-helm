@@ -299,7 +299,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "identity.fullname" . }}-spring-config
+            name: {{ include "identity.fullname" . }}
         {{- if .Values.identity.extraVolumes}}
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
