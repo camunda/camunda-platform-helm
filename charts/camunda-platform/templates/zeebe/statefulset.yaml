@@ -85,7 +85,29 @@ spec:
               value: {{ .Values.zeebe.ioThreadCount  | quote }}
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
-            {{- if not .Values.global.elasticsearch.disableExporter }}
+            {{- if .Values.global.elasticsearch.external }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled}}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
+              value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            {{- end}}
+            {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
@@ -101,6 +123,13 @@ spec:
               value: {{ .Values.zeebe.retention.policyName | quote }}
             {{- end }}
             {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.zeebe.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/externaldb.jks
+            {{- else }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.zeebe.javaOpts | quote }}
+            {{- end }}
             - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
               value: {{ .Values.zeebe.service.commandPort  | quote }}
             - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
@@ -111,12 +140,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.zeebe.javaOpts | quote }}
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-          {{- if .Values.zeebe.command}}
+          {{- if .Values.zeebe.command }}
           command: {{ toYaml .Values.zeebe.command | nindent 10 }}
           {{- end }}
           ports:
@@ -165,6 +192,11 @@ spec:
           resources:
             {{- toYaml .Values.zeebe.resources | nindent 12 }}
           volumeMounts:
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/zeebe/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
             - name: config
               mountPath: /usr/local/bin/startup.sh
               subPath: startup.sh
@@ -181,13 +213,25 @@ spec:
               mountPath: /usr/local/zeebe/config/log4j2.xml
               subPath: broker-log4j2.xml
             {{- end }}
-            {{- if .Values.zeebe.extraVolumeMounts}}
+            {{- if .Values.zeebe.extraVolumeMounts }}
             {{ .Values.zeebe.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
       {{- if .Values.zeebe.sidecars }}
       {{- .Values.zeebe.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
         {{- if eq .Values.zeebe.persistenceType "memory" }}
         - name: data
           emptyDir:
@@ -201,7 +245,7 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
-        {{- if .Values.zeebe.extraVolumes}}
+        {{- if .Values.zeebe.extraVolumes }}
           {{ .Values.zeebe.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       {{- if .Values.zeebe.serviceAccount.name }}
