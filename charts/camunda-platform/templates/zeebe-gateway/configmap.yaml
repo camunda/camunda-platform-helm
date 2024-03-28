@@ -15,10 +15,17 @@ data:
     {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
 {{- else }}
   application.yaml: |
-    {{- if .Values.zeebeGateway.contextPath }}
+    {{- if or .Values.zeebeGateway.contextPath .Values.global.identity.auth.enabled }}
     spring:
+      {{- if .Values.zeebeGateway.contextPath }}
       webflux:
         base-path: {{ .Values.zeebeGateway.contextPath | quote }}
+      {{- end }}
+
+      {{- if .Values.global.identity.auth.enabled }}
+      profiles:
+        active: "identity-auth"
+      {{- end }}
     {{- end }}
 
     server:

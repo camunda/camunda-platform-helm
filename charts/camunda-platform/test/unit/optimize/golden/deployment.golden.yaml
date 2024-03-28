@@ -48,6 +48,13 @@ spec:
             runAsNonRoot: true
             runAsUser: 1001
           env:
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
           volumeMounts:
             - mountPath: /tmp
               name: tmp

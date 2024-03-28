@@ -201,7 +201,7 @@ testcases:
     script: |
       zbctl --clientCache=/tmp/zeebe \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
-          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGrpc }}" \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGRPC }}" \
           {{ .coreVars.zbctl.extraArgs }} \
           status
     retry: 2
@@ -214,21 +214,21 @@ testcases:
     - result.systemout ShouldContainSubstring "Leader, Healthy"
     - result.systemout ShouldNotContainSubstring Unhealthy
     - result.timeseconds ShouldBeLessThan 1
-  # TODO: Enable with Zeebe Gateway REST is ready.
-  # - name: Check Zeebe Gateway status - REST
-  #   type: http
-  #   method: GET
-  #   url: "{{ .coreVars.baseURLs.zeebeGatewayRest }}/api/v1/topology"
-  #   headers:
-  #     Content-Type: application/json
-  #   retry: 2
-  #   delay: 10
-  #   # info: |
-  #   #  = Request Body: {{ .result.request.body }}
-  #   #  = Response Body: {{ .result.body }}
-  #   assertions:
-  #   - result.statuscode ShouldEqual 200
-  #   - result.bodyjson ShouldContainKey brokers
+  - name: Check Zeebe Gateway status - REST
+    type: http
+    method: GET
+    url: "{{ .coreVars.baseURLs.zeebeGatewayREST }}/v1/topology"
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+    retry: 2
+    delay: 10
+    info: |
+     = Request Body: {{ .result.request.body }}
+     = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson ShouldContainKey brokers
 
 - name: TEST - Deploying BPMN process
   steps:
@@ -242,7 +242,7 @@ testcases:
     script: |
       zbctl --clientCache=/tmp/zeebe \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
-          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGrpc }}" \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGRPC }}" \
           {{ .coreVars.zbctl.extraArgs }} \
           deploy /mnt/fixtures/{{ .value.file }}
     # info: |

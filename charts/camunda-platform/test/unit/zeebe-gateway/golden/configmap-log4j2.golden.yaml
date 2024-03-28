@@ -17,6 +17,9 @@ data:
     <xml>
     </xml>
   application.yaml: |
+    spring:
+      profiles:
+        active: "identity-auth"
 
     server:
       address: "0.0.0.0"

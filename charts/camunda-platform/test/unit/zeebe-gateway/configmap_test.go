@@ -86,4 +86,28 @@ func (s *configmapTemplateTest) TestZeebeMultiTenancyEnabled() {
 
 	// then
 	s.Require().Equal(true, configmapApplication.Zeebe.Gateway.MultiTenancy.Enabled)
+	s.Require().Equal(true, configmapApplication.Zeebe.Broker.Gateway.MultiTenancy.Enabled)
+}
+
+func (s *configmapTemplateTest) TestZeebeIdentityAuthenticationEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.enabled": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication camunda.ZeebeApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+	// then
+	s.Require().Equal("identity", configmapApplication.Zeebe.Gateway.Security.Authentication.Mode)
+	s.Require().Equal("identity-auth", configmapApplication.Spring.Profiles.Active)
+	s.Require().Equal("zeebe-api", configmapApplication.Camunda.Identity.Audience)
+	s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendUrl)
 }
