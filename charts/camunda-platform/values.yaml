@@ -78,6 +78,8 @@ global:
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
+    ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
       ## @param global.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
@@ -244,16 +246,16 @@ global:
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8084"
 
-      ## global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
+      ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
       console:
-        ## @skip global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        ## @param global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `console-secret` field, which will be used as secret for the identity-console communication.
         existingSecret:
-        ## @skip global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
+        ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
-        ## @skip global.identity.auth.console.audience can be used to Console audience in Identity.
+        ## @param global.identity.auth.console.audience can be used to Console audience in Identity.
         audience: console-api
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
@@ -464,6 +466,8 @@ console:
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     ## @param console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
+    ## @param console.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
     ## @param console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
     host: ""
@@ -1027,6 +1031,8 @@ zeebeGateway:
         nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       ## @param zeebeGateway.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
+      ## @param zeebeGateway.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      pathType: Prefix
       ## @param zeebeGateway.ingress.grpc.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
       host: ""
@@ -1053,6 +1059,8 @@ zeebeGateway:
         nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       ## @param zeebeGateway.ingress.rest.path defines the path which is associated with the Zeebe gateway's REST service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
+      ## @param zeebeGateway.ingress.rest.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      pathType: Prefix
       ## @param zeebeGateway.ingress.rest.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
       host: ""
@@ -1181,6 +1189,8 @@ operate:
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     ## @param operate.ingress.path defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
+    ## @param operate.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
     ## @param operate.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -1489,13 +1499,14 @@ tasklist:
     ## @skip tasklist.ingress.annotations.ingress.kubernetes.io/rewrite-target
     ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     ## @param tasklist.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
+    ## @param tasklist.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
     ## @param tasklist.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -1737,6 +1748,8 @@ optimize:
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     ## @param optimize.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
+    ## @param optimize.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
     ## @param optimize.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -1979,6 +1992,8 @@ identity:
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     ## @param identity.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
+    ## @param identity.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
     ## @param identity.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -2790,6 +2805,8 @@ webModeler:
       ## @param webModeler.ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the WebModeler web application will be available
       # Note: The value must be different from ingress.websockets.host
       host: ""
+      ## @param webModeler.ingress.webapp.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      pathType: Prefix
       ## @extra webModeler.ingress.webapp.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
         ## @param webModeler.ingress.webapp.tls.enabled if true, TLS will be configured on the ingress resource
@@ -2801,6 +2818,8 @@ webModeler:
       ## @param webModeler.ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the WebModeler client in the browser will use to connect to the WebSockets server
       # Note: The value must be different from ingress.webapp.host
       host: ""
+      ## @param webModeler.ingress.websockets.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      pathType: Prefix
       ## @extra webModeler.ingress.websockets.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
         ## @param webModeler.ingress.websockets.tls.enabled if true, TLS will be configured on the ingress resource
@@ -3069,6 +3088,8 @@ connectors:
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     ## @param connectors.ingress.path defines the path which is associated with the Connectors service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
+    ## @param connectors.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
     ## @param connectors.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""

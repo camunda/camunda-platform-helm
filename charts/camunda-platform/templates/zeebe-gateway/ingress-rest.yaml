@@ -20,7 +20,7 @@ spec:
     {{- end }}
         paths:
           - path: {{ .Values.zeebeGateway.ingress.rest.path }}
-            pathType: Prefix
+            pathType: {{ .Values.zeebeGateway.ingress.rest.pathType }}
             backend:
               service:
                 name: {{ include "zeebe.names.gateway" . }}

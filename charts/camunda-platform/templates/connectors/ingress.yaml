@@ -21,7 +21,7 @@ spec:
     {{- end }}
         paths:
           - path: {{ .Values.connectors.ingress.path }}
-            pathType: Prefix
+            pathType: {{ .Values.connectors.ingress.pathType }}
             backend:
               service:
                 name: {{ include "connectors.fullname" . }}
