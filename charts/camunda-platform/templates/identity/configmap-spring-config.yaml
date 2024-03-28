@@ -12,16 +12,17 @@ data:
   {{- else }}
   application.yaml: |
     identity:
-    {{- if .Values.identity.fullURL }}
-      url: {{ tpl .Values.identity.fullURL $ | quote }}
-    {{- else }}
-      url: {{ include "identity.internalUrl" . | quote }}
-    {{- end }}
+      url: {{ include "identity.externalUrl" . | quote }}
+      {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+      flags:
+        multi-tenancy: true
+      {{- end }}
 
-    {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+      {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
       client-id: {{ include "identity.authClientId" . | default "camunda-identity" | quote }}
       client-secret: {{ include "identity.authClientSecret" . | quote }}
-    {{- end }}
+      {{- end }}
+
       authProvider:
         {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         type: {{ include "camundaPlatform.authType" . | quote }}
@@ -197,16 +198,22 @@ data:
     {{- end }}
     server:
       port: 8080
-    {{- if .Values.identity.contextPath }}
+      {{- if .Values.identity.contextPath }}
       servlet:
         context-path: {{ .Values.identity.contextPath | quote }}
-    {{- end }}
+      {{- end }}
 
     spring:
-    {{- if .Values.global.identity.auth.enabled }}
+      {{- if .Values.global.identity.auth.enabled }}
       profiles:
         active: {{ eq .Values.global.identity.auth.type "KEYCLOAK" | ternary "keycloak" "oidc" }}
-    {{- end }}
+      {{- end }}
+
+      {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+      datasource:
+        url: {{ printf "jdbc:postgresql://%s:%s/%s" (include "identity.postgresql.host" .) (include "identity.postgresql.port" .) (include "identity.postgresql.database" .) | quote }}
+        username: {{ include "identity.postgresql.username" . | quote }}
+      {{- end }}
 
     camunda:
       identity:

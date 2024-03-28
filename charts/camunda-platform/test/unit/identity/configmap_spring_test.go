@@ -61,3 +61,66 @@ func (s *configMapSpringTemplateTest) TestContainerShouldAddContextPath() {
 	s.Require().Equal("https://mydomain.com/identity", configmapApplication.Identity.Url)
 	s.Require().Equal("/identity", configmapApplication.Server.Servlet.ContextPath)
 }
+
+func (s *configMapSpringTemplateTest) TestConfigMapBuiltinDatabaseEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.multitenancy.enabled": "true",
+			"identityPostgresql.enabled":  "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.NotEmpty(configmap.Data)
+
+	s.Require().Equal("true", configmapApplication.Identity.Flags.MultiTenancy)
+	s.Require().Equal("jdbc:postgresql://camunda-platform-test-identity-postgresql:5432/identity", configmapApplication.Spring.DataSource.Url)
+	s.Require().Equal("identity", configmapApplication.Spring.DataSource.Username)
+}
+
+func (s *configMapSpringTemplateTest) TestConfigMapExternalDatabaseEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.multitenancy.enabled":        "true",
+			"identityPostgresql.enabled":         "false",
+			"identity.externalDatabase.enabled":  "true",
+			"identity.externalDatabase.host":     "my-database-host",
+			"identity.externalDatabase.port":     "2345",
+			"identity.externalDatabase.database": "my-database-name",
+			"identity.externalDatabase.username": "my-database-username",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.NotEmpty(configmap.Data)
+
+	s.Require().Equal("true", configmapApplication.Identity.Flags.MultiTenancy)
+	s.Require().Equal("jdbc:postgresql://my-database-host:2345/my-database-name", configmapApplication.Spring.DataSource.Url)
+	s.Require().Equal("my-database-username", configmapApplication.Spring.DataSource.Username)
+}

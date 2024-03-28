@@ -35,7 +35,6 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: identity
       annotations:
-        checksum/configmap-env-vars: 4128f1c505cd30066686397de348f600f9fde410954338037994e4953fea5acc
     spec:
       imagePullSecrets:
         []
@@ -139,9 +138,6 @@ spec:
               value: "Web Modeler"
             - name: KEYCLOAK_USERS_0_ROLES_5
               value: "Console"
-          envFrom:
-            - configMapRef:
-                name: camunda-platform-test-identity-config-env-vars
           resources:
             limits:
               cpu: 2000m

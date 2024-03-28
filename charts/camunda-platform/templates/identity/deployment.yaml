@@ -17,7 +17,6 @@ spec:
         {{- toYaml .Values.identity.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/configmap-env-vars: {{ include (print $.Template.BasePath "/identity/configmap-env-vars.yaml") . | sha256sum }}
       {{- if .Values.identity.podAnnotations }}
         {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
       {{- end }}
@@ -226,9 +225,6 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "identity.fullname" . }}-config-env-vars
           {{- if .Values.identity.command}}
           command: {{ toYaml .Values.identity.command | nindent 10 }}
           {{- end }}
