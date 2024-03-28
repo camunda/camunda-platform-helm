@@ -54,32 +54,6 @@ spec:
               value: "production"
             - name: NODE_OPTIONS
               value: "--max-old-space-size=128"
-            - name: HTTP_WORKERS
-              value: "2"
-            - name: RESTAPI_HOST
-              value: "camunda-platform-test-web-modeler-restapi"
-            - name: RESTAPI_PORT
-              value: "80"
-            - name: RESTAPI_MANAGEMENT_PORT
-              value: "8091"
-            - name: SERVER_URL
-              value: "http://localhost:8084"
-            - name: SERVER_HTTPS_ONLY
-              value: "false"
-            - name: OAUTH2_TYPE
-              value: "KEYCLOAK"
-            - name: OAUTH2_CLIENT_ID
-              value: "web-modeler"
-            - name: OAUTH2_JWKS_URL
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            - name: OAUTH2_TOKEN_AUDIENCE
-              value: "web-modeler-api"
-            - name: OAUTH2_TOKEN_ISSUER
-              value: "http://localhost:18080/auth/realms/camunda-platform"
-            - name: PUSHER_HOST
-              value: "camunda-platform-test-web-modeler-websockets"
-            - name: PUSHER_PORT
-              value: "80"
             - name: PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
@@ -95,19 +69,13 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-web-modeler
                   key: pusher-app-secret
-            - name: CLIENT_PUSHER_HOST
-              value: "localhost"
-            - name: CLIENT_PUSHER_PORT
-              value: "8085"
-            - name: CLIENT_PUSHER_FORCE_TLS
-              value: "false"
             - name: CLIENT_PUSHER_KEY
               valueFrom:
                 configMapKeyRef:
                   name: camunda-platform-test-web-modeler
                   key: pusher-app-key
-            - name: IDENTITY_BASE_URL
-              value: "http://camunda-platform-test-identity:80"
+          args:
+            - application.toml
           resources:
             limits:
               cpu: 800m
@@ -131,6 +99,14 @@ spec:
             successThreshold: 1
             failureThreshold: 5
             timeoutSeconds: 1
+          volumeMounts:
+            - name: config
+              mountPath: /home/webapp/application.toml
+              subPath: application.toml
+      volumes:
+        - name: config
+          configMap:
+            name: camunda-platform-test-web-modeler-webapp
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

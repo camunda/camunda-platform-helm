@@ -14,8 +14,29 @@ metadata:
     app.kubernetes.io/component: tasklist
 data:
   application.yml: |
+    spring:
+      profiles:
+        active: identity-auth
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+              jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+    camunda:
+      identity:
+        clientId: "tasklist"
+        audience: "tasklist-api"
+
     # Tasklist configuration file
     camunda.tasklist:
+
+      identity:
+        redirectRootUrl: "http://localhost:8082"
+        userAccessRestrictions:
+          enabled: "true"
+
       # Set Tasklist username and password.
       # If user with <username> does not exists it will be created.
       # Default: demo/demo

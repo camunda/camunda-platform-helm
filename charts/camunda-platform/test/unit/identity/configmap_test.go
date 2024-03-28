@@ -1,33 +1,19 @@
-// Copyright 2022 Camunda Services GmbH
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package identity
 
 import (
-	"path/filepath"
-	"strings"
-	"testing"
-
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
+	"path/filepath"
+	"strings"
+	"testing"
 )
 
-type configMapTemplateTest struct {
+type configMapSpringTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -35,26 +21,53 @@ type configMapTemplateTest struct {
 	templates []string
 }
 
-func TestConfigMapTemplate(t *testing.T) {
+func TestSpringConfigMapTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configMapTemplateTest{
+	suite.Run(t, &configMapSpringTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/identity/configmap-env-vars.yaml"},
+		templates: []string{"templates/identity/configmap.yaml"},
 	})
 }
 
-func (s *configMapTemplateTest) TestConfigMapBuiltinDatabaseEnabled() {
+func (s *configMapSpringTemplateTest) TestContainerShouldAddContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.fullURL":     "https://mydomain.com/identity",
+			"identity.contextPath": "/identity",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("https://mydomain.com/identity", configmapApplication.Identity.Url)
+	s.Require().Equal("/identity", configmapApplication.Server.Servlet.ContextPath)
+}
+
+func (s *configMapSpringTemplateTest) TestConfigMapBuiltinDatabaseEnabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled": "true",
+			"identityPostgresql.enabled":  "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -62,23 +75,28 @@ func (s *configMapTemplateTest) TestConfigMapBuiltinDatabaseEnabled() {
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
 	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
 
 	// then
 	s.NotEmpty(configmap.Data)
-	s.Require().Equal("true", configmap.Data["MULTITENANCY_ENABLED"])
-	s.Require().Equal("camunda-platform-test-identity-postgresql", configmap.Data["IDENTITY_DATABASE_HOST"])
-	s.Require().Equal("5432", configmap.Data["IDENTITY_DATABASE_PORT"])
-	s.Require().Equal("identity", configmap.Data["IDENTITY_DATABASE_NAME"])
-	s.Require().Equal("identity", configmap.Data["IDENTITY_DATABASE_USERNAME"])
+
+	s.Require().Equal("true", configmapApplication.Identity.Flags.MultiTenancy)
+	s.Require().Equal("jdbc:postgresql://camunda-platform-test-identity-postgresql:5432/identity", configmapApplication.Spring.DataSource.Url)
+	s.Require().Equal("identity", configmapApplication.Spring.DataSource.Username)
 }
 
-func (s *configMapTemplateTest) TestConfigMapExternalDatabaseEnabled() {
+func (s *configMapSpringTemplateTest) TestConfigMapExternalDatabaseEnabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled":        "true",
-			"identityPostgresql.enabled":        "false",
+			"identityPostgresql.enabled":         "false",
 			"identity.externalDatabase.enabled":  "true",
 			"identity.externalDatabase.host":     "my-database-host",
 			"identity.externalDatabase.port":     "2345",
@@ -91,13 +109,18 @@ func (s *configMapTemplateTest) TestConfigMapExternalDatabaseEnabled() {
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
 	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
 
 	// then
 	s.NotEmpty(configmap.Data)
-	s.Require().Equal("true", configmap.Data["MULTITENANCY_ENABLED"])
-	s.Require().Equal("my-database-host", configmap.Data["IDENTITY_DATABASE_HOST"])
-	s.Require().Equal("2345", configmap.Data["IDENTITY_DATABASE_PORT"])
-	s.Require().Equal("my-database-name", configmap.Data["IDENTITY_DATABASE_NAME"])
-	s.Require().Equal("my-database-username", configmap.Data["IDENTITY_DATABASE_USERNAME"])
+
+	s.Require().Equal("true", configmapApplication.Identity.Flags.MultiTenancy)
+	s.Require().Equal("jdbc:postgresql://my-database-host:2345/my-database-name", configmapApplication.Spring.DataSource.Url)
+	s.Require().Equal("my-database-username", configmapApplication.Spring.DataSource.Username)
 }

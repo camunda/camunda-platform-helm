@@ -54,19 +54,11 @@ spec:
               name: http
               protocol: TCP
           env:
-            - name: SERVER_PORT
-              value: "8080"
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: "operate-api"
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: "connectors"
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-connectors-identity-secret
                   key: connectors-secret
-            - name: CAMUNDA_OPERATE_CLIENT_URL
-              value: "http://camunda-platform-test-operate:80"
             - name: ZEEBE_CLIENT_ID
               value: "zeebe"
             - name: ZEEBE_CLIENT_SECRET
@@ -78,10 +70,6 @@ spec:
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
               value: "zeebe-api"
-            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
-              value: "camunda-platform-test-zeebe-gateway:26500"
-            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
-              value: "true"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
@@ -104,9 +92,15 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - name: config
+              mountPath: /config/application.yml
+              subPath: application.yml
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: camunda-platform-test-connectors
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

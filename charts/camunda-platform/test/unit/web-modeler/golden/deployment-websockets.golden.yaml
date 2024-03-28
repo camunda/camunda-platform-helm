@@ -88,6 +88,14 @@ spec:
             successThreshold: 1
             failureThreshold: 5
             timeoutSeconds: 1
+          volumeMounts:
+            - name: config
+              mountPath: /home/webapp/config/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: camunda-platform-test-web-modeler-websockets
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

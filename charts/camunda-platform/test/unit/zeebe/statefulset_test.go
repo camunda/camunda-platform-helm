@@ -318,22 +318,6 @@ func (s *statefulSetTest) TestContainerOverwriteImageTagWithChartDirectSetting()
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
 }
 
-func (s *statefulSetTest) TestContainerShouldContainExporterClassPerDefault() {
-	// given
-	options := &helm.Options{
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", Value: "io.camunda.zeebe.exporter.ElasticsearchExporter"})
-}
-
 func (s *statefulSetTest) TestContainerDisableExporter() {
 	// given
 	options := &helm.Options{
