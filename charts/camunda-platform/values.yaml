@@ -2769,6 +2769,8 @@ webModeler:
       ## @param webModeler.ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the WebModeler client in the browser will use to connect to the WebSockets server
       # Note: The value must be different from ingress.webapp.host
       host: ""
+      ## @param webModeler.ingress.websockets.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      pathType: Prefix
       ## @extra webModeler.ingress.websockets.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
         ## @param webModeler.ingress.websockets.tls.enabled if true, TLS will be configured on the ingress resource

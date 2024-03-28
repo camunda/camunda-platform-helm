@@ -25,7 +25,7 @@ spec:
                 port:
                   number: {{ .Values.console.service.port }}
             path: {{ .Values.console.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.console.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if .Values.identity.enabled }}
           {{- if or .Values.identityKeycloak.enabled .Values.global.identity.keycloak.internal }}
@@ -35,7 +35,7 @@ spec:
                 port:
                   number: {{ include "identity.keycloak.port" . }}
             path: {{ include "identity.keycloak.contextPath" . }}
-            pathType: Prefix
+            pathType: {{ .Values.identityKeycloak.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
           {{- if and .Values.identity.contextPath (not .Values.identity.ingress.enabled) }}
@@ -45,7 +45,7 @@ spec:
                 port:
                   number: {{ .Values.identity.service.port }}
             path: {{ .Values.identity.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.identity.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- end }}
           {{- if and .Values.operate.enabled .Values.operate.contextPath }}
@@ -55,7 +55,7 @@ spec:
                 port:
                   number: {{ .Values.operate.service.port }}
             path: {{ .Values.operate.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.operate.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
           - backend:
@@ -64,7 +64,7 @@ spec:
                 port:
                   number: {{ .Values.optimize.service.port }}
             path: {{ .Values.optimize.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.optimize.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if and .Values.tasklist.enabled .Values.tasklist.contextPath }}
           - backend:
@@ -73,7 +73,7 @@ spec:
                 port:
                   number: {{ .Values.tasklist.service.port }}
             path: {{ .Values.tasklist.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.tasklist.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
           - backend:
@@ -82,14 +82,14 @@ spec:
                 port:
                   number: {{ .Values.webModeler.webapp.service.port }}
             path: {{ .Values.webModeler.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.webModeler.ingress.webapp.pathType | default .Values.global.ingress.pathType }}
           - backend:
               service:
                 name: {{ template "webModeler.websockets.fullname" . }}
                 port:
                   number:  {{ .Values.webModeler.websockets.service.port }}
             path: {{ template "webModeler.websocketContextPath" . }}
-            pathType: Prefix
+            pathType: {{ .Values.webModeler.ingress.websockets.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if and .Values.connectors.enabled .Values.connectors.contextPath }}
           - backend:
@@ -98,7 +98,7 @@ spec:
                 port:
                   number: {{ .Values.connectors.service.serverPort }}
             path: {{ .Values.connectors.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.connectors.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if and .Values.zeebe.enabled .Values.zeebeGateway.contextPath }}
           - backend:
@@ -107,7 +107,7 @@ spec:
                 port:
                   number: {{ .Values.zeebeGateway.service.restPort }}
             path: {{ .Values.zeebeGateway.contextPath }}
-            pathType: Prefix
+            pathType: {{ .Values.zeebeGateway.ingress.rest.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
   tls:

@@ -15,7 +15,7 @@ spec:
       http:
         paths:
           - path: /
-            pathType: Prefix
+            pathType: {{ .Values.webModeler.ingress.webapp.pathType }}
             backend:
               service:
                 name: {{ include "webModeler.webapp.fullname" . }}
@@ -25,7 +25,7 @@ spec:
       http:
         paths:
           - path: /
-            pathType: Prefix
+            pathType: {{ .Values.webModeler.ingress.websockets.pathType }}
             backend:
               service:
                 name: {{ include "webModeler.websockets.fullname" . }}

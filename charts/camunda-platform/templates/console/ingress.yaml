@@ -20,7 +20,7 @@ spec:
     {{- end }}
         paths:
           - path: {{ .Values.console.ingress.path }}
-            pathType: Prefix
+            pathType: {{ .Values.console.ingress.pathType }}
             backend:
               service:
                 name: {{ include "console.fullname" . }}
