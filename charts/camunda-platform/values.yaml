@@ -89,21 +89,70 @@ global:
 
   # Elasticsearch configuration which is shared between the sub charts
   ## @extra global.elasticsearch
+  ## @param global.elasticsearch.enabled if true, enables elasticsearch for all components
+  ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
+  ## @extra global.elasticsearch.tls 
+  ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
+  ## @extra global.elasticsearch.auth
+  ## @param global.elasticsearch.auth.username the username for external elasticsearch
+  ## @param global.elasticsearch.auth.password the password for external elasticsearch
+  ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
+  ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
-    ## @param global.elasticsearch.disableExporter if true, disables the elastic exporter in zeebe
+    enabled: true
+    external: false
+    tls:
+      enabled: false
+      existingSecret:
+    auth:
+      username:
+      password:
+      existingSecret:
+      existingSecretKey:
+      ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
     disableExporter: false
-    ## @param global.elasticsearch.url can be used to configure the URL to access elasticsearch, if not set services fallback to host and port configuration
+    ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
+    ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
+    ## @param global.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
+    ## @param global.elasticsearch.url.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
     url:
-    ## @param global.elasticsearch.protocol defines the elasticsearch access protocol, by default HTTP.
-    protocol: http
-    ## @param global.elasticsearch.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
-    host: "{{ .Release.Name }}-elasticsearch"
-    ## @param global.elasticsearch.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
-    port: 9200
+      protocol: http
+      host: "{{ .Release.Name }}-elasticsearch"
+      port: 9200
     ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
+  # Opensearch configuration which is shared between the sub charts
+  ## @extra global.opensearch
+  ## @param global.opensearch.enabled enabled external opensearch
+  ## @extra global.opensearch.tls 
+  ## @param global.opensearch.tls.enabled enable tls for external opensearch
+  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
+  ## @extra global.opensearch.auth
+  ## @param global.opensearch.auth.username the username for external opensearch
+  ## @param global.opensearch.auth.password the password for external opensearch
+  ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
+  ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
+  opensearch:
+    enabled: false
+    tls:
+      enabled: false
+      existingSecret:
+    auth:
+      username:
+      password:
+      existingSecret:
+      existingSecretKey:
+    ## @extra global.opensearch.url Configuration to configure opensearch url
+    ## @param global.opensearch.url.protocol defines the external opensearch access protocol
+    ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
+    ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
+    url:
+      protocol: https
+      host:
+      port: 443
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
   ## @param global.zeebePort defines the port which is used for the ZeebeGateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.
