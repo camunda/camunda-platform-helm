@@ -20,7 +20,7 @@ spec:
     {{- end }}
         paths:
           - path: {{ .Values.tasklist.ingress.path }}
-            pathType: Prefix
+            pathType: {{ .Values.tasklist.ingress.pathType }}
             backend:
               service:
                 name: {{ include "tasklist.fullname" . }}
