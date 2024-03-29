@@ -20,7 +20,7 @@ data:
             args:
               {{- if .Values.global.elasticsearch.external }}
               authentication:
-                username: value: {{ .Values.global.elasticsearch.auth.username | quote }}
+                username: {{ .Values.global.elasticsearch.auth.username | quote }}
               {{- end }}
               url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
               index:
@@ -37,7 +37,7 @@ data:
             args:
               url: {{ include "camundaPlatform.opensearchURL" . | quote }}
               authentication:
-                username: value: {{ .Values.global.opensearch.auth.username | quote }}
+                username: {{ .Values.global.opensearch.auth.username | quote }}
         {{- end }}
     
         {{- end }}
