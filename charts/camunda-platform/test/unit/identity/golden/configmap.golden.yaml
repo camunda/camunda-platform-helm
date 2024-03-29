@@ -23,6 +23,15 @@ data:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
         backend-url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
     keycloak:
+      environment:
+        clients:
+          - name: Identity
+            id: "camunda-identity"
+            type: CONFIDENTIAL
+            secret: ${IDENTITY_CLIENT_SECRET:}
+            root-url: ""
+            redirect-uris:
+              - "/auth/login-callback"
       presets:
         tasklist:
           clients:

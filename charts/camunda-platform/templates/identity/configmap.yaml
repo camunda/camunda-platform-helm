@@ -157,6 +157,19 @@ data:
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
     keycloak:
+      environment:
+        clients:
+          - name: Identity
+            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+            id: {{  printf "%s" (include "identity.authClientId" .) | default "camunda-identity" | quote }}
+            {{- else }}
+            id: "camunda-identity"
+            {{- end }}
+            type: CONFIDENTIAL
+            secret: ${IDENTITY_CLIENT_SECRET:}
+            root-url: {{ include "identity.externalUrl" . | quote }}
+            redirect-uris:
+              - "/auth/login-callback"
       presets:
         tasklist:
           clients:
@@ -226,7 +239,7 @@ data:
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
-        
+
   {{- end }}
   {{- range $key, $val := .Values.identity.extraConfiguration }}
   {{ $key }}: |
