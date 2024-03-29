@@ -157,7 +157,7 @@ spec:
             - name: keystore
               mountPath: /usr/local/zeebe/certificates/externaldb.jks
               subPath: externaldb.jks
-            {{- end }} subPath: startup.sh
+            {{- end }} 
             {{- if not ( eq .Values.zeebe.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/zeebe/data
