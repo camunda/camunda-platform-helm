@@ -38,6 +38,36 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if .Values.global.elasticsearch.external }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled }}
+              {{- if eq .Values.global.opensearch.url.protocol "https" }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
+            - name: CAMUNDA_OPTIMIZE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
+              value: {{ .Values.global.opensearch.url.port | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
+              value: {{ include "camundaPlatform.opensearchHost" . | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
+            {{- end }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -51,6 +81,11 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /optimize/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - mountPath: /optimize/config/application-ccsm.yaml
               subPath: application-ccsm.yaml
@@ -75,6 +110,36 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
+            {{- if .Values.global.elasticsearch.external }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled }}
+              {{- if eq .Values.global.opensearch.url.protocol "https" }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
+            - name: CAMUNDA_OPTIMIZE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
+              value: {{ .Values.global.opensearch.url.port | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
+              value: {{ include "camundaPlatform.opensearchHost" . | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
+            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
@@ -166,6 +231,11 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /optimize/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - mountPath: /optimize/config/application-ccsm.yaml
               subPath: application-ccsm.yaml
@@ -191,6 +261,18 @@ spec:
           configMap:
             name: {{ include "optimize.fullname" . }}
             defaultMode: {{ .Values.optimize.configMap.defaultMode }}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
