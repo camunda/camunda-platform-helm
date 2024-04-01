@@ -15,17 +15,17 @@
 package operate
 
 import (
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
 )
 
 type configMapTemplateTest struct {
@@ -50,28 +50,6 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.elasticsearch.url": "elasticsearch-test",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication map[string]interface{}
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yml"], &configmapApplication)
-
-	// TODO: Move Operate config to its own struct when we have more tests.
-	elasticsearchURL := configmapApplication["camunda.operate"].(map[string]interface{})["elasticsearch"].(map[string]interface{})["url"]
-
-	// then
-	s.Require().Equal("elasticsearch-test", elasticsearchURL)
-}
 func (s *configMapTemplateTest) TestContainerShouldAddContextPath() {
 	// given
 	options := &helm.Options{

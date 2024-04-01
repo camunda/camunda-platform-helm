@@ -37,6 +37,56 @@ spec:
           securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if .Values.tasklist.contextPath }}
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.tasklist.contextPath | quote }}
+            {{- end }}
+            {{- if .Values.global.elasticsearch.external }}
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_URL
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled }}
+            - name: CAMUNDA_TASKLIST_DATABASE
+              value: opensearch
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks
+            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
@@ -90,7 +140,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.tasklist.command}}
+          {{- if .Values.tasklist.command }}
           command: {{ toYaml .Values.tasklist.command | nindent 10 }}
           {{- end }}
           resources:
@@ -151,6 +201,11 @@ spec:
               mountPath: /usr/local/tasklist/config/{{ $key }}
               subPath: {{ $key }}
             {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /app/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
             {{- if .Values.tasklist.extraVolumeMounts}}
             {{- .Values.tasklist.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -166,10 +221,22 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.tasklist.extraVolumes}}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.tasklist.extraVolumes }}
         {{- .Values.tasklist.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.tasklist.serviceAccount.name}}
+      {{- if .Values.tasklist.serviceAccount.name }}
       serviceAccountName: {{ .Values.tasklist.serviceAccount.name }}
       {{- end }}
       {{- if .Values.tasklist.podSecurityContext }}

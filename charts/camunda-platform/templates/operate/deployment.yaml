@@ -37,6 +37,52 @@ spec:
           securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            {{- if .Values.global.elasticsearch.external }}
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_URL
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_URL
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_USERNAME
+              value: {{ .Values.global.elasticsearch.auth.username | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if .Values.global.opensearch.enabled }}
+            - name: CAMUNDA_OPERATE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPERATE_OPENSEARCH_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL
+              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_OPERATE_OPENSEARCH_USERNAME
+              value: {{ .Values.global.opensearch.auth.username | quote }}
+            - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
+            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
@@ -93,7 +139,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.operate.command}}
+          {{- if .Values.operate.command }}
           command: {{ toYaml .Values.operate.command | nindent 10 }}
           {{- end }}
           resources:
@@ -151,7 +197,12 @@ spec:
               mountPath: /usr/local/operate/config/{{ $key }}
               subPath: {{ $key }}
             {{- end }}
-            {{- if .Values.operate.extraVolumeMounts}}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/operate/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
+            {{- if .Values.operate.extraVolumeMounts }}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
         {{- if .Values.operate.sidecars }}
@@ -166,10 +217,22 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
-        {{- if .Values.operate.extraVolumes}}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.operate.extraVolumes }}
         {{- .Values.operate.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.operate.serviceAccount.name}}
+      {{- if .Values.operate.serviceAccount.name }}
       serviceAccountName: {{ .Values.operate.serviceAccount.name }}
       {{- end }}
       {{- if .Values.operate.podSecurityContext }}
