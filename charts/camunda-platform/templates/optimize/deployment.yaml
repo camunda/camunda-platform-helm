@@ -39,12 +39,6 @@ spec:
           {{- end }}
           env:
             {{- if .Values.global.elasticsearch.external }}
-              {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
-              value: "true"
-              {{- end }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -121,19 +115,13 @@ spec:
           {{- end }}
           env:
             {{- if .Values.global.elasticsearch.external }}
-              {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
-              value: "true"
-              {{- end }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if .Values.global.opensearch.enabled}}
+            {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
               value: "true"

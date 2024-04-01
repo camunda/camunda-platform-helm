@@ -55,6 +55,7 @@ data:
       # Default: demo/demo
       #username:
       #password:
+      {{- if .Values.global.elasticsearch.enabled }}
       # ELS instance to store Tasklist data
       elasticsearch:
         # Cluster name
@@ -63,6 +64,20 @@ data:
         host: {{ include "camundaPlatform.elasticsearchHost" . }}
         # Transport port
         port: {{ .Values.global.elasticsearch.url.port }}
+        {{- if .Values.global.elasticsearch.url.host }}
+        # Elasticsearch full url
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- end }}
+        {{- if .Values.global.elasticsearch.external }}
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.global.opensearch.enabled }}
+      database: opensearch
+      opensearch:
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        username: {{ .Values.global.opensearch.auth.username | quote }}
+      {{- end }}
       # Zeebe instance
       zeebe:
         # Broker contact point
@@ -77,6 +92,19 @@ data:
         port: {{ .Values.global.elasticsearch.url.port }}
         # Index prefix, configured in Zeebe Elasticsearch exporter
         prefix: {{ .Values.global.elasticsearch.prefix }}
+        {{- if .Values.global.elasticsearch.url.host }}
+        # Elasticsearch full url
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- end }}
+        {{- if .Values.global.elasticsearch.external }}
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- end }}
+      {{- if .Values.global.opensearch.enabled }}
+      zeebeOpensearch:
+        opensearch:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+      {{- end }}
       {{- if .Values.tasklist.retention.enabled }}
       archiver:
         ilmEnabled: true

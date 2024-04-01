@@ -39,6 +39,9 @@ data:
     
     # Operate configuration file
     camunda.operate:
+      {{- if .Values.global.opensearch.enabled }}
+      database: opensearch
+      {{- end }}
       {{- if .Values.global.multitenancy.enabled }}
       multiTenancy:
         enabled: true
@@ -49,17 +52,21 @@ data:
       {{- end }}
     
       # ELS instance to store Operate data
+      {{- if .Values.global.elasticsearch.enabled }}
       elasticsearch:
         # Cluster name
         clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        {{- if .Values.global.elasticsearch.external }}
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- end }}
         # Host
         host: {{ include "camundaPlatform.elasticsearchHost" . }}
         # Transport port
         port: {{ .Values.global.elasticsearch.url.port }}
-      # Zeebe instance
-      zeebe:
-        # Broker contact point
-        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.global.zeebePort }}"
+        {{- if .Values.global.elasticsearch.url.host }}
+        # Elasticsearch full url
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- end }}
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name
@@ -70,6 +77,27 @@ data:
         port: {{ .Values.global.elasticsearch.url.port }}
         # Index prefix, configured in Zeebe Elasticsearch exporter
         prefix: {{ .Values.global.elasticsearch.prefix }}
+        {{- if .Values.global.elasticsearch.url.host }}
+        # Elasticsearch full url
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- end }}
+        {{- if .Values.global.elasticsearch.external }}
+        # Elasticsearch username
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.global.opensearch.enabled }}
+      opensearch:
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        username: {{ .Values.global.opensearch.auth.username | quote }}
+      zeebeOpensearch:
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        username: {{ .Values.global.opensearch.auth.username | quote }}
+      {{- end }}
+      # Zeebe instance
+      zeebe:
+        # Broker contact point
+        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.global.zeebePort }}"
       {{- if .Values.operate.retention.enabled }}
       archiver:
         ilmEnabled: true
