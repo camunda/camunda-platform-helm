@@ -45,21 +45,27 @@ Example:
 {{- end -}}
 
 {{/*
+Get the app version label according to the values of "component" or "global" values.
+Usage: {{ include "camundaPlatform.appVersionLabel" (dict "component" "zeebe" "context" $) }}
+*/}}
+{{- define "camundaPlatform.appVersionLabel" -}}
+  {{- $componentValue := (index $.context.Values .component "image" "tag") -}}
+  {{- $globalValue := (index $.context.Values.global "image" "tag") -}}
+  {{- $version := $componentValue | default $globalValue -}}
+  {{- if $version }}
+  app.kubernetes.io/version: {{ $version | quote }}
+  {{- end }}
+{{- end -}}
+
+{{/*
 Define common labels, combining the match labels and transient labels, which might change on updating
 (version depending). These labels should not be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "camundaPlatform.labels" -}}
-{{- template "camundaPlatform.matchLabels" . }}
-helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-  {{- if .Values.zeebe.image.tag }}
-app.kubernetes.io/version: {{ .Values.zeebe.image.tag | quote }}
-  {{- else if .Values.image.tag }}
-app.kubernetes.io/version: {{ .Values.image.tag | quote }}
-  {{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
-  {{- end }}
+  {{- template "camundaPlatform.matchLabels" . }}
+  helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+  {{- include "camundaPlatform.appVersionLabel" (dict "component" .component "context" $) | nindent 4 }}
 {{- end }}
-
 
 {{/*
 Common match labels, which are extended by sub-charts and should be used in matchLabels selectors.
