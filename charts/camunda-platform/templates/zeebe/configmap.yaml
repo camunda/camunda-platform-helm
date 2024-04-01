@@ -13,11 +13,15 @@ data:
   application.yaml: |
     zeebe:
       broker:
-        {{- if not .Values.global.elasticsearch.disableExporter }}
         exporters:
+        {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
           elasticsearch:
             className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             args:
+              {{- if .Values.global.elasticsearch.external }}
+              authentication:
+                username: {{ .Values.global.elasticsearch.auth.username | quote }}
+              {{- end }}
               url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
               index:
                 prefix: {{ .Values.global.elasticsearch.prefix | quote }}
@@ -27,6 +31,14 @@ data:
                 minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
+        {{- end }}
+        {{- if .Values.global.opensearch.enabled }}
+          opensearch:
+            className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            args:
+              url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+              authentication:
+                username: {{ .Values.global.opensearch.auth.username | quote }}
         {{- end }}
         gateway:
           enable: true

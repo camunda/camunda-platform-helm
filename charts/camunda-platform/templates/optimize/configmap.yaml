@@ -20,11 +20,21 @@ data:
       enabled: true
       partitionCount: {{ .Values.optimize.partitionCount }}
 
+    {{- if .Values.global.elasticsearch.enabled }}
     es:
       connection:
         nodes:
           - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
-            httpPort: {{ .Values.global.elasticsearch.port }}
+            httpPort: {{ .Values.global.elasticsearch.url.port }}
+      {{- if .Values.global.elasticsearch.external }}
+      security:
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
+        ssl:
+          enabled: "true"
+        {{- end }}
+      {{- end }}
+    {{- end }}
 
     spring:
       profiles:

@@ -91,7 +91,7 @@ global:
   ## @extra global.elasticsearch
   ## @param global.elasticsearch.enabled if true, enables elasticsearch for all components
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
-  ## @extra global.elasticsearch.tls 
+  ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
   ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
@@ -127,7 +127,7 @@ global:
   # Opensearch configuration which is shared between the sub charts
   ## @extra global.opensearch
   ## @param global.opensearch.enabled enabled external opensearch
-  ## @extra global.opensearch.tls 
+  ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
   ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
@@ -1119,7 +1119,6 @@ zeebeGateway:
         enabled: false
         ## @param zeebeGateway.ingress.rest.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: camunda-platform-zeebe-gateway-rest
-  
   # contextPath: "/zeebe"
   ## @param zeebeGateway.contextPath can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
