@@ -101,9 +101,8 @@ data:
         {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       zeebeOpensearch:
-        opensearch:
-          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-          username: {{ .Values.global.opensearch.auth.username | quote }}
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        username: {{ .Values.global.opensearch.auth.username | quote }}
       {{- end }}
       {{- if .Values.tasklist.retention.enabled }}
       archiver:
