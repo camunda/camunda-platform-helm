@@ -5,6 +5,7 @@ metadata:
   name: {{ include "zeebe.names.broker" . }}
   labels:
     {{- include "zeebe.labels.broker" . | nindent 4 }}
+    {{- include "camundaPlatform.appVersionLabel" (dict "component" "zeebe" "context" $) | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.global.annotations }}
     {{ $key }}: {{ $value | quote }}
@@ -26,6 +27,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "camundaPlatform.appVersionLabel" (dict "component" "zeebe" "context" $) | nindent 8 }}
         {{- include "zeebe.labels.broker" . | nindent 8 }}
         {{- if .Values.zeebe.podLabels }}
         {{- toYaml .Values.zeebe.podLabels | nindent 8 }}

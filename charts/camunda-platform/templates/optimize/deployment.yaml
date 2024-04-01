@@ -5,6 +5,7 @@ metadata:
   name: {{ include "optimize.fullname" . }}
   labels:
     {{- include "optimize.labels" . | nindent 4 }}
+    {{- include "camundaPlatform.appVersionLabel" (dict "component" "optimize" "context" $) | nindent 4 }}
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
@@ -14,7 +15,8 @@ spec:
       {{- include "optimize.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      labels: 
+      labels:
+        {{- include "camundaPlatform.appVersionLabel" (dict "component" "optimize" "context" $) | nindent 8 }} 
         {{- include "optimize.labels" . | nindent 8 }}
         {{- if .Values.optimize.podLabels }}
         {{- toYaml .Values.optimize.podLabels | nindent 8 }}

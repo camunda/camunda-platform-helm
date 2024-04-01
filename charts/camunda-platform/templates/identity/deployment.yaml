@@ -3,7 +3,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "identity.fullname" . }}
-  labels: {{- include "identity.labels" . | nindent 4 }}
+  labels: 
+    {{- include "identity.labels" . | nindent 4 }}
+    {{- include "camundaPlatform.appVersionLabel" (dict "component" "identity" "context" $) | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
@@ -12,6 +14,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "camundaPlatform.appVersionLabel" (dict "component" "identity" "context" $) | nindent 8 }}
         {{- include "identity.labels" . | nindent 8 }}
         {{- if .Values.identity.podLabels }}
         {{- toYaml .Values.identity.podLabels | nindent 8 }}

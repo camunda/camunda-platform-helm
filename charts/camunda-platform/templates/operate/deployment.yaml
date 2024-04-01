@@ -5,6 +5,7 @@ metadata:
   name: {{ include "operate.fullname" . }}
   labels:
     {{- include "operate.labels" . | nindent 4 }}
+    {{- include "camundaPlatform.appVersionLabel" (dict "component" "operate" "context" $) | nindent 4 }}
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
@@ -15,6 +16,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "camundaPlatform.appVersionLabel" (dict "component" "operate" "context" $) | nindent 8 }}
         {{- include "operate.labels" . | nindent 8 }}
         {{- if .Values.operate.podLabels }}
           {{- toYaml .Values.operate.podLabels | nindent 8 }}

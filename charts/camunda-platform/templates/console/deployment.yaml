@@ -5,6 +5,7 @@ metadata:
   name: {{ include "console.fullname" . }}
   labels:
     {{- include "console.labels" . | nindent 4 }}
+    {{- include "camundaPlatform.appVersionLabel" (dict "component" "console" "context" $) | nindent 4 }}
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
@@ -19,6 +20,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        {{- include "camundaPlatform.appVersionLabel" (dict "component" "console" "context" $) | nindent 8 }}
         {{- include "console.matchLabels" . | nindent 8 }}
         {{- if .Values.console.podLabels }}
           {{- toYaml .Values.console.podLabels | nindent 8 }}

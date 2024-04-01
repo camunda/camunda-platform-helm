@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "tasklist.fullname" . }}
   labels:
+    {{- include "camundaPlatform.appVersionLabel" (dict "component" "tasklist" "context" $) | nindent 4 }}
     {{- include "tasklist.labels" . | nindent 4 }}
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
@@ -15,6 +16,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "camundaPlatform.appVersionLabel" (dict "component" "tasklist" "context" $) | nindent 8 }}
         {{- include "tasklist.labels" . | nindent 8 }}
         {{- if .Values.tasklist.podLabels }}
           {{- toYaml .Values.tasklist.podLabels | nindent 8 }}
