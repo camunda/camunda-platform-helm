@@ -34,6 +34,8 @@ spec:
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: connectors
+      annotations:
+        checksum/config: 3b345e754123332ba5d6731e24b08884f428176e7aefda6b9da2ddc2141bbd4b
     spec:
       imagePullSecrets:
         []

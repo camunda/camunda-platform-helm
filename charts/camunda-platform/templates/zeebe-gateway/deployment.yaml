@@ -20,7 +20,10 @@ spec:
           {{- toYaml .Values.zeebeGateway.podLabels | nindent 8 }}
         {{- end }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/zeebe-gateway/configmap.yaml") . | sha256sum }}
+        {{- if .Values.zeebeGateway.podAnnotations }}
         {{- toYaml .Values.zeebeGateway.podAnnotations | nindent 8 }}
+        {{- end }}
     spec:
       {{- if .Values.zeebeGateway.priorityClassName }}
       priorityClassName: {{ .Values.zeebeGateway.priorityClassName | quote }}
