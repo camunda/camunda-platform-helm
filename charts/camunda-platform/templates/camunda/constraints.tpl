@@ -40,6 +40,19 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 {{- end }}
 
 {{/*
+Fail with a message if global.zeebePort is set since now it's used from Zeebe Gateway values:
+"zeebeGateway.service.grpcPort".
+Chart Version: 10.0.0
+*/}}
+{{- if (.Values.global.zeebePort) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "The global Zeebe Gateway port \"global.zeebePort\" is deprecated. Please remove it."
+      "It is now used directly via \"zeebeGateway.service.grpcPort\"."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
 ********************************************************************************
 elasticsearch and opensearch constraints
 ********************************************************************************
