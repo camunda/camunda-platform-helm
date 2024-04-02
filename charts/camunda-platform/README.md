@@ -26,7 +26,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Global parameters](#global-parameters)
   - [Console Parameters](#console-parameters)
   - [Zeebe Parameters](#zeebe-parameters)
-  - [Zeebe Gateway Parameters](#zeebe-gateway-parameters)
+  - [ZeebeGateway Parameters](#zeebegateway-parameters)
   - [Operate Parameters](#operate-parameters)
   - [Tasklist Parameters](#tasklist-parameters)
   - [Optimize Parameters](#optimize-parameters)
@@ -472,7 +472,6 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `global.opensearch.url.host`                        | defines the external opensearch host, ideally the service name inside the namespace                                                                      | `nil`                                                 |
 | `global.opensearch.url.port`                        | defines the external opensearch port, under which opensearch can be accessed                                                                             | `443`                                                 |
 | `global.zeebeClusterName`                           | ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name. | `{{ .Release.Name }}-zeebe`                           |
-| `global.zeebePort`                                  | defines the port which is used for the ZeebeGateway. This port accepts the GRPC Client messages and forwards them to the Zeebe Brokers.                  | `26500`                                               |
 | `global.identity.keycloak.internal`                 | It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.                                               | `false`                                               |
 | `global.identity.keycloak.url`                      | can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart.                | `{}`                                                  |
 | `global.identity.keycloak.contextPath`              | In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.                                                                                 | `/auth`                                               |
