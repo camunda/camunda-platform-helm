@@ -49,11 +49,16 @@ Get the app version label according to the values of "component" or "global" val
 Usage: {{ include "camundaPlatform.appVersionLabel" (dict "component" "zeebe" "context" $) }}
 */}}
 {{- define "camundaPlatform.appVersionLabel" -}}
-  {{- $componentValue := (index $.context.Values .component "image" "tag") -}}
-  {{- $globalValue := (index $.context.Values.global "image" "tag") -}}
-  {{- $version := $componentValue | default $globalValue -}}
-  {{- if $version }}
-  app.kubernetes.io/version: {{ $version | quote }}
+  {{- $globalTag := index $.context.Values.global.image "tag" -}}  
+  {{- $version := $globalTag -}}  
+  {{- if and .component (hasKey $.context.Values .component) -}} 
+    {{- $componentImageTag := index (index $.context.Values .component "image") "tag" -}}
+    {{- if $componentImageTag -}}
+      {{- $version = $componentImageTag -}} 
+    {{- end }}
+  {{- end }}
+  {{- if $version -}}
+    app.kubernetes.io/version: {{ $version | quote }}
   {{- end }}
 {{- end -}}
 
