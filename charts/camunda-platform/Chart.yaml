@@ -22,7 +22,7 @@ dependencies:
   - name: keycloak
     alias: identityKeycloak
     repository: https://charts.bitnami.com/bitnami
-    version: 19.3.4
+    version: 19.4.1
     condition: "identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql

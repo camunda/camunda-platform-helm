@@ -18,7 +18,7 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
     {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
         "The Multi-Tenancy feature \"global.multitenancy\" requires Identity enabled and configured with database."
         "Ensure that \"identity.enabled: true\" and \"global.identity.auth.enabled: true\""
-        "and Identity database is configured built-in PostgreSQL chart via \"identity.postgresql\""
+        "and Identity database is configured built-in PostgreSQL chart via \"identityPostgresql\""
         "or configure an external database via \"identity.externalDatabase\"."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
@@ -37,6 +37,19 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
+{{- end }}
+
+{{/*
+Fail with a message if global.zeebePort is set since now it's used from Zeebe Gateway values:
+"zeebeGateway.service.grpcPort".
+Chart Version: 10.0.0
+*/}}
+{{- if (.Values.global.zeebePort) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "The global Zeebe Gateway port \"global.zeebePort\" is deprecated. Please remove it."
+      "It is now used directly via \"zeebeGateway.service.grpcPort\"."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
 {{/*
