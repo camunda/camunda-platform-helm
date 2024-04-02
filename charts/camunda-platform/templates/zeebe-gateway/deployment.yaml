@@ -76,8 +76,6 @@ spec:
             - name: ZEEBE_GATEWAY_MONITORING_PORT
               value: {{ .Values.zeebeGateway.service.httpPort | quote }}
             {{- if .Values.zeebeGateway.contextPath }}
-            - name: SERVER_SERVLET_CONTEXT_PATH
-              value: {{ .Values.zeebeGateway.contextPath | quote }}
             - name: SPRING_WEBFLUX_BASEPATH
               value: {{ .Values.zeebeGateway.contextPath | quote }}              
             - name: MANAGEMENT_SERVER_BASEPATH
