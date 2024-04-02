@@ -19,6 +19,7 @@ spec:
         {{- if .Values.operate.podLabels }}
           {{- toYaml .Values.operate.podLabels | nindent 8 }}
         {{- end }}
+        service_type: webapp
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/operate/webapp-configmap.yaml") . | sha256sum }}
       {{- if .Values.operate.podAnnotations }}

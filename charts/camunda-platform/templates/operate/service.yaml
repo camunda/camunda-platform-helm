@@ -21,4 +21,5 @@ spec:
       protocol: TCP
   selector:
     {{- include "operate.matchLabels" . | nindent 4 }}
+    service_type: webapp
 {{- end }}
