@@ -18,7 +18,7 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
     {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
         "The Multi-Tenancy feature \"global.multitenancy\" requires Identity enabled and configured with database."
         "Ensure that \"identity.enabled: true\" and \"global.identity.auth.enabled: true\""
-        "and Identity database is configured built-in PostgreSQL chart via \"identity.postgresql\""
+        "and Identity database is configured built-in PostgreSQL chart via \"identityPostgresql\""
         "or configure an external database via \"identity.externalDatabase\"."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}

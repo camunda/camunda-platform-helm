@@ -23,7 +23,7 @@ Show an error message if both internal and external databases are enabled at the
 
 {{- if and .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
     {{- $errorMessage := printf "[identity][error] %s %s"
-        "The values \"identity.postgresql.enabled\" and \"identity.externalDatabase.enabled\""
+        "The values \"identityPostgresql.enabled\" and \"identity.externalDatabase.enabled\""
         "are mutually exclusive and cannot be enabled together. Only use one of either."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
