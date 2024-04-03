@@ -37,6 +37,7 @@ Define common labels for connectors, combining the match labels and transient la
 {{- define "connectors.labels" -}}
 {{- template "camundaPlatform.labels" . }}
 {{ template "connectors.extraLabels" . }}
+{{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
 {{- end -}}
 {{/*
 Defines match labels for connectors, which are extended by sub-charts and should be used in matchLabels selectors.

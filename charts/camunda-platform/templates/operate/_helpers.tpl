@@ -26,6 +26,7 @@ Define common labels for operate, combining the match labels and transient label
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "operate.extraLabels" . }}
+    {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
 {{- end -}}
 
 {{/*

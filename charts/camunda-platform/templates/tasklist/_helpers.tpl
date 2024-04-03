@@ -29,6 +29,7 @@ Define common labels for tasklist, combining the match labels and transient labe
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "tasklist.extraLabels" . }}
+    {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
 {{- end -}}
 
 {{/*

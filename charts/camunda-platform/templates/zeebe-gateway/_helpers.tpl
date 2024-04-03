@@ -34,6 +34,7 @@ app.kubernetes.io/component: zeebe-gateway
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "zeebe.extraLabels.gateway" . }}
+    {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
 {{- end -}}
 
 {{/*

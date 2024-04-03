@@ -56,6 +56,7 @@ Define common labels for identity, combining the match labels and transient labe
 {{- define "identity.labels" -}}
 {{- template "camundaPlatform.labels" . }}
 {{ template "identity.extraLabels" . }}
+{{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
 {{- end -}}
 
 {{/*

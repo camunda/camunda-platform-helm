@@ -90,6 +90,7 @@ Define common labels for Web Modeler, combining the match labels and transient l
 {{- define "webModeler.labels" -}}
 {{ template "webModeler.commonLabels" . }}
 {{ template "webModeler.extraLabels" . }}
+{{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
 {{- end -}}
 
 {{/*

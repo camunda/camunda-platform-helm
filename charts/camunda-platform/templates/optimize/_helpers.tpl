@@ -27,6 +27,7 @@ Define common labels for optimize, combining the match labels and transient labe
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "optimize.extraLabels" . }}
+    {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
 {{- end -}}
 
 {{/*
