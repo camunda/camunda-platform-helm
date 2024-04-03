@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "operate.fullname" . }}-importer
+  name: {{ include "operate.fullname" . }}-importer-configuration
   labels:
     {{- include "operate.labels" . | nindent 4 }}
 data:
@@ -100,7 +100,7 @@ data:
       # Zeebe instance
       zeebe:
         # Broker contact point
-        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.global.zeebePort }}"
+        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
       {{- if .Values.operate.retention.enabled }}
       archiver:
         ilmEnabled: true

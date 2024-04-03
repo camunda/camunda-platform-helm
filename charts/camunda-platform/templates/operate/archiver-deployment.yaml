@@ -193,7 +193,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "operate.fullname" . }}-archiver
+            name: {{ include "operate.fullname" . }}-archiver-configuration
             defaultMode: {{ .Values.operate.configMap.defaultMode }}
         - name: tmp
           emptyDir: {}

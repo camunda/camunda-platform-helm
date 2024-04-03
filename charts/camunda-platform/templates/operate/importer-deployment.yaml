@@ -193,7 +193,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "operate.fullname" . }}-importer
+            name: {{ include "operate.fullname" . }}-importer-configuration
             defaultMode: {{ .Values.operate.configMap.defaultMode }}
         - name: tmp
           emptyDir: {}
