@@ -40,7 +40,7 @@ Selector labels
 */}}
 {{- define "console.matchLabels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
-{{ template "console.extraLabels" . }}
+app.kubernetes.io/component: console
 {{- end -}}
 
 {{/*

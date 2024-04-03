@@ -886,7 +886,7 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 	// find the volumeMount named environment-config
 	var volumeMount corev1.VolumeMount
 	for _, candidateVolumeMount := range volumeMounts {
-		if candidateVolumeMount.Name == "environment-config" && candidateVolumeMount.MountPath != "/optimize/config/environment-config.yaml"  && candidateVolumeMount.MountPath != "/optimize/config/application-ccsm.yaml" {
+		if candidateVolumeMount.Name == "environment-config" && candidateVolumeMount.MountPath != "/optimize/config/environment-config.yaml" && candidateVolumeMount.MountPath != "/optimize/config/application-ccsm.yaml" {
 			volumeMount = candidateVolumeMount
 			break
 		}

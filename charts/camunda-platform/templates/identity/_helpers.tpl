@@ -64,7 +64,7 @@ Defines match labels for identity, which are extended by sub-charts and should b
 */}}
 {{- define "identity.matchLabels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
-{{ template "identity.extraLabels" . }}
+app.kubernetes.io/component: identity
 {{- end -}}
 
 {{/*
