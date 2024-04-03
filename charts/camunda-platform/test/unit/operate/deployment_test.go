@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	  http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -549,34 +549,6 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldDisableOperateIntegration() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-
-	for _, envvar := range env {
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_ISSUER_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_CLIENT_ID", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET", envvar.Name)
-	}
-
-	s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "auth"})
-}
-
 func (s *deploymentTemplateTest) TestContainerShouldSetOperateIdentitySecretValue() {
 	// given
 	options := &helm.Options{
@@ -655,56 +627,6 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	s.Require().Equal(1, len(containers))
 	pullPolicy := containers[0].ImagePullPolicy
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
-}
-
-func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"operate.contextPath": "/operate",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "SERVER_SERVLET_CONTEXT_PATH",
-			Value: "/operate",
-		},
-	)
-}
-
-func (s *deploymentTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"operate.contextPath": "/camunda/operate",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL",
-			Value: "http://localhost:8081",
-		},
-	)
 }
 
 // readinessProbe is enabled by default so it's tested by golden files.
@@ -864,22 +786,96 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 	s.Require().Contains(podContainers, expectedContainer)
 }
 
-func (s *deploymentTemplateTest) TestOperateMultiTenancyEnabled() {
+func (s *deploymentTemplateTest) TestOperateWithConfiguration() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled": "true",
+			"operate.configuration": `
+camunda.operate:
+  elasticsearch:
+    numberOfShards: 3
+			`,
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_MULTITENANCY_ENABLED", Value: "true"})
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	volumes := deployment.Spec.Template.Spec.Volumes
+
+	// find the volume named config
+	var volume corev1.Volume
+	for _, candidateVolume := range volumes {
+		if candidateVolume.Name == "config" {
+			volume = candidateVolume
+			break
+		}
+	}
+
+	// find the volumeMount named environment-config
+	var volumeMount corev1.VolumeMount
+	for _, candidateVolumeMount := range volumeMounts {
+		if candidateVolumeMount.Name == "config" && strings.Contains(candidateVolumeMount.MountPath, "application") {
+			volumeMount = candidateVolumeMount
+			break
+		}
+	}
+	s.Require().Equal("config", volumeMount.Name)
+	s.Require().Equal("/usr/local/operate/config/application.yml", volumeMount.MountPath)
+	s.Require().Equal("application.yml", volumeMount.SubPath)
+
+	s.Require().Equal("config", volume.Name)
+	s.Require().Equal("camunda-platform-test-operate-configuration", volume.ConfigMap.Name)
+}
+
+func (s *deploymentTemplateTest) TestOperateWithLog4j2Configuration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			// unfortunately, this testing library does not accept periods in the keys so I had to leave
+			// out a period here.
+			"operate.extraConfiguration.log4j2xml": `
+<configuration></configuration>
+			`,
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	volumes := deployment.Spec.Template.Spec.Volumes
+
+	// find the volume named environment-config
+	var volume corev1.Volume
+	for _, candidateVolume := range volumes {
+		if candidateVolume.Name == "config" {
+			volume = candidateVolume
+			break
+		}
+	}
+
+	// find the volumeMount named environment-config
+	var volumeMount corev1.VolumeMount
+	for _, candidateVolumeMount := range volumeMounts {
+		if candidateVolumeMount.Name == "config" && strings.Contains(candidateVolumeMount.MountPath, "log4j2") {
+			volumeMount = candidateVolumeMount
+			break
+		}
+	}
+	s.Require().Equal("config", volumeMount.Name)
+	s.Require().Equal("/usr/local/operate/config/log4j2xml", volumeMount.MountPath)
+	s.Require().Equal("log4j2xml", volumeMount.SubPath)
+
+	s.Require().Equal("config", volume.Name)
+	s.Require().Equal("camunda-platform-test-operate-configuration", volume.ConfigMap.Name)
 }

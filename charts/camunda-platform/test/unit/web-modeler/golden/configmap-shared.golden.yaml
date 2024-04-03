@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-web-modeler
+  name: camunda-platform-test-web-modeler-configuration
   labels:
     app: camunda-platform
     app.kubernetes.io/name: web-modeler

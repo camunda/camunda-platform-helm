@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: operate
       annotations:
-        checksum/config: d3181d8bbf1c416d82082f846923bc5e0c41abfa846a76e22e9b4fbee8310523
+        checksum/config: e1bb53ab3b1e1e9c0de2c9709eb25fbfc191d2e41eeeaeb6f299838fb2fd06c2
     spec:
       imagePullSecrets:
         []
@@ -52,23 +52,11 @@ spec:
             runAsNonRoot: true
             runAsUser: 1001
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "identity-auth"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: "operate"
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-operate-identity-secret
                   key: operate-secret
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: "operate-api"
-            - name: CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL
-              value: "http://localhost:8081"
             - name: ZEEBE_CLIENT_ID
               value: "zeebe"
             - name: ZEEBE_CLIENT_SECRET
@@ -117,7 +105,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-operate
+            name: camunda-platform-test-operate-configuration
             defaultMode: 484
         - name: tmp
           emptyDir: {}

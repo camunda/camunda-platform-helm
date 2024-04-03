@@ -38,6 +38,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: zeebe-broker
       annotations:
+        checksum/config: 3975916697161092a2c137501fc0114d11cdc543ecd1edc63ea7507489807538
     spec:
       imagePullSecrets:
         []
@@ -73,20 +74,8 @@ spec:
                 $(K8S_SERVICE_NAME)-0.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
                 $(K8S_SERVICE_NAME)-1.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
                 $(K8S_SERVICE_NAME)-2.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
-            - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
-              value: camunda-platform-test-zeebe
             - name: ZEEBE_LOG_LEVEL
               value: "info"
-            - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-              value: "3"
-            - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
-              value: "3"
-            - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
-              value: "3"
-            - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
-              value: "3"
-            - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
-              value: "3"
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
@@ -97,12 +86,6 @@ spec:
               value: "zeebe-record"
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
-            - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
-              value: "26501"
-            - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
-              value: "26502"
-            - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
-              value: "9600"
             - name: K8S_POD_NAME
               valueFrom:
                 fieldRef:
@@ -147,10 +130,13 @@ spec:
               mountPath: /exporters
             - mountPath: /tmp
               name: tmp
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe
+            name: camunda-platform-test-zeebe-configuration
             defaultMode: 492
         - name: exporters
           emptyDir: {}

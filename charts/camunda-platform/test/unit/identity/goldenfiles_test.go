@@ -34,7 +34,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 		"service",
 		"serviceaccount",
 		"deployment",
-		"configmap-env-vars",
+		"configmap",
 	}
 
 	for _, name := range templateNames {

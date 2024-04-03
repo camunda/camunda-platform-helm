@@ -19,8 +19,9 @@ spec:
         {{- if .Values.optimize.podLabels }}
         {{- toYaml .Values.optimize.podLabels | nindent 8 }}
         {{- end }}
-      {{- if .Values.optimize.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/optimize/configmap.yaml") . | sha256sum }}
+      {{- if .Values.optimize.podAnnotations }}
         {{- toYaml .Values.optimize.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
@@ -39,12 +40,6 @@ spec:
           {{- end }}
           env:
             {{- if .Values.global.elasticsearch.external }}
-              {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
-              value: "true"
-              {{- end }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -74,10 +69,6 @@ spec:
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
             {{- end }}
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-              value: "true"
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-              value: {{ .Values.optimize.partitionCount | quote }}
             {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
@@ -94,6 +85,19 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            {{- if .Values.global.identity.auth.enabled }}
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            {{- end }}
+            {{- range $key, $val := .Values.optimize.extraConfiguration }}
+            - name: environment-config
+              mountPath: /optimize/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
               mountPath: /optimize/certificates/externaldb.jks
@@ -112,19 +116,13 @@ spec:
           {{- end }}
           env:
             {{- if .Values.global.elasticsearch.external }}
-              {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
-              value: "true"
-              {{- end }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if .Values.global.opensearch.enabled}}
+            {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
               value: "true"
@@ -151,10 +149,6 @@ spec:
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
               value: {{ .Values.optimize.contextPath | quote }}
             {{- end }}
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-              value: "true"
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-              value: {{ .Values.optimize.partitionCount | quote }}
             {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
@@ -162,12 +156,8 @@ spec:
               value: {{ .Values.global.elasticsearch.url.port | quote }}
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
-              value: "ccsm"
+              value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "optimize.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
@@ -185,15 +175,7 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: optimize-secret
               {{- end }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "optimize.authAudience" . | quote }}
-            - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
-              value: "optimize-api"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
-              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
               {{- end }}
-            - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
-              value: "false"
             {{- if .Values.global.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
               value: "true"
@@ -263,6 +245,19 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            {{- if .Values.global.identity.auth.enabled }}
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            {{- end }}
+            {{- range $key, $val := .Values.optimize.extraConfiguration }}
+            - name: environment-config
+              mountPath: /optimize/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
               mountPath: /optimize/certificates/externaldb.jks
@@ -279,6 +274,10 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
+        - name: environment-config
+          configMap:
+            name: {{ include "optimize.fullname" . }}-configuration
+            defaultMode: {{ .Values.optimize.configMap.defaultMode }}
         {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore
           secret:

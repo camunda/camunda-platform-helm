@@ -76,3 +76,4 @@ app.kubernetes.io/component: zeebe-broker
 {{- define "zeebe.tokenScope"}}
     {{- .Values.global.identity.auth.zeebe.tokenScope -}}
 {{- end -}}
+

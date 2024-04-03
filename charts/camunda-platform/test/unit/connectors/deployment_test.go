@@ -701,18 +701,10 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeDisabled() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 
 	for _, envvar := range env {
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_USERNAME", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_PASSWORD", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-ID", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET", envvar.Name)
 	}
 
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CONNECTOR_POLLING_ENABLED", Value: "false"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", Value: "false"})
 }
 
 func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
@@ -735,18 +727,9 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 
 	for _, envvar := range env {
-		s.Require().NotEqual("CAMUNDA_CONNECTOR_POLLING_ENABLED", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_KEYCLOAK-TOKEN-URL", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-ID", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_CLIENT-SECRET", envvar.Name)
 		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
 	}
-
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_USERNAME", Value: "connectors"})
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{
@@ -774,15 +757,10 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 
 	for _, envvar := range env {
-		s.Require().NotEqual("CAMUNDA_CONNECTOR_POLLING_ENABLED", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_CONNECTOR_WEBHOOK_ENABLED", envvar.Name)
 		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_USERNAME", envvar.Name)
 		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_PASSWORD", envvar.Name)
 	}
 
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS", Value: "camunda-platform-test-zeebe-gateway:26500"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_SECURITY_PLAINTEXT", Value: "true"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_ID", Value: "zeebe"})
 	s.Require().Contains(
 		env,
@@ -797,9 +775,6 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 		})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_AUTHORIZATION_SERVER_URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_TOKEN_AUDIENCE", Value: "zeebe-api"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_CLIENT_URL", Value: "http://camunda-platform-test-operate:80"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_IDENTITY_AUDIENCE", Value: "operate-api"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_IDENTITY_CLIENT_ID", Value: "connectors"})
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{
@@ -811,27 +786,6 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 				},
 			},
 		})
-}
-
-func (s *deploymentTemplateTest) TestContainerSetContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"connectors.enabled":     "true",
-			"connectors.contextPath": "/connectors",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-
-	s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SERVLET_CONTEXT_PATH", Value: "/connectors"})
 }
 
 func (s *deploymentTemplateTest) TestContainerSetSidecar() {
