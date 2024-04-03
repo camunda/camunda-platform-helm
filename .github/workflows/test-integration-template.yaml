@@ -65,7 +65,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      deployments: write
     strategy:
       fail-fast: false
       matrix:
@@ -110,6 +109,14 @@ jobs:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
+    # Used to create/delete GitHub environment.
+    # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
+    - name: Generate GitHub token
+      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+      id: generate-github-token
+      with:
+        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.distro.platform == 'gke'
@@ -160,7 +167,7 @@ jobs:
       id: deployment
       with:
         step: start
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     # TODO: Remove all logic for extra-values-file-setup-only.yaml after Camunda 8.5 cycle is done.
@@ -208,7 +215,7 @@ jobs:
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: finish
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ steps.generate-github-token.outputs.token }}
         status: ${{ job.status }}
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env_url: https://${{ steps.vars.outputs.ingress-host }}
@@ -227,15 +234,12 @@ jobs:
     - name: Get failed Pods info
       if: failure()
       uses: ./.github/actions/failed-pods-info
-    # TODO: Use "step: delete-env" to delete the env when the permission issue is fixed.
-    # Even using GH app token with deployment write access doesn't work.
-    # https://github.com/bobheadxi/deployments/issues/145
     - name: Cleanup GitHub deployment
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
-        step: deactivate-env
-        token: ${{ secrets.GITHUB_TOKEN }}
+        step: delete-env
+        token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
@@ -255,6 +259,14 @@ jobs:
       deployments: write
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    # Used to create/delete GitHub environment.
+    # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
+    - name: Generate GitHub token
+      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+      id: generate-github-token
+      with:
+        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
     - name: Set PR vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -274,8 +286,8 @@ jobs:
       if: always()
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
-        step: deactivate-env
-        token: ${{ secrets.GITHUB_TOKEN }}
+        step: delete-env
+        token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
