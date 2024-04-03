@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: 8.5.0-RC2
+    app.kubernetes.io/version: "8.5.0-RC2"
   annotations:
 spec:
   replicas: 3
@@ -23,7 +23,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-broker
-      app.kubernetes.io/version: 8.5.0-RC2
+      app.kubernetes.io/version: "8.5.0-RC2"
   serviceName: "camunda-platform-test-zeebe"
   updateStrategy:
     type: RollingUpdate
@@ -37,9 +37,9 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: 8.5.0-RC2
+        app.kubernetes.io/version: "8.5.0-RC2"
       annotations:
-        checksum/config: bc35e2afa17767d621db8257c529098454a385b70d194a133d3a5778d5114811
+        checksum/config: d47f05ffb2f81718eea8331492f8b9c4353fa3f4528d0580445d929639e3ca0a
     spec:
       imagePullSecrets:
         []

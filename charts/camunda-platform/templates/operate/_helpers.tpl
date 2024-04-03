@@ -16,7 +16,7 @@ Defines extra labels for operate.
 */}}
 {{ define "operate.extraLabels" -}}
 app.kubernetes.io/component: operate
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
 {{- end }}
 
 {{/*

@@ -47,7 +47,7 @@ Defines extra labels for identity.
 */}}
 {{- define "identity.extraLabels" -}}
 app.kubernetes.io/component: identity
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
 {{- end -}}
 
 {{/*

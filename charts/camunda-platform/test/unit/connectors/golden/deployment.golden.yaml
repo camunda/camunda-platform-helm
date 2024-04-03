@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: 8.4.6
+    app.kubernetes.io/version: "8.4.6"
   annotations:
     {}
 spec:
@@ -24,7 +24,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: connectors
-      app.kubernetes.io/version: 8.4.6
+      app.kubernetes.io/version: "8.4.6"
   template:
     metadata:
       labels:
@@ -34,9 +34,9 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: 8.4.6
+        app.kubernetes.io/version: "8.4.6"
       annotations:
-        checksum/config: 52e35609f0c8f26ce16cbed335eaa5626fe0eafba9e4b3d543d393ebe40cec4e
+        checksum/config: acd5c711153206452a51a809493e907f46126aab458b48c51ca5eb0590d6c869
     spec:
       imagePullSecrets:
         []
