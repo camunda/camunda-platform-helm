@@ -852,7 +852,7 @@ es:
 	s.Require().Equal("environment-config.yaml", volumeMount.SubPath)
 
 	s.Require().Equal("environment-config", volume.Name)
-	s.Require().Equal("camunda-platform-test-optimize", volume.ConfigMap.Name)
+	s.Require().Equal("camunda-platform-test-optimize-configuration", volume.ConfigMap.Name)
 }
 
 func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
@@ -896,5 +896,5 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 	s.Require().Equal("environment-logbackxml", volumeMount.SubPath)
 
 	s.Require().Equal("environment-config", volume.Name)
-	s.Require().Equal("camunda-platform-test-optimize", volume.ConfigMap.Name)
+	s.Require().Equal("camunda-platform-test-optimize-configuration", volume.ConfigMap.Name)
 }

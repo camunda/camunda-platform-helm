@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: 2d0e09277d1588143fd0ade17aeb5aeda94d7df89f212439e59b9732dd0edaca
+        checksum/config: 6d681528ffb55fd2c594ae55901b525512ab80bda2795447398fb1c66613fefd
     spec:
       imagePullSecrets:
         []
@@ -110,7 +110,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-tasklist
+            name: camunda-platform-test-tasklist-configuration
             defaultMode: 484
         - name: tmp
           emptyDir: {}

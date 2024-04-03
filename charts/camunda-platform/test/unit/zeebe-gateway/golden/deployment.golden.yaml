@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: zeebe-gateway
       annotations:
-        checksum/config: efd62aef08726dec5af207a82fd737ba59730b6be61490b30f9b242cb6a26575
+        checksum/config: 7b6069ff090cede7496a50541e97fcaa022fe198a2cfaafc16331e28596514fb
     spec:
       imagePullSecrets:
         []
@@ -105,7 +105,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-gateway
+            name: camunda-platform-test-zeebe-gateway-configuration
             defaultMode: 484
       securityContext:
         fsGroup: 1001

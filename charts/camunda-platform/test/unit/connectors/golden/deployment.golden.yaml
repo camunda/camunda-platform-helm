@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: connectors
       annotations:
-        checksum/config: 3b345e754123332ba5d6731e24b08884f428176e7aefda6b9da2ddc2141bbd4b
+        checksum/config: a4f1ef50637254d9eb25cc41a9571a3363e993b5da07b875579e8deb69a7e07d
     spec:
       imagePullSecrets:
         []
@@ -102,7 +102,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: camunda-platform-test-connectors
+            name: camunda-platform-test-connectors-configuration
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

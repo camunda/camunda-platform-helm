@@ -60,12 +60,12 @@ spec:
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
-                  name: camunda-platform-test-web-modeler
+                  name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-id
             - name: RESTAPI_PUSHER_KEY
               valueFrom:
                 configMapKeyRef:
-                  name: camunda-platform-test-web-modeler
+                  name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-key
             - name: RESTAPI_PUSHER_SECRET
               valueFrom:
@@ -108,7 +108,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: camunda-platform-test-web-modeler-restapi
+            name: camunda-platform-test-web-modeler-restapi-configuration
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

@@ -38,7 +38,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: zeebe-broker
       annotations:
-        checksum/config: 45566d9d0c32d74c73382b0bd1a5067e6cb659c72c90be6c4e5f245a4cbdf755
+        checksum/config: 3975916697161092a2c137501fc0114d11cdc543ecd1edc63ea7507489807538
     spec:
       imagePullSecrets:
         []
@@ -136,7 +136,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe
+            name: camunda-platform-test-zeebe-configuration
             defaultMode: 492
         - name: exporters
           emptyDir: {}

@@ -300,7 +300,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "identity.fullname" . }}
+            name: {{ include "identity.fullname" . }}-configuration
         {{- if .Values.identity.extraVolumes}}
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

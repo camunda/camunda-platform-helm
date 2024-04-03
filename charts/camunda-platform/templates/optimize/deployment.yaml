@@ -276,7 +276,7 @@ spec:
           emptyDir: {}
         - name: environment-config
           configMap:
-            name: {{ include "optimize.fullname" . }}
+            name: {{ include "optimize.fullname" . }}-configuration
             defaultMode: {{ .Values.optimize.configMap.defaultMode }}
         {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore

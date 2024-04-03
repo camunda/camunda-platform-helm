@@ -49,12 +49,12 @@ spec:
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
+                  name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-id
             - name: RESTAPI_PUSHER_KEY
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
+                  name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-key
             - name: RESTAPI_PUSHER_SECRET
               valueFrom:
@@ -133,7 +133,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "webModeler.fullname" . }}-restapi
+            name: {{ include "webModeler.fullname" . }}-restapi-configuration
         {{- if .Values.webModeler.restapi.extraVolumes }}
         {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

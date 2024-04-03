@@ -830,7 +830,7 @@ camunda.operate:
 	s.Require().Equal("application.yml", volumeMount.SubPath)
 
 	s.Require().Equal("config", volume.Name)
-	s.Require().Equal("camunda-platform-test-operate", volume.ConfigMap.Name)
+	s.Require().Equal("camunda-platform-test-operate-configuration", volume.ConfigMap.Name)
 }
 
 func (s *deploymentTemplateTest) TestOperateWithLog4j2Configuration() {
@@ -877,5 +877,5 @@ func (s *deploymentTemplateTest) TestOperateWithLog4j2Configuration() {
 	s.Require().Equal("log4j2xml", volumeMount.SubPath)
 
 	s.Require().Equal("config", volume.Name)
-	s.Require().Equal("camunda-platform-test-operate", volume.ConfigMap.Name)
+	s.Require().Equal("camunda-platform-test-operate-configuration", volume.ConfigMap.Name)
 }

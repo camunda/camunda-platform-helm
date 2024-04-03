@@ -1,7 +1,7 @@
 {{- if .Values.zeebe.enabled -}}
 kind: ConfigMap
 metadata:
-  name: {{ include "zeebe.fullname.gateway" . }}
+  name: {{ include "zeebe.fullname.gateway" . }}-configuration
   labels:
     {{- include "zeebe.labels.gateway" . | nindent 4 }}
 apiVersion: v1

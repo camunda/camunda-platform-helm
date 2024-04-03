@@ -139,7 +139,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "zeebe.fullname.gateway" . }}
+            name: {{ include "zeebe.fullname.gateway" . }}-configuration
             defaultMode: {{ .Values.zeebeGateway.configMap.defaultMode }}
         {{- if .Values.zeebeGateway.extraVolumes}}
         {{- .Values.zeebeGateway.extraVolumes | toYaml | nindent 8 }}

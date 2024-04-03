@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "connectors.fullname" . }}
+  name: {{ include "connectors.fullname" . }}-configuration
   labels:
     {{- include "connectors.labels" . | nindent 4 }}
 data:

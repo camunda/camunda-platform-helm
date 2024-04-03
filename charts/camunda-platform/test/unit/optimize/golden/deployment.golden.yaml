@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: optimize
       annotations:
-        checksum/config: a8df6e2f7c0eac3af0b19e32c9e09c8b617059b9fde2f3a646b674cd89d76add
+        checksum/config: 3707c07a28696d6d5c68762f39c8a9ddd3bc7412af4597b4cd69d41c8bae7dd1
     spec:
       imagePullSecrets:
         []
@@ -139,7 +139,7 @@ spec:
           emptyDir: {}
         - name: environment-config
           configMap:
-            name: camunda-platform-test-optimize
+            name: camunda-platform-test-optimize-configuration
             defaultMode: 492
       securityContext:
         fsGroup: 1001

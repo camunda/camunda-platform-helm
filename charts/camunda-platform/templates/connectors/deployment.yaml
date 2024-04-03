@@ -150,7 +150,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "connectors.fullname" . }}
+            name: {{ include "connectors.fullname" . }}-configuration
       {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}

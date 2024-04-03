@@ -1,7 +1,7 @@
 {{- if .Values.optimize.enabled -}}
 kind: ConfigMap
 metadata:
-  name: {{ include "optimize.fullname" . }}
+  name: {{ include "optimize.fullname" . }}-configuration
   labels:
     {{- include "optimize.labels" . | nindent 4 }}
 apiVersion: v1

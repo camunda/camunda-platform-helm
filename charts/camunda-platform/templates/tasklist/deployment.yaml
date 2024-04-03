@@ -197,7 +197,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "tasklist.fullname" . }}
+            name: {{ include "tasklist.fullname" . }}-configuration
             defaultMode: {{ .Values.tasklist.configMap.defaultMode }}
         - name: tmp
           emptyDir: {}

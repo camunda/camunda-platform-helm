@@ -38,12 +38,12 @@ spec:
             - name: PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
+                  name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-id
             - name: PUSHER_APP_KEY
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
+                  name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-key
             - name: PUSHER_APP_SECRET
               valueFrom:
@@ -116,7 +116,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "webModeler.fullname" . }}-websockets
+            name: {{ include "webModeler.fullname" . }}-websockets-configuration
       {{- if .Values.webModeler.websockets.extraVolumes }}
       {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
