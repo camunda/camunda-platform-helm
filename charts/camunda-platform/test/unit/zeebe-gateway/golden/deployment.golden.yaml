@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.5.0-alpha2"
     app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: 8.5.0-RC2
   annotations:
     {}
 spec:
@@ -24,6 +24,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-gateway
+      app.kubernetes.io/version: 8.5.0-RC2
   template:
     metadata:
       labels:
@@ -32,10 +33,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: zeebe-gateway
+        app.kubernetes.io/version: 8.5.0-RC2
       annotations:
-        checksum/config: 7b6069ff090cede7496a50541e97fcaa022fe198a2cfaafc16331e28596514fb
+        checksum/config: 287f371844b75f4f5cf52ba9a29b831bbca7d39d64b2739208f2e6682f253ebd
     spec:
       imagePullSecrets:
         []

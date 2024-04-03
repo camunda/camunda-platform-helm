@@ -24,6 +24,7 @@ Defines extra labels for console.
 */}}
 {{- define "console.extraLabels" -}}
 app.kubernetes.io/component: console
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 {{- end -}}
 
 {{/*
@@ -32,7 +33,6 @@ Common labels
 {{- define "console.labels" -}}
 {{- template "camundaPlatform.labels" . }}
 {{ template "console.extraLabels" . }}
-{{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 {{- end -}}
 
 {{/*

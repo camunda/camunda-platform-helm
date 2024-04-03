@@ -1,9 +1,9 @@
 ---
-# Source: camunda-platform/templates/identity/serviceaccount.yaml
+# Source: camunda-platform/templates/identity/configmap-env-vars.yaml
 apiVersion: v1
-kind: ServiceAccount
+kind: ConfigMap
 metadata:
-  name: camunda-platform-test-identity
+  name: camunda-platform-test-identity-config-env-vars
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -12,4 +12,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: 8.5.0-alpha2
-automountServiceAccountToken: true
+  annotations:
+    {}
+data:
+  IDENTITY_URL: ""

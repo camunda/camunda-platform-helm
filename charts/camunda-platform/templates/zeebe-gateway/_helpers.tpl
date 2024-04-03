@@ -24,6 +24,7 @@
 */}}
 {{ define "zeebe.extraLabels.gateway" -}}
 app.kubernetes.io/component: zeebe-gateway
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
 {{- end }}
 
 {{/*
@@ -34,7 +35,6 @@ app.kubernetes.io/component: zeebe-gateway
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "zeebe.extraLabels.gateway" . }}
-    {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
 {{- end -}}
 
 {{/*

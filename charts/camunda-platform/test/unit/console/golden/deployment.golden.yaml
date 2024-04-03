@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.5.0-alpha2"
     app.kubernetes.io/component: console
+    app.kubernetes.io/version: 8.5.0
   annotations:
     {}
 spec:
@@ -24,10 +24,11 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: console
+      app.kubernetes.io/version: 8.5.0
   template:
     metadata:
       annotations:
-        checksum/config: ee4f8fb96962f8257e7ebcc2159792324864a68147f7e43c43413242ff76ad39
+        checksum/config: be4b151386942efbd504c5d6a6a655c3690bc6451bda93126184cd1924765440
       labels:
         app: camunda-platform
         app.kubernetes.io/name: camunda-platform
@@ -35,6 +36,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: console
+        app.kubernetes.io/version: 8.5.0
     spec:
       imagePullSecrets:
         []

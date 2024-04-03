@@ -51,15 +51,6 @@ Define common labels, combining the match labels and transient labels, which mig
 {{- define "camundaPlatform.labels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-{{- if .Values.image }}
-    {{- if .Values.image.tag }}
-app.kubernetes.io/version: {{ .Values.image.tag | quote }}
-    {{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
-    {{- end }}
-{{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
-{{- end }}
 {{- end }}
 
 {{/*

@@ -47,6 +47,7 @@ Defines extra labels for identity.
 */}}
 {{- define "identity.extraLabels" -}}
 app.kubernetes.io/component: identity
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
 {{- end -}}
 
 {{/*
@@ -56,7 +57,6 @@ Define common labels for identity, combining the match labels and transient labe
 {{- define "identity.labels" -}}
 {{- template "camundaPlatform.labels" . }}
 {{ template "identity.extraLabels" . }}
-{{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
 {{- end -}}
 
 {{/*
