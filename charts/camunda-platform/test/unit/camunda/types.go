@@ -1,8 +1,8 @@
 package camunda
 
 type ZeebeApplicationYAML struct {
-	Zeebe ZeebeYAML `yaml:"zeebe"`
-	Spring SpringYAML `yaml:"spring"`
+	Zeebe   ZeebeYAML   `yaml:"zeebe"`
+	Spring  SpringYAML  `yaml:"spring"`
 	Camunda CamundaYAML `yaml:"camunda"`
 }
 
@@ -12,7 +12,7 @@ type ZeebeYAML struct {
 }
 
 type BrokerYAML struct {
-	Gateway GatewayYAML `yaml:"gateway"`
+	Gateway   GatewayYAML   `yaml:"gateway"`
 	Exporters ExportersYAML `yaml:"exporters"`
 }
 
@@ -26,7 +26,7 @@ type ElasticsearchYAML struct {
 
 type GatewayYAML struct {
 	MultiTenancy MultiTenancyYAML `yaml:"multitenancy"`
-	Security SecurityYAML `yaml:"security"`
+	Security     SecurityYAML     `yaml:"security"`
 }
 
 type SecurityYAML struct {
@@ -54,6 +54,6 @@ type CamundaYAML struct {
 }
 
 type IdentityYAML struct {
-	Audience string `yaml:"audience"`
+	Audience         string `yaml:"audience"`
 	IssuerBackendUrl string `yaml:"issuerBackendUrl"`
 }

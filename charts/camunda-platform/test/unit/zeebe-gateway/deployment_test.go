@@ -126,8 +126,8 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.registry":          "global.custom.registry.io",
-			"global.image.tag":               "8.x.x",
+			"global.image.registry":         "global.custom.registry.io",
+			"global.image.tag":              "8.x.x",
 			"zeebeGateway.image.registry":   "subchart.custom.registry.io",
 			"zeebeGateway.image.repository": "camunda/zeebe-test",
 			"zeebeGateway.image.tag":        "snapshot",
@@ -167,7 +167,7 @@ func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.pullSecrets[0].name":        "SecretName",
+			"global.image.pullSecrets[0].name":       "SecretName",
 			"zeebeGateway.image.pullSecrets[0].name": "SecretNameSubChart",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -207,7 +207,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag":        "a.b.c",
+			"global.image.tag":       "a.b.c",
 			"zeebeGateway.image.tag": "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -229,7 +229,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.tag":        "x.y.z",
+			"global.image.tag":       "x.y.z",
 			"zeebeGateway.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -796,4 +796,3 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
-
