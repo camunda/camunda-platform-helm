@@ -42,8 +42,7 @@ app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "
 */}}
 {{- define "zeebe.matchLabels.gateway" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-    {{- "\n" }}
-    {{- include "zeebe.extraLabels.gateway" . }}
+app.kubernetes.io/component: zeebe-gateway
 {{- end -}}
 
 {{/*

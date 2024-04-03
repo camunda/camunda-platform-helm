@@ -34,8 +34,7 @@ Defines match labels for operate, which are extended by sub-charts and should be
 */}}
 {{- define "operate.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-    {{- "\n" }}
-    {{- include "operate.extraLabels" . }}
+app.kubernetes.io/component: operate
 {{- end -}}
 
 {{/*

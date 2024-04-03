@@ -35,8 +35,7 @@ Defines match labels for optimize, which are extended by sub-charts and should b
 */}}
 {{- define "optimize.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-    {{- "\n" }}
-    {{- include "optimize.extraLabels" . }}
+app.kubernetes.io/component: optimize
 {{- end -}}
 
 {{/*

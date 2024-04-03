@@ -55,7 +55,7 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identityPostgresql.enabled":        "false",
+			"identityPostgresql.enabled":         "false",
 			"identity.externalDatabase.enabled":  "true",
 			"identity.externalDatabase.password": "super-secure-ext",
 		},

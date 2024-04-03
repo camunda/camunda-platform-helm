@@ -22,7 +22,6 @@ spec:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-gateway
-    app.kubernetes.io/version: "8.5.0-RC2"
   ports:
     - port: 9600
       protocol: TCP
