@@ -486,6 +486,14 @@ Zeebe templates.
   {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Zeebe Gateway GRPC external URL.
+*/}}
+{{- define "camundaPlatform.zeebeGatewayGRPCExternalURL" -}}
+  {{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.grpc.tls.enabled -}}
+  {{- printf "%s://%s" $proto .Values.zeebeGateway.ingress.grpc.host -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -570,7 +578,7 @@ Release templates.
     id: zeebeGateway
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}
     urls:
-      grpc: grpc://{{ tpl .Values.zeebeGateway.ingress.grpc.host $ }}
+      grpc: {{ include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
       http: {{ include "camundaPlatform.zeebeGatewayExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.metrics.prometheus }}
