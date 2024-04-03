@@ -489,7 +489,7 @@ Zeebe templates.
 {{/*
 [camunda-platform] Zeebe Gateway GRPC external URL.
 */}}
-{{- define "camundaPlatform.zeebeGatewayGRPCExternalURL" }}
+{{- define "camundaPlatform.zeebeGatewayGRPCExternalURL" -}}
   {{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.grpc.tls.enabled -}}
   {{- printf "%s://%s" $proto .Values.zeebeGateway.ingress.grpc.host -}}
 {{- end -}}
