@@ -24,7 +24,6 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: tasklist
-      app.kubernetes.io/version: "8.5.0-alpha2"
   template:
     metadata:
       labels:
