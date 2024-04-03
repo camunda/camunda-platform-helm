@@ -51,15 +51,6 @@ Define common labels, combining the match labels and transient labels, which mig
 {{- define "camundaPlatform.labels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-{{- if .Values.image }}
-    {{- if .Values.image.tag }}
-app.kubernetes.io/version: {{ .Values.image.tag | quote }}
-    {{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
-    {{- end }}
-{{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -145,15 +136,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: camunda-platform
 helm.sh/chart: identity-{{ .Chart.Version | replace "+" "_" }}
-{{- if .Values.identity.image }}
-{{- if .Values.identity.image.tag }}
-app.kubernetes.io/version: {{ .Values.identity.image.tag | quote }}
-{{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
-{{- end }}
-{{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
-{{- end }}
 app.kubernetes.io/component: identity
 {{- end }}
 

@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.5.0-alpha2"
     app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: "8.5.0-RC2"
 spec:
   minAvailable: 1
   selector:
@@ -22,3 +22,4 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-gateway
+      app.kubernetes.io/version: "8.5.0-RC2"

@@ -17,6 +17,7 @@ Defines extra labels for optimize.
 */}}
 {{ define "optimize.extraLabels" -}}
 app.kubernetes.io/component: optimize
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) | quote }}
 {{- end }}
 
 {{/*

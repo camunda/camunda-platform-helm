@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.5.0-alpha2"
     app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.5.0-alpha2"
   annotations:
 spec:
   type: ClusterIP
@@ -31,3 +31,4 @@ spec:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.5.0-alpha2"
