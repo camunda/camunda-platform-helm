@@ -91,7 +91,7 @@ global:
   ## @extra global.elasticsearch
   ## @param global.elasticsearch.enabled if true, enables elasticsearch for all components
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
-  ## @extra global.elasticsearch.tls 
+  ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
   ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
@@ -127,7 +127,7 @@ global:
   # Opensearch configuration which is shared between the sub charts
   ## @extra global.opensearch
   ## @param global.opensearch.enabled enabled external opensearch
-  ## @extra global.opensearch.tls 
+  ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
   ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
@@ -828,6 +828,11 @@ zeebe:
     ## @param zeebe.retention.policyName defines the name of the created and applied ILM policy.
     policyName: zeebe-record-retention-policy
 
+  ## @param zeebe.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
+
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
 #    #  #  #    #   #      #    #  #  #   # #
@@ -1117,6 +1122,10 @@ zeebeGateway:
   ## @param zeebeGateway.contextPath can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
+  ## @param zeebeGateway.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
 
 ################################################
  #####
@@ -1338,6 +1347,10 @@ operate:
     ## @param operate.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
 
+  ## @param operate.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  extraConfiguration: {}
 
 ##################################################
 #######
@@ -1557,6 +1570,11 @@ tasklist:
     ## @param tasklist.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
 
+  ## @param tasklist.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
+
 #############################################
  #####
 #     # #####  ##### # #    # # ###### ######
@@ -1611,6 +1629,12 @@ optimize:
   # contextPath: "/optimize"
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
+
+  ## @extra optimize.configMap configuration which will be applied to the mounted config map.
+  configMap:
+    ## @param optimize.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0754
 
   ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations
   podAnnotations: {}
@@ -1782,6 +1806,11 @@ optimize:
       enabled: false
       ## @param optimize.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-optimize
+
+  ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
+  configuration: ""
+  ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
+  extraConfiguration: {}
 
 
 ############################################
@@ -2042,6 +2071,11 @@ identity:
     password:
     existingSecret:
     existingSecretPasswordKey:
+
+  ## @param identity.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  extraConfiguration: {}
 
 # Identity.
 #####   ####   ####  #####  ####  #####  ######  ####   ####  #
@@ -2492,6 +2526,12 @@ webModeler:
       ## @param webModeler.restapi.service.managementPort defines the management port of the service
       managementPort: 8091
 
+    ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
+    configuration: ""
+    ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    extraConfiguration: {}
+
+
   # WebModeler.
   #    # ###### #####    ##   #####  #####
   #    # #      #    #  #  #  #    # #    #
@@ -2638,6 +2678,11 @@ webModeler:
       ## @param webModeler.webapp.service.managementPort defines the management port of the service
       managementPort: 8071
 
+    ## @param webModeler.webapp.configuration if specified, contents will be used as the application.yaml
+    configuration: ""
+    ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    extraConfiguration: {}
+
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
   #    # #      #    # #      #    # #    # #   #  #        #   #
@@ -2773,6 +2818,10 @@ webModeler:
       type: ClusterIP
       ## @param webModeler.websockets.service.port defines the port of the service
       port: 80
+    ## @param webModeler.websockets.configuration if specified, contents will be used as the application.yaml
+    configuration: ""
+    ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    extraConfiguration: {}
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
   serviceAccount:
@@ -3124,6 +3173,11 @@ connectors:
   tolerations: []
   ## @param connectors.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
+  ## @param connectors.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  extraConfiguration: {}
+
 
 #####################################################################################
 #######

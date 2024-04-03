@@ -17,7 +17,7 @@ spec:
         {{- toYaml .Values.identity.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/configmap-env-vars: {{ include (print $.Template.BasePath "/identity/configmap-env-vars.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/zeebe/configmap.yaml") . | sha256sum }}
       {{- if .Values.identity.podAnnotations }}
         {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
       {{- end }}
@@ -34,14 +34,8 @@ spec:
           securityContext: {{- toYaml .Values.identity.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.identity.contextPath }}
-            - name: IDENTITY_BASE_PATH
-              value: {{ .Values.identity.contextPath | quote }}
-            {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
-            - name: SPRING_PROFILES_ACTIVE
-              value: keycloak
             - name: KEYCLOAK_INIT_OPERATE_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
               valueFrom:
@@ -59,8 +53,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: operate-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_CONSOLE_SECRET
               {{- if and .Values.global.identity.auth.console.existingSecret (not (typeIs "string" .Values.global.identity.auth.console.existingSecret)) }}
               valueFrom:
@@ -78,8 +70,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "console") }}
                   key: console-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_TASKLIST_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
@@ -97,8 +87,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: tasklist-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
@@ -116,8 +104,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: optimize-secret
               {{- end }}
-            - name: KEYCLOAK_INIT_OPTIMIZE_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_ZEEBE_NAME
@@ -182,10 +168,6 @@ spec:
               value: "write:*"
             - name: KEYCLOAK_URL
               value: {{ include "identity.keycloak.url" . | quote }}
-            - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
-              value: {{ include "identity.issuerBackendUrl" . | quote }}
             - name: KEYCLOAK_SETUP_USER
               value: {{ include "identity.keycloak.authAdminUser" . | quote }}
             - name: KEYCLOAK_SETUP_PASSWORD
@@ -228,44 +210,12 @@ spec:
             {{- end }}
             {{- end }}
             {{- else }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: oidc
-            - name: CAMUNDA_IDENTITY_BASEURL
-              value: {{ include "identity.internalUrl" . | quote }}
-            - name: CAMUNDA_IDENTITY_TYPE
-              value: {{ include "camundaPlatform.authType" . | quote }}
-            - name: CAMUNDA_IDENTITY_ISSUER
-              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: IDENTITY_INITIAL_CLAIM_NAME
               value: {{ .Values.global.identity.auth.identity.initialClaimName }}
             - name: IDENTITY_INITIAL_CLAIM_VALUE
               value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "identity.authClientId" . | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              value: {{ include "identity.authClientSecret" . | quote }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "identity.authAudience" . | quote }}
-            - name: CAMUNDA_OPERATE_AUDIENCE
-              value: {{ include "operate.authAudience" . | quote }}
-            - name: CAMUNDA_TASKLIST_AUDIENCE
-              value: {{ include "tasklist.authAudience" . | quote }}
-            - name: CAMUNDA_OPTIMIZE_AUDIENCE
-              value: {{ include "optimize.authAudience" . | quote }}
-            - name: CAMUNDA_WEBMODELER_AUDIENCE
-              value: {{ .Values.global.identity.auth.webModeler.clientApiAudience }}
-            - name: CAMUNDA_WEBMODELER_PUBLIC_AUDIENCE
-              value: {{ .Values.global.identity.auth.webModeler.publicApiAudience }}
-            - name: CAMUNDA_ZEEBE_AUDIENCE
-              value: {{ .Values.global.identity.auth.zeebe.audience }}
-            - name: CAMUNDA_CONSOLE_AUDIENCE
-              value: {{ .Values.global.identity.auth.console.audience }}
             {{- end }}
             {{- end }}
-            - name: SERVER_PORT
-              value: "8080"
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
               valueFrom:
@@ -276,9 +226,6 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "identity.fullname" . }}-config-env-vars
           {{- if .Values.identity.command}}
           command: {{ toYaml .Values.identity.command | nindent 10 }}
           {{- end }}
@@ -294,7 +241,7 @@ spec:
           {{- if .Values.identity.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
               path: {{ .Values.identity.startupProbe.probePath }}
               scheme: {{ .Values.identity.startupProbe.scheme }}
               port: metrics
@@ -307,7 +254,7 @@ spec:
           {{- if .Values.identity.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
               path: {{ .Values.identity.readinessProbe.probePath }}
               scheme: {{ .Values.identity.readinessProbe.scheme }}
               port: metrics
@@ -320,7 +267,7 @@ spec:
           {{- if .Values.identity.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              {{- /* NOTE: Identity doesn't support contextPath for health endpoints. */}}
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
               path: {{ .Values.identity.livenessProbe.probePath }}
               scheme: {{ .Values.identity.livenessProbe.scheme }}
               port: metrics
@@ -333,6 +280,14 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - name: config
+              mountPath: /app/config/application.yaml
+              subPath: application.yaml
+          {{- range $key, $val := .Values.identity.extraConfiguration }}
+            - name: config
+              mountPath: /app/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
             {{- if .Values.identity.extraVolumeMounts}}
               {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -343,6 +298,9 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "identity.fullname" . }}-configuration
         {{- if .Values.identity.extraVolumes}}
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

@@ -37,24 +37,12 @@ spec:
           securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.operate.contextPath }}
-            - name: SERVER_SERVLET_CONTEXT_PATH
-              value: {{ .Values.operate.contextPath | quote }}
-            {{- end }}
             {{- if .Values.global.elasticsearch.external }}
-            - name: CAMUNDA_OPERATE_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -62,21 +50,11 @@ spec:
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
             {{- if .Values.global.opensearch.enabled }}
-            - name: CAMUNDA_OPERATE_DATABASE
-              value: opensearch
-            - name: CAMUNDA_OPERATE_OPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_OPERATE_OPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
             - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -88,14 +66,6 @@ spec:
               value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "identity-auth"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
-              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "operate.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
               valueFrom:
@@ -118,14 +88,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: operate-secret
               {{- end }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "operate.authAudience" . | quote }}
-            {{- /*
-              TODO: Remove the trimSuffix when it's fixed in Operate.
-              https://github.com/camunda/camunda-platform-helm/issues/714
-            */}}
-            - name: CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | trimSuffix .Values.operate.contextPath | quote }}
             - name: ZEEBE_CLIENT_ID
               value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
             - name: ZEEBE_CLIENT_SECRET
@@ -148,13 +110,6 @@ spec:
             - name: ZEEBE_TOKEN_SCOPE
               value: {{ include "zeebe.tokenScope" . | quote }}
             {{- end }}
-            {{- else }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "auth"
-            {{- end }}
-            {{- if .Values.global.multitenancy.enabled }}
-            - name: CAMUNDA_OPERATE_MULTITENANCY_ENABLED
-              value: "true"
             {{- end }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_auth_cache
@@ -219,6 +174,11 @@ spec:
               mountPath: /tmp
             - name: camunda
               mountPath: /camunda
+            {{- range $key, $val := .Values.operate.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/operate/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
               mountPath: /usr/local/operate/certificates/externaldb.jks
@@ -233,7 +193,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "operate.fullname" . }}
+            name: {{ include "operate.fullname" . }}-configuration
             defaultMode: {{ .Values.operate.configMap.defaultMode }}
         - name: tmp
           emptyDir: {}

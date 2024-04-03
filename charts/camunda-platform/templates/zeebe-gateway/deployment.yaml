@@ -20,7 +20,10 @@ spec:
           {{- toYaml .Values.zeebeGateway.podLabels | nindent 8 }}
         {{- end }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/zeebe-gateway/configmap.yaml") . | sha256sum }}
+        {{- if .Values.zeebeGateway.podAnnotations }}
         {{- toYaml .Values.zeebeGateway.podAnnotations | nindent 8 }}
+        {{- end }}
     spec:
       {{- if .Values.zeebeGateway.priorityClassName }}
       priorityClassName: {{ .Values.zeebeGateway.priorityClassName | quote }}
@@ -45,8 +48,6 @@ spec:
           env:
             - name: ZEEBE_STANDALONE_GATEWAY
               value: "true"
-            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
-              value: {{ tpl .Values.global.zeebeClusterName . }}
             - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
               valueFrom:
                 fieldRef:
@@ -57,50 +58,10 @@ spec:
               value: {{ .Values.zeebeGateway.javaOpts | quote }}
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
-            - name: SERVER_ADDRESS
-              value: 0.0.0.0
-            - name: SERVER_PORT
-              value: {{  .Values.zeebeGateway.service.restPort | quote }}
-            - name: ZEEBE_GATEWAY_NETWORK_HOST
-              value: 0.0.0.0
-            - name: ZEEBE_GATEWAY_NETWORK_PORT
-              value: {{ .Values.zeebeGateway.service.grpcPort | quote }}
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: ZEEBE_GATEWAY_CLUSTER_PORT
-              value: {{ .Values.zeebeGateway.service.internalPort | quote }}
-            - name: ZEEBE_GATEWAY_MONITORING_HOST
-              value: 0.0.0.0
-            - name: ZEEBE_GATEWAY_MONITORING_PORT
-              value: {{ .Values.zeebeGateway.service.httpPort | quote }}
-            {{- if .Values.zeebeGateway.contextPath }}
-            - name: SPRING_WEBFLUX_BASEPATH
-              value: {{ .Values.zeebeGateway.contextPath | quote }}              
-            - name: MANAGEMENT_SERVER_BASEPATH
-              value: {{ .Values.zeebeGateway.contextPath | quote }}
-            {{- end }}
-            {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_IDENTITY_TYPE
-              value: {{ include "camundaPlatform.authType" . | quote }}
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
-              value: "identity"
-            - name: SPRING_PROFILES_ACTIVE
-              value: "identity-auth"
-            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "zeebe.audience" . | quote }}
-            {{- end }}
-            {{- if .Values.global.multitenancy.enabled }}
-            - name: ZEEBE_GATEWAY_MULTITENANCY_ENABLED
-              value: "true"
-            - name: ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED
-              value: "true"
-            - name: CAMUNDA_IDENTITY_BASE_URL
-              value: {{ include "camundaPlatform.identityURL" . | quote }}
-            {{- end }}
             {{- with .Values.zeebeGateway.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -115,6 +76,14 @@ spec:
             - name: config
               mountPath: /usr/local/zeebe/config/log4j2.xml
               subPath: gateway-log4j2.xml
+            {{- end }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
+            {{- range $key, $val := .Values.zeebeGateway.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/{{ $key }}
+              subPath: {{ $key }}
             {{- end }}
             {{- if .Values.zeebeGateway.extraVolumeMounts}}
             {{ .Values.zeebeGateway.extraVolumeMounts | toYaml | nindent 12 }}
@@ -170,7 +139,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "zeebe.fullname.gateway" . }}
+            name: {{ include "zeebe.fullname.gateway" . }}-configuration
             defaultMode: {{ .Values.zeebeGateway.configMap.defaultMode }}
         {{- if .Values.zeebeGateway.extraVolumes}}
         {{- .Values.zeebeGateway.extraVolumes | toYaml | nindent 8 }}

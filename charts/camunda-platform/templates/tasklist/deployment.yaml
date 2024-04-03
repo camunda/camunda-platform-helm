@@ -42,19 +42,11 @@ spec:
               value: {{ .Values.tasklist.contextPath | quote }}
             {{- end }}
             {{- if .Values.global.elasticsearch.external }}
-            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username | quote }}
             - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -62,21 +54,11 @@ spec:
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
             {{- if .Values.global.opensearch.enabled }}
-            - name: CAMUNDA_TASKLIST_DATABASE
-              value: opensearch
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL
-              value: {{ include "camundaPlatform.opensearchURL" . | quote }}
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
             - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
             - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -88,14 +70,6 @@ spec:
               value: -Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "identity-auth"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
-              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "tasklist.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
@@ -113,16 +87,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: tasklist-secret
               {{- end }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "tasklist.authAudience" . | quote }}
-            - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
-              value: {{ .Values.tasklist.identity.userAccessRestrictions.enabled | quote }}
-            {{- /*
-              TODO: Remove the trimSuffix when it's fixed in Tasklist.
-              https://github.com/camunda/camunda-platform-helm/issues/714
-            */}}
-            - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix .Values.tasklist.contextPath | quote }}
             - name: ZEEBE_CLIENT_ID
               value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
             - name: ZEEBE_CLIENT_SECRET
@@ -145,18 +109,11 @@ spec:
             - name: ZEEBE_TOKEN_SCOPE
               value: {{ include "zeebe.tokenScope" . | quote }}
             {{- end }}
-            {{- else }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "auth"
-            {{- end }}
-            {{- if .Values.global.multitenancy.enabled }}
-            - name: CAMUNDA_TASKLIST_MULTITENANCY_ENABLED
-              value: "true"
-            {{- end }}
             - name: HOME
               value: /parent
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_auth_cache
+            {{- end }}
             {{- with .Values.tasklist.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -221,6 +178,11 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            {{- range $key, $val := .Values.tasklist.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/tasklist/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
               mountPath: /app/certificates/externaldb.jks
@@ -235,7 +197,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "tasklist.fullname" . }}
+            name: {{ include "tasklist.fullname" . }}-configuration
             defaultMode: {{ .Values.tasklist.configMap.defaultMode }}
         - name: tmp
           emptyDir: {}

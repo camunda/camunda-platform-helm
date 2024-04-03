@@ -16,8 +16,10 @@ spec:
         {{- if .Values.connectors.podLabels }}
         {{- toYaml .Values.connectors.podLabels | nindent 8 }}
         {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/connectors/configmap.yaml") . | sha256sum }}
       {{- if .Values.connectors.podAnnotations }}
-      annotations: {{- toYaml .Values.connectors.podAnnotations | nindent 8 }}
+      {{- toYaml .Values.connectors.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
@@ -35,23 +37,7 @@ spec:
               name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
-            - name: SERVER_PORT
-              value: {{ .Values.connectors.service.serverPort | quote }}
-            {{- if .Values.connectors.contextPath }}
-            - name: SERVER_SERVLET_CONTEXT_PATH
-              value: {{ .Values.connectors.contextPath | quote }}
-            {{- end }}
-          {{- if eq .Values.connectors.inbound.mode "disabled" }}
-            - name: CAMUNDA_CONNECTOR_POLLING_ENABLED
-              value: "false"
-            - name: CAMUNDA_CONNECTOR_WEBHOOK_ENABLED
-              value: "false"
-          {{- end }}
           {{- if eq .Values.connectors.inbound.mode "credentials" }}
-            - name: CAMUNDA_OPERATE_CLIENT_URL
-              value: {{ include "camundaPlatform.operateURL" . | quote }}
-            - name: CAMUNDA_OPERATE_CLIENT_USERNAME
-              value: connectors
             - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -60,10 +46,6 @@ spec:
           {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.connectors.inbound.mode "oauth" }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "operate.authAudience" . | quote }}
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ include "connectors.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
               valueFrom:
@@ -76,8 +58,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
                   key: connectors-secret
               {{- end }}
-            - name: CAMUNDA_OPERATE_CLIENT_URL
-              value: {{ include "camundaPlatform.operateURL" . | quote }}
             {{- end }}
             - name: ZEEBE_CLIENT_ID
               value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
@@ -102,10 +82,6 @@ spec:
               value: {{ include "zeebe.tokenScope" . | quote }}
             {{- end }}
           {{- end }}
-            - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
-              value: {{ include "connectors.zeebeEndpoint" . | quote }}
-            - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
-              value: "true"
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
@@ -155,6 +131,14 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - name: config
+              mountPath: /config/application.yml
+              subPath: application.yml
+          {{- range $key, $val := .Values.connectors.extraConfiguration }}
+            - name: config
+              mountPath: /config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
           {{- if .Values.connectors.extraVolumeMounts }}
             {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -164,6 +148,9 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "connectors.fullname" . }}-configuration
       {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}

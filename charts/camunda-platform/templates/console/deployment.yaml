@@ -14,8 +14,9 @@ spec:
       {{- include "console.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.console.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/console/configmap.yaml") . | sha256sum }}
+      {{- with .Values.console.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:

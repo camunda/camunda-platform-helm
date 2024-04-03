@@ -38,12 +38,12 @@ spec:
             - name: PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
+                  name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-id
             - name: PUSHER_APP_KEY
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
+                  name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-key
             - name: PUSHER_APP_SECRET
               valueFrom:
@@ -98,16 +98,27 @@ spec:
             failureThreshold: {{ .Values.webModeler.websockets.livenessProbe.failureThreshold }}
             timeoutSeconds: {{ .Values.webModeler.websockets.livenessProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.webModeler.websockets.extraVolumeMounts }}
           volumeMounts:
+            - name: config
+              mountPath: /home/webapp/config/application.yaml
+              subPath: application.yaml
+          {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
+            - name: config
+              mountPath: /home/webapp/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+          {{- if .Values.webModeler.websockets.extraVolumeMounts }}
           {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
         {{- if .Values.webModeler.websockets.sidecars }}
         {{- .Values.webModeler.websockets.sidecars | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.webModeler.websockets.extraVolumes }}
       volumes:
-      {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 6 }}
+        - name: config
+          configMap:
+            name: {{ include "webModeler.fullname" . }}-websockets-configuration
+      {{- if .Values.webModeler.websockets.extraVolumes }}
+      {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       {{- if .Values.webModeler.serviceAccount.name}}
       serviceAccountName: {{ .Values.webModeler.serviceAccount.name }}

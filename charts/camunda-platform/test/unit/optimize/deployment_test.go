@@ -630,31 +630,6 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 	s.Require().Equal(expectedPullPolicy, pullPolicy)
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"optimize.contextPath": "/optimize",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "CAMUNDA_OPTIMIZE_CONTEXT_PATH",
-			Value: "/optimize",
-		},
-	)
-}
-
 // readinessProbe is enabled by default so it's tested by golden files.
 
 func (s *deploymentTemplateTest) TestContainerStartupProbe() {
@@ -817,7 +792,7 @@ func (s *deploymentTemplateTest) TestOptimizeMultiTenancyEnabled() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled": "true",
+			"identityPostgresql.enabled":  "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -830,4 +805,96 @@ func (s *deploymentTemplateTest) TestOptimizeMultiTenancyEnabled() {
 	// then
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED", Value: "true"})
+}
+
+func (s *deploymentTemplateTest) TestOptimizeWithConfiguration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"optimize.configuration": `
+es:
+  settings:
+    index:
+      number_of_shards: 3
+			`,
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	volumes := deployment.Spec.Template.Spec.Volumes
+
+	// find the volume named environment-config
+	var volume corev1.Volume
+	for _, candidateVolume := range volumes {
+		if candidateVolume.Name == "environment-config" {
+			volume = candidateVolume
+			break
+		}
+	}
+
+	// find the volumeMount named environment-config
+	var volumeMount corev1.VolumeMount
+	for _, candidateVolumeMount := range volumeMounts {
+		if candidateVolumeMount.Name == "environment-config" {
+			volumeMount = candidateVolumeMount
+			break
+		}
+	}
+	s.Require().Equal("environment-config", volumeMount.Name)
+	s.Require().Equal("/optimize/config/environment-config.yaml", volumeMount.MountPath)
+	s.Require().Equal("environment-config.yaml", volumeMount.SubPath)
+
+	s.Require().Equal("environment-config", volume.Name)
+	s.Require().Equal("camunda-platform-test-optimize-configuration", volume.ConfigMap.Name)
+}
+
+func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"optimize.extraConfiguration.environment-logbackxml": `
+<configuration></configuration>
+			`},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+	volumes := deployment.Spec.Template.Spec.Volumes
+
+	// find the volume named environment-config
+	var volume corev1.Volume
+	for _, candidateVolume := range volumes {
+		if candidateVolume.Name == "environment-config" {
+			volume = candidateVolume
+			break
+		}
+	}
+
+	// find the volumeMount named environment-config
+	var volumeMount corev1.VolumeMount
+	for _, candidateVolumeMount := range volumeMounts {
+		if candidateVolumeMount.Name == "environment-config" && candidateVolumeMount.MountPath != "/optimize/config/environment-config.yaml"  && candidateVolumeMount.MountPath != "/optimize/config/application-ccsm.yaml" {
+			volumeMount = candidateVolumeMount
+			break
+		}
+	}
+	s.Require().Equal("environment-config", volumeMount.Name)
+	s.Require().Equal("/optimize/config/environment-logbackxml", volumeMount.MountPath)
+	s.Require().Equal("environment-logbackxml", volumeMount.SubPath)
+
+	s.Require().Equal("environment-config", volume.Name)
+	s.Require().Equal("camunda-platform-test-optimize-configuration", volume.ConfigMap.Name)
 }

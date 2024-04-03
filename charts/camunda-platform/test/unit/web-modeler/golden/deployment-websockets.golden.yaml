@@ -55,12 +55,12 @@ spec:
             - name: PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
-                  name: camunda-platform-test-web-modeler
+                  name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-id
             - name: PUSHER_APP_KEY
               valueFrom:
                 configMapKeyRef:
-                  name: camunda-platform-test-web-modeler
+                  name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-key
             - name: PUSHER_APP_SECRET
               valueFrom:
@@ -88,6 +88,14 @@ spec:
             successThreshold: 1
             failureThreshold: 5
             timeoutSeconds: 1
+          volumeMounts:
+            - name: config
+              mountPath: /home/webapp/config/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: camunda-platform-test-web-modeler-websockets-configuration
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

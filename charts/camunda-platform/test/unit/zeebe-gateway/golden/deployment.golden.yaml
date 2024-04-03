@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: zeebe-gateway
       annotations:
-        {}
+        checksum/config: 7b6069ff090cede7496a50541e97fcaa022fe198a2cfaafc16331e28596514fb
     spec:
       imagePullSecrets:
         []
@@ -57,8 +57,6 @@ spec:
           env:
             - name: ZEEBE_STANDALONE_GATEWAY
               value: "true"
-            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
-              value: camunda-platform-test-zeebe
             - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
               valueFrom:
                 fieldRef:
@@ -69,37 +67,16 @@ spec:
               value: "-XX:+ExitOnOutOfMemoryError"
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: camunda-platform-test-zeebe:26502
-            - name: SERVER_ADDRESS
-              value: 0.0.0.0
-            - name: SERVER_PORT
-              value: "8080"
-            - name: ZEEBE_GATEWAY_NETWORK_HOST
-              value: 0.0.0.0
-            - name: ZEEBE_GATEWAY_NETWORK_PORT
-              value: "26500"
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: ZEEBE_GATEWAY_CLUSTER_PORT
-              value: "26502"
-            - name: ZEEBE_GATEWAY_MONITORING_HOST
-              value: 0.0.0.0
-            - name: ZEEBE_GATEWAY_MONITORING_PORT
-              value: "9600"
-            - name: CAMUNDA_IDENTITY_TYPE
-              value: "KEYCLOAK"
-            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
-              value: "identity"
-            - name: SPRING_PROFILES_ACTIVE
-              value: "identity-auth"
-            - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: "zeebe-api"
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -128,7 +105,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-gateway
+            name: camunda-platform-test-zeebe-gateway-configuration
             defaultMode: 484
       securityContext:
         fsGroup: 1001

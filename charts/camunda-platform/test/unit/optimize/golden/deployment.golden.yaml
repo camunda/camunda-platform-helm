@@ -34,6 +34,8 @@ spec:
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/version: "8.5.0-alpha2"
         app.kubernetes.io/component: optimize
+      annotations:
+        checksum/config: 3707c07a28696d6d5c68762f39c8a9ddd3bc7412af4597b4cd69d41c8bae7dd1
     spec:
       imagePullSecrets:
         []
@@ -48,10 +50,6 @@ spec:
             runAsNonRoot: true
             runAsUser: 1001
           env:
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-              value: "true"
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-              value: "3"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
@@ -68,6 +66,12 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
       containers:
         - name: optimize
           image: camunda/optimize:8.4.2
@@ -79,33 +83,17 @@ spec:
             runAsNonRoot: true
             runAsUser: 1001
           env:
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
-              value: "true"
-            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
-              value: "3"
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
             - name: SPRING_PROFILES_ACTIVE
-              value: "ccsm"
-            - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
-              value: "http://localhost:8083"
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: "optimize"
+              value: ccsm
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-optimize-identity-secret
                   key: optimize-secret
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: "optimize-api"
-            - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
-              value: "optimize-api"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
-              value: "false"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
@@ -138,11 +126,21 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
       volumes:
         - name: tmp
           emptyDir: {}
         - name: camunda
           emptyDir: {}
+        - name: environment-config
+          configMap:
+            name: camunda-platform-test-optimize-configuration
+            defaultMode: 492
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
