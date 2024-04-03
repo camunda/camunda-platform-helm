@@ -222,7 +222,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 
 {{- if .Values.zeebeGateway.ingress.grpc.enabled }}
-- Zeebe Gateway gRPC: grpc://{{ tpl .Values.zeebeGateway.ingress.grpc.host $ }}
+- Zeebe Gateway gRPC: {{  include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
 {{- end }}
 
 {{- if .Values.zeebeGateway.ingress.rest.enabled }}
