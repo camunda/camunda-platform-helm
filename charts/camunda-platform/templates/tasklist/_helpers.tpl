@@ -37,8 +37,7 @@ Defines match labels for tasklist, which are extended by sub-charts and should b
 */}}
 {{- define "tasklist.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-    {{- "\n" }}
-    {{- include "tasklist.extraLabels" . }}
+app.kubernetes.io/component: tasklist
 {{- end -}}
 
 {{/*

@@ -45,8 +45,7 @@ app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "
 */}}
 {{- define "zeebe.matchLabels.broker" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-    {{- "\n" }}
-    {{- include "zeebe.extraLabels.broker" . }}
+app.kubernetes.io/component: zeebe-broker
 {{- end -}}
 
 {{/*

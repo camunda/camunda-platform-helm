@@ -44,7 +44,7 @@ Defines match labels for connectors, which are extended by sub-charts and should
 */}}
 {{- define "connectors.matchLabels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
-{{ template "connectors.extraLabels" . }}
+app.kubernetes.io/component: connectors
 {{- end -}}
 {{/*
 [connectors] Create the name of the service account to use
