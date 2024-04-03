@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "operate.fullname" . }}
+  name: {{ include "operate.fullname" . }}-archiver
   labels:
     {{- include "operate.labels" . | nindent 4 }}
   annotations:
@@ -193,7 +193,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "operate.fullname" . }}-configuration
+            name: {{ include "operate.fullname" . }}-archiver
             defaultMode: {{ .Values.operate.configMap.defaultMode }}
         - name: tmp
           emptyDir: {}
