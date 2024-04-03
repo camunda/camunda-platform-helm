@@ -26,7 +26,7 @@ data:
             components:
             - name: Console
               id: console
-              version: 8.4.60
+              version: 8.5.0
               url: 
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
@@ -62,7 +62,7 @@ data:
               id: zeebeGateway
               version: 8.5.0-RC2
               urls:
-                grpc: grpc://
+                grpc: http://
                 http: http://
               readiness: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/prometheus
