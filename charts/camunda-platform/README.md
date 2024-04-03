@@ -1709,3 +1709,4 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `promotheuServiceMonitor.labels`          | can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors |           |
 | `prometheusServiceMonitor.labels.release` |                                                                                                                                                                | `metrics` |
 | `prometheusServiceMonitor.scrapeInterval` | can be set to configure the interval at which metrics should be scraped                                                                                        | `10s`     |
+
