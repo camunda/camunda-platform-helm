@@ -5,9 +5,10 @@ A template to handel constraints.
 */}}
 
 {{/*
+TODO: Enable for 8.6 cycle.
+
 Fail with a message if the old refactored keys are still used and the new keys are not used.
 Chart Version: 10.0.0
-*/}}
 {{- if (index .Values "zeebe-gateway") }}
     {{- $errorMessage := printf "[zeebe-gateway] %s %s %s"
         "The Zeebe Gatway key changed from \"zeebe-gateway\" to \"zeebeGateway\"."
@@ -25,5 +26,6 @@ Chart Version: 10.0.0
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
+*/}}
 
 {{- end }}

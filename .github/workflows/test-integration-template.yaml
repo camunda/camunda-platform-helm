@@ -171,7 +171,6 @@ jobs:
         token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
-    # TODO: Remove all logic for extra-values-file-setup-only.yaml after Camunda 8.5 cycle is done.
     - name: Pre setup
       timeout-minutes: 5
       env:

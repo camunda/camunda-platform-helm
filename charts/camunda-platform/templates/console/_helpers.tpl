@@ -6,10 +6,11 @@ Expand the name of the chart.
 {{- end }}
 
 {{- define "console.fullname" -}}
-{{- /* TODO: Refactor this when more sub-charts are flatten and moved to the main chart. */}}
-    {{- $consoleValues := deepCopy . -}}
-    {{- $_ := set $consoleValues.Values "nameOverride" "console" -}}
-    {{- include "camundaPlatform.fullname" $consoleValues -}}
+    {{- include "camundaPlatform.componentFullname" (dict
+        "componentName" "console"
+        "componentValues" .Values.console
+        "context" $
+    ) -}}
 {{- end -}}
 
 {{/*
