@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: optimize
-    app.kubernetes.io/version: "8.4.2"
+    app.kubernetes.io/version: "8.4.3"
   annotations:
     {}
 spec:
@@ -33,15 +33,15 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: optimize
-        app.kubernetes.io/version: "8.4.2"
+        app.kubernetes.io/version: "8.4.3"
       annotations:
-        checksum/config: 5dbeb66e4cd32040926f11a7c992a87f231461c53de97c23eb1bfd7fffe2ee55
+        checksum/config: 66d964b19010808416190960b6eaa6319b759d19d418657079d9e5a75e945e5c
     spec:
       imagePullSecrets:
         []
       initContainers:
         - name: migration
-          image: camunda/optimize:8.4.2
+          image: camunda/optimize:8.4.3
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -74,7 +74,7 @@ spec:
               name: environment-config
       containers:
         - name: optimize
-          image: camunda/optimize:8.4.2
+          image: camunda/optimize:8.4.3
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
