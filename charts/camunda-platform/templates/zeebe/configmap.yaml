@@ -37,8 +37,14 @@ data:
             className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
             args:
               url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+              {{- if .Values.global.opensearch.auth.username }}
               authentication:
                 username: {{ .Values.global.opensearch.auth.username | quote }}
+              {{- end }}
+            {{- if .Values.global.opensearch.aws.enabled }}
+              aws:
+                enabled: true
+            {{- end}}
         {{- end }}
         gateway:
           enable: true
