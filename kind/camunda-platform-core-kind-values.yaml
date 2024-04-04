@@ -15,28 +15,16 @@ optimize:
 # Reduce for Zeebe and Gateway the configured replicas and with that the required resources
 # to get it running locally
 zeebe:
-  image:
-    tag: SNAPSHOT
   clusterSize: 1
   partitionCount: 1
   replicationFactor: 1
   pvcSize: 10Gi
 
 zeebeGateway:
-  image:
-    tag: SNAPSHOT
   replicas: 1
 
-operate:
-  image:
-    tag: SNAPSHOT
-
-tasklist:
-  image:
-    tag: SNAPSHOT
-
 connectors:
-  enabled: false
+  enabled: true
   inbound:
     mode: disabled
 
