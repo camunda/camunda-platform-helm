@@ -116,8 +116,8 @@ jobs:
       uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
       id: generate-github-token
       with:
-        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_CLEAN_GH_ENVS }}
+        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_CLEAN_GH_ENVS }}
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.distro.platform == 'gke'
@@ -265,8 +265,8 @@ jobs:
       uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
       id: generate-github-token
       with:
-        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_CLEAN_GH_ENVS }}
+        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_CLEAN_GH_ENVS }}
     - name: Set PR vars
       id: vars
       uses: ./.github/actions/workflow-vars
