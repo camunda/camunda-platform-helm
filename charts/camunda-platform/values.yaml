@@ -127,6 +127,7 @@ global:
   # Opensearch configuration which is shared between the sub charts
   ## @extra global.opensearch
   ## @param global.opensearch.enabled enabled external opensearch
+  ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
   ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
@@ -137,6 +138,8 @@ global:
   ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
   opensearch:
     enabled: false
+    aws:
+      enabled: false
     tls:
       enabled: false
       existingSecret:
