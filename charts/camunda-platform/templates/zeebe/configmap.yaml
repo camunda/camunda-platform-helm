@@ -38,7 +38,9 @@ data:
             args:
               url: {{ include "camundaPlatform.opensearchURL" . | quote }}
               authentication:
+                {{- if .Values.global.opensearch.auth.username }}
                 username: {{ .Values.global.opensearch.auth.username | quote }}
+                {{- end }}
         {{- end }}
         gateway:
           enable: true
