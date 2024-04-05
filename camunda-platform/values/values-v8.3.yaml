@@ -14,7 +14,7 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.3.9
+    tag: 8.3.10
 
 identity:
   keycloak:
