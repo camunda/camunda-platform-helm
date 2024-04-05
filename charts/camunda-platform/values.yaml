@@ -181,7 +181,7 @@ global:
       ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
       contextPath: "/auth/"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
-      realm: "/realms/camunda-platform"
+      realm: "realms/camunda-platform"
       ## @param global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
       auth: {}
         # identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.

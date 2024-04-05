@@ -21,7 +21,7 @@ data:
 
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
-        backend-url: "http://camunda-platform-test-keycloak:80/auth//realms/camunda-platform"
+        backend-url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
     keycloak:
       environment:
         clients:

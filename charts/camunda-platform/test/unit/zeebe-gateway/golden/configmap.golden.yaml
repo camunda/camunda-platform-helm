@@ -27,7 +27,7 @@ data:
     camunda:
       identity:
         type: "KEYCLOAK"
-        issuerBackendUrl: "http://camunda-platform-test-keycloak:80/auth//realms/camunda-platform"
+        issuerBackendUrl: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
         audience: "zeebe-api"
     zeebe:
       gateway:

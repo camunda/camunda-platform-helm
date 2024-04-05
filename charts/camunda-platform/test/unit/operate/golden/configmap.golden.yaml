@@ -21,8 +21,8 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: "http://camunda-platform-test-keycloak:80/auth//realms/camunda-platform"
-              jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth//realms/camunda-platform/protocol/openid-connect/certs"
+              issuer-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+              jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
 
     camunda:
       identity:
