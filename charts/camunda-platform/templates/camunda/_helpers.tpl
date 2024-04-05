@@ -125,7 +125,6 @@ Usage:
 
 {{/*
 [camunda-platform] Create labels for secrets shared between Identity and other components.
-TODO: Should be removed and use "camundaPlatform.labels" before 8.4 release.
 */}}
 {{- define "camundaPlatform.identityLabels" -}}
 {{- if .Values.global.labels -}}
@@ -159,8 +158,7 @@ Keycloak templates.
 
 {{/*
 [camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
-TODO: Refactor the Keycloak config once Console is production ready.
-      Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
+TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrl" -}}
   {{- if .Values.global.identity.auth.issuerBackendUrl -}}
