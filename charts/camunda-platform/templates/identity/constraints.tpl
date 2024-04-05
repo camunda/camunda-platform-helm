@@ -30,9 +30,10 @@ Show an error message if both internal and external databases are enabled at the
 {{- end }}
 
 {{/*
+TODO: Enable for 8.6 cycle.
+
 Fail with a message if the old refactored keys are still used and the new keys are not used.
 Chart Version: 10.0.0
-*/}}
 {{- if (.Values.identity.keycloak) }}
     {{- $errorMessage := printf "[identity][error] %s %s %s"
         "The Keycloak key changed from \"identity.keycloak\" to \"identityKeycloak\"."
@@ -50,5 +51,6 @@ Chart Version: 10.0.0
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
+*/}}
 
 {{- end }}
