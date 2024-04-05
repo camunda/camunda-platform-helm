@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: ec68f4c62c3c6ea0095cc90e0ad0aa1b4d1b04bab2edaedeb6704381ad46bc4d
+        checksum/config: 03eb4f42238aa793707d00bad8256e0a49114e463ad1d0b751ac35ddcdfc6b8a
       labels:
         app: camunda-platform
         app.kubernetes.io/name: camunda-platform
