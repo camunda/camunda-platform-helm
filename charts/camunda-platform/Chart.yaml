@@ -34,7 +34,10 @@ dependencies:
     alias: webModelerPostgresql
     repository: https://charts.bitnami.com/bitnami
     version: 11.x.x
-    condition: "webModelerPostgresql.enabled"
+    # START DEV COMMENT
+    # TODO: Remove "postgresql.enabled" condition after 8.6 cycle (on 8.7 release).
+    # END DEV COMMENT
+    condition: postgresql.enabled,webModelerPostgresql.enabled
   # Shared Dependencies.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
