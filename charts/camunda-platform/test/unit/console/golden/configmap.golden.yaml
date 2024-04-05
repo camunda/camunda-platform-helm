@@ -33,7 +33,7 @@ data:
             - name: Keycloak
               id: keycloak
               version: 23.0.7
-              url: http:///auth
+              url: http:///auth/
             - name: Identity
               id: identity
               version: 8.5.0

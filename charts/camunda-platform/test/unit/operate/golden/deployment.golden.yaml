@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/component: operate
         app.kubernetes.io/version: "8.5.0"
       annotations:
-        checksum/config: 75fe0ff8d09862871f9b6ac2c2c0c1bdd9484be2bcc093a934686bfbfc120d6b
+        checksum/config: 72d9f68058a41e3dd61ffd150d8c0b3f7ced635558983f037b9fe0e0a15d4275
     spec:
       imagePullSecrets:
         []
@@ -65,7 +65,7 @@ spec:
                   name: camunda-platform-test-zeebe-identity-secret
                   key: zeebe-secret
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+              value: "http://camunda-platform-test-keycloak:80/auth//realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
               value: "zeebe-api"
             - name: ZEEBE_CLIENT_CONFIG_PATH

@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 03eb4f42238aa793707d00bad8256e0a49114e463ad1d0b751ac35ddcdfc6b8a
+        checksum/config: 9293c766a8480532c79b1a0e72361f266446c4e178791b78b4e02c9db0258061
       labels:
         app: camunda-platform
         app.kubernetes.io/name: camunda-platform
@@ -58,7 +58,7 @@ spec:
             - name: NODE_ENV
               value: prod
             - name: KEYCLOAK_INTERNAL_BASE_URL
-              value: "http://camunda-platform-test-keycloak:80/auth"
+              value: "http://camunda-platform-test-keycloak:80/auth/"
             - name: KEYCLOAK_BASE_URL
               value: "http://localhost:18080/auth"
             - name: KEYCLOAK_REALM

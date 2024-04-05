@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/component: optimize
         app.kubernetes.io/version: "8.5.0"
       annotations:
-        checksum/config: 4068563208ee89183bdda775e37a5e552fd043f1ce720b8f724d0dcb7c230e33
+        checksum/config: 882cbdf390dddcd1c4667005a862925c3b097b665b7b9940458b343059d79fe7
     spec:
       imagePullSecrets:
         []
