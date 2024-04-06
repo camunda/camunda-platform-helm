@@ -8,10 +8,7 @@ vars:
 tasks:
   pre:
     cmds:
-    # TODO: Remove it once 8.5 cycle is done.
-    - |
-      # Identity.
-      kubectl -n {{ .TEST_NAMESPACE }} delete -l app.kubernetes.io/name=identity deployment
+    - echo "No pre setup task for this test."
 
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
   exec:

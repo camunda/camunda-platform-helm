@@ -46,7 +46,6 @@ Create a default fully qualified app name.
 Defines extra labels for identity.
 */}}
 {{- define "identity.extraLabels" -}}
-app.kubernetes.io/component: identity
 app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
 {{- end -}}
 
@@ -55,7 +54,7 @@ Define common labels for identity, combining the match labels and transient labe
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "identity.labels" -}}
-{{- template "camundaPlatform.labels" . }}
+{{- template "camundaPlatform.identityLabels" . }}
 {{ template "identity.extraLabels" . }}
 {{- end -}}
 
@@ -63,8 +62,7 @@ Define common labels for identity, combining the match labels and transient labe
 Defines match labels for identity, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "identity.matchLabels" -}}
-{{- template "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: identity
+{{- template "camundaPlatform.identityLabels" . }}
 {{- end -}}
 
 {{/*
