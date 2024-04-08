@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.5"
+    app.kubernetes.io/version: "8.4.6"
     app.kubernetes.io/component: console
 data:
   application.yaml: |-
@@ -22,11 +22,11 @@ data:
           releases:
           - name: camunda-platform-test
             namespace: camunda-platform
-            version: 9.3.2
+            version: 9.3.3
             components:
             - name: Console
               id: console
-              version: 8.4.55
+              version: 8.4.60
               url: 
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
@@ -36,36 +36,36 @@ data:
               url: http:///auth
             - name: Identity
               id: identity
-              version: 8.4.5
+              version: 8.4.6
               url: 
               readiness: http://camunda-platform-test.camunda-platform:82/actuator/health
               metrics: http://camunda-platform-test.camunda-platform:82/actuator/prometheus
             - name: Operate
               id: operate
-              version: 8.4.5
+              version: 8.4.6
               url: 
               readiness: http://camunda-platform-test-operate.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
             - name: Optimize
               id: optimize
-              version: 8.4.2
+              version: 8.4.3
               url: 
               readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
             - name: Tasklist
               id: tasklist
-              version: 8.4.5
+              version: 8.4.6
               url: 
               readiness: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/prometheus
             - name: Zeebe Gateway
               id: zeebeGateway
-              version: 8.4.5
+              version: 8.4.6
               url: grpc://
               readiness: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/prometheus
             - name: Zeebe
               id: zeebe
-              version: 8.4.5
+              version: 8.4.6
               readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
