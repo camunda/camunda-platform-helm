@@ -105,7 +105,7 @@ func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() 
 
 	// then
 	path := ingress.Spec.Rules[0].HTTP.Paths[0]
-	s.Require().Equal("/custom", path.Path)
+	s.Require().Equal("/custom/", path.Path)
 	s.Require().Equal("camunda-platform-test-keycloak", path.Backend.Service.Name)
 
 	// when
