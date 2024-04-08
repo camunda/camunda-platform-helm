@@ -40,7 +40,6 @@ jobs:
             "charts/camunda-platform/values/*"
             "charts/camunda-platform/values.yaml"
             "charts/camunda-platform/Chart.yaml"
-            "charts/camunda-platform/charts/identity/Chart.yaml"
           )
           for FILE in "${TARGET_FILES[@]}"; do
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
