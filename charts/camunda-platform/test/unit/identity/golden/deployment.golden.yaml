@@ -109,7 +109,7 @@ spec:
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
             - name: KEYCLOAK_URL
-              value: "http://camunda-platform-test-keycloak:80/auth/"
+              value: "http://camunda-platform-test-keycloak:80/auth"
             - name: KEYCLOAK_SETUP_USER
               value: "admin"
             - name: KEYCLOAK_SETUP_PASSWORD

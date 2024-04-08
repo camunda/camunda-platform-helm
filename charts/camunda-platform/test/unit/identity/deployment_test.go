@@ -76,7 +76,7 @@ func (s *deploymentTemplateTest) TestContainerWithExternalKeycloak() {
 	s.Require().Contains(env,
 		corev1.EnvVar{
 			Name:  "KEYCLOAK_URL",
-			Value: "https://keycloak.prod.svc.cluster.local:8443/auth/",
+			Value: "https://keycloak.prod.svc.cluster.local:8443/auth",
 		})
 	s.Require().Contains(env,
 		corev1.EnvVar{
