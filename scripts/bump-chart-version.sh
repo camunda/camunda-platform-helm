@@ -58,8 +58,5 @@ fi
 # Update parent chart version
 sed -i "s/version: ${chart_version_old}/version: ${chart_version_new}/g" charts/${chart_name}/Chart.yaml
 
-# Update subcharts version.
-sed -i "s/^version: ${chart_version_old}/version: ${chart_version_new}/g" charts/${chart_name}/charts/*/Chart.yaml
-
 # Print the changes.
 echo "The chart '${chart_name}' version has been bumped from '${chart_version_old}' to '${chart_version_new}'."
