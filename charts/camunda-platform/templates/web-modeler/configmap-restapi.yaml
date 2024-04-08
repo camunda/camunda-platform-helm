@@ -17,6 +17,8 @@ data:
       identity:
     {{- if .Values.identity.enabled }}
         base-url: {{ include "webModeler.identityBaseUrl" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
     {{- end }}
         type: {{ include "camundaPlatform.authType" . | quote }}
 
