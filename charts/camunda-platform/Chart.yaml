@@ -62,7 +62,39 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "AWS IRSA Addition"
+    - kind: added
+      description: "override application config"
+    - kind: added
+      description: "external elasticsearch"
+    - kind: added
+      description: "support customizing ingress pathType"
+    - kind: added
+      description: "add zeebe gateway REST API"
     - kind: fixed
-      description: "use the correct console.image.tag instead of SNAPSHOT"
+      description: "keycloak path defaults to having trailing /"
     - kind: fixed
-      description: "set identity automountServiceAccountToken to true instead of True"
+      description: "broken helm upgrades due to matchLabels including image version tags"
+    - kind: fixed
+      description: "add camundaPlatform.imageTagByParams to component helpers.tpl"
+    - kind: fixed
+      description: "references to grpc:// protocol removed"
+    - kind: fixed
+      description: "defining resources and limits for optimize migration container"
+    - kind: fixed
+      description: "remove extra char in IDENTITY_URL"
+    - kind: changed
+      description: "adding zeebe rest config for tasklist"
+    - kind: changed
+      description: "upgrade keycloak from v22 to v23"
+    - kind: changed
+      description: "upgrade elasticsearch from 8.9 to 8.12"
+    - kind: changed
+      description: "rename zeebe-gateway key from to zeebeGateway"
+    - kind: changed
+      description: "rename web-modeler postgres key to webModelerPostgresql"
+    - kind: changed
+      description: "move identity and its dependencies to top-level"
+    - kind: changed
+      description: "use the unified uid/gid 1001 for all components"
