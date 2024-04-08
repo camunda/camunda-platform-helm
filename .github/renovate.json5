@@ -51,20 +51,12 @@
       "matchUpdateTypes": ["patch"]
     },
     {
-      // Limit Web-Modeler version to 0.8.x for Camunda v8.1.
-      "matchManagers": ["regex"],
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["web-modeler-ee/modeler-restapi"],
-      "matchPaths": ["**/values/values-v8.1.yaml"],
-      "allowedVersions": "~0.8.0"
-    },
-    {
-      // Limit Elasticsearch version to latest supported version in Camunda v8.4.
+      // Limit Elasticsearch version to latest supported version in Camunda v8.5.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
       "matchPackageNames": ["bitnami/elasticsearch"],
-      "allowedVersions": "~8.9.0"
+      "allowedVersions": "~8.12.0"
     },
     {
       // Disable helm chart upgrades from bitnami/elasticsearch
@@ -93,9 +85,9 @@
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     },
     {
-      // This is mainly used to update Web-Modeler image tag.
-      // Web-Modeler Self-Managed version is different from SaaS version, hence, we use Web-Modeler API image tag
-      // as a source of truth for rest of WM components.
+      // This is mainly used to update enterprise image tags like Console and Web-Modeler.
+      // Console and Web-Modeler Self-Managed versions are different from SaaS versions,
+      // hence, we use image tags from Camunda private registry as a source of truth for those components.
       // Another use case is Elasticsearch public Docker registry.
       "fileMatch": ["\\.yaml$"],
       "datasourceTemplate":"docker",
