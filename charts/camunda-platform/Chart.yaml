@@ -30,10 +30,11 @@ dependencies:
     version: 12.x.x
     condition: "identityPostgresql.enabled"
   # WebModeler Dependencies.
-  - name: postgresql
-    repository: https://charts.bitnami.com/bitnami
+  - name: web-modeler-postgresql
+    alias: postgresql
+    repository: "file://../web-modeler-postgresql"
     version: 11.x.x
-    condition: postgresql.enabled
+    condition: "postgresql.enabled"
   # Shared Dependencies.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
