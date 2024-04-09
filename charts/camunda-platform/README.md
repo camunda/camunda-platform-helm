@@ -528,8 +528,6 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Console Parameters
 
-**CAUTION:** Console is under development and not available yet. We plan to release it with 8.5 in April.
-
 | Name                                                        | Description                                                                                                                                                                          | Value                      |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
 | `console`                                                   | configuration for the Console.                                                                                                                                                       |                            |
@@ -537,7 +535,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `console.configuration`                                     | Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/) | `""`                       |
 | `console.image.registry`                                    | can be used to set container image registry.                                                                                                                                         | `registry.camunda.cloud`   |
 | `console.image.repository`                                  | defines which image repository to use                                                                                                                                                | `console/console-sm`       |
-| `console.image.tag`                                         | can be used to set the Docker image tag for the Console image (overwrites global.image.tag)                                                                                          | `8.5.2`                    |
+| `console.image.tag`                                         | can be used to set the Docker image tag for the Console image (overwrites global.image.tag)                                                                                          | `8.5.4`                    |
 | `console.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                              | `[]`                       |
 | `console.sidecars`                                          | can be used to attach extra containers to the console deployment                                                                                                                     | `[]`                       |
 | `console.replicas`                                          | Number of Console replicas                                                                                                                                                           | `1`                        |
