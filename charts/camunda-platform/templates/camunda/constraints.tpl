@@ -40,7 +40,7 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 {{- end }}
 
 {{/*
-TODO: Enable for 8.6 cycle.
+TODO: Enable for 8.7 cycle.
 
 Fail with a message if global.zeebePort is set since now it's used from Zeebe Gateway values:
 "zeebeGateway.service.grpcPort".
@@ -55,7 +55,7 @@ Chart Version: 10.0.0
 */}}
 
 {{/*
-TODO: Enable for 8.6 cycle.
+TODO: Enable for 8.7 cycle.
 
 ********************************************************************************
 elasticsearch and opensearch constraints

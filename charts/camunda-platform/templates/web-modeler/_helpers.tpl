@@ -187,35 +187,35 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
+  {{- .Values.postgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUser" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary .Values.webModelerPostgresql.auth.username .Values.webModeler.restapi.externalDatabase.user -}}
+  {{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.username .Values.webModeler.restapi.externalDatabase.user -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the name of the secret that contains the database password, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretName" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary (include "webModeler.postgresql.fullname" .) (include "webModeler.restapi.fullname" .) -}}
+  {{- .Values.postgresql.enabled | ternary (include "webModeler.postgresql.fullname" .) (include "webModeler.restapi.fullname" .) -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the name of the database password key in the secret, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretKey" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary "password" "database-password" -}}
+  {{- .Values.postgresql.enabled | ternary "password" "database-password" -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the full name of the Kubernetes objects from the postgresql dependency chart
 */}}
 {{- define "webModeler.postgresql.fullname" -}}
-  {{- include "common.names.dependency.fullname" (dict "chartName" "webModelerPostgresql" "chartValues" .Values.webModelerPostgresql "context" $) -}}
+  {{- include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" $) -}}
 {{- end -}}
 
 {{/*

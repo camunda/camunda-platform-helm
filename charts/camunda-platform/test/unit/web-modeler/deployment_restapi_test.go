@@ -57,7 +57,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseCo
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
 			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"webModelerPostgresql.enabled":                 "false",
+			"postgresql.enabled":                           "false",
 			"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":     "modeler-user",
 			"webModeler.restapi.externalDatabase.password": "modeler-password",

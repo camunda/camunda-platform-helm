@@ -2881,30 +2881,30 @@ webModeler:
 #      #    # #    #   #   #    # #   #  #      #    # #   #  #
 #       ####   ####    #    ####  #    # ######  ####   ### # ######
 ## @section WebModeler - PostgreSQL Parameters
-## @extra webModelerPostgresql configuration for the postgresql dependency chart used by WebModeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
-webModelerPostgresql:
-  ## @param webModelerPostgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
+## @extra postgresql configuration for the postgresql dependency chart used by WebModeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
+postgresql:
+  ## @param postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
   # Note: If WebModeler is enabled, and WebModeler Postgresql is disabled, the external database configuration must be set under "webModeler.restapi.externalDatabase".
   enabled: false
-  ## @param webModelerPostgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
+  ## @param postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
   ## @extra postgresql.auth configuration of the database authentication
   auth:
-    ## @param webModelerPostgresql.auth.username defines the name of the database user to be created for WebModeler
+    ## @param postgresql.auth.username defines the name of the database user to be created for WebModeler
     username: web-modeler
-    ## @param webModelerPostgresql.auth.password defines the database user's password; a random password will be generated if left empty
+    ## @param postgresql.auth.password defines the database user's password; a random password will be generated if left empty
     password: ""
-    ## @param webModelerPostgresql.auth.database defines the name of the database to be created for WebModeler
+    ## @param postgresql.auth.database defines the name of the database to be created for WebModeler
     database: web-modeler
 
   primary:
-    ## @param webModelerPostgresql.primary.extraVolumes[0].name
-    ## @param webModelerPostgresql.primary.extraVolumes[0].emptyDir
-    ## @param webModelerPostgresql.primary.extraVolumes[1].name
-    ## @param webModelerPostgresql.primary.extraVolumes[1].emptyDir
-    ## @param webModelerPostgresql.primary.extraVolumes[2].name
-    ## @param webModelerPostgresql.primary.extraVolumes[2].emptyDir
+    ## @param postgresql.primary.extraVolumes[0].name
+    ## @param postgresql.primary.extraVolumes[0].emptyDir
+    ## @param postgresql.primary.extraVolumes[1].name
+    ## @param postgresql.primary.extraVolumes[1].emptyDir
+    ## @param postgresql.primary.extraVolumes[2].name
+    ## @param postgresql.primary.extraVolumes[2].emptyDir
     extraVolumes:
     - name: tmp
       emptyDir: {}
@@ -2912,12 +2912,12 @@ webModelerPostgresql:
       emptyDir: {}
     - name: postgresql-tmp
       emptyDir: {}
-    ## @param webModelerPostgresql.primary.extraVolumeMounts[0].mountPath
-    ## @param webModelerPostgresql.primary.extraVolumeMounts[0].name
-    ## @param webModelerPostgresql.primary.extraVolumeMounts[1].mountPath
-    ## @param webModelerPostgresql.primary.extraVolumeMounts[1].name
-    ## @param webModelerPostgresql.primary.extraVolumeMounts[2].mountPath
-    ## @param webModelerPostgresql.primary.extraVolumeMounts[2].name
+    ## @param postgresql.primary.extraVolumeMounts[0].mountPath
+    ## @param postgresql.primary.extraVolumeMounts[0].name
+    ## @param postgresql.primary.extraVolumeMounts[1].mountPath
+    ## @param postgresql.primary.extraVolumeMounts[1].name
+    ## @param postgresql.primary.extraVolumeMounts[2].mountPath
+    ## @param postgresql.primary.extraVolumeMounts[2].name
     extraVolumeMounts:
     - mountPath: /tmp
       name: tmp
@@ -2925,14 +2925,14 @@ webModelerPostgresql:
       name: config
     - mountPath: /opt/bitnami/postgresql/tmp
       name: postgresql-tmp
-    ## @param webModelerPostgresql.primary.containerSecurityContext.enabled
-    ## @param webModelerPostgresql.primary.containerSecurityContext.privileged
-    ## @param webModelerPostgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-    ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-    ## @param webModelerPostgresql.primary.containerSecurityContext.runAsNonRoot
-    ## @param webModelerPostgresql.primary.containerSecurityContext.runAsUser
-    ## @param webModelerPostgresql.primary.containerSecurityContext.capabilities.drop
-    ## @param webModelerPostgresql.primary.containerSecurityContext.seccompProfile.type
+    ## @param postgresql.primary.containerSecurityContext.enabled
+    ## @param postgresql.primary.containerSecurityContext.privileged
+    ## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
+    ## @param postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
+    ## @param postgresql.primary.containerSecurityContext.runAsNonRoot
+    ## @param postgresql.primary.containerSecurityContext.runAsUser
+    ## @param postgresql.primary.containerSecurityContext.capabilities.drop
+    ## @param postgresql.primary.containerSecurityContext.seccompProfile.type
     containerSecurityContext:
       enabled: true
       allowPrivilegeEscalation: false
@@ -2944,9 +2944,9 @@ webModelerPostgresql:
         drop: ["ALL"]
       seccompProfile:
         type: RuntimeDefault
-    ## @param webModelerPostgresql.primary.podSecurityContext.enabled
-    ## @param webModelerPostgresql.primary.podSecurityContext.runAsNonRoot
-    ## @param webModelerPostgresql.primary.podSecurityContext.fsGroup
+    ## @param postgresql.primary.podSecurityContext.enabled
+    ## @param postgresql.primary.podSecurityContext.runAsNonRoot
+    ## @param postgresql.primary.podSecurityContext.fsGroup
     podSecurityContext:
       enabled: true
       runAsNonRoot: true

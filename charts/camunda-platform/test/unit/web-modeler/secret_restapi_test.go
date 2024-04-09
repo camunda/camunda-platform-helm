@@ -55,7 +55,7 @@ func (s *secretTest) TestContainerCreateExternalDatabasePasswordSecret() {
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
 			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"webModelerPostgresql.enabled":                 "false",
+			"postgresql.enabled":                           "false",
 			"webModeler.restapi.externalDatabase.password": "secret123",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

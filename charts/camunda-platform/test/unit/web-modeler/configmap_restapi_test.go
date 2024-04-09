@@ -1,6 +1,10 @@
 package web_modeler
 
 import (
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -8,9 +12,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 type configmapRestAPITemplateTest struct {
@@ -252,7 +253,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
 			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"webModelerPostgresql.enabled":                 "false",
+			"postgresql.enabled":                           "false",
 			"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":     "modeler-user",
 			"webModeler.restapi.externalDatabase.password": "modeler-password",

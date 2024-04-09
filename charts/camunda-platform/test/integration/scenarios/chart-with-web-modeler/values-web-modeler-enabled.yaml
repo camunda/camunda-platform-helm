@@ -20,5 +20,5 @@ webModeler:
       fromAddress: noreply@example.com
 
 # WebModeler Database.
-webModelerPostgresql:
+postgresql:
   enabled: true

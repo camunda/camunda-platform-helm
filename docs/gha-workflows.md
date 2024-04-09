@@ -90,7 +90,7 @@ jobs:
                 enabled: false
               webModeler:
                 enabled: false
-              webModelerPostgresql:
+              postgresql:
                 enabled: false
               console:
                 enabled: false
@@ -109,7 +109,7 @@ jobs:
                 enabled: false
               webModeler:
                 enabled: false
-              webModelerPostgresql:
+              postgresql:
                 enabled: false
               console:
                 enabled: false

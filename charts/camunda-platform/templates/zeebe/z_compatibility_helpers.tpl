@@ -4,7 +4,7 @@ NOTE: According to how Helm order the templates, this helper file should be the 
 */}}
 
 {{/*
-TODO: Remove after 8.6 cycle.
+TODO: Remove after 8.7 cycle.
 ********************************************************************************
 * Camunda 8.5 backward compatibility.
 
@@ -17,6 +17,7 @@ Approach:
 ********************************************************************************
 */}}
 
+
 {{/*
 Identity.
 */}}
@@ -28,13 +29,6 @@ Identity.
     {{- $_ := set .Values "identityPostgresql" (deepCopy .Values.identity.postgresql | mergeOverwrite .Values.identityPostgresql) -}}
 {{- end -}}
 
-
-{{/*
-Web Modeler.
-*/}}
-{{- if .Values.postgresql -}}
-    {{- $_ := set .Values "webModelerPostgresql" (deepCopy .Values.postgresql | mergeOverwrite .Values.webModelerPostgresql) -}}
-{{- end -}}
 
 {{/*
 Zeebe Gateway.
