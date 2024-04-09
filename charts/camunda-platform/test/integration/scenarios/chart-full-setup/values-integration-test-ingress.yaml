@@ -27,8 +27,6 @@ global:
 
 identity:
   contextPath: "/identity"
-  # TODO: Remove it once the 8.5 cycle is done.
-  fullURL: "https://{{ .Values.global.ingress.host }}/identity"
   firstUser:
     existingSecret: "integration-test"
 
