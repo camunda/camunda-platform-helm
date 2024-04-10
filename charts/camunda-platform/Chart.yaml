@@ -58,10 +58,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "embed web-modeler postregsql chart in camunda chart"
-    - kind: fixed
-      description: "back to postgresql key instead of webModelerPostgresql"
-    - kind: fixed
-      description: "use correct chart appVersion"
+  artifacthub.io/changes: ""
