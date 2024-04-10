@@ -1,32 +1,32 @@
 preflightVars:
   baseURLs:
-    elasticsearch: http://integration-elasticsearch:9200
-    console: http://integration-console:9100
-    keycloak: http://integration-keycloak
-    identity: http://integration-identity:82
-    optimize: http://integration-optimize/optimize
-    operate: http://integration-operate/operate
-    tasklist: http://integration-tasklist/tasklist
-    connectors: http://integration-connectors:8080/connectors
-    webModelerRestapi: http://integration-web-modeler-restapi:8091
-    webModelerWebapp: http://integration-web-modeler-webapp:8071
-    zeebeGateway: http://integration-zeebe-gateway:9600/zeebe
+    elasticsearch: http://cpt-elasticsearch:9200
+    console: http://cpt-console:9100
+    keycloak: http://cpt-keycloak
+    identity: http://cpt-identity:82
+    optimize: http://cpt-optimize/optimize
+    operate: http://cpt-operate/operate
+    tasklist: http://cpt-tasklist/tasklist
+    connectors: http://cpt-connectors:8080/connectors
+    webModelerRestapi: http://cpt-web-modeler-restapi:8091
+    webModelerWebapp: http://cpt-web-modeler-webapp:8071
+    zeebeGateway: http://cpt-zeebe-gateway:9600/zeebe
 
 coreVars:
-  authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
-  testNamespace: "{{ .K8S_NAMESPACE }}"
+  authURL: "https://dev.jlscode.com/auth/realms/camunda-platform/protocol/openid-connect/token"
+  testNamespace: "default"
   baseURLs:
-    console: "https://{{ .TEST_INGRESS_HOST }}"
-    keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth/"
-    identity: "https://{{ .TEST_INGRESS_HOST }}/identity"
-    operate: "https://{{ .TEST_INGRESS_HOST }}/operate"
-    optimize: "https://{{ .TEST_INGRESS_HOST }}/optimize"
-    tasklist: "https://{{ .TEST_INGRESS_HOST }}/tasklist"
-    connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
-    webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
-    webModelerRestapi: http://integration-web-modeler-restapi
-    zeebeGatewayGRPC: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
-    zeebeGatewayREST: "https://{{ .TEST_INGRESS_HOST }}/zeebe"
+    console: "https://dev.jlscode.com"
+    keycloak: "https://dev.jlscode.com/auth/"
+    identity: "https://dev.jlscode.com/identity"
+    operate: "https://dev.jlscode.com/operate"
+    optimize: "https://dev.jlscode.com/optimize"
+    tasklist: "https://dev.jlscode.com/tasklist"
+    connectors: "https://dev.jlscode.com/connectors/inbound"
+    webModeler: "https://dev.jlscode.com/modeler"
+    webModelerRestapi: http://cpt-web-modeler-restapi
+    zeebeGatewayGRPC: "zeebe-gateway.dev.jlscode.com:443"
+    zeebeGatewayREST: "https://dev.jlscode.com/zeebe"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""
