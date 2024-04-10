@@ -12,6 +12,66 @@ entries:
         - name: Camunda 8 Self-Managed Helm charts
           url: https://github.com/camunda/camunda-platform-helm
     apiVersion: v2
+    appVersion: 8.5.x
+    created: "2024-04-10T14:53:04.757449629Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: https://charts.bitnami.com/bitnami
+      version: 19.4.1
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 12.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql
+      version: 11.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 20.0.0
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 55395e50f7fd17dd0c9a736545680dff3aa8b73610ac3321347db637fd1cd40e
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-10.0.2/camunda-platform-10.0.2.tgz
+    version: 10.0.2
+  - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
     appVersion: 8.4.x
     created: "2024-04-08T20:28:30.617752903Z"
     dependencies:
@@ -9555,4 +9615,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-04-10T01:11:17.160469549Z"
+generated: "2024-04-10T14:53:04.856371108Z"
