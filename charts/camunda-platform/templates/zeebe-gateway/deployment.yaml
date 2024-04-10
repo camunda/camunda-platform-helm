@@ -61,7 +61,7 @@ spec:
             - name: ZEEBE_GATEWAY_NETWORK_HOST
               value: 0.0.0.0
             - name: ZEEBE_GATEWAY_NETWORK_PORT
-              value: {{  .Values.zeebeGateway.service.gatewayPort | quote }}
+              value: {{  .Values.zeebeGateway.service.grpcPort | quote }}
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
