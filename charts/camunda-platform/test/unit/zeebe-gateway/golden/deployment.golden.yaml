@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/component: zeebe-gateway
         app.kubernetes.io/version: "8.5.0"
       annotations:
-        checksum/config: 7112e94f4f754ec53d9dc095b47c8291dddd5a620aae8311cdf49043b6cdf232
+        checksum/config: 3e07e5a1da26b295a7cd78846ccdc20e0cd6d0c06385cc7d7284d38b614ce567
     spec:
       imagePullSecrets:
         []
@@ -67,6 +67,10 @@ spec:
               value: "-XX:+ExitOnOutOfMemoryError"
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: camunda-platform-test-zeebe:26502
+            - name: ZEEBE_GATEWAY_NETWORK_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_NETWORK_PORT
+              value: "26500"
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
