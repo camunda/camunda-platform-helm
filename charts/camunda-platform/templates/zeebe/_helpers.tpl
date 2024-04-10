@@ -3,7 +3,7 @@
 {{/*
 [zeebe] Create a default fully qualified app name.
 */}}
-{{- define "zeebe.fullname.borker" -}}
+{{- define "zeebe.fullname.broker" -}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "zeebe"
         "componentValues" .Values.zeebe
@@ -53,7 +53,7 @@ app.kubernetes.io/component: zeebe-broker
 */}}
 {{- define "zeebe.serviceAccountName.broker" -}}
     {{- if .Values.zeebe.serviceAccount.enabled }}
-        {{- default (include "zeebe.fullname.borker" .) .Values.zeebe.serviceAccount.name }}
+        {{- default (include "zeebe.fullname.broker" .) .Values.zeebe.serviceAccount.name }}
     {{- else }}
         {{- default "default" .Values.zeebe.serviceAccount.name }}
     {{- end }}
