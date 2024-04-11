@@ -1873,7 +1873,7 @@ identity:
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
   ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
-  fullURL: ""
+  fullURL: "http://localhost:8080"
 
   # Note: Identity cannot be accessed over HTTP if a "contextPath" is configured.
   #       Which means that Identity cannot be configured in combined Ingress without HTTPS.
