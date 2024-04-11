@@ -17,7 +17,7 @@ metadata:
 data:
   application.yaml: |
     identity:
-      url: ""
+      url: "http://localhost:8080"
 
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
@@ -29,7 +29,7 @@ data:
             id: "camunda-identity"
             type: CONFIDENTIAL
             secret: ${IDENTITY_CLIENT_SECRET:}
-            root-url: ""
+            root-url: "http://localhost:8080"
             redirect-uris:
               - "/auth/login-callback"
       presets:
