@@ -49,11 +49,19 @@ tasks:
     - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
       ../../testsuites/base/files/variables.env
+    - echo "TEST_CHART_FLOW={{ .TEST_CHART_FLOW }}"
+    - echo "TEST_CHART_DIR={{ .TEST_CHART_DIR }}"
+    - echo "TEST_TMP_DIR={{ .TEST_TMP_DIR }}"
+    - echo "TEST_CHART_NAME={{ .TEST_CHART_NAME }}"
+    - echo "ls TEST_TMP_DIR"
+    - ls -al {{ .TEST_TMP_DIR }}
     - |
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }}
       fi
+    - echo "ls TEST_TMP_DIR"
+    - ls -al {{ .TEST_TMP_DIR }}
     - |
       # Create the local chart package to install.
       helm package {{ .TEST_CHART_DIR }}
