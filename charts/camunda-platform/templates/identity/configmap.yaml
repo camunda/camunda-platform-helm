@@ -35,7 +35,7 @@ data:
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
-              audience: ${IDENTITY_AUDIENCE:camunda-identity-resource-server}
+              audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
               permissions:
                 - definition: read
                   description: "Read permission"
@@ -47,9 +47,9 @@ data:
             - name: "Identity"
               description: "Provides full access to Identity"
               permissions:
-                - audience: ${IDENTITY_AUDIENCE:camunda-identity-resource-server}
+                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
                   definition: read
-                - audience: ${IDENTITY_AUDIENCE:camunda-identity-resource-server}
+                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
                   definition: write
         operate:
           apis:
@@ -111,7 +111,7 @@ data:
               permissions:
                 - audience: {{ include "optimize.authAudience" . | default "optimize-api" | quote }}
                   definition: write:*
-                - audience: {{ include "identity.authAudience" . | default "camunda-identity" | quote }}
+                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
                   definition: read:users
         webmodeler:
           apis:
