@@ -58,6 +58,7 @@ tasks:
     - echo "CAMUNDA_HELM_REPO_ROOT"
     - readlink -f {{ .CAMUNDA_HELM_REPO_ROOT }}
     - ls -al {{ .TEST_TMP_DIR }}
+    - helm version
     - |
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
@@ -78,6 +79,7 @@ tasks:
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
       fi
+    - helm version
     - helm install integration {{ .PR_SOURCE_CHART }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
@@ -104,6 +106,7 @@ tasks:
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh"
       fi
+    - helm version
     - helm install integration {{ .LATEST_RELEASE_PATH }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
@@ -124,6 +127,7 @@ tasks:
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
       fi
+    - helm version
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
