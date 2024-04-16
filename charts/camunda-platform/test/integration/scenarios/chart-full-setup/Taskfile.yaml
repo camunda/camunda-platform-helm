@@ -53,6 +53,10 @@ tasks:
     - echo "TEST_CHART_DIR={{ .TEST_CHART_DIR }}"
     - echo "TEST_TMP_DIR={{ .TEST_TMP_DIR }}"
     - echo "ls TEST_TMP_DIR"
+    - echo "TEST_CHART_DIR_ABSOLUTE_PATH"
+    - readlink -f {{ .TEST_CHART_DIR }}
+    - echo "CAMUNDA_HELM_REPO_ROOT"
+    - readlink -f {{ .CAMUNDA_HELM_REPO_ROOT }}
     - ls -al {{ .TEST_TMP_DIR }}
     - |
       # Extract OpenShift values from released chart for upgrade test.
