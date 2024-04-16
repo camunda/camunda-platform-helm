@@ -76,12 +76,8 @@ identityPostgresql:
 connectors:
   podSecurityContext:
     fsGroup: null
-    seccompProfile:
-      type: "RuntimeDefault"
   containerSecurityContext:
     runAsUser: null
-    capabilities:
-      drop: ["ALL"]
 
 #
 # Operate.
@@ -93,12 +89,8 @@ operate:
     defaultMode: 0444
   podSecurityContext:
     fsGroup: null
-    seccompProfile:
-      type: "RuntimeDefault"
   containerSecurityContext:
     runAsUser: null
-    capabilities:
-      drop: ["ALL"]
 
 #
 # Optimize.
@@ -108,12 +100,8 @@ operate:
 optimize:
   podSecurityContext:
     fsGroup: null
-    seccompProfile:
-      type: "RuntimeDefault"
   containerSecurityContext:
     runAsUser: null
-    capabilities:
-      drop: ["ALL"]
 
 #
 # Tasklist.
@@ -125,12 +113,8 @@ tasklist:
     defaultMode: 0444
   podSecurityContext:
     fsGroup: null
-    seccompProfile:
-      type: "RuntimeDefault"
   containerSecurityContext:
     runAsUser: null
-    capabilities:
-      drop: ["ALL"]
 
 #
 # WebModeler.
@@ -141,30 +125,18 @@ webModeler:
   restapi:
     podSecurityContext:
       fsGroup: null
-      seccompProfile:
-        type: "RuntimeDefault"
     containerSecurityContext:
       runAsUser: null
-      capabilities:
-        drop: ["ALL"]
   webapp:
     podSecurityContext:
       fsGroup: null
-      seccompProfile:
-        type: "RuntimeDefault"
     containerSecurityContext:
       runAsUser: null
-      capabilities:
-        drop: ["ALL"]
   websockets:
     podSecurityContext:
       fsGroup: null
-      seccompProfile:
-        type: "RuntimeDefault"
     containerSecurityContext:
       runAsUser: null
-      capabilities:
-        drop: ["ALL"]
 
 postgresql:
   primary:
@@ -193,12 +165,8 @@ zeebe:
     defaultMode: 0555
   podSecurityContext:
     fsGroup: null
-    seccompProfile:
-      type: "RuntimeDefault"
   containerSecurityContext:
     runAsUser: null
-    capabilities:
-      drop: ["ALL"]
 
 # omit the values below if zeebe-gateway.enabled is false
 zeebeGateway:
@@ -206,12 +174,8 @@ zeebeGateway:
     defaultMode: 0444
   podSecurityContext:
     fsGroup: null
-    seccompProfile:
-      type: "RuntimeDefault"
   containerSecurityContext:
     runAsUser: null
-    capabilities:
-      drop: ["ALL"]
 
 #
 # Elasticsearch.
@@ -222,12 +186,8 @@ elasticsearch:
   master:
     podSecurityContext:
       fsGroup: null
-      seccompProfile:
-        type: "RuntimeDefault"
     containerSecurityContext:
       runAsUser: null
-      capabilities:
-        drop: ["ALL"]
   # If needed, OpenShift TuneD operator will be used to set sysctl vm.max_map_count.
   # Apply the manifest "openshift-tuned.yaml" before install Camunda 8 chart.
   sysctlImage:
