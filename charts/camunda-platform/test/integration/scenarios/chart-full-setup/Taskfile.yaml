@@ -74,7 +74,7 @@ tasks:
     cmds:
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
-        export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}openshift/patch.sh"
+        export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
       fi
     - helm install integration {{ .PR_SOURCE_CHART }}
         --namespace {{ .TEST_NAMESPACE }}
@@ -98,7 +98,7 @@ tasks:
     cmds:
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
-        export TEST_OPENSHIFT_ARGS="--values {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .LATEST_RELEASE_PATH }}openshift/patch.sh"
+        export TEST_OPENSHIFT_ARGS="--values {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh"
       fi
     - helm install integration {{ .LATEST_RELEASE_PATH }}
         --namespace {{ .TEST_NAMESPACE }}
