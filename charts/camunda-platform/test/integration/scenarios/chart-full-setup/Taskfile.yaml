@@ -116,7 +116,7 @@ tasks:
     cmds:
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
-        export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}openshift/patch.sh"
+        export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
       fi
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \
