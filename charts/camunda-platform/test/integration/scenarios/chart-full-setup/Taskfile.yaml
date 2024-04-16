@@ -13,7 +13,7 @@ vars:
   LATEST_RELEASE_PATH: '{{ .TEST_TMP_DIR }}/camunda-platform/'
 
   CAMUNDA_HELM_REPO_ROOT: '{{ env "PWD" }}'
-  PR_SOURCE_CHART: '{{ .CAMUNDA_HELM_REPO_ROOT }}/camunda/camunda-platform-helm'
+  PR_SOURCE_CHART: '{{ .CAMUNDA_HELM_REPO_ROOT }}/charts/camunda-platform'
 
 dotenv:
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
