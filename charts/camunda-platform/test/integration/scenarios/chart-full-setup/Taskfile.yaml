@@ -9,7 +9,8 @@ vars:
   TEST_TMP_DIR: /tmp
   
   LATEST_RELEASE_SOURCE: camunda/camunda-platform
-  LATEST_RELEASE_PATH: {{ (printf "%s/camunda-platform/" .TEST_TMP_DIR) }}
+  # LATEST_RELEASE_PATH: '{{ (printf "%s/camunda-platform/" .TEST_TMP_DIR) }}'
+  LATEST_RELEASE_PATH: '{{ .TEST_TMP_DIR }}/camunda-platform/'
 
   CAMUNDA_HELM_REPO_ROOT: '{{ env "PWD" }}'
   PR_SOURCE_CHART: '{{ .CAMUNDA_HELM_REPO_ROOT }}/camunda/camunda-platform-helm'
