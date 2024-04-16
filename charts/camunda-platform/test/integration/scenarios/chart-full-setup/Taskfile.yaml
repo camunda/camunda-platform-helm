@@ -4,30 +4,29 @@ vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  FIXTURES_DIR: ../fixtures
+  TEST_CHART_DIR: ../../../../
+  TEST_TMP_DIR: /tmp
+  
+  LATEST_RELEASE_SOURCE: camunda/camunda-platform
+  LATEST_RELEASE_PATH: (printf "%s/camunda-platform/" .TEST_TMP_DIR)
+
+  CAMUNDA_HELM_REPO_ROOT: '{{ env "PWD" }}'
+  PR_SOURCE_CHART: '{{ .CAMUNDA_HELM_REPO_ROOT }}/camunda/camunda-platform-helm'
 
 dotenv:
-- ../vars/common.env
-- ../vars/dynamic.env
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
   init.seed:
-    taskfile: ../lib/init-seed-taskfile.yaml
+    taskfile: ../lib/create-setup-secrets-taskfile.yaml
     internal: true
-  upgrade:
-    taskfile: ../lib/chart-upgrade-taskfile.yaml
-    internal: true
-    vars:
-      TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
-      TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
-      TEST_HELM_EXTRA_ARGS: |-
-        {{ .TEST_HELM_EXTRA_ARGS }} --values ../chart-full-setup/values-integration-test-ingress.yaml
   test.preflight:
-    taskfile: ../lib/testsuite-deploy-taskfile.yaml
+    taskfile: ../lib/create-venom-job-taskfile.yaml
     vars:
       testID: preflight
   test.core:
-    taskfile: ../lib/testsuite-deploy-taskfile.yaml
+    taskfile: ../lib/create-venom-job-taskfile.yaml
     vars:
       testID: core
 
@@ -52,13 +51,12 @@ tasks:
     - echo "TEST_CHART_FLOW={{ .TEST_CHART_FLOW }}"
     - echo "TEST_CHART_DIR={{ .TEST_CHART_DIR }}"
     - echo "TEST_TMP_DIR={{ .TEST_TMP_DIR }}"
-    - echo "TEST_CHART_NAME={{ .TEST_CHART_NAME }}"
     - echo "ls TEST_TMP_DIR"
     - ls -al {{ .TEST_TMP_DIR }}
     - |
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
-        helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }}
+        helm pull {{ .LATEST_RELEASE_SOURCE }} --untar --untardir {{ .LATEST_RELEASE_PATH }}
       fi
     - echo "ls TEST_TMP_DIR"
     - ls -al {{ .TEST_TMP_DIR }}
@@ -69,7 +67,7 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
-    - helm install integration {{ .TEST_CHART_NAME }}
+    - helm install integration {{ .PR_SOURCE_CHART }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml
@@ -86,11 +84,58 @@ tasks:
     - kubectl delete secret registry-camunda-cloud --ignore-not-found=true
     - git checkout ../../testsuites/base/files/variables.env
 
-  upgrade.pre:
-    deps: [upgrade:pre]
+  upgrade.install-latest-release:
+    deps: [init.seed]
+    cmds:
+    - helm install integration {{ .LATEST_RELEASE_PATH }}
+        --namespace {{ .TEST_NAMESPACE }}
+        --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
+        --values ./values-integration-test-ingress.yaml
+        --timeout 20m0s
+        --wait
+        {{ .TEST_HELM_EXTRA_ARGS }}
 
-  upgrade.exec:
-    deps: [upgrade:exec]
+  upgrade.pre:
+    cmds:
+    - echo "No pre setup task for this test."
+
+  upgrade.upgrade-from-latest-to-pr:
+    cmds:
+    - |
+      export TEST_SECRET=$(kubectl get secret "integration-test" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
+      export ZEEBE_SECRET=$(kubectl get secret "integration-zeebe-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
+      export TASKLIST_SECRET=$(kubectl get secret "integration-tasklist-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
+      export OPTIMIZE_SECRET=$(kubectl get secret "integration-optimize-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.optimize-secret}" | base64 --decode)
+      export OPERATE_SECRET=$(kubectl get secret "integration-operate-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.operate-secret}" | base64 --decode)
+      export CONNECTORS_SECRET=$(kubectl get secret "integration-connectors-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.connectors-secret}" | base64 --decode)
+      export CONSOLE_SECRET=$(kubectl get secret "integration-console-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.console-secret}" | base64 --decode)
+      export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret "integration-keycloak" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.admin-password}" | base64 --decode)
+      export KEYCLOAK_POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
+
+      helm upgrade integration {{ .PR_SOURCE_CHART }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .FIXTURES_DIR }}/values-integration-test.yaml \
+        --set test.existingSecret=$TEST_SECRET \
+        --set global.identity.auth.zeebe.existingSecret=$ZEEBE_SECRET \
+        --set global.identity.auth.tasklist.existingSecret=$TASKLIST_SECRET \
+        --set global.identity.auth.optimize.existingSecret=$OPTIMIZE_SECRET \
+        --set global.identity.auth.operate.existingSecret=$OPERATE_SECRET \
+        --set global.identity.auth.connectors.existingSecret=$CONNECTORS_SECRET \
+        --set global.identity.auth.console.existingSecret=$CONSOLE_SECRET \
+        --set identityKeycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
+        --set identityKeycloak.postgresql.auth.password=$KEYCLOAK_POSTGRESQL_SECRET \
+        --set identityPostgresql.auth.password=dummy \
+        --timeout 20m0s \
+        --wait {{ .TEST_HELM_EXTRA_ARGS }}
 
   all:
     cmds:

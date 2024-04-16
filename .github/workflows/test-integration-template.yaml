@@ -183,6 +183,7 @@ jobs:
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
     - name: 🌟 Setup Camunda chart 🌟
+      if: matrix.scenario.flow == 'setup'
       env:
         TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
         TEST_HELM_EXTRA_ARGS: >-
@@ -195,6 +196,16 @@ jobs:
       timeout-minutes: 5
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+    - name: 🌟 Install most recent release chart 🌟
+      if: matrix.scenario.flow == 'upgrade'
+      env:
+        TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+        TEST_HELM_EXTRA_ARGS: >-
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          --values /tmp/extra-values-file.yaml
+        TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.ingress.outputs.host }}"
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.install-latest-release
     - name: Pre Upgrade
       if: matrix.scenario.flow == 'upgrade'
       run: |
@@ -206,7 +217,7 @@ jobs:
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.upgrade-from-latest-to-pr
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
