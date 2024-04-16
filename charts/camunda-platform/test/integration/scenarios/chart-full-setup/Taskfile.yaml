@@ -72,6 +72,8 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
+    - cat {{ .PR_SOURCE_CHART }}/openshift/values.yaml
+    - cat {{ .PR_SOURCE_CHART }}/openshift/patch.sh
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
@@ -96,6 +98,8 @@ tasks:
   upgrade.install-latest-release:
     deps: [init.seed]
     cmds:
+    - cat {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml
+    - cat {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh"
@@ -114,6 +118,8 @@ tasks:
 
   upgrade.upgrade-from-latest-to-pr:
     cmds:
+    - cat {{ .PR_SOURCE_CHART }}/openshift/values.yaml
+    - cat {{ .PR_SOURCE_CHART }}/openshift/patch.sh
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
