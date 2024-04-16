@@ -3,7 +3,7 @@ version: '3'
 vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
-  TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }}'
   FIXTURES_DIR: ../fixtures
   TEST_CHART_DIR: ../../../../
   TEST_TMP_DIR: /tmp
@@ -72,13 +72,17 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
+    - |
+      if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
+        export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}openshift/patch.sh"
+      fi
     - helm install integration {{ .PR_SOURCE_CHART }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml
         --timeout 20m0s
         --wait
-        {{ .TEST_HELM_EXTRA_ARGS }}
+        {{ .TEST_HELM_EXTRA_ARGS }} $TEST_OPENSHIFT_ARGS
 
   setup.post:
     cmds:
@@ -92,13 +96,17 @@ tasks:
   upgrade.install-latest-release:
     deps: [init.seed]
     cmds:
+    - |
+      if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
+        export TEST_OPENSHIFT_ARGS="--values {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .LATEST_RELEASE_PATH }}openshift/patch.sh"
+      fi
     - helm install integration {{ .LATEST_RELEASE_PATH }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml
         --timeout 20m0s
         --wait
-        {{ .TEST_HELM_EXTRA_ARGS }}
+        {{ .TEST_HELM_EXTRA_ARGS }} $TEST_OPENSHIFT_ARGS
 
   upgrade.pre:
     cmds:
@@ -106,6 +114,10 @@ tasks:
 
   upgrade.upgrade-from-latest-to-pr:
     cmds:
+    - |
+      if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
+        export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}openshift/patch.sh"
+      fi
     - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
@@ -140,7 +152,7 @@ tasks:
         --set identityKeycloak.postgresql.auth.password=$KEYCLOAK_POSTGRESQL_SECRET \
         --set identityPostgresql.auth.password=dummy \
         --timeout 20m0s \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+        --wait {{ .TEST_HELM_EXTRA_ARGS }} $TEST_OPENSHIFT_ARGS
 
   all:
     cmds:
