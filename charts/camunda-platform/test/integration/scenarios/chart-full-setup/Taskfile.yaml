@@ -75,12 +75,12 @@ tasks:
     cmds:
     - cat {{ .PR_SOURCE_CHART }}/openshift/values.yaml
     - cat {{ .PR_SOURCE_CHART }}/openshift/patch.sh
+    - helm version
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
       fi
-    - helm version
-    - helm install integration {{ .PR_SOURCE_CHART }}
+      helm install integration {{ .PR_SOURCE_CHART }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml
@@ -102,12 +102,12 @@ tasks:
     cmds:
     - cat {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml
     - cat {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh
+    - helm version
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh"
       fi
-    - helm version
-    - helm install integration {{ .LATEST_RELEASE_PATH }}
+      helm install integration {{ .LATEST_RELEASE_PATH }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml
@@ -123,12 +123,11 @@ tasks:
     cmds:
     - cat {{ .PR_SOURCE_CHART }}/openshift/values.yaml
     - cat {{ .PR_SOURCE_CHART }}/openshift/patch.sh
+    - helm version
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
       fi
-    - helm version
-    - |
       export TEST_SECRET=$(kubectl get secret "integration-test" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.client-secret}" | base64 --decode)
       export ZEEBE_SECRET=$(kubectl get secret "integration-zeebe-identity-secret" \
