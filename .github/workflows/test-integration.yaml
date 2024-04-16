@@ -22,7 +22,7 @@ jobs:
       id-token: write
       deployments: write
     secrets: inherit
-    uses: ./.github/workflows/test-integration-template.yaml
+    uses: ./.github/workflows/test-integration-template.yaml@${{ github.event.pull_request.head.sha }}
     with:
       identifier: "${{ github.event.pull_request.number }}"
       persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
