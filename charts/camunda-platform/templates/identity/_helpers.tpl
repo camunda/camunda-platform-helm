@@ -37,7 +37,7 @@ Create a default fully qualified app name.
             {{- $host := .Values.identity.ingress.host -}}
             {{- printf "%s://%s" $proto $host -}}
         {{- else -}}
-            {{- "" -}}
+            {{- "http://localhost:8080" -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}
