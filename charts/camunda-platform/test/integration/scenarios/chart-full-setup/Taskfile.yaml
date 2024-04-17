@@ -58,7 +58,6 @@ tasks:
     - echo "CAMUNDA_HELM_REPO_ROOT={{ .CAMUNDA_HELM_REPO_ROOT }}"
     - echo "CAMUNDA_HELM_REPO_ROOT absolute path:"
     - readlink -f {{ .CAMUNDA_HELM_REPO_ROOT }}
-    - ls -al {{ .TEST_TMP_DIR }}
     - echo "Helm version"
     - helm version
     - |
@@ -66,8 +65,6 @@ tasks:
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
         helm pull {{ .LATEST_RELEASE_SOURCE }} --untar --untardir {{ .LATEST_RELEASE_PATH }}
       fi
-    - echo "ls TEST_TMP_DIR"
-    - ls -al {{ .TEST_TMP_DIR }}
     - |
       # Create the local chart package to install.
       helm package {{ .PR_SOURCE_CHART }}
