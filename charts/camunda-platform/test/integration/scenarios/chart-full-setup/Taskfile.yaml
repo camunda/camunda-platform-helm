@@ -56,9 +56,7 @@ tasks:
       fi
     - |
       # Create the local chart package to install.
-      if [[ "${TEST_CHART_FLOW}" == "install" ]]; then
-        helm package {{ .TEST_CHART_DIR }}
-      fi
+      helm package {{ .TEST_CHART_DIR }}
 
   setup.exec:
     deps: [init.seed]
