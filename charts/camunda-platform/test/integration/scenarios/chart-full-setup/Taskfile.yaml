@@ -5,11 +5,9 @@ vars:
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }}'
   FIXTURES_DIR: ../fixtures
-  TEST_CHART_DIR: ../../../../
   TEST_TMP_DIR: /tmp
   
   LATEST_RELEASE_SOURCE: camunda/camunda-platform
-  # LATEST_RELEASE_PATH: '{{ (printf "%s/camunda-platform/" .TEST_TMP_DIR) }}'
   LATEST_RELEASE_PATH: '{{ .TEST_TMP_DIR }}/camunda-platform/'
 
   CAMUNDA_HELM_REPO_ROOT: '{{ env "PWD" }}'
@@ -49,15 +47,19 @@ tasks:
     - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
     - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
       ../../testsuites/base/files/variables.env
+    - echo "TEST_NAMESPACE={{ .TEST_NAMESPACE }}"
+    - echo "TEST_CLUSTER_TYPE={{ .TEST_CLUSTER_TYPE }}"
+    - echo "TEST_HELM_EXTRA_ARGS={{ .TEST_HELM_EXTRA_ARGS }}"
+    - echo "FIXTURES_DIR={{ .FIXTURES_DIR }}"
     - echo "TEST_CHART_FLOW={{ .TEST_CHART_FLOW }}"
-    - echo "TEST_CHART_DIR={{ .TEST_CHART_DIR }}"
     - echo "TEST_TMP_DIR={{ .TEST_TMP_DIR }}"
-    - echo "ls TEST_TMP_DIR"
-    - echo "TEST_CHART_DIR_ABSOLUTE_PATH"
-    - readlink -f {{ .TEST_CHART_DIR }}
-    - echo "CAMUNDA_HELM_REPO_ROOT"
+    - echo "LATEST_RELEASE_SOURCE={{ .LATEST_RELEASE_SOURCE }}"
+    - echo "LATEST_RELEASE_PATH={{ .LATEST_RELEASE_PATH }}"
+    - echo "CAMUNDA_HELM_REPO_ROOT={{ .CAMUNDA_HELM_REPO_ROOT }}"
+    - echo "CAMUNDA_HELM_REPO_ROOT absolute path:"
     - readlink -f {{ .CAMUNDA_HELM_REPO_ROOT }}
     - ls -al {{ .TEST_TMP_DIR }}
+    - echo "Helm version"
     - helm version
     - |
       # Extract OpenShift values from released chart for upgrade test.
@@ -68,14 +70,11 @@ tasks:
     - ls -al {{ .TEST_TMP_DIR }}
     - |
       # Create the local chart package to install.
-      helm package {{ .TEST_CHART_DIR }}
+      helm package {{ .PR_SOURCE_CHART }}
 
   setup.exec:
     deps: [init.seed]
     cmds:
-    - cat {{ .PR_SOURCE_CHART }}/openshift/values.yaml
-    - cat {{ .PR_SOURCE_CHART }}/openshift/patch.sh
-    - helm version
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
@@ -100,9 +99,6 @@ tasks:
   upgrade.install-latest-release:
     deps: [init.seed]
     cmds:
-    - cat {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml
-    - cat {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh
-    - helm version
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .LATEST_RELEASE_PATH }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .LATEST_RELEASE_PATH }}/openshift/patch.sh"
@@ -121,9 +117,6 @@ tasks:
 
   upgrade.upgrade-from-latest-to-pr:
     cmds:
-    - cat {{ .PR_SOURCE_CHART }}/openshift/values.yaml
-    - cat {{ .PR_SOURCE_CHART }}/openshift/patch.sh
-    - helm version
     - |
       if [[ "${TEST_CLUSTER_TYPE}" == "openshift" ]]; then
         export TEST_OPENSHIFT_ARGS="--values {{ .PR_SOURCE_CHART }}/openshift/values.yaml --post-renderer bash --post-renderer-args {{ .PR_SOURCE_CHART }}/openshift/patch.sh"
