@@ -12,7 +12,7 @@ spec:
   ingressClassName: {{ .Values.global.ingress.className }}
   rules:
     {{- if .Values.global.ingress.host }}
-    - host: {{ .Values.global.ingress.host }}
+    - host: {{ tpl .Values.global.ingress.host . }}
       http:
     {{- else }}
     - http:

@@ -8,7 +8,7 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: {{ .Values.zeebeGateway.replicas  }}
+  replicas: {{ tpl .Values.zeebeGateway.replicas . }}
   selector:
     matchLabels:
       {{- include "zeebe.matchLabels.gateway" . | nindent 6 }}

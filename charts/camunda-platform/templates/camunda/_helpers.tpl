@@ -168,7 +168,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
       {{-
         printf "%s://%s:%v%s%s"
           .Values.global.identity.keycloak.url.protocol
-          .Values.global.identity.keycloak.url.host
+          (tpl .Values.global.identity.keycloak.url.host . )
           .Values.global.identity.keycloak.url.port
           .Values.global.identity.keycloak.contextPath
           .Values.global.identity.keycloak.realm

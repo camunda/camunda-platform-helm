@@ -257,6 +257,6 @@ spec:
         {{- end }}
         resources:
           requests:
-            storage: {{ .Values.zeebe.pvcSize | quote }}
+            storage: {{ tpl .Values.zeebe.pvcSize . | quote }}
   {{- end }}
 {{- end }}

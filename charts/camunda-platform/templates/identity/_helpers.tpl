@@ -157,7 +157,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
 */}}
 {{- define "identity.keycloak.host" -}}
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
-        {{- .Values.global.identity.keycloak.url.host -}}
+        {{- tpl .Values.global.identity.keycloak.url.host . -}}
     {{- else -}}
         {{- include "identity.keycloak.hostDefault" . -}}
     {{- end -}}
