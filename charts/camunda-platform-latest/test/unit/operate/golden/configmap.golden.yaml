@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: operate
     app.kubernetes.io/version: "8.5.2"
 data:
-  application.yml: |
+  application.yaml: |
     spring:
       profiles:
         active: "identity-auth"
@@ -59,7 +59,7 @@ data:
       # Zeebe instance
       zeebe:
         # Broker contact point
-        brokerContactPoint: "camunda-platform-test-zeebe-gateway:26500"
+        gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
     logging:
       level:
         ROOT: INFO
