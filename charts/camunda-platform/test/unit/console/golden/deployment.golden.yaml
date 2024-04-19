@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.5.11"
+    app.kubernetes.io/version: "8.5.12"
   annotations:
     {}
 spec:
@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 1c65e1c8db562b2603d6c55b98d8a29f32d56fcf6e4849a0f6bc7ec2c91e1b44
+        checksum/config: d0ff599fd9f43adfcae9389eb3dfb67ecc87e0114e2893183f4cd39bf1494010
       labels:
         app: camunda-platform
         app.kubernetes.io/name: camunda-platform
@@ -46,7 +46,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: camunda-platform
-          image: registry.camunda.cloud/console/console-sm:8.5.11
+          image: registry.camunda.cloud/console/console-sm:8.5.12
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
