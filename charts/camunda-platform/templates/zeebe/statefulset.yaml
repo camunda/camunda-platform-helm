@@ -253,7 +253,7 @@ spec:
       spec:
         accessModes: {{ .Values.zeebe.pvcAccessModes }}
         {{- if .Values.zeebe.pvcStorageClassName }}
-        storageClassName: {{ .Values.zeebe.pvcStorageClassName }}
+        storageClassName: {{ tpl .Values.zeebe.pvcStorageClassName . }}
         {{- end }}
         resources:
           requests:
