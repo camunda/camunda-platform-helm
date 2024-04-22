@@ -39,7 +39,7 @@ jobs:
         - "8.3"
         - "8.2"
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
       with:
         ref: camunda-platform-${{ matrix.camundaChart }}
     - name: Login to GKE
