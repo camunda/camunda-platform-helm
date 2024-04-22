@@ -15,7 +15,12 @@ data:
     server:
       servlet:
         context-path: {{ .Values.operate.contextPath | quote }}
+    management:
+      server:
+        servlet:
+          context-path: {{ .Values.operate.contextPath | quote }}
     {{- end }}
+
     {{- if .Values.global.identity.auth.enabled }}
     spring:
       profiles:

@@ -513,7 +513,7 @@ Release templates.
   {{- end }}
 
   {{- if .Values.operate.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.port }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.managementPort }}
   - name: Operate
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}

@@ -130,12 +130,15 @@ spec:
             - containerPort: 8080
               name: http
               protocol: TCP
+            - containerPort: 9600
+              name: management
+              protocol: TCP
           {{- if .Values.operate.startupProbe.enabled }}
           startupProbe:
             httpGet:
               path: {{ .Values.operate.contextPath }}{{ .Values.operate.startupProbe.probePath }}
               scheme: {{ .Values.operate.startupProbe.scheme }}
-              port: http
+              port: management
             initialDelaySeconds: {{ .Values.operate.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.operate.startupProbe.periodSeconds }}
             successThreshold: {{ .Values.operate.startupProbe.successThreshold }}
@@ -147,7 +150,7 @@ spec:
             httpGet:
               path: {{ .Values.operate.contextPath }}{{ .Values.operate.readinessProbe.probePath }}
               scheme: {{ .Values.operate.readinessProbe.scheme }}
-              port: http
+              port: management
             initialDelaySeconds: {{ .Values.operate.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.operate.readinessProbe.periodSeconds }}
             successThreshold: {{ .Values.operate.readinessProbe.successThreshold }}
@@ -159,7 +162,7 @@ spec:
             httpGet:
               path: {{ .Values.operate.contextPath }}{{ .Values.operate.livenessProbe.probePath }}
               scheme: {{ .Values.operate.livenessProbe.scheme }}
-              port: http
+              port: management
             initialDelaySeconds: {{ .Values.operate.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.operate.livenessProbe.periodSeconds }}
             successThreshold: {{ .Values.operate.livenessProbe.successThreshold }}

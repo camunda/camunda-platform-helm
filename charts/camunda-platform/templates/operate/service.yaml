@@ -19,6 +19,10 @@ spec:
       name: http
       targetPort: 8080
       protocol: TCP
+    - port: {{ .Values.operate.service.managementPort }}
+      name: management
+      targetPort: 9600
+      protocol: TCP
   selector:
     {{- include "operate.matchLabels" . | nindent 4 }}
 {{- end }}
