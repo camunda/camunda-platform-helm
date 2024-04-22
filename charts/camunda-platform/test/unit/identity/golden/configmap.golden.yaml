@@ -77,3 +77,4 @@ data:
 
     camunda:
       identity:
+        audience: "camunda-identity-resource-server"
