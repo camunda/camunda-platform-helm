@@ -15,27 +15,25 @@ data:
     {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
 {{- else }}
   application.yaml: |
-    {{- if or .Values.zeebeGateway.contextPath .Values.global.identity.auth.enabled }}
-    management:
-      {{- if .Values.zeebeGateway.contextPath }}
-      server:
-        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
-      {{- end }}
-
+    {{- if .Values.global.identity.auth.enabled }}
     spring:
-      {{- if .Values.zeebeGateway.contextPath }}
-      webflux:
-        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
-      {{- end }}
-      {{- if .Values.global.identity.auth.enabled }}
       profiles:
         active: "identity-auth"
-      {{- end }}
+    {{- end }}
+
+    {{- if .Values.zeebeGateway.contextPath }}
+    management:
+      server:
+        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
     {{- end }}
 
     server:
       address: "0.0.0.0"
       port: {{  .Values.zeebeGateway.service.restPort | quote }}
+      {{- if .Values.zeebeGateway.contextPath }}
+      servlet:
+        context-path: {{ .Values.zeebeGateway.contextPath | quote }}
+      {{- end }}
     {{- if or .Values.global.identity.auth.enabled .Values.global.multitenancy.enabled }}
     camunda:
       identity:
