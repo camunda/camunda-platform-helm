@@ -6,4 +6,4 @@ tests, releases, etc. For the Camunda official docs, please check [Camunda 8 Sel
 
 - [GitHub Actions Workflows](./gha-workflows.md)
 - Tests (TBA).
-- Release (TBA).
+- [Release](./release.md).
