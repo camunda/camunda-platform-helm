@@ -371,6 +371,13 @@ console:
 
   ## @param console.replicas Number of Console replicas
   replicas: 1
+  console:
+    ## @param console.keycloak Keycloak authentication settings for the Console.
+    keycloak:
+      ## @param console.keycloak.realm Specifies the Keycloak realm used for authentication.
+      realm: "camunda-platform"
+
+
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
