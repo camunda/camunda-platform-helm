@@ -33,7 +33,7 @@ spec:
           {{- end }}
           env:
             - name: JAVA_OPTIONS
-              value: "-Xmx1536m"
+              value: "-XX:MaxRAMPercentage=80.0"
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
