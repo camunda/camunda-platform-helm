@@ -201,7 +201,11 @@ This is mainly used to access the external Keycloak service in the global Ingres
 [identity] Keycloak issuer backend URL.
 */}}
 {{- define "identity.issuerBackendUrl" -}}
+    {{- if .Values.global.identity.auth.issuerBackendUrl }}
+    {{- .Values.global.identity.auth.issuerBackendUrl }}
+    {{- else }}
     {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
+    {{- end }}
 {{- end -}}
 
 {{/*
