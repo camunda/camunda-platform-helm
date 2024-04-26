@@ -46,6 +46,8 @@ jobs:
           ${{ runner.os }}-go-
     - name: Update golden files
       run: make go.update-golden-only
+    - name: Install readme-generator-for-helm
+      run: npm install -g @bitnami/readme-generator-for-helm
     - name: Update README
       run: make helm.readme-update
     - name: Git pull
