@@ -190,7 +190,7 @@ entries:
         - name: Camunda 8 Self-Managed Helm charts
           url: https://github.com/camunda/camunda-platform-helm
     apiVersion: v2
-    appVersion: 9.3.x
+    appVersion: 8.4.x
     created: "2024-03-15T21:10:03.534857554Z"
     dependencies:
     - condition: identity.enabled
@@ -250,7 +250,7 @@ entries:
         - name: Camunda 8 Self-Managed Helm charts
           url: https://github.com/camunda/camunda-platform-helm
     apiVersion: v2
-    appVersion: 9.3.x
+    appVersion: 8.4.x
     created: "2024-03-11T13:54:37.774580376Z"
     dependencies:
     - condition: identity.enabled
