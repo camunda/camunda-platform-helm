@@ -412,7 +412,7 @@ Downloading common from repo https://charts.bitnami.com/bitnami
 
 ## Releasing the Charts
 
-Please see the corresponding [release guide](../../RELEASE.md) to find out how to release the chart.
+Please see the corresponding [release guide](../../docs/release.md) to find out how to release the chart.
 
 ## Parameters
 

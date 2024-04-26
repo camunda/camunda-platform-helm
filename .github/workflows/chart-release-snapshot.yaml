@@ -1,0 +1,80 @@
+# TODO: Convert this workflow to a template and use it for both snapshot and actual releases.
+name: "Chart - Release - Snapshot"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Helm Chart Snapshot
+    permissions:
+      packages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: charts/camunda-platform
+    #
+    # Vars.
+    env:
+      REPOSITORY_NAME: "camunda/helm"
+      CHART_NAME: "camunda-platform"
+      # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
+      CHART_VERSION: "0.0.0-main-snapshot"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        with:
+          ref: main
+          fetch-depth: 0
+      #
+      # Changelog.
+      - name: Generate snapshot changelog
+        run: |
+          LATEST_TAG="$(git describe --tags $(git rev-list --tags="${{ env.CHART_NAME }}-*" --max-count=1))"
+          export SNAPSHOT_DESCRIPTION="Changes since the latest release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${LATEST_TAG}...main"
+          yq -i '.description |= strenv(SNAPSHOT_DESCRIPTION)' Chart.yaml
+      #
+      # Package.
+      - name: Install Helm CLI
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Print Helm CLI version
+        run: helm version
+      - name: Package and push Helm chart
+        env:
+          HELM_EXPERIMENTAL_OCI: 1
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
+          helm dependency update
+          helm package --version ${{ env.CHART_VERSION }} .
+          helm push ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ env.REPOSITORY_NAME }}
+          helm registry logout ghcr.io
+      #
+      # Security signature.
+      - name: Install Cosign CLI
+        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
+      - name: Sign Helm chart with Cosign
+        run: |
+          cosign sign-blob -y ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
+            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle
+      - name: Verify signed Helm chart with Cosign
+        run: |
+          cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
+            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
+            --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install ORAS CLI
+        uses: oras-project/setup-oras@ee7dbe1144cb00080a89497f937dae78f85fce29 # v1
+      - name: Upload Helm chart Cosign bundle
+        run: |
+          oras push ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }}.cosign.bundle \
+            ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain

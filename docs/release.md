@@ -1,9 +1,21 @@
 # Camunda Helm Chart Release Process
 
-The charts are build, linted and tested on every push to the main branch. If the chart version
-(in `Chart.yaml`) changes a new github release with the corresponding packaged helm chart is
-created. The charts are hosted via github pages and use the release artifacts. We use the
+The charts are built, linted, and tested on every push to the main branch. If the chart version
+(in `Chart.yaml`) changes a new GitHub release with the corresponding packaged helm chart is
+created. The charts are hosted via GitHub pages and use the release artifacts. We use the
 [chart-releaser-action](https://github.com/helm/chart-releaser-action) to release the charts.
+
+## Snapshot
+
+For debugging and advanced testing purposes, we provide a snapshot chart from the unreleased changes on the `main` branch (never use it in production or stable environments).
+
+It will be always updated with the fixed version name `0.0.0-main-snapshot` (the tag needed to start with SemVer because Helm requires it).
+
+```shell
+helm template my-camunda-devel \
+  oci://ghcr.io/camunda/helm/camunda-platform \
+  --version 0.0.0-main-snapshot
+```
 
 ## Process
 
@@ -20,14 +32,14 @@ make release.chores
 
 This action will:
 
-- Locally pull latest updates to the `main` branch.
+- Locally pull the latest updates to the `main` branch.
 - Locally create a new branch called `release` from `main` branch.
-- Bump chart version and make a commit.
+- Bump the chart version and make a commit.
 - Generate release notes and make a commit.
-- Push updated `release` branch to the repo.
+- Push the updated `release` branch to the repo.
 - Generate a link to open a PR with prefilled title and template.
 
-Next, all that you need to open the PR using the generated link and follow th checklist there.
+Next, all you need to open the PR using the generated link and follow the checklist there.
 
 > [!NOTE]
 >
@@ -38,7 +50,7 @@ the release notes.
 ## Artifact Hub
 
 [Camunda repo](https://artifacthub.io/packages/search?repo=camunda) is already configured on
-Artifact Hub. Once the release workflow is done, Artifact Hub automatically scans Camunda Helm repo
+Artifact Hub. Once the release workflow is done, Artifact Hub automatically scans the Camunda Helm repo
 and the new release will show on Artifact Hub.
 
 > [!NOTE]

@@ -70,7 +70,7 @@ We value all feedback and contributions. To start contributing to this project, 
 
 ## Releasing
 
-Please visit the [Camunda 8 release guide](./RELEASE.md) to find out how to release the charts.
+Please visit the [Camunda 8 release guide](./docs/release.md) to find out how to release the charts.
 
 ## Deprecation
 
