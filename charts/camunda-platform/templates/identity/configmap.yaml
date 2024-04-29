@@ -28,7 +28,7 @@ data:
         type: {{ include "camundaPlatform.authType" . | quote }}
         {{- end }}
         issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-        backend-url: {{ include "identity.issuerBackendUrl" . | quote }}
+        backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 
       {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
       component-presets:
