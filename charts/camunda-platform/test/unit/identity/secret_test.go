@@ -75,3 +75,45 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 	s.NotEmpty(secret.Data)
 	s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
 }
+func (s *secretTest) TestSecretNotRenderedWhenExistingSecretIsDefined() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identityPostgresql.enabled":             "true",
+			"identityPostgresql.auth.existingSecret": "supersecretpassword",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	s.templates = []string{
+		"templates/identity/postgresql-secret.yaml",
+	}
+
+	// when
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "Error: could not find template templates/identity/postgresql-secret.yaml in chart")
+}
+func (s *secretTest) TestSecretIsRenderedWhenExistingSecretIsNotDefined() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identityPostgresql.enabled": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	s.templates = []string{
+		"templates/identity/postgresql-secret.yaml",
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var secret coreV1.Secret
+	helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+	// then
+	s.NotEmpty(secret.Data)
+}
