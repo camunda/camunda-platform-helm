@@ -1,6 +1,25 @@
 {{/*
-NOTE: According to how Helm order the templates, this helper file should be the last file in the Zeebe dir,
-      so Helm will process it first, and all migration steps will be applied to all templates in the chart implicitly.
+NOTE: Helm prioritizes files that are deeply nested in subdirectories when it's determining the render order.
+      see the sort function in helm:
+      https://github.com/helm/helm/blob/d58d7b376265338e059ff11c71267b5a6cf504c3/pkg/engine/engine.go#L347-L356
+      
+      Because of this sort order, and that we have nested subcharts such that
+      one of the rendered templates is:
+      charts/keycloak/charts/postgresql/charts/common/templates/validations/_validations.tpl,
+      we need this z_compatibility_helpers.tpl to be nested in at least 8 folders.
+
+      This was tested by using the following test helm chart:
+      https://github.com/jessesimpson36/jesse-subchart-values-hacktest/tree/main
+
+      As well as using the following patch ontop of helm to trace through the helm code:
+      https://github.com/helm/helm/compare/main...jessesimpson36:helm:render_test
+
+      In addition to the subdirectory ordering, helm also orders the templates
+      alphabetically descending within the same folder level, which is why it
+      is named with a "z_" inside the zeebe directory. so Helm will process
+      this file first, and all migration steps will be applied to all templates
+      in the chart implicitly:
+      https://github.com/helm/helm/blob/d58d7b376265338e059ff11c71267b5a6cf504c3/pkg/engine/engine.go#L362-L369
 */}}
 
 {{/*
