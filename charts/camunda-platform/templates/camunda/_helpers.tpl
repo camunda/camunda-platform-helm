@@ -174,7 +174,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
           .Values.global.identity.keycloak.realm
       -}}
     {{- else -}}
-      {{- include "identity.issuerBackendUrl" . -}}
+      {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
