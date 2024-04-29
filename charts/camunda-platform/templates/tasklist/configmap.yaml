@@ -15,6 +15,9 @@ data:
     server:
       servlet:
         contextPath: {{ .Values.tasklist.contextPath | quote }}
+    management:
+      server:
+        base-path: {{ .Values.tasklist.contextPath | quote }}
     {{- end }}
   
     {{- if .Values.global.identity.auth.enabled }}
