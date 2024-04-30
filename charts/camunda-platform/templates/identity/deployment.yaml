@@ -216,10 +216,6 @@ spec:
               value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
             {{- end }}
             {{- end }}
-            - name: identityPostgresql.enabled
-              value: {{ .Values.identityPostgresql.enabled | quote }}
-            - name: identity.externalDatabase.enabled
-              value: {{ .Values.identity.externalDatabase.enabled | quote }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
               valueFrom:
