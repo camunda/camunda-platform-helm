@@ -362,7 +362,7 @@ console:
     repository: console/console-sm
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.20
+    tag: 8.5.21
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -371,6 +371,11 @@ console:
 
   ## @param console.replicas Number of Console replicas
   replicas: 1
+
+  ## @param console.keycloak Keycloak authentication settings for the Console.
+  keycloak:
+    ## @param console.keycloak.realm Specifies the Keycloak realm used for authentication.
+    realm: "camunda-platform"
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
