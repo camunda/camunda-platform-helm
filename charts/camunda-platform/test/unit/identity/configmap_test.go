@@ -129,6 +129,7 @@ func (s *configMapSpringTemplateTest) TestConfigMapAuthIssuerBackendUrlWhenExpli
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"identityKeycloak.enabled": "false",
+			"global.identity.auth.enabled": "false",
 			"global.identity.auth.issuerBackendUrl": "https://example.com/",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
