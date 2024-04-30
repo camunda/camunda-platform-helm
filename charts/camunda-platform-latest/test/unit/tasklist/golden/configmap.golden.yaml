@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: tasklist
     app.kubernetes.io/version: "8.5.2"
 data:
-  application.yml: |
+  application.yaml: |
     spring:
       profiles:
         active: identity-auth
@@ -67,7 +67,7 @@ data:
       # Zeebe instance
       zeebe:
         # Broker contact point
-        brokerContactPoint: "camunda-platform-test-zeebe-gateway:26500"
+        gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
         restAddress: "http://camunda-platform-test-zeebe-gateway:8080"
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
