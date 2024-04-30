@@ -7,7 +7,8 @@ of the CI pipelines.
   - [Single Namespace](#single-namespace)
   - [Multi Namespace](#multi-namespace)
   - [Persistent namespace deletion](#persistent-namespace-deletion)
-
+  - [GitHub Actions: Integration Test Template Configuration](#github-actions-integration-test-template-configuration)
+    - [Integration Test Workflow Inputs](#workflow-inputs)
 ## Integration tests
 
 The most important workflow is the [main integration workflow](../.github/workflows/test-integration-template.yaml),
@@ -145,3 +146,73 @@ jobs:
     with:
       github-run-id: "${{ github.event.workflow_run.id }}"
 ```
+# GitHub Actions: Integration Test Template Configuration
+
+This section details the inputs for the GitHub Actions workflow defined in `.github/workflows/test-integration-template.yaml` within the Camunda Platform Helm repository. These inputs allow you to customize Helm chart deployments for integration testing.
+
+## Workflow Inputs
+
+```yaml
+name: "Integration Test Template"
+
+on:
+  workflow_call:
+    inputs:
+      identifier:
+        description: "Unique identifier used in the deployment hostname."
+        required: true
+        type: string
+        # Example: identifier: 'unique-id-123'
+
+      camunda-helm-git-ref:
+        description: "Git reference for the Camunda Helm chart repository (branch, tag, or commit SHA)."
+        required: false
+        default: 'main'
+        type: string
+        # Example: camunda-helm-git-ref: 'feature-branch'
+
+      caller-git-ref:
+        description: "Git reference of the caller's repository (branch, tag, or commit SHA) that initiated the workflow."
+        required: false
+        default: 'main'
+        type: string
+        # Example: caller-git-ref: 'caller-feature-branch'
+
+      persistent:
+        description: "Whether to keep the test deployment after the workflow is completed. Note: All persistent deployments will be deleted frequently to save costs."
+        required: false
+        default: false
+        type: boolean
+        # Example: persistent: true
+
+      platforms:
+        description: "Specifies the cloud platforms to use for the test (e.g., GKE, OpenShift)."
+        required: false
+        default: 'gke'
+        type: string
+        # Example: platforms: 'gke'
+
+      flows:
+        description: "Types of operations to perform with the Helm chart, like install, upgrade."
+        required: false
+        default: 'install'
+        type: string
+        # Example: flows: 'install'
+
+      test-enabled:
+        description: "Flag to enable or disable the execution of test scenarios after Helm chart deployment."
+        required: false
+        default: true
+        type: boolean
+        # Example: test-enabled: true
+
+      extra-values:
+        description: "Pass extra values to the Helm chart during deployment."
+        required: false
+        type: string
+        # Example: extra-values: '--set image.tag=latest --set environment=production'
+```
+
+## Additional Information
+
+For more details on how to use these inputs within the workflow or to modify them for specific testing needs, refer to the official [GitHub Actions documentation](https://docs.github.com/en/actions).
