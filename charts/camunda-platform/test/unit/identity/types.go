@@ -7,8 +7,13 @@ type IdentityConfigYAML struct {
 }
 
 type IdentityYAML struct {
-	Url   string    `yaml:"url"`
-	Flags FlagsYAML `yaml:"flags"`
+	Url          string           `yaml:"url"`
+	Flags        FlagsYAML        `yaml:"flags"`
+	AuthProvider AuthProviderYAML `yaml:"authProvider"`
+}
+
+type AuthProviderYAML struct {
+	BackendUrl string `yaml:"backend-url"`
 }
 
 type ServerYAML struct {

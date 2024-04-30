@@ -198,13 +198,6 @@ This is mainly used to access the external Keycloak service in the global Ingres
 {{- end -}}
 
 {{/*
-[identity] Keycloak issuer backend URL.
-*/}}
-{{- define "identity.issuerBackendUrl" -}}
-    {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
-{{- end -}}
-
-{{/*
 [identity] Get Keycloak auth admin user. For more details:
 */}}
 {{- define "identity.keycloak.authAdminUser" -}}
