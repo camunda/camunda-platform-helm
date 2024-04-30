@@ -48,7 +48,7 @@ spec:
             - name: KEYCLOAK_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
             - name: KEYCLOAK_REALM
-              value: camunda-platform
+              value: {{ .Values.console.keycloak.realm | quote }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: console-api
             - name: CAMUNDA_IDENTITY_CLIENT_ID
