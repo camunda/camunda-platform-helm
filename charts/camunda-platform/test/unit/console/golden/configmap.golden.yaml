@@ -22,7 +22,7 @@ data:
           releases:
           - name: camunda-platform-test
             namespace: camunda-platform
-            version: 10.0.3
+            version: 10.0.4
             components:
             - name: Console
               id: console
