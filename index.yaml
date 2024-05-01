@@ -2,6 +2,82 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "fullUrl for identity"
+        - kind: fixed
+          description: "align conditionals in identityPostgres"
+        - kind: fixed
+          description: "uses issuerBackendUrl if present before trying to calculate a keycloak url"
+        - kind: fixed
+          description: "keycloak realm in console component is hardcoded"
+        - kind: fixed
+          description: "ensured 8.5 compatibility layer works with sub-charts"
+        - kind: fixed
+          description: "identity configmap sets audience variable"
+        - kind: fixed
+          description: "identity configmap to use correct audience"
+        - kind: fixed
+          description: "mismatch errors during installation z_compatibility_helpers.tpl"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+    apiVersion: v2
+    appVersion: 8.5.x
+    created: "2024-05-01T16:11:11.610876483Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: https://charts.bitnami.com/bitnami
+      version: 19.4.1
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 12.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql
+      version: 11.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 20.0.0
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: da0bad0772b9f552c0ee32f9f7857cf8f3e54cd9e70653a25649dd5f835d12a7
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-10.0.3/camunda-platform-10.0.3.tgz
+    version: 10.0.3
+  - annotations:
       artifacthub.io/changes: ""
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
@@ -7690,6 +7766,41 @@ entries:
     urls:
     - https://charts.bitnami.com/bitnami/keycloak-7.1.6.tgz
     version: 7.1.6
+  web-modeler-postgresql:
+  - annotations:
+      category: Database
+    apiVersion: v2
+    appVersion: 14.5.0
+    created: "2024-05-01T16:11:11.853178279Z"
+    dependencies:
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: PostgreSQL (Postgres) is an open source object-relational database
+      known for reliability and data integrity. ACID-compliant, it supports foreign
+      keys, joins, views, triggers and stored procedures.
+    digest: 832197064e9c3a367bd48555b66792b871b1c2b2bba7008e8e4db13ac4ebd9ca
+    home: https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+    icon: https://bitnami.com/assets/stacks/postgresql/img/postgresql-stack-220x234.png
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - sql
+    - replication
+    - cluster
+    maintainers:
+    - name: Bitnami
+      url: https://github.com/bitnami/charts
+    name: web-modeler-postgresql
+    sources:
+    - https://github.com/bitnami/containers/tree/main/bitnami/postgresql
+    - https://www.postgresql.org/
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/web-modeler-postgresql-11.9.13/web-modeler-postgresql-11.9.13.tgz
+    version: 11.9.13
   zeebe-cluster-helm:
   - annotations:
       artifacthub.io/changes: |
@@ -9580,4 +9691,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-04-10T14:53:04.856371108Z"
+generated: "2024-05-01T16:11:11.853639808Z"
