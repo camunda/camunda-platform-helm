@@ -19,4 +19,5 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 * identity configmap sets audience variable ([#1654](https://github.com/camunda/camunda-platform-helm/issues/1654))
 * identity configmap to use correct audience ([#1615](https://github.com/camunda/camunda-platform-helm/issues/1615))
 * mismatch errors during installation z_compatibility_helpers.tpl ([#1634](https://github.com/camunda/camunda-platform-helm/issues/1634))
+* added zeebe gateway rest api port to port forwards in `helm status` ([#1645](https://github.com/camunda/camunda-platform-helm/issues/1645))
 
