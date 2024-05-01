@@ -1,10 +1,25 @@
 {{/*
-NOTE: According to how Helm order the templates, this helper file should be the last file in the Zeebe dir,
-      so Helm will process it first, and all migration steps will be applied to all templates in the chart implicitly.
+TODO: Remove the whole file just before 8.6 release.
+NOTE: We need to load this file first thing before all other resources to support backward compatibility.
+
+      Helm prioritizes files that are deeply nested in subdirectories when it's determining the render order.
+      see the sort function in Helm:
+      https://github.com/helm/helm/blob/d58d7b376265338e059ff11c71267b5a6cf504c3/pkg/engine/engine.go#L347-L356
+      
+      Because of this sort order, and that we have nested subcharts such that
+      one of the rendered templates is:
+      charts/keycloak/charts/postgresql/charts/common/templates/validations/_validations.tpl,
+      we need this z_compatibility_helpers.tpl to be nested in at least 8 folders.
+
+      In addition to the subdirectory ordering, Helm also orders the templates
+      alphabetically descending within the same folder level, which is why it
+      is named with a "z_" inside the zeebe directory. so Helm will process
+      this file first, and all migration steps will be applied to all templates
+      in the chart implicitly:
+      https://github.com/helm/helm/blob/d58d7b376265338e059ff11c71267b5a6cf504c3/pkg/engine/engine.go#L362-L369
 */}}
 
 {{/*
-TODO: Remove after 8.7 cycle.
 ********************************************************************************
 * Camunda 8.5 backward compatibility.
 
@@ -65,17 +80,20 @@ New:
 Notes:
 - Helm CLI will show a warning like "cannot overwrite table with non table for", but the old syntax will still work.
 */}}
-{{- if or (empty .Values.global.elasticsearch.url) (eq .Values.global.elasticsearch.url nil) -}}
+{{- if or (not .Values.global.elasticsearch.url) (empty .Values.global.elasticsearch.url) -}}
     {{- $esProtocol := .Values.global.elasticsearch.protocol | default "http" -}}
-    {{- $esHost := .Values.global.elasticsearch.host | default "{{ .Release.Name }}-elasticsearch" -}}
+    {{- $esHost := .Values.global.elasticsearch.host | default (print .Release.Name "-elasticsearch") -}}
     {{- $esPort := .Values.global.elasticsearch.port | default "9200" -}}
-    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" $esProtocol "host" (tpl $esHost .) "port" $esPort) -}}
-
-{{- else if (typeIs "string" .Values.global.elasticsearch.url) -}}
+    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" $esProtocol "host" $esHost "port" $esPort) -}}
+{{- else if eq (kindOf .Values.global.elasticsearch.url) "string" -}}
     {{- $esURL := urlParse .Values.global.elasticsearch.url -}}
     {{- $esProtocol := $esURL.scheme | default .Values.global.elasticsearch.protocol | default "http" -}}
-    {{- $esHost := ($esURL.host | splitList ":" | first) | default .Values.global.elasticsearch.host | default "{{ .Release.Name }}-elasticsearch" -}}
+    {{- $esHost := ($esURL.host | splitList ":" | first) | default .Values.global.elasticsearch.host | default (print .Release.Name "-elasticsearch") -}}
     {{- $esPort := ($esURL.host | splitList ":" | last) | default .Values.global.elasticsearch.port | default "9200" -}}
-    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" $esProtocol "host" (tpl $esHost .) "port" $esPort) -}}
-
+    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" $esProtocol "host" $esHost "port" $esPort) -}}
+{{- else }}
+    {{- /* Handle unexpected type with a default or error message */}}
+    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" "http" "host" (print .Release.Name "-elasticsearch") "port" "9200") -}}
+    {{- /* Optionally, log a warning or error */}}
+    {{/* WARNING: .Values.global.elasticsearch.url is not a string as expected. Using default settings. */}}
 {{- end -}}

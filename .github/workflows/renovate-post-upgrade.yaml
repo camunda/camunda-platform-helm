@@ -28,7 +28,7 @@ jobs:
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       with:
         token: '${{ steps.generate-github-token.outputs.token }}'
     - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
@@ -46,6 +46,8 @@ jobs:
           ${{ runner.os }}-go-
     - name: Update golden files
       run: make go.update-golden-only
+    - name: Install readme-generator-for-helm
+      run: npm install -g @bitnami/readme-generator-for-helm
     - name: Update README
       run: make helm.readme-update
     - name: Git pull

@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.5.10"
+    app.kubernetes.io/version: "8.5.22"
   annotations:
     {}
 spec:
@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 134c8a92042deaa7e42f5ba599debb59fa4a2b5bab7ef7af8dcbf92061171bdf
+        checksum/config: 461f4b2a514476439dc2c7f640c3cda80bfdd034dd308d0ccf455f514afcc9a7
       labels:
         app: camunda-platform
         app.kubernetes.io/name: camunda-platform
@@ -46,7 +46,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: camunda-platform
-          image: registry.camunda.cloud/console/console-sm:8.5.10
+          image: registry.camunda.cloud/console/console-sm:8.5.22
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -62,7 +62,7 @@ spec:
             - name: KEYCLOAK_BASE_URL
               value: "http://localhost:18080/auth"
             - name: KEYCLOAK_REALM
-              value: camunda-platform
+              value: "camunda-platform"
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: console-api
             - name: CAMUNDA_IDENTITY_CLIENT_ID
