@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/component: zeebe-gateway
         app.kubernetes.io/version: "8.5.0"
       annotations:
-        checksum/config: 1495edfd5b638cbfea7bbecd13cb4c3d1f72d23505477c5fe543fa759353a8a9
+        checksum/config: 26a968774d7ce649ad5230bb347861f8a44e1720fa6a21e441567313d462ac22
     spec:
       imagePullSecrets:
         []
