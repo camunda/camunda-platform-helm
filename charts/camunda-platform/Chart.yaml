@@ -23,12 +23,12 @@ dependencies:
     alias: identityKeycloak
     repository: https://charts.bitnami.com/bitnami
     version: 19.4.1
-    condition: "identityKeycloak.enabled"
+    condition: "identity.keycloak.enabled,identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
     repository: https://charts.bitnami.com/bitnami
     version: 12.x.x
-    condition: "identityPostgresql.enabled"
+    condition: "identity.postgresql.enabled,identityPostgresql.enabled"
   # WebModeler Dependencies.
   - name: web-modeler-postgresql
     alias: postgresql
