@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/component: connectors
         app.kubernetes.io/version: "8.5.0"
       annotations:
-        checksum/config: 2d98d646fb527480cea3890c2873fbebc2b6871632167dae190bf36885cf3895
+        checksum/config: d55fcca129d91935802a095b81063c3f2e015f032d16b4b4fe7d05ce998a0353
     spec:
       imagePullSecrets:
         []
