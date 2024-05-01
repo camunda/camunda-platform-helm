@@ -58,4 +58,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: "- kind: fixed\n  description: \"fullUrl for identity\"\n- kind: fixed\n  description: \"align conditionals in identityPostgres\"\n- kind: fixed\n  description: \"uses issuerBackendUrl if present before trying to calculate a keycloak url\"\n- kind: fixed\n  description: \"keycloak realm in console component is hardcoded\"\n- kind: fixed\n  description: \"ensured 8.5 compatibility layer works with sub-charts\"\n- kind: fixed\n  description: \"identity configmap sets audience variable\"\n- kind: fixed\n  description: \"identity configmap to use correct audience\"\n- kind: fixed\n  description: \"mismatch errors during installation z_compatibility_helpers.tpl\"\n"
