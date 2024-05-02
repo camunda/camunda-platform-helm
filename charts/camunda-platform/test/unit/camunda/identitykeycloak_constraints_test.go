@@ -55,14 +55,11 @@ func (s *ConstraintsTemplateTest) TestIdentityKeycloakConstraintFailure() {
 func (s *ConstraintsTemplateTest) TestIdentityKeycloakConstraintSuccess() {
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.enabled":                                "true",
-			"identityKeycloak.enabled":                        "false",
-			"global.identity.keycloak.url.protocol":           "https",
-			"global.identity.keycloak.url.host":               "keycloak.prod.svc.cluster.local",
-			"global.identity.keycloak.url.port":               "8443",
-			"global.identity.keycloak.auth.adminUser":         "testAdmin",
-			"global.identity.keycloak.auth.existingSecret":    "ownExistingSecretKeycloak",
-			"global.identity.keycloak.auth.existingSecretKey": "test-admin",
+			"identity.enabled":                      "true",
+			"identityKeycloak.enabled":              "false",
+			"global.identity.keycloak.url.protocol": "https",
+			"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
+			"global.identity.keycloak.url.port":     "8443",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
