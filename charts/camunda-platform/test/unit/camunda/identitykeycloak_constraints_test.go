@@ -10,6 +10,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 type ConstraintsTemplateTest struct {
@@ -17,18 +18,20 @@ type ConstraintsTemplateTest struct {
 	chartPath string
 	release   string
 	namespace string
+	templates []string
 }
 
 func TestConstraintsTemplate(t *testing.T) {
 	t.Parallel()
 
-	chartPath, err := filepath.Abs("../../../../")
+	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	suite.Run(t, &ConstraintsTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{},
 	})
 }
 
@@ -41,23 +44,33 @@ func (s *ConstraintsTemplateTest) TestIdentityKeycloakConstraintFailure() {
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	output, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, []string{"templates/camunda/constraints.tpl"})
+	output, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-	s.Require().Error(err, "Should fail if identityKeycloak is enabled but identity is disabled")
-	s.Require().Contains(output, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
+	s.Require().Error(err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
+
 }
 
 func (s *ConstraintsTemplateTest) TestIdentityKeycloakConstraintSuccess() {
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.enabled":         "true",
-			"identityKeycloak.enabled": "false",
+			"identity.enabled":                                "true",
+			"identityKeycloak.enabled":                        "false",
+			"global.identity.keycloak.url.protocol":           "https",
+			"global.identity.keycloak.url.host":               "keycloak.prod.svc.cluster.local",
+			"global.identity.keycloak.url.port":               "8443",
+			"global.identity.keycloak.auth.adminUser":         "testAdmin",
+			"global.identity.keycloak.auth.existingSecret":    "ownExistingSecretKeycloak",
+			"global.identity.keycloak.auth.existingSecretKey": "test-admin",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	output, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, []string{"templates/camunda/constraints.tpl"})
+	output, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-	s.Require().NoError(err, "Should not fail if identity is enabled or identityKeycloak is disabled")
-	s.Require().NotContains(output, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
+	s.Require().NoError(err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
+
 }
