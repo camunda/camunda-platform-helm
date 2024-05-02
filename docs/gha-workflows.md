@@ -150,67 +150,66 @@ jobs:
 
 This section details the inputs for the GitHub Actions workflow defined in `.github/workflows/test-integration-template.yaml` within the Camunda Platform Helm repository. These inputs allow you to customize Helm chart deployments for integration testing.
 
-## Workflow Inputs
+## Workflow Inputs - Usage
 
 ```yaml
-name: "Integration Test Template"
+jobs:
+  ...
+  helm-deploy:
+    name: Helm chart Integration Tests
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    secrets: inherit
+    with:
+      # Unique identifier used in the deployment hostname
+      # Required: true
+      identifier: 'dev-console-sm'
 
-on:
-  workflow_call:
-    inputs:
-      identifier:
-        description: "Unique identifier used in the deployment hostname."
-        required: true
-        type: string
-        # Example: identifier: 'unique-id-123'
+      # Git reference for the Camunda Helm chart repository 
+      # Default: 'main'
+      # Required: false
+      camunda-helm-git-ref: 'main'
 
-      camunda-helm-git-ref:
-        description: "Git reference for the Camunda Helm chart repository (branch, tag, or commit SHA)."
-        required: false
-        default: 'main'
-        type: string
-        # Example: camunda-helm-git-ref: 'feature-branch'
+      # Git reference of the caller's repository (branch, tag, or commit SHA) that initiated the workflow
+      # Default: 'main'
+      # Required: false
+      caller-git-ref: 'feature-branch'
 
-      caller-git-ref:
-        description: "Git reference of the caller's repository (branch, tag, or commit SHA) that initiated the workflow."
-        required: false
-        default: 'main'
-        type: string
-        # Example: caller-git-ref: 'caller-feature-branch'
+      # Whether to keep the test deployment after the workflow is completed
+      # Default: false
+      # Note: All persistent deployments will be deleted frequently to save costs
+      # Required: false
+      persistent: false
 
-      persistent:
-        description: "Whether to keep the test deployment after the workflow is completed. Note: All persistent deployments will be deleted frequently to save costs."
-        required: false
-        default: false
-        type: boolean
-        # Example: persistent: true
+      # Specifies the cloud platform that is currently used
+      # Default: 'gke'
+      # Required: false
+      platforms: 'gke'
 
-      platforms:
-        description: "Specifies the cloud platforms to use for the test (e.g., GKE, OpenShift)."
-        required: false
-        default: 'gke'
-        type: string
-        # Example: platforms: 'gke'
+      # Types of operations to perform with the Helm chart, like install, upgrade
+      # Default: 'install'
+      # Required: false
+      flows: 'install'
 
-      flows:
-        description: "Types of operations to perform with the Helm chart, like install, upgrade."
-        required: false
-        default: 'install'
-        type: string
-        # Example: flows: 'install'
+      # Flag to enable or disable the execution of test scenarios after Helm chart deployment
+      # Default: true
+      # Required: false
+      test-enabled: true
 
-      test-enabled:
-        description: "Flag to enable or disable the execution of test scenarios after Helm chart deployment."
-        required: false
-        default: true
-        type: boolean
-        # Example: test-enabled: true
+      # Pass extra values to the Helm chart during deployment
+      # Required: false
+      extra-values: |
+        global:
+          image:
+            tag: 8.2.10
+        console:
+          image:
+            tag: xyz
 
-      extra-values:
-        description: "Pass extra values to the Helm chart during deployment."
-        required: false
-        type: string
-        # Example: extra-values: '--set image.tag=latest --set environment=production'
+# Note:
+# - Adjust 'identifier', 'caller-git-ref', 'flows', 'test-enabled', and 'extra-values' as needed for your specific testing scenario.
+# - The 'identifier' is essential for distinguishing between different deployments, particularly useful in environments with multiple parallel deployments.
+# - For 'extra-values', ensure the YAML format is correct and that the values specified meet the requirements for your environment.
+
 ```
 
 ## Additional Information
