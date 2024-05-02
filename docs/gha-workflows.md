@@ -150,7 +150,7 @@ jobs:
 
 This section details the inputs for the GitHub Actions workflow defined in `.github/workflows/test-integration-template.yaml` within the Camunda Platform Helm repository. These inputs allow you to customize Helm chart deployments for integration testing.
 
-## Workflow Inputs - Usage
+## Workflow Inputs
 
 ```yaml
 jobs:
