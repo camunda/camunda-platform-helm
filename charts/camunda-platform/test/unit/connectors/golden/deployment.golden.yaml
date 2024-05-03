@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.5.0"
+    app.kubernetes.io/version: "8.5.1"
   annotations:
     {}
 spec:
@@ -33,9 +33,9 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: "8.5.0"
+        app.kubernetes.io/version: "8.5.1"
       annotations:
-        checksum/config: 4b6b899fb8aed74f41732a1ce2f3af8865cf767711ded2e2d1aef1caf8b97df1
+        checksum/config: 87f215c3cade5a0543e7dca152bd0b1a3b5c67224f22ff685fe40fbe870f5750
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.5.0
+          image: camunda/connectors-bundle:8.5.1
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
