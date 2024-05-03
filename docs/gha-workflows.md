@@ -148,7 +148,7 @@ jobs:
 ```
 # GitHub Actions: Integration Test Template Configuration
 
-This section details the inputs for the GitHub Actions workflow defined in `.github/workflows/test-integration-template.yaml` within the Camunda Platform Helm repository. These inputs allow you to customize Helm chart deployments for integration testing.
+This section details the inputs for the GitHub Actions workflow defined in [test-integration-template.yaml](../.github/workflows/test-integration-template.yaml) within the Camunda Platform Helm repository. These inputs allow you to customize Helm chart deployments for integration testing.
 
 ## Workflow Inputs
 
@@ -175,8 +175,8 @@ jobs:
       caller-git-ref: 'feature-branch'
 
       # Whether to keep the test deployment after the workflow is completed
-      # Default: false
       # Note: All persistent deployments will be deleted frequently to save costs
+      # Default: false
       # Required: false
       persistent: false
 
@@ -204,13 +204,14 @@ jobs:
         console:
           image:
             tag: xyz
-
-# Note:
-# - Adjust 'identifier', 'caller-git-ref', 'flows', 'test-enabled', and 'extra-values' as needed for your specific testing scenario.
-# - The 'identifier' is essential for distinguishing between different deployments, particularly useful in environments with multiple parallel deployments.
-# - For 'extra-values', ensure the YAML format is correct and that the values specified meet the requirements for your environment.
-
 ```
+
+>### Note:
+> - Adjust 'identifier', 'caller-git-ref', 'flows', 'test-enabled', and 'extra-values' as needed for your specific testing scenario.
+> - The 'identifier' is essential for distinguishing between different deployments, particularly useful in environments with multiple parallel deployments.
+> - For 'extra-values', ensure the YAML format is correct and that the values specified meet the requirements for your environment.
+
+
 
 ## Additional Information
 
