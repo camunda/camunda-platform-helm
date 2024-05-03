@@ -30,8 +30,36 @@ data:
         issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 
-      {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
       component-presets:
+        connectors:
+          applications:
+            - name: Connectors
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              type: m2m
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              permissions:
+                - audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
+                  definition: read:*
+        console:
+          applications:
+            - name: "Console"
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              type: public
+              root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/"
+          apis:
+            - name: Console API
+              audience: {{ .Values.global.identity.auth.console.audience | default "console-api" | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Console"
+              description: "Grants full access to Console"
+              permissions:
+                - audience: {{ .Values.global.identity.auth.console.audience | default "console-api" | quote }}
+                  definition: write:*
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -52,6 +80,14 @@ data:
                 - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
                   definition: write
         operate:
+          applications:
+            - name: Operate
+              id: ${CAMUNDA_OPERATE_CLIENT_ID:${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
+              type: confidential
+              secret: ${CAMUNDA_OPERATE_SECRET:${KEYCLOAK_INIT_OPERATE_SECRET:}}
+              root-url: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/identity-callback"
           apis:
             - name: Operate API
               audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
@@ -68,7 +104,38 @@ data:
                   definition: read:*
                 - audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
                   definition: write:*
+        optimize:
+          applications:
+            - name: Optimize
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              type: confidential
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+          apis:
+            - name: Optimize API
+              audience: {{ include "optimize.authAudience" . | default "optimize-api" | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+                - audience: {{ include "optimize.authAudience" . | default "optimize-api" | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+                  definition: read:users
         tasklist:
+          applications:
+            - name: Tasklist
+              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
+              type: confidential
+              secret: ${CAMUNDA_TASKLIST_SECRET:${KEYCLOAK_INIT_TASKLIST_SECRET:}}
+              root-url: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/identity-callback"
           apis:
             - name: Tasklist API
               audience: {{ include "tasklist.authAudience" . | default "tasklist-api" | quote }}
@@ -85,35 +152,14 @@ data:
                   definition: read:*
                 - audience: {{ include "tasklist.authAudience" . | default "tasklist-api" | quote }}
                   definition: write:*
-        zeebe:
-          apis:
-            - name: Zeebe API
-              audience: {{ .Values.global.identity.auth.zeebe.audience | default "zeebe-api" | quote }}
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Zeebe"
-              description: "Grants full access to the Zeebe API"
-              permissions:
-                - audience: {{ .Values.global.identity.auth.zeebe.audience | default "zeebe-api" | quote }}
-                  definition: write:*
-        optimize:
-          apis:
-            - name: Optimize API
-              audience: {{ include "optimize.authAudience" . | default "optimize-api" | quote }}
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Optimize"
-              description: "Grants full access to Optimize"
-              permissions:
-                - audience: {{ include "optimize.authAudience" . | default "optimize-api" | quote }}
-                  definition: write:*
-                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
-                  definition: read:users
         webmodeler:
+          applications:
+            - name: "Web Modeler"
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              type: public
+              root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/login-callback"
           apis:
             - name: Web Modeler Internal API
               audience: {{ .Values.global.identity.auth.webModeler.clientApiAudience | default "web-modeler-api" | quote }}
@@ -139,20 +185,19 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
                   definition: read:users
-        console:
+        zeebe:
           apis:
-            - name: Console API
-              audience: {{ .Values.global.identity.auth.console.audience | default "console-api" | quote }}
+            - name: Zeebe API
+              audience: {{ .Values.global.identity.auth.zeebe.audience | default "zeebe-api" | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
           roles:
-            - name: "Console"
-              description: "Grants full access to Console"
+            - name: "Zeebe"
+              description: "Grants full access to the Zeebe API"
               permissions:
-                - audience: {{ .Values.global.identity.auth.console.audience | default "console-api" | quote }}
+                - audience: {{ .Values.global.identity.auth.zeebe.audience | default "zeebe-api" | quote }}
                   definition: write:*
-      {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
@@ -170,43 +215,6 @@ data:
             root-url: {{ include "identity.externalUrl" . | quote }}
             redirect-uris:
               - "/auth/login-callback"
-      presets:
-        tasklist:
-          clients:
-            - name: Tasklist
-              id: tasklist
-              type: confidential
-              secret: ${KEYCLOAK_INIT_TASKLIST_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
-              redirect-uris:
-                - "/identity-callback"
-        operate:
-          clients:
-            - name: Operate
-              id: ${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
-              type: confidential
-              secret: ${KEYCLOAK_INIT_OPERATE_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
-              redirect-uris:
-                - "/identity-callback"
-        optimize:
-          clients:
-            - name: Optimize
-              id: ${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
-              type: confidential
-              secret: ${KEYCLOAK_INIT_OPTIMIZE_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
-              redirect-uris:
-                - "/api/authentication/callback"
-        console:
-          clients:
-            - name: "Console"
-              id: ${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
-              type: public
-              root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
-              redirect-uris:
-                - "/"
-
     {{- end }}
     {{- end }}
     server:
