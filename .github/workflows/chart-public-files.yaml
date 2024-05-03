@@ -15,7 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  copy-values-files:
+  copy-files:
+    name: Copy chart public files
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,7 +27,7 @@ jobs:
       - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
         with:
           path: main
-      - name: Copy the values files
+      - name: Copy files
         run: |
           mkdir -p camunda-platform/values camunda-platform/version-matrix
           cp -a main/charts/camunda-platform/values/*.yaml camunda-platform/values/
