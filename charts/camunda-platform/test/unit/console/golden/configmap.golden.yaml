@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.5.20"
+    app.kubernetes.io/version: "8.5.22"
 data:
   application.yaml: |-
     # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
@@ -22,11 +22,11 @@ data:
           releases:
           - name: camunda-platform-test
             namespace: camunda-platform
-            version: 10.0.2
+            version: 10.0.4
             components:
             - name: Console
               id: console
-              version: 8.5.20
+              version: 8.5.22
               url: 
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus

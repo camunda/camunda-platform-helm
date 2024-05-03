@@ -37,7 +37,7 @@ Create a default fully qualified app name.
             {{- $host := .Values.identity.ingress.host -}}
             {{- printf "%s://%s" $proto $host -}}
         {{- else -}}
-            {{- "" -}}
+            {{- "http://localhost:8080" -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}
@@ -195,13 +195,6 @@ This is mainly used to access the external Keycloak service in the global Ingres
         (include "identity.keycloak.port" .)
         (include "identity.keycloak.contextPath" .)
     -}}
-{{- end -}}
-
-{{/*
-[identity] Keycloak issuer backend URL.
-*/}}
-{{- define "identity.issuerBackendUrl" -}}
-    {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
 {{- end -}}
 
 {{/*

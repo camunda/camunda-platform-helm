@@ -15,7 +15,7 @@ data:
       url: {{ include "identity.externalUrl" . | quote }}
       {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
       flags:
-        multi-tenancy: true
+        multi-tenancy: {{ .Values.global.multitenancy.enabled | quote }}
       {{- end }}
 
       {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
@@ -28,7 +28,7 @@ data:
         type: {{ include "camundaPlatform.authType" . | quote }}
         {{- end }}
         issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-        backend-url: {{ include "identity.issuerBackendUrl" . | quote }}
+        backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 
       {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
       component-presets:
