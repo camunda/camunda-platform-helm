@@ -74,10 +74,7 @@ jobs:
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
-          export OUTPUT_VERSION_HEADER="### Images"
-          export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
-          gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
-            charts/camunda-platform/RELEASE-NOTES.md
+          make release.generate-notes-footer
       - name: Clean up release readme
         run: |
           sed -ri '/Badge .+/d' charts/camunda-platform/README.md
@@ -127,8 +124,7 @@ jobs:
           command: make release.verify-components-version
       - name: Generate version matrix
         run: |
-          git pull --tags
-          make release.generate-version-matrix-all > charts/camunda-platform/VERSION-MATRIX.md
+          make release.generate-version-matrix-released
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "renovate[bot]"

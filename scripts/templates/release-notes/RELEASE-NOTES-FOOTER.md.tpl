@@ -1,8 +1,10 @@
-{{ getenv "IMAGE_VERSION_MATRIX" }}
+### Release Info
+
+{{ getenv "VERSION_MATRIX_RELEASE_INFO" }}
 
 ### Verification
 
-To verify integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
+To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
 cosign verify-blob {{ getenv "CHART_NAME_WITH_VERSION" }}.tgz \

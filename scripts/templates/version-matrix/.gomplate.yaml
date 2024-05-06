@@ -1,0 +1,23 @@
+plugins:
+  versionMatrix:
+    cmd: scripts/generate-version-matrix.sh
+    timeout: 30s
+  # TODO: Move to the new format once gomplate v4 is released.
+  # https://github.com/hairyhenderson/gomplate/releases
+  # helmCLIVersion:
+  #   cmd: scripts/generate-version-matrix.sh
+  #   args:
+  #     - --helm-cli-version
+  #   timeout: 30s
+  # chartImagesCamunda:
+  #   cmd: scripts/generate-version-matrix.sh
+  #   args:
+  #     - --chart-images-camunda
+  #   pipe: true
+  #   timeout: 30s
+  # chartImagesNonCamunda:
+  #   cmd: scripts/generate-version-matrix.sh
+  #   args:
+  #     - --chart-images-non-camunda
+  #   pipe: true
+  #   timeout: 30s
