@@ -201,6 +201,43 @@ data:
             root-url: "http://localhost:8080"
             redirect-uris:
               - "/auth/login-callback"
+      # The presets key should be removed when 8.6.0 of the applications are released
+      presets:
+        tasklist:
+          clients:
+            - name: Tasklist
+              id: tasklist
+              type: confidential
+              secret: ${KEYCLOAK_INIT_TASKLIST_SECRET:}
+              root-url: "http://localhost:8082"
+              redirect-uris:
+                - "/identity-callback"
+        operate:
+          clients:
+            - name: Operate
+              id: ${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
+              type: confidential
+              secret: ${KEYCLOAK_INIT_OPERATE_SECRET:}
+              root-url: "http://localhost:8081"
+              redirect-uris:
+                - "/identity-callback"
+        optimize:
+          clients:
+            - name: Optimize
+              id: ${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
+              type: confidential
+              secret: ${KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+              root-url: "http://localhost:8083"
+              redirect-uris:
+                - "/api/authentication/callback"
+        console:
+          clients:
+            - name: "Console"
+              id: ${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
+              type: public
+              root-url: "http://localhost:8080"
+              redirect-uris:
+                - "/"
     server:
       port: 8080
 
