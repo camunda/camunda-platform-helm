@@ -31,6 +31,8 @@ data:
                 minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
+        {{- else -}}
+          {{ " {}" }}
         {{- end }}
         {{- if .Values.global.opensearch.enabled }}
           opensearch:
