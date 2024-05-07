@@ -50,6 +50,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
+  helm.sh/cliVersion: "3.14.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
