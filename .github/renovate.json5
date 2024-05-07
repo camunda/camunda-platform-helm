@@ -9,8 +9,16 @@
     "enabled": true
   },
   "patch": {
-    "enabled": true
+    "enabled": true,
   },
+  "requiredStatusChecks": [
+    "Custom values - Core",
+    "Custom values - Apps",
+    "Custom values - Zeebe",
+    "Custom values - WebModeler",
+    "lint-and-test",
+    "update-readme-metadata"
+  ],
   "helm-values": {
     "fileMatch": ["(^|/).*?values.*?\\.yaml$"]
   },
