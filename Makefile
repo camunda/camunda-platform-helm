@@ -171,8 +171,10 @@ release.verify-components-version:
 
 .PHONY: release.generate-version-matrix-single
 release.generate-version-matrix-single:
+	@bash scripts/generate-version-matrix.sh --init
 	@bash scripts/generate-version-matrix.sh --single
 
 .PHONY: release.generate-version-matrix-all
 release.generate-version-matrix-all:
+	@bash scripts/generate-version-matrix.sh --init
 	@bash scripts/generate-version-matrix.sh --all
