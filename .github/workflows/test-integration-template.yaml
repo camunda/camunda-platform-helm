@@ -227,7 +227,7 @@ jobs:
       timeout-minutes: 20
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
-    - name: Get failed Pods info
+    - name: 🚨 Get failed Pods info 🚨
       if: failure()
       uses: ./.github/actions/failed-pods-info
     - name: Cleanup GitHub deployment
