@@ -8,7 +8,8 @@ on:
     - main
     paths:
     - 'charts/camunda-platform/values/*.yaml'
-    - 'charts/camunda-platform/VERSION-MATRIX.md'
+    - 'charts/camunda-platform/version-matrix/**'
+    - 'scripts/templates/version-matrix/*'
   workflow_dispatch: { }
 
 permissions:
