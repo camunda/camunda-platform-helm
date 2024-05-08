@@ -173,12 +173,17 @@ release.chores:
 release.verify-components-version:
 	@bash scripts/verify-components-version.sh
 
-.PHONY: release.generate-version-matrix-unreleased
-release.generate-version-matrix-unreleased:
+.PHONY: release.generate-version-matrix-index
+release.generate-version-matrix-index:
 	@bash scripts/generate-version-matrix.sh --init
-	@bash scripts/generate-version-matrix.sh --unreleased
+	@bash scripts/generate-version-matrix.sh --index
 
 .PHONY: release.generate-version-matrix-released
 release.generate-version-matrix-released:
 	@bash scripts/generate-version-matrix.sh --init
 	@bash scripts/generate-version-matrix.sh --released
+
+.PHONY: release.generate-version-matrix-unreleased
+release.generate-version-matrix-unreleased:
+	@bash scripts/generate-version-matrix.sh --init
+	@bash scripts/generate-version-matrix.sh --unreleased
