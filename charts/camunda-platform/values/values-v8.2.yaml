@@ -32,7 +32,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 3.10.9
+    tag: 3.10.10
 
 webModeler:
   # Camunda Enterprise repository.
