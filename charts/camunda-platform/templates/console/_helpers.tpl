@@ -48,12 +48,11 @@ app.kubernetes.io/component: console
 Create the name of the service account to use
 */}}
 {{- define "console.serviceAccountName" -}}
-    {{- if .Values.console.serviceAccount.enabled }}
-        {{- default (include "console.fullname" .) .Values.console.serviceAccount.name }}
-    {{- else }}
-        {{- default "default" .Values.console.serviceAccount.name }}
-    {{- end }}
-{{- end }}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "console"
+        "context" $
+    ) -}}
+{{- end -}}
 
 {{/*
 Get the image pull secrets.

@@ -120,9 +120,7 @@ spec:
       {{- if .Values.webModeler.websockets.extraVolumes }}
       {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
-      {{- if .Values.webModeler.serviceAccount.name}}
-      serviceAccountName: {{ .Values.webModeler.serviceAccount.name }}
-      {{- end }}
+      serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
       {{- if .Values.webModeler.websockets.podSecurityContext }}
       securityContext: {{- toYaml .Values.webModeler.websockets.podSecurityContext | nindent 8 }}
       {{- end }}

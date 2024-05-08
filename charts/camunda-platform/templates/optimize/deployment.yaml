@@ -297,9 +297,7 @@ spec:
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.optimize.serviceAccount.name }}
-      serviceAccountName: {{ .Values.optimize.serviceAccount.name }}
-      {{- end }}
+      serviceAccountName: {{ include "optimize.serviceAccountName" . }}
       {{- if .Values.optimize.podSecurityContext }}
       securityContext: {{- toYaml .Values.optimize.podSecurityContext | nindent 8 }}
       {{- end }}

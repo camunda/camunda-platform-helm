@@ -44,12 +44,11 @@ app.kubernetes.io/component: tasklist
 [tasklist] Create the name of the service account to use
 */}}
 {{- define "tasklist.serviceAccountName" -}}
-    {{- if .Values.tasklist.serviceAccount.enabled }}
-        {{- default (include "tasklist.fullname" .) .Values.tasklist.serviceAccount.name }}
-    {{- else }}
-        {{- default "default" .Values.tasklist.serviceAccount.name }}
-    {{- end }}
-{{- end }}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "tasklist"
+        "context" $
+    ) -}}
+{{- end -}}
 
 {{/*
 [tasklist] Get the image pull secrets.

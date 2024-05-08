@@ -42,12 +42,11 @@ app.kubernetes.io/component: optimize
 [optimize] Create the name of the service account to use
 */}}
 {{- define "optimize.serviceAccountName" -}}
-    {{- if .Values.optimize.serviceAccount.enabled }}
-        {{- default (include "optimize.fullname" .) .Values.optimize.serviceAccount.name }}
-    {{- else }}
-        {{- default "default" .Values.optimize.serviceAccount.name }}
-    {{- end }}
-{{- end }}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "optimize"
+        "context" $
+    ) -}}
+{{- end -}}
 
 {{/*
 [optimize] Get the image pull secrets.

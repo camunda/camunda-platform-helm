@@ -47,17 +47,16 @@ Defines match labels for connectors, which are extended by sub-charts and should
 {{- template "camundaPlatform.matchLabels" . }}
 app.kubernetes.io/component: connectors
 {{- end -}}
+
 {{/*
 [connectors] Create the name of the service account to use
 */}}
 {{- define "connectors.serviceAccountName" -}}
-{{- if .Values.connectors.serviceAccount.enabled }}
-{{- default (include "connectors.fullname" .) .Values.connectors.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.connectors.serviceAccount.name }}
-{{- end }}
-
-{{- end }}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "connectors"
+        "context" $
+    ) -}}
+{{- end -}}
 
 {{/*
 [connectors] Create the name of the auth credentials

@@ -41,12 +41,11 @@ app.kubernetes.io/component: operate
 [operate] Create the name of the service account to use
 */}}
 {{- define "operate.serviceAccountName" -}}
-    {{- if .Values.operate.serviceAccount.enabled }}
-        {{- default (include "operate.fullname" .) .Values.operate.serviceAccount.name }}
-    {{- else }}
-        {{- default "default" .Values.operate.serviceAccount.name }}
-    {{- end }}
-{{- end }}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "operate"
+        "context" $
+    ) -}}
+{{- end -}}
 
 {{/*
 [operate] Get the image pull secrets.

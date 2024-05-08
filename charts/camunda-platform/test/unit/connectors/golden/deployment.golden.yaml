@@ -103,6 +103,7 @@ spec:
         - name: config
           configMap:
             name: camunda-platform-test-connectors-configuration
+      serviceAccountName: camunda-platform-test-connectors
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
