@@ -32,7 +32,7 @@ jobs:
         run: |
           mkdir -p camunda-platform/values camunda-platform/version-matrix
           cp -a main/charts/camunda-platform/values/*.yaml camunda-platform/values/
-          cp -a main/charts/camunda-platform/version-matrix/* camunda-platform/
+          cp -a main/charts/camunda-platform/version-matrix/* camunda-platform/version-matrix/
           rm -rf main
           find .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
