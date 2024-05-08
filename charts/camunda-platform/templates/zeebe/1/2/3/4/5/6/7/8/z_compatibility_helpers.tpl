@@ -80,7 +80,7 @@ New:
 Notes:
 - Helm CLI will show a warning like "cannot overwrite table with non table for", but the old syntax will still work.
 */}}
-{{- if or (not .Values.global.elasticsearch.url) (empty .Values.global.elasticsearch.url) -}}
+{{- if or (not .Values.global.elasticsearch.url) (not ((.Values.global.elasticsearch).url | default "")) -}}
     {{- $esProtocol := .Values.global.elasticsearch.protocol | default "http" -}}
     {{- $esHost := .Values.global.elasticsearch.host | default (print .Release.Name "-elasticsearch") -}}
     {{- $esPort := .Values.global.elasticsearch.port | default "9200" -}}
@@ -91,9 +91,4 @@ Notes:
     {{- $esHost := ($esURL.host | splitList ":" | first) | default .Values.global.elasticsearch.host | default (print .Release.Name "-elasticsearch") -}}
     {{- $esPort := ($esURL.host | splitList ":" | last) | default .Values.global.elasticsearch.port | default "9200" -}}
     {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" $esProtocol "host" $esHost "port" $esPort) -}}
-{{- else }}
-    {{- /* Handle unexpected type with a default or error message */}}
-    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" "http" "host" (print .Release.Name "-elasticsearch") "port" "9200") -}}
-    {{- /* Optionally, log a warning or error */}}
-    {{/* WARNING: .Values.global.elasticsearch.url is not a string as expected. Using default settings. */}}
 {{- end -}}
