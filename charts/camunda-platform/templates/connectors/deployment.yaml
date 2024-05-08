@@ -154,9 +154,7 @@ spec:
       {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
-      {{- if .Values.connectors.serviceAccount.name}}
-      serviceAccountName: {{ .Values.connectors.serviceAccount.name }}
-      {{- end }}
+      serviceAccountName: {{ include "connectors.serviceAccountName" . }}
       {{- if .Values.connectors.podSecurityContext }}
       securityContext: {{- toYaml .Values.connectors.podSecurityContext | nindent 8 }}
       {{- end }}

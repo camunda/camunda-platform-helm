@@ -3122,7 +3122,7 @@ connectors:
   ## @extra connectors.serviceAccount configuration for the service account where the Connectors pods are assigned to
   serviceAccount:
     ## @param connectors.serviceAccount.enabled if true, enables the Connectors service account
-    enabled: false
+    enabled: true
     ## @param connectors.serviceAccount.name can be used to set the name of the Connectors service account
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account

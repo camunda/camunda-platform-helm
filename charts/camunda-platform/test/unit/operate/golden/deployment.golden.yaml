@@ -111,6 +111,7 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
+      serviceAccountName: camunda-platform-test-operate
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

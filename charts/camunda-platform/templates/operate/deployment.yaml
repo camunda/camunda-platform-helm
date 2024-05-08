@@ -214,9 +214,7 @@ spec:
         {{- if .Values.operate.extraVolumes }}
         {{- .Values.operate.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.operate.serviceAccount.name }}
-      serviceAccountName: {{ .Values.operate.serviceAccount.name }}
-      {{- end }}
+      serviceAccountName: {{ include "operate.serviceAccountName" . }}
       {{- if .Values.operate.podSecurityContext }}
       securityContext: {{- toYaml .Values.operate.podSecurityContext | nindent 8 }}
       {{- end }}

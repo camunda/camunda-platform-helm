@@ -111,6 +111,7 @@ spec:
           configMap:
             name: camunda-platform-test-zeebe-gateway-configuration
             defaultMode: 484
+      serviceAccountName: camunda-platform-test-zeebe-gateway
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

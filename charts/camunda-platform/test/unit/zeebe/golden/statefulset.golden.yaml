@@ -142,6 +142,7 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+      serviceAccountName: camunda-platform-test-zeebe
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

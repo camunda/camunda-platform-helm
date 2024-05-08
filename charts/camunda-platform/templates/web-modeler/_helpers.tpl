@@ -176,12 +176,11 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Create the name of the service account to use
 */}}
 {{- define "webModeler.serviceAccountName" -}}
-  {{- if .Values.webModeler.serviceAccount.enabled }}
-    {{- default (include "webModeler.fullname" .) .Values.webModeler.serviceAccount.name }}
-  {{- else }}
-    {{- default "default" .Values.webModeler.serviceAccount.name }}
-  {{- end }}
-{{- end }}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "webModeler"
+        "context" $
+    ) -}}
+{{- end -}}
 
 {{/*
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.

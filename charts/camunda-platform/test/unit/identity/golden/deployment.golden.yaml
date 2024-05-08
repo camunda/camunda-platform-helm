@@ -176,6 +176,7 @@ spec:
         - name: config
           configMap:
             name: camunda-platform-test-identity-configuration
+      serviceAccountName: camunda-platform-test-identity
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
