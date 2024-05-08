@@ -6,6 +6,8 @@
 
 The Camunda Platform Helm repo contains and hosts Camunda Platform Helm charts.
 
+For more details about versions, check out the [full version matrix](./camunda-platform/version-matrix/).
+
 The charts can be accessed by adding the following Helm repo to your Helm setup:
 
 ```shell
@@ -36,7 +38,7 @@ helm repo update
 
 ## Versioning
 
-Since the 8.4 release (January 2024), the Camunda Helm chart version is decoupled from the version of the application (e.g., the chart version is 9.0.0 and the application version is 8.4.x).
+Since the 8.4 release (January 2024), the Camunda Helm chart version has been decoupled from the version of the application (e.g., the chart version is 9.0.0 and the application version is 8.4.x).
 
 For more details, check out the [full version matrix](./camunda-platform/version-matrix/).
 
