@@ -27,7 +27,7 @@ optimize:
   image:
     repository: camunda/optimize
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.5.0
+    tag: 8.5.1
 
 webModeler:
   # Camunda Enterprise repository.
@@ -49,7 +49,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       repository: bitnami/postgresql
-      tag: 15.6.0
+      tag: 15.7.0
 
 #
 # Elasticsearch
