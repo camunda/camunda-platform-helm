@@ -7,4 +7,4 @@ golang 1.22.3
 task 3.30.1
 gomplate 3.11.7
 git-chglog 0.15.4
-yq 4.43.1
+yq 4.44.1
