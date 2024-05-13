@@ -50,7 +50,7 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configmapTemplateTest) TestContainerShouldSetCorrectIdentityType() {
+func (s *configMapTemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
