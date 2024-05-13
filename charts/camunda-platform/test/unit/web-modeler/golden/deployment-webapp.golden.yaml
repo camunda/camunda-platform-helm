@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.13"
+    app.kubernetes.io/version: "8.2.14"
     app.kubernetes.io/component: webapp
   annotations:
     {}
@@ -32,14 +32,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.13"
+        app.kubernetes.io/version: "8.2.14"
         app.kubernetes.io/component: webapp
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-webapp
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.2.13"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.2.14"
         imagePullPolicy: IfNotPresent
         env:
           - name: NODE_ENV
