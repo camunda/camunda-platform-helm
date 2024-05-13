@@ -1,6 +1,14 @@
 package console
 
 type ConsoleYAML struct {
+	Camunda CamundaConfig `yaml:"camunda"`	
+}
+
+type CamundaConfig struct {
+	Console ConsoleConfig `yaml:"console"`
+}
+
+type ConsoleConfig struct {
 	OAuth OAuth2Config `yaml:"oAuth"`
 }
 

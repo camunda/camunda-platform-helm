@@ -74,5 +74,5 @@ func (s *configMapTemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	}
 
 	// then
-	s.Require().Equal("MICROSOFT", configmapApplication.OAuth.Type)
+	s.Require().Equal("MICROSOFT", configmapApplication.Camunda.Console.OAuth.Type)
 }
