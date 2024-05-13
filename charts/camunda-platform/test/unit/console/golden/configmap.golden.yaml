@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.5.34"
+    app.kubernetes.io/version: "8.5.37"
 data:
   application.yaml: |-
     # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
@@ -26,7 +26,7 @@ data:
             components:
             - name: Console
               id: console
-              version: 8.5.34
+              version: 8.5.37
               url: 
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
@@ -48,7 +48,7 @@ data:
               metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
             - name: Optimize
               id: optimize
-              version: 8.5.0
+              version: 8.5.1
               url: 
               readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
