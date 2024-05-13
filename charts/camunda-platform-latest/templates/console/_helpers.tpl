@@ -63,3 +63,18 @@ Get the image pull secrets.
         "context" $
     ) -}}
 {{- end }}
+
+{{/*
+[console] Define variables related to authentication.
+*/}}
+{{- define "console.authClientId" -}}
+  {{- .Values.global.identity.auth.console.clientId -}}
+{{- end -}}
+
+{{- define "console.authAudience" -}}
+  {{- .Values.global.identity.auth.console.clientApiAudience -}}
+{{- end -}}
+
+{{- define "console.authWellKnown" -}}
+  {{- .Values.global.identity.auth.console.wellKnown -}}
+{{- end -}}

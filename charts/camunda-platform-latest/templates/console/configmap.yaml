@@ -13,6 +13,13 @@ data:
     # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
     camunda:
       console:
+        oAuth:
+          clientId: {{ include "console.authClientId" . | quote }}
+          issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+          audience: {{ include "console.authAudience" . | quote }}
+          jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+          type: {{ include "camundaPlatform.authType" . | quote }}
+          wellKnown: {{ include "console.authWellKnown" . | quote }}
         managed:
           method: plain
           releases:
