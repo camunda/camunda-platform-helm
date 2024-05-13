@@ -21,11 +21,11 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	corev1 "k8s.io/api/core/v1"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type configMapTemplateTest struct {
@@ -54,9 +54,10 @@ func (s *configMapTemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"console.enabled":             "true",
-			"global.identity.auth.type":   "MICROSOFT",
-			"global.identity.auth.issuer": "https://example.com",
+			"console.enabled":                       "true",
+			"global.identity.auth.type":             "MICROSOFT",
+			"global.identity.auth.issuer":           "https://example.com",
+			"global.identity.auth.issuerBackendUrl": "https://example.com",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
