@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.3.11
+version: 8.3.12
 appVersion: 8.3.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 8.3.11
+    version: 8.3.12
     condition: "identity.enabled"
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
