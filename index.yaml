@@ -4,6 +4,77 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
+          description: "use component service account"
+        - kind: fixed
+          description: "handle type of es url correctly"
+        - kind: fixed
+          description: "set zeebe exporters empty map when disabled"
+        - kind: fixed
+          description: "add constraints for when identity is disabled and keycloak is enabled"
+        - kind: changed
+          description: "update identity application yaml to match upstream"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      helm.sh/cliVersion: 3.14.4
+    apiVersion: v2
+    appVersion: 8.5.x
+    created: "2024-05-14T18:06:04.680069438Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: https://charts.bitnami.com/bitnami
+      version: 19.4.1
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 12.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql
+      version: 11.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 20.0.0
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 30a1742aeabce0a667931be8fe4103dbf66580b1907593e1a2c543367ebc363f
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-10.0.5/camunda-platform-10.0.5.tgz
+    version: 10.0.5
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
           description: "multitenancy should not always be true"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
@@ -9941,4 +10012,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-05-13T20:35:31.33529094Z"
+generated: "2024-05-14T18:06:04.802998979Z"
