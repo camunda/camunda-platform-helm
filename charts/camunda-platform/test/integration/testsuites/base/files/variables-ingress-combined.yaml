@@ -10,7 +10,7 @@ preflightVars:
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
-    zeebeGateway: http://integration-zeebe-gateway:9600/zeebe
+    zeebeGateway: http://integration-zeebe-gateway:9600
 
 coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
