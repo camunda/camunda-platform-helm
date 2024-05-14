@@ -55,22 +55,22 @@
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
-      "matchPackageNames": ["bitnami/elasticsearch"],
+      "matchDepNames": ["bitnami/elasticsearch"],
       "allowedVersions": "~8.12.0"
     },
     {
       // Disable helm chart upgrades from bitnami/elasticsearch
-      "matchPackageNames": ["elasticsearch"],
+      "matchDepNames": ["elasticsearch"],
       "matchPaths": ["charts/camunda-platform/Chart.yaml"],
       "enabled": false
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
-      "matchPackagePatterns": ["kubectl"],
+      "matchDepPatterns": ["kubectl"],
       "allowedVersions": "<1.28.0"
     },
     {
-      "matchPackagePatterns": ["k8s.io/.*"],
+      "matchDepPatterns": ["k8s.io/.*"],
       "allowedVersions": "<0.28.0"
     }
   ],
