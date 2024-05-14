@@ -16,11 +16,6 @@ data:
 {{- else }}
   application.yaml: |
     {{- if or .Values.zeebeGateway.contextPath .Values.global.identity.auth.enabled }}
-    management:
-      {{- if .Values.zeebeGateway.contextPath }}
-      server:
-        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
-      {{- end }}
 
     spring:
       {{- if .Values.zeebeGateway.contextPath }}
