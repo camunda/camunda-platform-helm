@@ -76,11 +76,15 @@ release_notes_footer () {
 # Parse script input args.
 while test -n "${1}"; do
     case "${1}" in
+        --main)
+          main
+          ;;
         --footer)
           release_notes_footer
           ;;
         *)
-          main
+          echo "Unsupported option"
+          exit 1
           ;;
     esac
     shift

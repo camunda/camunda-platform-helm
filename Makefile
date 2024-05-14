@@ -140,7 +140,7 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 
 .PHONY: .release.generate-notes
 .release.generate-notes:
-	@bash scripts/generate-release-notes.sh
+	@bash scripts/generate-release-notes.sh --main
 
 .PHONY: release.generate-notes-footer
 release.generate-notes-footer:
