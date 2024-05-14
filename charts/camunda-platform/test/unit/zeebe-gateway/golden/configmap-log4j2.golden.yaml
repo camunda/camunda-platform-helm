@@ -17,7 +17,6 @@ data:
     <xml>
     </xml>
   application.yaml: |
-    management:
 
     spring:
       profiles:
