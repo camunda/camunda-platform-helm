@@ -57,8 +57,8 @@ global:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
-    # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.5.0
+    # renovate: datasource=docker depName=camunda/zeebe
+    tag: 8.5.1
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -362,7 +362,7 @@ console:
     repository: console/console-sm
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.37
+    tag: 8.5.34
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
