@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.0.4
+version: 10.0.5
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -60,3 +60,13 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: fixed
+      description: "use component service account"
+    - kind: fixed
+      description: "handle type of es url correctly"
+    - kind: fixed
+      description: "set zeebe exporters empty map when disabled"
+    - kind: fixed
+      description: "add constraints for when identity is disabled and keycloak is enabled"
+    - kind: changed
+      description: "update identity application yaml to match upstream"

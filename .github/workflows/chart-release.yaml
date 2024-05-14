@@ -114,6 +114,8 @@ jobs:
           # The verify step happens in the "release" branch before merging to the "main" branch.
           ref: release
           fetch-depth: 0
+      - name: Install env dependencies
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
