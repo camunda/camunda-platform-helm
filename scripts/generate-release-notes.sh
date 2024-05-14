@@ -19,7 +19,7 @@ main () {
         # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
         git-chglog                                    \
             --output "${chart_path}/RELEASE-NOTES.md" \
-            --tag-filter-pattern "${chart_tag%-*}"    \
+            --tag-filter-pattern "${chart_tag}-1"    \
             --next-tag "${chart_tag}"                 \
             --path "${chart_path}" "${chart_tag}"
 
