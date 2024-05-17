@@ -54,6 +54,7 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  TEST_AWS_REGION: "eu-west-2"
 
 permissions:
   contents: read
@@ -80,20 +81,77 @@ jobs:
             workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
             service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
           if: ${{ contains(inputs.platforms, 'gke') }}
-        - name: OpenShift 4.14
+
+        - name: OpenShift N(0)
           type: openshift
-          version: 4.14
+          # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
+          # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
+          # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.          version: 4.15.13
+          version: 4.15.11
           platform: rosa
           secret:
-            server-url: DISTRO_CI_OPENSHIFT_CLUSTER_URL
-            username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
-            password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+            rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
+            admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+            aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
+            aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
+            aws-profile: DISTRO_CI_AWS_PROFILE
+            tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
           if: ${{ contains(inputs.platforms, 'rosa') }}
+
+        - name: OpenShift N(1)
+          type: openshift
+          # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
+          version: 4.14.24
+          platform: rosa
+          secret:
+            rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
+            admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+            aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
+            aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
+            aws-profile: DISTRO_CI_AWS_PROFILE
+            tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
+          if: ${{ contains(inputs.platforms, 'rosa') }}
+
+
+        - name: OpenShift N(2)
+          type: openshift
+          # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
+          version: 4.13.41
+          platform: rosa
+          secret:
+            rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
+            admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+            aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
+            aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
+            aws-profile: DISTRO_CI_AWS_PROFILE
+            tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
+          if: ${{ contains(inputs.platforms, 'rosa') }}
+  
+        - name: OpenShift N(3)
+          type: openshift
+          # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
+          version: 4.12.56
+          platform: rosa
+          secret:
+            rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
+            admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+            aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
+            aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
+            aws-profile: DISTRO_CI_AWS_PROFILE
+            tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
+          if: ${{ contains(inputs.platforms, 'rosa') }}
+
+
         scenario:
         - name: Chart Setup
           desc: Setup chart in production-like setup with Ingress and TLS.
           flow: install
           if: ${{ contains(inputs.flows, 'install') }}
+
         - name: Chart Upgrade
           desc: Upgrade chart from the latest released version to the current branch.
           flow: upgrade
@@ -119,6 +177,7 @@ jobs:
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.distro.platform == 'gke'
@@ -128,13 +187,29 @@ jobs:
         cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
         workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
         service-account: ${{ secrets[matrix.distro.secret.service-account] }}
-    - name: Authenticate to OpenShift
+
+    - name: Authenticate to AWS
       if: matrix.distro.platform == 'rosa'
-      uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1
+      run: |
+        aws configure set aws_access_key_id  ${{ secrets[matrix.distro.secret.aws-access-key] }} --profile ${{ secrets[matrix.distro.secret.aws-profile] }}
+        aws configure set aws_secret_access_key ${{ secrets[matrix.distro.secret.aws-secret-key] }} --profile${{ secrets[matrix.distro.secret.aws-profile] }}
+        aws configure set region ${{ env.TEST_AWS_REGION }} --profile ${{ secrets[matrix.distro.secret.aws-profile] }}
+
+    - name: Create ROSA cluster and login
+      if: matrix.distro.platform == 'rosa'
+      # TODO: update this branch to main and pin the commit
+      uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@feature/init-action
+      timeout-minutes: 125
       with:
-        openshift_server_url: ${{ secrets[matrix.distro.secret.server-url] }}
-        openshift_username: ${{ secrets[matrix.distro.secret.username] }}
-        openshift_password: ${{ secrets[matrix.distro.secret.password] }}
+        rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
+        admin-username: ${{ secrets[matrix.distro.secret.admin-username] }}
+        admin-password: ${{ secrets[matrix.distro.secret.admin-password] }}
+        s3-backend-bucket: ${{ secrets[matrix.distro.secret.tf-state-bucket] }}
+
+        cluster-name: "${{ inputs.identifier }}-${{ matrix.distro.version }}"
+        aws-region: ${{ env.TEST_AWS_REGION }}
+        replicas: 3
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -245,7 +320,19 @@ jobs:
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
           -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+    
+    - name: Delete on-demand ROSA HCP Cluster
+      # TODO: update this branch to main and pin the commit
+      uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@feature/init-action
+      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type == 'rosa')
+      timeout-minutes: 125
+      with:
+        rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
+        s3-backend-bucket: ${{ secrets[matrix.distro.secret.tf-state-bucket] }}
 
+        cluster-name: "${{ inputs.identifier }}-${{ matrix.distro.version }}"
+        aws-region: ${{ env.TEST_AWS_REGION }}
+        
   clean:
     name: Clean up persistent resources
     if: github.event.action == 'closed'
