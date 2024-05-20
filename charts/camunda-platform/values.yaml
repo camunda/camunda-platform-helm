@@ -220,7 +220,7 @@ global:
         clientId: connectors
         ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
-        existingSecret: ""
+        existingSecret:
 
       ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other sub-charts
       identity:
@@ -314,7 +314,7 @@ global:
         clientId: zeebe
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
-        existingSecret: ""
+        existingSecret:
         ## @param global.identity.auth.zeebe.audience defines the audience, which is used by Zeebe.
         audience: zeebe-api
         ## @param global.identity.auth.zeebe.tokenScope defines the token scope, which is used by Zeebe.
