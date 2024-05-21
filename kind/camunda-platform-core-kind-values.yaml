@@ -9,6 +9,10 @@ global:
 identity:
   enabled: false
 
+# Disable keycloak
+identityKeycloak:
+  enabled: false
+
 optimize:
   enabled: false
 
