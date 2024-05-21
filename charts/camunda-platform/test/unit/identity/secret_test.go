@@ -77,10 +77,11 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 	s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
 }
 
-func (s *secretTest) TestSupport21601() {
+func (s *secretTest) TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
 			"identity.postgresql.enabled":       "true",
 			"identity.externalDatabase.enabled": "false",
 		},
@@ -123,14 +124,12 @@ func (s *secretTest) TestSupport21601() {
 
 	// then
 
-	// I expect Deployment to be rendered
 	// I expect Secret to NOT be rendered via charts/identityPostgresql/templates/secrets.yaml
-	// I expect Secret to be rendered via templates/identity/postgresql-secret.yaml
-	// I expect Deployment NOT to have a referenced password?
-	// I expect Deployment environment variable to reference the secret that is rendered
 	s.Require().ErrorContains(mainChartSecretError, "could not find template templates/identity/postgresql-secret.yaml in chart")
 	s.Require().Equal("IDENTITY_DATABASE_PASSWORD", identityDatabasePassword.Name)
+	// I expect Deployment environment variable to reference the secret that is rendered
 	s.Require().Equal("camunda-platform-test-identity-postgresql", identityDatabasePassword.ValueFrom.SecretKeyRef.Name)
+	// I expect Secret to be rendered via templates/identity/postgresql-secret.yaml
 	s.Require().Equal("camunda-platform-test-identity-postgresql", secret.ObjectMeta.Name)
 	s.Require().NotEmpty(string(secret.Data["password"]))
 }
