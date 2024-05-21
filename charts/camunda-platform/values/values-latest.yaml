@@ -15,6 +15,13 @@ connectors:
     repository: camunda/connectors-bundle
     tag: 8.4.5
 
+operate:
+  # https://hub.docker.com/r/camunda/operate/tags
+  image:
+    repository: camunda/operate
+    # renovate: datasource=docker depName=camunda/operate
+    tag: 8.4.8
+
 identity:
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
