@@ -195,10 +195,19 @@ jobs:
         aws configure set aws_secret_access_key ${{ secrets[matrix.distro.secret.aws-secret-key] }} --profile${{ secrets[matrix.distro.secret.aws-profile] }}
         aws configure set region ${{ env.TEST_AWS_REGION }} --profile ${{ secrets[matrix.distro.secret.aws-profile] }}
 
+    - name: Check out repository ROSA action repo
+      # needed due to Github Enterprise: https://stackoverflow.com/a/76255328
+      if: matrix.distro.platform == 'rosa'
+      uses: actions/checkout@v4
+      with:
+        repository: camunda/camunda-tf-rosa
+        ref: "feature/init-action"       # TODO: update this branch to main and pin the commit
+        token: ${{ secrets.GITHUB_TOKEN }}
+        path: ./.github/actions/camunda-tf-rosa
+
     - name: Create ROSA cluster and login
       if: matrix.distro.platform == 'rosa'
-      # TODO: update this branch to main and pin the commit
-      uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@feature/init-action
+      uses: ./.github/actions/camunda-tf-rosa/.github/actions/rosa-create-cluster
       timeout-minutes: 125
       with:
         rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
@@ -323,7 +332,7 @@ jobs:
     
     - name: Delete on-demand ROSA HCP Cluster
       # TODO: update this branch to main and pin the commit
-      uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@feature/init-action
+      uses: ./.github/actions/camunda-tf-rosa/.github/actions/rosa-delete-cluster
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type == 'rosa')
       timeout-minutes: 125
       with:
