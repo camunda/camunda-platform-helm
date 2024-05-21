@@ -170,16 +170,6 @@ jobs:
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
 
-    - name: Import private ROSA GHA
-      # needed due to Github Enterprise: https://stackoverflow.com/a/76255328
-      uses: actions/checkout@v4
-      with:
-        repository: camunda/camunda-tf-rosa
-        ref: "feature/init-action"       # TODO: update this branch to main and pin the commit
-        token: ${{ secrets.GITHUB_TOKEN }}
-        path: ./.github/actions/camunda-tf-rosa
-  
-
     # Used to create/delete GitHub environment.
     # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
     - name: Generate GitHub token
@@ -188,6 +178,15 @@ jobs:
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+
+    - name: Import private ROSA GHA
+      # needed due to Github Enterprise: https://stackoverflow.com/a/76255328
+      uses: actions/checkout@v4
+      with:
+        repository: camunda/camunda-tf-rosa
+        ref: "feature/init-action"       # TODO: update this branch to main and pin the commit
+        token: ${{ steps.generate-github-token.outputs.token }}
+        path: ./.github/actions/camunda-tf-rosa
 
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
