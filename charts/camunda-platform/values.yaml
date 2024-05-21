@@ -322,11 +322,10 @@ global:
 
   # Multiregion options for Zeebe
   #
-  ## WARNING: In order to get your multi-region setup covered by Camunda enterprise support you MUST get your configuration and run books reviewed by Camunda before going to production.
-  # This is necessary for us to be able to help you in case of outages, due to the complexity of operating multi-region setups and the dependencies to the underlying Kubernetes prerequisites.
-  # If you operate this in the wrong way you risk corruption and complete loss of all data especially in the dual-region case.
-  # If you can, consider three regions. Please, contact your customer success manager as soon as you start planning a multi-region setup.
-  # Camunda reserves the right to limit support if no review was done prior to launch or the review showed significant risks.
+  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps 
+  # outlined by Camunda before applying them in production setups.
+  # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
+  # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
   multiregion:
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
