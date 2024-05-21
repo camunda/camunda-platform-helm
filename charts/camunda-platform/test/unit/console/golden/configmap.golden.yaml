@@ -22,7 +22,7 @@ data:
           releases:
           - name: camunda-platform-test
             namespace: camunda-platform
-            version: 9.3.3
+            version: 9.3.4
             components:
             - name: Console
               id: console
@@ -42,7 +42,7 @@ data:
               metrics: http://camunda-platform-test.camunda-platform:82/actuator/prometheus
             - name: Operate
               id: operate
-              version: 8.4.7
+              version: 8.4.8
               url: 
               readiness: http://camunda-platform-test-operate.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus

@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/version: "8.4.7"
         app.kubernetes.io/component: operate
       annotations:
-        checksum/config: 35d083a2ac1c98d5b20e0a6df455a118c158886102d15ef8aff825285d227f5e
+        checksum/config: 4a29547cbac7cdb707cbb1cde44e993643fb6c14614a49d356391882993a28a8
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: operate
-          image: camunda/operate:8.4.7
+          image: camunda/operate:8.4.8
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
