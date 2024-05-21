@@ -326,7 +326,6 @@ global:
   # outlined by Camunda before applying them in production setups.
   # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
   # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
-  # If you can, consider three regions.
   multiregion:
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
