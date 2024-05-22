@@ -257,19 +257,20 @@ jobs:
           if oc get project "$TEST_NAMESPACE" > /dev/null 2>&1; then
             oc delete project "$TEST_NAMESPACE"
           fi
+
+          : # OpenShift HCP do not allow listing all namespaces
           oc new-project "$TEST_NAMESPACE"
         else
           kubectl delete ns --ignore-not-found=true \
               -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
 
           kubectl create ns $TEST_NAMESPACE
+          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
+          kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
+          kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
         fi
-
-        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
-        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-        kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
-        kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
-        kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
