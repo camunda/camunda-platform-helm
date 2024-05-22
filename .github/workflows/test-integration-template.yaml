@@ -231,7 +231,7 @@ jobs:
     - name: Promote user admin OpenShift
       if: matrix.distro.platform == 'rosa'
       run: |
-        rosa grant user cluster-admin --cluster=${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }} --user=${{ secrets[matrix.distro.secret.admin-username] }}
+        rosa grant user cluster-admin --region="${{ env.TEST_AWS_REGION }}" --cluster=${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }} --user=${{ secrets[matrix.distro.secret.admin-username] }}
 
     - name: Install dependencies for OpenShift
       if: matrix.distro.platform == 'rosa'
@@ -355,7 +355,7 @@ jobs:
     - name: Delete on-demand ROSA HCP Cluster
       # TODO: update this branch to main and pin the commit
       uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
-      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type == 'rosa')
+      if: always() && matrix.distro.type == 'rosa' && env.TEST_PERSISTENT != 'true'
       timeout-minutes: 125
       env:
         AWS_PROFILE: ${{ secrets[matrix.distro.secret.aws-profile] }}
