@@ -219,7 +219,7 @@ jobs:
         rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
         admin-username: ${{ secrets[matrix.distro.secret.admin-username] }}
         admin-password: ${{ secrets[matrix.distro.secret.admin-password] }}
-        s3-backend-bucket: ${{ secrets[matrix.distro.secret.tf-state-bucket] }}
+        s3-backend-bucket: "${{ secrets[matrix.distro.secret.tf-state-bucket] }}-${{ env.TEST_AWS_REGION }}"
 
         cluster-name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
         aws-region: ${{ env.TEST_AWS_REGION }}
@@ -364,7 +364,7 @@ jobs:
         AWS_PROFILE: ${{ secrets[matrix.distro.secret.aws-profile] }}
       with:
         rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
-        s3-backend-bucket: ${{ secrets[matrix.distro.secret.tf-state-bucket] }}
+        s3-backend-bucket: "${{ secrets[matrix.distro.secret.tf-state-bucket] }}-${{ env.TEST_AWS_REGION }}"
 
         cluster-name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
         aws-region: ${{ env.TEST_AWS_REGION }}
