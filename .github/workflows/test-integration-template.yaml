@@ -196,6 +196,15 @@ jobs:
         aws configure set aws_secret_access_key ${{ secrets[matrix.distro.secret.aws-secret-key] }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
         aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
 
+    - name: Define ROSA cluster name
+      if: matrix.distro.platform == 'rosa'
+      id: rosa-cluster-name
+      run: |
+        : # ensure that the name of the cluster is unique
+        rosa_cluster_name="c-${{ inputs.identifier }}-${{ matrix.distro.version }}-${{ matrix.scenario.flow }}"
+        rosa_cluster_name=$(echo "$rosa_cluster_name" | tr '.' '_')
+        echo "rosa_cluster_name=$rosa_cluster_name" >> "$GITHUB_OUTPUT"
+
     - name: Create ROSA cluster and login
       if: matrix.distro.platform == 'rosa'
       uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@main
@@ -208,9 +217,11 @@ jobs:
         admin-password: ${{ secrets[matrix.distro.secret.admin-password] }}
         s3-backend-bucket: ${{ secrets[matrix.distro.secret.tf-state-bucket] }}
 
-        cluster-name: "${{ inputs.identifier }}-${{ matrix.distro.version }}"
+        cluster-name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
         aws-region: ${{ env.TEST_AWS_REGION }}
         replicas: 3
+
+        openshift-version: "${{ matrix.distro.version }}"
 
     - name: Set workflow vars
       id: vars
@@ -334,7 +345,7 @@ jobs:
         rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
         s3-backend-bucket: ${{ secrets[matrix.distro.secret.tf-state-bucket] }}
 
-        cluster-name: "${{ inputs.identifier }}-${{ matrix.distro.version }}"
+        cluster-name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
         aws-region: ${{ env.TEST_AWS_REGION }}
         
   clean:
