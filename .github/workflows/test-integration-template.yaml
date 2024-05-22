@@ -184,6 +184,7 @@ jobs:
       with:
         key: ${{ secrets.SSH_KEY_ROSA_GHA_REPO }}
         name: id_gha_rosa
+        known_hosts: "github.com"
 
     - name: Import private ROSA GHA repo
       # needed due to Github Enterprise: https://stackoverflow.com/a/76255328
