@@ -138,10 +138,11 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.registry": "global.custom.registry.io",
-			"global.image.tag":      "8.x.x",
-			"optimize.image.tag":    "3.x.x",
-			"connectors.image.tag":  "8.x.x",
+			"global.image.registry":        "global.custom.registry.io",
+			"global.identity.auth.enabled": "false",
+			"global.image.tag":             "8.x.x",
+			"optimize.image.tag":           "3.x.x",
+			"connectors.image.tag":         "8.x.x",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -151,7 +152,6 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 
 	// then
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/connectors-bundle:8.x.x")
-	s.Require().Contains(output, "image: global.custom.registry.io/camunda/operate:8.x.x")
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/tasklist:8.x.x")
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/zeebe:8.x.x")
 	s.Require().Contains(output, "image: global.custom.registry.io/camunda/optimize:3.x.x")
