@@ -55,6 +55,7 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   TEST_AWS_REGION: "eu-west-3"
+  EXTERNAL_SECRETS_OPERATOR_VERSION: "v0.9.18"
 
 permissions:
   contents: read
@@ -227,11 +228,18 @@ jobs:
 
         openshift-version: "${{ matrix.distro.version }}"
 
-    - name: Debug commands OpenShift
+    - name: Promote user admin OpenShift
       if: matrix.distro.platform == 'rosa'
       run: |
-        oc describe clusterrole.rbac
+        rosa grant user cluster-admin --cluster=${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }} --user=${{ secrets[matrix.distro.secret.admin-username] }}
 
+    - name: Install dependencies for OpenShift
+      if: matrix.distro.platform == 'rosa'
+      run: |
+        kubectl apply -k "https://github.com/external-secrets/external-secrets/raw/${{ env.EXTERNAL_SECRETS_OPERATOR_VERSION }}/deploy/crds/bundle.yaml"
+        helm repo add external-secrets https://charts.external-secrets.io
+        helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
+    
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -251,26 +259,14 @@ jobs:
     - name: Create test namespace
       run: |
         echo $TEST_NAMESPACE
-
-        if [ "$TEST_CLUSTER_TYPE" == "openshift" ]; then
-          echo "Using OpenShift projects instead of namespaces"
-          if oc get project "$TEST_NAMESPACE" > /dev/null 2>&1; then
-            oc delete project "$TEST_NAMESPACE"
-          fi
-
-          : # OpenShift HCP do not allow listing all namespaces
-          oc new-project "$TEST_NAMESPACE"
-        else
-          kubectl delete ns --ignore-not-found=true \
-              -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
-
-          kubectl create ns $TEST_NAMESPACE
-          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
-          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
-          kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
-        fi
+        kubectl delete ns --ignore-not-found=true \
+            -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
+        kubectl create ns $TEST_NAMESPACE
+        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+        kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
+        kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
+        kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
