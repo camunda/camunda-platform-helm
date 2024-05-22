@@ -38,7 +38,7 @@ spec:
           env:
             - name: JAVA_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
-            {{- if .Values.webModeler.restapi.externalDatabase.password }}
+            {{- if or (not .Values.webModeler.restapi.externalDatabase.enabled) .Values.webModeler.restapi.externalDatabase.password }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
