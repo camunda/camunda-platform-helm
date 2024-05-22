@@ -201,8 +201,9 @@ jobs:
       id: rosa-cluster-name
       run: |
         : # ensure that the name of the cluster is unique
-        rosa_cluster_name="c-${{ inputs.identifier }}-${{ matrix.distro.version }}-${{ matrix.scenario.flow }}"
-        rosa_cluster_name=$(echo "$rosa_cluster_name" | tr '.' '_')
+        identifier="${{ inputs.identifier }}-${{ matrix.distro.version }}-${{ matrix.scenario.flow }}"
+        sha_identifier=$(echo -n "$identifier" | sha1sum | cut -c1-10)
+        rosa_cluster_name="c-$sha_identifier"
         echo "rosa_cluster_name=$rosa_cluster_name" >> "$GITHUB_OUTPUT"
 
     - name: Create ROSA cluster and login
