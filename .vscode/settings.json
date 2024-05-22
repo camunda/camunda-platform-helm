@@ -1,4 +1,24 @@
 {
   "markdown.extension.toc.levels": "2..3",
-  "editor.formatOnSaveMode": "modifications"
+  "editor.formatOnSaveMode": "modifications",
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#c8558e",
+    "activityBar.background": "#c8558e",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#8fc856",
+    "activityBarBadge.foreground": "#15202b",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#c8558e",
+    "statusBar.background": "#b13975",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#c8558e",
+    "statusBarItem.remoteBackground": "#b13975",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#b13975",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#b1397599",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#b13975"
 }

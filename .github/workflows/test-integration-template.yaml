@@ -201,9 +201,9 @@ jobs:
     - name: Authenticate to AWS
       if: matrix.distro.platform == 'rosa'
       run: |
-        aws configure set aws_access_key_id  ${{ secrets[matrix.distro.secret.aws-access-key] }} --profile ${{ secrets[matrix.distro.secret.aws-profile] }}
-        aws configure set aws_secret_access_key ${{ secrets[matrix.distro.secret.aws-secret-key] }} --profile${{ secrets[matrix.distro.secret.aws-profile] }}
-        aws configure set region ${{ env.TEST_AWS_REGION }} --profile ${{ secrets[matrix.distro.secret.aws-profile] }}
+        aws configure set aws_access_key_id ${{ secrets[matrix.distro.secret.aws-access-key] }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
+        aws configure set aws_secret_access_key ${{ secrets[matrix.distro.secret.aws-secret-key] }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
+        aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
 
     - name: Create ROSA cluster and login
       if: matrix.distro.platform == 'rosa'
