@@ -41,7 +41,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}
-  cancel-in-progress: true
+  cancel-in-progress: false # creation of cloud ressources such as OpenShift require completion of their workflow
 
 env:
   TEST_PERSISTENT: ${{ inputs.persistent }}
@@ -100,20 +100,21 @@ jobs:
             tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
           if: ${{ contains(inputs.platforms, 'rosa') }}
 
-        - name: OpenShift N(1)
-          type: openshift
-          # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
-          version: 4.14.24
-          platform: rosa
-          secret:
-            rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
-            admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
-            admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
-            aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
-            aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
-            aws-profile: DISTRO_CI_AWS_PROFILE
-            tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
-          if: ${{ contains(inputs.platforms, 'rosa') }}
+        # TODO: disabled for tests only
+        # - name: OpenShift N(1)
+        #   type: openshift
+        #   # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
+        #   version: 4.14.24
+        #   platform: rosa
+        #   secret:
+        #     rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
+        #     admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+        #     admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+        #     aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
+        #     aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
+        #     aws-profile: DISTRO_CI_AWS_PROFILE
+        #     tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
+        #   if: ${{ contains(inputs.platforms, 'rosa') }}
 
 
         # TODO: in May 2024, ROSA does not supports OpenShift 4.13 with HCP (N-2 version), when N(2) will be == 4.14,  un-comment this block
@@ -228,6 +229,7 @@ jobs:
 
         openshift-version: "${{ matrix.distro.version }}"
 
+    # TODO: remove when integrated
     - name: Promote user admin OpenShift
       if: matrix.distro.platform == 'rosa'
       run: |
