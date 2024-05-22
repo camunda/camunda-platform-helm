@@ -184,7 +184,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: camunda/camunda-tf-rosa
-        ref: "feature/init-action"       # TODO: update this branch to main and pin the commit
+        ref: "fix/aws_region"       # TODO: update this branch to main and pin the commit
         path: ./.github/actions/camunda-tf-rosa
         ssh-key: ${{ secrets.SSH_KEY_ROSA_GHA_REPO }}
 
@@ -209,6 +209,8 @@ jobs:
       if: matrix.distro.platform == 'rosa'
       uses: ./.github/actions/camunda-tf-rosa/.github/actions/rosa-create-cluster
       timeout-minutes: 125
+      env:
+        AWS_PROFILE: ${{ secrets[matrix.distro.secret.aws-profile] }}
       with:
         rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
         admin-username: ${{ secrets[matrix.distro.secret.admin-username] }}
