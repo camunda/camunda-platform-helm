@@ -179,13 +179,6 @@ jobs:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
 
-    - name: Install SSH key for ROSA GHA repo
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.SSH_KEY_ROSA_GHA_REPO }}
-        name: id_gha_rosa
-        known_hosts: "github.com"
-
     - name: Import private ROSA GHA repo
       # needed due to Github Enterprise: https://stackoverflow.com/a/76255328
       uses: actions/checkout@v4
@@ -193,6 +186,7 @@ jobs:
         repository: camunda/camunda-tf-rosa
         ref: "feature/init-action"       # TODO: update this branch to main and pin the commit
         path: ./.github/actions/camunda-tf-rosa
+        ssh-key: ${{ secrets.SSH_KEY_ROSA_GHA_REPO }}
 
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
