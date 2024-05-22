@@ -204,6 +204,7 @@ jobs:
         identifier="${{ inputs.identifier }}-${{ matrix.distro.version }}-${{ matrix.scenario.flow }}"
         sha_identifier=$(echo -n "$identifier" | sha1sum | cut -c1-10)
         rosa_cluster_name="c-$sha_identifier"
+        echo "rosa_cluster_name=$rosa_cluster_name"
         echo "rosa_cluster_name=$rosa_cluster_name" >> "$GITHUB_OUTPUT"
 
     - name: Create ROSA cluster and login
@@ -220,7 +221,7 @@ jobs:
 
         cluster-name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
         aws-region: ${{ env.TEST_AWS_REGION }}
-        replicas: 3
+        replicas: 4
 
         openshift-version: "${{ matrix.distro.version }}"
 
