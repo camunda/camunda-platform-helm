@@ -179,15 +179,6 @@ jobs:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
 
-    - name: Import private ROSA GHA repo
-      # needed due to Github Enterprise: https://stackoverflow.com/a/76255328
-      uses: actions/checkout@v4
-      with:
-        repository: camunda/camunda-tf-rosa
-        ref: "fix/aws_region"       # TODO: update this branch to main and pin the commit
-        path: ./.github/actions/camunda-tf-rosa
-        ssh-key: ${{ secrets.SSH_KEY_ROSA_GHA_REPO }}
-
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.distro.platform == 'gke'
@@ -207,7 +198,7 @@ jobs:
 
     - name: Create ROSA cluster and login
       if: matrix.distro.platform == 'rosa'
-      uses: ./.github/actions/camunda-tf-rosa/.github/actions/rosa-create-cluster
+      uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@main
       timeout-minutes: 125
       env:
         AWS_PROFILE: ${{ secrets[matrix.distro.secret.aws-profile] }}
@@ -334,9 +325,11 @@ jobs:
     
     - name: Delete on-demand ROSA HCP Cluster
       # TODO: update this branch to main and pin the commit
-      uses: ./.github/actions/camunda-tf-rosa/.github/actions/rosa-delete-cluster
+      uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type == 'rosa')
       timeout-minutes: 125
+      env:
+        AWS_PROFILE: ${{ secrets[matrix.distro.secret.aws-profile] }}
       with:
         rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
         s3-backend-bucket: ${{ secrets[matrix.distro.secret.tf-state-bucket] }}
