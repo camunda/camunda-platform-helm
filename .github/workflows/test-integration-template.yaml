@@ -225,6 +225,11 @@ jobs:
 
         openshift-version: "${{ matrix.distro.version }}"
 
+    - name: Debug commands OpenShift
+      if: matrix.distro.platform == 'rosa'
+      run: |
+        oc describe clusterrole.rbac
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -240,12 +245,24 @@ jobs:
       run: |
         make helm.repos-add
         make helm.dependency-update
+
     - name: Create test namespace
       run: |
         echo $TEST_NAMESPACE
-        kubectl delete ns --ignore-not-found=true \
-          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
-        kubectl create ns $TEST_NAMESPACE
+
+        if [ "$TEST_CLUSTER_TYPE" == "openshift" ]; then
+          echo "Using OpenShift projects instead of namespaces"
+          if oc get project "$TEST_NAMESPACE" > /dev/null 2>&1; then
+            oc delete project "$TEST_NAMESPACE"
+          fi
+          oc new-project "$TEST_NAMESPACE"
+        else
+          kubectl delete ns --ignore-not-found=true \
+              -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
+
+          kubectl create ns $TEST_NAMESPACE
+        fi
+
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
