@@ -55,7 +55,6 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   TEST_AWS_REGION: "eu-west-3"
-  EXTERNAL_SECRETS_OPERATOR_VERSION: "v0.9.18"
 
 permissions:
   contents: read
@@ -90,6 +89,7 @@ jobs:
           # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.          version: 4.15.13
           version: 4.15.11
           platform: rosa
+          cluster_created: "on-demand" # can either be on-demand or permanent
           secret:
             rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
             admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
@@ -228,14 +228,21 @@ jobs:
         replicas: 4
 
         openshift-version: "${{ matrix.distro.version }}"
-
-    - name: Install dependencies for OpenShift
-      if: matrix.distro.platform == 'rosa'
-      run: |
-        kubectl apply -k "https://github.com/external-secrets/external-secrets/raw/${{ env.EXTERNAL_SECRETS_OPERATOR_VERSION }}/deploy/crds/bundle.yaml"
-        helm repo add external-secrets https://charts.external-secrets.io
-        helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
     
+    - name: Configure on-demand cluster ROSA
+      if: matrix.distro.cluster_created == 'on-demand' && matrix.distro.platform == 'rosa'
+      run: |
+        git clone --depth=1 git@github.com:camunda/distribution.git ./.distribution-iac
+        cd ./.distribution-iac/clusters/rosa-distro-ci-hcp/
+
+        sed "s|credentials.json: \"\"|credentials.json: \"${{ secrets.GCP_DNS_SERVICE_ACCOUNT }}\"|" cert-manager/secret.yaml > cert-manager/secret.yaml
+        sed "s|credentials.json: \"\"|credentials.json: \"${{ secrets.GCP_DNS_SERVICE_ACCOUNT }}\"|" external-dns/secret.yaml > external-dns/secret.yaml
+
+        kubectl apply -k .
+
+        while ! kubectl get pods --all-namespaces | grep -v -E '(Running|Completed|STATUS)'; do echo "Waiting for all pods to be Running or Completed" && sleep 5; done
+        kubectl get all --all-namespaces
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -245,8 +252,10 @@ jobs:
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
+
     - name: Install env dependencies
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+
     - name: Add Helm repos and dependencies
       run: |
         make helm.repos-add
@@ -263,9 +272,11 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
+
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
+
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       id: deployment
