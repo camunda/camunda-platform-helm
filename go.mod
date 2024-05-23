@@ -3,7 +3,7 @@ module camunda-platform-helm
 go 1.22.2
 
 require (
-	github.com/BurntSushi/toml v1.3.2
+	github.com/BurntSushi/toml v1.4.0
 	github.com/gruntwork-io/terratest v0.46.15
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
