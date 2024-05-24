@@ -175,7 +175,7 @@ jobs:
         timeout-minutes: 10
           # TODO: use an other branch than feature/on-demand-openshift
         run: |
-          cd ./.github/workflows/fixture/clusters/rosa-hcp-on-demand/
+          cd ./.github/workflows/fixtures/clusters/rosa-hcp-on-demand/
     
           : # populate with secrets then kustomize and apply!
           export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
