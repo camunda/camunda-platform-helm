@@ -70,6 +70,7 @@ jobs:
     name: "Define matrix"
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         distro:
           - name: OpenShift N(0)
@@ -83,9 +84,10 @@ jobs:
         matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
-        env:
-          matrix: ${{ toJSON(matrix.distro) }}
         run: |
+          matrix=$((
+            echo '${{ toJSON(matrix.distro) }}'
+          ) | jq -c .)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   define_variables:
