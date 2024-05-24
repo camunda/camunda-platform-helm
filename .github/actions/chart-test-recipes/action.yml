@@ -1,0 +1,173 @@
+name: 'Camunda Chart Helm Tests Action'
+description: 'A reusable action for Camunda Helm chart integration tests'
+
+inputs:
+  platform:
+    description: "Plaform on which we run the tests"
+    required: true
+  identifier:
+    description: 'The unique identifier used in the deployment hostname.'
+    required: true
+  camunda-helm-git-ref:
+    description: "Camunda Helm Git reference"
+    required: false
+    default: 'main'
+  caller-git-ref:
+    description: "Caller of this action git reference"
+    required: false
+    default: 'main'
+  test-enabled:
+    description: "Enable the tests"
+    required: false
+    default: 'true'
+  persistent:
+    description: |
+      Keep test deployment after the workflow is done.
+      NOTE: All persistent deployments will be deleted frequently to save costs!
+    required: false
+    default: 'false'
+  flow:
+    description: "Test scenario to perform"
+    required: false
+    default: 'install'
+  extra-values:
+    description: 'Pass extra values to the Helm chart.'
+    required: false
+  ingress-hostname-base:
+    description: "Hostname base for the tests"
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        repository: camunda/camunda-platform-helm
+        ref: ${{ inputs.camunda-helm-git-ref }}
+
+    - name: Generate GitHub token
+      uses: tibdex/github-app-token@v2
+      id: generate-github-token
+      with:
+        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+  
+    - name: Set workflow vars
+      id: vars
+      uses: ../workflow-vars
+      with:
+        persistent: ${{ inputs.persistent }}
+        setup-flow: ${{ inputs.flow }}
+        platform: ${{ inputs.platform }}
+        identifier-base: ${{ inputs.identifier }}
+        ingress-hostname-base: ${{ inputs.ingress-hostname-base }}
+
+    - name: Install dependencies
+      uses: asdf-vm/actions/install@v3
+
+    - name: Add Helm repos and dependencies
+      shell: bash
+      run: |
+        make helm.repos-add
+        make helm.dependency-update
+    
+    - name: Create test namespace
+      shell: bash
+      run: |
+        kubectl delete ns --ignore-not-found=true \
+          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ inputs.flow }},test-persistent=true"
+        kubectl create ns $TEST_NAMESPACE
+        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+        kubectl label ns $TEST_NAMESPACE github-id=${{ inputs.identifier }}
+        kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
+        kubectl label ns $TEST_NAMESPACE test-persistent=${{ inputs.persistent }}
+
+    - name: Copy PRs wildcard certificate
+      shell: bash
+      run: kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
+
+    - name: Start GitHub deployment
+      uses: bobheadxi/deployments@v1
+      id: deployment
+      with:
+        step: start
+        token: ${{ steps.generate-github-token.outputs.token }}
+        env: ${{ steps.vars.outputs.identifier }}
+        ref: ${{ inputs.caller-git-ref }}
+  
+    - name: Pre setup
+      shell: bash
+      run: |
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
+        echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
+        cat /tmp/extra-values-file.yaml
+
+    - name: Setup Camunda chart
+      shell: bash
+      env:
+        TEST_CHART_FLOW: ${{ inputs.flow }}
+        TEST_HELM_EXTRA_ARGS: >-
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          --values /tmp/extra-values-file.yaml
+      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
+
+    - name: Post setup
+      shell: bash
+      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+
+    - name: Pre Upgrade
+      shell: bash
+      if: inputs.flow == 'upgrade'
+      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
+
+    - name: Upgrade Camunda chart
+      shell: bash
+      if: inputs.flow == 'upgrade'
+      env:
+        TEST_HELM_EXTRA_ARGS: >-
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          --values /tmp/extra-values-file.yaml
+      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
+
+    - name: Update GitHub deployment status
+      uses: bobheadxi/deployments@v1
+      with:
+        step: finish
+        token: ${{ steps.generate-github-token.outputs.token }}
+        status: ${{ job.status }}
+        deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+        env_url: https://${{ steps.vars.outputs.ingress-host }}
+        env: ${{ steps.vars.outputs.identifier }}
+        ref: ${{ inputs.caller-git-ref }}
+
+    - name: Run Preflight TestSuite
+      shell: bash
+      if: inputs.test-enabled == 'true'
+      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup test.preflight
+
+    - name: Run Core TestSuite
+      shell: bash
+      if: inputs.test-enabled == 'true'
+      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
+
+    - name: Get failed Pods info
+      if: failure()
+      uses: ./.github/actions/failed-pods-info
+
+    - name: Cleanup GitHub deployment
+      if: always() && inputs.persistent == 'false'
+      uses: bobheadxi/deployments@v1
+      with:
+        step: delete-env
+        token: ${{ steps.generate-github-token.outputs.token }}
+        env: ${{ steps.vars.outputs.identifier }}
+        ref: ${{ inputs.caller-git-ref }}
+
+    - name: Cleanup test namespace
+      shell: bash
+      if: always() && inputs.persistent == 'false'
+      run: kubectl delete ns --ignore-not-found=true \
+          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID

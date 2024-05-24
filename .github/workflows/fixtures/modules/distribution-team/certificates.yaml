@@ -1,0 +1,45 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: pr-distro-ultrawombat-com
+spec:
+  secretName: pr-distro-ultrawombat-com
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-dns
+  commonName: "*.pr.distro.ultrawombat.com"
+  dnsNames:
+  - "*.pr.distro.ultrawombat.com"
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ci-distro-ultrawombat-com
+spec:
+  secretName: ci-distro-ultrawombat-com
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-dns
+  commonName: "*.ci.distro.ultrawombat.com"
+  dnsNames:
+  - "*.ci.distro.ultrawombat.com"
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-distro-ultrawombat-com
+spec:
+  secretName: local-distro-ultrawombat-com
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-dns
+  commonName: "local.distro.ultrawombat.com"
+  dnsNames:
+  - "local.distro.ultrawombat.com"
+  - "*.local.distro.ultrawombat.com"

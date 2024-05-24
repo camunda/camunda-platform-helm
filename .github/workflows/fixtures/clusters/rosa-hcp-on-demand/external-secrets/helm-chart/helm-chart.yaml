@@ -1,0 +1,7 @@
+---
+apiVersion: builtin
+kind: HelmChartInflationGenerator
+metadata:
+  name: external-secrets 
+additionalValuesFiles:
+- helm-chart/external-secrets-values.yaml

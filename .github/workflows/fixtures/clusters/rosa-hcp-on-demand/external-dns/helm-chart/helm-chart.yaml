@@ -1,0 +1,7 @@
+---
+apiVersion: builtin
+kind: HelmChartInflationGenerator
+metadata:
+  name: external-dns
+additionalValuesFiles:
+- helm-chart/external-dns-values.yaml

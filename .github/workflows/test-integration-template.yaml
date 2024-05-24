@@ -41,7 +41,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}
-  cancel-in-progress: false # creation of cloud ressources such as OpenShift require completion of their workflow
+  cancel-in-progress: true
 
 env:
   TEST_PERSISTENT: ${{ inputs.persistent }}
@@ -54,14 +54,13 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
-  TEST_AWS_REGION: "eu-west-3"
 
 permissions:
   contents: read
   
 jobs:
   test:
-    name: ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}
+    name: ${{ inputs.platforms }} - ${{ matrix.scenario.name }}
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
@@ -71,101 +70,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro:
-        - name: Kubernetes 1.27
-          type: kubernetes
-          platform: gke
-          secret:
-            cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
-            cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
-            workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
-            service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
-          if: ${{ contains(inputs.platforms, 'gke') }}
-
-        # TODO:
-        # - single OpenShift cluster spawn all tests
-        # - extract OpenShift from on-push to scheduled daily
-        - name: OpenShift N(0)
-          type: openshift
-          # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
-          # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
-          # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.          version: 4.15.13
-          version: 4.15.11
-          platform: rosa
-          cluster_created: "on-demand" # can either be on-demand or permanent
-          secret:
-            rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
-            admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
-            admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
-            aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
-            aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
-            aws-profile: DISTRO_CI_AWS_PROFILE
-            tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
-          if: ${{ contains(inputs.platforms, 'rosa') }}
-
-        # TODO: disabled for tests only
-        # - name: OpenShift N(1)
-        #   type: openshift
-        #   # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
-        #   version: 4.14.24
-        #   platform: rosa
-        #   secret:
-        #     rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
-        #     admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
-        #     admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
-        #     aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
-        #     aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
-        #     aws-profile: DISTRO_CI_AWS_PROFILE
-        #     tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
-        #   if: ${{ contains(inputs.platforms, 'rosa') }}
-
-
-        # TODO: in May 2024, ROSA does not supports OpenShift 4.13 with HCP (N-2 version), when N(2) will be == 4.14,  un-comment this block
-        # - name: OpenShift N(2)
-        #   type: openshift
-        #   # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
-        #   version: 4.13.41
-        #   platform: rosa
-        #   secret:
-        #     rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
-        #     admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
-        #     admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
-        #     aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
-        #     aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
-        #     aws-profile: DISTRO_CI_AWS_PROFILE
-        #     tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
-        #   if: ${{ contains(inputs.platforms, 'rosa') }}
-  
-        # TODO: in May 2024, ROSA does not supports OpenShift 4.12 (N-3 version), when N(3) will be == 4.13,  un-comment this block
-        # - name: OpenShift N(3)
-        #   type: openshift
-        #   # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
-        #   version: 4.12.56
-        #   platform: rosa
-        #   secret:
-        #     rh-token: DISTRO_CI_REDHAT_CONSOLE_TOKEN
-        #     admin-username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
-        #     admin-password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
-        #     aws-access-key: DISTRO_CI_AWS_ACCESS_KEY
-        #     aws-secret-key: DISTRO_CI_AWS_SECRET_KEY
-        #     aws-profile: DISTRO_CI_AWS_PROFILE
-        #     tf-state-bucket: DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET
-        #   if: ${{ contains(inputs.platforms, 'rosa') }}
-
-
         scenario:
         - name: Chart Setup
           desc: Setup chart in production-like setup with Ingress and TLS.
           flow: install
           if: ${{ contains(inputs.flows, 'install') }}
-
         - name: Chart Upgrade
           desc: Upgrade chart from the latest released version to the current branch.
           flow: upgrade
           if: ${{ contains(inputs.flows, 'upgrade') }}
         exclude:
-        - distro:
-            if: false
         - scenario:
             if: false
     env:
@@ -176,7 +90,6 @@ jobs:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
-
     # Used to create/delete GitHub environment.
     # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
     - name: Generate GitHub token
@@ -185,78 +98,6 @@ jobs:
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-
-    # TODO: Later, find a way to abstract the auth for different platforms.
-    - name: Authenticate to GKE
-      if: matrix.distro.platform == 'gke'
-      uses: ./.github/actions/gke-login
-      with:
-        cluster-name: ${{ secrets[matrix.distro.secret.cluster-name] }}
-        cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
-        workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
-        service-account: ${{ secrets[matrix.distro.secret.service-account] }}
-
-    - name: Authenticate to AWS
-      if: matrix.distro.platform == 'rosa'
-      run: |
-        aws configure set aws_access_key_id ${{ secrets[matrix.distro.secret.aws-access-key] }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
-        aws configure set aws_secret_access_key ${{ secrets[matrix.distro.secret.aws-secret-key] }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
-        aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets[matrix.distro.secret.aws-profile] }}
-
-    - name: Define ROSA cluster name
-      if: matrix.distro.platform == 'rosa'
-      id: rosa-cluster-name
-      run: |
-        : # ensure that the name of the cluster is unique
-        identifier="${{ inputs.identifier }}-${{ matrix.distro.version }}-${{ matrix.scenario.flow }}"
-        sha_identifier=$(echo -n "$identifier" | sha1sum | cut -c1-10)
-        rosa_cluster_name="c-$sha_identifier"
-        echo "rosa_cluster_name=$rosa_cluster_name"
-        echo "rosa_cluster_name=$rosa_cluster_name" >> "$GITHUB_OUTPUT"
-
-    - name: Create ROSA cluster and login
-      if: matrix.distro.platform == 'rosa'
-      uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@main
-      timeout-minutes: 125
-      env:
-        AWS_PROFILE: ${{ secrets[matrix.distro.secret.aws-profile] }}
-      with:
-        rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
-        admin-username: ${{ secrets[matrix.distro.secret.admin-username] }}
-        admin-password: ${{ secrets[matrix.distro.secret.admin-password] }}
-        s3-backend-bucket: "${{ secrets[matrix.distro.secret.tf-state-bucket] }}-${{ env.TEST_AWS_REGION }}"
-
-        cluster-name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
-        aws-region: ${{ env.TEST_AWS_REGION }}
-        replicas: 4
-
-        openshift-version: "${{ matrix.distro.version }}"
-    
-    - name: Configure on-demand cluster ROSA
-      if: matrix.distro.cluster_created == 'on-demand' && matrix.distro.platform == 'rosa'
-      timeout-minutes: 10
-      # TODO: use an other branch than feature/on-demand-openshift
-      run: |
-        git clone --depth=1 git@github.com:camunda/distribution.git ./.distribution-iac
-        git switch feature/on-demand-openshift
-        cd ./.distribution-iac/clusters/rosa-hcp-on-demand/
-
-        : # populate with secrets then kustomize and apply!
-        export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
-        export CERT_MANAGER_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_CERT_MANAGER_GCP_SERVICE_ACCOUNT }}
-        envsubst < cert-manager/secret.yaml.tpl > cert-manager/secret.yaml
-        envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
-        kustomize build --enable-helm ./ | kubectl apply -f - 
-        
-        echo "Waiting for global state to converge"
-        sleep 30
-        
-        while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
-          echo "Waiting for all pods to be Running or Completed"
-          sleep 5
-        done
-
-        kubectl get all --all-namespaces
 
     - name: Set workflow vars
       id: vars
@@ -267,31 +108,30 @@ jobs:
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
-
+  
     - name: Install env dependencies
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-
     - name: Add Helm repos and dependencies
       run: |
         make helm.repos-add
         make helm.dependency-update
-
+  
     - name: Create test namespace
       run: |
         echo $TEST_NAMESPACE
         kubectl delete ns --ignore-not-found=true \
-            -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
+          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
-
+  
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
-
+  
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       id: deployment
@@ -300,6 +140,7 @@ jobs:
         token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
+
     - name: Pre setup
       timeout-minutes: 5
       env:
@@ -311,6 +152,7 @@ jobs:
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
+
     - name: 🌟 Setup Camunda chart 🌟
       env:
         TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
@@ -320,14 +162,17 @@ jobs:
         TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.ingress.outputs.host }}"
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
+
     - name: Post setup
       timeout-minutes: 5
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+  
     - name: Pre Upgrade
       if: matrix.scenario.flow == 'upgrade'
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
+  
     - name: 🌟 Upgrade Camunda chart 🌟
       if: matrix.scenario.flow == 'upgrade'
       env:
@@ -336,6 +181,7 @@ jobs:
           --values /tmp/extra-values-file.yaml
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
+  
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
@@ -346,19 +192,23 @@ jobs:
         env_url: https://${{ steps.vars.outputs.ingress-host }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
+  
     - name: ⭐️ Run Preflight TestSuite ⭐️
       if: inputs.test-enabled
-      timeout-minutes: 10
+      timeout-mioutputsnutes: 10
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup test.preflight
+  
     - name: ⭐️ Run Core TestSuite ⭐️
       if: inputs.test-enabled
       timeout-minutes: 20
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
+  
     - name: 🚨 Get failed Pods info 🚨
       if: failure()
       uses: ./.github/actions/failed-pods-info
+
     - name: Cleanup GitHub deployment
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
@@ -367,27 +217,14 @@ jobs:
         token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
+  
     - name: Cleanup test namespace
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       run: |
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
           -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
-    
-    - name: Delete on-demand ROSA HCP Cluster
-      # TODO: update this branch to main and pin the commit
-      uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
-      if: always() && matrix.distro.platform == 'rosa' && env.TEST_PERSISTENT != 'true'
-      timeout-minutes: 125
-      env:
-        AWS_PROFILE: ${{ secrets[matrix.distro.secret.aws-profile] }}
-      with:
-        rh-token: ${{ secrets[matrix.distro.secret.rh-token] }}
-        s3-backend-bucket: "${{ secrets[matrix.distro.secret.tf-state-bucket] }}-${{ env.TEST_AWS_REGION }}"
 
-        cluster-name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
-        aws-region: ${{ env.TEST_AWS_REGION }}
-        
   clean:
     name: Clean up persistent resources
     if: github.event.action == 'closed'

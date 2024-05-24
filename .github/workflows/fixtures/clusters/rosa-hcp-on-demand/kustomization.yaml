@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Description: this is a template cluster that is used each time we spawn an "on-demand" ROSA HCP cluster in the CI
+
+commonAnnotations:
+  camunda.com/team: distribution
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+
+resources:
+- ./cert-manager
+- ./ingress-nginx
+- ./external-dns
+- ./external-secrets
+- ./distribution-team

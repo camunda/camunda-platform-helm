@@ -1,0 +1,26 @@
+---
+txtOwnerId: rosa-distro-ci-hcp
+provider: google
+extraArgs:
+- --google-project=camunda-distribution
+- --txt-prefix=external-dns-
+registry: txt
+domainFilters:
+- distro.ultrawombat.com
+sources:
+- ingress
+policy: sync
+env:
+- name: GOOGLE_APPLICATION_CREDENTIALS
+  value: /etc/secrets/service-account/credentials.json
+extraVolumeMounts:
+- name: google-service-account
+  mountPath: /etc/secrets/service-account/
+extraVolumes:
+- name: google-service-account
+  secret:
+    secretName: external-dns-gcp-service-account
+securityContext:
+  runAsUser: null
+podSecurityContext:
+  fsGroup: null

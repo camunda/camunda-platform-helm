@@ -1,0 +1,275 @@
+name: "Test - Integration - ROSA"
+
+# description: This workflow perform integration tests against ROSA platform, it only prepares the cluster to run the tests
+
+on:
+  push: # TODO: change me with nighly or on-demand tests or with label
+  workflow_call:
+    inputs:
+      cluster_name:
+        description: The unique identifier of used in the cluster name, will be random if not provided.
+        required: false
+        type: string
+      identifier:
+        description: The unique identifier of used in the deployment hostname.
+        required: true
+        type: string
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      caller-git-ref:
+        required: false
+        default: main
+        type: string
+      persistent:
+        description: |
+          Keep test deployment after the workflow is done.
+          NOTE: All persistent deployments will be deleted frequently to save costs!
+        required: false
+        default: false
+        type: boolean
+      flows:
+        description: "JSON formated list of flows"
+        required: false
+        default: '["install", "upgrade"]'
+        type: string
+      test-enabled:
+        required: false
+        default: true
+        type: boolean
+      extra-values:
+        description: Pass extra values to the Helm chart.
+        required: false
+        type: string
+
+env:
+  TEST_PERSISTENT: ${{ inputs.persistent }}
+
+  TEST_AWS_REGION: "eu-west-3"
+
+  TEST_HOSTNAME_BASE: ci.distro.ultrawombat.com
+  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
+  # Docker Hub auth to avoid image pull rate limit.
+  TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
+  TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
+  TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
+  # Camunda registry auth to access WebModeler Docker image since it's not public.
+  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+
+  INPUTS_IDENTIFIER: "${{ inputs.identifier || github.event.pull_request.number || github.sha }}"
+  INPUTS_PERSISTENT: "${{ inputs.persistent || contains(github.event.*.labels.*.name, 'test-persistent') }}"
+  INPUTS_TEST_ENABLED: "${{ inputs.test-enabled || 'true' }}"
+  INPUT_CALLER_GIT_REF: "${{ inputs.caller-git-ref || github.event.pull_request.head.sha || github.sha }}"
+  INPUT_CAMUNDA_HELM_GIT_REF: "${{ inputs.camunda-helm-git-ref || github.event.pull_request.head.sha || github.sha }}"
+  INPUT_EXTRA_VALUES: "${{ inputs.extra-values || '' }}"
+
+jobs:
+  define_matrix:
+    name: "Define matrix"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro:
+          - name: OpenShift N(0)
+            type: openshift
+            # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
+            # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
+            # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.          version: 4.15.13
+            version: 4.15.11
+            platform: rosa
+    outputs:
+        matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        env:
+          distro: ${{ toJSON(matrix.distro) }}
+        run: jq -r -n 'env.distro | fromjson | @json "::set-output name=result::\(.data)"'
+
+  define_variables:
+    name: "Define variables"
+    runs-on: ubuntu-latest
+    needs:
+      - define_matrix
+    strategy:
+      fail-fast: false
+      matrix: 
+        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
+    steps:
+      - name: Define ROSA cluster name
+        id: rosa-cluster-name
+        run: |
+          if [ -z "${{ inputs.cluster_name }}" ]; then
+            random_string=$(LC_ALL=C tr -cd 'a-f0-9' < /dev/urandom | head -c 8)
+            identifier="random-${random_string}-${{ matrix.distro.name }}"
+          else
+            identifier="${{ inputs.cluster_name }}-${{ matrix.distro.name }}"
+          fi
+
+          : # ensure that the name of the cluster is unique 
+          sha_identifier=$(echo -n "$identifier" | sha1sum | cut -c1-10)
+          rosa_cluster_name="c-$sha_identifier"
+          echo "rosa_cluster_name=$rosa_cluster_name"
+          echo "rosa_cluster_name=$rosa_cluster_name" >> "$GITHUB_OUTPUT"
+      
+      ## Write for matrix outputs workaround
+      - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
+        id: out
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.distro.name }}
+          outputs: |-
+            cluster_name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
+
+  read_cluster_vars:
+    runs-on: ubuntu-latest
+    needs: [ define_variables ]
+    steps:
+      - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
+        id: read
+        with:
+          matrix-step-name: define_variables
+    outputs:
+      result: "${{ steps.read.outputs.result }}"
+
+  prepare_clusters:
+    name: "Run ROSA Tests"
+    needs:
+      - define_matrix
+      - read_cluster_vars
+    strategy:
+      fail-fast: false
+      matrix: 
+        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to AWS
+        run: |
+          aws configure set aws_secret_access_key ${{ secrets.DISTRO_CI_AWS_SECRET_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+     
+      - name: Create ROSA cluster and login
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@main
+        timeout-minutes: 125
+        env:
+          AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
+        with:
+          rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
+          admin-username: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME }}
+          admin-password: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD }}
+          s3-backend-bucket: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+
+          cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
+          aws-region: ${{ env.TEST_AWS_REGION }}
+          replicas: 4
+
+          openshift-version: "${{ matrix.distro.version }}"
+
+      - name: Configure on-demand cluster ROSA
+        timeout-minutes: 10
+          # TODO: use an other branch than feature/on-demand-openshift
+        run: |
+          cd ./.github/workflows/fixture/clusters/rosa-hcp-on-demand/
+    
+          : # populate with secrets then kustomize and apply!
+          export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
+          export CERT_MANAGER_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_CERT_MANAGER_GCP_SERVICE_ACCOUNT }}
+          envsubst < cert-manager/secret.yaml.tpl > cert-manager/secret.yaml
+          envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
+          kustomize build --enable-helm ./ | kubectl apply -f - 
+            
+          echo "Waiting for global state to converge"
+          sleep 30
+            
+          while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
+            echo "Waiting for all pods to be Running or Completed"
+            sleep 5
+          done
+    
+          kubectl get all --all-namespaces
+
+      - name: Export kubeconfig
+        id: export_kube_config
+        run: |
+          echo "kubeconfig_raw=$(kubectl config view --raw)" >> "$GITHUB_OUTPUT"
+      
+      ## Write for matrix outputs workaround
+      - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
+        id: out
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.distro.name }}
+          outputs: |-
+            kubeconfig_raw: ${{ steps.export_kube_config.outputs.kubeconfig_raw }}
+
+  read_kube_configs:
+    name: "Read kube configs from matrix"
+    runs-on: ubuntu-latest
+    needs: [ prepare_clusters ]
+    steps:
+      - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
+        id: read
+        with:
+          matrix-step-name: prepare_clusters
+    outputs:
+      kubeconfig: "${{ steps.read.outputs.result }}"
+
+  launch_tests:
+    name: "Launch tests"
+    runs-on: ubuntu-latest
+    needs:
+      - define_matrix
+      - read_cluster_vars
+      - read_kube_configs
+    strategy:
+      fail-fast: false
+      matrix: 
+        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
+        flow: ${{ fromJson(inputs.flows || '[\"install\", \"upgrade\"]') }}
+    steps:
+      - name: Login to the cluster
+        uses: Azure/k8s-set-context@v1
+        with:
+          kubeconfig: ${{ needs.read_kube_configs.outputs.kubeconfig }}
+
+      - name: Launch tests
+        uses: ./../actions/chart-test-recipes
+        with:
+          platform: "rosa"
+          identifier: "${{ env.INPUTS_IDENTIFIER }}"
+          persistent: "${{ env.TEST_PERSISTENT }}"
+          flow: "${{ matrix.flow }}"
+          test-enabled: "${{ env.INPUTS_TEST_ENABLED }}"
+
+          caller-git-ref: ${{ env.INPUT_CALLER_GIT_REF }}
+          camunda-helm-git-ref: ${{ env.INPUT_CAMUNDA_HELM_GIT_REF }}
+          extra-values: ${{ env.INPUT_EXTRA_VALUES }}
+          ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
+
+  cleanup-clusters:
+    name: "Cleanup ROSA clusters"
+    runs-on: ubuntu-latest
+    needs:
+      - define_matrix
+      - read_cluster_vars
+      - launch_tests
+    strategy:
+      fail-fast: false
+      matrix: 
+        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
+    steps:
+      - name: Delete on-demand ROSA HCP Cluster
+        # TODO: update this branch to main and pin the commit
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
+        if: always() && env.TEST_PERSISTENT != 'true'
+        timeout-minutes: 125
+        env:
+          AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
+        with:
+          rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
+          s3-backend-bucket: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+
+          cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
+          aws-region: ${{ env.TEST_AWS_REGION }}
