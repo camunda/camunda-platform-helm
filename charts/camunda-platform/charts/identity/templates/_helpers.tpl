@@ -38,11 +38,13 @@ If release name contains chart name it will be used as a full name.
             {{ $host := .Values.global.ingress.host }}
             {{ $path := .Values.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
-        {{- else -}}
-            {{ $proto := ternary "https" "http" .Values.ingress.tls.enabled -}}
-            {{ $host := .Values.ingress.host -}}
+       {{- else if .Values.ingress.enabled -}}
+            {{- $proto := ternary "https" "http" .Values.ingress.tls.enabled -}}
+            {{- $host := .Values.ingress.host -}}
             {{- printf "%s://%s" $proto $host -}}
-        {{- end -}}
+      {{- else -}}
+        {{- "http://localhost:8080" -}}
+      {{- end -}}
     {{- end -}}
 {{- end -}}
 
