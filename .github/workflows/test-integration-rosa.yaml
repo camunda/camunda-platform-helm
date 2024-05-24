@@ -65,6 +65,10 @@ env:
   INPUT_CAMUNDA_HELM_GIT_REF: "${{ inputs.camunda-helm-git-ref || github.event.pull_request.head.sha || github.sha }}"
   INPUT_EXTRA_VALUES: "${{ inputs.extra-values || '' }}"
 
+# limit to a single execution per actor of this workflow
+concurrency:
+    group: "${{ github.workflow }}-${{ github.actor }}"
+
 jobs:
   define_matrix:
     name: "Define matrix"
