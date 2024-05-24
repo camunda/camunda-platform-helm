@@ -72,6 +72,10 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        with:
+          fetch-depth: 0
+
       - id: set-matrix
         # we define a global matrix in an external file due to https://github.com/orgs/community/discussions/26284
         run: |
