@@ -140,6 +140,10 @@ jobs:
         distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        with:
+          fetch-depth: 0
+
       - name: Authenticate to AWS
         run: |
           aws configure set aws_secret_access_key ${{ secrets.DISTRO_CI_AWS_SECRET_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
@@ -225,6 +229,10 @@ jobs:
         distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
         flow: ${{ fromJson(inputs.flows || '[\"install\", \"upgrade\"]') }}
     steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        with:
+          fetch-depth: 0
+          
       - name: Login to the cluster
         uses: Azure/k8s-set-context@v1
         with:
