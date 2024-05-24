@@ -80,6 +80,14 @@ jobs:
             # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.          version: 4.15.13
             version: 4.15.11
             platform: rosa
+
+          - name: OpenShift N(1)
+            type: openshift
+            # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
+            # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
+            # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.          version: 4.15.13
+            version: 4.15.11
+            platform: rosa
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
