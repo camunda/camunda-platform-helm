@@ -84,8 +84,9 @@ jobs:
     steps:
       - id: set-matrix
         env:
-          distro: ${{ toJSON(matrix.distro) }}
-        run: jq -r -n 'env.distro | fromjson | @json "::set-output name=result::\(.data)"'
+          matrix: ${{ toJSON(matrix.distro) }}
+        run: |
+          echo "matrix=$(echo ${{ toJson(matrix.distro) }})" >> "$GITHUB_ENV"
 
   define_variables:
     name: "Define variables"
