@@ -265,6 +265,12 @@ jobs:
       matrix: 
         distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
     steps:
+      - name: Authenticate to AWS
+        run: |
+          aws configure set aws_secret_access_key ${{ secrets.DISTRO_CI_AWS_SECRET_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+     
       - name: Delete on-demand ROSA HCP Cluster
         # TODO: update this branch to main and pin the commit
         uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
