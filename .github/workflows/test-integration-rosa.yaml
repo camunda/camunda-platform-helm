@@ -81,13 +81,14 @@ jobs:
             version: 4.15.11
             platform: rosa
     outputs:
-        matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
         run: |
           matrix=$((
             echo '${{ toJSON(matrix.distro) }}'
           ) | jq -c .)
+          echo "matrix=$matrix"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   define_variables:
