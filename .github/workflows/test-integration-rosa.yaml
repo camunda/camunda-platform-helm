@@ -86,7 +86,7 @@ jobs:
         env:
           matrix: ${{ toJSON(matrix.distro) }}
         run: |
-          echo "matrix=$(echo ${{ toJson(matrix.distro) }})" >> "$GITHUB_ENV"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   define_variables:
     name: "Define variables"
