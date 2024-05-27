@@ -779,8 +779,8 @@ zeebe:
     enabled: false
     ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
+    ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849
+    probePath: /actuator/health/readiness
     ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
