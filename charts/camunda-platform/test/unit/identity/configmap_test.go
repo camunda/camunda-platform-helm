@@ -124,3 +124,82 @@ func (s *configMapSpringTemplateTest) TestConfigMapExternalDatabaseEnabled() {
 	s.Require().Equal("jdbc:postgresql://my-database-host:2345/my-database-name", configmapApplication.Spring.DataSource.Url)
 	s.Require().Equal("my-database-username", configmapApplication.Spring.DataSource.Username)
 }
+func (s *configMapSpringTemplateTest) TestConfigMapAuthIssuerBackendUrlWhenExplicitlyDefined() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identityKeycloak.enabled": "false",
+			"global.identity.auth.enabled": "false",
+			"global.identity.auth.issuerBackendUrl": "https://example.com/",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.NotEmpty(configmap.Data)
+
+	s.Require().Equal("https://example.com/", configmapApplication.Identity.AuthProvider.BackendUrl)
+}
+func (s *configMapSpringTemplateTest) TestConfigMapAuthIssuerBackendUrlWhenKeycloakUrlDefined() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.keycloak.url.protocol": "https",
+			"global.identity.keycloak.url.host":     "keycloak.com",
+			"global.identity.keycloak.url.port":     "443",
+			"global.identity.keycloak.contextPath":  "/auth/",
+			"global.identity.keycloak.realm":        "camunda-platform",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.NotEmpty(configmap.Data)
+
+	s.Require().Equal("https://keycloak.com:443/auth/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
+}
+func (s *configMapSpringTemplateTest) TestConfigMapAuthIssuerBackendUrlWhenKeycloakNotDefined() {
+	// given
+	options := &helm.Options{
+		SetValues:      map[string]string{},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.NotEmpty(configmap.Data)
+
+	s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
+}

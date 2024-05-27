@@ -131,9 +131,7 @@ spec:
         {{- if .Values.webModeler.webapp.extraVolumes }}
         {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-        {{- if .Values.webModeler.serviceAccount.name }}
-      serviceAccountName: {{ .Values.webModeler.serviceAccount.name }}
-      {{- end }}
+      serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
       {{- if .Values.webModeler.webapp.podSecurityContext }}
       securityContext: {{- toYaml .Values.webModeler.webapp.podSecurityContext | nindent 8 }}
       {{- end }}

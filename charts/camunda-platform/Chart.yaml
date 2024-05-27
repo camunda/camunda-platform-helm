@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.0.2
+version: 10.0.5
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -23,12 +23,12 @@ dependencies:
     alias: identityKeycloak
     repository: https://charts.bitnami.com/bitnami
     version: 19.4.1
-    condition: "identityKeycloak.enabled"
+    condition: "identity.keycloak.enabled,identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
     repository: https://charts.bitnami.com/bitnami
     version: 12.x.x
-    condition: "identityPostgresql.enabled"
+    condition: "identity.postgresql.enabled,identityPostgresql.enabled"
   # WebModeler Dependencies.
   - name: web-modeler-postgresql
     alias: postgresql
@@ -50,6 +50,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
+  helm.sh/cliVersion: "3.14.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -58,4 +59,14 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "use component service account"
+    - kind: fixed
+      description: "handle type of es url correctly"
+    - kind: fixed
+      description: "set zeebe exporters empty map when disabled"
+    - kind: fixed
+      description: "add constraints for when identity is disabled and keycloak is enabled"
+    - kind: changed
+      description: "update identity application yaml to match upstream"

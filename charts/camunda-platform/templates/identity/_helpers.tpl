@@ -37,7 +37,7 @@ Create a default fully qualified app name.
             {{- $host := .Values.identity.ingress.host -}}
             {{- printf "%s://%s" $proto $host -}}
         {{- else -}}
-            {{- "" -}}
+            {{- "http://localhost:8080" -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}
@@ -71,12 +71,11 @@ app.kubernetes.io/component: identity
 [identity] Create the name of the service account to use
 */}}
 {{- define "identity.serviceAccountName" -}}
-{{- if .Values.identity.serviceAccount.enabled }}
-{{- default (include "identity.fullname" .) .Values.identity.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.identity.serviceAccount.name }}
-{{- end }}
-{{- end }}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "identity"
+        "context" $
+    ) -}}
+{{- end -}}
 
 {{/*
 Keycloak helpers
@@ -195,13 +194,6 @@ This is mainly used to access the external Keycloak service in the global Ingres
         (include "identity.keycloak.port" .)
         (include "identity.keycloak.contextPath" .)
     -}}
-{{- end -}}
-
-{{/*
-[identity] Keycloak issuer backend URL.
-*/}}
-{{- define "identity.issuerBackendUrl" -}}
-    {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
 {{- end -}}
 
 {{/*

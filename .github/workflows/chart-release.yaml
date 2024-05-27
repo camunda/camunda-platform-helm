@@ -29,7 +29,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           fetch-depth: 0
       - name: Install env dependencies
@@ -74,10 +74,7 @@ jobs:
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
-          export OUTPUT_VERSION_HEADER="### Images"
-          export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
-          gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
-            charts/camunda-platform/RELEASE-NOTES.md
+          make release.generate-notes-footer
       - name: Clean up release readme
         run: |
           sed -ri '/Badge .+/d' charts/camunda-platform/README.md
@@ -112,11 +109,13 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           # The verify step happens in the "release" branch before merging to the "main" branch.
           ref: release
           fetch-depth: 0
+      - name: Install env dependencies
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
@@ -127,8 +126,8 @@ jobs:
           command: make release.verify-components-version
       - name: Generate version matrix
         run: |
-          git pull --tags
-          make release.generate-version-matrix-all > charts/camunda-platform/VERSION-MATRIX.md
+          make release.generate-version-matrix-index
+          make release.generate-version-matrix-released
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "renovate[bot]"

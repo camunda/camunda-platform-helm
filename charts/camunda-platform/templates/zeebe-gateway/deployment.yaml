@@ -148,9 +148,7 @@ spec:
         {{- if .Values.zeebeGateway.extraVolumes}}
         {{- .Values.zeebeGateway.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.zeebeGateway.serviceAccount.name}}
-      serviceAccountName: {{ .Values.zeebeGateway.serviceAccount.name }}
-      {{- end }}
+      serviceAccountName: {{ include "zeebe.serviceAccountName.gateway" . }}
       {{- if .Values.zeebeGateway.podSecurityContext }}
       securityContext: {{- toYaml .Values.zeebeGateway.podSecurityContext | nindent 8 }}
       {{- end }}

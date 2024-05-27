@@ -1,6 +1,12 @@
 {{/* vim: set filetype=mustache: */}}
 
 {{/*
+********************************************************************************
+General.
+********************************************************************************
+*/}}
+
+{{/*
 Expand the name of the chart.
 */}}
 {{- define "camundaPlatform.name" -}}
@@ -138,6 +144,18 @@ helm.sh/chart: identity-{{ .Chart.Version | replace "+" "_" }}
 app.kubernetes.io/component: identity
 {{- end }}
 
+{{/*
+[camunda-platform] Create the name of the service account to use
+Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operate" "context" $) }}
+*/}}
+{{- define "camundaPlatform.serviceAccountName" -}}
+    {{- $values := (index .context.Values .component) -}}
+    {{- if $values.serviceAccount.enabled -}}
+        {{- $values.serviceAccount.name | default (include (printf "%s.fullname" .component) .context) -}}
+    {{- else -}}
+        {{- $values.serviceAccount.name | default "default" -}}
+    {{- end -}}
+{{- end -}}
 
 {{/*
 ********************************************************************************

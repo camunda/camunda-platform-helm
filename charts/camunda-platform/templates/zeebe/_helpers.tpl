@@ -52,12 +52,12 @@ app.kubernetes.io/component: zeebe-broker
 [zeebe] Create the name of the service account to use.
 */}}
 {{- define "zeebe.serviceAccountName.broker" -}}
-    {{- if .Values.zeebe.serviceAccount.enabled }}
-        {{- default (include "zeebe.fullname.broker" .) .Values.zeebe.serviceAccount.name }}
-    {{- else }}
-        {{- default "default" .Values.zeebe.serviceAccount.name }}
-    {{- end }}
-{{- end }}
+    {{- if .Values.zeebe.serviceAccount.enabled -}}
+        {{- default (include "zeebe.fullname.broker" .) .Values.zeebe.serviceAccount.name -}}
+    {{- else -}}
+        {{- default "default" .Values.zeebe.serviceAccount.name -}}
+    {{- end -}}
+{{- end -}}
 
 {{/*
 [zeebe] Get the image pull secrets.

@@ -57,8 +57,8 @@ global:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
     ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
-    # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.5.0
+    # renovate: datasource=docker depName=camunda/zeebe
+    tag: 8.5.1
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -220,7 +220,7 @@ global:
         clientId: connectors
         ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
-        existingSecret: ""
+        existingSecret:
 
       ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other sub-charts
       identity:
@@ -314,7 +314,7 @@ global:
         clientId: zeebe
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
-        existingSecret: ""
+        existingSecret:
         ## @param global.identity.auth.zeebe.audience defines the audience, which is used by Zeebe.
         audience: zeebe-api
         ## @param global.identity.auth.zeebe.tokenScope defines the token scope, which is used by Zeebe.
@@ -322,11 +322,10 @@ global:
 
   # Multiregion options for Zeebe
   #
-  ## WARNING: In order to get your multi-region setup covered by Camunda enterprise support you MUST get your configuration and run books reviewed by Camunda before going to production.
-  # This is necessary for us to be able to help you in case of outages, due to the complexity of operating multi-region setups and the dependencies to the underlying Kubernetes prerequisites.
-  # If you operate this in the wrong way you risk corruption and complete loss of all data especially in the dual-region case.
-  # If you can, consider three regions. Please, contact your customer success manager as soon as you start planning a multi-region setup.
-  # Camunda reserves the right to limit support if no review was done prior to launch or the review showed significant risks.
+  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps 
+  # outlined by Camunda before applying them in production setups.
+  # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
+  # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
   multiregion:
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
@@ -362,7 +361,7 @@ console:
     repository: console/console-sm
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.20
+    tag: 8.5.37
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -371,6 +370,11 @@ console:
 
   ## @param console.replicas Number of Console replicas
   replicas: 1
+
+  ## console.keycloak configuration to configure Keycloak authentication settings.
+  keycloak:
+    ## @param console.keycloak.realm Specifies the Keycloak realm used for authentication.
+    realm: "camunda-platform"
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
@@ -1600,7 +1604,7 @@ optimize:
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.5.0
+    tag: 8.5.1
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2097,7 +2101,7 @@ identityPostgresql:
   ##
   image:
     repository: bitnami/postgresql
-    tag: 15.6.0
+    tag: 15.7.0
   ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
   ##
   nameOverride: identity-postgresql
@@ -2145,7 +2149,7 @@ identityKeycloak:
       ## @param identityKeycloak.postgresql.image.repository image repo
       repository: bitnami/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
-      tag: 15.6.0
+      tag: 15.7.0
     primary:
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
@@ -2336,7 +2340,7 @@ webModeler:
     registry: registry.camunda.cloud
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.0
+    tag: 8.5.1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the WebModeler images are pulled directly from Camunda's private registry.
     #
@@ -2891,6 +2895,12 @@ postgresql:
   ## @param postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
+  # https://hub.docker.com/r/bitnami/postgresql/tags
+  ## @param postgresql.image.repository PostgreSQL repo
+  ## @param postgresql.image.tag PostgreSQL image tag
+  image:
+    repository: bitnami/postgresql
+    tag: 14.12.0
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param postgresql.auth.username defines the name of the database user to be created for WebModeler
@@ -2986,7 +2996,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.5.0
+    tag: 8.5.2
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -3113,7 +3123,7 @@ connectors:
   ## @extra connectors.serviceAccount configuration for the service account where the Connectors pods are assigned to
   serviceAccount:
     ## @param connectors.serviceAccount.enabled if true, enables the Connectors service account
-    enabled: false
+    enabled: true
     ## @param connectors.serviceAccount.name can be used to set the name of the Connectors service account
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account

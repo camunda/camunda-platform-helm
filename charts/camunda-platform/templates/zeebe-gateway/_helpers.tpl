@@ -49,12 +49,12 @@ app.kubernetes.io/component: zeebe-gateway
 [zeebe-gateway] Create the name of the service account to use.
 */}}
 {{- define "zeebe.serviceAccountName.gateway" -}}
-    {{- if .Values.zeebeGateway.serviceAccount.enabled }}
-        {{- default (include "zeebe.fullname.gateway" .) .Values.zeebeGateway.serviceAccount.name }}
-    {{- else }}
-        {{- default "default" .Values.zeebeGateway.serviceAccount.name }}
-    {{- end }}
-{{- end }}
+    {{- if .Values.zeebeGateway.serviceAccount.enabled -}}
+        {{- default (include "zeebe.fullname.gateway" .) .Values.zeebeGateway.serviceAccount.name -}}
+    {{- else -}}
+        {{- default "default" .Values.zeebeGateway.serviceAccount.name -}}
+    {{- end -}}
+{{- end -}}
 
 {{/*
 [zeebe-gateway] Get the image pull secrets.

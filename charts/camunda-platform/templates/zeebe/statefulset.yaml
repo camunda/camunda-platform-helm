@@ -223,9 +223,7 @@ spec:
         {{- if .Values.zeebe.extraVolumes }}
           {{ .Values.zeebe.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      {{- if .Values.zeebe.serviceAccount.name }}
-      serviceAccountName: {{ .Values.zeebe.serviceAccount.name }}
-      {{- end }}
+      serviceAccountName: {{ include "zeebe.serviceAccountName.broker" . }}
       {{- if .Values.zeebe.podSecurityContext }}
       securityContext: {{- toYaml .Values.zeebe.podSecurityContext | nindent 8 }}
       {{- end }}

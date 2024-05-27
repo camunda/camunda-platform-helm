@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: operate
-    app.kubernetes.io/version: "8.5.0"
+    app.kubernetes.io/version: "8.5.1"
   annotations:
     {}
 spec:
@@ -33,9 +33,9 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: operate
-        app.kubernetes.io/version: "8.5.0"
+        app.kubernetes.io/version: "8.5.1"
       annotations:
-        checksum/config: 70a30cc63fe15bb4fec9bddf0e1722b38921c1c6f35cedc861c835c97cf85a24
+        checksum/config: 1b086a0a6ed0700431c07d04eb23c7d513eee54d0802a9f1b6c5d3ed7ce1c76e
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: operate
-          image: camunda/operate:8.5.0
+          image: camunda/operate:8.5.1
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -111,6 +111,7 @@ spec:
           emptyDir: {}
         - name: camunda
           emptyDir: {}
+      serviceAccountName: camunda-platform-test-operate
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

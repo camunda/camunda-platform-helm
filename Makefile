@@ -1,5 +1,5 @@
 # Makefile for managing the Helm charts
-
+MAKEFLAGS += --silent
 chartPath=charts/camunda-platform
 chartVersion=$(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName=camunda-platform-test
@@ -140,7 +140,11 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 
 .PHONY: .release.generate-notes
 .release.generate-notes:
-	@bash scripts/generate-release-notes.sh
+	@bash scripts/generate-release-notes.sh --main
+
+.PHONY: release.generate-notes-footer
+release.generate-notes-footer:
+	@bash scripts/generate-release-notes.sh --footer
 
 .PHONY: release.generate-and-commit
 release.generate-and-commit: .release.generate-notes
@@ -169,10 +173,17 @@ release.chores:
 release.verify-components-version:
 	@bash scripts/verify-components-version.sh
 
-.PHONY: release.generate-version-matrix-single
-release.generate-version-matrix-single:
-	@bash scripts/generate-version-matrix.sh --single
+.PHONY: release.generate-version-matrix-index
+release.generate-version-matrix-index:
+	@bash scripts/generate-version-matrix.sh --init
+	@bash scripts/generate-version-matrix.sh --index
 
-.PHONY: release.generate-version-matrix-all
-release.generate-version-matrix-all:
-	@bash scripts/generate-version-matrix.sh --all
+.PHONY: release.generate-version-matrix-released
+release.generate-version-matrix-released:
+	@bash scripts/generate-version-matrix.sh --init
+	@bash scripts/generate-version-matrix.sh --released
+
+.PHONY: release.generate-version-matrix-unreleased
+release.generate-version-matrix-unreleased:
+	@bash scripts/generate-version-matrix.sh --init
+	@bash scripts/generate-version-matrix.sh --unreleased

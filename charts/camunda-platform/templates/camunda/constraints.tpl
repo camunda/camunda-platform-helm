@@ -40,6 +40,16 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 {{- end }}
 
 {{/*
+Fail with a message if Identity is disabled and identityKeycloak is enabled.
+*/}}
+{{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
+  {{- $errorMessage := "[camunda][error] Identity is disabled but identityKeycloak is enabled. Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+
+{{/*
 TODO: Enable for 8.7 cycle.
 
 Fail with a message if global.zeebePort is set since now it's used from Zeebe Gateway values:
