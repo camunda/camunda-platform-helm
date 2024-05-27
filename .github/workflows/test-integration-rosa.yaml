@@ -251,7 +251,7 @@ jobs:
       - name: Set up Kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ fromJson(needs.read_kube_configs.outputs).kubeconfig_raw[matrix.distro.name] }}" | base64 --decode > $HOME/.kube/config
+          echo "${{ fromJson(needs.read_kube_configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       - name: Launch tests
