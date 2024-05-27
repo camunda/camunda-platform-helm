@@ -101,7 +101,6 @@ jobs:
       fail-fast: false
       matrix: 
         distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
-        flow: ${{ fromJson(needs.define_matrix.outputs.flow_matrix) }}
     steps:
       - name: Define ROSA cluster name
         id: rosa-cluster-name
