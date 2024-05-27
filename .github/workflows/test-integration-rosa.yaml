@@ -203,7 +203,7 @@ jobs:
       - name: Export kubeconfig
         id: export_kube_config
         run: |
-          echo "kubeconfig_raw=$(kubectl config view --raw)" >> "$GITHUB_OUTPUT"
+          echo "kubeconfig_raw=$(kubectl config view --raw | base64)" >> "$GITHUB_OUTPUT"
       
       ## Write for matrix outputs workaround
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
@@ -243,10 +243,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Login to the cluster
-        uses: Azure/k8s-set-context@v1
-        with:
-          kubeconfig: ${{ needs.read_kube_configs.outputs.kubeconfig }}
+      - name: Set up Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ needs.read_kube_configs.outputs.kubeconfig }}" | base64 --decode > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
 
       - name: Launch tests
         uses: ./../actions/chart-test-recipes
