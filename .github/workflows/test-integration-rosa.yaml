@@ -203,7 +203,7 @@ jobs:
       - name: Export kubeconfig
         id: export_kube_config
         run: |
-          echo "kubeconfig_raw=$(kubectl config view --raw | base64)" >> "$GITHUB_OUTPUT"
+          echo "kubeconfig_raw=$(kubectl config view --raw | base64 -w 0)" >> "$GITHUB_OUTPUT"
       
       ## Write for matrix outputs workaround
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
