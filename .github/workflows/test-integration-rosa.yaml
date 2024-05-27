@@ -74,7 +74,8 @@ jobs:
     name: "Define matrix"
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      platform_matrix: ${{ steps.set-matrix.outputs.platform_matrix }}
+      flow_matrix: ${{ steps.set-matrix.outputs.flow_matrix }}
     steps:
       - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
         with:
@@ -83,9 +84,18 @@ jobs:
       - id: set-matrix
         # we define a global matrix in an external file due to https://github.com/orgs/community/discussions/26284
         run: |
-          matrix=$(yq -I0 '.matrix.distro' -o=json  .github/workflows/configs/test-integration-rosa-matrix.yaml)
-          echo "matrix=$matrix"
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          platform_matrix=$(yq -I0 '.matrix.distro' -o=json  .github/workflows/configs/test-integration-rosa-matrix.yaml)
+          echo "platform_matrix=$matrix"
+          echo "platform_matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+          if [ -z "${{ inputs.flows }}" ]; then
+            flow_matrix='["install", "upgrade"]'
+          else
+            flow_matrix='${{ inputs.flows }}'
+          fi
+          echo "flow_matrix=$flow_matrix"
+          echo "flow_matrix=$flow_matrix" >> "$GITHUB_OUTPUT"
+
 
   define_variables:
     name: "Define variables"
@@ -95,7 +105,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
+        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
     steps:
       - name: Define ROSA cluster name
         id: rosa-cluster-name
@@ -141,7 +151,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
+        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
@@ -236,8 +246,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
-        flow: ${{ fromJson(inputs.flows || '[\"install\", \"upgrade\"]') }}
+        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
+        flow: ${{ fromJson(needs.define_matrix.outputs.flow_matrix) }}
     steps:
       - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
         with:
@@ -274,7 +284,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        distro: ${{ fromJson(needs.define_matrix.outputs.matrix) }}
+        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
     steps:
       - name: Authenticate to AWS
         run: |
