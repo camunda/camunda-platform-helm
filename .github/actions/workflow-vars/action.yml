@@ -83,5 +83,7 @@ runs:
     # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
   - name: Set chart version
     shell: bash
+    # TODO: Use the branch name dynamically as part of the version when it's supported in GitHub:
+    # https://github.com/orgs/community/discussions/70343
     run: |
       yq -i '.version = "0.0.0-ci-snapshot"' charts/camunda-platform/Chart.yaml
