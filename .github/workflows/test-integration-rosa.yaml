@@ -64,7 +64,7 @@ env:
   INPUTS_CALLER_GIT_REF: "${{ inputs.caller-git-ref || github.event.pull_request.head.sha || github.sha }}"
   INPUTS_CAMUNDA_HELM_GIT_REF: "${{ inputs.camunda-helm-git-ref || github.event.pull_request.head.sha || github.sha }}"
   INPUTS_EXTRA_VALUES: "${{ inputs.extra-values || '' }}"
-  INPUTS_FLOWS: "${{ inputs.flows || '["install", "upgrade"]' }}"
+  INPUTS_FLOWS: ${{ inputs.flows || '["install", "upgrade"]' }}
 
 # limit to a single execution per actor of this workflow
 concurrency:
