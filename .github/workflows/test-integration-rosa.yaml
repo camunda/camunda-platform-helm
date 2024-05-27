@@ -88,6 +88,7 @@ jobs:
           platform_matrix=$(yq -I0 '.matrix.distro' -o=json  .github/workflows/configs/test-integration-rosa-matrix.yaml)
           echo "platform_matrix=$platform_matrix"
           echo "platform_matrix=$platform_matrix" >> "$GITHUB_OUTPUT"
+          echo "flow_matrix=${{ env.INPUTS_FLOWS }}"
           echo "flow_matrix=${{ env.INPUTS_FLOWS }}" >> "$GITHUB_OUTPUT"
 
 
@@ -100,6 +101,7 @@ jobs:
       fail-fast: false
       matrix: 
         distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
+        flow: ${{ fromJson(needs.define_matrix.outputs.flow_matrix) }}
     steps:
       - name: Define ROSA cluster name
         id: rosa-cluster-name
@@ -138,7 +140,7 @@ jobs:
       result: "${{ steps.read.outputs.result }}"
 
   prepare_clusters:
-    name: "Run ROSA Tests"
+    name: "Prepare Clusters"
     needs:
       - define_matrix
       - read_cluster_vars
@@ -267,7 +269,7 @@ jobs:
           extra-values: ${{ env.INPUTS_EXTRA_VALUES }}
           ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
 
-  cleanup-clusters:
+  cleanup_clusters:
     name: "Cleanup ROSA clusters"
     if: always()
     runs-on: ubuntu-latest
