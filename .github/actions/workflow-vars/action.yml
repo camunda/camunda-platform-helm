@@ -79,3 +79,9 @@ runs:
       fi
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+    # Avoid confusion about the chart version since we only change the version during the release process
+    # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
+  - name: Set chart version
+    shell: bash
+    run: |
+      yq -i '.version = "0.0.0-ci-snapshot"' charts/camunda-platform/Chart.yaml
