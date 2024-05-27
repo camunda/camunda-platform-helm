@@ -282,20 +282,15 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
 
       - name: Delete on-demand ROSA HCP Cluster
-        # in order to make sure that the cleanup does not fails for an unreadiness reason, retry it
-        uses: Wandalen/wretry.action@master
+        # TODO:  pin the commit
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
         if: always() && env.TEST_PERSISTENT != 'true'
         timeout-minutes: 125
         env:
           AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
         with:
-          # TODO: pin the commit
-          action: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
-          attempt_limit: 3 # fails after 3 unsuccessful attemps
-          attempt_delay: 60000 # wait 60s between attempts
-          with: |
-            rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
-            s3-backend-bucket: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+          rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
+          s3-backend-bucket: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}-${{ env.TEST_AWS_REGION }}"
 
-            cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
-            aws-region: ${{ env.TEST_AWS_REGION }}
+          cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
+          aws-region: ${{ env.TEST_AWS_REGION }}
