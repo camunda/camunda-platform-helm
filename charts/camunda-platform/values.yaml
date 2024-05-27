@@ -780,7 +780,7 @@ zeebe:
     ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
+    probePath: /actuator/health/readiness
     ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
