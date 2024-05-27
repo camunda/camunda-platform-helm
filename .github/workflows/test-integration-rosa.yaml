@@ -46,7 +46,7 @@ on:
 env:
   TEST_PERSISTENT: ${{ inputs.persistent }}
 
-  TEST_AWS_REGION: "eu-west-3"
+  TEST_AWS_REGION: "eu-central-1"
 
   TEST_HOSTNAME_BASE: ci.distro.ultrawombat.com
   TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
