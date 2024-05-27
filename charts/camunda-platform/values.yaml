@@ -3272,6 +3272,6 @@ prometheusServiceMonitor:
   ## @param prometheusServiceMonitor.labels.release
     release: metrics
   ## @param prometheusServiceMonitor.scrapeInterval can be set to configure the interval at which metrics should be scraped
-  # Should be *less* than 60s if the provided grafana dashboard is used, which can be found here https://github.com/camunda/zeebe/tree/main/monitor/grafana,
+  # Should be *less* than 60s if the provided grafana dashboard is used, which can be found here https://github.com/camunda/camunda/tree/main/monitor/grafana,
   # otherwise it isn't able to show any metrics which is aggregated over 1 min.
   scrapeInterval: 10s
