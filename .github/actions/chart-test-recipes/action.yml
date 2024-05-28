@@ -44,17 +44,17 @@ inputs:
       Github App private key used to impersonate the action.
       Used to create/delete GitHub environment.
       NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
-    
+
 runs:
   using: 'composite'
   steps:
     - name: Generate GitHub token
-      uses: tibdex/github-app-token@v2
+      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
       id: generate-github-token
       with:
         app_id: ${{ inputs.gh_app_id }}
         private_key: ${{ inputs.gh_app_private_key }}
-  
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -67,14 +67,14 @@ runs:
         ingress-hostname-base: ${{ inputs.ingress-hostname-base }}
 
     - name: Install dependencies
-      uses: asdf-vm/actions/install@v3
+      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
 
     - name: Add Helm repos and dependencies
       shell: bash
       run: |
         make helm.repos-add
         make helm.dependency-update
-    
+
     - name: Create test namespace
       shell: bash
       run: |
@@ -92,14 +92,14 @@ runs:
       run: kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
 
     - name: Start GitHub deployment
-      uses: bobheadxi/deployments@v1
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       id: deployment
       with:
         step: start
         token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
-  
+
     - name: Pre setup
       shell: bash
       env:
@@ -117,9 +117,8 @@ runs:
       env:
         TEST_CHART_FLOW: ${{ inputs.flow }}
         TEST_HELM_EXTRA_ARGS: >-
-          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-          --values /tmp/extra-values-file.yaml
-        TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.vars.outputs.ingress-host }}" # TODO: this variable was previously set on ${{ steps.ingress.outputs.host }} but no such steps exists, check if it sill works
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }} --values /tmp/extra-values-file.yaml
+        TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.vars.outputs.ingress-host }}" # this variable was previously set on ${{ steps.ingress.outputs.host }} but no such steps exists, check if it sill works
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
 
@@ -137,12 +136,11 @@ runs:
       if: inputs.flow == 'upgrade'
       env:
         TEST_HELM_EXTRA_ARGS: >-
-          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-          --values /tmp/extra-values-file.yaml
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }} --values /tmp/extra-values-file.yaml
       run: task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
 
     - name: Update GitHub deployment status
-      uses: bobheadxi/deployments@v1
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: finish
         token: ${{ steps.generate-github-token.outputs.token }}
@@ -168,7 +166,7 @@ runs:
 
     - name: Cleanup GitHub deployment
       if: always() && (inputs.persistent == 'false' || inputs.type != 'kubernetes')
-      uses: bobheadxi/deployments@v1
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
         token: ${{ steps.generate-github-token.outputs.token }}
@@ -178,6 +176,4 @@ runs:
     - name: Cleanup test namespace
       shell: bash
       if: always() && (inputs.persistent == 'false' || inputs.type != 'kubernetes')
-      run: kubectl delete ns --ignore-not-found=true \
-          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
-          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+      run: kubectl delete ns --ignore-not-found=true \ -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \ -l github-job-id=$GITHUB_WORKFLOW_JOB_ID

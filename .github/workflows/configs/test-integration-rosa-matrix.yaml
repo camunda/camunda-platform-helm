@@ -8,12 +8,11 @@ matrix:
         version: 4.15.11
         platform: rosa   
 
-      # TODO: uncomment before PR
-      # - name: OpenShift 4.14
-      #   type: openshift
-      #   # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
-      #   version: 4.14.24
-      #   platform: rosa
+      - name: OpenShift 4.14
+        type: openshift
+        # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
+        version: 4.14.24
+        platform: rosa
 
       # # TODO: in May 2024, ROSA does not supports OpenShift 4.13 with HCP, when this will be == 4.14,  un-comment this block
       # - name: OpenShift 4.13
