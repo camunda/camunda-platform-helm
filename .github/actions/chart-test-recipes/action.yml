@@ -117,7 +117,9 @@ runs:
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
         TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.vars.outputs.ingress-host }}" # TODO: this variable was previously set on ${{ steps.ingress.outputs.host }} but no such steps exists, check if it sill works
-      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
+      run: |
+        echo "$TEST_CHART_FLOW"
+        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
 
     - name: Post setup
       shell: bash

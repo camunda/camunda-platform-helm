@@ -148,7 +148,6 @@ jobs:
         test-enabled: "${{ inputs.test-enabled }}"
 
         caller-git-ref: ${{ inputs.caller-git-ref  }}
-        camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
         extra-values: ${{ inputs.extra-values }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
 
