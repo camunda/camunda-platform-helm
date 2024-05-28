@@ -99,3 +99,12 @@ runs:
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
       echo "TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" | tee -a $GITHUB_ENV
+
+  # Avoid confusion about the chart version since we only change the version during the release process
+  # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
+  - name: Set chart version
+    shell: bash
+    # TODO: Use the branch name dynamically as part of the version when it's supported in GitHub:
+    # https://github.com/orgs/community/discussions/70343
+    run: |
+      yq -i '.version = "0.0.0-ci-snapshot"' charts/camunda-platform/Chart.yaml
