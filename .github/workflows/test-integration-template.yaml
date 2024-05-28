@@ -131,9 +131,9 @@ jobs:
 
     - name: Ensure identifier is set
       run: |
-        if [ -z "${{ env.INPUTS_IDENTIFIER }}" ]; then
+        if [ -z "${{ env.TEST_IDENTIFIER }}" ]; then
           calculatedSha=$(git rev-parse --short ${{ github.sha }})
-          echo "INPUTS_IDENTIFIER=$calculatedSha" >> $GITHUB_ENV
+          echo "TEST_IDENTIFIER=$calculatedSha" >> $GITHUB_ENV
         fi
 
     - name: Launch tests
