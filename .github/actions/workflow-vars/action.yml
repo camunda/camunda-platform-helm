@@ -63,9 +63,9 @@ runs:
 
       # Workflow.
       echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
-      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_OUTPUT
+      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" >> "$GITHUB_OUTPUT"
       echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
-      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_OUTPUT
+      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" >> "$GITHUB_OUTPUT"
 
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
