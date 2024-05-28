@@ -102,6 +102,9 @@ runs:
   
     - name: Pre setup
       shell: bash
+      env:
+        TEST_CHART_FLOW: ${{ inputs.flow }}
+        TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
       run: |
         timeout 5m task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
 
@@ -118,9 +121,6 @@ runs:
           --values /tmp/extra-values-file.yaml
         TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.vars.outputs.ingress-host }}" # TODO: this variable was previously set on ${{ steps.ingress.outputs.host }} but no such steps exists, check if it sill works
       run: |
-        echo "$TEST_CHART_FLOW"
-        echo "$(pwd)"
-        echo "$(ls)"
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
 
     - name: Post setup
