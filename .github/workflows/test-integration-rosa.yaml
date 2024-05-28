@@ -264,7 +264,9 @@ jobs:
       - name: Launch tests
         uses: ./.github/actions/chart-test-recipes
         with:
-          platform: "rosa"
+          platform: "${{ matrix.distro.platform }}"
+          type: "${{ matrix.distro.type }}"
+          
           identifier: "${{ env.INPUTS_IDENTIFIER }}"
           persistent: "${{ env.TEST_PERSISTENT }}"
           flow: "${{ matrix.flow }}"

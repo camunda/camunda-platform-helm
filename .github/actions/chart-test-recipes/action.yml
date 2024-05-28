@@ -5,6 +5,9 @@ inputs:
   platform:
     description: "Plaform on which we run the tests"
     required: true
+  type:
+    description: "Type of the plaform on which we run the tests"
+    required: true
   identifier:
     description: 'The unique identifier used in the deployment hostname.'
     required: true
@@ -41,8 +44,11 @@ inputs:
     description: "Github App Id used to impersonate the action"
   gh_app_private_key:
     required: true
-    description: "Github App private key used to impersonate the action"
-
+    description: |
+      Github App private key used to impersonate the action.
+      Used to create/delete GitHub environment.
+      NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
+    
 runs:
   using: 'composite'
   steps:
@@ -106,29 +112,32 @@ runs:
     - name: Pre setup
       shell: bash
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
+        timeout 5m task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
+
+        echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
 
-    - name: Setup Camunda chart
+    - name: 🌟 Setup Camunda chart 🌟
       shell: bash
       env:
         TEST_CHART_FLOW: ${{ inputs.flow }}
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
+        TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.vars.outputs.ingress-host }}" # TODO: this variable was previously set on ${{ steps.ingress.outputs.host }} but no such steps exists, check if it sill works
       run: task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
 
     - name: Post setup
       shell: bash
-      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+      run: timeout 5m task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
 
     - name: Pre Upgrade
       shell: bash
       if: inputs.flow == 'upgrade'
       run: task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
 
-    - name: Upgrade Camunda chart
+    - name: 🌟 Upgrade Camunda chart 🌟
       shell: bash
       if: inputs.flow == 'upgrade'
       env:
@@ -148,22 +157,22 @@ runs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
 
-    - name: Run Preflight TestSuite
+    - name: ⭐️ Run Preflight TestSuite ⭐️
       shell: bash
       if: inputs.test-enabled == 'true'
-      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup test.preflight
+      run: timeout 10m task -d $TEST_SCENARIOS_DIR/chart-full-setup test.preflight
 
-    - name: Run Core TestSuite
+    - name: ⭐️ Run Core TestSuite ⭐️
       shell: bash
       if: inputs.test-enabled == 'true'
-      run: task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
+      run: timeout 20m task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
 
-    - name: Get failed Pods info
+    - name: 🚨 Get failed Pods info 🚨
       if: failure()
       uses: ./.github/actions/failed-pods-info
 
     - name: Cleanup GitHub deployment
-      if: always() && inputs.persistent == 'false'
+      if: always() && (inputs.persistent == 'false' || inputs.type != 'kubernetes')
       uses: bobheadxi/deployments@v1
       with:
         step: delete-env
@@ -173,7 +182,7 @@ runs:
 
     - name: Cleanup test namespace
       shell: bash
-      if: always() && inputs.persistent == 'false'
+      if: always() && (inputs.persistent == 'false' || inputs.type != 'kubernetes')
       run: kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
           -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
