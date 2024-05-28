@@ -85,6 +85,7 @@ jobs:
             diffInSeconds=$(($(date -u -d "$currentTimestamp" +"%s") - $(date -u -d "$creationTimestamp" +"%s")))
             # If the namespace is older than 24 hours (86400 seconds), delete it
             if [ "$diffInSeconds" -gt 86400 ]; then
+              # TODO: uncomment below and remove echo command when PR is approved
               # kubectl delete ns --ignore-not-found=true "$ns"
               echo "can delete $ns"
             fi
