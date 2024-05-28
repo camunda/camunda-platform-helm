@@ -62,6 +62,7 @@ runs:
         persistent: ${{ inputs.persistent }}
         setup-flow: ${{ inputs.flow }}
         platform: ${{ inputs.platform }}
+        type: ${{ inputs.type }}
         identifier-base: ${{ inputs.identifier }}
         ingress-hostname-base: ${{ inputs.ingress-hostname-base }}
 

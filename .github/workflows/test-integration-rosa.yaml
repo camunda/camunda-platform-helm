@@ -3,7 +3,17 @@ name: "Test - Integration - ROSA"
 # description: This workflow perform integration tests against ROSA platform, it only prepares the cluster to run the tests
 
 on:
-  push: # TODO: change me with nighly or on-demand tests or with label
+  schedule:
+    - cron: '0 3 * * 1,3,4,6' # Runs at 3 AM on Monday, Wednesday, Thursday, and Saturday
+  pull_request:
+    paths:
+    - '.github/workflows/configs/test-integration-rosa-matrix.yaml'
+    - '.github/workflows/test-integration-rosa.yaml'
+    - '.github/actions/workflow-vars/**'
+    - '.github/actions/chart-test-recipes/**'
+    - '.github/workflows/fixtures/clusters/rosa-hcp-on-demand/**'
+    - '.github/workflows/fixtures/modules/**'
+    - '.tool-versions'
   workflow_call:
     inputs:
       cluster_name:

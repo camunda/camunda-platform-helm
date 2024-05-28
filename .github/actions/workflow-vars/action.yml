@@ -11,7 +11,9 @@ inputs:
   ingress-hostname-base:
     description: The base of the Ingress hostname.
   platform:
-    description: The deployment cloud platform like GKE or ROSA.
+    description: The deployment cloud platform like GKE or ROSA.  
+  type:
+    description: The platform type platform like openshift or kubernetes.
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
@@ -53,8 +55,6 @@ runs:
       # https://github.com/orgs/community/discussions/40291
       GITHUB_WORKFLOW_JOB_ID=$(rand_gen | cut -c 1-6)
 
-      echo "Env vars:"
-
       # Workflow.
       echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
       echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_OUTPUT
@@ -76,7 +76,7 @@ runs:
       echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_ENV
       echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_OUTPUT
 
-      echo "Output vars:"
+      echo "TEST_CLUSTER_TYPE=${{ inputs.type }}" | tee -a $GITHUB_ENV
 
       # Deployment identifier.
       TEST_IDENTIFIER="${{ inputs.platform }}-${{ inputs.identifier-base }}"

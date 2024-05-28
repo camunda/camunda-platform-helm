@@ -2,6 +2,11 @@
 name: Daily cleanup ROSA cluster
 
 on:
+  pull_request:
+    paths:
+    - '.github/workflows/daily-cleanup-rosa.yml'
+    - '.github/workflows/scripts/destroy-clusters.sh'
+    - '.github/templates/issue_delete_clusters_failed.md'
   workflow_dispatch:
     inputs:
       max_age_hours_cluster:
