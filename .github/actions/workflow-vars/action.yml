@@ -5,17 +5,23 @@ inputs:
     description: Don't use changing vars like SHA commit
     # TODO: Change that to real bool when it's supported in GHA.
     default: "false"
+    required: true
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"
+    required: true
   ingress-hostname-base:
     description: The base of the Ingress hostname.
+    required: true
   platform:
     description: The deployment cloud platform like GKE or ROSA.  
+    required: true
   type:
     description: The platform type platform like openshift or kubernetes.
+    required: true
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
+    required: true
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
   identifier:
