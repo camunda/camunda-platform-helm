@@ -133,7 +133,7 @@ jobs:
     - name: Launch tests
       uses: ./.github/actions/chart-test-recipes
       env:
-        KUBECONFIG: "$KUBECONFIG"
+        KUBECONFIG: "~/.kube/config"
       with:
         platform: "${{ matrix.distro.platform }}"
         type: "${{ matrix.distro.type }}"
