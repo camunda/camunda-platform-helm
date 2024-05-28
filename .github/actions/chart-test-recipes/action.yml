@@ -36,6 +36,12 @@ inputs:
   ingress-hostname-base:
     description: "Hostname base for the tests"
     required: true
+  gh_app_id:
+    required: true
+    description: "Github App Id used to impersonate the action"
+  gh_app_private_key:
+    required: true
+    description: "Github App private key used to impersonate the action"
 
 runs:
   using: 'composite'
@@ -50,12 +56,12 @@ runs:
       uses: tibdex/github-app-token@v2
       id: generate-github-token
       with:
-        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+        app_id: ${{ inputs.gh_app_id }}
+        private_key: ${{ inputs.gh_app_private_key }}
   
     - name: Set workflow vars
       id: vars
-      uses: ../workflow-vars
+      uses: ./.github/actions/workflow-vars
       with:
         persistent: ${{ inputs.persistent }}
         setup-flow: ${{ inputs.flow }}

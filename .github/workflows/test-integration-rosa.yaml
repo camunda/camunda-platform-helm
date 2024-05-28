@@ -204,12 +204,15 @@ jobs:
               done
           
               kubectl get all --all-namespaces
-      # TODO: secure this export of kubeconfig
-      - name: Export kubeconfig
+      
+      - name: Export kubeconfig and encrypt it # this is required to pass matrix outputs securely using artifacts
         id: export_kube_config
         run: |
-          echo "kubeconfig_raw=$(kubectl config view --raw | base64 -w 0)" >> "$GITHUB_OUTPUT"
-      
+          echo "$(kubectl config view --raw)" > kubeconfig.yaml 2>/dev/null
+          openssl enc -aes-256-cbc -salt -in kubeconfig.yaml -out encrypted_kubeconfig.enc -pass pass:"${GITHUB_TOKEN}" -pbkdf2
+          encrypted_kubeconfig_base64=$(base64 -w 0 encrypted_kubeconfig.enc)
+          echo "kubeconfig_raw=${encrypted_kubeconfig_base64}" >> "$GITHUB_OUTPUT"
+
       ## Write for matrix outputs workaround
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
         id: out
@@ -251,7 +254,9 @@ jobs:
       - name: Set up Kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ fromJson(needs.read_kube_configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}" | base64 --decode > $HOME/.kube/config
+          echo "${{ fromJson(needs.read_kube_configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}" | base64 --decode > encrypted_kubeconfig.enc
+          openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
+          rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
 
       - name: Launch tests
@@ -267,6 +272,9 @@ jobs:
           camunda-helm-git-ref: ${{ env.INPUTS_CAMUNDA_HELM_GIT_REF }}
           extra-values: ${{ env.INPUTS_EXTRA_VALUES }}
           ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
+
+          gh_app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
 
   cleanup_clusters:
     name: "Cleanup ROSA clusters"
