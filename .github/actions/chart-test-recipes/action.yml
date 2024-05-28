@@ -121,7 +121,6 @@ runs:
         echo "$TEST_CHART_FLOW"
         echo "$(pwd)"
         echo "$(ls)"
-        echo "$(tree /)"
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
 
     - name: Post setup
