@@ -31,10 +31,7 @@ data:
                 minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
-        {{- else -}}
-          {{ " {}" }}
-        {{- end }}
-        {{- if .Values.global.opensearch.enabled }}
+        {{- else if .Values.global.opensearch.enabled }}
           opensearch:
             className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
             args:
@@ -43,10 +40,12 @@ data:
               authentication:
                 username: {{ .Values.global.opensearch.auth.username | quote }}
               {{- end }}
-            {{- if .Values.global.opensearch.aws.enabled }}
+              {{- if .Values.global.opensearch.aws.enabled }}
               aws:
                 enabled: true
-            {{- end}}
+              {{- end}}
+        {{- else -}}
+          {{ " {}" }}
         {{- end }}
         gateway:
           enable: true
