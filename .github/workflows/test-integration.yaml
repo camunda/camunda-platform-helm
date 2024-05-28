@@ -23,7 +23,7 @@ jobs:
       id-token: write
       deployments: write
     secrets: inherit
-    uses: ./.github/workflows/test-integration-template.yaml
+    uses: ./.github/workflows/test-integration-template.yaml@feature/openshift-tests # TODO: change to main before
     with:
       identifier: "${{ github.event.pull_request.number }}"
       persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
