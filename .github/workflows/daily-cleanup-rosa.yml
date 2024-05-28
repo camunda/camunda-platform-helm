@@ -21,7 +21,7 @@ env:
   MAX_AGE_HOURS_CLUSTER: 20
 
   # please keep those variables synced with test-integration-template.yml
-  TEST_AWS_REGION: "eu-west-3"
+  TEST_AWS_REGION: "eu-central-1"
   TF_S3_BUCKET: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}"
 
   ASSIGNEES_ISSUE_ERROR: "aabouzaid, jessesimpson36, hamza-m-masood"
@@ -61,7 +61,7 @@ jobs:
           AWS_REGION: "${{ env.TEST_AWS_REGION }}"
           MAX_AGE_HOURS_CLUSTER: ${{ github.event.inputs.max_age_hours_cluster || env.MAX_AGE_HOURS_CLUSTER }}
         run: |
-          .github/workflows/scripts/destroy-clusters.sh "${{ env.TF_S3_BUCKET }}" ./.rosa-hcp/modules/rosa-hcp/ /tmp/rosa/ ${{ env.MAX_AGE_HOURS_CLUSTER }}
+          .github/workflows/scripts/destroy-clusters.sh "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}" ./.rosa-hcp/modules/rosa-hcp/ /tmp/rosa/ ${{ env.MAX_AGE_HOURS_CLUSTER }}
 
       - name: Close issue in case of success
         shell: bash

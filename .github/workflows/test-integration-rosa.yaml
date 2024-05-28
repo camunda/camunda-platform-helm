@@ -56,7 +56,9 @@ on:
 env:
   TEST_PERSISTENT: ${{ inputs.persistent }}
 
+  # please keep those variables synced with test-integration-template.yml
   TEST_AWS_REGION: "eu-central-1"
+  TF_S3_BUCKET: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}"
 
   TEST_HOSTNAME_BASE: ci.distro.ultrawombat.com
   TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
@@ -180,7 +182,7 @@ jobs:
           rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
           admin-username: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME }}
           admin-password: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD }}
-          s3-backend-bucket: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+          s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
 
           cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
           aws-region: ${{ env.TEST_AWS_REGION }}
@@ -324,7 +326,7 @@ jobs:
           AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
         with:
           rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
-          s3-backend-bucket: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+          s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
 
           cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
           aws-region: ${{ env.TEST_AWS_REGION }}
