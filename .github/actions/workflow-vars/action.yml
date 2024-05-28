@@ -80,7 +80,7 @@ runs:
       fi
 
       echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_ENV
-      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_OUTPUT
+      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" >> $GITHUB_OUTPUT
 
       echo "TEST_CLUSTER_TYPE=${{ inputs.type }}" | tee -a $GITHUB_ENV
 
