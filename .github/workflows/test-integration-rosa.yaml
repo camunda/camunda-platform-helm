@@ -58,7 +58,7 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
 
-  INPUTS_IDENTIFIER: "${{ inputs.identifier || github.event.pull_request.number || github.sha }}"
+  INPUTS_IDENTIFIER: "${{ inputs.identifier }}"
   INPUTS_PERSISTENT: "${{ inputs.persistent || contains(github.event.*.labels.*.name, 'test-persistent') }}"
   INPUTS_TEST_ENABLED: "${{ inputs.test-enabled || 'true' }}"
   INPUTS_CALLER_GIT_REF: "${{ inputs.caller-git-ref || github.event.pull_request.head.sha || github.sha }}"
@@ -260,13 +260,20 @@ jobs:
           openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
-
+      
+      - name: Ensure identifier is set
+        run: |
+          if [ -z "${{ env.INPUTS_IDENTIFIER }}" ]; then
+            calculatedSha=$(git rev-parse --short ${{ github.sha }})
+            echo "INPUTS_IDENTIFIER=$calculatedSha" >> $GITHUB_ENV
+          fi
+        
       - name: Launch tests
         uses: ./.github/actions/chart-test-recipes
         with:
           platform: "${{ matrix.distro.platform }}"
           type: "${{ matrix.distro.type }}"
-          
+
           identifier: "${{ env.INPUTS_IDENTIFIER }}"
           persistent: "${{ env.TEST_PERSISTENT }}"
           flow: "${{ matrix.flow }}"
