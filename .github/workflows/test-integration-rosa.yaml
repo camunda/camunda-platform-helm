@@ -255,7 +255,7 @@ jobs:
           chmod 600 $HOME/.kube/config
 
       - name: Launch tests
-        uses: ./../actions/chart-test-recipes
+        uses: ./.github/actions/chart-test-recipes
         with:
           platform: "rosa"
           identifier: "${{ env.INPUTS_IDENTIFIER }}"
