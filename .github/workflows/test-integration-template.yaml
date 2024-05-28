@@ -60,7 +60,7 @@ permissions:
   
 jobs:
   test:
-    name: ${{ inputs.platforms }} - ${{ matrix.scenario.name }}
+    name: ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
@@ -70,6 +70,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        distro:
+        - name: Kubernetes 1.27
+          type: kubernetes
+          platform: gke
+          secret:
+            cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
+            cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
+            workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
+            service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
+          if: ${{ contains(inputs.platforms, 'gke') }}
+        - name: OpenShift 4.14
+          type: openshift
+          version: 4.14
+          platform: rosa
+          secret:
+            server-url: DISTRO_CI_OPENSHIFT_CLUSTER_URL
+            username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+          if: ${{ contains(inputs.platforms, 'rosa') }}
         scenario:
         - name: Chart Setup
           desc: Setup chart in production-like setup with Ingress and TLS.
@@ -80,6 +99,8 @@ jobs:
           flow: upgrade
           if: ${{ contains(inputs.flows, 'upgrade') }}
         exclude:
+        - distro:
+            if: false
         - scenario:
             if: false
     env:
@@ -98,7 +119,22 @@ jobs:
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-
+    # TODO: Later, find a way to abstract the auth for different platforms.
+    - name: Authenticate to GKE
+      if: matrix.distro.platform == 'gke'
+      uses: ./.github/actions/gke-login
+      with:
+        cluster-name: ${{ secrets[matrix.distro.secret.cluster-name] }}
+        cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
+        workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
+        service-account: ${{ secrets[matrix.distro.secret.service-account] }}
+    - name: Authenticate to OpenShift
+      if: matrix.distro.platform == 'rosa'
+      uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1
+      with:
+        openshift_server_url: ${{ secrets[matrix.distro.secret.server-url] }}
+        openshift_username: ${{ secrets[matrix.distro.secret.username] }}
+        openshift_password: ${{ secrets[matrix.distro.secret.password] }}
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -108,14 +144,12 @@ jobs:
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
         ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
-  
     - name: Install env dependencies
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
     - name: Add Helm repos and dependencies
       run: |
         make helm.repos-add
         make helm.dependency-update
-  
     - name: Create test namespace
       run: |
         echo $TEST_NAMESPACE
@@ -127,11 +161,9 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
-  
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
-  
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       id: deployment
@@ -140,7 +172,6 @@ jobs:
         token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
-
     - name: Pre setup
       timeout-minutes: 5
       env:
@@ -152,7 +183,6 @@ jobs:
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
-
     - name: 🌟 Setup Camunda chart 🌟
       env:
         TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
@@ -162,17 +192,14 @@ jobs:
         TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.ingress.outputs.host }}"
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
-
     - name: Post setup
       timeout-minutes: 5
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
-  
     - name: Pre Upgrade
       if: matrix.scenario.flow == 'upgrade'
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
-  
     - name: 🌟 Upgrade Camunda chart 🌟
       if: matrix.scenario.flow == 'upgrade'
       env:
@@ -181,7 +208,6 @@ jobs:
           --values /tmp/extra-values-file.yaml
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
-  
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
@@ -192,23 +218,19 @@ jobs:
         env_url: https://${{ steps.vars.outputs.ingress-host }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
-  
     - name: ⭐️ Run Preflight TestSuite ⭐️
       if: inputs.test-enabled
-      timeout-mioutputsnutes: 10
+      timeout-minutes: 10
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup test.preflight
-  
     - name: ⭐️ Run Core TestSuite ⭐️
       if: inputs.test-enabled
       timeout-minutes: 20
       run: |
         task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
-  
     - name: 🚨 Get failed Pods info 🚨
       if: failure()
       uses: ./.github/actions/failed-pods-info
-
     - name: Cleanup GitHub deployment
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
@@ -217,7 +239,6 @@ jobs:
         token: ${{ steps.generate-github-token.outputs.token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
-  
     - name: Cleanup test namespace
       if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       run: |
