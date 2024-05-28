@@ -11,10 +11,6 @@ inputs:
   identifier:
     description: 'The unique identifier used in the deployment hostname.'
     required: true
-  camunda-helm-git-ref:
-    description: "Camunda Helm Git reference"
-    required: false
-    default: 'main'
   caller-git-ref:
     description: "Caller of this action git reference"
     required: false
@@ -52,12 +48,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        repository: camunda/camunda-platform-helm
-        ref: ${{ inputs.camunda-helm-git-ref }}
-
     - name: Generate GitHub token
       uses: tibdex/github-app-token@v2
       id: generate-github-token
