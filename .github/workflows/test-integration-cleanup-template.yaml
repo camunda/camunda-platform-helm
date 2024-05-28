@@ -76,7 +76,7 @@ jobs:
         openshift_password: ${{ secrets[matrix.distro.secret.password] }}
     - name: Check Namespace in ${{ matrix.distro.name }} and Delete if Older than 24 hours
       run: |
-          for ns in $(kubectl get ns -l github-run-id --output=jsonpath='{.items[*].metadata.name}'); do
+          for ns in $(kubectl get ns -l github-run-id -l test-persistent=false --output=jsonpath='{.items[*].metadata.name}'); do
             # Get the creation timestamp of the namespace
             creationTimestamp=$(kubectl get ns "$ns" -o jsonpath='{.metadata.creationTimestamp}')
             # Get the current date and time
