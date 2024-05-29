@@ -49,6 +49,113 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{- end }}
 
 
+
+{{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
+  {{/* TODO: Check if there are more existingSecrets to check */}}
+
+  {{- $existingSecretsNotConfigured := list }}
+
+  {{ if and (.Values.global.identity.auth.enabled) (.Values.connectors.enabled) (not .Values.global.identity.auth.connectors.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.global.identity.auth.enabled) (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.global.identity.auth.enabled) (.Values.operate.enabled) (not .Values.global.identity.auth.operate.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.operate.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.global.identity.auth.enabled) (.Values.tasklist.enabled) (not .Values.global.identity.auth.tasklist.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.tasklist.existingSecret" }}
+  {{- end }}
+  
+  {{ if and (.Values.global.identity.auth.enabled) (.Values.tasklist.enabled) (not .Values.global.identity.auth.optimize.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.optimize.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.global.identity.auth.enabled) (.Values.console.enabled) (not .Values.global.identity.auth.console.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.console.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.global.identity.auth.enabled) (.Values.zeebe.enabled) (not .Values.global.identity.auth.zeebe.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.zeebe.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.identityKeycloak.enabled) (not .Values.identityKeycloak.auth.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityKeycloak.auth.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.postgresql.enabled) (not .Values.postgresql.auth.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "postgresql.auth.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.externalDatabase.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.restapi.externalDatabase.existingSecret" }}
+  {{- end }}
+
+  {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.mail.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.mail.existingSecret" }}
+  {{- end }}
+
+  {{- if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "warning" }}
+    {{- $errorMessage := (printf (repeat 19 "%s")
+      "\n[camunda][warning] \nAs of appVersion 8.7, the camunda helm chart will NOT perform automatic passwords generation.\n"
+      "This means that secrets must be provided in the form of kubernetes secrets. \n"
+      "In appVersion 8.6, this warning will display if not all of the necessary existingSecrets are set.: \n\n"
+      "An example of one of these secrets is:\n\n"
+      "apiVersion: v1\n"
+      "kind: Secret\n"
+      "metadata:\n"
+      "  name: identity-secret-for-components\n"
+      "type: Opaque\n"
+      "data:\n"
+      "  operate-secret: <base64-encoded-secret>\n"
+      "  tasklist-secret: <base64-encoded-secret>\n"
+      "  optimize-secret: <base64-encoded-secret>\n"
+      "  connectors-secret: <base64-encoded-secret>\n"
+      "  console-secret: <base64-encoded-secret>\n"
+      "  keycloak-secret: <base64-encoded-secret>\n"
+      "  zeebe-secret: <base64-encoded-secret>\n"
+      "\n\n"
+      "The following values inside your values.yaml need to be set but were not: "
+      )
+    -}}
+    {{- range $existingSecretsNotConfigured }}
+      {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
+    {{- end }}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- else if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "error" }}
+    {{- $errorMessage := (printf (repeat 18 "%s")
+      "\n[camunda][error] \nAs of appVersion 8.7, the camunda helm chart will NOT perform automatic passwords generation.\n"
+      "This means that secrets must be provided in the form of kubernetes secrets. \n\n"
+      "An example of one of these secrets is:\n\n"
+      "apiVersion: v1\n"
+      "kind: Secret\n"
+      "metadata:\n"
+      "  name: identity-secret-for-components\n"
+      "type: Opaque\n"
+      "data:\n"
+      "  operate-secret: <base64-encoded-secret>\n"
+      "  tasklist-secret: <base64-encoded-secret>\n"
+      "  optimize-secret: <base64-encoded-secret>\n"
+      "  connectors-secret: <base64-encoded-secret>\n"
+      "  console-secret: <base64-encoded-secret>\n"
+      "  keycloak-secret: <base64-encoded-secret>\n"
+      "  zeebe-secret: <base64-encoded-secret>\n"
+      "\n\n"
+      "The following values inside your values.yaml need to be set but were not: "
+      )
+    -}}
+    {{- range $existingSecretsNotConfigured }}
+      {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
+    {{- end }}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end }}
+
+
 {{/*
 TODO: Enable for 8.7 cycle.
 
