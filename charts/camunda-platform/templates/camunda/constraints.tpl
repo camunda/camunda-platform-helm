@@ -87,12 +87,16 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityKeycloak.auth.existingSecret" }}
     {{- end }}
 
+    {{ if and (.Values.identityKeycloak.postgresql.enabled) (not .Values.identityKeycloak.postgresql.auth.existingSecret) }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityKeycloak.postgresql.auth.existingSecret" }}
+    {{- end }}
+
     {{ if and (.Values.postgresql.enabled) (not .Values.postgresql.auth.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "postgresql.auth.existingSecret" }}
     {{- end }}
 
-    {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.externalDatabase.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.restapi.externalDatabase.existingSecret" }}
+    {{ if and (.Values.identityPostgresql.enabled) (not .Values.identityPostgresql.auth.existingSecret) }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret" }}
     {{- end }}
 
     {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.mail.existingSecret) }}
@@ -122,6 +126,10 @@ data:
   console-secret: <base64-encoded-secret>
   keycloak-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
+  admin-password: <base64-encoded-secret> # used for keycloak
+  management-password: <base64-encoded-secret> # used for keycloak
+  postgres-password: <base64-encoded-secret> # used for postgresql admin password
+  password: <base64-encoded-secret> # used for postgresql user password
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -153,6 +161,10 @@ data:
   console-secret: <base64-encoded-secret>
   keycloak-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
+  admin-password: <base64-encoded-secret> # used for keycloak
+  management-password: <base64-encoded-secret> # used for keycloak
+  postgres-password: <base64-encoded-secret> # used for postgresql admin password
+  password: <base64-encoded-secret> # used for postgresql user password
 
 The following values inside your values.yaml need to be set but were not:
       `
