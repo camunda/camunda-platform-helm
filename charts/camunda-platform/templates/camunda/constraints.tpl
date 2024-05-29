@@ -99,7 +99,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret" }}
     {{- end }}
 
-    {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.mail.existingSecret) }}
+    {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.mail.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.mail.existingSecret" }}
     {{- end }}
 
