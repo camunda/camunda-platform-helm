@@ -64,7 +64,7 @@ func (s *configMapTemplateTest) TestExistingSecretConstraintDisplays() {
 	// then
 	s.Require().ErrorContains(err, "As of appVersion 8.7, the camunda helm chart will NOT perform automatic passwords")
 }
-func (s *configMapTemplateTest) TestConstraintDoesNotDisplayErrorForComponentWithExistingSecret() {
+func (s *configMapTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -81,7 +81,7 @@ func (s *configMapTemplateTest) TestConstraintDoesNotDisplayErrorForComponentWit
 	// then
 	s.Require().NotContains(err.Error(), "global.identity.auth.zeebe.existingSecret")
 }
-func (s *configMapTemplateTest) TestConstraintDoesNotDisplayErrorForComponentThatsDisabled() {
+func (s *configMapTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentThatsDisabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -97,4 +97,20 @@ func (s *configMapTemplateTest) TestConstraintDoesNotDisplayErrorForComponentTha
 
 	// then
 	s.Require().NotContains(err.Error(), "global.identity.auth.operate.existingSecret")
+}
+func (s *configMapTemplateTest) TestExistingSecretConstraintInWarningModeDoesNotPreventInstall() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
+			"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	s.Require().Nil(err)
 }
