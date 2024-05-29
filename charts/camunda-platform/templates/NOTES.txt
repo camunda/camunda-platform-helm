@@ -237,4 +237,6 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 
 {{ include "camundaPlatform.releaseInfo" . }}
 
+{{ include "camunda.constraints.warnings" . | trim }}
+
 {{- end }}
