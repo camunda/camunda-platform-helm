@@ -205,7 +205,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- else }}
     {{- if (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) }}
       {{- include "webModeler.restapi.fullname" . }}
-    {{- else }}
+    {{- else if typeIs "map[string]interface {}" .Values.webModeler.restapi.externalDatabase.existingSecret }}
       {{- .Values.webModeler.restapi.externalDatabase.existingSecret.name | default (include "webModeler.restapi.fullname" .) }}
     {{- end }}
   {{- end }}
@@ -235,11 +235,11 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the name of the secret resource that contains the SMTP password.
 */}}
 {{- define "webModeler.restapi.smtpSecretName" -}}
-  {{- if .Values.webModeler.restapi.mail.existingSecret }}
-    {{- .Values.webModeler.restapi.mail.existingSecret }}
-  {{- else if .Values.webModeler.restapi.mail.smtpPassword }}
-    {{- (include "webModeler.restapi.fullname" .) }}
-  {{- end }}
+  {{- if or (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) .Values.webModeler.restapi.mail.smtpPassword }} 
+      {{- (include "webModeler.restapi.fullname" .) }}
+    {{- else if and (typeIs "map[string]interface {}" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.existingSecret.name }}
+      {{- .Values.webModeler.restapi.mail.existingSecret.name }}
+    {{- end }}
 {{- end -}}
 
 {{/*
@@ -247,7 +247,9 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 */}}
 {{- define "webModeler.restapi.smtpSecretKey" -}}
   {{- $defaultSecretKey := "smtp-password" -}}
-  {{- if .Values.webModeler.restapi.mail.existingSecret }}
+  {{- if (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) }}
+    {{- $defaultSecretKey }}
+  {{- else if .Values.webModeler.restapi.mail.existingSecret }}
     {{- .Values.webModeler.restapi.mail.existingSecretPasswordKey | default $defaultSecretKey }}
   {{- else if .Values.webModeler.restapi.mail.smtpPassword }}
     {{- $defaultSecretKey }}
