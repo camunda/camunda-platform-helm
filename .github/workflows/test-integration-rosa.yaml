@@ -61,7 +61,6 @@ env:
   TF_S3_BUCKET: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}"
 
   TEST_HOSTNAME_BASE: ci.distro.ultrawombat.com
-  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}

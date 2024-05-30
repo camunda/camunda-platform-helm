@@ -47,7 +47,6 @@ env:
   TEST_PERSISTENT: ${{ inputs.persistent }}
   TEST_IDENTIFIER: ${{ inputs.identifier }}
   TEST_HOSTNAME_BASE: ci.distro.ultrawombat.com
-  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
@@ -153,7 +152,7 @@ jobs:
 
         gh_app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-
+    
   clean:
     name: Clean up persistent resources
     if: github.event.action == 'closed'
