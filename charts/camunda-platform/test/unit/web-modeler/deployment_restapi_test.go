@@ -126,7 +126,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSec
 			"postgresql.enabled":                                            "false",
 			"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":                      "modeler-user",
-			"webModeler.restapi.externalDatabase.existingSecret":            "my-secret",
+			"webModeler.restapi.externalDatabase.existingSecret.name":       "my-secret",
 			"webModeler.restapi.externalDatabase.existingSecretPasswordKey": "my-database-password-key",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -146,6 +146,39 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSec
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
 					Key:                  "my-database-password-key",
+				},
+			},
+		})
+}
+func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordExplicitlyDefinedStillReferencesInternalSecret() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                 "true",
+			"webModeler.restapi.mail.fromAddress":                "example@example.com",
+			"postgresql.enabled":                                 "false",
+			"webModeler.restapi.externalDatabase.url":            "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+			"webModeler.restapi.externalDatabase.user":           "modeler-user",
+			"webModeler.restapi.externalDatabase.existingSecret": "password1234",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "SPRING_DATASOURCE_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-web-modeler-restapi"},
+					Key:                  "database-password",
 				},
 			},
 		})

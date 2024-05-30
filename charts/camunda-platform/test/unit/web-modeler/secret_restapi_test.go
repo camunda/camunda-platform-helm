@@ -91,3 +91,45 @@ func (s *secretTest) TestContainerCreateSmtpPasswordSecret() {
 	s.Require().NotNil(secret.Data)
 	s.Require().Equal("secret123", string(secret.Data["smtp-password"]))
 }
+func (s *secretTest) TestDatabaseSecretAddedViaName() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                      "true",
+			"webModeler.restapi.mail.fromAddress":                     "example@example.com",
+			"webModeler.restapi.mail.smtpPassword":                    "secret123",
+			"webModeler.restapi.externalDatabase.existingSecret.name": "example-secret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var secret coreV1.Secret
+	helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+	// then
+	s.Require().NotNil(secret.Data)
+	_, databaseSecretKeyExists := secret.Data["database-password"]
+	s.Require().False(databaseSecretKeyExists)
+}
+func (s *secretTest) TestDatabaseSecretAddedViaDirectPassword() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                 "true",
+			"webModeler.restapi.mail.fromAddress":                "example@example.com",
+			"webModeler.restapi.mail.smtpPassword":               "secret123",
+			"webModeler.restapi.externalDatabase.existingSecret": "password1234",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var secret coreV1.Secret
+	helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+	// then
+	s.Require().Equal("password1234", string(secret.Data["database-password"]))
+}
