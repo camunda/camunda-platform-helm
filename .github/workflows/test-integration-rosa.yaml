@@ -207,6 +207,7 @@ jobs:
               export CERT_MANAGER_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_CERT_MANAGER_GCP_SERVICE_ACCOUNT }}
               envsubst < cert-manager/secret.yaml.tpl > cert-manager/secret.yaml
               envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
+              yq -ei '.txtOwnerId = "${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
               kustomize build --enable-helm ./ | kubectl apply -f - 
                   
               echo "Waiting for global state to converge"
