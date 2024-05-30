@@ -38,3 +38,4 @@ jobs:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
           message: "chore: Update README.md using readme-generator-for-helm"
+          ref: ${{ github.event.pull_request.head.ref }}
