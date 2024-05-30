@@ -322,7 +322,7 @@ global:
 
   # Multiregion options for Zeebe
   #
-  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps 
+  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps
   # outlined by Camunda before applying them in production setups.
   # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
   # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
