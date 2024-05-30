@@ -203,7 +203,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- if .Values.postgresql.enabled }}
     {{- .Values.postgresql.auth.existingSecret | default (include "webModeler.postgresql.fullname" .) }}
   {{- else }}
-    {{- if (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) }}
+    {{- if or (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) .Values.webModeler.restapi.externalDatabase.password }}
       {{- include "webModeler.restapi.fullname" . }}
     {{- else if typeIs "map[string]interface {}" .Values.webModeler.restapi.externalDatabase.existingSecret }}
       {{- .Values.webModeler.restapi.externalDatabase.existingSecret.name | default (include "webModeler.restapi.fullname" .) }}

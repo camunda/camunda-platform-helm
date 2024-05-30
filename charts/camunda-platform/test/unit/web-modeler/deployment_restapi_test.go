@@ -88,12 +88,12 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSec
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                                 "true",
-			"webModeler.restapi.mail.fromAddress":                "example@example.com",
-			"postgresql.enabled":                                 "false",
-			"webModeler.restapi.externalDatabase.url":            "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-			"webModeler.restapi.externalDatabase.user":           "modeler-user",
-			"webModeler.restapi.externalDatabase.existingSecret": "my-secret",
+			"webModeler.enabled":                                      "true",
+			"webModeler.restapi.mail.fromAddress":                     "example@example.com",
+			"postgresql.enabled":                                      "false",
+			"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+			"webModeler.restapi.externalDatabase.user":                "modeler-user",
+			"webModeler.restapi.externalDatabase.existingSecret.name": "my-secret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -282,10 +282,10 @@ func (s *restapiDeploymentTemplateTest) TestContainerSmtpPasswordSecretRefForExi
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                     "true",
-			"webModeler.restapi.mail.fromAddress":    "example@example.com",
-			"webModeler.restapi.mail.smtpUser":       "modeler-user",
-			"webModeler.restapi.mail.existingSecret": "my-secret",
+			"webModeler.enabled":                          "true",
+			"webModeler.restapi.mail.fromAddress":         "example@example.com",
+			"webModeler.restapi.mail.smtpUser":            "modeler-user",
+			"webModeler.restapi.mail.existingSecret.name": "my-secret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -316,7 +316,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerSmtpPasswordSecretRefForExi
 			"webModeler.enabled":                                "true",
 			"webModeler.restapi.mail.fromAddress":               "example@example.com",
 			"webModeler.restapi.mail.smtpUser":                  "modeler-user",
-			"webModeler.restapi.mail.existingSecret":            "my-secret",
+			"webModeler.restapi.mail.existingSecret.name":       "my-secret",
 			"webModeler.restapi.mail.existingSecretPasswordKey": "my-smtp-password-key",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
