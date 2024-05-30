@@ -5,7 +5,6 @@ on:
   pull_request:
     paths:
     - '.github/workflows/daily-cleanup-rosa.yml'
-    - '.github/workflows/scripts/destroy-clusters.sh'
     - '.github/templates/issue_delete_clusters_failed.md'
   workflow_dispatch:
     inputs:
@@ -54,14 +53,14 @@ jobs:
 
       - name: Delete clusters
         id: delete_clusters
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-cleanup-clusters@feature/delete-clusters-action
         timeout-minutes: 125
-        shell: bash
         env:
           RH_TOKEN: "${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}"
           AWS_REGION: "${{ env.TEST_AWS_REGION }}"
-          MAX_AGE_HOURS_CLUSTER: ${{ github.event.inputs.max_age_hours_cluster || env.MAX_AGE_HOURS_CLUSTER }}
-        run: |
-          .github/workflows/scripts/destroy-clusters.sh "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}" ./.rosa-hcp/modules/rosa-hcp/ /tmp/rosa/ ${{ env.MAX_AGE_HOURS_CLUSTER }}
+        with:
+          tf-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+          max-age-hours-cluster: "${{ env.MAX_AGE_HOURS_CLUSTER }}"
 
       - name: Close issue in case of success
         shell: bash
