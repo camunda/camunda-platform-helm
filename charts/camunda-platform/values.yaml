@@ -15,7 +15,7 @@
 #  * In the documentation the variable name is started with a big letter, similar to kubernetes resource documentation.
 #  * If the variable is part of a subsection/object we use a json path expression (to make it more clear where the variable belongs to).
 #    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in helm.
-#
+# !
 # Conjunction:
 #   * [defines] for mandatory configuration
 #   * [can be used] for optional configuration
