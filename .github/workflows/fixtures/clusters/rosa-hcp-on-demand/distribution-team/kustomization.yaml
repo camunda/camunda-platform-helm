@@ -10,4 +10,7 @@ commonLabels:
 namespace: distribution-team
 
 resources:
-- ../../../modules/distribution-team
+  - secret.yaml
+  - external-cluster-secretstore.yaml
+  - external-secret.yaml
+  - ../../../modules/distribution-team

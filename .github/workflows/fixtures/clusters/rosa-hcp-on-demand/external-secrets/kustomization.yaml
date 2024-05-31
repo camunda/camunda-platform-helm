@@ -10,9 +10,6 @@ commonLabels:
 namespace: external-secrets
 
 resources:
-  - secret.yaml
-  - serviceaccount.yaml
-  - external-cluster-secretstore.yaml
   - ../../../modules/external-secrets
 
 generators:
