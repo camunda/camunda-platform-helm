@@ -201,12 +201,19 @@ jobs:
           command: |
               cd ./.github/workflows/fixtures/clusters/rosa-hcp-on-demand/
           
-              : # populate with secrets then kustomize and apply!
+              : # configure external dns
               export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
-              export CERT_MANAGER_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_CERT_MANAGER_GCP_SERVICE_ACCOUNT }}
-              envsubst < cert-manager/secret.yaml.tpl > cert-manager/secret.yaml
               envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
               yq -ei '.txtOwnerId = "${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
+              
+              : # configure ExternalSecretStore replication from the permanent ROSA cluster
+              export EXTERNAL_SECRET_STORE_SA_TOKEN=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_TOKEN }}
+              export EXTERNAL_SECRET_STORE_SA_SERVICE_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_SERVICE_CA }}
+              export EXTERNAL_SECRET_STORE_SA_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_CA }}
+              envsubst < external-secrets/secret.yaml.tpl > external-secrets/secret.yaml
+              yq -ei '.spec.provider.kubernetes.server.url = "${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_URL }}"' external-secrets/external-cluster-secretstore.yaml
+              
+              : # apply!
               kustomize build --enable-helm ./ | kubectl apply -f - 
                   
               echo "Waiting for global state to converge"
@@ -295,6 +302,8 @@ jobs:
           caller-git-ref: ${{ env.INPUTS_CALLER_GIT_REF }}
           extra-values: ${{ env.INPUTS_EXTRA_VALUES }}
           ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
+
+          wildcard_certs_secret_path: ".github/config/external-secret-on-demand.yaml"
 
           gh_app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}

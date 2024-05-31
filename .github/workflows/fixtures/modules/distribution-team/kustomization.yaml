@@ -11,5 +11,4 @@ commonLabels:
 
 resources:
 - ./namespace.yaml
-- ./certificates.yaml
 - ./cluster-secret-store.yaml

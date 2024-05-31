@@ -10,7 +10,6 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
 
 resources:
-- ./cert-manager
 - ./ingress-nginx
 - ./external-dns
 - ./external-secrets

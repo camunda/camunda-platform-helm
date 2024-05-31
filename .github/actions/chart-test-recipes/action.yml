@@ -41,6 +41,9 @@ inputs:
   test_scenarios_dir:
     default: "charts/camunda-platform/test/integration/scenarios"
     description: "Directory path containing scenarios"
+  wildcard_certs_secret_path:
+    default: ".github/config/external-secret.yaml"
+    description: "Path of the secrets containing the wildcard certificates for the ingress"
   gh_app_private_key:
     required: true
     description: |
@@ -92,7 +95,7 @@ runs:
 
     - name: Copy PRs wildcard certificate
       shell: bash
-      run: kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
+      run: kubectl apply -n $TEST_NAMESPACE -f ${{ inputs.wildcard_certs_secret_path }}
 
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1

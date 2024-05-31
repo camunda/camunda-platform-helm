@@ -10,7 +10,10 @@ commonLabels:
 namespace: external-secrets
 
 resources:
-- ../../../modules/external-secrets
+  - secret.yaml
+  - serviceaccount.yaml
+  - external-cluster-secretstore.yaml
+  - ../../../modules/external-secrets
 
 generators:
 - helm-chart
