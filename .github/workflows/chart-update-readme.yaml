@@ -33,8 +33,7 @@ jobs:
         run: |
           echo "Updating README.md"
           make helm.readme-update
-      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
-        with:
-          author_name: "renovate[bot]"
-          author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore: Update README.md using readme-generator-for-helm"
+          git diff --exit-code || (
+            echo "Please ensure to run: make helm.readme-update";
+            exit 1;
+          )
