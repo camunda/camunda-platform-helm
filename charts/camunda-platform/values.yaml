@@ -430,6 +430,8 @@ console:
 
   ## console.startupProbe configuration
   startupProbe:
+    ## @param console.startupProbe.test if true, the startup probe is enabled in app container
+    test: test
     ## @param console.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
     ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
