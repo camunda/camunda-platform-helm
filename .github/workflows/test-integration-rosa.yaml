@@ -199,6 +199,10 @@ jobs:
           shell: bash
           retry_wait_seconds: 15
           command: |
+              : # see https://github.com/nick-fields/retry/issues/133
+              set -o errexit
+              set -o pipefail
+
               cd ./.github/workflows/fixtures/clusters/rosa-hcp-on-demand/
           
               : # configure external dns
