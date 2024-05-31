@@ -34,4 +34,5 @@ jobs:
         run: |
           echo "Updating README.md"
           make helm.readme-update
-          git diff --quiet HEAD
+          git diff --exit-code
+ 
