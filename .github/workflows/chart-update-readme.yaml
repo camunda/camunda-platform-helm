@@ -34,5 +34,7 @@ jobs:
         run: |
           echo "Updating README.md"
           make helm.readme-update
-          git diff --exit-code
- 
+          git diff --exit-code || (
+            echo "Please ensure to run: make helm.readme-update";
+            exit 1;
+          )
