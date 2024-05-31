@@ -34,17 +34,4 @@ jobs:
         run: |
           echo "Updating README.md"
           make helm.readme-update
-      - name: Display Git status
-        run: git status
-      - name: Show current branch
-        run: git branch
-      - name: Set branch name
-        run: |
-          git checkout ${GITHUB_REF#refs/heads/}
-      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
-        with:
-          author_name: "renovate[bot]"
-          author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore: Update README.md using readme-generator-for-helm"
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${GITHUB_REF#refs/heads/}
+          git diff --quiet HEAD
