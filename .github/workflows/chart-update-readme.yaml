@@ -27,13 +27,17 @@ jobs:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
-          ref: ${{ github.ref }}
+          # ref: ${{ github.event.pull_request.head.ref }}
       - name: Install readme-generator-for-helm
         run: npm install -g @bitnami/readme-generator-for-helm
       - name: Run readme generator
         run: |
           echo "Updating README.md"
           make helm.readme-update
+      - name: Display Git status
+        run: git status
+      - name: Show current branch
+        run: git branch
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "renovate[bot]"
