@@ -13,6 +13,7 @@ metadata:
 {{- end }}
 spec:
   host: {{ .Values.identity.route.host }}
+  path: {{ .Values.identity.route.path }}
   port:
     targetPort: 80
   {{- if .Values.identity.route.tls.enabled }}

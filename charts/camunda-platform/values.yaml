@@ -2058,7 +2058,8 @@ identity:
     ## @param identity.route.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
     ## @param identity.route.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    annotations: {}
+    annotations:
+      ingress.kubernetes.io/rewrite-target: /
     ## @param identity.route.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /identity
     ## @param identity.route.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
