@@ -2070,7 +2070,12 @@ identity:
       ## @param identity.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       ## @param identity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-identity
+      # Insecure edge termination policy of the Route. Can be `None`, `Redirect`, or `Allow`
+      insecureEdgeTerminationPolicy: Redirect
+      # TLS termination of the route. Can be `edge`, `passthrough`, or `reencrypt`
+      termination: edge
+      certificate: ""
+      key: ""
 
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
