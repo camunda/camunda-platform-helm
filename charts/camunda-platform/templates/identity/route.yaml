@@ -1,6 +1,5 @@
-# TODO: take all the ingress references out and give optinos for the termination
 {{- if .Values.identity.enabled -}}
-{{- if .Values.identity.routes.enabled -}}
+{{- if .Values.identity.route.enabled -}}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -15,7 +14,7 @@ spec:
   host: {{ .Values.identity.route.host }}
   path: {{ .Values.identity.route.path }}
   port:
-    targetPort: 80
+    targetPort: http
   {{- if .Values.identity.route.tls.enabled }}
   tls:
     insecureEdgeTerminationPolicy: Redirect
