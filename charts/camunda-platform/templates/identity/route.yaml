@@ -1,22 +1,21 @@
 # TODO: take all the ingress references out and give optinos for the termination
 {{- if .Values.identity.enabled -}}
 {{- if .Values.identity.routes.enabled -}}
-
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: {{ include "identity.fullname" . }}
   labels:
     {{- include "identity.labels" . | nindent 4 }}
-{{- with .Values.identity.ingress.annotations }}
+{{- with .Values.identity.route.annotations }}
   annotations:
     {{- tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
 spec:
-  host: {{ .Values.identity.ingress.host }}
+  host: {{ .Values.identity.route.host }}
   port:
     targetPort: 80
-  {{- if .Values.identity.ingress.tls.enabled }}
+  {{- if .Values.identity.route.tls.enabled }}
   tls:
     insecureEdgeTerminationPolicy: Redirect
     termination: edge

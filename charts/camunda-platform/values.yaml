@@ -2054,6 +2054,23 @@ identity:
       ## @param identity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform-identity
 
+  route:
+    ## @param identity.route.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
+    enabled: false
+    ## @param identity.route.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    annotations: {}
+    ## @param identity.route.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /identity
+    ## @param identity.route.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    host: ""
+    ## @extra identity.route.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      ## @param identity.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      ## @param identity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: camunda-platform-identity
+
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
   ## @param identity.externalDatabase.enabled
