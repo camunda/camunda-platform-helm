@@ -107,11 +107,11 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       {{- $errorMessage := (printf "%s"
       `
 [camunda][warning]
-As of appVersion 8.7, the camunda helm chart will NOT perform automatic passwords generation.
-This means that secrets must be provided in the form of kubernetes secrets.
-In appVersion 8.6, this warning will display if not all of the necessary existingSecrets are set.:
+DEPRICATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component. 
+Users must provide passwords as Kubernetes secrets. 
+In appVersion 8.6, this warning will appear if all necessary existingSecrets are not set.
 
-An example of one of these secrets is:
+Example of a required secret:
 
 apiVersion: v1
 kind: Secret
@@ -143,10 +143,10 @@ The following values inside your values.yaml need to be set but were not:
       {{- $errorMessage := (printf "%s"
       `
 [camunda][error]
-As of appVersion 8.7, the camunda helm chart will NOT perform automatic passwords generation.
-This means that secrets must be provided in the form of kubernetes secrets.
+DEPRICATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component. 
+Users must provide passwords as Kubernetes secrets. 
 
-An example of one of these secrets is:
+Example of a required secret:
 
 apiVersion: v1
 kind: Secret
