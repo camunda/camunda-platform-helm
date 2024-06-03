@@ -180,7 +180,7 @@ jobs:
 
           cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
           aws-region: ${{ env.TEST_AWS_REGION }}
-          replicas: 6
+          replicas: 7
 
           openshift-version: "${{ matrix.distro.version }}"
 
