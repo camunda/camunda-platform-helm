@@ -4,16 +4,16 @@ name: "Test - Integration - ROSA"
 
 on:
   schedule:
-    - cron: '0 3 * * 1,3,4,6' # Runs at 3 AM on Monday, Wednesday, Thursday, and Saturday
+    - cron: '0 3 * * 1,3,5' # Runs at 3 AM on Monday, Wednesday, and Friday
   pull_request:
     paths:
-    - '.github/workflows/configs/test-integration-rosa-matrix.yaml'
-    - '.github/workflows/test-integration-rosa.yaml'
-    - '.github/actions/workflow-vars/**'
-    - '.github/actions/chart-test-recipes/**'
-    - '.github/workflows/fixtures/clusters/rosa-hcp-on-demand/**'
-    - '.github/workflows/fixtures/modules/**'
-    - '.tool-versions'
+      - '.github/workflows/configs/test-integration-rosa-matrix.yaml'
+      - '.github/workflows/test-integration-rosa.yaml'
+      - '.github/actions/workflow-vars/**'
+      - '.github/actions/chart-test-recipes/**'
+      - '.github/workflows/fixtures/clusters/rosa-hcp-on-demand/**'
+      - '.github/workflows/fixtures/modules/**'
+      - '.tool-versions'
   workflow_call:
     inputs:
       cluster_name:
@@ -76,7 +76,7 @@ env:
 
 # limit to a single execution per actor of this workflow
 concurrency:
-    group: "${{ github.workflow }}-${{ github.actor }}"
+  group: "${{ github.workflow }}-${{ github.actor }}"
 
 jobs:
   define_matrix:
@@ -86,7 +86,7 @@ jobs:
       platform_matrix: ${{ steps.set-matrix.outputs.platform_matrix }}
       flow_matrix: ${{ steps.set-matrix.outputs.flow_matrix }}
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           fetch-depth: 0
 
@@ -99,7 +99,6 @@ jobs:
           echo "flow_matrix=${{ env.INPUTS_FLOWS }}"
           echo "flow_matrix=${{ env.INPUTS_FLOWS }}" >> "$GITHUB_OUTPUT"
 
-
   define_variables:
     name: "Define variables"
     runs-on: ubuntu-latest
@@ -107,7 +106,7 @@ jobs:
       - define_matrix
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
     steps:
       - name: Define ROSA cluster name
@@ -125,7 +124,7 @@ jobs:
           rosa_cluster_name="c-$sha_identifier"
           echo "rosa_cluster_name=$rosa_cluster_name"
           echo "rosa_cluster_name=$rosa_cluster_name" >> "$GITHUB_OUTPUT"
-      
+
       ## Write for matrix outputs workaround
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
         id: out
@@ -153,11 +152,11 @@ jobs:
       - read_cluster_vars
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           fetch-depth: 0
 
@@ -166,9 +165,9 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.DISTRO_CI_AWS_SECRET_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
           aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
           aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
-     
+
       - name: Create ROSA cluster and login
-        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@main
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@34eef55d18c7d3d84a79bfc0d305c92bd3dccc45 # main
         timeout-minutes: 125
         env:
           AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
@@ -194,37 +193,37 @@ jobs:
           shell: bash
           retry_wait_seconds: 15
           command: |
-              : # see https://github.com/nick-fields/retry/issues/133
-              set -o errexit
-              set -o pipefail
+            : # see https://github.com/nick-fields/retry/issues/133
+            set -o errexit
+            set -o pipefail
 
-              cd ./.github/workflows/fixtures/clusters/rosa-hcp-on-demand/
-          
-              : # configure external dns
-              export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
-              envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
-              yq -ei '.txtOwnerId = "${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
-              
-              : # configure ExternalSecretStore replication from the permanent ROSA cluster
-              export EXTERNAL_SECRET_STORE_SA_TOKEN=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_TOKEN }}
-              export EXTERNAL_SECRET_STORE_SA_SERVICE_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_SERVICE_CA }}
-              export EXTERNAL_SECRET_STORE_SA_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_CA }}
-              envsubst < distribution-team/secret.yaml.tpl > distribution-team/secret.yaml
-              yq -ei '.spec.provider.kubernetes.server.url = "${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_URL }}"' distribution-team/external-cluster-secretstore.yaml
-              
-              : # apply!
-              kustomize build --enable-helm ./ | kubectl apply -f - 
-                  
-              echo "Waiting for global state to converge"
-              sleep 30
-                  
-              while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
-                  echo "Waiting for all pods to be Running or Completed"
-                  sleep 5
-              done
-          
-              kubectl get all --all-namespaces
-      
+            cd ./.github/workflows/fixtures/clusters/rosa-hcp-on-demand/
+
+            : # configure external dns
+            export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
+            envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
+            yq -ei '.txtOwnerId = "${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
+
+            : # configure ExternalSecretStore replication from the permanent ROSA cluster
+            export EXTERNAL_SECRET_STORE_SA_TOKEN=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_TOKEN }}
+            export EXTERNAL_SECRET_STORE_SA_SERVICE_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_SERVICE_CA }}
+            export EXTERNAL_SECRET_STORE_SA_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_CA }}
+            envsubst < distribution-team/secret.yaml.tpl > distribution-team/secret.yaml
+            yq -ei '.spec.provider.kubernetes.server.url = "${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_URL }}"' distribution-team/external-cluster-secretstore.yaml
+
+            : # apply!
+            kustomize build --enable-helm ./ | kubectl apply -f - 
+                
+            echo "Waiting for global state to converge"
+            sleep 30
+                
+            while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
+                echo "Waiting for all pods to be Running or Completed"
+                sleep 5
+            done
+
+            kubectl get all --all-namespaces
+
       - name: Export kubeconfig and encrypt it # this is required to pass matrix outputs securely using artifacts
         id: export_kube_config
         run: |
@@ -263,11 +262,11 @@ jobs:
       - read_kube_configs
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
         flow: ${{ fromJson(needs.define_matrix.outputs.flow_matrix) }}
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           fetch-depth: 1
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -279,7 +278,7 @@ jobs:
           openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
-      
+
       - name: Ensure identifier is set and append cluster name
         run: |
           INPUTS_IDENTIFIER="${{ env.INPUTS_IDENTIFIER }}"
@@ -317,7 +316,7 @@ jobs:
       - launch_tests
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
     steps:
       - name: Authenticate to AWS
@@ -327,7 +326,7 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
 
       - name: Delete on-demand ROSA HCP Cluster
-        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@main
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@34eef55d18c7d3d84a79bfc0d305c92bd3dccc45 # main
         if: always() && env.TEST_PERSISTENT != 'true'
         timeout-minutes: 125
         env:
@@ -338,7 +337,7 @@ jobs:
 
           cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
           aws-region: ${{ env.TEST_AWS_REGION }}
-  
+
   report:
     name: "Report failures"
     if: always()

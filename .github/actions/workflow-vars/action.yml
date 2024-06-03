@@ -12,7 +12,7 @@ inputs:
     description: The base of the Ingress hostname.
     required: true
   platform:
-    description: The deployment cloud platform like GKE or ROSA.  
+    description: The deployment cloud platform like GKE or ROSA.
     required: true
   type:
     description: The platform type platform like openshift or kubernetes.
@@ -36,72 +36,71 @@ outputs:
     value: ${{ steps.vars.outputs.GITHUB_WORKFLOW_RUN_ID }}
   test-namespace:
     description: "The name of the namespace to use for tests"
-    value: ${{ steps.vars.outputs.TEST_NAMESPACE }}  
+    value: ${{ steps.vars.outputs.TEST_NAMESPACE }}
   cluster_type:
     description: "The cluster type for tests"
     value: ${{ steps.vars.outputs.TEST_CLUSTER_TYPE }}
-  
 
 runs:
   using: composite
   steps:
-  - name: Set workflow vars
-    id: vars
-    shell: bash
-    run: |
-      # Generate workflow vars.
-      rand_gen() {
-        python -c "import random, string; print(''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(20)))"
-      }
+    - name: Set workflow vars
+      id: vars
+      shell: bash
+      run: |
+        # Generate workflow vars.
+        rand_gen() {
+          python -c "import random, string; print(''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(20)))"
+        }
 
-      is_pr() {
-        echo ${{ github.event.pull_request.number }} | grep -q .
-      }
+        is_pr() {
+          echo ${{ github.event.pull_request.number }} | grep -q .
+        }
 
-      # NOTE: We should use the matrix job id var once it's available.
-      # https://github.com/orgs/community/discussions/40291
-      GITHUB_WORKFLOW_JOB_ID=$(rand_gen | cut -c 1-6)
+        # NOTE: We should use the matrix job id var once it's available.
+        # https://github.com/orgs/community/discussions/40291
+        GITHUB_WORKFLOW_JOB_ID=$(rand_gen | cut -c 1-6)
 
-      # Workflow.
-      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+        # Workflow.
+        echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+        echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
-      # Namespace.
-      TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
-      TEST_NAMESPACE="camunda-platform-${TRIGGER_KEY}-${{ inputs.identifier-base }}"
+        # Namespace.
+        TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
+        TEST_NAMESPACE="camunda-platform-${TRIGGER_KEY}-${{ inputs.identifier-base }}"
 
-      if [[ "${{ inputs.persistent }}" == 'false' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
-      fi
+        if [[ "${{ inputs.persistent }}" == 'false' ]]; then
+          TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
+        fi
 
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
-      fi
+        if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+          TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
+        fi
 
-      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+        echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
-      echo "TEST_CLUSTER_TYPE=${{ inputs.type }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+        echo "TEST_CLUSTER_TYPE=${{ inputs.type }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
-      # Deployment identifier.
-      TEST_IDENTIFIER="${{ inputs.platform }}-${{ inputs.identifier-base }}"
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
-      fi
-      echo "TEST_IDENTIFIER=${TEST_IDENTIFIER}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+        # Deployment identifier.
+        TEST_IDENTIFIER="${{ inputs.platform }}-${{ inputs.identifier-base }}"
+        if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+          TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
+        fi
+        echo "TEST_IDENTIFIER=${TEST_IDENTIFIER}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
-      # Ingress hostname.
-      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
-      if [[ "${{ inputs.persistent }}" == "false" ]] && is_pr; then
-        TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
-      fi
-      # The var is needed in some non-shell steps.
-      echo "TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+        # Ingress hostname.
+        TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
+        if [[ "${{ inputs.persistent }}" == "false" ]] && is_pr; then
+          TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
+        fi
+        # The var is needed in some non-shell steps.
+        echo "TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
-  # Avoid confusion about the chart version since we only change the version during the release process
-  # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
-  - name: Set chart version
-    shell: bash
-    # TODO: Use the branch name dynamically as part of the version when it's supported in GitHub:
-    # https://github.com/orgs/community/discussions/70343
-    run: |
-      yq -i '.version = "0.0.0-ci-snapshot"' charts/camunda-platform/Chart.yaml
+    # Avoid confusion about the chart version since we only change the version during the release process
+    # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
+    - name: Set chart version
+      shell: bash
+      # TODO: Use the branch name dynamically as part of the version when it's supported in GitHub:
+      # https://github.com/orgs/community/discussions/70343
+      run: |
+        yq -i '.version = "0.0.0-ci-snapshot"' charts/camunda-platform/Chart.yaml

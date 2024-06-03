@@ -1,29 +1,16 @@
 matrix:
     distro:
+      # According to https://access.redhat.com/support/policy/updates/openshift, this matrix should reference the last 4 (may change) supported versions of OpenShift
       - name: OpenShift 4.15
         type: openshift
         # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
-        # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
-        # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.          version: 4.15.13
         version: 4.15.11
+        # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
+        # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.
         platform: rosa   
 
-      - name: OpenShift 4.14
+      - name: OpenShift 4.14 # TODO: when you will add to this matrix OpenShift 4.16, please duplicate this block for 4.15 (pay attention the the renovate regex)
         type: openshift
-        # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
+        # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4.14(\.(?<patch>\d+))?$  
         version: 4.14.24
         platform: rosa
-
-      # # TODO: in May 2024, ROSA does not supports OpenShift 4.13 with HCP, when this will be == 4.14,  un-comment this block
-      # - name: OpenShift 4.13
-      #   type: openshift
-      #   # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
-      #   version: 4.13.41
-      #   platform: rosa
-
-      # # TODO: in May 2024, ROSA does not supports OpenShift 4.12 with HCP, when this will be == 4.14,  un-comment this block
-      # - name: OpenShift 4.12
-      #   type: openshift
-      #   # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(\d+))?(\.(?<patch>\d+))?$
-      #   version: 4.12.56
-      #   platform: rosa

@@ -23,7 +23,7 @@ inputs:
       NOTE: All persistent deployments will be deleted frequently to save costs!
     default: 'false'
   flow:
-    description: "Test scenario to perform"
+    description: "Test scenario to perform (install, upgrade)."
     default: 'install'
   extra-values:
     description: 'Pass extra values to the Helm chart.'
