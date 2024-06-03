@@ -13,25 +13,21 @@ inputs:
     required: true
   caller-git-ref:
     description: "Caller of this action git reference"
-    required: false
     default: 'main'
   test-enabled:
     description: "Enable the tests"
-    required: false
     default: 'true'
   persistent:
     description: |
       Keep test deployment after the workflow is done.
       NOTE: All persistent deployments will be deleted frequently to save costs!
-    required: false
     default: 'false'
   flow:
     description: "Test scenario to perform"
-    required: false
     default: 'install'
   extra-values:
     description: 'Pass extra values to the Helm chart.'
-    required: false
+    default: ""
   ingress-hostname-base:
     description: "Hostname base for the tests"
     required: true
@@ -95,7 +91,13 @@ runs:
 
     - name: Copy PRs wildcard certificate
       shell: bash
-      run: kubectl apply -n $TEST_NAMESPACE -f ${{ inputs.wildcard_certs_secret_path }}
+      run: |
+        kubectl apply -n $TEST_NAMESPACE -f ${{ inputs.wildcard_certs_secret_path }}
+        timeout 300 bash -c '
+        until kubectl get externalsecret -n $TEST_NAMESPACE -o json | jq -e \'.items | all(.status.conditions[]? | select(.type=="Ready").status == "True")\' > /dev/null; do
+          echo "Waiting for ExternalSecrets to be ready";
+          sleep 10;
+        done'
 
     - name: Start GitHub deployment
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
@@ -110,7 +112,6 @@ runs:
       shell: bash
       env:
         TEST_CHART_FLOW: ${{ inputs.flow }}
-        TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
       run: |
         timeout 5m task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup setup.pre
 

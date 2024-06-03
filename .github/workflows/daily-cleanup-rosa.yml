@@ -10,7 +10,6 @@ on:
     inputs:
       max_age_hours_cluster:
         description: "Maximum age of clusters in hours"
-        required: true
         default: "20"
 
   schedule:

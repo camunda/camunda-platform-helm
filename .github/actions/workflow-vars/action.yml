@@ -5,11 +5,9 @@ inputs:
     description: Don't use changing vars like SHA commit
     # TODO: Change that to real bool when it's supported in GHA.
     default: "false"
-    required: true
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"
-    required: true
   ingress-hostname-base:
     description: The base of the Ingress hostname.
     required: true
@@ -22,14 +20,14 @@ inputs:
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
     required: true
-# NOTE: This is not an exclusive list, some vars are exported as env var not an output.
+# NOTE: every outputs variable will also be set in the environment using "TEST_" prefix and capitalize
 outputs:
   identifier:
     description: The unique identifier of the deployment where the workflow could be triggered by pull_request or workflow_dispatch.
-    value: ${{ steps.vars.outputs.identifier }}
+    value: ${{ steps.vars.outputs.TEST_IDENTIFIER }}
   ingress-host:
     description: Ingress hostname that will be used in the test
-    value: ${{ steps.vars.outputs.ingress-host }}
+    value: ${{ steps.vars.outputs.TEST_INGRESS_HOST }}
   github-workflow-job-id:
     description: "The github workflow job id"
     value: ${{ steps.vars.outputs.GITHUB_WORKFLOW_JOB_ID }}
@@ -38,7 +36,10 @@ outputs:
     value: ${{ steps.vars.outputs.GITHUB_WORKFLOW_RUN_ID }}
   test-namespace:
     description: "The name of the namespace to use for tests"
-    value: ${{ steps.vars.outputs.TEST_NAMESPACE }}
+    value: ${{ steps.vars.outputs.TEST_NAMESPACE }}  
+  cluster_type:
+    description: "The cluster type for tests"
+    value: ${{ steps.vars.outputs.TEST_CLUSTER_TYPE }}
   
 
 runs:
@@ -62,10 +63,8 @@ runs:
       GITHUB_WORKFLOW_JOB_ID=$(rand_gen | cut -c 1-6)
 
       # Workflow.
-      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
-      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" >> "$GITHUB_OUTPUT"
-      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
-      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
@@ -79,17 +78,16 @@ runs:
         TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
       fi
 
-      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_ENV
-      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" >> $GITHUB_OUTPUT
+      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
-      echo "TEST_CLUSTER_TYPE=${{ inputs.type }}" | tee -a $GITHUB_ENV
+      echo "TEST_CLUSTER_TYPE=${{ inputs.type }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
       # Deployment identifier.
       TEST_IDENTIFIER="${{ inputs.platform }}-${{ inputs.identifier-base }}"
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
         TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
       fi
-      echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
+      echo "TEST_IDENTIFIER=${TEST_IDENTIFIER}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
       # Ingress hostname.
       TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
@@ -97,8 +95,7 @@ runs:
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
       # The var is needed in some non-shell steps.
-      echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
-      echo "TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" | tee -a $GITHUB_ENV
+      echo "TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
   # Avoid confusion about the chart version since we only change the version during the release process
   # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.

@@ -9,35 +9,30 @@ on:
         required: true
         type: string
       camunda-helm-git-ref:
-        required: false
         default: main
         type: string
       caller-git-ref:
-        required: false
         default: main
         type: string
       persistent:
         description: |
           Keep test deployment after the workflow is done.
           NOTE: All persistent deployments will be deleted frequently to save costs!
-        required: false
         default: false
         type: boolean
       platforms:
         default: gke
         type: string
       flows:
-        required: false
         default: install
         type: string
       test-enabled:
-        required: false
         default: true
         type: boolean
       extra-values:
         description: Pass extra values to the Helm chart.
-        required: false
         type: string
+        default: ""
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}

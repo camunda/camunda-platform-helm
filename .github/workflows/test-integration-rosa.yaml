@@ -18,39 +18,34 @@ on:
     inputs:
       cluster_name:
         description: The unique identifier of used in the cluster name, will be random if not provided.
-        required: false
+        default: ""
         type: string
       identifier:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
       camunda-helm-git-ref:
-        required: false
         default: main
         type: string
       caller-git-ref:
-        required: false
         default: main
         type: string
       persistent:
         description: |
           Keep test deployment after the workflow is done.
           NOTE: All persistent deployments will be deleted frequently to save costs!
-        required: false
         default: false
         type: boolean
       flows:
         description: "JSON formated list of flows"
-        required: false
         default: '["install", "upgrade"]'
         type: string
       test-enabled:
-        required: false
         default: true
         type: boolean
       extra-values:
         description: Pass extra values to the Helm chart.
-        required: false
+        default: ""
         type: string
 
 env:
@@ -285,13 +280,15 @@ jobs:
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
       
-      - name: Ensure identifier is set
+      - name: Ensure identifier is set and append cluster name
         run: |
-          if [ -z "${{ env.INPUTS_IDENTIFIER }}" ]; then
-            calculatedSha=$(git rev-parse --short ${{ github.sha }})
-            echo "INPUTS_IDENTIFIER=$calculatedSha" >> $GITHUB_ENV
+          INPUTS_IDENTIFIER="${{ env.INPUTS_IDENTIFIER }}"
+          if [ -z "$INPUTS_IDENTIFIER" ]; then
+            INPUTS_IDENTIFIER="$(git rev-parse --short ${{ github.sha }})"
           fi
-        
+
+          echo "INPUTS_IDENTIFIER=$INPUTS_IDENTIFIER-${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}" | tee -a "$GITHUB_ENV"
+
       - name: Launch tests
         uses: ./.github/actions/chart-test-recipes
         with:
