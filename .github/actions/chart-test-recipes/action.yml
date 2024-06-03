@@ -94,7 +94,7 @@ runs:
       run: |
         kubectl apply -n $TEST_NAMESPACE -f ${{ inputs.wildcard_certs_secret_path }}
         timeout 300 bash -c '
-        until kubectl get externalsecret -n $TEST_NAMESPACE -o json | jq -e \'.items | all(.status.conditions[]? | select(.type=="Ready").status == "True")\' > /dev/null; do
+        until kubectl get externalsecret -n "$TEST_NAMESPACE" -o json | jq -e ".items | all(.status.conditions[]? | select(.type==\"Ready\").status == \"True\")" > /dev/null; do
           echo "Waiting for ExternalSecrets to be ready";
           sleep 10;
         done'
