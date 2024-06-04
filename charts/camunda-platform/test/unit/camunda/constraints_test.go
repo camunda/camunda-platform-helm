@@ -62,7 +62,7 @@ func (s *configMapTemplateTest) TestExistingSecretConstraintDisplays() {
 	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
 
 	// then
-	s.Require().ErrorContains(err, "As of appVersion 8.7, the camunda helm chart will NOT perform automatic passwords")
+	s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
 }
 func (s *configMapTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret() {
 	// given
