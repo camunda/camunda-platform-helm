@@ -1,0 +1,24 @@
+global:
+  identity:
+    auth:
+      # NOTE: In Camunda Platform v8.2.0 (apps and Helm chart), WebModeler expects to have
+      # Keycloak externally configured to work with M2M tokens (unlike other components like
+      # Operate, Tasklist, and Optimize).
+      publicIssuerUrl: http://integration-keycloak/auth/realms/camunda-platform
+
+webModeler:
+  # Web Modeler is disabled by default
+  enabled: true
+  image:
+    # the pull secret is required to pull the images from Camunda's Docker registry; it's created as part of the integration test setup
+    pullSecrets:
+    - name: index-docker-io
+    - name: registry-camunda-cloud
+  restapi:
+    mail:
+      # the value is required, otherwise the restapi pod wouldn't start
+      fromAddress: noreply@example.com
+
+# database used by Web Modeler
+postgresql:
+  enabled: true

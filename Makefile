@@ -1,8 +1,8 @@
 # Makefile for managing the Helm charts
 MAKEFLAGS += --silent
-chartPath=charts/camunda-platform
-chartVersion=$(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
-releaseName=camunda-platform-test
+chartPath ?= charts/camunda-platform
+chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
+releaseName = camunda-platform-test
 
 #########################################################
 ######### Go.
@@ -11,25 +11,34 @@ releaseName=camunda-platform-test
 #
 # Tests.
 
+define go_test_run
+	find $(chartPath) -name "go.mod" -exec dirname {} \; | while read chart_dir; do\
+		echo "\nChart dir: $${chart_dir}";\
+		cd $$(git rev-parse --show-toplevel);\
+		cd "$${chart_dir}";\
+		$(1);\
+	done
+endef
+
 # go.test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: go.test
 go.test: helm.dependency-update
-	go test ./...
+	@$(call go_test_run, go test ./...)
 
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
 go.test-golden-updated: helm.dependency-update
-	go test ./... -args -update-golden
+	@$(call go_test_run, go test ./... -args -update-golden)
 
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only
 go.update-golden-only: helm.dependency-update
-	go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden
+	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
 
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt
 go.fmt:
-	go fmt ./...
+	@$(call go_test_run, go fmt ./...)
 	@diff=$$(git status --porcelain | grep -F ".go" || true)
 	@if [ -n "$${diff}" ]; then\
 		echo "Some files are not following the go format ($${diff}), run gofmt and fix your files.";\
@@ -89,12 +98,24 @@ tools.zbctl-topology:
 helm.repos-add:
 	helm repo add camunda https://helm.camunda.io
 	helm repo add bitnami https://charts.bitnami.com/bitnami
+	helm repo add elastic https://helm.elastic.co
 	helm repo update
 
 # helm.dependency-update: update and downloads the dependencies for the Helm chart
 .PHONY: helm.dependency-update
 helm.dependency-update:
-	helm dependency update $(chartPath)
+	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
+		echo "Chart dir: $${chart_dir}";\
+		helm dependency update $${chart_dir};\
+	done
+
+# helm.lint: verify that the chart is well-formed.
+.PHONY: helm.lint
+helm.lint:
+	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
+		echo "Chart dir: $${chart_dir}";\
+		helm lint --strict $${chart_dir};\
+	done
 
 # helm.install: install the local chart into the current kubernetes cluster/namespace
 .PHONY: helm.install

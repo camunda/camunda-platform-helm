@@ -4,10 +4,10 @@ name: "Test - Regression"
 on:
   push:
     paths:
-    - 'charts/camunda-platform/values/values-v8*.yaml'
+    - 'charts/camunda-platform-*/**'
   pull_request:
     paths:
-    - 'charts/camunda-platform/values/values-v8*.yaml'
+    - 'charts/camunda-platform-*/**'
   workflow_dispatch: { }
 
 concurrency:
@@ -40,8 +40,6 @@ jobs:
         - "8.2"
     steps:
     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-      with:
-        ref: camunda-platform-${{ matrix.camundaChart }}
     - name: Login to GKE
       uses: ./.github/actions/gke-login
       with:
@@ -61,15 +59,20 @@ jobs:
         kubectl delete ns $TEST_NAMESPACE --ignore-not-found=true
     - name: Update Helm dependency
       run: |
+        export chartPath="charts/camunda-platform-${{ matrix.camundaChart }}"
         make helm.repos-add
         make helm.dependency-update
+    - name: Update golden files
+      run: |
+        export chartPath="charts/camunda-platform-${{ matrix.camundaChart }}"
+        make go.fmt
+        make go.update-golden-only
     - name: Install Camunda 8 Helm chart v${{ matrix.camundaChart }}
       timeout-minutes: 15
       run: |
-        helm install camunda-platform charts/camunda-platform \
+        helm install camunda-platform charts/camunda-platform-${{ matrix.camundaChart }} \
           --wait --timeout 15m0s \
-          --namespace $TEST_NAMESPACE --create-namespace \
-          --values https://helm.camunda.io/camunda-platform/values/values-v${{ matrix.camundaChart }}.yaml
+          --namespace $TEST_NAMESPACE --create-namespace
     - name: Check setup
       if: always()
       run: |

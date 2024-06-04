@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-venom
+spec:
+  template:
+    spec:
+      containers:
+      - name: venom
+        # All env vars here assume that the Helm deployment is called "integration".
+        env:
+        - name: VENOM_VAR_CONSOLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-console-identity-secret
+              key: console-secret
+        - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-tasklist-identity-secret
+              key: tasklist-secret
+        - name: VENOM_VAR_OPERATE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-operate-identity-secret
+              key: operate-secret
+        - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-optimize-identity-secret
+              key: optimize-secret
+        - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-connectors-identity-secret
+              key: connectors-secret

@@ -7,13 +7,13 @@ on:
     paths:
     - '.github/**'
     - '.tool-versions'
-    - 'charts/**'
+    - 'charts/camunda-platform*/**'
     - 'go.*'
   pull_request:
     paths:
     - '.github/**'
     - '.tool-versions'
-    - 'charts/**'
+    - 'charts/camunda-platform*/**'
     - 'go.*'
   workflow_dispatch: { }
 

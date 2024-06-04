@@ -1,0 +1,9 @@
+# Gateway configuration to define properties related to the standalone gateway
+zeebe-gateway:
+  # ExtraInitContainers can be used to set up extra init containers for the gateway pods, useful for adding interceptors
+  extraInitContainers:
+    - name: "init-container"
+      image: "busybox:1.28"
+      command: ["sh", "-c" , "echo", "Hello World!"]
+  podDisruptionBudget:
+    enabled: true
