@@ -2,11 +2,11 @@
 # Camunda - Latest
 #
 
+# https://github.com/camunda/camunda-platform/releases
 global:
-  # https://github.com/camunda/camunda-platform/releases
   # https://hub.docker.com/u/camunda
   image:
-    # renovate: datasource=github-releases depName=camunda/camunda-platform
+    # renovate: datasource=docker depName=camunda/zeebe
     tag: 8.4.5
 
 connectors:

@@ -3,8 +3,8 @@
 # https://docs.camunda.io/docs/next/reference/announcements/#camunda-84
 #
 
+# https://github.com/camunda/camunda-platform/releases
 global:
-  # https://github.com/camunda/camunda-platform/releases
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=docker depName=camunda/zeebe
