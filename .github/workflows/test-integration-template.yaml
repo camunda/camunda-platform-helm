@@ -8,6 +8,10 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform
+        type: string
       camunda-helm-git-ref:
         required: false
         default: main
@@ -51,7 +55,7 @@ concurrency:
 env:
   TEST_PERSISTENT: ${{ inputs.persistent }}
   TEST_HOSTNAME_BASE: ci.distro.ultrawombat.com
-  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
+  TEST_SCENARIOS_DIR: charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
@@ -168,6 +172,7 @@ jobs:
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
     - name: Add Helm repos and dependencies
       run: |
+        export chartPath="charts/${{ inputs.camunda-helm-dir }}"
         make helm.repos-add
         make helm.dependency-update
     - name: Create test namespace
