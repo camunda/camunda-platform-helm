@@ -7,7 +7,7 @@ global:
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.5.1
+    tag: 8.5.2
 
 console:
   # Camunda Enterprise repository.
