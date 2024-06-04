@@ -40,7 +40,7 @@ func TestConstraintTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configMapTemplateTest{
+	suite.Run(t, &constraintTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -48,7 +48,7 @@ func TestConstraintTemplate(t *testing.T) {
 	})
 }
 
-func (s *configMapTemplateTest) TestExistingSecretConstraintDisplays() {
+func (s *constraintTemplateTest) TestExistingSecretConstraintDisplays() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -64,7 +64,7 @@ func (s *configMapTemplateTest) TestExistingSecretConstraintDisplays() {
 	// then
 	s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
 }
-func (s *configMapTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret() {
+func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -81,7 +81,7 @@ func (s *configMapTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorF
 	// then
 	s.Require().NotContains(err.Error(), "global.identity.auth.zeebe.existingSecret")
 }
-func (s *configMapTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentThatsDisabled() {
+func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentThatsDisabled() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -98,7 +98,7 @@ func (s *configMapTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorF
 	// then
 	s.Require().NotContains(err.Error(), "global.identity.auth.operate.existingSecret")
 }
-func (s *configMapTemplateTest) TestExistingSecretConstraintInWarningModeDoesNotPreventInstall() {
+func (s *constraintTemplateTest) TestExistingSecretConstraintInWarningModeDoesNotPreventInstall() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
