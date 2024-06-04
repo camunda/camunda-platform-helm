@@ -17,6 +17,23 @@ spec:
     targetPort: http
   {{- if .Values.identity.route.tls.enabled }}
   tls:
+  {{- if .Values.identity.route.existingSecret }}
+    {{- $secretData := (lookup "v1" "Secret" .Release.Namespace .Values.identity.route.existingSecret) }}
+  {{- if $secretData }}
+    {{- if hasKey $secretData.data "tls.crt" }}
+    certificate: |
+      {{- index $secretData.data "tls.crt" | b64dec | nindent 6 }}
+    {{- end }}
+    {{- if hasKey $secretData.data "tls.key" }}
+    key: |
+      {{- index $secretData.data "tls.key" | b64dec | nindent 6 }}
+    {{- end }}
+    {{- if hasKey $secretData.data "ca.crt" }}
+    caCertificate: |
+      {{- index $secretData.data "ca.crt" | b64dec | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
     insecureEdgeTerminationPolicy: Redirect
     termination: edge
   {{- end }}
