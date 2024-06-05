@@ -38,6 +38,11 @@ on:
         description: Pass extra values to the Helm chart.
         required: false
         type: string
+      vault-secret-mapping:
+        description: (optional) defines how to map Vault secrets to distro CI environment variables
+        required: false
+        type: string
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}
@@ -57,7 +62,7 @@ env:
 
 permissions:
   contents: read
-  
+
 jobs:
   test:
     name: ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}
@@ -111,6 +116,21 @@ jobs:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
+
+    # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
+    # and populate environment variables from Vault
+    - name: Import Vault secrets
+      id: secrets
+      uses: hashicorp/vault-action@v3.0.0
+      if: inputs.vault-secret-mapping != ''
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: ${{ inputs.vault-secret-mapping }}
+        exportEnv: true
+
     # Used to create/delete GitHub environment.
     # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
     - name: Generate GitHub token
