@@ -1,5 +1,7 @@
 matrix:
     distro:
+      # /!\ BEFORE ADDING/REMOVING A VERSION:
+      # /!\ Please keep this matrix synced with the official documentation: https://github.com/camunda/camunda-docs/blob/main/docs/self-managed/setup/deploy/openshift/redhat-openshift.md?plain=1#L2
       # According to https://access.redhat.com/support/policy/updates/openshift, this matrix should reference the last 4 (may change) supported versions of OpenShift
       - name: OpenShift 4.15
         type: openshift

@@ -72,7 +72,7 @@ env:
   INPUTS_EXTRA_VALUES: "${{ inputs.extra-values || '' }}"
   INPUTS_FLOWS: ${{ inputs.flows || '[\"install\", \"upgrade\"]' }}
 
-  ASSIGNEES_ISSUE_ERROR: "aabouzaid, jessesimpson36, hamza-m-masood"
+  ASSIGNEES_ISSUE_ERROR: "aabouzaid, jessesimpson36, hamza-m-masood, drodriguez-305"
 
 # limit to a single execution per actor of this workflow
 concurrency:
