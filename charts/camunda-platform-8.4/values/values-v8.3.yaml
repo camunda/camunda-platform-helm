@@ -8,7 +8,7 @@ global:
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=github-releases depName=camunda/camunda-platform
-    tag: 8.3.8
+    tag: 8.3.11
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
