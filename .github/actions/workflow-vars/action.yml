@@ -79,6 +79,12 @@ runs:
       fi
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+
+      # Chart version.
+      # Used to install previous supported versions of Camunda Helm charts.
+      TEST_CHART_VERSION="$(yq '.version' charts/${CI_CHART_DIR}/Chart.yaml)"
+      echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+
     # Avoid confusion about the chart version since we only change the version during the release process
     # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
   - name: Set chart version
