@@ -20,7 +20,7 @@ operate:
   image:
     repository: camunda/operate
     # renovate: datasource=docker depName=camunda/operate
-    tag: 8.4.8
+    tag: 8.4.9
 
 identity:
   keycloak:
