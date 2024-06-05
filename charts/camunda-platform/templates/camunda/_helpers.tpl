@@ -578,8 +578,8 @@ Release templates.
     urls:
       grpc: {{ include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
       http: {{ include "camundaPlatform.zeebeGatewayExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebeGateway.metrics.prometheus }}
+    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.zeebeGateway.contextPath .Values.zeebeGateway.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.zeebeGateway.contextPath .Values.zeebeGateway.metrics.prometheus }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.broker" . | trimAll "\"") .Release.Namespace .Values.zeebe.service.httpPort }}
   - name: Zeebe
     id: zeebe
