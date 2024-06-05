@@ -1,0 +1,41 @@
+#
+# Camunda - v8.0
+#
+
+global:
+  # https://github.com/camunda/camunda-platform/releases
+  # https://hub.docker.com/u/camunda
+  image:
+    # renovate: datasource=github-releases depName=camunda/camunda-platform
+    tag: 8.0.21
+
+identity:
+  keycloak:
+    # https://hub.docker.com/r/bitnami/keycloak/tags
+    image:
+      repository: bitnami/keycloak
+      tag: 16.1.1
+    postgresql:
+      # https://hub.docker.com/r/bitnami/postgresql/tags
+      repository: bitnami/postgresql
+      image:
+        tag: 14.2.0
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
+  image:
+    repository: camunda/optimize
+    tag: 3.9.5
+  env:
+  - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+    value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}"
+
+#
+# Elasticsearch
+#
+
+elasticsearch:
+  # https://hub.docker.com/r/elastic/elasticsearch/tags
+  # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
+  image: docker.elastic.co/elasticsearch/elasticsearch
+  imageTag: 7.17.10

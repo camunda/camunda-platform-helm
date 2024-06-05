@@ -1,0 +1,60 @@
+#
+# Camunda Platform - v8.1
+#
+
+global:
+  # https://github.com/camunda/camunda-platform/releases
+  # https://hub.docker.com/u/camunda
+  image:
+    # renovate: datasource=github-releases depName=camunda/camunda-platform
+    tag: 8.1.16
+
+connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags
+  image:
+    repository: camunda/connectors-bundle
+    tag: 0.16.1
+
+identity:
+  keycloak:
+    # https://hub.docker.com/r/bitnami/keycloak/tags
+    image:
+      repository: bitnami/keycloak
+      tag: 16.1.1
+    postgresql:
+      # https://hub.docker.com/r/bitnami/postgresql/tags
+      image:
+        repository: bitnami/postgresql
+        tag: 14.5.0
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
+  image:
+    repository: camunda/optimize
+    tag: 3.9.5
+  env:
+  - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+    value: "{{ .Values.global.identity.auth.optimize.redirectUrl }}"
+
+webModeler:
+  # Camunda Enterprise repository.
+  # registry.camunda.cloud/web-modeler-ee
+  image:
+    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
+    tag: 0.8.0-beta
+
+#
+# Elasticsearch
+#
+
+elasticsearch:
+  # https://hub.docker.com/r/elastic/elasticsearch/tags
+  image: docker.elastic.co/elasticsearch/elasticsearch
+  # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
+  imageTag: 7.17.13
+
+retentionPolicy:
+  # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags
+  image:
+    repository: bitnami/elasticsearch-curator-archived
+    tag: 5.8.4

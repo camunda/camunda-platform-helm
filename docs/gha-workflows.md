@@ -29,6 +29,13 @@ jobs:
       # Required: true
       identifier: 'dev-console-sm'
 
+      # A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
+      # The latest supported chart doesn't have a version in its directory name like `camunda-platform`.
+      # The previous releases have the Camunda version in their directory name e.g. `camunda-platform-8.4`.
+      # Default: 'camunda-platform'
+      # Required: false
+      camunda-helm-dir: 'camunda-platform'
+
       # Git reference for the Camunda Helm chart repository 
       # Default: 'main'
       # Required: false

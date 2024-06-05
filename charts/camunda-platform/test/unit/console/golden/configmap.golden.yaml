@@ -48,7 +48,7 @@ data:
               metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
             - name: Optimize
               id: optimize
-              version: 8.5.1
+              version: 8.5.2
               url: 
               readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus

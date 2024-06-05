@@ -11,7 +11,7 @@
 
 ### Checklist
 
-Please make sure to follow our [Contributing Guide](../blob/main/CONTRIBUTING.md).
+Please make sure to follow our [Contributing Guide](../blob/main/docs/contributing.md).
 
 <!-- Place an '[x]' (no spaces) in all applicable fields. Please remove unrelated fields. -->
 
@@ -20,7 +20,7 @@ Please make sure to follow our [Contributing Guide](../blob/main/CONTRIBUTING.md
 - [ ] In the repo's root dir, run `make go.update-golden-only`.
 - [ ] There is no other open [pull request](../pulls) for the same update/change.
 - [ ] Tests for charts are added (if needed).
-- [ ] In-repo [documentation](../blob/main/CONTRIBUTING.md#documentation) are updated (if needed).
+- [ ] In-repo [documentation](../blob/main/docs/contributing.md#documentation) are updated (if needed).
 
 **After opening the PR:**
 
