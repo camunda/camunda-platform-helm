@@ -81,7 +81,7 @@ func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectAuthClientId(
 	}
 
 	// then
-	s.Require().Equal("custom-clientId", configmapApplication.OAuth2.ClientId)
+	s.Require().Equal("custom-clientId", configmapApplication.OAuth2.Client.Id)
 }
 func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsDisabled() {
 	// given

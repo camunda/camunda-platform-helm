@@ -77,12 +77,16 @@ type PusherConfig struct {
 }
 
 type OAuth2Config struct {
-	Token    TokenConfig `toml:"token"`
-	ClientId string      `toml:"clientId"`
-	Type     string      `toml:"type"`
+	Client OAuth2ClientConfig `toml:"client"`
+	Token  OAuth2TokenConfig  `toml:"token"`
+	Type   string             `toml:"type"`
 }
 
-type TokenConfig struct {
+type OAuth2ClientConfig struct {
+	Id string `toml:"id"`
+}
+
+type OAuth2TokenConfig struct {
 	Audience string `toml:"audience"`
 	JwksUrl  string `toml:"jwksUrl"`
 }
