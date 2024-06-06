@@ -15,6 +15,10 @@
 
 set -o pipefail
 
-# Perform two passes: once for single quotes, once for double quotes, as it's not specified that string values are
-# always output with single or double quotes
-sed -e "s/'@@null@@'/null/g" -e 's/"@@null@@"/null/g'
+if [[ "$(uname)" == "Darwin" ]]; then
+    sed_command="gsed"
+else
+    sed_command="sed"
+fi
+
+"$sed_command" -e '/\srunAsUser:\s/d' -e '/\sfsGroup:\s/d'

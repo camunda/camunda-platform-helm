@@ -14,4 +14,11 @@
 # from any working directory.
 
 set -o pipefail
-sed -e '/\srunAsUser:\s/d' -e '/\sfsGroup:\s/d'
+
+if [[ "$(uname)" == "Darwin" ]]; then
+    sed_command="gsed"
+else
+    sed_command="sed"
+fi
+
+"$sed_command" -e '/\srunAsUser:\s/d' -e '/\sfsGroup:\s/d'
