@@ -228,7 +228,7 @@ global:
         clientId: identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
         # The existing secret should contain an `identity-secret` field, which will be used as secret for the identity-identity communication.
         existingSecret:
         ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.

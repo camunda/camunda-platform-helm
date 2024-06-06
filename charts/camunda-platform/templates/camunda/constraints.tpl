@@ -40,6 +40,18 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 {{- end }}
 
 {{/*
+Fail with a message if global.identity.auth.identity.existingSecret is set and global.identity.auth.type is set to KEYCLOAK
+*/}}
+
+{{- if (.Values.global.identity.auth.identity.existingSecret) }}
+  {{- if eq (upper .Values.global.identity.auth.type) "KEYCLOAK" }}
+    {{- $errorMessage := "[camunda][error] global.identity.auth.identity.existingSecret does not need to be set when using Keycloak."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if Identity is disabled and identityKeycloak is enabled.
 */}}
 {{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
