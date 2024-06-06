@@ -72,6 +72,7 @@ spec:
                 configMapKeyRef:
                   name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-key
+          envFrom:
           args:
             - application.toml
           resources:

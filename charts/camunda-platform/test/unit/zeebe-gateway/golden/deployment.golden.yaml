@@ -75,6 +75,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+          envFrom:
           volumeMounts:
             - mountPath: /tmp
               name: tmp

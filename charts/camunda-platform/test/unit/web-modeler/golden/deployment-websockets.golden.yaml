@@ -67,6 +67,7 @@ spec:
                   key: pusher-app-secret
             - name: PUSHER_APP_CLUSTER
               value: "web-modeler"
+          envFrom:
           resources:
             limits:
               cpu: 200m

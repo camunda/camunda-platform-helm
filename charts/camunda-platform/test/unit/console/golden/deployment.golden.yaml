@@ -69,6 +69,7 @@ spec:
               value: console
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
               value: ""
+          envFrom:
           ports:
             - name: http
               containerPort: 8080
