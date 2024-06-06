@@ -48,7 +48,7 @@ global:
     registry: ""
     # Image.tag defines the tag / version which should be used in the most of the apps.
     # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.2.28
+    tag: 8.5.2
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: IfNotPresent
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
