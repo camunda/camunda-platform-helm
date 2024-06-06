@@ -4,7 +4,7 @@
 [![Test - Unit](https://github.com/camunda/camunda-platform-helm/actions/workflows/test-unit.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/test-unit.yml)
 [![Camunda Platform 8](https://img.shields.io/badge/dynamic/yaml?label=Camunda%20Platform&query=version&url=https%3A%2F%2Fraw.githubusercontent.com%2Fcamunda%2Fcamunda-platform-helm%2Fmain%2Fcharts%2Fcamunda-platform%2FChart.yaml?style=plastic&logo=artifacthub&logoColor=white&labelColor=417598&color=2D4857)](https://artifacthub.io/packages/helm/camunda/camunda-platform)
 
-Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/deploy/) on how to use Helm charts.
+Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
 
 - [Architecture](#architecture)
 - [Requirements](#requirements)
@@ -159,7 +159,7 @@ We recommend using Helm on KIND for local environments, as the Helm configuratio
 and much closer to production systems.
 
 For more details, follow the Camunda Platform 8
-[local Kubernetes cluster guide](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/guides/local-kubernetes-cluster/).
+[local Kubernetes cluster guide](https://docs.camunda.io/docs/self-managed/setup/deploy/local/local-kubernetes-cluster/).
 
 ### OpenShift
 
@@ -220,7 +220,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 
 > **Note**
 > For more details about deploying Camunda Platform 8 on Kubernetes, please visit the
-> [Helm/Kubernetes installation instructions docs](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/overview/).
+> [Helm/Kubernetes installation instructions docs](https://docs.camunda.io/docs/self-managed/setup/install/).
 
 ### Global 
 
@@ -1076,7 +1076,7 @@ connectors:
 
 After that, a Modeler user can set in their BPMN diagram a value `secrets.SLACK_TOKEN` without ever knowing the actual token.
 
-Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/self-managed/connectors-deployment/connectors-configuration/#secrets-in-manual-installations) to learn more.
+Visit [using secrets configuration](https://docs.camunda.io/docs/self-managed/connectors-deployment/connectors-configuration/#secrets) to learn more.
 
 ### Elasticsearch
 
@@ -1149,7 +1149,7 @@ identity:
 > **Note**
 >
 > For full list of guides list, please visit
-> [Helm/Kubernetes Guides](https://docs.camunda.io/docs/next/self-managed/platform-deployment/helm-kubernetes/overview/)
+> [Helm/Kubernetes Guides](https://docs.camunda.io/docs/self-managed/setup/guides/)
 
 ### Adding dynamic exporters to Zeebe Brokers
 
