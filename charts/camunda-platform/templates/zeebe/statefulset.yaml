@@ -111,14 +111,9 @@ spec:
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
           envFrom:
-          {{- if .Values.zeebe.configMapRef }}
-            - configMapRef:
-                name: {{ .Values.zeebe.configMapRef }}
-          {{- end }}
-          {{- if .Values.zeebe.secretRef }}
-            - secretRef:
-                name: {{ .Values.zeebe.secretRef }}
-          {{- end }}
+            {{- if .Values.zeebe.envFrom }}
+              {{ .Values.zeebe.envFrom | toYaml | nindent 12 }}
+            {{- end }}
           {{- if .Values.zeebe.command }}
           command: {{ toYaml .Values.zeebe.command | nindent 10 }}
           {{- end }}

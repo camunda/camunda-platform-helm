@@ -85,18 +85,13 @@ spec:
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
-          {{- if .Values.global.identity.auth.enabled }}
           envFrom:
+          {{- if .Values.global.identity.auth.enabled }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.connectors.configMapRef }}
-            - configMapRef:
-                name: {{ .Values.connectors.configMapRef }}
-          {{- end }}
-          {{- if .Values.connectors.secretRef }}
-            - secretRef:
-                name: {{ .Values.connectors.secretRef }}
+          {{- if .Values.connectors.envFrom }}
+            {{ .Values.connectors.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.connectors.command}}
           command: {{ toYaml .Values.connectors.command | nindent 12 }}
