@@ -3,18 +3,18 @@
 # https://docs.camunda.io/docs/next/reference/announcements/#camunda-83
 #
 
+# https://github.com/camunda/camunda-platform/releases
 global:
-  # https://github.com/camunda/camunda-platform/releases
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.5.2
+    tag: 8.3.11
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.3
+    tag: 8.3.11
 
 identity:
   keycloak:
@@ -33,14 +33,14 @@ optimize:
   image:
     repository: camunda/optimize
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.5.2
+    tag: 8.3.9
 
 webModeler:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.1
+    tag: 8.3.7
 
 #
 # Elasticsearch
@@ -50,4 +50,4 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.14.0
+    tag: 8.8.2

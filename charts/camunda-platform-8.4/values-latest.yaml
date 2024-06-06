@@ -8,20 +8,20 @@ global:
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.5.2
+    tag: 8.4.7
 
 console:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/console
   image:
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.47
+    tag: 8.4.60
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.3
+    tag: 8.4.7
 
 identity:
   keycloak:
@@ -40,14 +40,14 @@ optimize:
   image:
     repository: camunda/optimize
     # renovate: datasource=docker depName=camunda/optimize
-    tag: 8.5.2
+    tag: 8.4.4
 
 webModeler:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.1
+    tag: 8.4.5
 
 #
 # Elasticsearch
@@ -57,4 +57,4 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.14.0
+    tag: 8.9.2
