@@ -57,6 +57,8 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: ZEEBE_STANDALONE_GATEWAY
               value: "true"
+            - name: ZEEBE_SET_SEED_ENV_VARS
+              value: "false"
             - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
               valueFrom:
                 fieldRef:
