@@ -17,7 +17,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name:  {{ include "optimize.fullname" . }}
+                name: {{ include "optimize.fullname" . }}
                 port:
                   number: 80
   {{- if .Values.ingress.tls.enabled }}

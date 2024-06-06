@@ -1,0 +1,73 @@
+name: "Chart - Validate - Template"
+
+on:
+  workflow_call:
+    inputs:
+      identifier:
+        description: The unique identifier of the workflow run.
+        required: true
+        type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform
+        type: string
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ inputs.identifier }}"
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout.
+      - name: Checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          fetch-depth: 0
+          ref: "${{ inputs.camunda-helm-git-ref }}"
+      # Configurtion.
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git fetch origin main
+      - name: Don't check version increment if there is no release label
+        if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
+        run: |
+          echo "check-version-increment: false" >> .github/config/chart-testing.yaml
+      # Dependencies.
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Add helm repos
+        run: |
+          make helm.repos-add
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
+      - name: Get Helm dependency
+        run: |
+          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          make helm.dependency-update
+      # Lint.
+      - name: Run Helm lint
+        run: |
+          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          make helm.lint
+      - name: Run CT lint
+        run: |
+          ct lint --charts charts/${{ inputs.camunda-helm-dir }} --config .github/config/chart-testing.yaml
+      - name: Run YAMLlint
+        run: |
+          # Call yamllint via asdf because there is an issue loading the correct version of yamllint in GHA workflow.
+          $(asdf which yamllint) -c .github/config/yamllint.yaml ./charts/${{ inputs.camunda-helm-dir }}/test/unit

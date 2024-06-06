@@ -1,4 +1,6 @@
-ignore: charts/camunda-platform/test/unit/camunda/golden/keycloak-statefulset.golden.yaml
+ignore:
+- "charts/camunda-platform*/test/unit/golden/keycloak-statefulset.golden.yaml"
+- "charts/camunda-platform*/test/unit/camunda/golden/keycloak-statefulset.golden.yaml"
 
 rules:
   brackets:
@@ -28,6 +30,9 @@ rules:
     spaces: 2
     indent-sequences: true
     check-multi-line-strings: false
+    # Remove this exception for v8.2 when it gets EOL.
+    ignore:
+      - charts/camunda-platform-8.2/test/unit/**
   key-duplicates: enable
   line-length: disable              # Lines can be any length
   new-line-at-end-of-file: disable

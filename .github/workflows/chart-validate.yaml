@@ -12,54 +12,10 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: write
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-        with:
-          fetch-depth: 0
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          git fetch origin main
-      - name: Install Helm
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-      - name: Add helm repos
-        run: |
-          make helm.repos-add
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
-      - name: Get Helm dependency
-        run: |
-          for chart_dir in $(ct --config .github/config/chart-testing.yaml list-changed); do
-              chartPath="${chart_dir}" make helm.dependency-update
-          done
-      - name: Run Helm lint 
-        run: |
-          for chart_dir in $(ct --config .github/config/chart-testing.yaml list-changed); do
-              chartPath="${chart_dir}" make helm.lint
-          done
-      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5
-        with:
-          python-version: 3.7
-      - name: Don't check version increment if there is no release label
-        if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
-        run: |
-          echo "check-version-increment: false" >> .github/config/chart-testing.yaml
-      - name: Run chart testing and lint
-        run: |
-          ct lint --config .github/config/chart-testing.yaml
-      - name: Lint YAML Files
-        run: |
-          yamllint -c .github/config/yamllint.yaml ./charts/camunda-platform/test/unit
+  validate:
+    name: Validate
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

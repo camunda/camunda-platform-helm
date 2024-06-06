@@ -154,9 +154,9 @@ spec:
             {{- end }}
           - name: KEYCLOAK_CLIENTS_1_TYPE
             value: "M2M"
-          - name:  KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
+          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
             value: "zeebe-api"
-          - name:  KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
+          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
             value: "write:*"
           {{- end }}
           - name: SERVER_PORT

@@ -18,4 +18,3 @@ while IFS= read -r line; do
     echo "$line" | awk '{ORS=""; print "| | `"; $2=tolower(substr($2,0,1))substr($2,2); print $2 "` |"; $1=$2=""; $3=toupper(substr($3, 0, 1))substr($3,2); ORS="\n"; print $0 " | |"}'
   fi
 done <<< "$lines"
-
