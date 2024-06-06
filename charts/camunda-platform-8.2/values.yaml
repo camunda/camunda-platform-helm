@@ -1826,6 +1826,10 @@ webModeler:
     startupProbe:
       # Websockets.startupProbe.enabled if true, the startup probe will be enabled for the websockets container
       enabled: false
+      # Websockets.startupProbe.scheme defines the startup probe schema used on calling the probePath
+      scheme: HTTP
+      # Websockets.startupProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /up
       # Websockets.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       # Websockets.startupProbe.periodSeconds defines how often the probe is executed
@@ -1841,6 +1845,10 @@ webModeler:
     readinessProbe:
       # Websockets.readinessProbe.enabled if true, the readiness probe will be enabled for the websockets container
       enabled: true
+      # Websockets.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+      scheme: HTTP
+      # Websockets.readinessProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /up
       # Websockets.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       # Websockets.readinessProbe.periodSeconds defines how often the probe is executed
@@ -1856,6 +1864,10 @@ webModeler:
     livenessProbe:
       # Websockets.livenessProbe.enabled if true, the liveness probe will be enabled for the websockets container
       enabled: false
+      # Websockets.livenessProbe.startupProbe.scheme defines the startup probe schema used on calling the probePath
+      scheme: HTTP
+      # Websockets.livenessProbe.startupProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /up
       # Websockets.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       # Websockets.livenessProbe.periodSeconds defines how often the probe is executed

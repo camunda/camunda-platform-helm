@@ -913,6 +913,8 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets.containerSecurityContext` | Can be used to define the security options the websockets container should be run with | `{}` |
 | | `websockets.startupProbe` | Configuration of the websockets startup probe | |
 | | `websockets.startupProbe.enabled` | If true, the startup probe will be enabled for the websockets container | |
+| | `websockets.startupProbe.scheme` | Defines the startup probe schema used on calling the probePath | |
+| | `websockets.startupProbe.probePath` | Defines the HTTP endpoint used for the startup probe | |
 | | `websockets.startupProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
 | | `websockets.startupProbe.periodSeconds` | Defines how often the probe is executed | |
 | | `websockets.startupProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
@@ -920,6 +922,8 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets.startupProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
 | | `websockets.readinessProbe` | Configuration of the websockets readiness probe | |
 | | `websockets.readinessProbe.enabled` | If true, the readiness probe will be enabled for the websockets container | |
+| | `websockets.readinessProbe.scheme` | Defines the readiness probe schema used on calling the probePath | |
+| | `websockets.readinessProbe.probePath` | Defines the HTTP endpoint used for the readiness probe | |
 | | `websockets.readinessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
 | | `websockets.readinessProbe.periodSeconds` | Defines how often the probe is executed | |
 | | `websockets.readinessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
@@ -927,6 +931,8 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `websockets.readinessProbe.timeoutSeconds` | Defines the number of seconds after which the probe times out | |
 | | `websockets.livenessProbe` | Configuration of the websockets liveness probe | |
 | | `websockets.livenessProbe.enabled` | If true, the liveness probe will be enabled for the websockets container | |
+| | `websockets.livenessProbe.scheme` | Defines the liveness probe schema used on calling the probePath | |
+| | `websockets.livenessProbe.probePath` | Defines the HTTP endpoint used for the startup probe | |
 | | `websockets.livenessProbe.initialDelaySeconds` | Defines the number of seconds after the container has started before the probe is initiated | |
 | | `websockets.livenessProbe.periodSeconds` | Defines how often the probe is executed | |
 | | `websockets.livenessProbe.successThreshold` | Defines how often the probe needs to succeed to be considered successful after having failed | |
