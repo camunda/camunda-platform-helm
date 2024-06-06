@@ -39,12 +39,13 @@ spec:
                 secretKeyRef:
                   name: {{ include "webModeler.restapi.databaseSecretName" . }}
                   key: {{ include "webModeler.restapi.databaseSecretKey" . }}
-            {{- if .Values.webModeler.restapi.mail.smtpPassword }}
+            {{- $smtpSecretName := (include "webModeler.restapi.smtpSecretName" .) }}
+            {{- if $smtpSecretName }}
             - name: RESTAPI_MAIL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "webModeler.restapi.fullname" . }}
-                  key: smtp-password
+                  name: {{ $smtpSecretName }}
+                  key: {{ include "webModeler.restapi.smtpSecretKey" . }}
             {{- end }}
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:

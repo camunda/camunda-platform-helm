@@ -51,7 +51,7 @@ func TestRestapiDeploymentTemplate(t *testing.T) {
 	})
 }
 
-func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
+func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSecretRefForGivenPassword() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -84,7 +84,170 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalDatabaseCo
 		})
 }
 
-func (s *restapiDeploymentTemplateTest) TestContainerShouldSetSmtpCredentials() {
+func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                      "true",
+			"webModeler.restapi.mail.fromAddress":                     "example@example.com",
+			"postgresql.enabled":                                      "false",
+			"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+			"webModeler.restapi.externalDatabase.user":                "modeler-user",
+			"webModeler.restapi.externalDatabase.existingSecret.name": "my-secret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "SPRING_DATASOURCE_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "database-password",
+				},
+			},
+		})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndCustomKey() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                            "true",
+			"webModeler.restapi.mail.fromAddress":                           "example@example.com",
+			"postgresql.enabled":                                            "false",
+			"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+			"webModeler.restapi.externalDatabase.user":                      "modeler-user",
+			"webModeler.restapi.externalDatabase.existingSecret.name":       "my-secret",
+			"webModeler.restapi.externalDatabase.existingSecretPasswordKey": "my-database-password-key",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "SPRING_DATASOURCE_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "my-database-password-key",
+				},
+			},
+		})
+}
+func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordExplicitlyDefinedStillReferencesInternalSecret() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                 "true",
+			"webModeler.restapi.mail.fromAddress":                "example@example.com",
+			"postgresql.enabled":                                 "false",
+			"webModeler.restapi.externalDatabase.url":            "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+			"webModeler.restapi.externalDatabase.user":           "modeler-user",
+			"webModeler.restapi.externalDatabase.existingSecret": "password1234",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "SPRING_DATASOURCE_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-web-modeler-restapi"},
+					Key:                  "database-password",
+				},
+			},
+		})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerInternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"postgresql.enabled":                  "true",
+			"postgresql.auth.existingSecret":      "my-secret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "SPRING_DATASOURCE_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "password",
+				},
+			},
+		})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerInternalDatabasePasswordSecretRefForExistingSecretAndCustomKey() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                         "true",
+			"webModeler.restapi.mail.fromAddress":        "example@example.com",
+			"postgresql.enabled":                         "true",
+			"postgresql.auth.existingSecret":             "my-secret",
+			"postgresql.auth.secretKeys.userPasswordKey": "my-database-password-key",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "SPRING_DATASOURCE_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "my-database-password-key",
+				},
+			},
+		})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerSmtpPasswordSecretRefForGivenPassword() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -110,6 +273,69 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetSmtpCredentials() 
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-web-modeler-restapi"},
 					Key:                  "smtp-password",
+				},
+			},
+		})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerSmtpPasswordSecretRefForExistingSecretAndDefaultKey() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                          "true",
+			"webModeler.restapi.mail.fromAddress":         "example@example.com",
+			"webModeler.restapi.mail.smtpUser":            "modeler-user",
+			"webModeler.restapi.mail.existingSecret.name": "my-secret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "RESTAPI_MAIL_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "smtp-password",
+				},
+			},
+		})
+}
+
+func (s *restapiDeploymentTemplateTest) TestContainerSmtpPasswordSecretRefForExistingSecretAndCustomKey() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                                "true",
+			"webModeler.restapi.mail.fromAddress":               "example@example.com",
+			"webModeler.restapi.mail.smtpUser":                  "modeler-user",
+			"webModeler.restapi.mail.existingSecret.name":       "my-secret",
+			"webModeler.restapi.mail.existingSecretPasswordKey": "my-smtp-password-key",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "RESTAPI_MAIL_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "my-smtp-password-key",
 				},
 			},
 		})
