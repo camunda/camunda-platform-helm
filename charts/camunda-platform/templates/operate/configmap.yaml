@@ -67,6 +67,10 @@ data:
         # Elasticsearch full url
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         {{- end }}
+        # Elasticsearch prefix indices for Operate
+        {{- if .Values.elasticsearch.indexPrefix }}
+        indexPrefix: {{ .Values.elasticsearch.indexPrefix }}
+        {{- end }}
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name

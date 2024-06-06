@@ -929,6 +929,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `operate.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `operate.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
 | `operate.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                 | `{}`                         |
+| `operate.elasticsearch.indexPrefix`                         | Prefix for index names                                                                                                                                                       | `operate`                    |
 
 ### Tasklist Parameters
 

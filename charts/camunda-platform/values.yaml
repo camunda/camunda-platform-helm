@@ -1156,6 +1156,9 @@ operate:
     ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  elasticsearch:
+    indexPrefix: operate
+
   ## @param operate.sidecars can be used to attach extra containers to the operate deployment
   sidecars: []
   ## @param operate.initContainers can be used to set up extra init containers for the application Pod
