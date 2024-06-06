@@ -122,7 +122,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.tasklist.envFrom }}
+          {{- if .Values.tasklist.envFrom -}}
             {{ .Values.tasklist.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.tasklist.command }}

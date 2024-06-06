@@ -139,7 +139,6 @@ spec:
               value: "Web Modeler"
             - name: KEYCLOAK_USERS_0_ROLES_5
               value: "Console"
-          envFrom:
           resources:
             limits:
               cpu: 2000m

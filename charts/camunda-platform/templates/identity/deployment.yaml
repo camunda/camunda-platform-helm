@@ -226,8 +226,8 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          envFrom:
           {{- if .Values.identity.envFrom }}
+          envFrom:
             {{ .Values.identity.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.identity.command}}

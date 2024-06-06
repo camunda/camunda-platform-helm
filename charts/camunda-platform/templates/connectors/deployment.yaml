@@ -90,7 +90,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.connectors.envFrom }}
+          {{- if .Values.connectors.envFrom -}}
             {{ .Values.connectors.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.connectors.command}}

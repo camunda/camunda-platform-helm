@@ -557,7 +557,6 @@ console:
   ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
 
-
 ###################################
 #######
      #  ###### ###### #####  ######
@@ -840,7 +839,6 @@ zeebe:
   configuration: ""
   ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
-
 
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
@@ -1138,7 +1136,6 @@ zeebeGateway:
   ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
 
-
 ################################################
  #####
 #     # #####  ###### #####    ##   ##### ######
@@ -1366,7 +1363,6 @@ operate:
   ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
 
-
 ##################################################
 #######
    #      ##    ####  #    # #      #  ####  #####
@@ -1590,7 +1586,6 @@ tasklist:
   configuration: ""
   ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
-
 
 #############################################
  #####
@@ -1830,7 +1825,6 @@ optimize:
   configuration: ""
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
   extraConfiguration: {}
-
 
 ############################################
 ###
@@ -2561,7 +2555,6 @@ webModeler:
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
 
-
   # WebModeler.
   #    # ###### #####    ##   #####  #####
   #    # #      #    #  #  #  #    # #    #
@@ -2714,7 +2707,6 @@ webModeler:
     configuration: ""
     ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
-
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
@@ -3222,7 +3214,6 @@ connectors:
   configuration: ""
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
-
 
 #####################################################################################
 #######

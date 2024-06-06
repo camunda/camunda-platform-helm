@@ -196,7 +196,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-          {{- if .Values.optimize.envFrom }}
+          {{- if .Values.optimize.envFrom -}}
            {{ .Values.optimize.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.optimize.command }}
