@@ -121,6 +121,14 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
+          {{- if .Values.operate.configMapRef }}
+            - configMapRef:
+                name: {{ .Values.operate.configMapRef }}
+          {{- end }}
+          {{- if .Values.operate.secretRef }}
+            - secretRef:
+                name: {{ .Values.operate.secretRef }}
+          {{- end }}
           {{- if .Values.operate.command }}
           command: {{ toYaml .Values.operate.command | nindent 10 }}
           {{- end }}

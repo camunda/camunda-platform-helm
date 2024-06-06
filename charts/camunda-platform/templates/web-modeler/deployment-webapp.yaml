@@ -59,6 +59,15 @@ spec:
             {{- with .Values.webModeler.webapp.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+          envFrom:
+          {{- if .Values.webModeler.webapp.configMapRef }}
+            - configMapRef:
+                name: {{ .Values.webModeler.webapp.configMapRef }}
+          {{- end }}
+          {{- if .Values.webModeler.webapp.secretRef }}
+            - secretRef:
+                name: {{ .Values.webModeler.webapp.secretRef }}
+          {{- end }}
           {{- if .Values.webModeler.webapp.command }}
           command: {{ toYaml .Values.webModeler.webapp.command | nindent 10 }}
           {{- end }}

@@ -196,6 +196,14 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
+          {{- if .Values.optimize.configMapRef }}
+            - configMapRef:
+                name: {{ .Values.optimize.configMapRef }}
+          {{- end }}
+          {{- if .Values.optimize.secretRef }}
+            - secretRef:
+                name: {{ .Values.optimize.secretRef }}
+          {{- end }}
           {{- if .Values.optimize.command }}
           command: {{ toYaml .Values.optimize.command | nindent 10 }}
           {{- end }}

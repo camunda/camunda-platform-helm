@@ -59,6 +59,15 @@ spec:
           {{- with .Values.webModeler.websockets.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          envFrom:
+          {{- if .Values.webModeler.websockets.configMapRef }}
+            - configMapRef:
+                name: {{ .Values.webModeler.websockets.configMapRef }}
+          {{- end }}
+          {{- if .Values.webModeler.websockets.secretRef }}
+            - secretRef:
+                name: {{ .Values.webModeler.websockets.secretRef }}
+          {{- end }}
           {{- if .Values.webModeler.websockets.command}}
           command: {{ toYaml .Values.webModeler.websockets.command | nindent 10 }}
           {{- end }}

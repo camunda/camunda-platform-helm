@@ -69,6 +69,15 @@ spec:
             {{- with .Values.zeebeGateway.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+          envFrom:
+          {{- if .Values.zeebeGateway.configMapRef }}
+            - configMapRef:
+                name: {{ .Values.zeebeGateway.configMapRef }}
+          {{- end }}
+          {{- if .Values.zeebeGateway.secretRef }}
+            - secretRef:
+                name: {{ .Values.zeebeGateway.secretRef }}
+          {{- end }}
           {{- if .Values.zeebeGateway.command}}
           command:
           {{- toYaml .Values.zeebeGateway.command | nindent 12 }}

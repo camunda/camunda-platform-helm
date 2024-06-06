@@ -67,6 +67,15 @@ spec:
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+          envFrom:
+          {{- if .Values.webModeler.restapi.configMapRef }}
+            - configMapRef:
+                name: {{ .Values.webModeler.restapi.configMapRef }}
+          {{- end }}
+          {{- if .Values.webModeler.restapi.secretRef }}
+            - secretRef:
+                name: {{ .Values.webModeler.restapi.secretRef }}
+          {{- end }}
           {{- if .Values.webModeler.restapi.command }}
           command: {{ toYaml .Values.webModeler.restapi.command | nindent 10 }}
           {{- end }}

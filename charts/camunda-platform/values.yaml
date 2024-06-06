@@ -353,6 +353,13 @@ console:
   ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
   configuration: ""
 
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param console.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param console.secretRef Reference to a Secret for environment variables
+  secretRef: ""
+
   ## console.image configuration to configure the Console image specifics
   image:
     ## @param console.image.registry can be used to set container image registry.
@@ -836,6 +843,13 @@ zeebe:
   ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
 
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param zeebe.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param zeebe.secretRef Reference to a Secret for environment variables
+  secretRef: ""
+
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
 #    #  #  #    #   #      #    #  #  #   # #
@@ -1130,6 +1144,13 @@ zeebeGateway:
   ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
 
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param zeebeGateway.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param zeebeGateway.secretRef Reference to a Secret for environment variables
+  secretRef: ""
+
 ################################################
  #####
 #     # #####  ###### #####    ##   ##### ######
@@ -1355,6 +1376,13 @@ operate:
   ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
 
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param operate.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param operate.secretRef Reference to a Secret for environment variables
+  secretRef: ""
+
 ##################################################
 #######
    #      ##    ####  #    # #      #  ####  #####
@@ -1577,6 +1605,13 @@ tasklist:
   configuration: ""
   ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
+
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param tasklist.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param tasklist.secretRef Reference to a Secret for environment variables
+  secretRef: ""
 
 #############################################
  #####
@@ -1815,6 +1850,13 @@ optimize:
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
   extraConfiguration: {}
 
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param optimize.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param optimize.secretRef Reference to a Secret for environment variables
+  secretRef: ""
+
 
 ############################################
 ###
@@ -1841,6 +1883,13 @@ identity:
   fullnameOverride: ""
   ## @param identity.nameOverride can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)
   nameOverride: ""
+
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param identity.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param identity.secretRef Reference to a Secret for environment variables
+  secretRef: ""
 
   ## @extra identity.firstUser configuration to configure properties of the first Identity user, which can be used to access all
   # web applications
@@ -2541,6 +2590,12 @@ webModeler:
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
 
+    ## @extra Configuration for envFrom to include configMaps and secrets
+    ## @param webModeler.restapi.configMapRef Reference to a ConfigMap for environment variables
+    configMapRef: ""
+
+    ## @param webModeler.restapi.secretRef Reference to a Secret for environment variables
+    secretRef: ""
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -2693,6 +2748,12 @@ webModeler:
     ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
 
+    ## @param webModeler.webapp.configMapRef Reference to a ConfigMap for environment variables
+    configMapRef: ""
+
+    ## @param webModeler.webapp.secretRef Reference to a Secret for environment variables
+    secretRef: ""
+
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
   #    # #      #    # #      #    # #    # #   #  #        #   #
@@ -2832,6 +2893,12 @@ webModeler:
     configuration: ""
     ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
+
+    ## @param webModeler.websockets.configMapRef Reference to a ConfigMap for environment variables
+    configMapRef: ""
+
+    ## @param webModeler.websockets.secretRef Reference to a Secret for environment variables
+    secretRef: ""
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
   serviceAccount:
@@ -2994,6 +3061,13 @@ connectors:
     auth:
       ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains Operate password (if inbound mode is credentials)
       existingSecret: ""
+
+  ## @extra Configuration for envFrom to include configMaps and secrets
+  ## @param connectors.configMapRef Reference to a ConfigMap for environment variables
+  configMapRef: ""
+
+  ## @param connectors.secretRef Reference to a Secret for environment variables
+  secretRef: ""
 
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags

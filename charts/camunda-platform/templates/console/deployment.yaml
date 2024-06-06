@@ -58,6 +58,15 @@ spec:
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
+          envFrom:
+          {{- if .Values.console.configMapRef }}
+            - configMapRef:
+                name: {{ .Values.console.configMapRef }}
+          {{- end }}
+          {{- if .Values.console.secretRef }}
+            - secretRef:
+                name: {{ .Values.console.secretRef }}
+          {{- end }}
           ports:
             - name: http
               containerPort: 8080
