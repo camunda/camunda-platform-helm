@@ -30,10 +30,13 @@ go.test: helm.dependency-update
 go.test-golden-updated: helm.dependency-update
 	@$(call go_test_run, go test ./... -args -update-golden)
 
+.PHONY: go.update-golden-only-lite
+go.update-golden-only-lite:
+	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
+
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only
-go.update-golden-only: helm.dependency-update
-	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
+go.update-golden-only: helm.dependency-update go.update-golden-only-lite
 
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt

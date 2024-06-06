@@ -1,6 +1,9 @@
 name: Renovate - Config Check
 
 on:
+  push:
+    paths:
+    - '.github/renovate.json5'
   pull_request:
     paths:
     - '.github/renovate.json5'

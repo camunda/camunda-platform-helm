@@ -8,7 +8,7 @@ global:
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.3.11
+    tag: 8.3.12
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -40,7 +40,7 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.3.7
+    tag: 8.3.8
 
 #
 # Elasticsearch
