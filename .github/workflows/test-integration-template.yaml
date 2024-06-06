@@ -57,7 +57,6 @@ env:
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_PERSISTENT: ${{ inputs.persistent }}
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
-  CI_CHART_DIR: ${{ inputs.camunda-helm-dir }}
   CI_SCENARIOS_DIR: charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
@@ -171,6 +170,7 @@ jobs:
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
         ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
     - name: Add Helm repos and dependencies

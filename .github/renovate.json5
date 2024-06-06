@@ -26,6 +26,13 @@
       // "automerge": true
     },
     {
+      "matchPaths": [
+        "charts/camunda-platform*/Chart.yaml",
+        "charts/camunda-platform*/values*.yaml"
+      ],
+      "matchUpdateTypes": ["patch"],
+    },
+    {
       // Disable major version update for all Helm components.
       "enabled": false,
       "matchManagers": ["helmv3", "helm-values", "regex"],

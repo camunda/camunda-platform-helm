@@ -14,6 +14,8 @@ inputs:
     description: The deployment cloud platform like GKE or ROSA.
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
+  chart-dir:
+    description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
   identifier:
@@ -82,8 +84,11 @@ runs:
 
       # Chart version.
       # Used to install previous supported versions of Camunda Helm charts.
-      TEST_CHART_VERSION="$(yq '.version' charts/${CI_CHART_DIR}/Chart.yaml)"
-      echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+      # This is only needed in the upgrade flow not the setup.
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        TEST_CHART_VERSION="$(yq '.version' charts/${{ inputs.chart-dir }}/Chart.yaml)"
+        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+      fi
 
     # Avoid confusion about the chart version since we only change the version during the release process
     # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
