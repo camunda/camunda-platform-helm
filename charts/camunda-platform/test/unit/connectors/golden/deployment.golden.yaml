@@ -51,6 +51,8 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
           ports:
             - containerPort: 8080
               name: http
@@ -107,3 +109,5 @@ spec:
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

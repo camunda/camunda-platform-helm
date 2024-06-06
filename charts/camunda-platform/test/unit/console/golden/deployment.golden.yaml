@@ -44,6 +44,8 @@ spec:
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: camunda-platform
           image: registry.camunda.cloud/console/console-sm:8.5.48
@@ -54,6 +56,8 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: NODE_ENV
               value: prod
