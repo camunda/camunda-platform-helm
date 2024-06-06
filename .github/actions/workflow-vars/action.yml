@@ -84,8 +84,11 @@ runs:
 
       # Chart version.
       # Used to install previous supported versions of Camunda Helm charts.
-      TEST_CHART_VERSION="$(yq '.version' charts/${{ inputs.chart-dir }}/Chart.yaml)"
-      echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+      # This is only needed in the upgrade flow not the setup.
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        TEST_CHART_VERSION="$(yq '.version' charts/${{ inputs.chart-dir }}/Chart.yaml)"
+        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+      fi
 
     # Avoid confusion about the chart version since we only change the version during the release process
     # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
