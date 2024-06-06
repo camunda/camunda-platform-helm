@@ -35,6 +35,12 @@ identity:
         repository: bitnami/postgresql
         tag: 15.5.0
 
+operate:
+  # https://hub.docker.com/r/camunda/operate/tags
+  image:
+    # renovate: datasource=docker depName=camunda/operate
+    tag: 8.4.9
+
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
@@ -47,7 +53,7 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.4.5
+    tag: 8.4.6
 
 #
 # Elasticsearch

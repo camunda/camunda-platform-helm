@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.7"
+    app.kubernetes.io/version: "8.4.8"
     app.kubernetes.io/component: console
 data:
   application.yaml: |-
@@ -36,13 +36,13 @@ data:
               url: http:///auth
             - name: Identity
               id: identity
-              version: 8.4.7
+              version: 8.4.8
               url: 
               readiness: http://camunda-platform-test.camunda-platform:82/actuator/health
               metrics: http://camunda-platform-test.camunda-platform:82/actuator/prometheus
             - name: Operate
               id: operate
-              version: 8.4.8
+              version: 8.4.9
               url: 
               readiness: http://camunda-platform-test-operate.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
@@ -54,18 +54,18 @@ data:
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
             - name: Tasklist
               id: tasklist
-              version: 8.4.7
+              version: 8.4.8
               url: 
               readiness: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/health/readiness
               metrics: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/prometheus
             - name: Zeebe Gateway
               id: zeebeGateway
-              version: 8.4.7
+              version: 8.4.8
               url: grpc://
               readiness: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/prometheus
             - name: Zeebe
               id: zeebe
-              version: 8.4.7
+              version: 8.4.8
               readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus

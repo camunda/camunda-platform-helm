@@ -30,10 +30,13 @@ go.test: helm.dependency-update
 go.test-golden-updated: helm.dependency-update
 	@$(call go_test_run, go test ./... -args -update-golden)
 
+.PHONY: go.update-golden-only-lite
+go.update-golden-only-lite:
+	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
+
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only
-go.update-golden-only: helm.dependency-update
-	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
+go.update-golden-only: helm.dependency-update go.update-golden-only-lite
 
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt
@@ -142,9 +145,13 @@ helm.template: helm.dependency-update
 # helm.readme-update: generate readme from values file
 .PHONY: helm.readme-update
 helm.readme-update:
-	readme-generator \
-		--values "$(chartPath)/values.yaml" \
-		--readme "$(chartPath)/README.md"
+	for chart_dir in $(chartPath); do\
+		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
+		echo "\nChart dir: $${chart_dir}";\
+		readme-generator \
+			--values "$${chart_dir}/values.yaml" \
+			--readme "$${chart_dir}/README.md";\
+	done
 
 #########################################################
 ######### Release

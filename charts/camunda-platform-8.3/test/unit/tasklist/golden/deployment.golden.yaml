@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.3.11"
+    app.kubernetes.io/version: "8.3.12"
     app.kubernetes.io/component: tasklist
   annotations:
     {}
@@ -32,10 +32,10 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.3.11"
+        app.kubernetes.io/version: "8.3.12"
         app.kubernetes.io/component: tasklist
       annotations:
-        checksum/config: 78bb24d9d639ade4afc4c8c265d6e6f4de351956bc388e09d97f0bec893e6486
+        checksum/config: 03c5340155f4923f819495fa345f4ca73b6b85caeb40444e4c9df530c1006703
     spec:
       imagePullSecrets:
         []
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: tasklist
-          image: camunda/tasklist:8.3.11
+          image: camunda/tasklist:8.3.12
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

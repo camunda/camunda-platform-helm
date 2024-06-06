@@ -21,14 +21,22 @@
   },
   "packageRules": [
     {
+      "matchFileNames": [
+        ".github/workflows/*.ya?ml",
+        ".github/actions/action.ya?ml",
+        "charts/camunda-platform/Chart.yaml",
+        "charts/camunda-platform/values*.yaml",
+        "charts/camunda-platform/go.*"
+      ],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       // "addLabels": ["automerge"],
       // "automerge": true
     },
     {
-      "matchPaths": [
+      "matchFileNames": [
         "charts/camunda-platform*/Chart.yaml",
-        "charts/camunda-platform*/values*.yaml"
+        "charts/camunda-platform*/values*.yaml",
+        "charts/camunda-platform*/go.*",
       ],
       "matchUpdateTypes": ["patch"],
     },
@@ -42,7 +50,9 @@
       // Disable minor version update for previous Camunda releases which will only get patch updates.
       "enabled": false,
       "matchManagers": ["helm-values", "regex"],
-      "matchPaths": ["**/values/values-v8.*.yaml"],
+      "matchPaths": [
+        "charts/camunda-platform*/values*.yaml",
+      ],
       "matchUpdateTypes": ["minor"]
     },
     {

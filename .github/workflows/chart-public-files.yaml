@@ -35,7 +35,7 @@ jobs:
           mkdir -p camunda-platform/values camunda-platform/version-matrix
 
           # Latest version.
-          cp -a main/charts/camunda-platform/values/values-latest.yaml camunda-platform/values/values-latest.yaml
+          cp -a main/charts/camunda-platform/values-latest.yaml camunda-platform/values/values-latest.yaml
 
           # Previous versions.
           find charts -name "camunda-platform-*" | while read chart_id; do
