@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ tpl .Values.global.zeebeClusterName . }}-test-connection"
+  labels: {{ include "zeebe.labels.broker" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['{{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.service.httpPort }}']
+  restartPolicy: Never

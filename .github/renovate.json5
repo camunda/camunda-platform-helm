@@ -21,9 +21,24 @@
   },
   "packageRules": [
     {
+      "matchFileNames": [
+        ".github/workflows/*.ya?ml",
+        ".github/actions/action.ya?ml",
+        "charts/camunda-platform/Chart.yaml",
+        "charts/camunda-platform/values*.yaml",
+        "charts/camunda-platform/go.*"
+      ],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "addLabels": ["automerge"],
-      "automerge": true
+      // "addLabels": ["automerge"],
+      // "automerge": true
+    },
+    {
+      "matchFileNames": [
+        "charts/camunda-platform*/Chart.yaml",
+        "charts/camunda-platform*/values*.yaml",
+        "charts/camunda-platform*/go.*",
+      ],
+      "matchUpdateTypes": ["patch"],
     },
     {
       // Disable major version update for all Helm components.
@@ -35,33 +50,35 @@
       // Disable minor version update for previous Camunda releases which will only get patch updates.
       "enabled": false,
       "matchManagers": ["helm-values", "regex"],
-      "matchPaths": ["**/values/values-v8.*.yaml"],
+      "matchPaths": [
+        "charts/camunda-platform*/values*.yaml",
+      ],
       "matchUpdateTypes": ["minor"]
     },
     {
       // Enable non-major version update for current Camunda version.
       "matchDatasources": ["github-releases", "docker", "regex"],
-      "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
+      "matchPaths": ["charts/camunda-platform/values.yaml", "charts/camunda-platform/values-latest.yaml"],
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
       // Enable patch version update for previous Camunda version.
       "matchDatasources": ["github-releases", "docker", "regex"],
-      "matchPaths": ["**/values/values-v8.*.yaml"],
+      "matchPaths": ["charts/camunda-platform-*/values.yaml", "charts/camunda-platform-*/values-latest.yaml"],
       "matchUpdateTypes": ["patch"]
     },
     {
       // Limit Elasticsearch version to latest supported version in Camunda v8.5.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
-      "matchPaths": ["**/values.yaml", "**/values/values-latest.yaml"],
+      "matchPaths": ["charts/camunda-platform/values.yaml", "charts/camunda-platform/values-latest.yaml"],
       "matchDepNames": ["bitnami/elasticsearch"],
       "allowedVersions": "~8.12.0"
     },
     {
-      // Disable helm chart upgrades from bitnami/elasticsearch
+      // Disable Helm chart upgrades from bitnami/elasticsearch
       "matchDepNames": ["elasticsearch"],
-      "matchPaths": ["charts/camunda-platform/Chart.yaml"],
+      "matchPaths": ["charts/camunda-platform*/Chart.yaml"],
       "enabled": false
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.

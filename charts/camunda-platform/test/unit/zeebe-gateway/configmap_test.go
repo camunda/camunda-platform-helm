@@ -15,13 +15,14 @@
 package gateway
 
 import (
-	"camunda-platform-helm/charts/camunda-platform/test/unit/camunda"
-	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
-	"github.com/gruntwork-io/terratest/modules/k8s"
-	corev1 "k8s.io/api/core/v1"
+	"camunda-platform/test/unit/camunda"
+	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"

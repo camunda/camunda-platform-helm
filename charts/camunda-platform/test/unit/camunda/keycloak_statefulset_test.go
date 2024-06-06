@@ -21,7 +21,7 @@
 package camunda
 
 import (
-	"camunda-platform-helm/charts/camunda-platform/test/unit/utils"
+	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"testing"
 

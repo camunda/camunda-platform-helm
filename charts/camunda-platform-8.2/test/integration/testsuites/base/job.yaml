@@ -1,0 +1,94 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-venom
+  labels:
+    app: venom
+    test: integration
+spec:
+  template:
+    metadata:
+      labels:
+        app: venom
+        test: integration
+    spec:
+      imagePullSecrets: []
+      initContainers:
+      - name: download-tools
+        image: alpine
+        command:
+        - sh
+        - -c
+        # TODO: Check if we can use asdf here to unify and simplify tools management.
+        - |
+          echo "Downloading additional tools";
+          wget https://github.com/camunda/zeebe/releases/download/8.2.4/zbctl -O /tools/zbctl
+          chmod +x /tools/zbctl
+          echo Finished downloading;
+        volumeMounts:
+        - mountPath: /tools
+          name: tools
+      containers:
+      - name: venom
+        image: ovhcom/venom:latest
+        command:
+        - sh
+        - -c
+        - |
+          # NOTE: That loop will be replaced once we use Testkube.
+          try=0
+          limit=3
+          delay=30s
+
+          until [ ${try} -ge ${limit} ]; do
+            try=$((try + 1))
+            echo "[INFO] Venom exec no. ${try}..."
+            /usr/local/venom run ./tests/${VENOM_TESTSUITE_FILES:-*.yaml} \
+              ${VENOM_EXTRA_ARGS:- --var-from-file=./vars/variables-default.yaml}
+            exit_code=$?
+            test ${exit_code} == 0 && break
+            sleep ${delay}
+          done
+
+          if [[ ${exit_code} != 0 ]]; then
+            cat ./results/venom.log
+            exit 1
+          fi
+        env:
+        - name: IS_TTY
+          value: "true"
+        # Used to access get token from Keycloak to access Camunda APIs.
+        - name: VENOM_VAR_TEST_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test
+              key: client-secret
+              # Making it optional for debugging Venom where is no Camunda Platform is deployed.
+              optional: true
+        envFrom:
+        - configMapRef:
+            name: venom-env-vars
+        volumeMounts:
+        - mountPath: /usr/local/bin/zbctl
+          name: tools
+          subPath: zbctl
+        - name: venom-tests
+          mountPath: /workdir/tests
+        - name: venom-vars
+          mountPath: /workdir/vars
+        - name: venom-fixtures
+          mountPath: /mnt/fixtures
+      volumes:
+      - name: tools
+        emptyDir: {}
+      - name: venom-tests
+        configMap:
+          name: venom-tests
+      - name: venom-vars
+        configMap:
+          name: venom-vars
+      - name: venom-fixtures
+        configMap:
+          name: venom-fixtures
+      restartPolicy: Never
+  backoffLimit: 0

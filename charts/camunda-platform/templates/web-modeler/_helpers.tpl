@@ -237,9 +237,9 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.restapi.smtpSecretName" -}}
   {{- if or (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.smtpPassword }} 
       {{- (include "webModeler.restapi.fullname" .) }}
-    {{- else if and (typeIs "map[string]interface {}" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.existingSecret.name }}
+  {{- else if and (typeIs "map[string]interface {}" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.existingSecret.name }}
       {{- .Values.webModeler.restapi.mail.existingSecret.name }}
-    {{- end }}
+  {{- end }}
 {{- end -}}
 
 {{/*

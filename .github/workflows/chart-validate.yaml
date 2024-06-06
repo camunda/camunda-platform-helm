@@ -7,7 +7,7 @@ on:
     paths:
       - '.github/**'
       - '.tool-versions'
-      - 'charts/**'
+      - 'charts/camunda-platform*/**'
 
 permissions:
   contents: read
@@ -32,29 +32,34 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git fetch origin main
       - name: Install Helm
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Add helm repos
         run: |
           make helm.repos-add
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
       - name: Get Helm dependency
         run: |
-          make helm.dependency-update
+          for chart_dir in $(ct --config .github/config/chart-testing.yaml list-changed); do
+              chartPath="${chart_dir}" make helm.dependency-update
+          done
       - name: Run Helm lint 
         run: |
-          helm lint --strict charts/*
+          for chart_dir in $(ct --config .github/config/chart-testing.yaml list-changed); do
+              chartPath="${chart_dir}" make helm.lint
+          done
       - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5
         with:
           python-version: 3.7
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
       - name: Don't check version increment if there is no release label
         if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
         run: |
           echo "check-version-increment: false" >> .github/config/chart-testing.yaml
       - name: Run chart testing and lint
-      #check to see if this works:
-        run: ct lint --config .github/config/chart-testing.yaml
+        run: |
+          ct lint --config .github/config/chart-testing.yaml
       - name: Lint YAML Files
         run: |
           yamllint -c .github/config/yamllint.yaml ./charts/camunda-platform/test/unit

@@ -62,6 +62,7 @@ tasks:
     deps: [init.seed]
     cmds:
     - helm install integration {{ .TEST_CHART_NAME }}
+        --version {{ .TEST_CHART_VERSION | default ">0.0.0" | quote }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .FIXTURES_DIR }}/values-integration-test.yaml
         --values ./values-integration-test-ingress.yaml

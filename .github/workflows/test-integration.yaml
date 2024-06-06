@@ -8,7 +8,7 @@ on:
     - '.github/actions/gke-login/**'
     - '.github/actions/workflow-vars/**'
     - '.tool-versions'
-    - 'charts/**'
+    - 'charts/camunda-platform/**'
     types: [opened, closed, reopened, synchronize]
 
 permissions:

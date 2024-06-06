@@ -29,3 +29,7 @@ test/
 
 # Values for previous versions
 values/
+
+# Go.
+go.mod
+go.sum

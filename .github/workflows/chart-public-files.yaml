@@ -7,7 +7,7 @@ on:
     branches:
     - main
     paths:
-    - 'charts/camunda-platform/values/*.yaml'
+    - 'charts/camunda-platform/values*.yaml'
     - 'charts/camunda-platform/version-matrix/**'
     - 'scripts/templates/version-matrix/*'
   workflow_dispatch: { }
@@ -30,9 +30,26 @@ jobs:
           path: main
       - name: Copy files
         run: |
+          #
+          # Values files.
           mkdir -p camunda-platform/values camunda-platform/version-matrix
-          cp -a main/charts/camunda-platform/values/*.yaml camunda-platform/values/
+
+          # Latest version.
+          cp -a main/charts/camunda-platform/values-latest.yaml camunda-platform/values/values-latest.yaml
+
+          # Previous versions.
+          find charts -name "camunda-platform-*" | while read chart_id; do
+              camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              echo "cp -a main/${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml";
+          done
+
+          #
+          # Version matrix.
+          mkdir -p camunda-platform/values camunda-platform/version-matrix
           cp -a main/charts/camunda-platform/version-matrix/* camunda-platform/version-matrix/
+
+          #
+          # Post run.            
           rm -rf main
           find .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
