@@ -553,7 +553,7 @@ console:
     runAsUser: 1001
     ## @extra console.containerSecurityContext.seccompProfile
     seccompProfile:
-    ## @param console.containerSecurityContext.seccompProfile.type 
+    ## @param console.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
@@ -951,7 +951,7 @@ zeebeGateway:
     runAsUser: 1001
     ## @extra zeebeGateway.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param zeebeGateway.containerSecurityContext.seccompProfile.type 
+      ## @param zeebeGateway.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra zeebeGateway.startupProbe configuration
@@ -1300,7 +1300,7 @@ operate:
     runAsUser: 1001
     ## @extra operate.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param operate.containerSecurityContext.seccompProfile.type 
+      ## @param operate.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra operate.startupProbe configuration
@@ -1492,7 +1492,7 @@ tasklist:
     runAsUser: 1001
     ## @extra tasklist.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param tasklist.containerSecurityContext.seccompProfile.type 
+      ## @param tasklist.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra tasklist.startupProbe configuration
@@ -1743,7 +1743,7 @@ optimize:
     runAsUser: 1001
     ## @extra optimize.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param optimize.containerSecurityContext.seccompProfile.type 
+      ## @param optimize.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra optimize.startupProbe configuration
@@ -1977,7 +1977,7 @@ identity:
     runAsUser: 1001
     ## @extra identity.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param identity.containerSecurityContext.seccompProfile.type 
+      ## @param identity.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra identity.startupProbe configuration
