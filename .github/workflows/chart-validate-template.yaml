@@ -7,13 +7,13 @@ on:
         description: The unique identifier of the workflow run.
         required: true
         type: string
-      camunda-helm-dir:
-        required: false
-        default: camunda-platform
-        type: string
       camunda-helm-git-ref:
         required: false
         default: main
+        type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform
         type: string
 
 permissions:

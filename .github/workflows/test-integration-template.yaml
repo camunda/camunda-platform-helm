@@ -47,6 +47,8 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}
@@ -65,9 +67,6 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
-
-permissions:
-  contents: read
 
 jobs:
   test:

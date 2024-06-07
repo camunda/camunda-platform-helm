@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   init:
-    name: Get changed charts
+    name: Generate chart matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
     - name: Generate chart versions
       id: generate-chart-versions
-      uses: ./.github/actions/generate-regression-matrix
+      uses: ./.github/actions/generate-chart-matrix
 
   validation:
     if: ${{ needs.init.outputs.matrix != '' }}
@@ -43,32 +43,46 @@ jobs:
         version: ${{ fromJson(needs.init.outputs.matrix) }}
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-validate"
+      identifier: "${{ github.event.pull_request.number }}-${{ matrix.version }}-validate"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  integration:
+  unit:
     if: ${{ needs.init.outputs.matrix != '' }}
-    name: Camunda ${{ matrix.version }} - Integration
+    name: Camunda ${{ matrix.version }} - Unit Test
     needs: [init, validation]
     strategy:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs.init.outputs.matrix) }}
-    permissions:
-      contents: read
-      id-token: write
-      deployments: write
-    secrets: inherit
-    uses: ./.github/workflows/test-integration-template.yaml
+    uses: ./.github/workflows/test-unit-template.yml
     with:
-      identifier: "${{ github.event.pull_request.number }}-reg"
-      persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
-      platforms: "gke"
-      # TODO: Add upgrade flow.
-      flows: "install"
+      identifier: "${{ github.event.pull_request.number }}-${{ matrix.version }}-unit"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  # integration:
+  #   if: ${{ needs.init.outputs.matrix != '' }}
+  #   name: Camunda ${{ matrix.version }} - Integration Test
+  #   needs: [init, validation, unit]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       version: ${{ fromJson(needs.init.outputs.matrix) }}
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #     deployments: write
+  #   secrets: inherit
+  #   uses: ./.github/workflows/test-integration-template.yaml
+  #   with:
+  #     identifier: "${{ github.event.pull_request.number }}-reg"
+  #     persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
+  #     platforms: "gke"
+  #     # TODO: Add upgrade flow.
+  #     flows: "install"
+  #     camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   # test:
   #   name: Previous chart v${{ matrix.camundaChart }}.x

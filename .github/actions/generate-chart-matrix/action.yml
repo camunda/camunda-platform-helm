@@ -1,4 +1,4 @@
-name: Generate regression matrix
+name: Generate chart matrix
 description: Find changed charts and generate matrix for changed ones only.
 outputs:
   matrix:
