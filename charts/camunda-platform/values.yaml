@@ -534,7 +534,7 @@ console:
     runAsNonRoot: true
     ## @param console.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param console.podSecurityContext.seccompProfile
+    ## @extra console.podSecurityContext.seccompProfile
     seccompProfile:
     ## @param console.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -551,7 +551,7 @@ console:
     runAsNonRoot: true
     ## @param console.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param console.containerSecurityContext.seccompProfile 
+    ## @extra console.containerSecurityContext.seccompProfile
     seccompProfile:
     ## @param console.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
@@ -728,7 +728,7 @@ zeebe:
     runAsNonRoot: true
     ## @param zeebe.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param zeebe.podSecurityContext.seccompProfile
+    ## @extra zeebe.podSecurityContext.seccompProfile
     seccompProfile:
       ## @param zeebe.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -745,7 +745,7 @@ zeebe:
     runAsNonRoot: true
     ## @param zeebe.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param zeebe.containerSecurityContext.seccompProfile 
+    ## @extra zeebe.containerSecurityContext.seccompProfile
     seccompProfile:
     ## @param zeebe.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -932,7 +932,7 @@ zeebeGateway:
     runAsNonRoot: true
     ## @param zeebeGateway.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param zeebeGateway.podSecurityContext.seccompProfile
+    ## @extra zeebeGateway.podSecurityContext.seccompProfile
     seccompProfile:
     ## @param zeebeGateway.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -949,7 +949,7 @@ zeebeGateway:
     runAsNonRoot: true
     ## @param zeebeGateway.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param zeebeGateway.containerSecurityContext.seccompProfile 
+    ## @extra zeebeGateway.containerSecurityContext.seccompProfile
     seccompProfile:
       ## @param zeebeGateway.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
@@ -1281,7 +1281,7 @@ operate:
     runAsNonRoot: true
     ## @param operate.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param operate.podSecurityContext.seccompProfile
+    ## @extra operate.podSecurityContext.seccompProfile
     seccompProfile:
       ## @param operate.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -1298,7 +1298,7 @@ operate:
     runAsNonRoot: true
     ## @param operate.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param operate.containerSecurityContext.seccompProfile 
+    ## @extra operate.containerSecurityContext.seccompProfile
     seccompProfile:
       ## @param operate.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
@@ -1473,7 +1473,7 @@ tasklist:
     runAsNonRoot: true
     ## @param tasklist.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param tasklist.podSecurityContext.seccompProfile
+    ## @extra tasklist.podSecurityContext.seccompProfile
     seccompProfile:
       ## @param tasklist.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -1490,7 +1490,7 @@ tasklist:
     runAsNonRoot: true
     ## @param tasklist.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param tasklist.containerSecurityContext.seccompProfile 
+    ## @extra tasklist.containerSecurityContext.seccompProfile
     seccompProfile:
       ## @param tasklist.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
@@ -1724,7 +1724,7 @@ optimize:
     runAsNonRoot: true
     ## @param optimize.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param optimize.podSecurityContext.seccompProfile
+    ## @extra optimize.podSecurityContext.seccompProfile
     seccompProfile:
       ## @param optimize.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -1741,7 +1741,7 @@ optimize:
     runAsNonRoot: true
     ## @param optimize.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param optimize.containerSecurityContext.seccompProfile 
+    ## @extra optimize.containerSecurityContext.seccompProfile
     seccompProfile:
       ## @param optimize.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
@@ -1958,7 +1958,7 @@ identity:
     runAsNonRoot: true
     ## @param identity.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param identity.podSecurityContext.seccompProfile
+    ## @extra identity.podSecurityContext.seccompProfile
     seccompProfile:
       ## @param identity.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -1975,7 +1975,7 @@ identity:
     runAsNonRoot: true
     ## @param identity.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param identity.containerSecurityContext.seccompProfile 
+    ## @extra identity.containerSecurityContext.seccompProfile
     seccompProfile:
       ## @param identity.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
@@ -2486,7 +2486,7 @@ webModeler:
       ## @param webModeler.restapi.podSecurityContext.fsGroup
       runAsNonRoot: true
       fsGroup: 1001
-      ## @param webModeler.restapi.podSecurityContext.seccompProfile
+      ## @extra webModeler.restapi.podSecurityContext.seccompProfile
       seccompProfile:
       ## @param webModeler.restapi.podSecurityContext.seccompProfile.type
         type: RuntimeDefault
@@ -2502,7 +2502,7 @@ webModeler:
       readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1001
-      ## @param webModeler.restapi.containerSecurityContext.seccompProfile 
+      ## @extra webModeler.restapi.containerSecurityContext.seccompProfile
       seccompProfile:
       ## @param webModeler.restapi.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
@@ -2646,7 +2646,7 @@ webModeler:
     podSecurityContext:
       runAsNonRoot: true
       fsGroup: 1001
-      ## @param webModeler.webapp.podSecurityContext.seccompProfile
+      ## @extra webModeler.webapp.podSecurityContext.seccompProfile
       seccompProfile:
         ## @param webModeler.webapp.podSecurityContext.seccompProfile.type
         type: RuntimeDefault
@@ -2662,7 +2662,7 @@ webModeler:
       readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1001
-      ## @param webModeler.webapp.containerSecurityContext.seccompProfile 
+      ## @extra webModeler.webapp.containerSecurityContext.seccompProfile
       seccompProfile:
         ## @param webModeler.webapp.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
@@ -2814,7 +2814,7 @@ webModeler:
     podSecurityContext:
       runAsNonRoot: true
       fsGroup: 1001
-      ## @param webModeler.websockets.podSecurityContext.seccompProfile
+      ## @extra webModeler.websockets.podSecurityContext.seccompProfile
       seccompProfile:
         ## @param webModeler.websockets.podSecurityContext.seccompProfile.type
         type: RuntimeDefault
@@ -2830,7 +2830,7 @@ webModeler:
       readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1001
-      ## @param webModeler.websockets.containerSecurityContext.seccompProfile 
+      ## @extra webModeler.websockets.containerSecurityContext.seccompProfile
       seccompProfile:
         ## @param webModeler.websockets.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
@@ -3251,7 +3251,7 @@ connectors:
     runAsNonRoot: true
     ## @param connectors.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param connectors.podSecurityContext.seccompProfile
+    ## @extra connectors.podSecurityContext.seccompProfile
     seccompProfile:
       ## @param connectors.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
@@ -3268,7 +3268,7 @@ connectors:
     readOnlyRootFilesystem: true
     runAsNonRoot: true
     runAsUser: 1001
-    ## @param connectors.containerSecurityContext.seccompProfile 
+    ## @extra connectors.containerSecurityContext.seccompProfile
     seccompProfile:
       ## @param connectors.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
