@@ -69,7 +69,7 @@ spec:
             {{- end }}
           {{- if .Values.webModeler.restapi.envFrom }}
           envFrom:
-            {{ .Values.webModeler.restapi.envFrom | toYaml | nindent 12 }}
+            {{- .Values.webModeler.restapi.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.restapi.command }}
           command: {{ toYaml .Values.webModeler.restapi.command | nindent 10 }}

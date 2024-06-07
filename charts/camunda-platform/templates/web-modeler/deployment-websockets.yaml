@@ -61,7 +61,7 @@ spec:
           {{- end }}
           {{- if .Values.webModeler.websockets.envFrom }}
           envFrom:
-            {{ .Values.webModeler.websockets.envFrom | toYaml | nindent 12 }}
+            {{- .Values.webModeler.websockets.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.websockets.command}}
           command: {{ toYaml .Values.webModeler.websockets.command | nindent 10 }}

@@ -61,7 +61,7 @@ spec:
             {{- end }}
           {{- if .Values.webModeler.webapp.envFrom }}
           envFrom:
-            {{ .Values.webModeler.webapp.envFrom | toYaml | nindent 12 }}
+            {{- .Values.webModeler.webapp.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.webapp.command }}
           command: {{ toYaml .Values.webModeler.webapp.command | nindent 10 }}

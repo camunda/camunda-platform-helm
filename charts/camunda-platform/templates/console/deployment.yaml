@@ -60,7 +60,7 @@ spec:
           {{- end }}
           {{- if .Values.console.envFrom }}
           envFrom:
-            {{ .Values.console.envFrom | toYaml | nindent 12 }}
+            {{- .Values.console.envFrom | toYaml | nindent 12 }}
           {{- end }}
           ports:
             - name: http
