@@ -71,7 +71,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret" }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
+    {{ if and (.Values.global.identity.auth.enabled) (ne (upper .Values.global.identity.auth.type) "KEYCLOAK") (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret" }}
     {{- end }}
 
@@ -115,8 +115,9 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.mail.existingSecret" }}
     {{- end }}
 
-    {{- if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "warning" }}
-      {{- $errorMessage := (printf "%s"
+    {{- if $existingSecretsNotConfigured }}
+      {{- if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "warning" }}
+        {{- $errorMessage := (printf "%s"
       `
 [camunda][warning]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
@@ -145,14 +146,14 @@ data:
 
 The following values inside your values.yaml need to be set but were not:
       `
-        )
-      -}}
-      {{- range $existingSecretsNotConfigured }}
-        {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
-      {{- end }}
-      {{- printf "\n%s" $errorMessage | trimSuffix "\n" }}
-    {{- else if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "error" }}
-      {{- $errorMessage := (printf "%s"
+          )
+        -}}
+        {{- range $existingSecretsNotConfigured }}
+          {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
+        {{- end }}
+        {{- printf "\n%s" $errorMessage | trimSuffix "\n" }}
+      {{- else if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "error" }}
+        {{- $errorMessage := (printf "%s"
       `
 [camunda][error]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
@@ -180,12 +181,13 @@ data:
 
 The following values inside your values.yaml need to be set but were not:
       `
-        )
-      -}}
-      {{- range $existingSecretsNotConfigured }}
-        {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
+          )
+        -}}
+        {{- range $existingSecretsNotConfigured }}
+          {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
+        {{- end }}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
       {{- end }}
-      {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
     {{- end }}
   {{- end }}
 {{- end }}
