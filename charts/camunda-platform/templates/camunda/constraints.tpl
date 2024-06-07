@@ -68,31 +68,31 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
     {{- $existingSecretsNotConfigured := list }}
 
     {{ if and (.Values.global.identity.auth.enabled) (.Values.connectors.enabled) (not .Values.global.identity.auth.connectors.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.global.identity.auth.enabled) (ne (upper .Values.global.identity.auth.type) "KEYCLOAK") (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.global.identity.auth.enabled) (.Values.operate.enabled) (not .Values.global.identity.auth.operate.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.operate.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.operate.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.global.identity.auth.enabled) (.Values.tasklist.enabled) (not .Values.global.identity.auth.tasklist.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.tasklist.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.tasklist.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.global.identity.auth.enabled) (.Values.tasklist.enabled) (not .Values.global.identity.auth.optimize.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.optimize.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.optimize.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.global.identity.auth.enabled) (.Values.console.enabled) (not .Values.global.identity.auth.console.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.console.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.console.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.global.identity.auth.enabled) (.Values.zeebe.enabled) (not .Values.global.identity.auth.zeebe.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.zeebe.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.zeebe.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.identityKeycloak.enabled) (not .Values.identityKeycloak.auth.existingSecret) }}
@@ -112,7 +112,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
     {{- end }}
 
     {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.mail.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.mail.existingSecret" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.mail.existingSecret.name" }}
     {{- end }}
 
     {{- if $existingSecretsNotConfigured }}
@@ -151,6 +151,7 @@ The following values inside your values.yaml need to be set but were not:
         {{- range $existingSecretsNotConfigured }}
           {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
         {{- end }}
+        {{- $errorMessage = (cat $errorMessage "\n\n" "Please be aware that each of the above parameters expect a string name of a kubernetes Secret.\n") }}
         {{- printf "\n%s" $errorMessage | trimSuffix "\n" }}
       {{- else if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "error" }}
         {{- $errorMessage := (printf "%s"
@@ -186,6 +187,7 @@ The following values inside your values.yaml need to be set but were not:
         {{- range $existingSecretsNotConfigured }}
           {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
         {{- end }}
+        {{- $errorMessage = (cat $errorMessage "\n\n" "Please be aware that each of the above parameters expect a string name of a kubernetes Secret.\n") }}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
       {{- end }}
     {{- end }}
