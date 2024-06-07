@@ -534,8 +534,9 @@ console:
     runAsNonRoot: true
     ## @param console.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param console.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param console.podSecurityContext.seccompProfile
     seccompProfile:
+    ## @param console.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   # ContainerSecurityContext defines the security options the Console broker container should be run with
@@ -550,8 +551,9 @@ console:
     runAsNonRoot: true
     ## @param console.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param console.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param console.containerSecurityContext.seccompProfile 
     seccompProfile:
+    ## @param console.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
 
   ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
@@ -726,8 +728,9 @@ zeebe:
     runAsNonRoot: true
     ## @param zeebe.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param zeebe.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param zeebe.podSecurityContext.seccompProfile
     seccompProfile:
+      ## @param zeebe.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra zeebe.containerSecurityContext defines the security options the Zeebe broker container should be run with
@@ -742,8 +745,9 @@ zeebe:
     runAsNonRoot: true
     ## @param zeebe.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param zeebe.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param zeebe.containerSecurityContext.seccompProfile 
     seccompProfile:
+    ## @param zeebe.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra zeebe.startupProbe configuration
@@ -928,8 +932,9 @@ zeebeGateway:
     runAsNonRoot: true
     ## @param zeebeGateway.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param zeebeGateway.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param zeebeGateway.podSecurityContext.seccompProfile
     seccompProfile:
+    ## @param zeebeGateway.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra zeebeGateway.containerSecurityContext defines the security options the gateway container should be run with
@@ -944,8 +949,9 @@ zeebeGateway:
     runAsNonRoot: true
     ## @param zeebeGateway.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param zeebeGateway.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param zeebeGateway.containerSecurityContext.seccompProfile 
     seccompProfile:
+      ## @param zeebeGateway.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
 
   ## @extra zeebeGateway.startupProbe configuration
@@ -1275,8 +1281,9 @@ operate:
     runAsNonRoot: true
     ## @param operate.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param operate.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param operate.podSecurityContext.seccompProfile
     seccompProfile:
+      ## @param operate.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra operate.containerSecurityContext defines the security options the Operate container should be run with
@@ -1291,8 +1298,9 @@ operate:
     runAsNonRoot: true
     ## @param operate.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param operate.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param operate.containerSecurityContext.seccompProfile 
     seccompProfile:
+      ## @param operate.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
 
   ## @extra operate.startupProbe configuration
@@ -1465,8 +1473,9 @@ tasklist:
     runAsNonRoot: true
     ## @param tasklist.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param tasklist.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param tasklist.podSecurityContext.seccompProfile
     seccompProfile:
+      ## @param tasklist.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra tasklist.containerSecurityContext defines the security options the Tasklist container should be run with
@@ -1481,8 +1490,9 @@ tasklist:
     runAsNonRoot: true
     ## @param tasklist.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param tasklist.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param tasklist.containerSecurityContext.seccompProfile 
     seccompProfile:
+      ## @param tasklist.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
 
   ## @extra tasklist.startupProbe configuration
@@ -1714,8 +1724,9 @@ optimize:
     runAsNonRoot: true
     ## @param optimize.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param optimize.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param optimize.podSecurityContext.seccompProfile
     seccompProfile:
+      ## @param optimize.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra optimize.containerSecurityContext defines the security options the Optimize container should be run with
@@ -1730,8 +1741,9 @@ optimize:
     runAsNonRoot: true
     ## @param optimize.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param optimize.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param optimize.containerSecurityContext.seccompProfile 
     seccompProfile:
+      ## @param optimize.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
 
   ## @extra optimize.startupProbe configuration
@@ -1946,8 +1958,9 @@ identity:
     runAsNonRoot: true
     ## @param identity.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param identity.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param identity.podSecurityContext.seccompProfile
     seccompProfile:
+      ## @param identity.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra identity.containerSecurityContext defines the security options the Identity container should be run with
@@ -1962,8 +1975,9 @@ identity:
     runAsNonRoot: true
     ## @param identity.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @param identity.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param identity.containerSecurityContext.seccompProfile 
     seccompProfile:
+      ## @param identity.containerSecurityContext.seccompProfile.type 
       type: RuntimeDefault
 
   ## @extra identity.startupProbe configuration
@@ -2472,8 +2486,9 @@ webModeler:
       ## @param webModeler.restapi.podSecurityContext.fsGroup
       runAsNonRoot: true
       fsGroup: 1001
-      ## @param webModeler.restapi.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+      ## @param webModeler.restapi.podSecurityContext.seccompProfile
       seccompProfile:
+      ## @param webModeler.restapi.podSecurityContext.seccompProfile.type
         type: RuntimeDefault
     ## @extra webModeler.restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
     ## @param webModeler.restapi.containerSecurityContext.privileged
@@ -2487,8 +2502,9 @@ webModeler:
       readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1001
-      ## @param webModeler.restapi.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+      ## @param webModeler.restapi.containerSecurityContext.seccompProfile 
       seccompProfile:
+      ## @param webModeler.restapi.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
 
     ## @extra webModeler.restapi.startupProbe configuration of the restapi startup probe
@@ -2630,8 +2646,9 @@ webModeler:
     podSecurityContext:
       runAsNonRoot: true
       fsGroup: 1001
-      ## @param webModeler.webapp.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+      ## @param webModeler.webapp.podSecurityContext.seccompProfile
       seccompProfile:
+        ## @param webModeler.webapp.podSecurityContext.seccompProfile.type
         type: RuntimeDefault
     ## @extra webModeler.webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
     ## @param webModeler.webapp.containerSecurityContext.privileged
@@ -2645,8 +2662,9 @@ webModeler:
       readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1001
-      ## @param webModeler.webapp.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+      ## @param webModeler.webapp.containerSecurityContext.seccompProfile 
       seccompProfile:
+        ## @param webModeler.webapp.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
 
     ## @extra webModeler.webapp.startupProbe configuration of the webapp startup probe
@@ -2796,8 +2814,9 @@ webModeler:
     podSecurityContext:
       runAsNonRoot: true
       fsGroup: 1001
-      ## @param webModeler.websockets.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+      ## @param webModeler.websockets.podSecurityContext.seccompProfile
       seccompProfile:
+        ## @param webModeler.websockets.podSecurityContext.seccompProfile.type
         type: RuntimeDefault
     ## @extra webModeler.websockets.containerSecurityContext can be used to define the security options the websockets container should be run with
     ## @param webModeler.websockets.containerSecurityContext.privileged
@@ -2811,8 +2830,9 @@ webModeler:
       readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1001
-      ## @param webModeler.websockets.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+      ## @param webModeler.websockets.containerSecurityContext.seccompProfile 
       seccompProfile:
+        ## @param webModeler.websockets.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
 
     ## @extra webModeler.websockets.startupProbe configuration of the websockets startup probe
@@ -3231,8 +3251,9 @@ connectors:
     runAsNonRoot: true
     ## @param connectors.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @param connectors.podSecurityContext.seccompProfile Specifies the seccomp profile to be used for pod-level security.
+    ## @param connectors.podSecurityContext.seccompProfile
     seccompProfile:
+      ## @param connectors.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra connectors.containerSecurityContext defines the security options the Connectors container should be run with
@@ -3247,8 +3268,9 @@ connectors:
     readOnlyRootFilesystem: true
     runAsNonRoot: true
     runAsUser: 1001
-    ## @param connectors.containerSecurityContext.seccompProfile Specifies the seccomp profile to be used for container-level security.
+    ## @param connectors.containerSecurityContext.seccompProfile 
     seccompProfile:
+      ## @param connectors.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @param connectors.nodeSelector can be used to define on which nodes the Connectors pods should run
