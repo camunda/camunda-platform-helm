@@ -418,6 +418,8 @@ console:
 
   ## @param console.env can be used to set extra environment variables in each app container
   env: []
+  ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @param console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
   ## @param console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
@@ -607,6 +609,8 @@ zeebe:
       value: "2GB"
     - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
       value: "3GB"
+  ## @param zeebe.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @extra zeebe.configMap configuration which will be applied to the mounted config map.
   configMap:
      ## @param zeebe.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
@@ -877,6 +881,8 @@ zeebeGateway:
 
   ## @param zeebeGateway.env can be used to set extra environment variables in each gateway container
   env: []
+  ## @param zeebeGateway.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @extra zeebeGateway.configMap configuration which will be applied to the mounted config map.
   configMap:
     ## @param zeebeGateway.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
@@ -1201,6 +1207,8 @@ operate:
 
   ## @param operate.env can be used to set extra environment variables in each Operate container
   env: []
+  ## @param operate.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @extra operate.configMap configuration which will be applied to the mounted config map.
   configMap:
     ## @param operate.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
@@ -1391,7 +1399,8 @@ tasklist:
 
   ## @param tasklist.env can be used to set extra environment variables on each Tasklist container
   env: []
-
+  ## @param tasklist.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @param tasklist.podAnnotations can be used to define extra Tasklist pod annotations
   podAnnotations: {}
   ## @param tasklist.podLabels can be used to define extra tasklist pod labels
@@ -1648,6 +1657,8 @@ optimize:
   partitionCount: "3"
   ## @param optimize.env can be used to set extra environment variables in each Optimize container
   env: []
+  ## @param optimize.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @param optimize.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
   ## @param optimize.extraVolumes can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates
@@ -1814,7 +1825,6 @@ optimize:
   configuration: ""
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
   extraConfiguration: {}
-
 
 ############################################
 ###
@@ -2009,6 +2019,8 @@ identity:
 
   ## @param identity.env can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
+  ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @param identity.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
   ## @param identity.extraVolumes can be used to define extra volumes for the identity pods, useful for tls and self-signed certificates
@@ -2417,6 +2429,8 @@ webModeler:
 
     ## @param webModeler.restapi.env can be used to set extra environment variables in each restapi container
     env: []
+    ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
+    envFrom: []
     ## @param webModeler.restapi.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
     ## @param webModeler.restapi.extraVolumes can be used to define extra volumes for the restapi pods, useful for TLS and self-signed certificates
@@ -2541,7 +2555,6 @@ webModeler:
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
 
-
   # WebModeler.
   #    # ###### #####    ##   #####  #####
   #    # #      #    #  #  #  #    # #    #
@@ -2569,6 +2582,8 @@ webModeler:
 
     ## @param webModeler.webapp.env can be used to set extra environment variables in each webapp container
     env: []
+    ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
+    envFrom: []
     ## @param webModeler.webapp.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
     ## @param webModeler.webapp.extraVolumes can be used to define extra volumes for the webapp pods, useful for TLS and self-signed certificates
@@ -2729,6 +2744,8 @@ webModeler:
 
     ## @param webModeler.websockets.env can be used to set extra environment variables in each websockets container
     env: []
+    ## @param webModeler.websockets.envFrom list of environment variables to import from configMapRef and secretRef
+    envFrom: []
     ## @param webModeler.websockets.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
     ## @param webModeler.websockets.extraVolumes can be used to define extra volumes for the websockets pod; useful for logging to a file
@@ -3056,6 +3073,8 @@ connectors:
 
   ## @param connectors.env can be used to set extra environment variables in each Connector container
   env: []
+  ## @param connectors.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
   ## @param connectors.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
   ## @param connectors.extraVolumes can be used to define extra volumes for the Connectors pods, useful for TLS and self-signed certificates
@@ -3195,7 +3214,6 @@ connectors:
   configuration: ""
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
-
 
 #####################################################################################
 #######

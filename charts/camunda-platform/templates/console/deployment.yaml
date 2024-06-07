@@ -58,6 +58,10 @@ spec:
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
+          {{- if .Values.console.envFrom }}
+          envFrom:
+            {{- .Values.console.envFrom | toYaml | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: 8080

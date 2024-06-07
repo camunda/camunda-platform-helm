@@ -226,6 +226,10 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- if .Values.identity.envFrom }}
+          envFrom:
+            {{- .Values.identity.envFrom | toYaml | nindent 12 }}
+          {{- end }}
           {{- if .Values.identity.command}}
           command: {{ toYaml .Values.identity.command | nindent 10 }}
           {{- end }}

@@ -110,6 +110,10 @@ spec:
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+          {{- if .Values.zeebe.envFrom }}
+          envFrom:
+            {{- .Values.zeebe.envFrom | toYaml | nindent 12 }}
+          {{- end }}
           {{- if .Values.zeebe.command }}
           command: {{ toYaml .Values.zeebe.command | nindent 10 }}
           {{- end }}

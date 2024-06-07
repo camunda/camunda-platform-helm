@@ -117,10 +117,13 @@ spec:
             {{- with .Values.tasklist.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-          {{- if .Values.global.identity.auth.enabled }}
           envFrom:
+          {{- if .Values.global.identity.auth.enabled }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
+          {{- if .Values.tasklist.envFrom -}}
+            {{ .Values.tasklist.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.tasklist.command }}
           command: {{ toYaml .Values.tasklist.command | nindent 10 }}
