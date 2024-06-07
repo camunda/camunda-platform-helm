@@ -46,6 +46,11 @@ global:
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
 
+  ## @skip global.testDeprecationFlags
+  testDeprecationFlags:
+    ## @skip global.testDeprecationFlags.existingSecretsMustBeSet give error or warning when existingSecret is not set
+    existingSecretsMustBeSet: "ignore"
+
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   labels:
