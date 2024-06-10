@@ -59,12 +59,12 @@ go.addlicense-install:
 # go.addlicense-run: adds license headers to go files
 .PHONY: go.addlicense-run
 go.addlicense-run:
-	addlicense -c 'Camunda Services GmbH' -l apache charts/camunda-platform/test/**/*.go
+	addlicense -c 'Camunda Services GmbH' -l apache charts/$(chartPath)/test/**/*.go
 
 # go.addlicense-check: checks that the go files contain license header
 .PHONY: go.addlicense-check
 go.addlicense-check:
-	addlicense -check -l apache charts/camunda-platform/test/**/*.go
+	addlicense -check -l apache charts/$(chartPath)/test/**/*.go
 
 #########################################################
 ######### Tools
@@ -115,9 +115,14 @@ helm.dependency-update:
 # helm.lint: verify that the chart is well-formed.
 .PHONY: helm.lint
 helm.lint:
+	echo "Chart dir: $(chartPath)"
+	helm lint --strict $(chartPath)
+
+# helm.lint: verify that the chart is well-formed.
+.PHONY: helm.lint-all
+helm.lint-all:
 	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
-		echo "Chart dir: $${chart_dir}";\
-		helm lint --strict $${chart_dir};\
+		$(MAKE) chartPath=$${chart_dir} helm.lint;\
 	done
 
 # helm.install: install the local chart into the current kubernetes cluster/namespace

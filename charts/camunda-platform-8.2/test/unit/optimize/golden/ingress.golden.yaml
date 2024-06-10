@@ -25,6 +25,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name:  camunda-platform-test-optimize
+                name: camunda-platform-test-optimize
                 port:
                   number: 80

@@ -1,0 +1,34 @@
+name: Generate chart matrix
+description: Find changed charts and generate matrix for changed ones only.
+outputs:
+  matrix:
+    description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-chart-versions.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: Get changed dirs
+      id: changed-files
+      uses: tj-actions/changed-files@d6babd6899969df1a11d14c368283ea4436bca78 # v44
+      with:
+        dir_names: "true"
+    - name: Generate matrix
+      shell: bash
+      id: set-chart-versions
+      env:
+        ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+      run: |
+        echo "Setting matrix based on changed files"
+        echo "Changed files: ${ALL_CHANGED_FILES}"
+        touch matrix_versions.txt
+
+        ls -d charts/camunda-platform-8* | while read chart_dir; do
+          if [[ $(echo ${ALL_CHANGED_FILES} | grep "${chart_dir}") ]]; then
+            camunda_version="$(echo ${chart_dir} | cut -d '-' -f 3)";
+            echo "Camunda version: ${camunda_version}"
+            echo "${camunda_version}" >> matrix_versions.txt;
+          fi
+        done
+
+        matrix="$(cat matrix_versions.txt | jq -s -c -R 'split("\n") | .[:-1]')"
+        echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT

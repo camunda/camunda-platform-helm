@@ -2,9 +2,6 @@
 name: "Test - Regression"
 
 on:
-  push:
-    paths:
-    - 'charts/camunda-platform-*/**'
   pull_request:
     paths:
     - 'charts/camunda-platform-*/**'
@@ -25,64 +22,64 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Previous chart v${{ matrix.camundaChart }}.x
-    if: ${{ contains(github.event.*.labels.*.name, 'test-regression') || github.event.pull_request.head.repo.full_name == github.repository }}
+  init:
+    name: Generate chart matrix
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
+    outputs:
+      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Generate chart versions
+      id: generate-chart-versions
+      uses: ./.github/actions/generate-chart-matrix
+
+  validation:
+    if: ${{ needs.init.outputs.matrix != '' }}
+    name: Validation - Camunda ${{ matrix.version }}
+    needs: init
     strategy:
       fail-fast: false
       matrix:
-        camundaChart:
-        - "8.4"
-        - "8.3"
-        - "8.2"
-    steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-    - name: Login to GKE
-      uses: ./.github/actions/gke-login
-      with:
-        cluster-name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-        cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-        workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-        service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
-    - name: Set test vars
-      id: vars
-      run: |
-        TEST_NAMESPACE="camunda-platform-pr-$GITHUB_PR_NUMBER-regression-${{ matrix.camundaChart }}"
-        echo "TEST_NAMESPACE=${TEST_NAMESPACE//./-}" >> $GITHUB_ENV
-    - name: Install env dependencies
-      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-    - name: Cleanup any old namespace
-      run: |
-        kubectl delete ns $TEST_NAMESPACE --ignore-not-found=true
-    - name: Update Helm dependency
-      run: |
-        export chartPath="charts/camunda-platform-${{ matrix.camundaChart }}"
-        make helm.repos-add
-        make helm.dependency-update
-    - name: Update golden files
-      run: |
-        export chartPath="charts/camunda-platform-${{ matrix.camundaChart }}"
-        make go.fmt
-        make go.update-golden-only
-    - name: Install Camunda 8 Helm chart v${{ matrix.camundaChart }}
-      timeout-minutes: 15
-      run: |
-        helm install camunda-platform charts/camunda-platform-${{ matrix.camundaChart }} \
-          --wait --timeout 15m0s \
-          --namespace $TEST_NAMESPACE --create-namespace
-    - name: Check setup
-      if: always()
-      run: |
-        echo "List Helm release ..."
-        helm list -n $TEST_NAMESPACE
-        echo "Get Pods ..."
-        kubectl get pod -n $TEST_NAMESPACE
-        echo "Describe Pods ..."
-        kubectl describe pod -n $TEST_NAMESPACE
-    - name: Cleanup test namespace
-      if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
-      run: |
-        kubectl delete ns $TEST_NAMESPACE --ignore-not-found=true
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  unit:
+    if: ${{ needs.init.outputs.matrix != '' }}
+    name: Unit Test - Camunda ${{ matrix.version }}
+    needs: [init]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  integration:
+    if: ${{ needs.init.outputs.matrix != '' }}
+    name: Integration Test - Camunda ${{ matrix.version }}
+    needs: [init, validation, unit]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
+      persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
+      platforms: "gke"
+      flows: "install,upgrade"
+      test-enabled: false
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
