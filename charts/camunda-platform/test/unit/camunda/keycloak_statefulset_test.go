@@ -40,10 +40,9 @@ func TestGoldenKeycloakDefaults(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda",
 		GoldenFileName: "keycloak-statefulset",
-		// secrets are auto-generated and need to be ignored.
 		IgnoredLines: []string{
-			`\s+checksum/configmap-env-vars:\s+.*`,
-			`\s+checksum/secrets:\s+.*`,
+			`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+			`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 		},
 		// ExtraHelmArgs is used instead of Templates here because Keycloak is a dependency chart.
 		ExtraHelmArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
