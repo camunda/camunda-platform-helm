@@ -37,9 +37,8 @@ jobs:
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
-            "charts/camunda-platform/values/*"
-            "charts/camunda-platform/values.yaml"
-            "charts/camunda-platform/Chart.yaml"
+            "charts/camunda-platform*/values*.yaml"
+            "charts/camunda-platform*/Chart.yaml"
           )
           for FILE in "${TARGET_FILES[@]}"; do
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
@@ -102,6 +101,7 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
   post-release:
     needs: release
     runs-on: ubuntu-latest
