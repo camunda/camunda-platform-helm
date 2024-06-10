@@ -1,6 +1,6 @@
 annotations:
   category: Database
-  helm.sh/cliVersion: 3.14.4
+  helm.sh/cliVersion: 3.15.1
   artifacthub.io/changes: |
     - kind: fixed
       description: "embed web-modeler postregsql chart in camunda chart"

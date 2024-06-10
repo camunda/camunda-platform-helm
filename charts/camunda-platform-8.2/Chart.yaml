@@ -72,3 +72,4 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: ""
+  helm.sh/cliVersion: 3.15.1
