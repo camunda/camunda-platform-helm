@@ -47,6 +47,8 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: APP_NAME
               value: "Web Modeler WebSockets"
@@ -98,3 +100,5 @@ spec:
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

@@ -88,6 +88,8 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
@@ -116,6 +118,8 @@ spec:
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
   # yamllint disable
       affinity:
         podAntiAffinity:

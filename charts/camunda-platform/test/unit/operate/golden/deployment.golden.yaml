@@ -51,6 +51,8 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
@@ -115,3 +117,5 @@ spec:
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
