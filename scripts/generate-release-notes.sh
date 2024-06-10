@@ -13,7 +13,7 @@ main () {
         #
         # Set Helm CLI version.
         helm_cli_version="$(grep "helm" .tool-versions | cut -d " " -f2)" \
-            yq -i '.annotations."helm.sh/cliVersion" = env(helm_cli_version)' "${chart_file}"
+            yq -i '.annotations."camunda.io/helmCLIVersion" = env(helm_cli_version)' "${chart_file}"
 
         #
         # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
