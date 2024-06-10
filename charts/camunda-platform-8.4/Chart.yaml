@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.3.5
+version: 9.3.6
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.3.5
+    version: 9.3.6
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT
