@@ -84,6 +84,38 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSec
 		})
 }
 
+func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalPasswordWhenPasswordIsNotEmpty() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                           "true",
+			"webModeler.restapi.mail.fromAddress":          "example@example.com",
+			"webModeler.restapi.externalDatabase.enabled":  "true",
+			"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+			"webModeler.restapi.externalDatabase.user":     "modeler-user",
+			"webModeler.restapi.externalDatabase.password": "modeler-password",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{
+		Name: "SPRING_DATASOURCE_PASSWORD",
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-web-modeler-restapi"},
+				Key:                  "database-password",
+			},
+		},
+	})
+}
+
 func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey() {
 	// given
 	options := &helm.Options{
