@@ -10,6 +10,10 @@ unit:
     - name: WebModeler
       packages: web-modeler
 
+# Used in the GitHub Actions integration test CI workflow.
 integration:
   scenarios:
-    dir: integration/scenarios
+    # Using the common test dir.
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../../charts

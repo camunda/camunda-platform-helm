@@ -53,7 +53,7 @@ runs:
 
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
-      TEST_NAMESPACE="camunda-platform-${TRIGGER_KEY}-${{ inputs.identifier-base }}"
+      TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
 
       if [[ "${{ inputs.persistent }}" == 'false' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
@@ -97,4 +97,4 @@ runs:
     # TODO: Use the branch name dynamically as part of the version when it's supported in GitHub:
     # https://github.com/orgs/community/discussions/70343
     run: |
-      yq -i '.version = "0.0.0-ci-snapshot"' charts/camunda-platform/Chart.yaml
+      yq -i '.version = "0.0.0-ci-snapshot"' charts/${{ inputs.chart-dir }}/Chart.yaml
