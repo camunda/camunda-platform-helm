@@ -115,6 +115,31 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetExternalPasswordWh
 		},
 	})
 }
+func (s *restapiDeploymentTemplateTest) TestContainerShouldNotSetExternalPasswordIfEnabledAndPasswordIsBlank() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                           "true",
+			"webModeler.restapi.mail.fromAddress":          "example@example.com",
+			"webModeler.restapi.externalDatabase.enabled":  "true",
+			"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+			"webModeler.restapi.externalDatabase.user":     "modeler-user",
+			"webModeler.restapi.externalDatabase.password": "",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	for _, envVar := range env {
+		s.Require().NotEqual("SPRING_DATASOURCE_PASSWORD", envVar.Name)
+	}
+}
 
 func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey() {
 	// given
