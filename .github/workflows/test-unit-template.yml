@@ -28,26 +28,26 @@ jobs:
     name: Generate components matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.components-unit-test.outputs.matrix }}
+      unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}
     steps:
     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       with:
         ref: "${{ inputs.camunda-helm-git-ref }}"
-    - name: Generate chart versions
-      id: components-unit-test
-      run: |
-        matrix_file="charts/${{ inputs.camunda-helm-dir }}/test/unit/ci-unit-test-matrix.yaml"
-        matrix="$(yq --indent=0 --output-format json ${matrix_file})"
-        echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
+    - name: Get CI unit test matrix
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: "${{ inputs.camunda-helm-dir }}"
 
   unit:
     name: ${{ matrix.test.name }} - Unit Test
-    if: ${{ needs.init.outputs.matrix != '' }}
+    if: ${{ needs.init.outputs.unitTestMatrix != '' }}
     needs: init
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+      matrix:
+        test: ${{ fromJson(needs.init.outputs.unitTestMatrix) }}
     env:
       chartPath: "charts/${{ inputs.camunda-helm-dir }}"
     steps:

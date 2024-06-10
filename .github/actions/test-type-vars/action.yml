@@ -1,0 +1,38 @@
+name: Test type vars
+description: Get vars for different type of tests
+inputs:
+  chart-dir:
+    description: A reference for the Camunda Helm chart directory.
+outputs:
+  unitTestMatrix:
+    description: JSON matrix of changed charts which will be used as input for GHA workflow matrix.
+    value: ${{ steps.vars.outputs.unit-matrix }}
+  integrationTestScenariosDir:
+    description: Path of the directory that has the integration tests.
+    value: ${{ steps.vars.outputs.integration-scenarios-dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get test type vars
+      shell: bash
+      id: vars
+      run: |
+        matrix_file="charts/${{ inputs.chart-dir }}/test/ci-test-config.yaml"
+
+        #
+        # Unit Tests.
+
+        # Unit test matrix.
+        unit_matrix="$(yq '.unit.matrix' --indent=0 --output-format json ${matrix_file})"
+        echo "unit-matrix=${unit_matrix}" | tee -a $GITHUB_OUTPUT
+
+        #
+        # Integration Tests.
+
+        # Integration test dir.
+        integration_scenarios_dir_relativ="$(yq '.integration.scenarios.dir' \
+          --unwrapScalar --indent=0 --output-format json ${matrix_file})"
+        integration_scenarios_dir="charts/${{ inputs.chart-dir }}/test/${integration_scenarios_dir_relativ}"
+        echo "integration-scenarios-dir=${integration_scenarios_dir}" | tee -a $GITHUB_OUTPUT
+        echo "INTEGRATION_SCENARIOS_DIR=${integration_scenarios_dir}" | tee -a $GITHUB_ENV

@@ -59,7 +59,6 @@ env:
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_PERSISTENT: ${{ inputs.persistent }}
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
-  CI_SCENARIOS_DIR: charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
@@ -113,8 +112,10 @@ jobs:
             if: false
         - scenario:
             if: false
+
     env:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
+
     steps:
     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       with:
@@ -170,6 +171,11 @@ jobs:
         identifier-base: ${{ inputs.identifier }}
         ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
         chart-dir: ${{ inputs.camunda-helm-dir }}
+    - name: Set test type vars
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: "${{ inputs.camunda-helm-dir }}"
     - name: Install env dependencies
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
     - name: Add Helm repos and dependencies
@@ -205,7 +211,7 @@ jobs:
         TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
         TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
       run: |
-        task -d $CI_SCENARIOS_DIR/chart-full-setup setup.pre
+        task -d $INTEGRATION_SCENARIOS_DIR/chart-full-setup setup.pre
 
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
@@ -217,15 +223,15 @@ jobs:
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
       run: |
-        task -d $CI_SCENARIOS_DIR/chart-full-setup setup.exec
+        task -d $INTEGRATION_SCENARIOS_DIR/chart-full-setup setup.exec
     - name: Post setup
       timeout-minutes: 5
       run: |
-        task -d $CI_SCENARIOS_DIR/chart-full-setup setup.post
+        task -d $INTEGRATION_SCENARIOS_DIR/chart-full-setup setup.post
     - name: Pre Upgrade
       if: matrix.scenario.flow == 'upgrade'
       run: |
-        task -d $CI_SCENARIOS_DIR/chart-full-setup upgrade.pre
+        task -d $INTEGRATION_SCENARIOS_DIR/chart-full-setup upgrade.pre
     - name: 🌟 Upgrade Camunda chart 🌟
       if: matrix.scenario.flow == 'upgrade'
       env:
@@ -233,7 +239,7 @@ jobs:
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
       run: |
-        task -d $CI_SCENARIOS_DIR/chart-full-setup upgrade.exec
+        task -d $INTEGRATION_SCENARIOS_DIR/chart-full-setup upgrade.exec
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
@@ -248,12 +254,12 @@ jobs:
       if: inputs.test-enabled
       timeout-minutes: 10
       run: |
-        task -d $CI_SCENARIOS_DIR/chart-full-setup test.preflight
+        task -d $INTEGRATION_SCENARIOS_DIR/chart-full-setup test.preflight
     - name: ⭐️ Run Core TestSuite ⭐️
       if: inputs.test-enabled
       timeout-minutes: 20
       run: |
-        task -d $CI_SCENARIOS_DIR/chart-full-setup test.core
+        task -d $INTEGRATION_SCENARIOS_DIR/chart-full-setup test.core
     - name: 🚨 Get failed Pods info 🚨
       if: failure()
       uses: ./.github/actions/failed-pods-info

@@ -35,7 +35,7 @@ jobs:
 
   validation:
     if: ${{ needs.init.outputs.matrix != '' }}
-    name: Camunda ${{ matrix.version }} - Validation
+    name: Validation - Camunda ${{ matrix.version }}
     needs: init
     strategy:
       fail-fast: false
@@ -49,7 +49,7 @@ jobs:
 
   unit:
     if: ${{ needs.init.outputs.matrix != '' }}
-    name: Camunda ${{ matrix.version }} - Unit Test
+    name: Unit Test - Camunda ${{ matrix.version }}
     needs: [init, validation]
     strategy:
       fail-fast: false
@@ -63,7 +63,7 @@ jobs:
 
   # integration:
   #   if: ${{ needs.init.outputs.matrix != '' }}
-  #   name: Camunda ${{ matrix.version }} - Integration Test
+  #   name: Integration Test - Camunda ${{ matrix.version }}
   #   needs: [init, validation, unit]
   #   strategy:
   #     fail-fast: false
