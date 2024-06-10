@@ -62,6 +62,7 @@ jobs:
           make helm.repos-add
       - name: Update Helm dependency
         run: |
+          export chartPath="charts/camunda-platform*"
           make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
@@ -125,6 +126,7 @@ jobs:
           retry_wait_seconds: 10
           command: make release.verify-components-version
       - name: Generate version matrix
+        shell: bash
         run: |
           make release.generate-version-matrix-index
           make release.generate-version-matrix-released
