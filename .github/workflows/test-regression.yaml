@@ -4,7 +4,7 @@ name: "Test - Regression"
 on:
   pull_request:
     paths:
-    - 'charts/camunda-platform-*/**'
+    - 'charts/camunda-platform-8*/**'
   workflow_dispatch: { }
 
 concurrency:
@@ -32,9 +32,11 @@ jobs:
     - name: Generate chart versions
       id: generate-chart-versions
       uses: ./.github/actions/generate-chart-matrix
+      with:
+        charts-path: "charts/camunda-platform-8*"
 
   validation:
-    if: ${{ needs.init.outputs.matrix != '' }}
+    if: ${{ needs.init.outputs.matrix.version != '' }}
     name: Validation - Camunda ${{ matrix.version }}
     needs: init
     strategy:
@@ -48,7 +50,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   unit:
-    if: ${{ needs.init.outputs.matrix != '' }}
+    if: ${{ needs.init.outputs.matrix.version != '' }}
     name: Unit Test - Camunda ${{ matrix.version }}
     needs: [init]
     strategy:
@@ -62,7 +64,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
-    if: ${{ needs.init.outputs.matrix != '' }}
+    if: ${{ needs.init.outputs.matrix.version != '' }}
     name: Integration Test - Camunda ${{ matrix.version }}
     needs: [init, validation, unit]
     strategy:

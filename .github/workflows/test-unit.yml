@@ -5,13 +5,13 @@ on:
     branches:
     - main
     paths:
-    - '.github/**'
+    - '.github/*unit*'
     - '.tool-versions'
     - 'charts/camunda-platform*/**'
     - 'go.*'
   pull_request:
     paths:
-    - '.github/**'
+    - '.github/*unit*'
     - '.tool-versions'
     - 'charts/camunda-platform*/**'
     - 'go.*'
