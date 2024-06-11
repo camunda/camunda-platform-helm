@@ -38,7 +38,7 @@ jobs:
           cp -a main/charts/camunda-platform/values-latest.yaml camunda-platform/values/values-latest.yaml
 
           # Previous versions.
-          find charts -name "camunda-platform-*" | while read chart_id; do
+          find main/charts -name "camunda-platform-*" | while read chart_id; do
               camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
               echo "cp -a main/${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml";
           done
