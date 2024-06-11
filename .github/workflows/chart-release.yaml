@@ -128,10 +128,11 @@ jobs:
           command: make release.verify-components-version
       - name: Generate version matrix
         run: |
+          make helm.repos-add
           make release.generate-version-matrix-index
           make release.generate-version-matrix-released
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore: Generate VERSION-MATRIX.md"
+          message: "chore: Generate version matrix"

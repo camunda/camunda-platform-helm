@@ -107,7 +107,7 @@ postgresql:
 
 After the 8.4 release (January 2024), the Camunda Helm chart version is **decoupled** from the version of the application (e.g., the chart version is `9.0.0` and the application version is `8.4.x`).
 
-Before the 8.4 release, the Camunda Helm chart version was **coupled** with the applications version (e.g., chart version is `8.3.x` and applications version is `8.3.x`).
+Before the 8.4 release, the Camunda Helm chart version was **coupled** with the version of the application (e.g., the chart version is `8.3.x` and the applications version is `8.3.x`).
 
 For more details, check out the [full version matrix](https://helm.camunda.io/camunda-platform/version-matrix).
 

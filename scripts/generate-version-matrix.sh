@@ -62,7 +62,7 @@ generate_version_matrix_index () {
       --config scripts/templates/version-matrix/.gomplate.yaml \
       --datasource versions=env:///ALL_CAMUNDA_VERSIONS?type=application/array+json \
       --file scripts/templates/version-matrix/VERSION-MATRIX-INDEX.md.tpl |
-        tee "charts/${CHART_NAME}/version-matrix/README.md"
+        tee "version-matrix/README.md"
 }
 
 # Generate a version matrix for a certain Camunda version.
@@ -80,10 +80,10 @@ generate_version_matrix_single () {
 generate_version_matrix_released () {
     get_versions_filtered | jq -c '.[]' | while read SUPPORTED_CAMUNDA_VERSION_DATA; do
         SUPPORTED_CAMUNDA_VERSION="$(echo ${SUPPORTED_CAMUNDA_VERSION_DATA} | jq -r '.app')"
-        mkdir -p "charts/${CHART_NAME}/version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}"
+        mkdir -p "version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}"
         echo -e "#\n# Generating version matrix for Camunda ${SUPPORTED_CAMUNDA_VERSION}\n#"
         generate_version_matrix_single "${SUPPORTED_CAMUNDA_VERSION_DATA}" | tee \
-          "charts/${CHART_NAME}/version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}/README.md"
+          "version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}/README.md"
     done
 }
 
