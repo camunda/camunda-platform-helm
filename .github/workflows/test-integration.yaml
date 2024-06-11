@@ -23,7 +23,8 @@ jobs:
       id-token: write
       deployments: write
     secrets: inherit
-    uses: ./.github/workflows/test-integration-template.yaml
+    # uses: ./.github/workflows/test-integration-template.yaml
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-cleanup-template.yaml@ttl
     with:
       identifier: "${{ github.event.pull_request.number }}"
       persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
