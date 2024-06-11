@@ -9,8 +9,8 @@ on:
     paths:
     - '.github/workflows/chart-public-files.yaml'
     - 'charts/camunda-platform*/values*.yaml'
-    - 'charts/camunda-platform/version-matrix/**'
     - 'scripts/templates/version-matrix/*'
+    - 'version-matrix/**'
   workflow_dispatch: { }
 
 permissions:
@@ -33,7 +33,7 @@ jobs:
         run: |
           #
           # Values files.
-          mkdir -p camunda-platform/values camunda-platform/version-matrix
+          mkdir -p camunda-platform/values
 
           # Latest version.
           cp -a main/charts/camunda-platform/values-latest.yaml camunda-platform/values/values-latest.yaml
@@ -46,8 +46,8 @@ jobs:
 
           #
           # Version matrix.
-          mkdir -p camunda-platform/values camunda-platform/version-matrix
-          cp -a main/charts/camunda-platform/version-matrix/* camunda-platform/version-matrix/
+          mkdir -p camunda-platform/version-matrix
+          cp -a main/version-matrix/* camunda-platform/version-matrix/
 
           #
           # Post run.            
