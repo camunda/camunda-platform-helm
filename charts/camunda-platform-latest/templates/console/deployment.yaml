@@ -1,6 +1,7 @@
 {{- if .Values.console.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
+#test
 metadata:
   name: {{ include "console.fullname" . }}
   labels:
