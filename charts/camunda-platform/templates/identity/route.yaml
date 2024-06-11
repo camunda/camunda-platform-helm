@@ -1,0 +1,47 @@
+{{- if .Values.identity.enabled -}}
+{{- if .Values.identity.route.enabled -}}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "identity.fullname" . }}
+  labels:
+    {{- include "identity.labels" . | nindent 4 }}
+{{- with .Values.identity.route.annotations }}
+  annotations:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  host: {{ .Values.identity.route.host }}
+  path: {{ .Values.identity.route.path }}
+  port:
+    targetPort: http
+  {{- if .Values.identity.route.tls.enabled }}
+  tls:
+  {{- if .Values.identity.route.existingSecret }}
+    {{- $secretData := (lookup "v1" "Secret" .Release.Namespace .Values.identity.route.existingSecret) }}
+  {{- if $secretData }}
+    {{- if hasKey $secretData.data "tls.crt" }}
+    certificate: |
+      {{- index $secretData.data "tls.crt" | b64dec | nindent 6 }}
+    {{- end }}
+    {{- if hasKey $secretData.data "tls.key" }}
+    key: |
+      {{- index $secretData.data "tls.key" | b64dec | nindent 6 }}
+    {{- end }}
+    {{- if hasKey $secretData.data "ca.crt" }}
+    caCertificate: |
+      {{- index $secretData.data "ca.crt" | b64dec | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  {{- end }}
+  to:
+    kind: Service
+    name: {{ include "identity.fullname" . }}
+    weight: 100
+  wildcardPolicy: None
+{{- end }}
+{{- end }}
+
