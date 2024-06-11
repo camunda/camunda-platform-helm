@@ -45,6 +45,11 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			SetValues: map[string]string{
 				"console.enabled": "true",
 			},
+			IgnoredLines: []string{
+				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+				`\s+version:\s+.*`,      // ignore release version in console config.
+			},
 		})
 	}
 }

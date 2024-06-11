@@ -82,11 +82,24 @@ runs:
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
 
+  - name: Set workflow vars - Chart version
+    shell: bash
+    run: |
       # Chart version.
       # Used to install previous supported versions of Camunda Helm charts.
       # This is only needed in the upgrade flow not the setup.
+
+      get_latest_released_chart_by_app_version() {
+        app_version="${1}"
+        helm repo add camunda https://helm.camunda.io > /dev/null
+        helm search repo camunda/camunda-platform --versions --output json |
+          jq -r --arg app_version "$app_version" \
+            '[.[] | select (.app_version == $app_version)] | first | .version'
+      }
+
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-        TEST_CHART_VERSION="$(yq '.version' charts/${{ inputs.chart-dir }}/Chart.yaml)"
+        app_version="$(yq '.appVersion' charts/${{ inputs.chart-dir }}/Chart.yaml)"
+        TEST_CHART_VERSION="$(get_latest_released_chart_by_app_version ${app_version})"
         echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
       fi
 

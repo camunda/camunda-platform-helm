@@ -37,9 +37,8 @@ jobs:
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
-            "charts/camunda-platform/values/*"
-            "charts/camunda-platform/values.yaml"
-            "charts/camunda-platform/Chart.yaml"
+            "charts/camunda-platform*/values*.yaml"
+            "charts/camunda-platform*/Chart.yaml"
           )
           for FILE in "${TARGET_FILES[@]}"; do
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
@@ -63,20 +62,22 @@ jobs:
           make helm.repos-add
       - name: Update Helm dependency
         run: |
+          export chartPath="charts/camunda-platform*"
           make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
       - name: Set Helm chart version var
         run: |
-          CHART_NAME="$(yq ".name" charts/camunda-platform/Chart.yaml)"
-          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
+          CHART_NAME="$(yq '.name' charts/camunda-platform/Chart.yaml)"
+          CHART_VERSION="$(yq '.version' charts/camunda-platform/Chart.yaml)"
           echo "CHART_NAME_WITH_VERSION=${CHART_NAME}-${CHART_VERSION}" | tee -a $GITHUB_ENV
       # TODO: Move this step to pre-release workflow when we have it.
       - name: Generate release note footer
         run: |
           make release.generate-notes-footer
-      - name: Clean up release readme
+      - name: Tidy up
         run: |
+          # Clean up badges from readme to avoid showing them in Artifact Hub.
           sed -ri '/Badge .+/d' charts/camunda-platform/README.md
       - name: Run Chart Releaser
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
@@ -102,6 +103,7 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
   post-release:
     needs: release
     runs-on: ubuntu-latest
