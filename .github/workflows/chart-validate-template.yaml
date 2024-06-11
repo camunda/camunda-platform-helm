@@ -13,7 +13,7 @@ on:
         type: string
       camunda-helm-dir:
         required: false
-        default: camunda-platform
+        default: camunda-platform-latest
         type: string
 
 permissions:

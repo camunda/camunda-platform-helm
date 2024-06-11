@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - 'charts/camunda-platform*/README.md'
       - 'charts/camunda-platform*/values.yaml'
       - '.github/workflows/chart-update-readme.yaml'
 

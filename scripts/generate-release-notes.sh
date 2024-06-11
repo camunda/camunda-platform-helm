@@ -84,7 +84,7 @@ release_notes_footer () {
     export VERSION_MATRIX_RELEASE_HEADER="false"
     export VERSION_MATRIX_RELEASE_INFO="$(make release.generate-version-matrix-unreleased)"
     gomplate --file scripts/templates/release-notes/RELEASE-NOTES-FOOTER.md.tpl |
-        tee --append charts/camunda-platform/RELEASE-NOTES.md
+        tee --append charts/camunda-platform-latest/RELEASE-NOTES.md
 }
 
 # Parse script input args.
