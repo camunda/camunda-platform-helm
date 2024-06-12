@@ -31,7 +31,7 @@ on:
         description: |
           Define a ttl for the lifespan of the workflow
         required: false
-        default: 1d
+        default: ""
         type: string
       repo:
         description: |
