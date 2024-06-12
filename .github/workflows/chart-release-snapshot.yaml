@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - 265-aa-follow-up
 
 jobs:
   release:
@@ -16,7 +17,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: charts/camunda-platform
+        working-directory: charts/camunda-platform-latest
     #
     # Vars.
     env:
