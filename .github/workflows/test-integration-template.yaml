@@ -20,6 +20,13 @@ on:
         required: false
         default: main
         type: string
+      persistent:
+        description: |
+          Keep test deployment after the workflow is done.
+          NOTE: All persistent deployments will be deleted frequently to save costs!
+        required: false
+        default: false
+        type: boolean
       ttl:
         description: |
           Define a ttl for the lifespan of the workflow
