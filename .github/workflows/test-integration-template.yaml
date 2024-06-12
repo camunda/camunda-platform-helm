@@ -273,7 +273,7 @@ jobs:
       if: failure()
       uses: ./.github/actions/failed-pods-info
     - name: Cleanup GitHub deployment
-      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes' || env.CI_TTL != '')
+      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
@@ -281,7 +281,7 @@ jobs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
-      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes' || env.CI_TTL != '')
+      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       run: |
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
