@@ -171,6 +171,8 @@ jobs:
       id: vars
       uses: ./.github/actions/workflow-vars
       with:
+        ttl: ${{ env.CI_TTL }}
+        repo: ${{ env.REPO }}
         setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
