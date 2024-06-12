@@ -202,9 +202,7 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.CI_PERSISTENT }}
-        if [ -n "${{ env.CI_TTL }}" ]; then
-        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.TTL }}
-        fi
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env. CI_TTL }}
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
