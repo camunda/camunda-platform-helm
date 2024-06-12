@@ -20,9 +20,6 @@ on:
         required: false
         default: main
         type: string
-        required: false
-        default: false
-        type: boolean
       ttl:
         description: |
           Define a ttl for the lifespan of the workflow
