@@ -88,6 +88,7 @@ runs:
       # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
       # then upgraded from the PR branch to ensure upgradability.
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        git fetch origin main:main --no-tags
         TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
         echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
       fi

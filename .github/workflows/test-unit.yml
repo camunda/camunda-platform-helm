@@ -5,14 +5,14 @@ on:
     branches:
     - main
     paths:
-    - '.github/*unit*'
     - '.tool-versions'
+    - '.github/workflows/test-unit*'
     - 'charts/camunda-platform*/**'
     - 'go.*'
   pull_request:
     paths:
-    - '.github/*unit*'
     - '.tool-versions'
+    - '.github/workflows/test-unit*'
     - 'charts/camunda-platform*/**'
     - 'go.*'
   workflow_dispatch: { }
@@ -21,46 +21,11 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Custom values - ${{ matrix.test.name }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-        - name: Core
-          packages: camunda identity console
-        - name: Apps
-          packages: connectors operate optimize tasklist
-        - name: Zeebe
-          packages: zeebe zeebe-gateway
-        - name: WebModeler
-          packages: web-modeler
-    steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-    - name: Install env dependencies
-      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-    - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - name: Format
-      run: make go.fmt
-    - name: Install License Tool
-      run: |
-        make go.addlicense-install
-        asdf reshim golang
-    - name: Check License
-      run: make go.addlicense-check
-    - name: Add helm repos
-      run: make helm.repos-add
-    - name: Get Helm dependency
-      run: make helm.dependency-update
-    - name: ⭐️ Test ⭐️
-      run: |
-        cd charts/camunda-platform-latest/test/unit
-        go test $(printf "./%s " ${{ matrix.test.packages }})
+  unit:
+    name: Unit Test - Camunda latest
+    needs: init
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-latest"
+      camunda-helm-dir: "camunda-platform-latest"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
