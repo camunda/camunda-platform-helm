@@ -26,9 +26,7 @@ jobs:
     uses: ./.github/workflows/test-integration-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}"
-      # persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
-      # ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
-      repo: "helm"
+      persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
       platforms: "gke,rosa"
       flows: "install,upgrade"
       caller-git-ref: ${{ github.event.pull_request.head.sha }}
