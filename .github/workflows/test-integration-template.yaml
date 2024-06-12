@@ -62,6 +62,8 @@ concurrency:
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
+  CI_TTL: ${{ inputs.ttl }}
+  CI_REPO: ${{ inputs.repo }}
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
