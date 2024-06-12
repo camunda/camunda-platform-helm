@@ -1,10 +1,10 @@
 name: Workflow vars
 description: Set common vars for workflow
 inputs:
-  persistent:
-    description: Don't use changing vars like SHA commit
-    # TODO: Change that to real bool when it's supported in GHA.
-    default: "false"
+  # persistent:
+  #   description: Don't use changing vars like SHA commit
+  #   # TODO: Change that to real bool when it's supported in GHA.
+  #   default: "false"
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"
@@ -55,9 +55,9 @@ runs:
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
       TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
 
-      if [[ "${{ inputs.persistent }}" == 'false' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
-      fi
+      # if [[ "${{ inputs.persistent }}" == 'false' ]]; then
+      TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
+      # fi
 
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
@@ -75,10 +75,10 @@ runs:
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
 
       # Ingress hostname.
-      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
-      if [[ "${{ inputs.persistent }}" == "false" ]] && is_pr; then
-        TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
-      fi
+      # TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
+      # if [[ "${{ inputs.persistent }}" == "false" ]] && is_pr; then
+      #   TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
+      # fi
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
 
