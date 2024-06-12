@@ -33,6 +33,12 @@ on:
         required: false
         default: 1d
         type: string
+      repo:
+        description: |
+          Specifies what github repository has called this workflow
+        required: false
+        default: ""
+        type: string
       platforms:
         default: gke
         type: string
@@ -174,6 +180,7 @@ jobs:
       with:
         persistent: ${{ env.CI_PERSISTENT }}
         ttl: ${{ env.CI_TTL }}
+        repo: ${{ env.REPO }}
         setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
@@ -202,6 +209,7 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.CI_PERSISTENT }}
+        kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.REPO }}
         kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env. CI_TTL }}
     - name: Copy PRs wildcard certificate
       run: |
