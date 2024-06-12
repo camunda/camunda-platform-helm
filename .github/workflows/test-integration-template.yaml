@@ -20,6 +20,18 @@ on:
         required: false
         default: main
         type: string
+      ttl:
+        description: |
+          Define a ttl for the lifespan of the workflow
+        required: false
+        default: ""
+        type: string
+      repo:
+        description: |
+          Specifies what github repository has called this workflow
+        required: false
+        default: ""
+        type: string
       platforms:
         default: gke
         type: string
