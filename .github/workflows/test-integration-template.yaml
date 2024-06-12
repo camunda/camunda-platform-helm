@@ -200,6 +200,8 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
+        kubectl label ns $TEST_NAMESPACE repo=${{ env.REPO }}
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.CI_TTL }}
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
@@ -270,7 +272,7 @@ jobs:
       if: failure()
       uses: ./.github/actions/failed-pods-info
     - name: Cleanup GitHub deployment
-      if: always() && (matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_TTL != "" || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
@@ -278,7 +280,7 @@ jobs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
-      if: always() && (matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_TTL != "" || matrix.distro.type != 'kubernetes')
       run: |
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
