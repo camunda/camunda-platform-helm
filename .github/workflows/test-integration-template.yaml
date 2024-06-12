@@ -27,6 +27,18 @@ on:
         required: false
         default: false
         type: boolean
+      ttl:
+        description: |
+          Define a ttl for the lifespan of the workflow
+        required: false
+        default: ""
+        type: string
+      repo:
+        description: |
+          Specifies what github repository has called this workflow
+        required: false
+        default: ""
+        type: string
       platforms:
         default: gke
         type: string
@@ -57,7 +69,8 @@ concurrency:
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
-  CI_PERSISTENT: ${{ inputs.persistent }}
+  CI_TTL: ${{ inputs.ttl }}
+  REPO: ${{ inputs.repo }}
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
@@ -165,7 +178,8 @@ jobs:
       id: vars
       uses: ./.github/actions/workflow-vars
       with:
-        persistent: ${{ env.CI_PERSISTENT }}
+        ttl: ${{ env.CI_TTL }}
+        repo: ${{ env.REPO }}
         setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
@@ -187,13 +201,14 @@ jobs:
       run: |
         echo $TEST_NAMESPACE
         kubectl delete ns --ignore-not-found=true \
-          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},test-persistent=true"
+          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }}"
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
-        kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.CI_PERSISTENT }}
+        kubectl label ns $TEST_NAMESPACE repo=${{ env.REPO }}
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env. CI_TTL }}
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
@@ -264,7 +279,7 @@ jobs:
       if: failure()
       uses: ./.github/actions/failed-pods-info
     - name: Cleanup GitHub deployment
-      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_TTL != "" || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
@@ -272,8 +287,9 @@ jobs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
-      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_TTL != "" || matrix.distro.type != 'kubernetes')
       run: |
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
           -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+
