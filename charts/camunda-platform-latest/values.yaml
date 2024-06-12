@@ -231,7 +231,6 @@ global:
       identity:
         ## @param global.identity.auth.identity.clientId defines the client id, which is used by Identity in authentication flows.
         clientId: identity
-        test: test
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
         ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
