@@ -1234,7 +1234,7 @@ Dependency tasklist did not declare a repository. Assuming it exists in the char
 Dependency identity did not declare a repository. Assuming it exists in the charts directory
 Downloading elasticsearch from repo https://helm.elastic.co
 Deleting outdated charts
-helm dependency update charts/camunda-platform/charts/identity
+helm dependency update charts/camunda-platform-latest/charts/identity
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "elastic" chart repository

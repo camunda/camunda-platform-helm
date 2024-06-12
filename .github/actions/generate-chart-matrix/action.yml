@@ -1,5 +1,9 @@
 name: Generate chart matrix
 description: Find changed charts and generate matrix for changed ones only.
+inputs:
+  charts-path:
+    description: Charts path to match.
+    default: "charts/camunda-platform*"
 outputs:
   matrix:
     description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
@@ -19,10 +23,11 @@ runs:
         ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
       run: |
         echo "Setting matrix based on changed files"
-        echo "Changed files: ${ALL_CHANGED_FILES}"
+        echo "Changed files:"
+        printf "%s\n" ${ALL_CHANGED_FILES}
         touch matrix_versions.txt
 
-        ls -d charts/camunda-platform-8* | while read chart_dir; do
+        ls -d ${{ inputs.charts-path }} | while read chart_dir; do
           if [[ $(echo ${ALL_CHANGED_FILES} | grep "${chart_dir}") ]]; then
             camunda_version="$(echo ${chart_dir} | cut -d '-' -f 3)";
             echo "Camunda version: ${camunda_version}"
