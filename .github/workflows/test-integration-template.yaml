@@ -56,7 +56,7 @@ concurrency:
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
-  CI_TTL: ${{ inputs.deployment-ttl }}
+  CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
   CI_REPO: $(basename ${{ github.event.repository.full_name }})
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
   # Docker Hub auth to avoid image pull rate limit.
@@ -165,7 +165,7 @@ jobs:
       id: vars
       uses: ./.github/actions/workflow-vars
       with:
-        deployment-ttl: ${{ env.CI_TTL }}
+        deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
         repo: ${{ env.CI_REPO }}
         setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}
@@ -195,7 +195,7 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE repo=${{ env.CI_REPO }}
-        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.CI_TTL }}
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.CI_DEPLOYMENT_TTL }}
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
@@ -266,7 +266,7 @@ jobs:
       if: failure()
       uses: ./.github/actions/failed-pods-info
     - name: Cleanup test namespace
-      if: always() && (env.CI_TTL == '' || matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
       run: |
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
