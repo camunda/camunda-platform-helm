@@ -14,12 +14,12 @@ data:
     camunda:
       console:
         oAuth:
-          clientId: {{ include "console.authClientId" . | quote }}
+          audience: {{ .Values.global.identity.auth.console.audience | quote }}
+          clientId: {{ .Values.global.identity.auth.console.clientId | quote }}
           issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-          audience: {{ include "console.authAudience" . | quote }}
           jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
           type: {{ include "camundaPlatform.authType" . | quote }}
-          wellKnown: {{ include "console.authWellKnown" . | quote }}
+          wellKnown: {{ .Values.global.identity.auth.console.wellKnown | quote }}
         managed:
           method: plain
           releases:
