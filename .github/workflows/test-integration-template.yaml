@@ -277,7 +277,7 @@ jobs:
       if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
       run: |
         # the if statement ensures that only the input from the user is taken and not the default value.
-        if [ -n "${CI_TTL}" ]; then
+        if [ -n "${CI_DEPLOYMENT_TTL}" ]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
         else
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
