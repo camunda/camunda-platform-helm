@@ -3,13 +3,16 @@ name: "Dispatch Backport - Integration - Main"
 on:
   workflow_dispatch:
     inputs:
-      persistent:
+      ttl:
         description: |
-          Keep test deployment after the workflow is done.
-          NOTE: All persistent deployments will be deleted frequently to save costs!
+          Define a ttl for the lifespan of the workflow
         required: false
-        default: false
-        type: boolean
+        type: string
+      repo:
+        description: |
+          Specifies what github repository has called this workflow
+        required: false
+        type: string
       platforms:
         description: platform to test on
         required: false
@@ -40,4 +43,5 @@ jobs:
       identifier: ${{ github.event.inputs.identifier }}
       extra-values: ${{ github.event.inputs.extra-values }}
       platforms: ${{ github.event.inputs.platforms }}
-      persistent: ${{ github.event.inputs.persistent == 'true' }}
+      # ??
+      # persistent: ${{ github.event.inputs.persistent == 'true' }}

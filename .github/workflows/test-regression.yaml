@@ -79,7 +79,7 @@ jobs:
     uses: ./.github/workflows/test-integration-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
-      persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
+      ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
       test-enabled: false

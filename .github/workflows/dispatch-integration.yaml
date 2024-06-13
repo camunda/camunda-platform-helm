@@ -17,13 +17,18 @@ on:
         required: false
         default: main
         type: string
-      persistent:
+      ttl:
         description: |
-          Keep test deployment after the workflow is done.
-          NOTE: All persistent deployments will be deleted frequently to save costs!
+          Define a ttl for the lifespan of the workflow
         required: false
-        default: false
-        type: boolean
+        default: ""
+        type: string
+      repo:
+        description: |
+          Specifies what github repository has called this workflow
+        required: false
+        default: ""
+        type: string
       platforms:
         description: platforms
         default: gke
@@ -59,7 +64,8 @@ jobs:
       identifier: ${{ github.event.inputs.identifier }}
       caller-git-ref: ${{ github.event.inputs.caller-git-ref }}
       camunda-helm-git-ref: ${{ github.event.inputs.camunda-helm-git-ref }}
-      persistent: ${{ github.event.inputs.persistent == 'true' }}
+      # ??
+      # persistent: ${{ github.event.inputs.persistent == 'true' }}
       platforms: ${{ github.event.inputs.platforms }}
       flows: ${{ github.event.inputs.flows }}
       test-enabled: ${{ github.event.inputs.test-enabled == 'true' }}
