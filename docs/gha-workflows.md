@@ -50,7 +50,7 @@ jobs:
       # Note: All persistent deployments will be deleted frequently to save costs
       # Default: ""
       # Required: false
-      ttl:
+      deployment-ttl:
 
       # Specifies the cloud platform that is currently used
       # Default: 'gke'
@@ -86,9 +86,9 @@ jobs:
 
 > [!NOTE]
 > The default behavior in the integration tests workflow is to delete the test resources 
-> after the test is finished. To keep the deployment for at least one day, you need to set `ttl: 1d`.
-> and you need to rerun the workflow again when you need the deployment to be persistent with a defined ttl.
-Example ttl values:
+> after the test is finished. To keep the deployment for at least one day, you need to set `deployment-ttl: 1d`.
+> and you need to rerun the workflow again when you need the deployment to be persistent with a defined deployment-ttl.
+Example deployment-ttl values:
 360s: 360 seconds
 10m: 10 minutes
 24h: 24 hours
@@ -200,11 +200,11 @@ jobs:
     secrets: inherit
     with:
       identifier: dev-console-sm-${{ matrix.deployment.id }}
-      ttl: 1d
+      deployment-ttl: 1d
       extra-values: |
         ${{ matrix.deployment.extra-values }}
 ```
 
 #### Persistent deployment
 
-If you have long-running workflows with multiple jobs, you can set `ttl: 1d` which will keep the deployment namespace for 1 day and not delete it after the workflow is done.
+If you have long-running workflows with multiple jobs, you can set `deployment-ttl: 1d` which will keep the deployment namespace for 1 day and not delete it after the workflow is done.
