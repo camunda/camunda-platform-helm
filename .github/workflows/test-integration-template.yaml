@@ -192,9 +192,10 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
-        kubectl label ns $TEST_NAMESPACE org=$(dirname $GITHUB_REPOSITORY)
-        kubectl label ns $TEST_NAMESPACE repo=$(basename $GITHUB_REPOSITORY)
+        kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
+        kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
         kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.CI_DEPLOYMENT_TTL }}
+        kubectl annotate ns $TEST_NAMESPACE workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
