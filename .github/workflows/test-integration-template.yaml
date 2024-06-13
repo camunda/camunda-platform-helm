@@ -194,7 +194,7 @@ jobs:
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
         kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
         kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.CI_DEPLOYMENT_TTL }}
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
         kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
     - name: Copy PRs wildcard certificate
       run: |
@@ -276,4 +276,7 @@ jobs:
     - name: Cleanup test namespace
       if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
       run: |
-        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl="1s"
+        # the if statement ensures that only the input from the user is taken and not the default value.
+        if [ -n "${{ env.CI_TTL }}" ]; then
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.CI_DEPLOYMENT_TTL }} --overwrite=true
+        fi
