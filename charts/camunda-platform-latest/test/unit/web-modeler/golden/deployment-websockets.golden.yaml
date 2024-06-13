@@ -67,8 +67,6 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-web-modeler
                   key: pusher-app-secret
-            - name: PUSHER_APP_CLUSTER
-              value: "web-modeler"
           resources:
             limits:
               cpu: 200m

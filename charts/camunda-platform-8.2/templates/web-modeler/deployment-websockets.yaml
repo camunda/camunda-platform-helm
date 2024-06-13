@@ -47,8 +47,6 @@ spec:
               secretKeyRef:
                 name: {{ include "webModeler.fullname" . }}
                 key: pusher-app-secret
-          - name: PUSHER_APP_CLUSTER
-            value: "web-modeler"
           {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
           - name: PUSHER_APP_PATH
             value: {{ include "webModeler.websocketContextPath" . | quote }}
