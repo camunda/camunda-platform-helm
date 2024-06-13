@@ -14,12 +14,6 @@ inputs:
     required: false
     default: ""
     type: string
-  repo:
-    description: |
-      Specifies what github repository has called this workflow
-    required: false
-    default: ""
-    type: string
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
   chart-dir:

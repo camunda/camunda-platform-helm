@@ -57,7 +57,6 @@ env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
-  CI_REPO: $(basename ${{ github.event.repository.full_name }})
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
@@ -166,7 +165,6 @@ jobs:
       uses: ./.github/actions/workflow-vars
       with:
         deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-        repo: ${{ env.CI_REPO }}
         setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
