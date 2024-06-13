@@ -64,8 +64,8 @@ jobs:
       identifier: ${{ github.event.inputs.identifier }}
       caller-git-ref: ${{ github.event.inputs.caller-git-ref }}
       camunda-helm-git-ref: ${{ github.event.inputs.camunda-helm-git-ref }}
-      # ??
-      # persistent: ${{ github.event.inputs.persistent == 'true' }}
+      ttl: ${{ github.event.inputs.ttl == "1w" }}
+      repo: ${{ github.event.inputs.repo }}
       platforms: ${{ github.event.inputs.platforms }}
       flows: ${{ github.event.inputs.flows }}
       test-enabled: ${{ github.event.inputs.test-enabled == 'true' }}

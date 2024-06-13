@@ -7,6 +7,7 @@ on:
         description: |
           Define a ttl for the lifespan of the workflow
         required: false
+        default: ""
         type: string
       repo:
         description: |
@@ -43,5 +44,5 @@ jobs:
       identifier: ${{ github.event.inputs.identifier }}
       extra-values: ${{ github.event.inputs.extra-values }}
       platforms: ${{ github.event.inputs.platforms }}
-      # ??
-      # persistent: ${{ github.event.inputs.persistent == 'true' }}
+      ttl: ${{ github.event.inputs.ttl == "1w" }}
+      repo: ${{ github.event.inputs.repo }}
