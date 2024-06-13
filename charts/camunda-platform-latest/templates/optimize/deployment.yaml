@@ -39,7 +39,7 @@ spec:
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.external }}
+            {{- if and .Values.global.elasticsearch.external  (include "elasticsearch.authExistingSecret" .) }}
             - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
