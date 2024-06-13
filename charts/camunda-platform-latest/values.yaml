@@ -303,6 +303,12 @@ global:
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
       console:
+        ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
+        clientId: console
+        ## @param global.identity.auth.console.audience defines the audience which is used by Console's client API.
+        audience: console-api
+        ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
+        wellKnown: https://well-known-uri
         ## @param global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `console-secret` field, which will be used as secret for the identity-console communication.
         existingSecret:
@@ -310,8 +316,6 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
-        ## @param global.identity.auth.console.audience can be used to Console audience in Identity.
-        audience: console-api
 
       ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
       zeebe:
