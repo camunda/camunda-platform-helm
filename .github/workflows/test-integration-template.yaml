@@ -274,6 +274,6 @@ jobs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
-      if: always() && (env.CI_DEPLOYMENT_TTL == "43200s" || matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
       run: |
         kubectl annotate ns $TEST_NAMESPACE cleaner/ttl="1s"
