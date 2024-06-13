@@ -218,55 +218,8 @@ jobs:
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
         cat /tmp/extra-values-file.yaml
-    - name: 🌟 Setup Camunda chart 🌟
-      env:
-        TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
-        TEST_HELM_EXTRA_ARGS: >-
-          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-          --values /tmp/extra-values-file.yaml
-      run: |
-        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
-    - name: Post setup
-      timeout-minutes: 5
-      run: |
-        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
-    - name: Pre Upgrade
-      if: matrix.scenario.flow == 'upgrade'
-      run: |
-        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
-    - name: 🌟 Upgrade Camunda chart 🌟
-      if: matrix.scenario.flow == 'upgrade'
-      env:
-        TEST_HELM_EXTRA_ARGS: >-
-          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-          --values /tmp/extra-values-file.yaml
-      run: |
-        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
-    - name: Update GitHub deployment status
-      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
-      with:
-        step: finish
-        token: ${{ steps.generate-github-token.outputs.token }}
-        status: ${{ job.status }}
-        deployment_id: ${{ steps.deployment.outputs.deployment_id }}
-        env_url: https://${{ steps.vars.outputs.ingress-host }}
-        env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.caller-git-ref }}
-    - name: ⭐️ Run Preflight TestSuite ⭐️
-      if: inputs.test-enabled
-      timeout-minutes: 10
-      run: |
-        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
-    - name: ⭐️ Run Core TestSuite ⭐️
-      if: inputs.test-enabled
-      timeout-minutes: 20
-      run: |
-        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
-    - name: 🚨 Get failed Pods info 🚨
-      if: failure()
-      uses: ./.github/actions/failed-pods-info
     - name: Cleanup GitHub deployment
-      if: always() && (matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
@@ -274,7 +227,7 @@ jobs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
-      if: always() && (matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
       run: |
         # the if statement ensures that only the input from the user is taken and not the default value.
         if [ -n "${CI_DEPLOYMENT_TTL}" ]; then
@@ -282,3 +235,67 @@ jobs:
         else
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
         fi
+    # - name: 🌟 Setup Camunda chart 🌟
+    #   env:
+    #     TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+    #     TEST_HELM_EXTRA_ARGS: >-
+    #       --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+    #       --values /tmp/extra-values-file.yaml
+    #   run: |
+    #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
+    # - name: Post setup
+    #   timeout-minutes: 5
+    #   run: |
+    #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
+    # - name: Pre Upgrade
+    #   if: matrix.scenario.flow == 'upgrade'
+    #   run: |
+    #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
+    # - name: 🌟 Upgrade Camunda chart 🌟
+    #   if: matrix.scenario.flow == 'upgrade'
+    #   env:
+    #     TEST_HELM_EXTRA_ARGS: >-
+    #       --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+    #       --values /tmp/extra-values-file.yaml
+    #   run: |
+    #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+    # - name: Update GitHub deployment status
+    #   uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
+    #   with:
+    #     step: finish
+    #     token: ${{ steps.generate-github-token.outputs.token }}
+    #     status: ${{ job.status }}
+    #     deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+    #     env_url: https://${{ steps.vars.outputs.ingress-host }}
+    #     env: ${{ steps.vars.outputs.identifier }}
+    #     ref: ${{ inputs.caller-git-ref }}
+    # - name: ⭐️ Run Preflight TestSuite ⭐️
+    #   if: inputs.test-enabled
+    #   timeout-minutes: 10
+    #   run: |
+    #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
+    # - name: ⭐️ Run Core TestSuite ⭐️
+    #   if: inputs.test-enabled
+    #   timeout-minutes: 20
+    #   run: |
+    #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
+    # - name: 🚨 Get failed Pods info 🚨
+    #   if: failure()
+    #   uses: ./.github/actions/failed-pods-info
+    # - name: Cleanup GitHub deployment
+    #   if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
+    #   uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
+    #   with:
+    #     step: delete-env
+    #     token: ${{ steps.generate-github-token.outputs.token }}
+    #     env: ${{ steps.vars.outputs.identifier }}
+    #     ref: ${{ inputs.caller-git-ref }}
+    # - name: Cleanup test namespace
+    #   if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
+    #   run: |
+    #     # the if statement ensures that only the input from the user is taken and not the default value.
+    #     if [ -n "${CI_DEPLOYMENT_TTL}" ]; then
+    #         kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+    #     else
+    #         kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+    #     fi
