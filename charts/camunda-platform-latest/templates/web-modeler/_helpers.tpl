@@ -232,6 +232,13 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{/*
+[web-modeler] Get an explicit password if set
+*/}}
+{{- define "webModeler.restapi.explicitPassword" -}}
+{{- .Values.webModeler.restapi.externalDatabase.existingSecret | default .Values.webModeler.restapi.externalDatabase.password -}}
+{{- end -}}
+
+{{/*
 [web-modeler] Get the name of the secret resource that contains the SMTP password.
 */}}
 {{- define "webModeler.restapi.smtpSecretName" -}}
