@@ -194,7 +194,7 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
-        kubectl label ns $TEST_NAMESPACE repo=${{ env.CI_REPO }}
+        kubectl label ns $TEST_NAMESPACE repo=${{ GITHUB_ACTION_REPOSITORY }}
         kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ env.CI_DEPLOYMENT_TTL }}
     - name: Copy PRs wildcard certificate
       run: |
