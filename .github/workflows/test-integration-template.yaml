@@ -123,6 +123,17 @@ jobs:
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
 
+    # Print PR information when triggered by a pull request.
+    - name: Get PR information
+      if: github.event.pull_request
+      run: |
+        echo "PR Information:"
+        echo "Title: ${{ github.event.pull_request.title }}"  
+        echo "Number: ${{ github.event.pull_request.number }}"
+        echo "URL: ${{ github.event.pull_request.html_url }}"
+        echo "Head SHA: ${{ github.event.pull_request.head.sha }}"
+        echo "Base Ref: ${{ github.event.pull_request.base.ref }}"
+
     # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
     # and populate environment variables from Vault
     - name: Import Vault secrets
