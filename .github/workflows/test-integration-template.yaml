@@ -26,12 +26,6 @@ on:
         required: false
         default: ""
         type: string
-      # repo:
-      #   description: |
-      #     Specifies what github repository has called this workflow
-      #   required: false
-      #   default: ""
-      #   type: string
       platforms:
         default: gke
         type: string

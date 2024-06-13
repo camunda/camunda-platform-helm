@@ -9,11 +9,6 @@ on:
         required: false
         default: ""
         type: string
-      repo:
-        description: |
-          Specifies what github repository has called this workflow
-        required: false
-        type: string
       platforms:
         description: platform to test on
         required: false
@@ -45,4 +40,3 @@ jobs:
       extra-values: ${{ github.event.inputs.extra-values }}
       platforms: ${{ github.event.inputs.platforms }}
       ttl: ${{ github.event.inputs.ttl == "1w" }}
-      repo: ${{ github.event.inputs.repo }}
