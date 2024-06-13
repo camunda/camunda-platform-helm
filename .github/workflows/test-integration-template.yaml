@@ -24,7 +24,7 @@ on:
         description: |
           Define a ttl for the lifespan of the deployment
         required: false
-        default: "43200s"
+        default: ""
         type: string
       platforms:
         default: gke
