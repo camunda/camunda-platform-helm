@@ -80,7 +80,7 @@ jobs:
     with:
       identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
       ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
-      repo: "camunda-platform-helm"
+      repo: "camunda-platform-helm" 
       platforms: "gke"
       flows: "install,upgrade"
       test-enabled: false
