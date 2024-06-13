@@ -30,7 +30,17 @@ spec:
       imagePullSecrets:
         {{- include "operate.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.operate.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- if .Values.optimize.initContainers }}
+          {{- tpl (.Values.optimize.initContainers | toYaml | nindent 8) $ }}
+        {{- end }}
+        {{- if .Values.operate.migration.enabled }}
+        - name: migration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          command: [ '/bin/sh', '/usr/local/operate/bin/migrate' ]
+          env:
+            {{- with .Values.operate.migration.env }}
+            {{- toYaml . | nindent 8 }}
+            {{- end }}
       containers:
         - name: operate
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
