@@ -24,7 +24,7 @@ on:
         description: |
           Define a ttl for the lifespan of the deployment
         required: false
-        default: ""
+        default: "43200s"
         type: string
       platforms:
         default: gke
@@ -265,9 +265,15 @@ jobs:
     - name: 🚨 Get failed Pods info 🚨
       if: failure()
       uses: ./.github/actions/failed-pods-info
+    - name: Cleanup GitHub deployment
+      if: always() && (env.CI_DEPLOYMENT_TTL == "43200s" || matrix.distro.type != 'kubernetes')
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
+      with:
+        step: delete-env
+        token: ${{ steps.generate-github-token.outputs.token }}
+        env: ${{ steps.vars.outputs.identifier }}
+        ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
-      if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_DEPLOYMENT_TTL == "43200s" || matrix.distro.type != 'kubernetes')
       run: |
-        kubectl delete ns --ignore-not-found=true \
-          -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
-          -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl="1s"
