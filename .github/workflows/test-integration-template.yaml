@@ -20,9 +20,9 @@ on:
         required: false
         default: main
         type: string
-      ttl:
+      deployment-ttl:
         description: |
-          Define a ttl for the lifespan of the workflow
+          Define a ttl for the lifespan of the deployment
         required: false
         default: ""
         type: string
@@ -56,7 +56,7 @@ concurrency:
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
-  CI_TTL: ${{ inputs.ttl }}
+  CI_TTL: ${{ inputs.deployment-ttl }}
   CI_REPO: $(basename ${{ github.event.repository.full_name }})
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
   # Docker Hub auth to avoid image pull rate limit.
@@ -165,7 +165,7 @@ jobs:
       id: vars
       uses: ./.github/actions/workflow-vars
       with:
-        ttl: ${{ env.CI_TTL }}
+        deployment-ttl: ${{ env.CI_TTL }}
         repo: ${{ env.CI_REPO }}
         setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}

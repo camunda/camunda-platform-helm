@@ -27,7 +27,7 @@ jobs:
     with:
       identifier: "${{ github.event.pull_request.number }}"
       platforms: "gke,rosa"
-      ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       flows: "install,upgrade"
       caller-git-ref: ${{ github.event.pull_request.head.sha }}
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha }}

@@ -3,9 +3,9 @@ name: "Dispatch Backport - Integration - Main"
 on:
   workflow_dispatch:
     inputs:
-      ttl:
+      deployment-ttl:
         description: |
-          Define a ttl for the lifespan of the workflow
+          Define a ttl for the lifespan of the deployment
         required: false
         default: ""
         type: string
@@ -39,4 +39,4 @@ jobs:
       identifier: ${{ github.event.inputs.identifier }}
       extra-values: ${{ github.event.inputs.extra-values }}
       platforms: ${{ github.event.inputs.platforms }}
-      ttl: ${{ github.event.inputs.ttl == "1w" }}
+      deployment-ttl: ${{ github.event.inputs.deployment-ttl == "1w" }}
