@@ -274,6 +274,7 @@ jobs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
+      if: always()
       run: |
         if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
           if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
