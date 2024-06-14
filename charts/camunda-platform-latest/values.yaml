@@ -18,6 +18,7 @@
 #    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in helm.
 #
 # Conjunction:
+
 #   * [defines] for mandatory configuration
 #   * [can be used] for optional configuration
 #   * [if true] for toggles
