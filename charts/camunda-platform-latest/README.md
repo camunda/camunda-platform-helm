@@ -613,6 +613,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `console.nodeSelector`                                      | can be used to define on which nodes the Console pods should run                                                                                                                     | `{}`                       |
 | `console.tolerations`                                       | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                                 | `[]`                       |
 | `console.affinity`                                          | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                              | `{}`                       |
+| `console.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                            | `{}`                       |
+| `console.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                              | `""`                       |
 
 ### Zeebe Parameters
 
@@ -732,6 +734,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `zeebe.retention.policyName`                              | defines the name of the created and applied ILM policy.                                                                                                                                                                       | `zeebe-record-retention-policy`                                                                                                                            |
 | `zeebe.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                                                                   | `""`                                                                                                                                                       |
 | `zeebe.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                                                                      | `{}`                                                                                                                                                       |
+| `zeebe.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                                                                     | `{}`                                                                                                                                                       |
+| `zeebe.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                                                                       | `""`                                                                                                                                                       |
 
 ### ZeebeGateway Parameters
 
@@ -853,6 +857,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `zeebeGateway.contextPath`                                       | can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.                             | `""`                                  |
 | `zeebeGateway.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                                  |
 | `zeebeGateway.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                                  |
+| `zeebeGateway.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `{}`                                  |
+| `zeebeGateway.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `""`                                  |
 
 ### Operate Parameters
 
@@ -951,6 +957,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `operate.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `operate.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
 | `operate.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                 | `{}`                         |
+| `operate.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `{}`                         |
+| `operate.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `""`                         |
 
 ### Tasklist Parameters
 
@@ -1046,6 +1054,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `tasklist.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `tasklist.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
 | `tasklist.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                         |
+| `tasklist.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `{}`                         |
+| `tasklist.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `""`                         |
 
 ### Optimize Parameters
 
@@ -1148,6 +1158,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `optimize.ingress.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                          | `camunda-platform-optimize` |
 | `optimize.configuration`                                     | if specified, contents will be used as the environment-config.yaml                                                                                                                  | `""`                        |
 | `optimize.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as environment-logback.xml                                                                               | `{}`                        |
+| `optimize.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                           | `{}`                        |
+| `optimize.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                             | `""`                        |
 
 ### Identity Parameters
 
@@ -1259,6 +1271,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `identity.externalDatabase.existingSecretPasswordKey`        | Name of an existing secret key containing the database credentials                                                                                                                                        | `nil`                       |
 | `identity.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                                               | `""`                        |
 | `identity.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                                              | `{}`                        |
+| `identity.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                                                 | `{}`                        |
+| `identity.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                                                   | `""`                        |
 
 ### Identity - PostgreSQL Parameters
 
@@ -1442,6 +1456,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.restapi.service.managementPort`                            | defines the management port of the service                                                                                                                                   | `8091`                           |
 | `webModeler.restapi.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                             |
 | `webModeler.restapi.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                             |
+| `webModeler.restapi.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `{}`                             |
+| `webModeler.restapi.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `""`                             |
 
 ### WebModeler - WebApp Parameters
 
@@ -1515,6 +1531,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.webapp.service.managementPort`                            | defines the management port of the service                                                                                                                                   | `8071`                          |
 | `webModeler.webapp.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                            |
 | `webModeler.webapp.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                            |
+| `webModeler.webapp.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `{}`                            |
+| `webModeler.webapp.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `""`                            |
 
 ### WebModeler - WebSockets Parameters
 
@@ -1582,6 +1600,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.websockets.service.port`                                      | defines the port of the service                                                                                                                                                                                                   | `80`                                     |
 | `webModeler.websockets.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                                                                       | `""`                                     |
 | `webModeler.websockets.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                                                                          | `{}`                                     |
+| `webModeler.websockets.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                                                                         | `{}`                                     |
+| `webModeler.websockets.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                                                                           | `""`                                     |
 | `webModeler.serviceAccount`                                               | configuration for the service account the WebModeler pods are assigned to                                                                                                                                                         |                                          |
 | `webModeler.serviceAccount.enabled`                                       | if true, enables the WebModeler service account                                                                                                                                                                                   | `true`                                   |
 | `webModeler.serviceAccount.name`                                          | can be used to set the name of the WebModeler service account                                                                                                                                                                     | `""`                                     |
@@ -1740,6 +1760,8 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `connectors.affinity`                                          | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                      | `{}`                          |
 | `connectors.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                          |
 | `connectors.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                 | `{}`                          |
+| `connectors.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `{}`                          |
+| `connectors.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `""`                          |
 
 ### Elasticsearch Parameters
 
