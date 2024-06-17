@@ -2975,7 +2975,7 @@ webModeler:
     ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
     ## @param webModeler.websockets.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-    dnsPolicy: { }
+    dnsPolicy: {}
     ## @param webModeler.websockets.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: ""
 
