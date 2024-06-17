@@ -879,3 +879,105 @@ func (s *deploymentTemplateTest) TestOperateWithLog4j2Configuration() {
 	s.Require().Equal("config", volume.Name)
 	s.Require().Equal("camunda-platform-test-operate-configuration", volume.ConfigMap.Name)
 }
+
+func (s *deploymentTemplateTest) TestOperateDoesNotSetElasticsearchPasswordIfNoneProvidedAndExternal() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.external":     "true",
+			"global.elasticsearch.url.protocol": "http",
+			"global.elasticsearch.url.host":     "elasticexternal",
+			"global.elasticsearch.url.port":     "9200",
+			"elasticsearch.enabled":             "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	envVars := deployment.Spec.Template.Spec.Containers[0].Env
+
+	for _, envVar := range envVars {
+		if envVar.Name == "CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD" || envVar.Name == "CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD" {
+			s.Fail("The elasticsearch password vars should not be set when external elasticsearch is unauthenticated")
+		}
+	}
+}
+func (s *deploymentTemplateTest) TestOperateSetsElasticsearchPasswordIfProvidedByExplicitValueAndExternal() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.external":      "true",
+			"global.elasticsearch.url.protocol":  "http",
+			"global.elasticsearch.url.host":      "elasticexternal",
+			"global.elasticsearch.url.port":      "9200",
+			"elasticsearch.enabled":              "false",
+			"global.elasticsearch.auth.password": "supersecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	envVars := deployment.Spec.Template.Spec.Containers[0].Env
+
+	var camundaOperateElasticPassword corev1.EnvVar
+	var camundaOperateZeebeElasticPassword corev1.EnvVar
+	for _, envVar := range envVars {
+		if envVar.Name == "CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD" {
+			camundaOperateElasticPassword = envVar
+			continue
+		}
+		if envVar.Name == "CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD" {
+			camundaOperateZeebeElasticPassword = envVar
+		}
+	}
+
+	s.Require().Equal(camundaOperateElasticPassword.ValueFrom.SecretKeyRef.Name, "camunda-platform-test-elasticsearch")
+	s.Require().Equal(camundaOperateZeebeElasticPassword.ValueFrom.SecretKeyRef.Name, "camunda-platform-test-elasticsearch")
+}
+func (s *deploymentTemplateTest) TestOperateSetsElasticsearchPasswordIfProvidedBySecretNameAndExternal() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.external":            "true",
+			"global.elasticsearch.url.protocol":        "http",
+			"global.elasticsearch.url.host":            "elasticexternal",
+			"global.elasticsearch.url.port":            "9200",
+			"elasticsearch.enabled":                    "false",
+			"global.elasticsearch.auth.existingSecret": "supersecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	envVars := deployment.Spec.Template.Spec.Containers[0].Env
+
+	var camundaOperateElasticPassword corev1.EnvVar
+	var camundaOperateZeebeElasticPassword corev1.EnvVar
+	for _, envVar := range envVars {
+		if envVar.Name == "CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD" {
+			camundaOperateElasticPassword = envVar
+			continue
+		}
+		if envVar.Name == "CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD" {
+			camundaOperateZeebeElasticPassword = envVar
+		}
+	}
+
+	s.Require().Equal(camundaOperateElasticPassword.ValueFrom.SecretKeyRef.Name, "supersecret")
+	s.Require().Equal(camundaOperateZeebeElasticPassword.ValueFrom.SecretKeyRef.Name, "supersecret")
+}

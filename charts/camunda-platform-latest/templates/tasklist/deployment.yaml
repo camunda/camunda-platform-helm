@@ -41,7 +41,7 @@ spec:
             - name: SERVER_SERVLET_CONTEXT_PATH
               value: {{ .Values.tasklist.contextPath | quote }}
             {{- end }}
-            {{- if .Values.global.elasticsearch.external }}
+            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
             - name: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
