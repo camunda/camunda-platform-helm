@@ -43,7 +43,7 @@ get_versions_filtered () {
 get_chart_images () {
     chart_version="${1}"
     helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
-      --values "charts/${CHART_NAME}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
+      --values "test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
     tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
     sort | uniq
 }
@@ -89,12 +89,12 @@ generate_version_matrix_released () {
 
 # Generate a version matrix from the unreleased chart using the local git repo.
 generate_version_matrix_unreleased () {
-    export CHART_SOURCE="charts/${CHART_NAME}"
+    export CHART_SOURCE="charts/${CHART_NAME}-latest"
     export CHART_REF_NAME="$(git branch --show-current)"
     CHART_VERSION_LOCAL="{
-      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "charts/${CHART_NAME}/Chart.yaml")\",
+      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "charts/${CHART_NAME}-latest/Chart.yaml")\",
       \"charts\": [
-        \"$(yq '.version' "charts/${CHART_NAME}/Chart.yaml")\"
+        \"$(yq '.version' "charts/${CHART_NAME}-latest/Chart.yaml")\"
       ]
     }"
     generate_version_matrix_single "${CHART_VERSION_LOCAL}"
