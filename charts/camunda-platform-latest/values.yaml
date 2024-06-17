@@ -2655,9 +2655,9 @@ webModeler:
     configuration: ""
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
-    ## @param webmodeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+    ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: {}
-    ## @param webmodeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+    ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: ""
 
   # WebModeler.
@@ -2820,9 +2820,9 @@ webModeler:
     configuration: ""
     ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
-    ## @param webmodeler.webapp.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+    ## @param webModeler.webapp.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: {}
-    ## @param webmodeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+    ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: ""
 
   # WebModeler.
@@ -2974,9 +2974,9 @@ webModeler:
     configuration: ""
     ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
-    ## @param webmodeler.websockets.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+    ## @param webModeler.websockets.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: { }
-    ## @param webmodeler.websockets.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+    ## @param webModeler.websockets.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: ""
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
