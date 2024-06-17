@@ -218,6 +218,12 @@ spec:
         {{- .Values.operate.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "operate.serviceAccountName" . }}
+      {{- if .Values.operate.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.operate.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.operate.dnsPolicy }}
+      dnsPolicy: {{ .Values.operate.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.operate.podSecurityContext }}
       securityContext: {{- toYaml .Values.operate.podSecurityContext | nindent 8 }}
       {{- end }}
