@@ -37,7 +37,7 @@ spec:
           securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            {{- if .Values.global.elasticsearch.external }}
+            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
