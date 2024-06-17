@@ -26,7 +26,7 @@ operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     # renovate: datasource=docker depName=camunda/operate
-    tag: 8.5.2
+    tag: 8.5.3
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -40,6 +40,16 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
+    tag: 8.5.3
+
+zeebe:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    tag: 8.5.3
+
+zeebeGateway:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
     tag: 8.5.3
 
 #
