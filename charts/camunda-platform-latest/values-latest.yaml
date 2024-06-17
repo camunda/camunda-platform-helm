@@ -42,6 +42,16 @@ webModeler:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
     tag: 8.5.3
 
+zeebe:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    tag: 8.5.3
+
+zeebeGateway:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    tag: 8.5.3
+
 #
 # Identity - Keycloak
 #
