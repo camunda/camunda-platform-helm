@@ -13,7 +13,7 @@ for dep_name in ${dep_names}; do
 done
 
 CHART_NAME="${CHART_NAME:-camunda-platform}"
-CHART_VERSION="${CHART_VERSION:-latest}"
+CHART_DIR="${CHART_DIR:-${CHART_NAME-latest}}"
 CHART_SOURCE="${CHART_SOURCE:-camunda/$CHART_NAME}"
 # Add unsupported Camunda version to reduce generation time.
 CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[01])'
@@ -43,7 +43,7 @@ get_versions_filtered () {
 get_chart_images () {
     chart_version="${1}"
     helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
-      --values "charts/${CHART_NAME}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
+      --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
     tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
     sort | uniq
 }
@@ -51,7 +51,7 @@ get_chart_images () {
 # Get Helm CLI version based on the asdf .tool-versions file.
 get_helm_cli_version () {
     chart_ref_name="${CHART_REF_NAME:-$1}"
-    (git show ${chart_ref_name}:.tool-versions 2> /dev/null | awk '/helm/{printf $2}') ||
+    (git show ${chart_ref_name}:.tool-versions 2> /dev/null | awk '/helm /{printf $2}') ||
       echo -n ''
 }
 
@@ -89,12 +89,12 @@ generate_version_matrix_released () {
 
 # Generate a version matrix from the unreleased chart using the local git repo.
 generate_version_matrix_unreleased () {
-    export CHART_SOURCE="charts/${CHART_NAME}"
+    export CHART_SOURCE="${CHART_DIR}"
     export CHART_REF_NAME="$(git branch --show-current)"
     CHART_VERSION_LOCAL="{
-      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "charts/${CHART_NAME}/Chart.yaml")\",
+      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "${CHART_SOURCE}/Chart.yaml")\",
       \"charts\": [
-        \"$(yq '.version' "charts/${CHART_NAME}/Chart.yaml")\"
+        \"$(yq '.version' "${CHART_SOURCE}/Chart.yaml")\"
       ]
     }"
     generate_version_matrix_single "${CHART_VERSION_LOCAL}"

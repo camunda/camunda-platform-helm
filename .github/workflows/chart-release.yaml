@@ -37,8 +37,8 @@ jobs:
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
-            "charts/camunda-platform*/values*.yaml"
-            "charts/camunda-platform*/Chart.yaml"
+            "charts/camunda-platform-*/values*.yaml"
+            "charts/camunda-platform-*/Chart.yaml"
           )
           for FILE in "${TARGET_FILES[@]}"; do
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
@@ -50,6 +50,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
@@ -73,10 +74,6 @@ jobs:
             make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
-      # TODO: Move this step to pre-release workflow when we have it.
-      - name: Generate release note footer
-        run: |
-          make release.generate-notes-footer
       - name: Tidy up
         run: |
           # Clean up badges from readme to avoid showing them in Artifact Hub.

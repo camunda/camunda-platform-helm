@@ -1,0 +1,22 @@
+name: "Chart - Release - PR"
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Run Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
+          config-file: .github/config/release-please/release-please-config.json
+          manifest-file: .github/config/release-please/.release-please-manifest.json
