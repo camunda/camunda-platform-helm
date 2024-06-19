@@ -62,18 +62,24 @@ jobs:
       - name: Set vars
         run: |
           echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
-      - name: Update PR title
+      - name: Update PR info
         env:
           GH_TOKEN: '${{ steps.generate-github-token.outputs.token }}'
         run: |
           git fetch origin main:main
-          # Set vars to update PR title.
+
+          # Update PR title with changed versions.
           title="$(jq -r '."group-pull-request-title-pattern"' ${RELEASE_PLEASE_CONFIG})"
           versions="$(git log -p main..HEAD -- ${RELEASE_PLEASE_MANIFEST} |
                 awk -F ": " '/^+ /{gsub(/[",]/,""); printf "%s%s",sep,$2; sep=", "} END{print ""}')"
           pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
-          # Update PR title with changed versions.
           gh pr edit "${pr_nubmer}" --title "${title} ${versions}"
+
+          # Set PR labels.
+          gh pr edit "${pr_nubmer}" --add-label "camunda-platform,chore"
+
+          # Set PR project.
+          gh pr edit "${pr_nubmer}" --add-project "Distribution Team"
       # We use git-chglog to generate the release notes and release-please
       # doesn't have an option to disable the generation of CHANGELOG.md files.
       # https://github.com/googleapis/release-please/issues/2007
