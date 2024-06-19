@@ -14,9 +14,15 @@ jobs:
     name: Run Release Please
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          token: '${{ steps.generate-github-token.outputs.token }}'
           # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
           config-file: .github/config/release-please/release-please-config.json
           manifest-file: .github/config/release-please/.release-please-manifest.json
