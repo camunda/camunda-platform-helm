@@ -54,7 +54,7 @@ jobs:
         - distro:
             if: false
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
@@ -74,7 +74,17 @@ jobs:
         openshift_server_url: ${{ secrets[matrix.distro.secret.server-url] }}
         openshift_username: ${{ secrets[matrix.distro.secret.username] }}
         openshift_password: ${{ secrets[matrix.distro.secret.password] }}
-    - name: Delete Namespace on ${{ matrix.distro.name }}
+    - name: Check Namespace in ${{ matrix.distro.name }} and Delete if Older than 24 hours
       run: |
-        kubectl delete ns --ignore-not-found=true \
-          -l github-run-id="${{ inputs.github-run-id }}"
+          for ns in $(kubectl get ns -l github-run-id -l test-persistent=false --output=jsonpath='{.items[*].metadata.name}'); do
+            # Get the creation timestamp of the namespace
+            creationTimestamp=$(kubectl get ns "$ns" -o jsonpath='{.metadata.creationTimestamp}')
+            # Get the current date and time
+            currentTimestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            # Calculate the difference in seconds between the current time and the creation time
+            diffInSeconds=$(($(date -u -d "$currentTimestamp" +"%s") - $(date -u -d "$creationTimestamp" +"%s")))
+            # If the namespace is older than 24 hours (86400 seconds), delete it
+            if [ "$diffInSeconds" -gt 86400 ]; then
+              kubectl delete ns --ignore-not-found=true "$ns"
+            fi
+          done

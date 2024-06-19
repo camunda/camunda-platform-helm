@@ -7,10 +7,10 @@ on:
     branches:
     - 'renovate/*'
     paths:
-    - 'charts/camunda-platform/Chart.yaml'
-    - 'charts/camunda-platform/values.yaml'
-    - 'charts/camunda-platform/templates/**'
-    - 'charts/camunda-platform/charts/**'
+    - 'charts/camunda-platform*/Chart.yaml'
+    - 'charts/camunda-platform*/values.yaml'
+    - 'charts/camunda-platform*/templates/**'
+    - 'charts/camunda-platform*/charts/**'
 
 permissions:
   contents: read
@@ -28,12 +28,12 @@ jobs:
       with:
         app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
         private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         token: '${{ steps.generate-github-token.outputs.token }}'
-    - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+    - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5
       with:
-        go-version-file: go.mod
+        go-version-file: charts/camunda-platform-latest/go.mod
         cache: false
     - uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
     - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4
@@ -41,6 +41,7 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
+          ~/.asdf/installs/golang/*/packages/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-

@@ -1,8 +1,8 @@
 # Makefile for managing the Helm charts
-
-chartPath=charts/camunda-platform
-chartVersion=$(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
-releaseName=camunda-platform-test
+MAKEFLAGS += --silent
+chartPath ?= charts/camunda-platform-latest
+chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
+releaseName = camunda-platform-test
 
 #########################################################
 ######### Go.
@@ -11,25 +11,37 @@ releaseName=camunda-platform-test
 #
 # Tests.
 
+define go_test_run
+	find $(chartPath) -name "go.mod" -exec dirname {} \; | while read chart_dir; do\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
+		cd $$(git rev-parse --show-toplevel);\
+		cd "$${chart_dir}";\
+		$(1);\
+	done
+endef
+
 # go.test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: go.test
 go.test: helm.dependency-update
-	go test ./...
+	@$(call go_test_run, go test ./...)
 
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
 go.test-golden-updated: helm.dependency-update
-	go test ./... -args -update-golden
+	@$(call go_test_run, go test ./... -args -update-golden)
+
+.PHONY: go.update-golden-only-lite
+go.update-golden-only-lite:
+	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
 
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only
-go.update-golden-only: helm.dependency-update
-	go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden
+go.update-golden-only: helm.dependency-update go.update-golden-only-lite
 
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt
 go.fmt:
-	go fmt ./...
+	@$(call go_test_run, go fmt ./...)
 	@diff=$$(git status --porcelain | grep -F ".go" || true)
 	@if [ -n "$${diff}" ]; then\
 		echo "Some files are not following the go format ($${diff}), run gofmt and fix your files.";\
@@ -47,12 +59,12 @@ go.addlicense-install:
 # go.addlicense-run: adds license headers to go files
 .PHONY: go.addlicense-run
 go.addlicense-run:
-	addlicense -c 'Camunda Services GmbH' -l apache charts/camunda-platform/test/**/*.go
+	addlicense -c 'Camunda Services GmbH' -l apache charts/$(chartPath)/test/**/*.go
 
 # go.addlicense-check: checks that the go files contain license header
 .PHONY: go.addlicense-check
 go.addlicense-check:
-	addlicense -check -l apache charts/camunda-platform/test/**/*.go
+	addlicense -check -l apache charts/$(chartPath)/test/**/*.go
 
 #########################################################
 ######### Tools
@@ -89,12 +101,29 @@ tools.zbctl-topology:
 helm.repos-add:
 	helm repo add camunda https://helm.camunda.io
 	helm repo add bitnami https://charts.bitnami.com/bitnami
+	helm repo add elastic https://helm.elastic.co
 	helm repo update
 
 # helm.dependency-update: update and downloads the dependencies for the Helm chart
 .PHONY: helm.dependency-update
 helm.dependency-update:
-	helm dependency update $(chartPath)
+	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
+		echo "[$@] Chart dir: $${chart_dir}";\
+		helm dependency update $${chart_dir};\
+	done
+
+# helm.lint: verify that the chart is well-formed.
+.PHONY: helm.lint
+helm.lint:
+	echo "[$@] Chart dir: $(chartPath)"
+	helm lint --strict $(chartPath)
+
+# helm.lint: verify that the chart is well-formed.
+.PHONY: helm.lint-all
+helm.lint-all:
+	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
+		$(MAKE) chartPath=$${chart_dir} helm.lint;\
+	done
 
 # helm.install: install the local chart into the current kubernetes cluster/namespace
 .PHONY: helm.install
@@ -121,9 +150,13 @@ helm.template: helm.dependency-update
 # helm.readme-update: generate readme from values file
 .PHONY: helm.readme-update
 helm.readme-update:
-	readme-generator \
-		--values "$(chartPath)/values.yaml" \
-		--readme "$(chartPath)/README.md"
+	for chart_dir in $(chartPath); do\
+		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
+		readme-generator \
+			--values "$${chart_dir}/values.yaml" \
+			--readme "$${chart_dir}/README.md";\
+	done
 
 #########################################################
 ######### Release
@@ -138,12 +171,22 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 	git add $(chartPath);\
 	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
-.PHONY: .release.generate-notes
-.release.generate-notes:
-	@bash scripts/generate-release-notes.sh
+.PHONY: release.generate-notes
+release.generate-notes:
+	for chart_dir in $(chartPath); do\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
+		bash scripts/generate-release-notes.sh --main "$${chart_dir}";\
+	done
+
+.PHONY: release.generate-notes-footer
+release.generate-notes-footer:
+	for chart_dir in $(chartPath); do\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
+		bash scripts/generate-release-notes.sh --footer "$${chart_dir}";\
+	done
 
 .PHONY: release.generate-and-commit
-release.generate-and-commit: .release.generate-notes
+release.generate-and-commit: release.generate-notes
 	git add $(chartPath);\
 	git commit -m "chore: add generated files for camunda-platform $(chartVersion)"
 
@@ -169,10 +212,17 @@ release.chores:
 release.verify-components-version:
 	@bash scripts/verify-components-version.sh
 
-.PHONY: release.generate-version-matrix-single
-release.generate-version-matrix-single:
-	@bash scripts/generate-version-matrix.sh --single
+.PHONY: release.generate-version-matrix-index
+release.generate-version-matrix-index:
+	@bash scripts/generate-version-matrix.sh --init
+	@bash scripts/generate-version-matrix.sh --index
 
-.PHONY: release.generate-version-matrix-all
-release.generate-version-matrix-all:
-	@bash scripts/generate-version-matrix.sh --all
+.PHONY: release.generate-version-matrix-released
+release.generate-version-matrix-released:
+	@bash scripts/generate-version-matrix.sh --init
+	@bash scripts/generate-version-matrix.sh --released
+
+.PHONY: release.generate-version-matrix-unreleased
+release.generate-version-matrix-unreleased:
+	@bash scripts/generate-version-matrix.sh --init
+	@bash scripts/generate-version-matrix.sh --unreleased

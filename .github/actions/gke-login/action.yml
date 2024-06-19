@@ -22,18 +22,18 @@ runs:
   steps:
   - name: Authenticate to Google Cloud - Workload Identity
     if: ${{ inputs.auth-method == 'workload-identity' }}
-    uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2
+    uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2
     with:
       token_format: 'access_token'
       workload_identity_provider: ${{ inputs.workload-identity-provider }}
       service_account: ${{ inputs.service-account }}
   - name: Authenticate to Google Cloud - Service Account Key
     if: ${{ inputs.auth-method == 'credentials-json' }}
-    uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2
+    uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2
     with:
       credentials_json: '${{ inputs.credentials-json }}'
   - name: Get GKE credentials
-    uses: google-github-actions/get-gke-credentials@c02be8662df01db62234e9b9cff0765d1c1827ae # v2
+    uses: google-github-actions/get-gke-credentials@c544a3d7e92276d24e03a5632a53aa3913ad5d8a # v2
     with:
       cluster_name: ${{ inputs.cluster-name }}
       location: ${{ inputs.cluster-location }}
