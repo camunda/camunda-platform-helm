@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - charts/camunda-platform-latest/**
+      - charts/camunda-platform-alpha/**
 
 jobs:
   release:
@@ -16,10 +19,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
         chart:
         - name: Helm Chart Latest
           directory: charts/camunda-platform-latest
-          # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
           version: 0.0.0-main-snapshot
         - name: Helm Chart Alpha
           directory: charts/camunda-platform-alpha
