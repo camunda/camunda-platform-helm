@@ -2,26 +2,35 @@
 set -euo pipefail
 
 main () {
-    chart_files_to_release="${1:-"charts/*/Chart.yaml"}"
+    chart_files_to_release="${1:-"charts/camunda-platform*/Chart.yaml"}"
 
     for chart_file in ${chart_files_to_release}; do
-        chart_name=$(grep -Po "(?<=^name: ).+" ${chart_file})
-        chart_version=$(grep -Po "(?<=^version: ).+" ${chart_file})
+        chart_path="$(dirname ${chart_file})"
+        chart_name="$(yq '.name' ${chart_file})"
+        chart_version="$(yq '.version' ${chart_file})"
+        chart_version_previous="$(git show main:${chart_file} | yq '.version')"
         chart_tag="${chart_name}-${chart_version}"
-        chart_path="charts/${chart_name}"
+        chart_tag_previous="${chart_name}-${chart_version_previous}"
+
+        #
+        # Early exit if the tag already exists.
+        git tag -l | grep -q "${chart_tag}" && {
+            echo "[WARN] The tag ${chart_tag} already exists, nothing to do...";
+            continue
+        }
 
         #
         # Set Helm CLI version.
         helm_cli_version="$(grep "helm" .tool-versions | cut -d " " -f2)" \
-            yq -i '.annotations."helm.sh/cliVersion" = env(helm_cli_version)' "${chart_file}"
+            yq -i '.annotations."camunda.io/helmCLIVersion" = env(helm_cli_version)' "${chart_file}"
 
         #
         # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
-        git-chglog                                    \
-            --output "${chart_path}/RELEASE-NOTES.md" \
-            --tag-filter-pattern "${chart_tag%%.*}"   \
-            --next-tag "${chart_tag}"                 \
-            --path "${chart_path}" "${chart_tag}"
+        git-chglog                                      \
+            --output "${chart_path}/RELEASE-NOTES.md"   \
+            --next-tag "${chart_tag}"                   \
+            --path "${chart_path}"                      \
+            "${chart_tag_previous}".."${chart_tag}"
 
         #
         # Update ArtifactHub "changes" annotation in the Chart.yaml file.
@@ -36,6 +45,11 @@ main () {
             ["fix"]=fixed
         )
 
+        # Workaround to rest with empty literal block which is not possible in yq.
+        yq -i '.annotations."artifacthub.io/changes" = ""' "${chart_file}"
+        sed -i 's#artifacthub.io/changes: ""#artifacthub.io/changes: |#g' "${chart_file}"
+
+        # Generate temp file with changes to be merged with the Chart.yaml file.
         artifacthub_changes_tmp="/tmp/changes-for-artifacthub.yaml.tmp"
         echo -e 'annotations:\n  artifacthub.io/changes: |' > "${artifacthub_changes_tmp}"
 
@@ -59,9 +73,9 @@ main () {
         # Merge changes back to the Chart.yaml file.
         # https://mikefarah.gitbook.io/yq/operators/reduce#merge-all-yaml-files-together
         yq eval-all '. as $item ireduce ({}; . * $item )' \
-            ${chart_path}/Chart.yaml "${artifacthub_changes_tmp}" > \
+            "${chart_file}" "${artifacthub_changes_tmp}" > \
             /tmp/Chart-with-artifacthub-changes.yaml.tmp
-        cat /tmp/Chart-with-artifacthub-changes.yaml.tmp > ${chart_path}/Chart.yaml
+        cat /tmp/Chart-with-artifacthub-changes.yaml.tmp > "${chart_file}"
         rm "${artifacthub_changes_tmp}"
     done
 }
@@ -70,7 +84,7 @@ release_notes_footer () {
     export VERSION_MATRIX_RELEASE_HEADER="false"
     export VERSION_MATRIX_RELEASE_INFO="$(make release.generate-version-matrix-unreleased)"
     gomplate --file scripts/templates/release-notes/RELEASE-NOTES-FOOTER.md.tpl |
-        tee --append charts/camunda-platform/RELEASE-NOTES.md
+        tee --append charts/camunda-platform-latest/RELEASE-NOTES.md
 }
 
 # Parse script input args.

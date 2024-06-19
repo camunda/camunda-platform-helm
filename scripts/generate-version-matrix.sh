@@ -43,7 +43,7 @@ get_versions_filtered () {
 get_chart_images () {
     chart_version="${1}"
     helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
-      --values "charts/${CHART_NAME}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
+      --values "test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
     tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
     sort | uniq
 }
@@ -62,7 +62,7 @@ generate_version_matrix_index () {
       --config scripts/templates/version-matrix/.gomplate.yaml \
       --datasource versions=env:///ALL_CAMUNDA_VERSIONS?type=application/array+json \
       --file scripts/templates/version-matrix/VERSION-MATRIX-INDEX.md.tpl |
-        tee "charts/${CHART_NAME}/version-matrix/README.md"
+        tee "version-matrix/README.md"
 }
 
 # Generate a version matrix for a certain Camunda version.
@@ -80,21 +80,21 @@ generate_version_matrix_single () {
 generate_version_matrix_released () {
     get_versions_filtered | jq -c '.[]' | while read SUPPORTED_CAMUNDA_VERSION_DATA; do
         SUPPORTED_CAMUNDA_VERSION="$(echo ${SUPPORTED_CAMUNDA_VERSION_DATA} | jq -r '.app')"
-        mkdir -p "charts/${CHART_NAME}/version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}"
+        mkdir -p "version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}"
         echo -e "#\n# Generating version matrix for Camunda ${SUPPORTED_CAMUNDA_VERSION}\n#"
         generate_version_matrix_single "${SUPPORTED_CAMUNDA_VERSION_DATA}" | tee \
-          "charts/${CHART_NAME}/version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}/README.md"
+          "version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}/README.md"
     done
 }
 
 # Generate a version matrix from the unreleased chart using the local git repo.
 generate_version_matrix_unreleased () {
-    export CHART_SOURCE="charts/${CHART_NAME}"
+    export CHART_SOURCE="charts/${CHART_NAME}-latest"
     export CHART_REF_NAME="$(git branch --show-current)"
     CHART_VERSION_LOCAL="{
-      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "charts/${CHART_NAME}/Chart.yaml")\",
+      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "charts/${CHART_NAME}-latest/Chart.yaml")\",
       \"charts\": [
-        \"$(yq '.version' "charts/${CHART_NAME}/Chart.yaml")\"
+        \"$(yq '.version' "charts/${CHART_NAME}-latest/Chart.yaml")\"
       ]
     }"
     generate_version_matrix_single "${CHART_VERSION_LOCAL}"
