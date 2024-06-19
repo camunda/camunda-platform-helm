@@ -91,6 +91,12 @@ runs:
         git fetch origin main:main --no-tags
         TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
         echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+
+        # Alpha should be always upgraded from latest version.
+        if [[ $(echo "${TEST_CHART_VERSION}" | grep 'alpha') ]]; then
+          TEST_CHART_VERSION="$(git show main:charts/camunda-platform-latest/Chart.yaml | yq '.version')"
+          echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+        fi
       fi
 
     # Avoid confusion about the chart version since we only change the version during the release process
