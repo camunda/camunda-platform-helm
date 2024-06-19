@@ -1224,8 +1224,6 @@ operate:
     type: ClusterIP
     ## @param operate.service.port defines the port of the service, where the Operate web application will be available
     port: 80
-    ## @param operate.service.managementPort defines the management port of the service
-    managementPort: 9600
 
   ## @extra operate.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param operate.resources.requests.cpu
