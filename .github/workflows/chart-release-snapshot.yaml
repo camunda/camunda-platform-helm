@@ -19,14 +19,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
         chart:
         - name: Helm Chart Latest
           directory: charts/camunda-platform-latest
-          version: 0.0.0-main-snapshot
+          versionSuffix: main-snapshot
         - name: Helm Chart Alpha
           directory: charts/camunda-platform-alpha
-          version: 0.0.0-main-alpha
+          versionSuffix: ""
     defaults:
       run:
         shell: bash
@@ -36,12 +35,17 @@ jobs:
     env:
       REPOSITORY_NAME: "camunda/helm"
       CHART_NAME: "camunda-platform"
-      CHART_VERSION: ${{ matrix.chart.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
+      - name: Set vars
+        run: |
+          # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-main-snapshot".
+          CHART_VERSION_SUFFIX="${{ matrix.chart.versionSuffix }}"
+          CHART_VERSION_SUFFIX_DEFAULT="$(yq '.version' Chart.yaml)"
+          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a $GITHUB_ENV
       #
       # Changelog.
       - name: Generate snapshot changelog
