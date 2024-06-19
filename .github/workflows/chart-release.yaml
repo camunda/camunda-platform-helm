@@ -29,7 +29,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
       - name: Install env dependencies
@@ -37,9 +37,8 @@ jobs:
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
-            "charts/camunda-platform/values/*"
-            "charts/camunda-platform/values.yaml"
-            "charts/camunda-platform/Chart.yaml"
+            "charts/camunda-platform-*/values*.yaml"
+            "charts/camunda-platform-*/Chart.yaml"
           )
           for FILE in "${TARGET_FILES[@]}"; do
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
@@ -51,6 +50,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
@@ -58,53 +58,99 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Install Chart Releaser
+        uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
+        with:
+          install_only: true
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          CR_SKIP_EXISTING: 'true'
       - name: Add Helm repos
         run: |
           make helm.repos-add
       - name: Update Helm dependency
         run: |
-          make helm.dependency-update
+          chartPath="$(ct list-changed | tr '\n' ' ')" \
+            make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
-      - name: Set Helm chart version var
+      - name: Tidy up
         run: |
-          CHART_NAME="$(yq ".name" charts/camunda-platform/Chart.yaml)"
-          CHART_VERSION="$(yq ".version" charts/camunda-platform/Chart.yaml)"
-          echo "CHART_NAME_WITH_VERSION=${CHART_NAME}-${CHART_VERSION}" | tee -a $GITHUB_ENV
-      # TODO: Move this step to pre-release workflow when we have it.
-      - name: Generate release note footer
+          # Clean up badges from readme to avoid showing them in Artifact Hub.
+          sed -ri '/Badge .+/d' charts/camunda-platform-latest/README.md
+          mkdir release-packages
+
+      #
+      # We run Chart Releaser twice as a workaround because it's not possible to control the release order.
+      # CR by default will release "camunda-platform-10.x.x" first then "camunda-platform-8.x.x",
+      # however, we want the latest version to show as the latest release in GitHub releases.
+      #
+
+      # Release previous versions.
+      - name: Pre-Release - Previous versions
         run: |
-          export OUTPUT_VERSION_HEADER="### Images"
-          export IMAGE_VERSION_MATRIX="$(make release.generate-version-matrix-single)"
-          gomplate --file release/release-notes-footer/RELEASE-NOTES-FOOTER.md.tpl >> \
-            charts/camunda-platform/RELEASE-NOTES.md
-      - name: Clean up release readme
-        run: |
-          sed -ri '/Badge .+/d' charts/camunda-platform/README.md
-      - name: Run Chart Releaser
+          rm -rf charts/camunda-platform-latest
+      - name: Run Chart Releaser - Previous versions
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
         with:
           config: .github/config/chart-releaser.yaml
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
+      - name: Post-Release - Previous versions
+        run: |
+          mv .cr-release-packages/* release-packages/
+          git checkout :/
+
+      # Release the latest version.
+      - name: Pre-Release - Latest version
+        run: |
+          rm -rf charts/camunda-platform-8*
+      - name: Run Chart Releaser - Latest version
+        uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
+        with:
+          config: .github/config/chart-releaser.yaml
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          CR_SKIP_EXISTING: 'true'
+      - name: Post-Release - Latest version
+        run: |
+          mv .cr-release-packages/* release-packages/
+          git checkout :/
+
+      # Sign and upload the signature of the chart package.
+      - name: Set Helm chart vars
+        run: |
+          CHART_PACKAGES="$(find release-packages -maxdepth 1 -name "camunda-platform*.tgz" \
+            -exec basename {} \; | xargs)"
+          echo "CHART_PACKAGES=${CHART_PACKAGES}" | tee -a $GITHUB_ENV
       - name: Sign Helm chart with Cosign
         run: |
-          cosign sign-blob -y .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
-            --bundle ${CHART_NAME_WITH_VERSION}.cosign.bundle
+          for chart_package in ${CHART_PACKAGES}; do
+            echo "Package: ${chart_package}"
+            cosign sign-blob -y release-packages/${chart_package} \
+              --bundle "${chart_package%.*}.cosign.bundle"
+          done
       - name: Verify signed Helm chart with Cosign
         run: |
-          cosign verify-blob .cr-release-packages/${CHART_NAME_WITH_VERSION}.tgz \
-            --bundle ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
-            --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+          for chart_package in ${CHART_PACKAGES}; do
+            echo "Package: ${chart_package}"
+            cosign verify-blob release-packages/${chart_package} \
+              --bundle "${chart_package%.*}.cosign.bundle" \
+              --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+          done
       - name: Upload Helm chart signature bundle
         run: |
-          gh release upload "${CHART_NAME_WITH_VERSION}" \
-            ./${CHART_NAME_WITH_VERSION}.cosign.bundle \
-            --repo "${GITHUB_REPOSITORY}"
+          for chart_package in ${CHART_PACKAGES}; do
+            echo "Package: ${chart_package}"
+            gh release upload "${chart_package%.*}" \
+              "${chart_package%.*}.cosign.bundle" \
+              --repo "${GITHUB_REPOSITORY}"
+          done
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
   post-release:
     needs: release
     runs-on: ubuntu-latest
@@ -112,11 +158,13 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
-          # The verify step happens in the "release" branch before merging to the "main" branch.
+          # The verification step happens in the "release" branch before merging into the "main" branch.
           ref: release
           fetch-depth: 0
+      - name: Install env dependencies
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
@@ -127,10 +175,11 @@ jobs:
           command: make release.verify-components-version
       - name: Generate version matrix
         run: |
-          git pull --tags
-          make release.generate-version-matrix-all > charts/camunda-platform/VERSION-MATRIX.md
+          make helm.repos-add
+          make release.generate-version-matrix-index
+          make release.generate-version-matrix-released
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore: Generate VERSION-MATRIX.md"
+          message: "chore: Generate version matrix"

@@ -7,30 +7,50 @@ on:
     branches:
     - main
     paths:
-    - 'charts/camunda-platform/values/*.yaml'
-    - 'charts/camunda-platform/VERSION-MATRIX.md'
+    - '.github/workflows/chart-public-files.yaml'
+    - 'charts/camunda-platform*/values*.yaml'
+    - 'scripts/templates/version-matrix/*'
+    - 'version-matrix/**'
   workflow_dispatch: { }
 
 permissions:
   contents: read
 
 jobs:
-  copy-values-files:
+  copy-files:
+    name: Copy chart public files
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           ref: gh-pages
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           path: main
-      - name: Copy the values files
+      - name: Copy files
         run: |
-          mkdir -p camunda-platform/values camunda-platform/version-matrix
-          cp -a main/charts/camunda-platform/values/*.yaml camunda-platform/values/
-          cp -a main/charts/camunda-platform/VERSION-MATRIX.md camunda-platform/version-matrix/README.md
+          #
+          # Values files.
+          mkdir -p camunda-platform/values
+
+          # Latest version.
+          cp -a main/charts/camunda-platform-latest/values-latest.yaml camunda-platform/values/values-latest.yaml
+
+          # Previous versions.
+          find main/charts -name "camunda-platform-*" | while read chart_id; do
+              camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              echo "cp -a main/${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml";
+          done
+
+          #
+          # Version matrix.
+          mkdir -p camunda-platform/version-matrix
+          cp -a main/version-matrix/* camunda-platform/version-matrix/
+
+          #
+          # Post run.            
           rm -rf main
           find .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
