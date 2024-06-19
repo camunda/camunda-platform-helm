@@ -1,0 +1,19 @@
+# Used in the GitHub Actions unit test CI workflow.
+unit:
+  matrix:
+    - name: Core
+      packages: identity camunda
+    - name: Apps
+      packages: connectors operate optimize tasklist
+    - name: Zeebe
+      packages: zeebe zeebe-gateway
+    - name: WebModeler
+      packages: web-modeler
+
+# Used in the GitHub Actions integration test CI workflow.
+integration:
+  scenarios:
+    # Using the common test dir.
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../../charts

@@ -1,5 +1,6 @@
 # See https://github.com/helm/chart-testing#configuration
 remote: origin
 target-branch: main
+lint-conf: yamllint.yaml
 chart-dirs:
   - charts

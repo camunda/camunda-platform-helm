@@ -1,0 +1,89 @@
+#
+# Camunda - Alpha
+#
+
+global:
+  # https://github.com/camunda/camunda-platform/releases
+  # https://hub.docker.com/u/camunda
+  image:
+    tag:
+
+console:
+  # Camunda Enterprise repository.
+  # registry.camunda.cloud/console
+  image:
+    # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
+    tag: 8.5.52
+
+connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags
+  image:
+    repository: camunda/connectors-bundle
+    tag: 8.6.0-alpha2.1
+
+operate:
+  # https://hub.docker.com/r/camunda/operate/tags
+  image:
+    tag: 8.6.0-alpha2
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
+  image:
+    repository: camunda/optimize
+    tag: 8.6.0-alpha2
+
+tasklist:
+  # https://hub.docker.com/r/camunda/tasklist/tags
+  image:
+    repository: camunda/tasklist
+    tag: 8.6.0-alpha2
+
+webModeler:
+  # Camunda Enterprise repository.
+  # registry.camunda.cloud/web-modeler-ee
+  image:
+    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
+    tag: 8.6.0-alpha2
+
+zeebe:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    repository: camunda/zeebe
+    tag: 8.6.0-alpha2
+
+zeebeGateway:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    repository: camunda/zeebe
+    tag: 8.6.0-alpha2
+
+#
+# Identity
+#
+
+identity:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    repository: camunda/identity
+    tag: 8.6.0-alpha2
+
+identityKeycloak:
+  # https://hub.docker.com/r/bitnami/keycloak/tags
+  image:
+    repository: bitnami/keycloak
+    tag: 23.0.7
+  postgresql:
+    # https://hub.docker.com/r/bitnami/postgresql/tags
+    image:
+      repository: bitnami/postgresql
+      tag: 15.7.0
+
+#
+# Elasticsearch
+#
+
+elasticsearch:
+  # https://hub.docker.com/r/bitnami/elasticsearch/tags
+  image:
+    repository: bitnami/elasticsearch
+    tag: 8.12.2

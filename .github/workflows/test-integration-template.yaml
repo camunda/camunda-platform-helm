@@ -1,3 +1,4 @@
+# Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md
 name: "Test - Integration - Template"
 
 on:
@@ -6,6 +7,10 @@ on:
       identifier:
         description: The unique identifier of used in the deployment hostname.
         required: true
+        type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform-latest
         type: string
       camunda-helm-git-ref:
         required: false
@@ -37,15 +42,23 @@ on:
         description: Pass extra values to the Helm chart.
         required: false
         type: string
+      vault-secret-mapping:
+        description: (optional) defines how to map Vault secrets to distro CI environment variables
+        required: false
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}
   cancel-in-progress: true
 
 env:
-  TEST_PERSISTENT: ${{ inputs.persistent }}
-  TEST_HOSTNAME_BASE: ci.distro.ultrawombat.com
-  TEST_SCENARIOS_DIR: charts/camunda-platform/test/integration/scenarios
+  # Vars with "CI_" prefix are used in the CI workflow only.
+  # Vars with "TEST_" prefix are used in the test runner tool (Task).
+  CI_PERSISTENT: ${{ inputs.persistent }}
+  CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
@@ -54,9 +67,6 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
 
-permissions:
-  contents: read
-  
 jobs:
   test:
     name: ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}
@@ -102,14 +112,31 @@ jobs:
             if: false
         - scenario:
             if: false
+
     env:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
+
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
+
+    # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
+    # and populate environment variables from Vault
+    - name: Import Vault secrets
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      if: inputs.vault-secret-mapping != ''
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: ${{ inputs.vault-secret-mapping }}
+        exportEnv: true
+
     # Used to create/delete GitHub environment.
     # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
     - name: Generate GitHub token
@@ -138,15 +165,22 @@ jobs:
       id: vars
       uses: ./.github/actions/workflow-vars
       with:
-        persistent: ${{ env.TEST_PERSISTENT }}
+        persistent: ${{ env.CI_PERSISTENT }}
         setup-flow: ${{ matrix.scenario.flow }}
         platform: ${{ matrix.distro.platform }}
         identifier-base: ${{ inputs.identifier }}
-        ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
+        ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+    - name: Set test type vars
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: "${{ inputs.camunda-helm-dir }}"
     - name: Install env dependencies
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
     - name: Add Helm repos and dependencies
       run: |
+        export chartPath="charts/${{ inputs.camunda-helm-dir }}"
         make helm.repos-add
         make helm.dependency-update
     - name: Create test namespace
@@ -159,7 +193,7 @@ jobs:
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
-        kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.TEST_PERSISTENT }}
+        kubectl label ns $TEST_NAMESPACE test-persistent=${{ env.CI_PERSISTENT }}
     - name: Copy PRs wildcard certificate
       run: |
         kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
@@ -177,7 +211,7 @@ jobs:
         TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
         TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.pre
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
@@ -188,17 +222,16 @@ jobs:
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
-        TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.ingress.outputs.host }}"
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.exec
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
     - name: Post setup
       timeout-minutes: 5
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup setup.post
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
     - name: Pre Upgrade
       if: matrix.scenario.flow == 'upgrade'
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.pre
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
     - name: 🌟 Upgrade Camunda chart 🌟
       if: matrix.scenario.flow == 'upgrade'
       env:
@@ -206,7 +239,7 @@ jobs:
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
           --values /tmp/extra-values-file.yaml
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup upgrade.exec
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
@@ -221,17 +254,17 @@ jobs:
       if: inputs.test-enabled
       timeout-minutes: 10
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup test.preflight
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
     - name: ⭐️ Run Core TestSuite ⭐️
       if: inputs.test-enabled
       timeout-minutes: 20
       run: |
-        task -d $TEST_SCENARIOS_DIR/chart-full-setup test.core
-    - name: Get failed Pods info
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
+    - name: 🚨 Get failed Pods info 🚨
       if: failure()
       uses: ./.github/actions/failed-pods-info
     - name: Cleanup GitHub deployment
-      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
@@ -239,55 +272,8 @@ jobs:
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
     - name: Cleanup test namespace
-      if: always() && (env.TEST_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
+      if: always() && (env.CI_PERSISTENT == 'false' || matrix.distro.type != 'kubernetes')
       run: |
         kubectl delete ns --ignore-not-found=true \
           -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
           -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
-
-  clean:
-    name: Clean up persistent resources
-    if: github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-      deployments: write
-    steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-    # Used to create/delete GitHub environment.
-    # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
-    - name: Generate GitHub token
-      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-      id: generate-github-token
-      with:
-        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-    - name: Set PR vars
-      id: vars
-      uses: ./.github/actions/workflow-vars
-      with:
-        persistent: ${{ env.TEST_PERSISTENT }}
-        platform: gke
-        identifier-base: ${{ inputs.identifier }}
-    # Persistent resources are deployed only on GKE.
-    - name: Authenticate to GKE
-      uses: ./.github/actions/gke-login
-      with:
-        cluster-name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-        cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-        workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-        service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
-    - name: Cleanup GitHub deployment
-      if: always()
-      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
-      with:
-        step: delete-env
-        token: ${{ steps.generate-github-token.outputs.token }}
-        env: ${{ steps.vars.outputs.identifier }}
-        ref: ${{ inputs.caller-git-ref }}
-    - name: Cleanup test namespace
-      if: always()
-      run: |
-        kubectl delete ns --ignore-not-found=true \
-          -l "github-id=${{ steps.vars.outputs.identifier }},test-persistent=true"
