@@ -9,7 +9,6 @@ on:
     - '.github/actions/workflow-vars/**'
     - '.tool-versions'
     - 'charts/camunda-platform-latest/**'
-    - 'charts/camunda-platform-alpha/**'
     types: [opened, closed, reopened, synchronize]
 
 permissions:
