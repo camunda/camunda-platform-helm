@@ -20,8 +20,8 @@ keywords:
 dependencies:
   # Camunda Platform charts.
   - name: identity
-    version: 8.2.28
-    condition: "identity.enabled"
+    version: 8.2.x
+    condition: identity.enabled
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
       #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
@@ -30,19 +30,19 @@ dependencies:
       - child: image
         parent: global.identity.image
   - name: operate
-    version: 8.2.28
+    version: 8.2.x
     condition: "operate.enabled"
   - name: optimize
-    version: 8.2.28
+    version: 8.2.x
     condition: "optimize.enabled"
   - name: tasklist
-    version: 8.2.28
+    version: 8.2.x
     condition: "tasklist.enabled"
   - name: zeebe
-    version: 8.2.28
+    version: 8.2.x
     condition: "zeebe.enabled"
   - name: zeebe-gateway
-    version: 8.2.28
+    version: 8.2.x
     condition: "zeebe.enabled"
   # Dependency charts.
   - name: elasticsearch

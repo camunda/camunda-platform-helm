@@ -20,8 +20,8 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 8.3.13
-    condition: "identity.enabled"
+    version: 8.3.x
+    condition: identity.enabled
     import-values:
       # NOTE: This is used to share Identity image details with its subchart Keycloak.
       #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
@@ -33,11 +33,11 @@ dependencies:
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
     version: 19.13.13
-    condition: "elasticsearch.enabled"
+    condition: elasticsearch.enabled
   - name: postgresql
     repository: https://charts.bitnami.com/bitnami
     version: 11.x.x
-    condition: "postgresql.enabled"
+    condition: postgresql.enabled
   # Helpers charts.
   - name: common
     repository: https://charts.bitnami.com/bitnami
