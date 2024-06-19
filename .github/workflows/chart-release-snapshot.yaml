@@ -21,10 +21,13 @@ jobs:
       fail-fast: false
       matrix:
         chart:
-        - name: Helm Chart Latest
+        - name: Helm Chart Latest rolling
           directory: charts/camunda-platform-latest
           versionSuffix: main-snapshot
-        - name: Helm Chart Alpha
+        - name: Helm Chart Alpha rolling
+          directory: charts/camunda-platform-alpha
+          versionSuffix: main-alpha
+        - name: Helm Chart Alpha versioned
           directory: charts/camunda-platform-alpha
           versionSuffix: ""
     defaults:
