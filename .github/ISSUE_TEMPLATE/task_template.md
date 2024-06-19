@@ -7,14 +7,20 @@ labels: 'kind/task'
 
 ---
 
-**Related to:**
+## Related to
 
 <!-- Link to the parent if found. -->
 
-**Overview:**
+Epic:
+
+## Overview
 
 <!-- Add details about the task. -->
 
-**Actions:**
+## Actions
 
 <!-- Add details about the expected outcome if any. -->
+
+```[tasklist]
+### Sub-tasks
+```

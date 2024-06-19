@@ -14,6 +14,8 @@ inputs:
     description: The deployment cloud platform like GKE or ROSA.
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
+  chart-dir:
+    description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
   identifier:
@@ -51,7 +53,7 @@ runs:
 
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
-      TEST_NAMESPACE="camunda-platform-${TRIGGER_KEY}-${{ inputs.identifier-base }}"
+      TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
 
       if [[ "${{ inputs.persistent }}" == 'false' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
@@ -79,3 +81,22 @@ runs:
       fi
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+
+  - name: Set workflow vars - Chart version
+    shell: bash
+    run: |
+      # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
+      # then upgraded from the PR branch to ensure upgradability.
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        git fetch origin main:main --no-tags
+        TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
+        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+      fi
+
+    # Avoid confusion about the chart version since we only change the version during the release process
+    # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
+  - name: Set chart version
+    shell: bash
+    run: |
+      chart_version="$(echo ${{ inputs.chart-dir }} | sed 's/camunda-platform/0.0.0-ci-snapshot/g')" \
+        yq -i '.version = env(chart_version)' charts/${{ inputs.chart-dir }}/Chart.yaml

@@ -1,6 +1,9 @@
 name: Renovate - Config Check
 
 on:
+  push:
+    paths:
+    - '.github/renovate.json5'
   pull_request:
     paths:
     - '.github/renovate.json5'
@@ -14,7 +17,7 @@ jobs:
     name: Check renovate config 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
     - name: Validate renovate config
       uses: docker://renovate/renovate
       with:
