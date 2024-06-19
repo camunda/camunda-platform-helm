@@ -9,7 +9,7 @@ of the CI pipelines.
 
 ## Camunda Helm chart deployment
 
-The Distro team provides a GitHub Actions Workflow to deploy the Camunda Helm chart via GitHub Actions. This workflow is customizable and supports different patterns. For example: disabling integration tests, single namespace, multi namespace, persistent setup (not deleted after the workflow is done), and more.
+The Distro team provides a GitHub Actions Workflow to deploy the Camunda Helm chart via GitHub Actions. This workflow is customizable and supports different patterns. For example: disabling integration tests, single namespace, multi namespace, persistent setup with a defined ttl (not deleted after the workflow is done), and more.
 
 The GitHub Actions workflow is defined in the [test-integration-template.yaml](../.github/workflows/test-integration-template.yaml) within the Camunda Platform Helm repository and could be used by other repos within Camunda organizations.
 
@@ -46,11 +46,11 @@ jobs:
       # Required: false
       caller-git-ref: ''
 
-      # Whether to keep the test deployment after the workflow is completed
+      # Define a ttl for the deployment after the workflow is completed
       # Note: All persistent deployments will be deleted frequently to save costs
-      # Default: false
+      # Default: ""
       # Required: false
-      persistent:
+      deployment-ttl:
 
       # Specifies the cloud platform that is currently used
       # Default: 'gke'
@@ -86,9 +86,15 @@ jobs:
 
 > [!NOTE]
 > The default behavior in the integration tests workflow is to delete the test resources 
-> after the test is finished. To keep the deployment you need to set `persistent: true`.
-> **However**, even it's persistent, the resources will be deleted frequently to save costs
-> and you need to rerun the workflow again when you need it.
+> after the test is finished. To keep the deployment for at least one day, you need to set `deployment-ttl: 1d`.
+> and you need to rerun the workflow again when you need the deployment to be persistent with a defined deployment-ttl.
+Example deployment-ttl values:
+360s: 360 seconds
+10m: 10 minutes
+24h: 24 hours
+7d: 7 days
+2w: 2 weeks
+
 
 ### Workflow patterns
 
@@ -194,32 +200,11 @@ jobs:
     secrets: inherit
     with:
       identifier: dev-console-sm-${{ matrix.deployment.id }}
-      persistent: true
+      deployment-ttl: 1d
       extra-values: |
         ${{ matrix.deployment.extra-values }}
 ```
 
 #### Persistent deployment
 
-If you have long-running workflows with multiple jobs, you can set `persistent: true` which will keep the deployment namespace and not delete it after the workflow is done.
-
-If you need to delete the deployment afterward, you need to add the following workflow to delete the namespace once the main workflow is finished.
-
-```yaml
-name: Helm Deployment Cleanup
-
-on: 
-  workflow_run:
-    workflows: 
-      - "*"
-    types:
-      - completed
-
-jobs:
-  cleaup:
-    name: Delete Namespace
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-cleanup-template.yaml@main
-    secrets: inherit
-    with:
-      github-run-id: "${{ github.event.workflow_run.id }}"
-```
+If you have long-running workflows with multiple jobs, you can set `deployment-ttl: 1d` which will keep the deployment namespace for 1 day and not delete it after the workflow is done.

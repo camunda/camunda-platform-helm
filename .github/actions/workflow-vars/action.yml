@@ -1,10 +1,6 @@
 name: Workflow vars
 description: Set common vars for workflow
 inputs:
-  persistent:
-    description: Don't use changing vars like SHA commit
-    # TODO: Change that to real bool when it's supported in GHA.
-    default: "false"
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"
@@ -12,6 +8,12 @@ inputs:
     description: The base of the Ingress hostname.
   platform:
     description: The deployment cloud platform like GKE or ROSA.
+  deployment-ttl:
+    description: |
+      Define a ttl for the lifespan of the deployment
+    required: false
+    default: ""
+    type: string
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
   chart-dir:
@@ -55,7 +57,7 @@ runs:
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
       TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
 
-      if [[ "${{ inputs.persistent }}" == 'false' ]]; then
+      if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
       fi
 
@@ -76,7 +78,7 @@ runs:
 
       # Ingress hostname.
       TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
-      if [[ "${{ inputs.persistent }}" == "false" ]] && is_pr; then
+      if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
       # The var is needed in some non-shell steps.
