@@ -2083,6 +2083,25 @@ identity:
       memory: 2Gi
 
   ## @param identity.env can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## When you use exsiting Keycloak, please define below variable:
+  ## - name: IDENTITY_CLIENT_SECRET
+  ##   valueFrom:
+  ##     secretKeyRef:
+  ##       name: <secret_name>
+  ##       key: secret
+  ## - name: IDENTITY_CLIENT_ID
+  ##   valueFrom:
+  ##     secretKeyRef:
+  ##       name: <secret_name>
+  ##       key: id
+  ## - name: KEYCLOAK_REALM
+  ##   valueFrom:
+  ##     secretKeyRef:
+  ##       name: <secret_name>
+  ##       key: realm
+  ## - name: IDENTITY_LOG_LEVEL
+  ##   value: DEBUG
+  ## And then create new Kubernetes Secret that contains client_id, realm, client_secret.
   env: []
   ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
