@@ -8,27 +8,36 @@ on:
 
 jobs:
   release:
-    name: Helm Chart Snapshot
+    name: ${{ matrix.chart.name }}
     permissions:
       packages: write
       id-token: write
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+        - name: Helm Chart Latest
+          directory: charts/camunda-platform-latest
+          # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
+          version: 0.0.0-main-snapshot
+        - name: Helm Chart Alpha
+          directory: charts/camunda-platform-alpha
+          version: 0.0.0-main-alpha
     defaults:
       run:
         shell: bash
-        working-directory: charts/camunda-platform-latest
+        working-directory: ${{ matrix.chart.directory }}
     #
     # Vars.
     env:
       REPOSITORY_NAME: "camunda/helm"
       CHART_NAME: "camunda-platform"
-      # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
-      CHART_VERSION: "0.0.0-main-snapshot"
+      CHART_VERSION: ${{ matrix.chart.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
-          ref: main
           fetch-depth: 0
       #
       # Changelog.
@@ -73,7 +82,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install ORAS CLI
-        uses: oras-project/setup-oras@ee7dbe1144cb00080a89497f937dae78f85fce29 # v1
+        uses: oras-project/setup-oras@ca28077386065e263c03428f4ae0c09024817c93 # v1
       - name: Upload Helm chart Cosign bundle
         run: |
           oras push ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }}.cosign.bundle \

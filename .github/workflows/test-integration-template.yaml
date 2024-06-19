@@ -117,7 +117,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
 
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
@@ -127,7 +127,7 @@ jobs:
     # and populate environment variables from Vault
     - name: Import Vault secrets
       id: secrets
-      uses: hashicorp/vault-action@v3.0.0
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
       if: inputs.vault-secret-mapping != ''
       with:
         url: ${{ secrets.VAULT_ADDR }}

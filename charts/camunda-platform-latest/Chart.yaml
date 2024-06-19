@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.1.0
+version: 10.1.1
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,28 +62,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "warning and error for not setting existingSecrets for all components"
-    - kind: added
-      description: "support envFrom reference in all components"
-    - kind: added
-      description: "adding a constraint for identity existingSecret"
-    - kind: fixed
-      description: "release info did not respect the context path"
-    - kind: fixed
-      description: "update livenessProbe endpoint of zeebe"
-    - kind: fixed
-      description: "re-added the postgresql secret"
-    - kind: fixed
-      description: "Delete multi-region review comment in values.yaml"
-    - kind: fixed
-      description: "use component service account"
-    - kind: fixed
-      description: "handle type of es url correctly"
-    - kind: fixed
-      description: "set zeebe exporters empty map when disabled"
-    - kind: fixed
-      description: "add constraints for when identity is disabled and keycloak is enabled"
-    - kind: changed
-      description: "add support for seccomp profiles in all components"
-    - kind: changed
-      description: "update identity application yaml to match upstream"
+      description: "add console auth vars"
