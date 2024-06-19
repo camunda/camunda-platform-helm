@@ -66,7 +66,9 @@ jobs:
           make helm.lint
       - name: Run CT lint
         run: |
-          ct lint --charts charts/${{ inputs.camunda-helm-dir }} --config .github/config/chart-testing.yaml
+          ct lint --charts charts/${{ inputs.camunda-helm-dir }} \
+            --lint-conf .github/config/chart-testing.yaml \
+            --config .github/config/chart-testing.yaml
       - name: Run YAMLlint
         run: |
           # Call yamllint via asdf because there is an issue loading the correct version of yamllint in GHA workflow.
