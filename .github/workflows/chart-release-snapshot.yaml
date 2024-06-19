@@ -6,6 +6,7 @@ on:
     branches:
       - main
     paths:
+      - .github/workflows/chart-release-snapshot.yaml
       - charts/camunda-platform-latest/**
       - charts/camunda-platform-alpha/**
 
