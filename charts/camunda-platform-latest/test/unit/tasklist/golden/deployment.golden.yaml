@@ -99,8 +99,11 @@ spec:
             timeoutSeconds: 1
           volumeMounts:
             - name: config
-              mountPath: /usr/local/tasklist/config/application.yaml
-              subPath: application.yaml
+              mountPath: /app/resources/application.yml
+              subPath: application.yml
+            - name: config
+              mountPath: /usr/local/tasklist/config/application.yml
+              subPath: application.yml
             - mountPath: /tmp
               name: tmp
             - mountPath: /camunda
