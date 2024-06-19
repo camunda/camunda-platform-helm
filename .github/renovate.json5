@@ -29,8 +29,8 @@
         "charts/camunda-platform-latest/go.*"
       ],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      // "addLabels": ["automerge"],
-      // "automerge": true
+      "addLabels": ["automerge"],
+      "automerge": true
     },
     {
       "matchFileNames": [
