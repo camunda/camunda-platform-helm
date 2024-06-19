@@ -88,7 +88,7 @@ data:
       {{- end }}
       # Zeebe instance
       zeebe:
-        # Broker contact point
+        # Gateway address
         gatewayAddress: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
