@@ -1462,6 +1462,8 @@ tasklist:
     type: ClusterIP
     ## @param tasklist.service.port defines the port of the service, where the tasklist web application will be available
     port: 80
+    ## @param tasklist.service.managementPort defines the management port of the service
+    managementPort: 9600
 
   ## @extra tasklist.identity configures app user management.
   identity:
