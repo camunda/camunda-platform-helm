@@ -8,27 +8,36 @@ on:
 
 jobs:
   release:
-    name: Helm Chart Snapshot
+    name: ${{ matrix.chart.name }}
     permissions:
       packages: write
       id-token: write
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+        - name: Helm Chart Latest
+          directory: charts/camunda-platform-latest
+          # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
+          version: 0.0.0-main-snapshot
+        - name: Helm Chart Alpha
+          directory: charts/camunda-platform-alpha
+          version: 0.0.0-main-alpha
     defaults:
       run:
         shell: bash
-        working-directory: charts/camunda-platform-latest
+        working-directory: ${{ matrix.chart.directory }}
     #
     # Vars.
     env:
       REPOSITORY_NAME: "camunda/helm"
       CHART_NAME: "camunda-platform"
-      # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
-      CHART_VERSION: "0.0.0-main-snapshot"
+      CHART_VERSION: ${{ matrix.chart.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
-          ref: main
           fetch-depth: 0
       #
       # Changelog.
