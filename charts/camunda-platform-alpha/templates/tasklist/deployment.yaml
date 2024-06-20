@@ -114,6 +114,28 @@ spec:
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_auth_cache
             {{- end }}
+            # the host name of Operate that is used when connecting with the Zeebe cluster
+            # via atomix-cluster (SWIM)
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            # the unique member id (in this case the pod name) that is used as identifier inside the SWIM cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            # the name of the atomix cluster (SWIM) to connect to (must be the same as for the Zeebe cluster)
+            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
+              value:  {{ tpl .Values.global.zeebeClusterName . }}
+            # the port the service expects requests/messages from the atomix cluster (must be exposed internally)
+            - name: ZEEBE_GATEWAY_CLUSTER_PORT
+              value: {{ .Values.tasklist.service.internalPort | quote }}
+            # the initial contact point to join the SWIM (atomix) cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+              value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
             {{- with .Values.tasklist.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -136,6 +158,8 @@ spec:
               protocol: TCP
             - containerPort: 9600
               name: management
+            - containerPort: {{ .Values.tasklist.service.internalPort }}
+              name: {{ .Values.tasklist.service.internalName }}
               protocol: TCP
           {{- if .Values.tasklist.startupProbe.enabled }}
           startupProbe:
