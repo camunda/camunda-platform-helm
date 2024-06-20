@@ -88,7 +88,7 @@ spec:
                   fieldPath: metadata.name
             # the name of the atomix cluster (SWIM) to connect to (must be the same as for the Zeebe cluster)
             - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
-              value:  camunda-platform-test-zeebe
+              value: camunda-platform-test-zeebe
             # the port the service expects requests/messages from the atomix cluster (must be exposed internally)
             - name: ZEEBE_GATEWAY_CLUSTER_PORT
               value: "26502"

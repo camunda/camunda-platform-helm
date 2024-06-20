@@ -129,7 +129,7 @@ spec:
                   fieldPath: metadata.name
             # the name of the atomix cluster (SWIM) to connect to (must be the same as for the Zeebe cluster)
             - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
-              value:  {{ tpl .Values.global.zeebeClusterName . }}
+              value: {{ tpl .Values.global.zeebeClusterName . }}
             # the port the service expects requests/messages from the atomix cluster (must be exposed internally)
             - name: ZEEBE_GATEWAY_CLUSTER_PORT
               value: {{ .Values.tasklist.service.internalPort | quote }}
