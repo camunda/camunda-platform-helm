@@ -85,11 +85,14 @@ spec:
             - containerPort: 8080
               name: http
               protocol: TCP
+            - containerPort: 9600
+              name: management
+              protocol: TCP
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               scheme: HTTP
-              port: http
+              port: management
             initialDelaySeconds: 30
             periodSeconds: 30
             successThreshold: 1

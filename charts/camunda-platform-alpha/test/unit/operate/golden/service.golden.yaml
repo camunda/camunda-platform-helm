@@ -20,6 +20,10 @@ spec:
       name: http
       targetPort: 8080
       protocol: TCP
+    - port: 9600
+      name: management
+      targetPort: 9600
+      protocol: TCP
   selector:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

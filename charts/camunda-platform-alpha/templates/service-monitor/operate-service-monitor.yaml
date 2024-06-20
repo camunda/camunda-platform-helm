@@ -13,6 +13,6 @@ spec:
   endpoints:
     - honorLabels: true
       path: {{ .Values.operate.contextPath }}{{ .Values.operate.metrics.prometheus }}
-      port: http
+      port: management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}
