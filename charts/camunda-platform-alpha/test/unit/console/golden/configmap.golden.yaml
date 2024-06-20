@@ -56,8 +56,8 @@ data:
             - name: Tasklist
               id: tasklist
               url: 
-              readiness: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/health/readiness
-              metrics: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/prometheus
+              readiness: http://camunda-platform-test-tasklist.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-tasklist.camunda-platform:9600/actuator/prometheus
             - name: Zeebe Gateway
               id: zeebeGateway
               urls:
