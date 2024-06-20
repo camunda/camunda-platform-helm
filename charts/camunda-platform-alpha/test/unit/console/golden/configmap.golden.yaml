@@ -46,8 +46,8 @@ data:
             - name: Operate
               id: operate
               url: 
-              readiness: http://camunda-platform-test-operate.camunda-platform:80/actuator/health/readiness
-              metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
+              readiness: http://camunda-platform-test-operate.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-operate.camunda-platform:9600/actuator/prometheus
             - name: Optimize
               id: optimize
               url: 
