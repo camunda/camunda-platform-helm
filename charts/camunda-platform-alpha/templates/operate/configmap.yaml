@@ -7,10 +7,10 @@ metadata:
     {{- include "operate.labels" . | nindent 4 }}
 data:
   {{- if .Values.operate.configuration }}
-  application.yml: |
+  application.yaml: |
     {{ .Values.operate.configuration | indent 4 | trim }}
   {{- else }}
-  application.yml: |
+  application.yaml: |
     {{- if .Values.operate.contextPath }}
     server:
       servlet:
@@ -92,8 +92,8 @@ data:
       {{- end }}
       # Zeebe instance
       zeebe:
-        # Broker contact point
-        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
+        # Gateway address
+        gatewayAddress: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
