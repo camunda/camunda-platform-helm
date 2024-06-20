@@ -9,7 +9,6 @@ on:
     - '.github/actions/workflow-vars/**'
     - '.tool-versions'
     - 'charts/camunda-platform-latest/**'
-    - 'charts/camunda-platform-alpha/**'
     types: [opened, closed, reopened, synchronize]
 
 permissions:
@@ -26,8 +25,8 @@ jobs:
     uses: ./.github/workflows/test-integration-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}"
-      persistent: "${{ contains(github.event.*.labels.*.name, 'test-persistent') }}"
       platforms: "gke,rosa"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       flows: "install,upgrade"
       caller-git-ref: ${{ github.event.pull_request.head.sha }}
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha }}
