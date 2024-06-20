@@ -66,7 +66,7 @@ func (s *configMapTemplateTest) TestContainerShouldAddContextPath() {
 	var configmapApplication TasklistConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -90,7 +90,7 @@ func (s *configMapTemplateTest) TestContainerShouldDisableOperateIntegration() {
 	var configmapApplication TasklistConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -117,7 +117,7 @@ func (s *configMapTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
 	var configmapApplication TasklistConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -141,7 +141,7 @@ func (s *configMapTemplateTest) TestTasklistMultiTenancyEnabled() {
 	var configmapApplication TasklistConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
