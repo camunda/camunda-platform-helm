@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/chart-release-snapshot.yaml
+      - charts/camunda-platform-latest/**
+      - charts/camunda-platform-alpha/**
 
 jobs:
   release:
@@ -17,13 +21,15 @@ jobs:
       fail-fast: false
       matrix:
         chart:
-        - name: Helm Chart Latest
+        - name: Helm Chart Latest rolling
           directory: charts/camunda-platform-latest
-          # NOTE: Helm CLI only accepts SemVer so we need to use the "0.0.0-main-snapshot" format.
-          version: 0.0.0-main-snapshot
-        - name: Helm Chart Alpha
+          versionSuffix: main-snapshot
+        - name: Helm Chart Alpha rolling
           directory: charts/camunda-platform-alpha
-          version: 0.0.0-main-alpha
+          versionSuffix: main-alpha
+        - name: Helm Chart Alpha versioned
+          directory: charts/camunda-platform-alpha
+          versionSuffix: ""
     defaults:
       run:
         shell: bash
@@ -33,12 +39,17 @@ jobs:
     env:
       REPOSITORY_NAME: "camunda/helm"
       CHART_NAME: "camunda-platform"
-      CHART_VERSION: ${{ matrix.chart.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
+      - name: Set vars
+        run: |
+          # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-main-snapshot".
+          CHART_VERSION_SUFFIX="${{ matrix.chart.versionSuffix }}"
+          CHART_VERSION_SUFFIX_DEFAULT="$(yq '.version' Chart.yaml)"
+          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a $GITHUB_ENV
       #
       # Changelog.
       - name: Generate snapshot changelog

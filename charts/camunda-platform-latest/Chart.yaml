@@ -38,7 +38,7 @@ dependencies:
   # Shared Dependencies.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 20.0.0
+    version: 20.0.4
     condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
@@ -50,6 +50,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
+  dummy: dummy
   camunda.io/helmCLIVersion: "3.15.1"
   artifacthub.io/links: |
     - name: Camunda 8 docs

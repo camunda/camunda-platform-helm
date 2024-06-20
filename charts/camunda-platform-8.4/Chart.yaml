@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.3.6
+    version: 9.3.x
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT
@@ -58,5 +58,7 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: "- kind: fixed\n  description: \"operate should be 8.4.8 in helm 9.3.4\"\n"
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "operate should be 8.4.8 in helm 9.3.4"
   camunda.io/helmCLIVersion: 3.15.1

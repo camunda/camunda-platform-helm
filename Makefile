@@ -13,7 +13,7 @@ releaseName = camunda-platform-test
 
 define go_test_run
 	find $(chartPath) -name "go.mod" -exec dirname {} \; | while read chart_dir; do\
-		echo "\nChart dir: $${chart_dir}";\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
 		cd $$(git rev-parse --show-toplevel);\
 		cd "$${chart_dir}";\
 		$(1);\
@@ -108,14 +108,14 @@ helm.repos-add:
 .PHONY: helm.dependency-update
 helm.dependency-update:
 	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
-		echo "Chart dir: $${chart_dir}";\
+		echo "[$@] Chart dir: $${chart_dir}";\
 		helm dependency update $${chart_dir};\
 	done
 
 # helm.lint: verify that the chart is well-formed.
 .PHONY: helm.lint
 helm.lint:
-	echo "Chart dir: $(chartPath)"
+	echo "[$@] Chart dir: $(chartPath)"
 	helm lint --strict $(chartPath)
 
 # helm.lint: verify that the chart is well-formed.
@@ -152,7 +152,7 @@ helm.template: helm.dependency-update
 helm.readme-update:
 	for chart_dir in $(chartPath); do\
 		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
-		echo "\nChart dir: $${chart_dir}";\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
 			--readme "$${chart_dir}/README.md";\
@@ -171,16 +171,22 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 	git add $(chartPath);\
 	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
-.PHONY: .release.generate-notes
-.release.generate-notes:
-	@bash scripts/generate-release-notes.sh --main
+.PHONY: release.generate-notes
+release.generate-notes:
+	for chart_dir in $(chartPath); do\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
+		bash scripts/generate-release-notes.sh --main "$${chart_dir}";\
+	done
 
 .PHONY: release.generate-notes-footer
 release.generate-notes-footer:
-	@bash scripts/generate-release-notes.sh --footer
+	for chart_dir in $(chartPath); do\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
+		bash scripts/generate-release-notes.sh --footer "$${chart_dir}";\
+	done
 
 .PHONY: release.generate-and-commit
-release.generate-and-commit: .release.generate-notes
+release.generate-and-commit: release.generate-notes
 	git add $(chartPath);\
 	git commit -m "chore: add generated files for camunda-platform $(chartVersion)"
 
