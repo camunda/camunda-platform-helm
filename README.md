@@ -4,6 +4,9 @@
 [![Test - Unit](https://github.com/camunda/camunda-platform-helm/actions/workflows/test-unit.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/test-unit.yml)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
 
+> [!CAUTION]
+>
+> This GitHub repository is mainly for development, don't use it directly to deploy Camunda. End users should use the [official documentation](https://docs.camunda.io/docs/self-managed/about-self-managed/) for [installation](https://docs.camunda.io/docs/self-managed/setup/install/), [upgrade](https://docs.camunda.io/docs/self-managed/setup/upgrade/), etc.
 
 - [Overview](#overview)
 - [Documentation](#documentation)
