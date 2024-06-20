@@ -28,6 +28,7 @@ data:
       identity:
         clientId: "operate"
         audience: "operate-api"
+        baseUrl: "http://camunda-platform-test-identity:80"
     
     # Operate configuration file
     camunda.operate:

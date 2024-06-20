@@ -43,8 +43,6 @@ data:
         type: {{ include "camundaPlatform.authType" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         audience: {{ include "zeebe.audience" . | quote }}
-        {{- end }}
-        {{- if .Values.global.multitenancy.enabled }}
         baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
         {{- end }}
     {{- end }}
