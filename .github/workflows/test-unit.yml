@@ -23,7 +23,6 @@ permissions:
 jobs:
   unit:
     name: Unit Test - Camunda latest
-    needs: init
     uses: ./.github/workflows/test-unit-template.yml
     with:
       identifier: "${{ github.event.pull_request.number }}-unit-latest"
