@@ -1226,6 +1226,10 @@ operate:
     port: 80
     ## @param operate.service.managementPort defines the management port of the service
     managementPort: 9600
+    ## @param operate.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    internalPort: 26502
+    ## @param operate.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    internalName: "internal"
 
   ## @extra operate.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param operate.resources.requests.cpu
@@ -1466,6 +1470,10 @@ tasklist:
     port: 80
     ## @param tasklist.service.managementPort defines the management port of the service
     managementPort: 9600
+    ## @param tasklist.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    internalPort: 26502
+    ## @param tasklist.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    internalName: "internal"
 
   ## @extra tasklist.identity configures app user management.
   identity:
