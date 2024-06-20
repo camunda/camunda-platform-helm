@@ -138,11 +138,15 @@ func (s *deploymentTemplateTest) TestContainerSetImageNameGlobal() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.registry": "global.custom.registry.io",
-			"global.image.tag":      "8.x.x",
-			"optimize.image.tag":    "3.x.x",
-			"connectors.image.tag":  "8.x.x",
-			"zeebe.image.tag":       "8.x.x",
+			"global.image.registry":  "global.custom.registry.io",
+			"global.image.tag":       "8.x.x",
+			"connectors.image.tag":   "8.x.x",
+			"identity.image.tag":     "8.x.x",
+			"operate.image.tag":      "8.x.x",
+			"optimize.image.tag":     "3.x.x",
+			"tasklist.image.tag":     "8.x.x",
+			"zeebe.image.tag":        "8.x.x",
+			"zeebeGateway.image.tag": "8.x.x",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
