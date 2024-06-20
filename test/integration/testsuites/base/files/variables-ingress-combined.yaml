@@ -5,8 +5,8 @@ preflightVars:
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82
     optimize: http://integration-optimize/optimize
-    operate: http://integration-operate/operate
-    tasklist: http://integration-tasklist/tasklist
+    operate: http://integration-operate:9600/operate
+    tasklist: http://integration-tasklist:9600/tasklist
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
