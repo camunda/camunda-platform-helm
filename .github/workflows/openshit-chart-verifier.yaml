@@ -19,6 +19,7 @@ jobs:
       - name: Install OpenShift Tools
         uses: redhat-actions/openshift-tools-installer@v1
         with:
+          source: "github"
           chart-verifier: "latest"
 
       - name: Verify Helm Chart
