@@ -1,0 +1,30 @@
+name: Chart Verifier
+
+on:
+  pull_request:
+
+jobs:
+  verify-chart:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Install OpenShift Tools
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          openshift_version: '4.3' # Specify the OpenShift version you want
+
+      - name: Verify Helm Chart
+        run: |
+          # Navigate to the directory containing your Helm chart
+          cd charts/camunda-platform-latest
+          
+          # Run the chart verifier
+          chart-verifier verify .
