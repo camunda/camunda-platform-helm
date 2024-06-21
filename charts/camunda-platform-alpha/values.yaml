@@ -866,8 +866,9 @@ zeebe:
   configuration: ""
   ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
-  ## @param zeebe.strategy can be used to configure the statefulsets update strategy https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  ## @extra zeebe.strategy can be used to configure the statefulsets update strategy https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
   strategy:
+    ## @skip zeebe.strategy.type
     type: RollingUpdate
 
 # Zeebe.
@@ -1905,8 +1906,9 @@ optimize:
   configuration: ""
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
   extraConfiguration: {}
-  ## @param optimize.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  ## @extra optimize.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
   strategy:
+    ## @skip optimize.strategy.type
     type: Recreate
 
 ############################################

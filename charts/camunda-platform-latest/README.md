@@ -613,6 +613,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `console.nodeSelector`                                      | can be used to define on which nodes the Console pods should run                                                                                                                     | `{}`                       |
 | `console.tolerations`                                       | can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/                                                                 | `[]`                       |
 | `console.affinity`                                          | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                              | `{}`                       |
+| `console.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                              | `{}`                       |
 
 ### Zeebe Parameters
 
@@ -732,6 +733,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `zeebe.retention.policyName`                              | defines the name of the created and applied ILM policy.                                                                                                                                                                       | `zeebe-record-retention-policy`                                                                                                                            |
 | `zeebe.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                                                                   | `""`                                                                                                                                                       |
 | `zeebe.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                                                                      | `{}`                                                                                                                                                       |
+| `zeebe.strategy`                                          | can be used to configure the statefulsets update strategy https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies                                                                            |                                                                                                                                                            |
 
 ### ZeebeGateway Parameters
 
@@ -853,6 +855,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `zeebeGateway.contextPath`                                       | can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.                             | `""`                                  |
 | `zeebeGateway.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                                  |
 | `zeebeGateway.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                                  |
+| `zeebeGateway.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                                  |
 
 ### Operate Parameters
 
@@ -951,6 +954,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `operate.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `operate.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
 | `operate.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                 | `{}`                         |
+| `operate.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                         |
 
 ### Tasklist Parameters
 
@@ -1046,6 +1050,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `tasklist.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `tasklist.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
 | `tasklist.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                         |
+| `tasklist.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                         |
 
 ### Optimize Parameters
 
@@ -1148,6 +1153,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `optimize.ingress.tls.secretName`                            | defines the secret name which contains the TLS private key and certificate                                                                                                          | `camunda-platform-optimize` |
 | `optimize.configuration`                                     | if specified, contents will be used as the environment-config.yaml                                                                                                                  | `""`                        |
 | `optimize.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as environment-logback.xml                                                                               | `{}`                        |
+| `optimize.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                             |                             |
 
 ### Identity Parameters
 
@@ -1259,6 +1265,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `identity.externalDatabase.existingSecretPasswordKey`        | Name of an existing secret key containing the database credentials                                                                                                                                        | `nil`                       |
 | `identity.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                                               | `""`                        |
 | `identity.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                                              | `{}`                        |
+| `identity.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                                                   | `{}`                        |
 
 ### Identity - PostgreSQL Parameters
 
@@ -1442,6 +1449,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.restapi.service.managementPort`                            | defines the management port of the service                                                                                                                                   | `8091`                           |
 | `webModeler.restapi.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                             |
 | `webModeler.restapi.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                             |
+| `webModeler.restapi.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                             |
 
 ### WebModeler - WebApp Parameters
 
@@ -1515,6 +1523,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.webapp.service.managementPort`                            | defines the management port of the service                                                                                                                                   | `8071`                          |
 | `webModeler.webapp.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                            |
 | `webModeler.webapp.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                            |
+| `webModeler.webapp.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                            |
 
 ### WebModeler - WebSockets Parameters
 
@@ -1582,6 +1591,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.websockets.service.port`                                      | defines the port of the service                                                                                                                                                                                                   | `80`                                     |
 | `webModeler.websockets.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                                                                       | `""`                                     |
 | `webModeler.websockets.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                                                                          | `{}`                                     |
+| `webModeler.websockets.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                                                                           | `{}`                                     |
 | `webModeler.serviceAccount`                                               | configuration for the service account the WebModeler pods are assigned to                                                                                                                                                         |                                          |
 | `webModeler.serviceAccount.enabled`                                       | if true, enables the WebModeler service account                                                                                                                                                                                   | `true`                                   |
 | `webModeler.serviceAccount.name`                                          | can be used to set the name of the WebModeler service account                                                                                                                                                                     | `""`                                     |
@@ -1740,6 +1750,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `connectors.affinity`                                          | can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity                      | `{}`                          |
 | `connectors.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                          |
 | `connectors.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                 | `{}`                          |
+| `connectors.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                          |
 
 ### Elasticsearch Parameters
 
