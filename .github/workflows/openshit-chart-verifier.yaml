@@ -32,6 +32,6 @@ jobs:
       - name: Verify Helm Chart
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
-          cd ${{ chartPath }}
+          cd ${{ inputs.chartPath }}
           
           chart-verifier verify .
