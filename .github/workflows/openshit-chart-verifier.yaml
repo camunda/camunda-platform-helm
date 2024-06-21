@@ -9,12 +9,7 @@ on:
         default: camunda-platform-latest
         type: string
   pull_request:
-    inputs:
-      camunda-helm-dir:
-        required: false
-        description: The name of the helm directory
-        default: camunda-platform-latest
-        type: string
+
 jobs:
   verify-chart:
     name: Verify Chart
@@ -36,5 +31,6 @@ jobs:
 
       - name: Verify Helm Chart
         run: |
-          cd charts/${{ github.event.inputs.camunda-helm-dir }}
+          # cd charts/${{ inputs.camunda-helm-dir }}
+          cd charts/camunda-platform-latest
           chart-verifier verify .
