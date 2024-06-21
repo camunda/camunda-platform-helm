@@ -574,9 +574,9 @@ console:
   ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
   ## @param console.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 ###################################
 #######
@@ -869,9 +869,9 @@ zeebe:
   ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
   ## @param zeebe.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param zeebe.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
@@ -1177,9 +1177,9 @@ zeebeGateway:
   ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
   ## @param zeebeGateway.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param zeebeGateway.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 ################################################
  #####
@@ -1416,9 +1416,9 @@ operate:
   ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
   ## @param operate.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param operate.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 ##################################################
 #######
@@ -1652,9 +1652,9 @@ tasklist:
   ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
   ## @param tasklist.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param tasklist.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 #############################################
  #####
@@ -1903,9 +1903,9 @@ optimize:
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
   extraConfiguration: {}
   ## @param optimize.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param optimize.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 ############################################
 ###
@@ -2181,9 +2181,9 @@ identity:
   ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 # Identity.
 #####   ####   ####  #####  ####  #####  ######  ####   ####  #
@@ -2656,9 +2656,9 @@ webModeler:
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-    dnsPolicy: {}
+    dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-    dnsConfig: ""
+    dnsConfig: {}
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -2821,9 +2821,9 @@ webModeler:
     ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
     ## @param webModeler.webapp.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-    dnsPolicy: {}
+    dnsPolicy: ""
     ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-    dnsConfig: ""
+    dnsConfig: {}
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
@@ -2975,9 +2975,9 @@ webModeler:
     ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
     ## @param webModeler.websockets.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-    dnsPolicy: {}
+    dnsPolicy: ""
     ## @param webModeler.websockets.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-    dnsConfig: ""
+    dnsConfig: {}
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
   serviceAccount:
@@ -3352,9 +3352,9 @@ connectors:
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: {}
+  dnsPolicy: ""
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: ""
+  dnsConfig: {}
 
 #####################################################################################
 #######
