@@ -11,6 +11,7 @@ on:
 
 jobs:
   verify-chart:
+    name: Verify Chart
     runs-on: ubuntu-latest
 
     steps:
