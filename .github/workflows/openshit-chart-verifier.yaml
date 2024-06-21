@@ -8,6 +8,7 @@ on:
         description: The name of the helm directory
         default: camunda-platform-latest
         type: string
+  pull_request:
 
 jobs:
   verify-chart:
