@@ -9,6 +9,8 @@ metadata:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
+  strategy:
+    {{- .Values.optimize.strategy | toYaml | nindent 4 }}
   selector:
     matchLabels:
       {{- include "optimize.matchLabels" . | nindent 6 }}

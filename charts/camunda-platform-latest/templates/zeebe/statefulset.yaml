@@ -21,7 +21,7 @@ spec:
       {{- include "zeebe.matchLabels.broker" . | nindent 6 }}
   serviceName: {{ include "zeebe.names.broker" . }}
   updateStrategy:
-    type: RollingUpdate
+    {{- .Values.zeebe.strategy | toYaml | nindent 4 }}
   podManagementPolicy: Parallel
   template:
     metadata:

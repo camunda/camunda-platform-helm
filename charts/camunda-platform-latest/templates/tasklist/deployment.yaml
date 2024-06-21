@@ -9,6 +9,10 @@ metadata:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: 1
+  {{- if .Values.tasklist.strategy }}
+  strategy:
+    {{- .Values.tasklist.strategy | toYaml | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "tasklist.matchLabels" . | nindent 6 }}

@@ -913,3 +913,39 @@ func (s *statefulSetTest) TestContainerSetSidecar() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+
+func (s *statefulSetTest) TestDefaultStrategy() {
+	// given
+	options := &helm.Options{
+		SetValues:      map[string]string{},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	updateStrategy := statefulSet.Spec.UpdateStrategy
+	s.Require().Contains(string(updateStrategy.Type), "RollingUpdate")
+}
+
+func (s *statefulSetTest) TestDefinedStrategy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.strategy.type": "OnDelete",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	updateStrategy := statefulSet.Spec.UpdateStrategy
+	s.Require().Contains(string(updateStrategy.Type), "OnDelete")
+}
