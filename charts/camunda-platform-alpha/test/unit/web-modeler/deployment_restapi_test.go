@@ -510,7 +510,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerSetInitContainer() {
 	s.Require().Contains(podContainers, expectedContainer)
 }
 
-func (s *deploymentTemplateTest) TestDefaultStrategy() {
+func (s *restapiDeploymentTemplateTest) TestDefaultStrategy() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -532,7 +532,7 @@ func (s *deploymentTemplateTest) TestDefaultStrategy() {
 
 }
 
-func (s *deploymentTemplateTest) TestDefinedStrategy() {
+func (s *restapiDeploymentTemplateTest) TestDefinedStrategy() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
