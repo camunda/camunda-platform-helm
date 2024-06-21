@@ -36,6 +36,5 @@ jobs:
 
       - name: Verify Helm Chart
         run: |
-          cd charts/${{ inputs.camunda-helm-dir }}
-          
+          cd charts/${{ github.event.inputs.camunda-helm-dir }}
           chart-verifier verify .
