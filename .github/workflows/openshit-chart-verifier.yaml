@@ -1,7 +1,7 @@
 name: Chart Verifier
 
 on:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   verify-chart:
@@ -10,7 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
-          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
 
       - name: Set up Docker Buildx
@@ -24,8 +23,6 @@ jobs:
 
       - name: Verify Helm Chart
         run: |
-          # Navigate to the directory containing your Helm chart
           cd charts/camunda-platform-latest
           
-          # Run the chart verifier
           chart-verifier verify .
