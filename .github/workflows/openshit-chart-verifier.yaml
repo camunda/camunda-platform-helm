@@ -9,7 +9,12 @@ on:
         default: camunda-platform-latest
         type: string
   pull_request:
-
+    inputs:
+      camunda-helm-dir:
+        required: false
+        description: The name of the helm directory
+        default: camunda-platform-latest
+        type: string
 jobs:
   verify-chart:
     name: Verify Chart
@@ -32,6 +37,8 @@ jobs:
       - name: Verify Helm Chart
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
-          cd ${{ inputs.chartPath }}
+          echo "This is the chart path:"
+          echo ${{ chartPath }}
+          cd ${{ chartPath }}
           
           chart-verifier verify .
