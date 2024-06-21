@@ -2,6 +2,12 @@ name: Chart Verifier
 
 on:
   workflow_dispatch:
+    inputs:
+      camunda-helm-dir:
+        required: false
+        description: The name of the helm directory
+        default: camunda-platform-latest
+        type: string
 
 jobs:
   verify-chart:
@@ -23,6 +29,7 @@ jobs:
 
       - name: Verify Helm Chart
         run: |
-          cd charts/camunda-platform-latest
+          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          cd ${{ chartPath }}
           
           chart-verifier verify .
