@@ -20,6 +20,7 @@ jobs:
         uses: redhat-actions/openshift-tools-installer@v1
         with:
           openshift_version: '4.3' # Specify the OpenShift version you want
+          clients: 'chart-verifier'
 
       - name: Verify Helm Chart
         run: |
