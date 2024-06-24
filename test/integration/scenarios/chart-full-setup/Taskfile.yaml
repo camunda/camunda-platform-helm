@@ -26,10 +26,12 @@ includes:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
       testID: preflight
+      chartDir: "{{ .TEST_CHART_DIR }}"
   test.core:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
       testID: core
+      chartDir: "{{ .TEST_CHART_DIR }}"
 
 tasks:
   setup.pre:
@@ -37,6 +39,8 @@ tasks:
     - test -n "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
     - test -n "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
     - test -n "${TEST_INGRESS_HOST}"
+    env:
+      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     # This is needed to access WebModeler Docker image since it's not public.
     - kubectl create secret docker-registry registry-camunda-cloud
@@ -44,11 +48,12 @@ tasks:
         --docker-server "registry.camunda.cloud"
         --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
         --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
-    - echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> ../../testsuites/base/files/variables.env
-    - echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> ../../testsuites/base/files/variables.env
-    - echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> ../../testsuites/base/files/variables.env
-    - echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >>
-      ../../testsuites/base/files/variables.env
+    # Set Venom vars.
+    - |
+      echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
     - |
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
@@ -78,7 +83,7 @@ tasks:
   setup.clean:
     cmds:
     - kubectl delete secret registry-camunda-cloud --ignore-not-found=true
-    - git checkout ../../testsuites/base/files/variables.env
+    - git checkout {{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env
 
   upgrade.pre:
     deps: [upgrade:pre]
