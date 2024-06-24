@@ -7,12 +7,6 @@ resources:
 - ../base
 
 configMapGenerator:
-- name: venom-tests
-  options:
-    disableNameSuffixHash: true
-  behavior: merge
-  files:
-  - testsuites/core.yaml
 - name: venom-fixtures
   options:
     disableNameSuffixHash: true

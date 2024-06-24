@@ -47,4 +47,4 @@ tasks:
         --set identityKeycloak.postgresql.auth.password=$KEYCLOAK_POSTGRESQL_SECRET \
         --set identityPostgresql.auth.password=dummy \
         --timeout 20m0s \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+        {{ .TEST_HELM_EXTRA_ARGS }}
