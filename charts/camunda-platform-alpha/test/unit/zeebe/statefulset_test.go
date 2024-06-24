@@ -913,3 +913,33 @@ func (s *statefulSetTest) TestContainerSetSidecar() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+func (s *statefulSetTest) TestSetDnsPolicyAndDnsConfig() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.dnsPolicy":                "ClusterFirst",
+			"zeebe.dnsConfig.nameservers[0]": "8.8.8.8",
+			"zeebe.dnsConfig.searches[0]":    "example.com",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	// Check if dnsPolicy is set
+	require.NotEmpty(s.T(), statefulSet.Spec.Template.Spec.DNSPolicy, "dnsPolicy should not be empty")
+
+	// Check if dnsConfig is set
+	require.NotNil(s.T(), statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should not be nil")
+
+	expectedDNSConfig := &corev1.PodDNSConfig{
+		Nameservers: []string{"8.8.8.8"},
+		Searches:    []string{"example.com"},
+	}
+
+	require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
+}

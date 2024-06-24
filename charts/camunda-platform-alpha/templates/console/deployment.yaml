@@ -30,6 +30,12 @@ spec:
       initContainers:
         {{- tpl (.Values.console.initContainers | default list | toYaml | nindent 8) $ }}
       serviceAccountName: {{ include "console.serviceAccountName" . }}
+      {{- if .Values.console.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.console.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.console.dnsPolicy }}
+      dnsPolicy: {{ .Values.console.dnsPolicy | quote }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.console.podSecurityContext | nindent 8 }}
       containers:
