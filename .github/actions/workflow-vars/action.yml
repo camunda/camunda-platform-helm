@@ -70,7 +70,7 @@ runs:
       echo "Output vars:"
 
       # Deployment identifier.
-      TEST_IDENTIFIER="${{ inputs.platform }}-${{ inputs.identifier-base }}"
+      TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
         TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
       fi

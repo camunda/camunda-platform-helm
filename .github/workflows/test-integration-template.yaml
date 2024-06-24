@@ -116,12 +116,15 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
 
     steps:
+    - name: Print workflow inputs
+      run: |
+        echo "Workflow inputs:"
+        echo "${{ toJSON(inputs) }}"
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
-
     # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
     # and populate environment variables from Vault
     - name: Import Vault secrets
@@ -135,7 +138,6 @@ jobs:
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: ${{ inputs.vault-secret-mapping }}
         exportEnv: true
-
     # Used to create/delete GitHub environment.
     # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
     - name: Generate GitHub token
