@@ -748,6 +748,7 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			"console.enabled":                  "true",
 			"console.dnsPolicy":                "ClusterFirst",
 			"console.dnsConfig.nameservers[0]": "8.8.8.8",
 			"console.dnsConfig.searches[0]":    "example.com",
