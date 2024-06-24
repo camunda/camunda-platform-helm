@@ -228,6 +228,12 @@ spec:
           {{ .Values.zeebe.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "zeebe.serviceAccountName.broker" . }}
+      {{- if .Values.zeebe.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.zeebe.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.zeebe.dnsPolicy }}
+      dnsPolicy: {{ .Values.zeebe.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.zeebe.podSecurityContext }}
       securityContext: {{- toYaml .Values.zeebe.podSecurityContext | nindent 8 }}
       {{- end }}

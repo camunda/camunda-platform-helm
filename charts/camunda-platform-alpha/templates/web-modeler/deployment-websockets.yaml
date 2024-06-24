@@ -123,6 +123,12 @@ spec:
       {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if .Values.webModeler.websockets.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.webModeler.websockets.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.websockets.dnsPolicy }}
+      dnsPolicy: {{ .Values.webModeler.websockets.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.webModeler.websockets.podSecurityContext }}
       securityContext: {{- toYaml .Values.webModeler.websockets.podSecurityContext | nindent 8 }}
       {{- end }}

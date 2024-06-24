@@ -158,6 +158,12 @@ spec:
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "connectors.serviceAccountName" . }}
+      {{- if .Values.connectors.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.connectors.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.connectors.dnsPolicy }}
+      dnsPolicy: {{ .Values.connectors.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.connectors.podSecurityContext }}
       securityContext: {{- toYaml .Values.connectors.podSecurityContext | nindent 8 }}
       {{- end }}
