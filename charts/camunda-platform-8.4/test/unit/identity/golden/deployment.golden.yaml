@@ -42,7 +42,7 @@ spec:
         []
       containers:
         - name: identity
-          image: "camunda/identity:8.4.8"
+          image: camunda/identity:8.4.8
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

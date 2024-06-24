@@ -27,7 +27,7 @@ spec:
         {{- tpl (.Values.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "camundaPlatform.image" . | quote }}
+          image: {{ include "camundaPlatform.image" . }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.containerSecurityContext }}
           securityContext: {{- toYaml .Values.containerSecurityContext | nindent 12 }}
