@@ -17,7 +17,16 @@ tasks:
   default:
     cmds:
     # Add testsuites vars.
-    - kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars | kubectl apply -n $TEST_NAMESPACE -f -
+    - |
+      # Kustomize doesn't support dir with edit/patch.
+      # https://github.com/kubernetes-sigs/kustomize/issues/2803
+      (
+        cd {{ .chartDir }}/test/integration/testsuites/vars &&
+        kustomize edit add configmap venom-tests --disableNameSuffixHash \
+          --from-file=files/testsuite-{{ .testID }}.yaml
+      )
+    - |
+      kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars | kubectl apply -n $TEST_NAMESPACE -f -
     # Add imagePullSecrets if needed.
     - cmd: |
         if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then

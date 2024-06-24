@@ -14,6 +14,7 @@ spec:
             secretKeyRef:
               name: integration-console-identity-secret
               key: console-secret
+              optional: true
         - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:

@@ -82,6 +82,5 @@ jobs:
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
-      test-enabled: false
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

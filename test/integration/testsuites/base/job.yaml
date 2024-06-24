@@ -43,7 +43,7 @@ spec:
           until [ ${try} -ge ${limit} ]; do
             try=$((try + 1))
             echo "[INFO] Venom exec no. ${try}..."
-            /usr/local/venom run ./tests/${VENOM_TESTSUITE_FILES:-*.yaml} \
+            /usr/local/venom run ./tests/*/${VENOM_TESTSUITE_FILES:-*.yaml} \
               ${VENOM_EXTRA_ARGS:- --var-from-file=./vars/variables-default.yaml}
             exit_code=$?
             test ${exit_code} == 0 && break
@@ -76,8 +76,10 @@ spec:
         - mountPath: /usr/local/bin/zbctl
           name: tools
           subPath: zbctl
+        - name: venom-tests-common
+          mountPath: /workdir/tests/common
         - name: venom-tests
-          mountPath: /workdir/tests
+          mountPath: /workdir/tests/overlay
         - name: venom-vars
           mountPath: /workdir/vars
         - name: venom-fixtures
@@ -85,6 +87,9 @@ spec:
       volumes:
       - name: tools
         emptyDir: {}
+      - name: venom-tests-common
+        configMap:
+          name: venom-tests-common
       - name: venom-tests
         configMap:
           name: venom-tests
