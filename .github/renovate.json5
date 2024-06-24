@@ -21,6 +21,19 @@
   },
   "packageRules": [
     {
+      "matchDatasources": ["docker", "helm-values"],
+      "matchDepPatterns": ["^camunda/.+"],
+      "matchFileNames": [
+        "charts/camunda-platform-alpha/Chart.yaml",
+        "charts/camunda-platform-alpha/values*.yaml",
+      ],
+      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
+      // which is not the case.
+      "versionCompatibility": "^(?<version>[^-]*)(-(?<compatibility>[^-]*))?$",
+      "versioning": "semver",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
       "matchFileNames": [
         ".github/workflows/*.ya?ml",
         ".github/actions/action.ya?ml",
