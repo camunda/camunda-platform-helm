@@ -31,7 +31,7 @@ testcases:
     - component: Connectors
       url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
     - component: ZeebeGateway
-      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/readiness"
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
