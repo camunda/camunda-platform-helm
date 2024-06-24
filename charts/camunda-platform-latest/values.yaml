@@ -905,7 +905,9 @@ zeebeGateway:
     -XX:+ExitOnOutOfMemoryError
 
   ## @param zeebeGateway.env can be used to set extra environment variables in each gateway container
-  env: []
+  env: 
+    - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
+      value: NONE
   ## @param zeebeGateway.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
   ## @extra zeebeGateway.configMap configuration which will be applied to the mounted config map.
