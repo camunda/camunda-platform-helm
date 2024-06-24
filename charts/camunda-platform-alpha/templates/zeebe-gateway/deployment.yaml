@@ -153,6 +153,12 @@ spec:
         {{- .Values.zeebeGateway.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "zeebe.serviceAccountName.gateway" . }}
+      {{- if .Values.zeebeGateway.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.zeebeGateway.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.zeebeGateway.dnsPolicy }}
+      dnsPolicy: {{ .Values.zeebeGateway.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.zeebeGateway.podSecurityContext }}
       securityContext: {{- toYaml .Values.zeebeGateway.podSecurityContext | nindent 8 }}
       {{- end }}

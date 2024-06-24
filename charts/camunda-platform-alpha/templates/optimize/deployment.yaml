@@ -301,6 +301,12 @@ spec:
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "optimize.serviceAccountName" . }}
+      {{- if .Values.optimize.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.optimize.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.optimize.dnsPolicy }}
+      dnsPolicy: {{ .Values.optimize.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.optimize.podSecurityContext }}
       securityContext: {{- toYaml .Values.optimize.podSecurityContext | nindent 8 }}
       {{- end }}

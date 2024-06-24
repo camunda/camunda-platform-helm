@@ -309,6 +309,12 @@ spec:
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "identity.serviceAccountName" . }}
+      {{- if .Values.identity.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.identity.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.identity.dnsPolicy }}
+      dnsPolicy: {{ .Values.identity.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.identity.podSecurityContext }}
       securityContext: {{- toYaml .Values.identity.podSecurityContext | nindent 8 }}
       {{- end }}
