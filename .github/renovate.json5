@@ -30,7 +30,6 @@
       // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
       // which is not the case.
       "versionCompatibility": "^(?<version>[^-]*)(-(?<compatibility>[^-]*))?$",
-      "versioning": "semver",
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
