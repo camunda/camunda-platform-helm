@@ -2,6 +2,7 @@ version: '3'
 
 vars:
   testID: PLACEHOLDER
+  chartDir: camunda-platform-latest
 
 env:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
@@ -15,6 +16,8 @@ tasks:
   # TODO: Simplify the steps here when we use TestKube.
   default:
     cmds:
+    # Add testsuites vars.
+    - kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars | kubectl apply -n $TEST_NAMESPACE -f -
     # Add imagePullSecrets if needed.
     - cmd: |
         if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then
