@@ -52,6 +52,5 @@ jobs:
       identifier: "${{ github.event.pull_request.number }}-intg-alpha"
       platforms: "gke"
       flows: "install,upgrade"
-      test-enabled: false
       camunda-helm-dir: "camunda-platform-alpha"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
