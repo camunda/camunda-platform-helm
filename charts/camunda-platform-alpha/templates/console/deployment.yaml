@@ -9,6 +9,10 @@ metadata:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: {{ .Values.console.replicas }}
+  {{- if .Values.console.strategy }}
+  strategy:
+    {{- .Values.console.strategy | toYaml | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "console.matchLabels" . | nindent 6 }}
