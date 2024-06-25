@@ -21,6 +21,16 @@
   },
   "packageRules": [
     {
+      "matchFileNames": [
+        ".tool-versions",
+        ".github/workflows/*",
+        ".github/actions/*",
+        "charts/camunda-platform-*/**",
+      ],
+      "addLabels": ["automerge"],
+      "automerge": true
+    },
+    {
       "matchDatasources": ["docker", "helm-values"],
       "matchDepPatterns": ["^camunda/.+"],
       "matchFileNames": [
@@ -34,15 +44,13 @@
     },
     {
       "matchFileNames": [
-        ".github/workflows/*.ya?ml",
-        ".github/actions/action.ya?ml",
+        ".github/workflows/*",
+        ".github/actions/*",
         "charts/camunda-platform-latest/Chart.yaml",
         "charts/camunda-platform-latest/values*.yaml",
         "charts/camunda-platform-latest/go.*"
       ],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "addLabels": ["automerge"],
-      "automerge": true
     },
     {
       "matchFileNames": [
