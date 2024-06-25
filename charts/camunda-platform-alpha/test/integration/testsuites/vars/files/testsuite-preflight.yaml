@@ -31,14 +31,14 @@ testcases:
     - component: Connectors
       url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
     - component: ZeebeGateway
-      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health"
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/readiness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
     delay: 10
-    # info: |
-    #   {{ .value.component }} URL: {{ .value.url }}
-    #   Response Body: {{ .result.body }}
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
   - name: "WebModeler - {{ .value.component }}"
@@ -54,9 +54,9 @@ testcases:
     url: "{{ .value.url }}"
     retry: 3
     delay: 10
-    # info: |
-    #   {{ .value.component }} URL: {{ .value.url }}
-    #   Response Body: {{ .result.body }}
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
 
@@ -87,9 +87,9 @@ testcases:
     url: "{{ .value.url }}"
     retry: 3
     delay: 10
-    # info: |
-    #   {{ .value.component }} URL: {{ .value.url }}
-    #   Response Body: {{ .result.body }}
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
   - name: "WebModeler - {{ .value.component }}"
@@ -105,9 +105,9 @@ testcases:
     url: "{{ .value.url }}"
     retry: 3
     delay: 10
-    # info: |
-    #   {{ .value.component }} URL: {{ .value.url }}
-    #   Response Body: {{ .result.body }}
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
 
