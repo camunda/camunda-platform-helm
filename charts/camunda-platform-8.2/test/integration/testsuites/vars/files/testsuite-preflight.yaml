@@ -1,6 +1,6 @@
 # NOTE: WebModeler has its own step because Venom doesn't support skip in loops yet.
 # https://github.com/ovh/venom/issues/651
-name: Run preflight checks for Camunda
+name: Run preflight checks for Camunda Platform
 
 # Vars without defaults are passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
 vars:
@@ -31,7 +31,7 @@ testcases:
     - component: Connectors
       url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
     - component: ZeebeGateway
-      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/readiness"
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/health"
     method: GET
     url: "{{ .value.url }}"
     retry: 3

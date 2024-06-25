@@ -898,6 +898,36 @@ func (s *deploymentTemplateTest) TestOptimizeWithLog4j2Configuration() {
 	s.Require().Equal("environment-config", volume.Name)
 	s.Require().Equal("camunda-platform-test-optimize-configuration", volume.ConfigMap.Name)
 }
+func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"optimize.dnsPolicy":                "ClusterFirst",
+			"optimize.dnsConfig.nameservers[0]": "8.8.8.8",
+			"optimize.dnsConfig.searches[0]":    "example.com",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	// Check if dnsPolicy is set
+	require.NotEmpty(s.T(), deployment.Spec.Template.Spec.DNSPolicy, "dnsPolicy should not be empty")
+
+	// Check if dnsConfig is set
+	require.NotNil(s.T(), deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should not be nil")
+
+	expectedDNSConfig := &corev1.PodDNSConfig{
+		Nameservers: []string{"8.8.8.8"},
+		Searches:    []string{"example.com"},
+	}
+
+	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
+}
 
 func (s *deploymentTemplateTest) TestDefaultStrategy() {
 	// given

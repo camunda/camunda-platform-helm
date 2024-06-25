@@ -147,6 +147,12 @@ spec:
         {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if .Values.webModeler.restapi.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.webModeler.restapi.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.restapi.dnsPolicy }}
+      dnsPolicy: {{ .Values.webModeler.restapi.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.webModeler.restapi.podSecurityContext }}
       securityContext: {{- toYaml .Values.webModeler.restapi.podSecurityContext | nindent 8 }}
       {{- end }}

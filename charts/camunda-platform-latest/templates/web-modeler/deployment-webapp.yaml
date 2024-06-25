@@ -140,6 +140,12 @@ spec:
         {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if .Values.webModeler.webapp.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.webModeler.webapp.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.webapp.dnsPolicy }}
+      dnsPolicy: {{ .Values.webModeler.webapp.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.webModeler.webapp.podSecurityContext }}
       securityContext: {{- toYaml .Values.webModeler.webapp.podSecurityContext | nindent 8 }}
       {{- end }}

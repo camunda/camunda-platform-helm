@@ -5,7 +5,7 @@ resources:
 - job.yaml
 
 configMapGenerator:
-- name: venom-tests
+- name: venom-tests-common
   options:
     disableNameSuffixHash: true
   files:

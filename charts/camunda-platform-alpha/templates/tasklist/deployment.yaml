@@ -250,6 +250,12 @@ spec:
         {{- .Values.tasklist.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "tasklist.serviceAccountName" . }}
+      {{- if .Values.tasklist.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.tasklist.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tasklist.dnsPolicy }}
+      dnsPolicy: {{ .Values.tasklist.dnsPolicy | quote }}
+      {{- end }}
       {{- if .Values.tasklist.podSecurityContext }}
       securityContext: {{- toYaml .Values.tasklist.podSecurityContext | nindent 8 }}
       {{- end }}
