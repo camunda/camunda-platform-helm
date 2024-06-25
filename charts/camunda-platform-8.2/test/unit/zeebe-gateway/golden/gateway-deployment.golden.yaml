@@ -90,7 +90,7 @@ spec:
           volumeMounts:
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/readiness
               scheme: HTTP
               port: 9600
             initialDelaySeconds: 30

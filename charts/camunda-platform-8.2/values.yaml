@@ -517,7 +517,7 @@ zeebe-gateway:
     # ReadinessProbe.schema defines the startup probe schema used on calling the probePath
     scheme: HTTP
     # ReadinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /actuator/health
+    probePath: /actuator/health/readiness
     # ReadinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
