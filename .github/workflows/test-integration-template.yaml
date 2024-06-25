@@ -119,7 +119,16 @@ jobs:
     - name: Print workflow inputs
       run: |
         echo "Workflow inputs:"
-        echo "${{ toJSON(inputs) }}"
+        echo "identifier: ${{ inputs.identifier }}"
+        echo "camunda-helm-dir: ${{ inputs.camunda-helm-dir }}"
+        echo "camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}"
+        echo "caller-git-ref: ${{ inputs.caller-git-ref }}"
+        echo "deployment-ttl: ${{ inputs.deployment-ttl }}"
+        echo "platforms: ${{ inputs.platforms }}"
+        echo "flows: ${{ inputs.flows }}"
+        echo "test-enabled: ${{ inputs.test-enabled }}"
+        echo "extra-values: ${{ inputs.extra-values }}"
+        echo "vault-secret-mapping: ${{ inputs.vault-secret-mapping }}"
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
