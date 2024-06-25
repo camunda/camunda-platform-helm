@@ -252,3 +252,47 @@ func (s *webappDeploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
+
+func (s *webappDeploymentTemplateTest) TestDefaultStrategy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	strategy := deployment.Spec.Strategy
+
+	s.Require().Equal("", string(strategy.Type))
+
+}
+
+func (s *webappDeploymentTemplateTest) TestDefinedStrategy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.webapp.strategy.type":     "Recreate",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	strategy := deployment.Spec.Strategy
+
+	s.Require().Equal("Recreate", string(strategy.Type))
+}

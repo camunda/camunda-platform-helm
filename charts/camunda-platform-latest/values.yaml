@@ -573,6 +573,8 @@ console:
   tolerations: []
   ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
+  ## @param console.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy: {}
   ## @param console.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -868,6 +870,10 @@ zeebe:
   configuration: ""
   ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
+  ## @extra zeebe.strategy can be used to configure the statefulsets update strategy https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  strategy:
+    ## @skip zeebe.strategy.type
+    type: RollingUpdate
   ## @param zeebe.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param zeebe.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1176,6 +1182,8 @@ zeebeGateway:
   configuration: ""
   ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
+  ## @param zeebeGateway.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy: {}
   ## @param zeebeGateway.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param zeebeGateway.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1415,6 +1423,8 @@ operate:
   configuration: ""
   ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
+  ## @param operate.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy: {}
   ## @param operate.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param operate.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1655,6 +1665,8 @@ tasklist:
   dnsPolicy: ""
   ## @param tasklist.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param tasklist.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy: {}
 
 #############################################
  #####
@@ -1902,6 +1914,10 @@ optimize:
   configuration: ""
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
   extraConfiguration: {}
+  ## @extra optimize.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy:
+    ## @skip optimize.strategy.type
+    type: Recreate
   ## @param optimize.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param optimize.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -2180,6 +2196,8 @@ identity:
   configuration: ""
   ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
+  ## @param identity.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy: {}
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -2659,6 +2677,8 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.restapi.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+    strategy: {}
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -2824,6 +2844,8 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.webapp.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+    strategy: {}
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
@@ -2978,6 +3000,8 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.websockets.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.websockets.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+    strategy: {}
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
   serviceAccount:
@@ -3355,6 +3379,8 @@ connectors:
   dnsPolicy: ""
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param connectors.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy: {}
 
 #####################################################################################
 #######
