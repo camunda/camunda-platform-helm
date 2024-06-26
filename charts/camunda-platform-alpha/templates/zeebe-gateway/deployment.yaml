@@ -61,6 +61,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: ZEEBE_GATEWAY_NETWORK_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_NETWORK_PORT
+              value: {{  .Values.zeebeGateway.service.grpcPort | quote }}
             - name: ZEEBE_LOG_LEVEL
               value: {{ .Values.zeebeGateway.logLevel | quote }}
             - name: JAVA_TOOL_OPTIONS
