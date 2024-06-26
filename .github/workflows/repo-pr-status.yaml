@@ -1,0 +1,20 @@
+name: Repo - PR Checks Status
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # This check will be used in gh rules to determine that all checks passed.
+  check:
+    name: Check PR status
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure PR checks passed
+        uses: poseidon/wait-for-status-checks@6988432d64ad3f9c2608db4ca16fded1b7d36ead # v0.5.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Exclude this job itself from the check.
+          ignore: "Check PR status"
