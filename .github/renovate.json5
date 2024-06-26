@@ -27,7 +27,8 @@
         ".github/actions/*",
         "charts/camunda-platform-*/**",
       ],
-      "addLabels": ["automerge"],
+      "addLabels": ["automerge", "bot/renovatebot"],
+      "platformAutomerge": false,
       "automerge": true
     },
     {
