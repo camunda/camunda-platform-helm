@@ -6,8 +6,7 @@ global:
   # https://github.com/camunda/camunda-platform/releases
   # https://hub.docker.com/u/camunda
   image:
-    # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.5.2
+    tag:
 
 console:
   # Camunda Enterprise repository.
@@ -25,15 +24,18 @@ connectors:
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
-    # renovate: datasource=docker depName=camunda/operate
     tag: 8.5.4
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    # renovate: datasource=docker depName=camunda/optimize
     tag: 8.5.3
+
+tasklist:
+  # https://hub.docker.com/r/camunda/tasklist/tags
+  image:
+    tag: 8.5.2
 
 webModeler:
   # Camunda Enterprise repository.
@@ -53,8 +55,13 @@ zeebeGateway:
     tag: 8.5.3
 
 #
-# Identity - Keycloak
+# Identity
 #
+
+identity:
+  # https://hub.docker.com/r/camunda/identity/tags
+  image:
+    tag: 8.5.3
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
