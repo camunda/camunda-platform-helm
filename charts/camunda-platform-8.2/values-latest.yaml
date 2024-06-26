@@ -8,7 +8,7 @@ global:
   # https://hub.docker.com/u/camunda
   image:
     # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.2.28
+    tag: 8.2.29
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
