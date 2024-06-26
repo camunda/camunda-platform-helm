@@ -152,6 +152,7 @@ jobs:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
   post-release:
+    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
     needs: release
     runs-on: ubuntu-latest
     permissions:
