@@ -42,7 +42,7 @@ webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.0-alpha2
+    tag: 8.6.0-alpha3
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
