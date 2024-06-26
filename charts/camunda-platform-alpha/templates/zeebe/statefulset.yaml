@@ -51,6 +51,11 @@ spec:
           securityContext: {{- toYaml .Values.zeebe.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME

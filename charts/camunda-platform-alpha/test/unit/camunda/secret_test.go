@@ -88,3 +88,24 @@ func (s *secretTest) TestContainerGenerateSecret() {
 		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
 	}
 }
+
+func (s *deploymentTemplateTest) TestContainerCamundaLicenseWithExistingSecret() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.license.existingSecret":    "ownExistingSecretForLicense",
+			"global.license.existingSecretKey": "camunda-license",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// then
+	// TODO: TODO: Extend this test to ensure that the key is available for all components.
+	s.Require().Contains(output, "name: CAMUNDA_LICENSE_KEY")
+	s.Require().Contains(output, "name: ownExistingSecretForLicense")
+	s.Require().Contains(output, "key: camunda-license")
+}

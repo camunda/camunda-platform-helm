@@ -158,6 +158,22 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
 {{- end -}}
 
 {{/*
+[camunda-platform] Get Camunda license secret name.
+*/}}
+{{- define "camundaPlatform.licenseSecretName" -}}
+  {{- $defaultSecretName := printf "%s-license" (include "camundaPlatform.fullname" .) -}}
+  {{- .Values.global.license.existingSecret | default $defaultSecretName -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Get Camunda license secret key.
+*/}}
+{{- define "camundaPlatform.licenseSecretKey" -}}
+  {{- $defaultSecretKey := "CAMUNDA_LICENSE_KEY" -}}
+  {{- .Values.global.license.existingSecretKey | default $defaultSecretKey -}}
+{{- end -}}
+
+{{/*
 ********************************************************************************
 Keycloak templates.
 ********************************************************************************

@@ -37,6 +37,11 @@ spec:
           {{- toYaml .Values.webModeler.websockets.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: APP_NAME
               value: "Web Modeler WebSockets"
             - name: PUSHER_APP_ID
