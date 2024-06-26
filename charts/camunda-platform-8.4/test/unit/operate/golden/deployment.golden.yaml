@@ -42,7 +42,7 @@ spec:
         []
       containers:
         - name: operate
-          image: camunda/operate:8.4.9
+          image: camunda/operate:8.4.10
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
