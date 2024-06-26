@@ -265,7 +265,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedContainerImage := "registry.camunda.cloud/web-modeler-ee/modeler-" + s.component + ":a.b.c"
+	expectedContainerImage := "camunda/web-modeler-" + s.component + ":a.b.c"
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
@@ -289,7 +289,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedContainerImage := "registry.camunda.cloud/web-modeler-ee/modeler-" + s.component + ":a.b.c"
+	expectedContainerImage := "camunda/web-modeler-" + s.component + ":a.b.c"
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
@@ -313,7 +313,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedContainerImage := "registry.camunda.cloud/web-modeler-ee/modeler-" + s.component + ":a.b.c"
+	expectedContainerImage := "camunda/web-modeler-" + s.component + ":a.b.c"
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
