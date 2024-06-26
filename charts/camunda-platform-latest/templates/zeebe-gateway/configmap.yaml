@@ -59,9 +59,6 @@ data:
         cluster:
           clusterName: {{ tpl .Values.global.zeebeClusterName . }}
           port: {{ .Values.zeebeGateway.service.internalPort | quote }}
-        network:
-          host: 0.0.0.0
-          port: {{ .Values.zeebeGateway.service.grpcPort | quote }}
         {{- if .Values.global.multitenancy.enabled }}
         multitenancy:
           enabled: true
