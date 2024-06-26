@@ -50,6 +50,11 @@ spec:
             - containerPort: {{  .Values.zeebeGateway.service.restPort }}
               name: {{ default "gateway" .Values.zeebeGateway.service.restName  }}
           env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: ZEEBE_STANDALONE_GATEWAY
               value: "true"
             - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
