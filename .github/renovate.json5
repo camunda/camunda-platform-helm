@@ -28,6 +28,8 @@
         "charts/camunda-platform-*/**",
       ],
       "addLabels": ["automerge", "bot/renovatebot"],
+      // The platformAutomerge value should be false to avoid having the renovatebot PRs merged
+      // without all checks passed.
       "platformAutomerge": false,
       "automerge": true
     },
