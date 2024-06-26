@@ -41,6 +41,11 @@ spec:
               name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
           {{- if eq .Values.connectors.inbound.mode "credentials" }}
             - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
               valueFrom:

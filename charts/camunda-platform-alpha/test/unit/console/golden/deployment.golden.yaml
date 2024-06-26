@@ -58,6 +58,11 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-license
+                  key: CAMUNDA_LICENSE_KEY
             - name: NODE_ENV
               value: prod
             - name: KEYCLOAK_INTERNAL_BASE_URL

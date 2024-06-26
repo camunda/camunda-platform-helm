@@ -37,6 +37,16 @@
 ## @section Global parameters
 ## @extra global
 global:
+  ## License configuration.
+  ## @extra global.license
+  license:
+    ## @param global.license.key if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
+    key:
+    ## @param global.license.existingSecret you can provide an existing secret name for Camunda license secret.
+    existingSecret:
+    ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
+    existingSecretKey:
+
   ## Multitenancy configuration.
   ## @extra global.multitenancy
   multitenancy:
