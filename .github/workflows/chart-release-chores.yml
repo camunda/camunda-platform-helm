@@ -75,9 +75,6 @@ jobs:
           pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
           gh pr edit "${pr_nubmer}" --title "${title} ${versions}"
 
-          # Set PR labels.
-          gh pr edit "${pr_nubmer}" --add-label "camunda-platform,chore"
-
           # Set PR project.
           gh pr edit "${pr_nubmer}" --add-project "Distribution Team"
       # We use git-chglog to generate the release notes and release-please
