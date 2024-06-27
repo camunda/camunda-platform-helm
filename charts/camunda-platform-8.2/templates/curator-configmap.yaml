@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: camunda-platform-curator-config
   labels:
-    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- include "retentionPolicy.labels" . | nindent 4 }}
 data:
   action_file.yml: |-
     ---
