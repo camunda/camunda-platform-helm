@@ -13,7 +13,7 @@ For the best experience, please remember:
 
   ```helm search repo camunda/camunda-platform --versions```
 
-- Always use the `Helm CLI` version that's used with the Helm chart. It's mentioned in the matrix for all charts or under chart annotation `helm.sh/cliVersion` for newer charts.
+- Always use the `Helm CLI` version that's used with the Helm chart. It's mentioned in the matrix for all charts or under chart annotation `camunda.io/helmCLIVersion` for newer charts.
 
 - During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions).
 

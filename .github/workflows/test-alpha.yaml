@@ -1,0 +1,56 @@
+# Basic test for Alpha Camunda 8 Helm charts.
+name: "Test - Alpha"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-alpha.yaml'
+      - 'charts/camunda-platform-alpha/**'
+  workflow_dispatch: { }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
+  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+  KUBECONFIG: .github/config/kubeconfig
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    name: Validation - Camunda Alpha
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-alpha"
+      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  unit:
+    name: Unit Test - Camunda Alpha
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-alpha"
+      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  integration:
+    name: Integration Test - Camunda Alpha
+    needs: [validation, unit]
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-alpha"
+      platforms: "gke"
+      flows: "install,upgrade"
+      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

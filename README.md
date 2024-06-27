@@ -1,9 +1,11 @@
 # Camunda 8 Helm
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Test - Unit](https://github.com/camunda/camunda-platform-helm/actions/workflows/test-unit.yml/badge.svg)](https://github.com/camunda/camunda-platform-helm/actions/workflows/test-unit.yml)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
 
+> [!CAUTION]
+>
+> This GitHub repository is mainly for development, don't use it directly to deploy Camunda. End users should use the [official documentation](https://docs.camunda.io/docs/self-managed/about-self-managed/) for [installation](https://docs.camunda.io/docs/self-managed/setup/install/), [upgrade](https://docs.camunda.io/docs/self-managed/setup/upgrade/), etc.
 
 - [Overview](#overview)
 - [Documentation](#documentation)
@@ -13,7 +15,6 @@
 - [Issues](#issues)
 - [Contributing](#contributing)
 - [Releasing](#releasing)
-- [Deprecation](#deprecation)
 - [License](#license)
 
 ## Overview
@@ -39,12 +40,12 @@ The dependency management is fully automated and managed by Helm itself.
 
 ## Versioning
 
-For more details about the Camunda 8 Helm chart versioning, please read the [versioning scheme](./charts/camunda-platform/#versioning).
+For more details about the Camunda 8 Helm chart versioning, please read the [versioning scheme](./charts/camunda-platform-latest/#versioning).
 
 ## Installation
 
 Find out more details about different installation and deployment options
-on the [Camunda 8 Helm chart readme](./charts/camunda-platform/README.md).
+on the [Camunda 8 Helm chart readme](./charts/camunda-platform-latest/README.md).
 
 ## Guides
 
@@ -64,34 +65,13 @@ We value all feedback and contributions. To start contributing to this project, 
 - **Don't create a PR without opening [an issue](https://github.com/camunda/camunda-platform-helm/issues/new/choose)
   and discussing it first.**
 - Familiarize yourself with the
-[contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/CONTRIBUTING.md).
+[contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/docs/contributing.md).
 - Find more information about configuring and deploying the Camunda 8
-  [Helm chart](./charts/camunda-platform/README.md).
+  [Helm chart](./charts/camunda-platform-latest/README.md).
 
 ## Releasing
 
 Please visit the [Camunda 8 release guide](./docs/release.md) to find out how to release the charts.
-
-## Deprecation
-
-<!-- omit in toc -->
-### Old Zeebe charts
-
-With the creation of the Camunda 8 Helm charts (previously known as `ccsm-helm`), the old `zeebe-*` charts
-have been deprecated. That means they are no longer part of the repository and are no longer maintained.
-However, the packaged charts are still available for download. But will be removed in the next releases.
-
-The following charts are deprecated:
-
-- zeebe-full-helm
-- zeebe-cluster-helm
-- zeebe-operate-helm
-- zeebe-tasklist-helm
-
-The new `camunda-platform` chart is a full replacement of `zeebe-full-helm` and replaces (contains) all other charts
-as sub-charts. All sub-charts in the `camunda-platform` are enabled by default.
-
-For a complete migration guide, visit [migration docs](./MIGRATION.md).
 
 ## License
 
@@ -99,5 +79,4 @@ Camunda 8 Self-Managed Helm charts are licensed under the open-source Apache Lic
 Please see [LICENSE](LICENSE) for details.
 
 For Camunda 8 components, please visit
-[licensing information page](https://docs.camunda.io/docs/reference/licenses).
-
+the [licensing information page](https://docs.camunda.io/docs/reference/licenses).

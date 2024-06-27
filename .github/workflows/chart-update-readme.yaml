@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'charts/camunda-platform/values.yaml'
+      - 'charts/camunda-platform*/README.md'
+      - 'charts/camunda-platform*/values.yaml'
       - '.github/workflows/chart-update-readme.yaml'
 
 permissions:
@@ -24,7 +25,7 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
       - name: Install readme-generator-for-helm

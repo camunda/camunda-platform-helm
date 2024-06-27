@@ -8,13 +8,17 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform-latest
+        type: string
       camunda-helm-git-ref:
         default: main
         type: string
       caller-git-ref:
         default: main
         type: string
-      persistent:
+      deployment-ttl:
         description: |
           Keep test deployment after the workflow is done.
           NOTE: All persistent deployments will be deleted frequently to save costs!
@@ -50,9 +54,6 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
 
-permissions:
-  contents: read
-  
 jobs:
   test:
     name: ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}
@@ -99,7 +100,20 @@ jobs:
         - scenario:
             if: false
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Print workflow inputs
+      run: |
+        echo "Workflow inputs:"
+        echo "identifier: ${{ inputs.identifier }}"
+        echo "camunda-helm-dir: ${{ inputs.camunda-helm-dir }}"
+        echo "camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}"
+        echo "caller-git-ref: ${{ inputs.caller-git-ref }}"
+        echo "deployment-ttl: ${{ inputs.deployment-ttl }}"
+        echo "platforms: ${{ inputs.platforms }}"
+        echo "flows: ${{ inputs.flows }}"
+        echo "test-enabled: ${{ inputs.test-enabled }}"
+        echo "extra-values: ${{ inputs.extra-values }}"
+        echo "vault-secret-mapping: ${{ inputs.vault-secret-mapping }}"
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
@@ -183,6 +197,109 @@ jobs:
         service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
     - name: Cleanup GitHub deployment
       if: always()
+        deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+        setup-flow: ${{ matrix.scenario.flow }}
+        platform: ${{ matrix.distro.platform }}
+        identifier-base: ${{ inputs.identifier }}
+        ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+    - name: Set test type vars
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: "${{ inputs.camunda-helm-dir }}"
+    - name: Install env dependencies
+      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+    - name: Add Helm repos and dependencies
+      run: |
+        export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+        make helm.repos-add
+        make helm.dependency-update
+    - name: Create test namespace
+      run: |
+        echo $TEST_NAMESPACE
+        kubectl delete ns --ignore-not-found=true \
+          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }}"
+        kubectl create ns $TEST_NAMESPACE
+        kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+        kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+        kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
+        kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
+        kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
+        kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
+        kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+    - name: Copy PRs wildcard certificate
+      run: |
+        kubectl apply -n $TEST_NAMESPACE -f .github/config/external-secret.yaml
+    - name: Start GitHub deployment
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
+      id: deployment
+      with:
+        step: start
+        token: ${{ steps.generate-github-token.outputs.token }}
+        env: ${{ steps.vars.outputs.identifier }}
+        ref: ${{ inputs.caller-git-ref }}
+    - name: Pre setup
+      timeout-minutes: 5
+      env:
+        TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+        TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+      run: |
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
+
+        echo "Extra values from workflow:"
+        echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
+        cat /tmp/extra-values-file.yaml
+    - name: 🌟 Setup Camunda chart 🌟
+      env:
+        TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+        TEST_HELM_EXTRA_ARGS: >-
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          --values /tmp/extra-values-file.yaml
+      run: |
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
+    - name: Post setup
+      timeout-minutes: 5
+      run: |
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
+    - name: Pre Upgrade
+      if: matrix.scenario.flow == 'upgrade'
+      run: |
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
+    - name: 🌟 Upgrade Camunda chart 🌟
+      if: matrix.scenario.flow == 'upgrade'
+      env:
+        TEST_HELM_EXTRA_ARGS: >-
+          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          --values /tmp/extra-values-file.yaml
+      run: |
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+    - name: Update GitHub deployment status
+      uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
+      with:
+        step: finish
+        token: ${{ steps.generate-github-token.outputs.token }}
+        status: ${{ job.status }}
+        deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+        env_url: https://${{ steps.vars.outputs.ingress-host }}
+        env: ${{ steps.vars.outputs.identifier }}
+        ref: ${{ inputs.caller-git-ref }}
+    - name: ⭐️ Run Preflight TestSuite ⭐️
+      if: inputs.test-enabled
+      timeout-minutes: 10
+      run: |
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
+    - name: ⭐️ Run Core TestSuite ⭐️
+      if: inputs.test-enabled
+      timeout-minutes: 20
+      run: |
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
+    - name: 🚨 Get failed Pods info 🚨
+      if: failure()
+      uses: ./.github/actions/failed-pods-info
+    - name: Cleanup GitHub deployment
+      if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env

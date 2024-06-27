@@ -1,10 +1,6 @@
 name: Workflow vars
 description: Set common vars for workflow
 inputs:
-  persistent:
-    description: Don't use changing vars like SHA commit
-    # TODO: Change that to real bool when it's supported in GHA.
-    default: "false"
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"

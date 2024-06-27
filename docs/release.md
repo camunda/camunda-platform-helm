@@ -9,12 +9,36 @@ created. The charts are hosted via GitHub pages and use the release artifacts. W
 
 For debugging and advanced testing purposes, we provide a snapshot chart from the unreleased changes on the `main` branch (never use it in production or stable environments).
 
-It will be always updated with the fixed version name `0.0.0-main-snapshot` (the tag needed to start with SemVer because Helm requires it).
+It will be always updated with the fixed version name like `0.0.0-snapshot-latest` (the tag needed to start with SemVer because Helm requires it).
+
+### Latest
+
+The latest unreleased changes version has rolling version `0.0.0-snapshot-latest`:
 
 ```shell
 helm template my-camunda-devel \
   oci://ghcr.io/camunda/helm/camunda-platform \
-  --version 0.0.0-main-snapshot
+  --version 0.0.0-snapshot-latest
+```
+
+### Alpha
+
+The Alpha version is available in two flavors:
+
+Rolling version `0.0.0-snapshot-alpha` (always pointing to the Camunda latest alpha release):
+
+```shell
+helm template my-camunda-devel \
+  oci://ghcr.io/camunda/helm/camunda-platform \
+  --version 0.0.0-snapshot-alpha
+```
+
+Fixed version like `0.0.0-8.6.0-alpha2` (it will be updated according to the Camunda latest alpha release):
+
+```shell
+helm template my-camunda-devel \
+  oci://ghcr.io/camunda/helm/camunda-platform \
+  --version 0.0.0-8.6.0-alpha2
 ```
 
 ## Process
