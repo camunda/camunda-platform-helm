@@ -60,20 +60,6 @@ jobs:
           tf-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
           max-age-hours-cluster: "${{ env.MAX_AGE_HOURS_CLUSTER }}"
 
-      - name: Close issue in case of success
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        run: |
-          issue_url=$(gh --repo "${{ github.repository }}" search issues  "Failed to cleanup ROSA clusters" --state=open --label="schedule" --json 'url' | jq '.[0].url' -r)
-
-          if [ "$issue_url" != "null" ]; then
-            gh issue close --comment "Auto-closing issue as the cleanup has been successfuly ran in ${{ env.WORKFLOW_URL }}." "$issue_url"
-          else
-            echo "No open issues found with the specified criteria."
-          fi
-
       - name: Notify in Slack in case of failure
         id: slack-notification
         if: failure() && github.event_name == 'schedule'
@@ -96,5 +82,5 @@ jobs:
               ]
             }
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ secrets.DISTRO_CI_SLACK_BOT_TOKEN }}
           WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -366,5 +366,5 @@ jobs:
               ]
             }
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ secrets.DISTRO_CI_SLACK_BOT_TOKEN }}
           WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
