@@ -151,13 +151,13 @@ jobs:
         type: "${{ matrix.distro.type }}"
 
         identifier: "${{ env.TEST_IDENTIFIER }}"
-        persistent: "${{ env.TEST_PERSISTENT }}"
+        deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
         flow: "${{ matrix.scenario.flow }}"
         test-enabled: "${{ inputs.test-enabled }}"
 
         caller-git-ref: ${{ inputs.caller-git-ref  }}
         extra-values: ${{ inputs.extra-values }}
-        ingress-hostname-base: ${{ env.TEST_HOSTNAME_BASE }}
+        ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
 
         gh_app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
         gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}

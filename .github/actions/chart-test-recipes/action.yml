@@ -17,11 +17,11 @@ inputs:
   test-enabled:
     description: "Enable the tests"
     default: 'true'
-  persistent:
+  deployment-ttl:
     description: |
-      Keep test deployment after the workflow is done.
-      NOTE: All persistent deployments will be deleted frequently to save costs!
-    default: 'false'
+      Define a ttl for the lifespan of the deployment
+    required: false
+    default: ""
   flow:
     description: "Test scenario to perform (install, upgrade)."
     default: 'install'
@@ -61,7 +61,7 @@ runs:
       id: vars
       uses: ./.github/actions/workflow-vars
       with:
-        persistent: ${{ inputs.persistent }}
+        deployment-ttl: ${{ inputs.deployment-ttl }}
         setup-flow: ${{ inputs.flow }}
         platform: ${{ inputs.platform }}
         type: ${{ inputs.type }}
@@ -80,15 +80,19 @@ runs:
     - name: Create test namespace
       shell: bash
       run: |
+        echo $TEST_NAMESPACE
         kubectl delete ns --ignore-not-found=true \
-          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ inputs.flow }},test-persistent=true"
+          -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ inputs.flow }}"
         kubectl create ns $TEST_NAMESPACE
         kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
         kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
         kubectl label ns $TEST_NAMESPACE github-id=${{ inputs.identifier }}
         kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
-        kubectl label ns $TEST_NAMESPACE test-persistent=${{ inputs.persistent }}
-
+        kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
+        kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
+        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
+        kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+ 
     - name: Copy PRs wildcard certificate
       shell: bash
       run: |
@@ -172,7 +176,7 @@ runs:
       uses: ./.github/actions/failed-pods-info
 
     - name: Cleanup GitHub deployment
-      if: always() && (inputs.persistent == 'false' || inputs.type != 'kubernetes')
+      if: always() && (inputs.deployment-ttl == '' || inputs.type != 'kubernetes')
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
@@ -182,6 +186,14 @@ runs:
 
     - name: Cleanup test namespace
       shell: bash
-      if: always() && (inputs.persistent == 'false' || inputs.type != 'kubernetes')
+      if: always()
       run: |
-        kubectl delete ns --ignore-not-found=true -l github-run-id=$GITHUB_WORKFLOW_RUN_ID -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
+        if [ "${{ inputs.deployment-ttl }}" != "" ]; then
+          if [ "${{ inputs.type }}" == "kubernetes" ]; then
+            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl }} --overwrite=true
+          else
+            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+          fi
+        else
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+        fi
