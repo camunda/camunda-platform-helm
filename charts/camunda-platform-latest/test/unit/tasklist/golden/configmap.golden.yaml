@@ -28,6 +28,7 @@ data:
       identity:
         clientId: "tasklist"
         audience: "tasklist-api"
+        baseUrl: "http://camunda-platform-test-identity:80"
 
     # Tasklist configuration file
     camunda.tasklist:

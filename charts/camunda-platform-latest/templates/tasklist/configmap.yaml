@@ -32,6 +32,8 @@ data:
       identity:
         clientId: {{ include "tasklist.authClientId" . | quote }}
         audience: {{ include "tasklist.authAudience" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
+
     {{- else }}
     spring:
       profiles:
