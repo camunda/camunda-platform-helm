@@ -31,6 +31,7 @@ data:
       identity:
         clientId: {{ include "operate.authClientId" . | quote }}
         audience: {{ include "operate.authAudience" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
     {{- else }}
     spring:
       profiles:
