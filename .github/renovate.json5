@@ -27,7 +27,7 @@
         ".github/actions/*",
         "charts/camunda-platform-*/**",
       ],
-      "addLabels": ["automerge", "bot/renovatebot"],
+      "addLabels": ["automerge", "automation/renovatebot", "kind/chore"],
       // The platformAutomerge value should be false to avoid having the renovatebot PRs merged
       // without all checks passed.
       "platformAutomerge": false,
