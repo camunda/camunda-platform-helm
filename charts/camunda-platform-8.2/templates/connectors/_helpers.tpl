@@ -27,6 +27,7 @@ If release name contains chart name it will be used as a full name.
 Defines extra labels for connectors.
 */}}
 {{- define "connectors.extraLabels" -}}
+app.kubernetes.io/version: {{ .Chart.Version | quote }}
 app.kubernetes.io/component: connectors
 {{- end -}}
 
@@ -35,7 +36,8 @@ Define common labels for connectors, combining the match labels and transient la
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "connectors.labels" -}}
-{{- template "camundaPlatform.labels" . }}
+{{- template "camundaPlatform.matchLabels" . }}
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ template "connectors.extraLabels" . }}
 {{- end -}}
 {{/*
@@ -43,7 +45,7 @@ Defines match labels for connectors, which are extended by sub-charts and should
 */}}
 {{- define "connectors.matchLabels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
-{{ template "connectors.extraLabels" . }}
+app.kubernetes.io/component: connectors
 {{- end -}}
 {{/*
 [connectors] Create the name of the service account to use

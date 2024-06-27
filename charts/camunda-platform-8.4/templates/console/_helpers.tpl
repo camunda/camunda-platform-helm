@@ -31,6 +31,7 @@ Common labels
 */}}
 {{- define "console.labels" -}}
 {{- template "camundaPlatform.labels" . }}
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) | quote }}
 {{ template "console.extraLabels" . }}
 {{- end -}}
 

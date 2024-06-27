@@ -38,8 +38,20 @@ app.kubernetes.io/version: {{ .Values.image.tag | quote }}
 app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
     {{- end }}
 {{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+app.kubernetes.io/version: {{ .Chart.Version | quote }}
 {{- end }}
+{{- end -}}
+
+{{- define "retentionPolicy.labels" -}}
+{{- template "camundaPlatform.matchLabels" . }}
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+app.kubernetes.io/version: {{ .Chart.Version | quote }}
+{{- end -}}
+
+{{- define "prometheusServiceMonitor.labels" -}}
+  {{- include "camundaPlatform.matchLabels" . | nindent 4 }}
+  {{- printf "app.kubernetes.io/version: %s" (.Chart.Version | quote) | nindent 4 }}
+  {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4 }}
 {{- end -}}
 
 {{/*
@@ -68,6 +80,15 @@ Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "o
         (.overlay.image.repository | default .base.image.repository)
         (.overlay.image.tag | default .base.image.tag)
     -}}
+{{- end -}}
+
+{{/*
+Get image tag according the values of "base" or "overlay" values.
+If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
+Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+*/}}
+{{- define "camundaPlatform.imageTagByParams" -}}
+    {{- .overlay.image.tag | default .base.image.tag -}}
 {{- end -}}
 
 {{/*
