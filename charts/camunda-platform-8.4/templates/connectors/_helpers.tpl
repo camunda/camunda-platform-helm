@@ -36,6 +36,7 @@ Define common labels for connectors, combining the match labels and transient la
 */}}
 {{- define "connectors.labels" -}}
 {{- template "camundaPlatform.labels" . }}
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) | quote }}
 {{ template "connectors.extraLabels" . }}
 {{- end -}}
 {{/*

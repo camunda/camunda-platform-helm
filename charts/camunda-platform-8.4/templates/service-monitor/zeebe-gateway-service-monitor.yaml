@@ -3,8 +3,10 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-zeebe-gateway
-  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
-    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4 }}
 spec:
   selector:
     matchLabels:

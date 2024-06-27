@@ -4,7 +4,7 @@ kind: CronJob
 metadata:
   name: camunda-platform-curator
   labels:
-    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- include "retentionPolicy.labels" . | nindent 4 }}
 spec:
   schedule: {{ .Values.retentionPolicy.schedule | quote }}
   successfulJobsHistoryLimit: 1

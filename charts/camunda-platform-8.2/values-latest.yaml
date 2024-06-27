@@ -1,38 +1,34 @@
 #
 # Camunda - v8.2
-# https://docs.camunda.io/docs/next/reference/announcements/#camunda-82
+# https://docs.camunda.io/docs/reference/announcements/#camunda-82
 #
 
 global:
-  # https://github.com/camunda/camunda-platform/releases
   # https://hub.docker.com/u/camunda
   image:
-    # renovate: datasource=docker depName=camunda/zeebe
-    tag: 8.2.29
+    tag:
 
 connectors:
-  # https://hub.docker.com/r/camunda/connectors-bundle/tags
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags?page=&page_size=&ordering=&name=8.2
   image:
     repository: camunda/connectors-bundle
     tag: 0.23.2
 
-identity:
-  keycloak:
-    # https://hub.docker.com/r/bitnami/keycloak/tags
-    image:
-      repository: bitnami/keycloak
-      tag: 19.0.3
-    postgresql:
-      # https://hub.docker.com/r/bitnami/postgresql/tags
-      image:
-        repository: bitnami/postgresql
-        tag: 15.4.0
+operate:
+  # https://hub.docker.com/r/camunda/operate/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.28
 
 optimize:
-  # https://hub.docker.com/r/camunda/optimize/tags
+  # https://hub.docker.com/r/camunda/optimize/tags?page=&page_size=&ordering=&name=8.2
   image:
     repository: camunda/optimize
     tag: 8.2.12
+
+tasklist:
+  # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.28
 
 webModeler:
   # Camunda Enterprise repository.
@@ -40,6 +36,36 @@ webModeler:
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
     tag: 8.2.16
+
+zeebe:
+  # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.29
+
+zeebe-gateway:
+  # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.29
+
+#
+# Identity
+#
+
+identity:
+  # https://hub.docker.com/r/camunda/identity/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    repository: camunda/identity
+    tag: 8.2.29
+  keycloak:
+    # https://hub.docker.com/r/bitnami/keycloak/tags?page=&page_size=&ordering=&name=8.2
+    image:
+      repository: bitnami/keycloak
+      tag: 19.0.3
+    postgresql:
+      # https://hub.docker.com/r/bitnami/postgresql/tags?page=&page_size=&ordering=&name=8.2
+      image:
+        repository: bitnami/postgresql
+        tag: 15.4.0
 
 #
 # Elasticsearch
