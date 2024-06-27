@@ -237,6 +237,7 @@ func (s *statefulSetTest) TestContainerOverwriteGlobalImageTag() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.tag": "a.b.c",
+			"zeebe.image.tag": "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
