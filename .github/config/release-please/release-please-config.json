@@ -2,6 +2,7 @@
   "release-type": "helm",
   "group-pull-request-title-pattern": "Release Camunda Platform Helm Chart",
   "pull-request-title-pattern": "Camunda Platform Helm Chart ${component}/${version}",
+  "extra-label": "bot/release-please,release/pr,camunda-platform,chore",
   "skip-github-release": true,
   "separate-pull-requests": false,
   "bump-minor-pre-major": false,
@@ -10,12 +11,12 @@
   "packages": {
     "charts/camunda-platform-latest": {
       "component": "camunda-platform-latest",
-      "label": "version/8.5",
+      "extra-label": "version/8.5",
       "changelog-path": "CHANGELOG.md"
     },
     "charts/camunda-platform-8.4": {
       "component": "camunda-platform-8.4",
-      "label": "version/8.4",
+      "extra-label": "version/8.4",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
@@ -27,7 +28,7 @@
     },
     "charts/camunda-platform-8.3": {
       "component": "camunda-platform-8.3",
-      "label": "version/8.3",
+      "extra-label": "version/8.3",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
@@ -39,7 +40,7 @@
     },
     "charts/camunda-platform-8.2": {
       "component": "camunda-platform-8.2",
-      "label": "version/8.2",
+      "extra-label": "version/8.2",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
