@@ -22,8 +22,6 @@ env:
   TEST_AWS_REGION: "eu-central-1"
   TF_S3_BUCKET: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}"
 
-  ASSIGNEES_ISSUE_ERROR: "aabouzaid, jessesimpson36, hamza-m-masood, drodriguez-305"
-
 jobs:
 
   cleanup-clusters:
@@ -76,15 +74,27 @@ jobs:
             echo "No open issues found with the specified criteria."
           fi
 
-      - name: Create issue on failure
-        if: failure()
-        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5 # v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      - name: Notify in Slack in case of failure
+        id: slack-notification
+        if: failure() && github.event_name == 'schedule'
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
         with:
-          assignees: "${{ env.ASSIGNEES_ISSUE_ERROR }}"
-          update_existing: true
-          search_existing: all
-          filename: .github/templates/issue_delete_clusters_failed.md
- 
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          payload: |
+            {
+              "unfurl_links": false,
+              "unfurl_media": false,
+              "text": "${{ github.event.repository.name }} (${{ github.server_url }}/${{ github.repository }}) scheduled workflow: ${{ github.workflow }} failed! Please check: ${{ env.WORKFLOW_URL }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":automation-platform-failure: :mechanic: <${{ github.server_url }}/${{ github.repository }}|[${{ github.event.repository.name }}]> scheduled workflow: ${{ github.workflow }} failed! \n :link: Please check: ${{ env.WORKFLOW_URL }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
