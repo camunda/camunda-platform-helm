@@ -79,7 +79,7 @@ concurrency:
   group: "${{ github.workflow }}-${{ github.actor }}"
 
 jobs:
-  define_matrix:
+  define-matrix:
     name: "Define matrix"
     runs-on: ubuntu-latest
     outputs:
@@ -99,15 +99,15 @@ jobs:
           echo "flow_matrix=${{ env.INPUTS_FLOWS }}"
           echo "flow_matrix=${{ env.INPUTS_FLOWS }}" >> "$GITHUB_OUTPUT"
 
-  define_variables:
+  define-variables:
     name: "Define variables"
     runs-on: ubuntu-latest
     needs:
-      - define_matrix
+      - define-matrix
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
+        distro: ${{ fromJson(needs.define-matrix.outputs.platform_matrix) }}
     steps:
       - name: Define ROSA cluster name
         id: rosa-cluster-name
@@ -134,26 +134,26 @@ jobs:
           outputs: |-
             cluster_name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
 
-  read_cluster_vars:
+  read-cluster-vars:
     runs-on: ubuntu-latest
-    needs: [ define_variables ]
+    needs: [ define-variables ]
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
         id: read
         with:
-          matrix-step-name: define_variables
+          matrix-step-name: define-variables
     outputs:
       result: "${{ steps.read.outputs.result }}"
 
-  prepare_clusters:
+  prepare-clusters:
     name: "Prepare Clusters"
     needs:
-      - define_matrix
-      - read_cluster_vars
+      - define-matrix
+      - read-cluster-vars
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
+        distro: ${{ fromJson(needs.define-matrix.outputs.platform_matrix) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -177,7 +177,7 @@ jobs:
           admin-password: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD }}
           s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
 
-          cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
+          cluster-name: ${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}
           aws-region: ${{ env.TEST_AWS_REGION }}
           replicas: 8
 
@@ -202,7 +202,7 @@ jobs:
             : # configure external dns
             export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
             envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
-            yq -ei '.txtOwnerId = "${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
+            yq -ei '.txtOwnerId = "${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
 
             : # configure ExternalSecretStore replication from the permanent ROSA cluster
             export EXTERNAL_SECRET_STORE_SA_TOKEN=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_TOKEN }}
@@ -241,30 +241,30 @@ jobs:
           outputs: |-
             kubeconfig_raw: ${{ steps.export_kube_config.outputs.kubeconfig_raw }}
 
-  read_kube_configs:
+  read-kube-configs:
     name: "Read kube configs from matrix"
     runs-on: ubuntu-latest
-    needs: [ prepare_clusters ]
+    needs: [ prepare-clusters ]
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
         id: read
         with:
-          matrix-step-name: prepare_clusters
+          matrix-step-name: prepare-clusters
     outputs:
       kubeconfig: "${{ steps.read.outputs.result }}"
 
-  launch_tests:
+  launch-tests:
     name: "Launch tests"
     runs-on: ubuntu-latest
     needs:
-      - define_matrix
-      - read_cluster_vars
-      - read_kube_configs
+      - define-matrix
+      - read-cluster-vars
+      - read-kube-configs
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
-        flow: ${{ fromJson(needs.define_matrix.outputs.flow_matrix) }}
+        distro: ${{ fromJson(needs.define-matrix.outputs.platform_matrix) }}
+        flow: ${{ fromJson(needs.define-matrix.outputs.flow_matrix) }}
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
@@ -274,7 +274,7 @@ jobs:
       - name: Set up Kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ fromJson(needs.read_kube_configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}" | base64 --decode > encrypted_kubeconfig.enc
+          echo "${{ fromJson(needs.read-kube-configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}" | base64 --decode > encrypted_kubeconfig.enc
           openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
@@ -286,7 +286,7 @@ jobs:
             INPUTS_IDENTIFIER="$(git rev-parse --short ${{ github.sha }})"
           fi
 
-          echo "INPUTS_IDENTIFIER=$INPUTS_IDENTIFIER-${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}" | tee -a "$GITHUB_ENV"
+          echo "INPUTS_IDENTIFIER=$INPUTS_IDENTIFIER-${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}" | tee -a "$GITHUB_ENV"
 
       - name: Launch tests
         uses: ./.github/actions/chart-test-recipes
@@ -306,18 +306,18 @@ jobs:
           gh_app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
 
-  cleanup_clusters:
+  cleanup-clusters:
     name: "Cleanup ROSA clusters"
     if: always()
     runs-on: ubuntu-latest
     needs:
-      - define_matrix
-      - read_cluster_vars
-      - launch_tests
+      - define-matrix
+      - read-cluster-vars
+      - launch-tests
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJson(needs.define_matrix.outputs.platform_matrix) }}
+        distro: ${{ fromJson(needs.define-matrix.outputs.platform_matrix) }}
     steps:
       - name: Authenticate to AWS
         run: |
@@ -335,7 +335,7 @@ jobs:
           rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
           s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
 
-          cluster-name: ${{ fromJson(needs.read_cluster_vars.outputs.result).cluster_name[matrix.distro.name] }}
+          cluster-name: ${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}
           aws-region: ${{ env.TEST_AWS_REGION }}
 
   report:
@@ -343,8 +343,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     needs:
-      - launch_tests
-      - cleanup_clusters
+      - launch-tests
+      - cleanup-clusters
     steps:
       - name: Create issue on failure
         if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
