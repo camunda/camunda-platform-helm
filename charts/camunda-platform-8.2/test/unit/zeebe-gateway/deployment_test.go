@@ -208,6 +208,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.tag": "a.b.c",
+			"zeebe-gateway.image.tag": "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

@@ -80,6 +80,7 @@ Define common labels for all Web Modeler components.
 {{- define "webModeler.commonLabels" -}}
 {{- $values := merge (deepCopy .Values) (dict "nameOverride" (include "webModeler.name" .) "image" .Values.webModeler.image) }}
 {{- template "camundaPlatform.labels" (dict "Chart" .Chart "Release" .Release "Values" $values) }}
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
 {{- end -}}
 
 {{/*

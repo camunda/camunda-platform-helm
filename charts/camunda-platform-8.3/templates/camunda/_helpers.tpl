@@ -58,7 +58,7 @@ app.kubernetes.io/version: {{ .Values.image.tag | quote }}
 app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
     {{- end }}
 {{- else }}
-app.kubernetes.io/version: {{ .Values.global.image.tag | quote }}
+app.kubernetes.io/version: {{ .Chart.Version | quote }}
 {{- end }}
 {{- end }}
 
