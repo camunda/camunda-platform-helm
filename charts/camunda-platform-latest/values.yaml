@@ -2269,6 +2269,7 @@ identityKeycloak:
       repository: bitnami/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
       tag: 15.7.0
+
     primary:
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
