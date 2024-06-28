@@ -50,7 +50,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}

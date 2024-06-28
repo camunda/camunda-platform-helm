@@ -18,7 +18,7 @@ on:
 env:
   MAX_AGE_HOURS_CLUSTER: 20
 
-  # please keep those variables synced with test-integration-template.yml
+  # please keep those variables synced with test-integration-rosa.yml
   TEST_AWS_REGION: "eu-central-1"
   TF_S3_BUCKET: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}"
 
