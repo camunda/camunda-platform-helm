@@ -1,7 +1,7 @@
 {
   "release-type": "helm",
-  "group-pull-request-title-pattern": "Release Camunda Platform Helm Chart",
-  "pull-request-title-pattern": "Camunda Platform Helm Chart ${component}/${version}",
+  "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart",
+  "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${component}/${version}",
   "extra-label": "automation/release-please,release/pr,kind/chore,chart/camunda-platform",
   "skip-github-release": true,
   "separate-pull-requests": false,
