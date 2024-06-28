@@ -2450,6 +2450,7 @@ webModeler:
   ## @param webModeler.nameOverride can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)
   nameOverride: ""
 
+
   ## @extra webModeler.image configuration of the WebModeler Docker images
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
