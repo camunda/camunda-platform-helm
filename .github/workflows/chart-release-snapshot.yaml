@@ -87,8 +87,7 @@ jobs:
       # Changelog.
       - name: Generate snapshot changelog
         run: |
-          LATEST_TAG="$(git describe --tags $(git rev-list --tags="${{ env.CHART_NAME }}-*" --max-count=1))"
-          export SNAPSHOT_DESCRIPTION="Changes since the latest release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${LATEST_TAG}...main"
+          export SNAPSHOT_DESCRIPTION="Check chart dir for more details: https://github.com/camunda/camunda-platform-helm/tree/main/charts/${{ matrix.chart.directory }}"
           yq -i '.description |= strenv(SNAPSHOT_DESCRIPTION)' Chart.yaml
       #
       # Package.
