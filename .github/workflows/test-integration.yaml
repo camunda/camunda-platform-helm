@@ -1,7 +1,7 @@
 name: "Test - Integration"
 
 on:
-  push:
+  pull_request:
     paths:
     - '.github/workflows/test-integration-template.yaml'
     - '.github/workflows/test-integration.yaml'
