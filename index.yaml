@@ -4,6 +4,80 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "configurable update strategy"
+        - kind: added
+          description: "support dnsPolicy and dnsConfig for all components"
+        - kind: added
+          description: "add console auth vars"
+        - kind: fixed
+          description: "identity base url not configured"
+        - kind: fixed
+          description: "unauthenticated external elasticsearch no longer forces password…"
+        - kind: changed
+          description: "remove the global image tag value and use it from the components"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.2
+      dummy: dummy
+    apiVersion: v2
+    appVersion: 8.5.x
+    created: "2024-06-28T21:53:23.378369467Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: https://charts.bitnami.com/bitnami
+      version: 19.4.1
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 12.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql
+      version: 11.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 20.0.4
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 4b1b6817310cbcf05d6f11a0fb5f6971a67cd1ed8a31178af42336bcfe4f59a8
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-10.2.0/camunda-platform-10.2.0.tgz
+    version: 10.2.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "add console auth vars"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
@@ -1358,6 +1432,67 @@ entries:
     description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
       platform allows developers to design, automate and improve processes. '
     digest: 8474f8bb86491897bd7f1a5055f31a857dd0b6c53060267f3268ba90cd82d9a5
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.6.0-alpha3/camunda-platform-8.6.0-alpha3.tgz
+    version: 8.6.0-alpha3
+  - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.1
+    apiVersion: v2
+    appVersion: 8.6.x
+    created: "2024-06-28T21:53:23.553298461Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: https://charts.bitnami.com/bitnami
+      version: 19.4.1
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 12.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql
+      version: 11.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 20.0.4
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 46d09b7c9f987cbf883915023dd5c2d4508c510a8ddf95279811afbdc8d4a3f0
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
@@ -10673,4 +10808,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-06-28T21:52:53.815765317Z"
+generated: "2024-06-28T21:53:23.685163825Z"
