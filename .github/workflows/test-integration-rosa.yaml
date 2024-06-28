@@ -11,6 +11,7 @@ on:
       - '.github/workflows/test-integration-rosa.yaml'
       - '.github/actions/workflow-vars/**'
       - '.github/actions/chart-test-recipes/**'
+      - '.github/actions/test-type-vars/**'
       - '.github/workflows/fixtures/clusters/rosa-hcp-on-demand/**'
       - '.github/workflows/fixtures/modules/**'
       - '.tool-versions'
