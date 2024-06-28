@@ -59,6 +59,6 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "operate should be 8.4.8 in helm 9.3.4"
-  camunda.io/helmCLIVersion: 3.15.1
+    - kind: changed
+      description: "remove the global image tag value and use it from the components - 8.2, 8.3, and 8.4"
+  camunda.io/helmCLIVersion: 3.15.2
