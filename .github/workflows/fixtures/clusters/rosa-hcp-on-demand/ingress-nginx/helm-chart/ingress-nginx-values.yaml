@@ -1,7 +1,0 @@
----
-controller:
-  ingressClassResource:
-    default: true
-  admissionWebhooks:
-    enabled: false
-  replicaCount: 2

@@ -188,6 +188,23 @@ jobs:
 
           openshift-version: "${{ matrix.distro.version }}"
 
+      # this token is used to clone the github repository containing the base modules
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+
+      - name: Clone the distribution GitOps repo
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          repository: "camunda/distribution"
+          ref: "main"
+          path: "./.distribution-kube/"
+          fetch-depth: 0
+          token: "${{ steps.generate-github-token.outputs.token }}"
+
       - name: Configure on-demand cluster ROSA
         timeout-minutes: 10
         # we need to retry as CRDs can take some time to be installed
@@ -202,7 +219,8 @@ jobs:
             set -o errexit
             set -o pipefail
 
-            cd ./.github/workflows/fixtures/clusters/rosa-hcp-on-demand/
+            : # we configure the whole cluster using this cluster template
+            cd ./.distribution-kube/clusters/rosa-hcp-on-demand/
 
             : # configure external dns
             export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
