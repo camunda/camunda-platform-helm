@@ -652,7 +652,7 @@ operate:
     # Image.repository defines which image repository to use
     repository: camunda/operate
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.27
+    tag: 8.2.28
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -832,7 +832,7 @@ tasklist:
     # Image.repository defines which image repository to use
     repository: camunda/tasklist
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.28
+    tag: 8.2.29
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
