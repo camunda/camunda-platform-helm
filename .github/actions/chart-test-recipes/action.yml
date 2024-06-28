@@ -31,49 +31,57 @@ inputs:
   ingress-hostname-base:
     description: "Hostname base for the tests"
     required: true
-  gh_app_id:
+  chart-dir:
+    description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
     required: true
-    description: "Github App Id used to impersonate the action"
-  test_scenarios_dir:
-    default: "charts/camunda-platform/test/integration/scenarios"
-    description: "Directory path containing scenarios"
-  wildcard_certs_secret_path:
+  gh-token:
+    required: true
+    description: "Github Token used to handle deployments (requires administration:write)"
+  wildcard-certs-secret-path:
     default: ".github/config/external-secret.yaml"
     description: "Path of the secrets containing the wildcard certificates for the ingress"
-  gh_app_private_key:
-    required: true
-    description: |
-      Github App private key used to impersonate the action.
-      Used to create/delete GitHub environment.
-      NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
 
 runs:
   using: 'composite'
   steps:
-    - name: Generate GitHub token
-      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-      id: generate-github-token
-      with:
-        app_id: ${{ inputs.gh_app_id }}
-        private_key: ${{ inputs.gh_app_private_key }}
+
+    - name: Print workflow inputs
+      run: |
+        echo "Tests inputs:"
+        echo "identifier: ${{ inputs.identifier }}"
+        echo "chart-dir: ${{ inputs.chart-dir }}"
+        echo "caller-git-ref: ${{ inputs.caller-git-ref }}"
+        echo "deployment-ttl: ${{ inputs.deployment-ttl }}"
+        echo "platform: ${{ inputs.platform }}"
+        echo "flow: ${{ inputs.flow }}"
+        echo "test-enabled: ${{ inputs.test-enabled }}"
+        echo "extra-values: ${{ inputs.extra-values }}"
+
+    - name: Install dependencies
+      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
 
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
       with:
-        deployment-ttl: ${{ inputs.deployment-ttl }}
         setup-flow: ${{ inputs.flow }}
+        ingress-hostname-base: ${{ inputs.ingress-hostname-base }}
         platform: ${{ inputs.platform }}
+        deployment-ttl: ${{ inputs.deployment-ttl }}
         type: ${{ inputs.type }}
         identifier-base: ${{ inputs.identifier }}
-        ingress-hostname-base: ${{ inputs.ingress-hostname-base }}
+        chart-dir: ${{ inputs.chart-dir }}
 
-    - name: Install dependencies
-      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+    - name: Set test type vars
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: "${{ inputs.chart-dir }}"
 
     - name: Add Helm repos and dependencies
       shell: bash
       run: |
+        export chartPath="charts/${{ inputs.chart-dir }}"
         make helm.repos-add
         make helm.dependency-update
 
@@ -96,7 +104,7 @@ runs:
     - name: Copy PRs wildcard certificate
       shell: bash
       run: |
-        kubectl apply -n $TEST_NAMESPACE -f ${{ inputs.wildcard_certs_secret_path }}
+        kubectl apply -n $TEST_NAMESPACE -f ${{ inputs.wildcard-certs-secret-path }}
         timeout 300 bash -c '
         until kubectl get externalsecret -n "$TEST_NAMESPACE" -o json | jq -e ".items | all(.status.conditions[]? | select(.type==\"Ready\").status == \"True\")" > /dev/null; do
           echo "Waiting for ExternalSecrets to be ready";
@@ -108,7 +116,7 @@ runs:
       id: deployment
       with:
         step: start
-        token: ${{ steps.generate-github-token.outputs.token }}
+        token: ${{ inputs.gh-token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
 
@@ -117,7 +125,7 @@ runs:
       env:
         TEST_CHART_FLOW: ${{ inputs.flow }}
       run: |
-        timeout 5m task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup setup.pre
+        timeout 5m task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
         echo "Extra values from workflow:"
         echo "${{ inputs.extra-values }}" > /tmp/extra-values-file.yaml
@@ -129,18 +137,17 @@ runs:
         TEST_CHART_FLOW: ${{ inputs.flow }}
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }} --values /tmp/extra-values-file.yaml
-        TEST_PROMETHEUS_HELM_EXTRA_ARGS: "--set host=${{ steps.vars.outputs.ingress-host }}" # this variable was previously set on ${{ steps.ingress.outputs.host }} but no such steps exists, check if it sill works
       run: |
-        task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup setup.exec
+        task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
     - name: Post setup
       shell: bash
-      run: timeout 5m task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup setup.post
+      run: timeout 5m task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
     - name: Pre Upgrade
       shell: bash
       if: inputs.flow == 'upgrade'
-      run: task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup upgrade.pre
+      run: task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
     - name: 🌟 Upgrade Camunda chart 🌟
       shell: bash
@@ -148,13 +155,13 @@ runs:
       env:
         TEST_HELM_EXTRA_ARGS: >-
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }} --values /tmp/extra-values-file.yaml
-      run: task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup upgrade.exec
+      run: task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
     - name: Update GitHub deployment status
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: finish
-        token: ${{ steps.generate-github-token.outputs.token }}
+        token:  ${{ inputs.gh-token }}
         status: ${{ job.status }}
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env_url: https://${{ steps.vars.outputs.ingress-host }}
@@ -164,12 +171,12 @@ runs:
     - name: ⭐️ Run Preflight TestSuite ⭐️
       shell: bash
       if: inputs.test-enabled == 'true'
-      run: timeout 10m task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup test.preflight
+      run: timeout 10m task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
 
     - name: ⭐️ Run Core TestSuite ⭐️
       shell: bash
       if: inputs.test-enabled == 'true'
-      run: timeout 20m task -d ${{ inputs.test_scenarios_dir }}/chart-full-setup test.core
+      run: timeout 20m task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
 
     - name: 🚨 Get failed Pods info 🚨
       if: failure()
@@ -180,7 +187,7 @@ runs:
       uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
       with:
         step: delete-env
-        token: ${{ steps.generate-github-token.outputs.token }}
+        token: ${{ inputs.gh-token }}
         env: ${{ steps.vars.outputs.identifier }}
         ref: ${{ inputs.caller-git-ref }}
 

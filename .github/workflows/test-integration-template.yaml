@@ -115,21 +115,39 @@ jobs:
     - name: Print workflow inputs
       run: |
         echo "Workflow inputs:"
-        echo "identifier: ${{ inputs.identifier }}"
-        echo "camunda-helm-dir: ${{ inputs.camunda-helm-dir }}"
         echo "camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}"
-        echo "caller-git-ref: ${{ inputs.caller-git-ref }}"
-        echo "deployment-ttl: ${{ inputs.deployment-ttl }}"
         echo "platforms: ${{ inputs.platforms }}"
         echo "flows: ${{ inputs.flows }}"
-        echo "test-enabled: ${{ inputs.test-enabled }}"
-        echo "extra-values: ${{ inputs.extra-values }}"
         echo "vault-secret-mapping: ${{ inputs.vault-secret-mapping }}"
+
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
+
+    # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
+    # and populate environment variables from Vault
+    - name: Import Vault secrets
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      if: inputs.vault-secret-mapping != ''
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: ${{ inputs.vault-secret-mapping }}
+        exportEnv: true
+
+    # Used to create/delete GitHub environment.
+    # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
+    - name: Generate GitHub token
+      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+      id: generate-github-token
+      with:
+        app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+        private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
 
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
@@ -149,6 +167,7 @@ jobs:
         openshift_username: ${{ secrets[matrix.distro.secret.username] }}
         openshift_password: ${{ secrets[matrix.distro.secret.password] }}
 
+    # when TEST_IDENTIFIER is empty (in case of a push event or other), we must provide a fallback value that is unique
     - name: Ensure identifier is set
       run: |
         if [ -z "${{ env.TEST_IDENTIFIER }}" ]; then
@@ -170,6 +189,6 @@ jobs:
         caller-git-ref: ${{ inputs.caller-git-ref  }}
         extra-values: ${{ inputs.extra-values }}
         ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
 
-        gh_app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-        gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+        gh-token: ${{ steps.generate-github-token.outputs.token }}

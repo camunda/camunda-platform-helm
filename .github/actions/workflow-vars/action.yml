@@ -22,6 +22,7 @@ inputs:
     required: true
   chart-dir:
     description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
+    required: true
 
 # NOTE: every outputs variable will also be set in the environment using "TEST_" prefix and capitalize
 outputs:

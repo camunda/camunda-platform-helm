@@ -24,6 +24,10 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform-latest
+        type: string
       camunda-helm-git-ref:
         default: main
         type: string
@@ -34,7 +38,7 @@ on:
         description: |
           Define a ttl for the lifespan of the deployment
           NOTE: Currently, any ttl will be handled as a 24h deployment
-        required: false # TODO: configure a way to handle ttl for permanent clusters
+        required: false # TODO: configure a way to handle ttl for permanent clusters see https://github.com/camunda/camunda-platform-helm/pull/1816#discussion_r1658465380
         default: ""
         type: string
       flows:
@@ -73,6 +77,7 @@ env:
   INPUTS_CAMUNDA_HELM_GIT_REF: "${{ inputs.camunda-helm-git-ref || github.event.pull_request.head.sha || github.sha }}"
   INPUTS_EXTRA_VALUES: "${{ inputs.extra-values || '' }}"
   INPUTS_FLOWS: ${{ inputs.flows || '[\"install\", \"upgrade\"]' }}
+  INPUTS_CHART_DIR: ${{  inputs.camunda-helm-dir || 'camunda-platform-latest' }}
 
 # limit to a single execution per actor of this workflow
 concurrency:
@@ -279,6 +284,7 @@ jobs:
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
 
+      # when TEST_IDENTIFIER is empty (in case of a push event or other), we must provide a fallback value that is unique
       - name: Ensure identifier is set and append cluster name
         run: |
           INPUTS_IDENTIFIER="${{ env.INPUTS_IDENTIFIER }}"
@@ -287,6 +293,15 @@ jobs:
           fi
 
           echo "INPUTS_IDENTIFIER=$INPUTS_IDENTIFIER-${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}" | tee -a "$GITHUB_ENV"
+
+      # Used to create/delete GitHub environment.
+      # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
 
       - name: Launch tests
         uses: ./.github/actions/chart-test-recipes
@@ -302,10 +317,10 @@ jobs:
           caller-git-ref: ${{ env.INPUTS_CALLER_GIT_REF }}
           extra-values: ${{ env.INPUTS_EXTRA_VALUES }}
           ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ env.INPUTS_CHART_DIR }}
 
-          gh_app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-
+          gh-token: ${{ steps.generate-github-token.outputs.token }}
+  
   cleanup-clusters:
     name: "Cleanup ROSA clusters"
     if: always()
@@ -319,6 +334,15 @@ jobs:
       matrix:
         distro: ${{ fromJson(needs.define-matrix.outputs.platform_matrix) }}
     steps:
+      # Used to create/delete GitHub environment.
+      # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+
       - name: Authenticate to AWS
         run: |
           aws configure set aws_secret_access_key ${{ secrets.DISTRO_CI_AWS_SECRET_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
