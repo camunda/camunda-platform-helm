@@ -10,7 +10,7 @@ tasks:
     cmds:
     - echo "No pre setup task for this test."
 
-  # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
+  # https://docs.camunda.io/docs/self-managed/setup/upgrade/
   exec:
     cmds:
     - |

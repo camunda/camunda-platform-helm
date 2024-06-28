@@ -50,7 +50,7 @@ on the [Camunda 8 Helm chart readme](./charts/camunda-platform-latest/README.md)
 ## Guides
 
 Default values cannot cover every use case, so we have
-[Camunda 8 deploy guides](https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/guides/).
+[Camunda 8 deploy guides](https://docs.camunda.io/docs/self-managed/setup/guides/).
 The guides have detailed examples for different use cases like Ingress setup.
 
 ## Issues
