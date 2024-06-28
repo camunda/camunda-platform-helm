@@ -46,6 +46,7 @@ runs:
   steps:
 
     - name: Print workflow inputs
+      shell: bash
       run: |
         echo "Tests inputs:"
         echo "identifier: ${{ inputs.identifier }}"
