@@ -38,7 +38,7 @@ Chart Version: 10.0.0
     {{- $errorMessage := printf "[identity][error] %s %s %s"
         "The Keycloak key changed from \"identity.keycloak\" to \"identityKeycloak\"."
         "For more details, please check Camunda Helm chart documentation."
-        "https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions"
+        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
@@ -47,7 +47,7 @@ Chart Version: 10.0.0
     {{- $errorMessage := printf "[identity][error] %s %s %s"
         "The PostgreSQL key changed from \"identity.postgresq\" to \"identityPostgresql\"."
         "For more details, please check Camunda Helm chart documentation."
-        "https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions"
+        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
