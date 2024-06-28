@@ -13,7 +13,7 @@ Chart Version: 10.0.0
     {{- $errorMessage := printf "[zeebe-gateway] %s %s %s"
         "The Zeebe Gatway key changed from \"zeebe-gateway\" to \"zeebeGateway\"."
         "For more details, please check Camunda Helm chart documentation."
-        "https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions"
+        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
@@ -22,7 +22,7 @@ Chart Version: 10.0.0
     {{- $errorMessage := printf "[zeebe-gateway] %s %s %s"
         "The gRPC Ingress key changed from \"zeebeGateway.ingress\" to \"zeebeGateway.ingress.grpc\"."
         "For more details, please check Camunda Helm chart documentation."
-        "https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/#version-update-instructions"
+        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
