@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euox pipefail
 
 # Check dependencies.
 dep_names="awk git gomplate helm jq tr yq"
@@ -13,7 +13,7 @@ for dep_name in ${dep_names}; do
 done
 
 CHART_NAME="${CHART_NAME:-camunda-platform}"
-CHART_DIR="${CHART_DIR:-${CHART_NAME-latest}}"
+CHART_DIR="${CHART_DIR:-charts/camunda-platform-latest}"
 CHART_SOURCE="${CHART_SOURCE:-camunda/$CHART_NAME}"
 # Add unsupported Camunda version to reduce generation time.
 CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[01])'
