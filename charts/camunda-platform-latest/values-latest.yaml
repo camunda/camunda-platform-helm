@@ -12,7 +12,7 @@ console:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/console
   image:
-    # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
+    # renovate: datasource=docker depName=camunda/console packageName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
     tag: 8.5.68
 
 connectors:
@@ -41,7 +41,7 @@ webModeler:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
   image:
-    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
+    # renovate: datasource=docker depName=camunda/web-modeler packageName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
     tag: 8.5.5
 
 zeebe:
