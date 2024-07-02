@@ -35,6 +35,7 @@ jobs:
         run: npm install -g @bitnami/readme-generator-for-helm
       - name: Run readme generator
         run: |
+          git fetch origin main:main
           echo "Updating README.md"
           chartPath="$(ct list-changed | tr '\n' ' ')" \
             make helm.readme-update
