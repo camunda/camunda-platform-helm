@@ -1,4 +1,4 @@
-name: Pull Request Conventions
+name: Repo - Pull Request Conventions
 
 on:
   pull_request:
