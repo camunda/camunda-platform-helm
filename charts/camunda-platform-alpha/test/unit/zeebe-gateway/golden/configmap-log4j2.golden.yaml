@@ -40,3 +40,6 @@ data:
         cluster:
           clusterName: camunda-platform-test-zeebe
           port: "26502"
+        network:
+          host: 0.0.0.0
+          port: "26500"
