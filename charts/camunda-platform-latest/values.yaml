@@ -10,6 +10,7 @@
 #
 # Furthermore, we try to apply the following pattern: # [VarName] [conjunction] [definition]
 #
+
 # VarName:
 #
 #  * In the documentation the variable name is started with a big letter, similar to kubernetes resource documentation.
@@ -17,6 +18,7 @@
 #    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in helm.
 #
 # Conjunction:
+
 #   * [defines] for mandatory configuration
 #   * [can be used] for optional configuration
 #   * [if true] for toggles
