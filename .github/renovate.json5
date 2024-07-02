@@ -213,6 +213,7 @@
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
   ],
+
   "hostRules": [
     {
       "hostType": "docker",
