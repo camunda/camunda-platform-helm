@@ -20,6 +20,161 @@
     "fileMatch": ["^\\.github/workflows/[^/]+\\.ya?ml$"]
   },
   "packageRules": [
+    //
+    // Main groups.
+    // This section should be updated with the Camunda supported versions.
+    // Start of minor cycle chores.
+    {
+      "groupName": "camunda-platform-8.2",
+      "addLabels": ["version/8.2", "deps/charts"],
+      "matchFileNames": [
+        "charts/camunda-platform-8.2/Chart.yaml",
+        "charts/camunda-platform-8.2/values*.yaml",
+        "charts/camunda-platform-8.2/go.*"
+      ],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+    },
+    {
+      "groupName": "camunda-platform-8.3",
+      "addLabels": ["version/8.3", "deps/charts"],
+      "matchFileNames": [
+        "charts/camunda-platform-8.3/Chart.yaml",
+        "charts/camunda-platform-8.3/values*.yaml",
+        "charts/camunda-platform-8.3/go.*"
+      ],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+    },
+    {
+      "groupName": "camunda-platform-8.4",
+      "addLabels": ["version/8.4", "deps/charts"],
+      "matchFileNames": [
+        "charts/camunda-platform-8.4/Chart.yaml",
+        "charts/camunda-platform-8.4/values*.yaml",
+        "charts/camunda-platform-8.4/go.*"
+      ],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+    },
+    {
+      "groupName": "camunda-platform-latest",
+      "addLabels": ["version/8.5", "deps/charts"],
+      "matchFileNames": [
+        "charts/camunda-platform-latest/Chart.yaml",
+        "charts/camunda-platform-latest/values*.yaml",
+        "charts/camunda-platform-latest/go.*"
+      ],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+    },
+    {
+      "groupName": "camunda-platform-alpha",
+      "addLabels": ["version/8.6", "deps/charts"],
+      "matchFileNames": [
+        "charts/camunda-platform-alpha/Chart.yaml",
+        "charts/camunda-platform-alpha/values*.yaml",
+        "charts/camunda-platform-alpha/go.*"
+      ],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+    },
+    // End of minor cycle chores.
+
+    //
+    // Other groups.
+    {
+      "groupName": "bitnami-web-modeler-postgresql",
+      "addLabels": ["deps/charts"],
+      "matchFileNames": [
+        "charts/web-modeler-postgresql/**",
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+    },
+    {
+      "groupName": "tool-versions",
+      "addLabels": ["deps/tools"],
+      "matchFileNames": [".tool-versions"],
+    },
+    {
+      "groupName": "github-actions",
+      "addLabels": ["deps/github-actions"],
+      "matchManagers": ["github-actions"],
+    },
+
+    //
+    // Tools.
+    {
+      // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
+      "matchDepPatterns": ["kubectl"],
+      "allowedVersions": "<1.28.0"
+    },
+    {
+      "matchDepPatterns": ["k8s.io/.*"],
+      "allowedVersions": "<0.28.0"
+    },
+
+    //
+    // Camunda charts.
+    {
+      "matchDepPatterns": ["^camunda/.+"],
+      "matchFileNames": [
+        "charts/camunda-platform-alpha/Chart.yaml",
+        "charts/camunda-platform-alpha/values*.yaml",
+      ],
+      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
+      // which is not the case.
+      "versionCompatibility": "^(?<version>[^-]*)(-(?<compatibility>[^-]*))?$",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      // Disable major version update for all Helm components.
+      "enabled": false,
+      "matchManagers": ["helmv3", "helm-values", "regex"],
+      "matchUpdateTypes": ["major"]
+    },
+    {
+      // Disable minor version update for previous Camunda releases which will only get patch updates.
+      "enabled": false,
+      "matchManagers": ["helmv3", "helm-values", "regex"],
+      "matchPaths": [
+        "charts/camunda-platform-8*/values*.yaml",
+      ],
+      "matchUpdateTypes": ["minor"]
+    },
+    {
+      // Enable non-major version update for current Camunda version.
+      "matchDatasources": ["helm", "docker", "regex"],
+      "matchPaths": [
+        "charts/camunda-platform-latest/values.yaml",
+        "charts/camunda-platform-latest/values-latest.yaml"
+      ],
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      // Enable patch version update for previous Camunda version.
+      "matchDatasources": ["helmv3", "helm-values", "docker", "regex"],
+      "matchPaths": [
+        "charts/camunda-platform-8*/values.yaml",
+        "charts/camunda-platform-8*/values-latest.yaml"
+      ],
+      "matchUpdateTypes": ["patch"]
+    },
+    {
+      // Limit Elasticsearch version to latest supported version in Camunda v8.5.
+      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      "matchDatasources": ["docker"],
+      "matchPaths": [
+        "charts/camunda-platform-latest/values.yaml",
+        "charts/camunda-platform-latest/values-latest.yaml"
+      ],
+      "matchDepNames": ["bitnami/elasticsearch"],
+      "allowedVersions": "~8.12.0"
+    },
+    {
+      // Disable Helm chart upgrades from bitnami/elasticsearch
+      "matchDepNames": ["elasticsearch"],
+      "matchPaths": ["charts/camunda-platform-8*/Chart.yaml"],
+      "enabled": false
+    },
+
+    //
+    // General.
     {
       "matchFileNames": [
         ".tool-versions",
@@ -32,88 +187,9 @@
       // without all checks passed.
       "platformAutomerge": false,
       "automerge": true
-    },
-    {
-      "matchDatasources": ["docker", "helm-values"],
-      "matchDepPatterns": ["^camunda/.+"],
-      "matchFileNames": [
-        "charts/camunda-platform-alpha/Chart.yaml",
-        "charts/camunda-platform-alpha/values*.yaml",
-      ],
-      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
-      // which is not the case.
-      "versionCompatibility": "^(?<version>[^-]*)(-(?<compatibility>[^-]*))?$",
-      "matchUpdateTypes": ["minor", "patch"]
-    },
-    {
-      "matchFileNames": [
-        ".github/workflows/*",
-        ".github/actions/*",
-        "charts/camunda-platform-latest/Chart.yaml",
-        "charts/camunda-platform-latest/values*.yaml",
-        "charts/camunda-platform-latest/go.*"
-      ],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-    },
-    {
-      "matchFileNames": [
-        "charts/camunda-platform-8*/Chart.yaml",
-        "charts/camunda-platform-8*/values*.yaml",
-        "charts/camunda-platform-8*/go.*",
-      ],
-      "matchUpdateTypes": ["patch"],
-    },
-    {
-      // Disable major version update for all Helm components.
-      "enabled": false,
-      "matchManagers": ["helmv3", "helm-values", "regex"],
-      "matchUpdateTypes": ["major"]
-    },
-    {
-      // Disable minor version update for previous Camunda releases which will only get patch updates.
-      "enabled": false,
-      "matchManagers": ["helm-values", "regex"],
-      "matchPaths": [
-        "charts/camunda-platform-8*/values*.yaml",
-      ],
-      "matchUpdateTypes": ["minor"]
-    },
-    {
-      // Enable non-major version update for current Camunda version.
-      "matchDatasources": ["github-releases", "docker", "regex"],
-      "matchPaths": ["charts/camunda-platform-latest/values.yaml", "charts/camunda-platform-latest/values-latest.yaml"],
-      "matchUpdateTypes": ["minor", "patch"]
-    },
-    {
-      // Enable patch version update for previous Camunda version.
-      "matchDatasources": ["github-releases", "docker", "regex"],
-      "matchPaths": ["charts/camunda-platform-*/values.yaml", "charts/camunda-platform-*/values-latest.yaml"],
-      "matchUpdateTypes": ["patch"]
-    },
-    {
-      // Limit Elasticsearch version to latest supported version in Camunda v8.5.
-      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
-      "matchDatasources": ["docker"],
-      "matchPaths": ["charts/camunda-platform-latest/values.yaml", "charts/camunda-platform-latest/values-latest.yaml"],
-      "matchDepNames": ["bitnami/elasticsearch"],
-      "allowedVersions": "~8.12.0"
-    },
-    {
-      // Disable Helm chart upgrades from bitnami/elasticsearch
-      "matchDepNames": ["elasticsearch"],
-      "matchPaths": ["charts/camunda-platform-8*/Chart.yaml"],
-      "enabled": false
-    },
-    // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
-    {
-      "matchDepPatterns": ["kubectl"],
-      "allowedVersions": "<1.28.0"
-    },
-    {
-      "matchDepPatterns": ["k8s.io/.*"],
-      "allowedVersions": "<0.28.0"
     }
   ],
+
   "regexManagers": [
     {
       // This is mainly used to update Camunda unified image tag.
