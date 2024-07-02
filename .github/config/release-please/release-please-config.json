@@ -9,6 +9,11 @@
   "prerelease": false,
   "draft": false,
   "packages": {
+    "charts/camunda-platform-alpha": {
+      "component": "camunda-platform-alpha",
+      "extra-label": "version/8.6",
+      "changelog-path": "CHANGELOG.md"
+    },
     "charts/camunda-platform-latest": {
       "component": "camunda-platform-latest",
       "extra-label": "version/8.5",
