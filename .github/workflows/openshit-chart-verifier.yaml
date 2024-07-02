@@ -1,0 +1,34 @@
+name: Chart Verifier
+
+on:
+  workflow_dispatch:
+    inputs:
+      camunda-helm-dir:
+        required: false
+        description: The name of the helm directory
+        default: camunda-platform-latest
+        type: string
+
+jobs:
+  verify-chart:
+    name: Verify Chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          repository: camunda/camunda-platform-helm
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Install OpenShift Tools
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          source: "github"
+          chart-verifier: "latest"
+
+      - name: Verify Helm Chart
+        run: |
+          cd charts/${{ inputs.camunda-helm-dir }}
+          chart-verifier verify .
