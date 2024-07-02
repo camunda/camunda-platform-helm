@@ -201,7 +201,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           repository: "camunda/distribution"
-          ref: "main"
+          ref: "feature/on-demand-openshift-cluster" # TODO: reverse before merge!
           path: "./.distribution-kube/"
           fetch-depth: 0
           token: "${{ steps.generate-github-token.outputs.token }}"
@@ -220,8 +220,12 @@ jobs:
             set -o errexit
             set -o pipefail
 
-            : # we configure the whole cluster using this cluster template
+            : # we configure the whole cluster using this generic template
             cd ./.distribution-kube/clusters/rosa-hcp-on-demand/
+            kustomize build --enable-helm ./ | kubectl apply -f - 
+
+            : # configure specific configurations for the ci
+            cd ${{ github.workspace }}/.github/config/rosa-on-demand/
 
             : # configure external dns
             export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
@@ -235,8 +239,8 @@ jobs:
             envsubst < distribution-team/secret.yaml.tpl > distribution-team/secret.yaml
             yq -ei '.spec.provider.kubernetes.server.url = "${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_URL }}"' distribution-team/external-cluster-secretstore.yaml
 
-            : # apply!
-            kustomize build --enable-helm ./ | kubectl apply -f - 
+            : # apply
+            kustomize build ./ | kubectl apply -f - 
                 
             echo "Waiting for global state to converge"
             sleep 30
