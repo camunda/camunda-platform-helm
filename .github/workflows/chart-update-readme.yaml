@@ -29,15 +29,12 @@ jobs:
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
           ref: ${{ github.event.pull_request.head.ref }}
-      - name: Install dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Install readme-generator-for-helm
         run: npm install -g @bitnami/readme-generator-for-helm
       - name: Run readme generator
         run: |
-          git fetch origin main:main
           echo "Updating README.md"
-          chartPath="$(ct list-changed | tr '\n' ' ')" \
+          chartPath="charts/camunda-platform-*" \
             make helm.readme-update
           git diff --exit-code || (
             echo "Please ensure to run: make helm.readme-update";
