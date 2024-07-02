@@ -8,10 +8,12 @@
 # use a different SCC such as nonroot or anyuid.
 ##
 ---
-
 #
 # Identity.
 #
+global:
+  ingress:
+    className: openshift-default
 
 # omit the values below if identity.enabled is false
 identity:
@@ -78,6 +80,24 @@ connectors:
     fsGroup: null
   containerSecurityContext:
     runAsUser: null
+  inbound:
+    mode: oauth
+  contextPath: "/connectors"
+  env:
+    - name: ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS
+      value: "camunda-zeebe-gateway.test-ns.svc.cluster.local:26500"
+    - name: ZEEBE_CLIENT_SECURITY_PLAINTEXT
+      value: "false"
+    - name: JAVA_TOOL_OPTIONS
+      value: "-Djavax.net.ssl.trustStore=/usr/local/certificates/keystore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+  extraVolumeMounts:
+    - name: keystore
+      readOnly: true
+      mountPath: /usr/local/certificates
+  extraVolumes:
+    - name: keystore
+      secret:
+        secretName: keystore
 
 #
 # Operate.
@@ -91,6 +111,24 @@ operate:
     fsGroup: null
   containerSecurityContext:
     runAsUser: null
+  env:
+    - name: CAMUNDA_OPERATE_ZEEBE_BROKERCONTACTPOINT
+      value: camunda-zeebe-gateway.test-ns.svc.cluster.local:26500
+    - name: CAMUNDA_OPERATE_ZEEBE_SECURE
+      value: "true"
+    - name: CAMUNDA_OPERATE_ZEEBE_CERTIFICATEPATH
+      value: /usr/local/operate/config/tls.crt
+  extraVolumeMounts:
+    - name: certificate
+      mountPath: /usr/local/operate/config/tls.crt
+      subPath: tls.crt
+  extraVolumes:
+    - name: certificate
+      secret:
+        secretName: camunda-zeebe-gateway-generated
+        items:
+          - key: tls.crt
+            path: tls.crt
 
 #
 # Optimize.
@@ -115,6 +153,25 @@ tasklist:
     fsGroup: null
   containerSecurityContext:
     runAsUser: null
+  env:
+    - name: CAMUNDA_TASKLIST_ZEEBE_BROKERCONTACTPOINT
+      value: camunda-zeebe-gateway.test-ns.svc.cluster.local:26500
+    - name: CAMUNDA_TASKLIST_ZEEBE_SECURE
+      value: "true"
+    - name: CAMUNDA_TASKLIST_ZEEBE_CERTIFICATEPATH
+      value: /usr/local/tasklist/config/tls.crt
+  extraVolumeMounts:
+    - name: certificate
+      mountPath: /usr/local/tasklist/config/tls.crt
+      subPath: tls.crt
+  extraVolumes:
+    - name: certificate
+      secret:
+        secretName: camunda-zeebe-gateway-generated
+        items:
+          - key: tls.crt
+            path: tls.crt
+        defaultMode: 420
 
 #
 # WebModeler.
@@ -176,6 +233,55 @@ zeebeGateway:
     fsGroup: null
   containerSecurityContext:
     runAsUser: null
+  service:
+    annotations:
+      service.beta.openshift.io/serving-cert-secret-name: camunda-zeebe-gateway-generated
+  env:
+    - name: ZEEBE_GATEWAY_SECURITY_ENABLED
+      value: "true"
+    - name: ZEEBE_GATEWAY_SECURITY_CERTIFICATECHAINPATH
+      value: /usr/local/zeebe/config/tls.crt
+    - name: ZEEBE_GATEWAY_SECURITY_PRIVATEKEYPATH
+      value: /usr/local/zeebe/config/tls.key
+  extraVolumeMounts:
+    - name: certificate
+      mountPath: /usr/local/zeebe/config/tls.crt
+      subPath: tls.crt
+    - name: key
+      mountPath: /usr/local/zeebe/config/tls.key
+      subPath: tls.key
+  extraVolumes:
+    - name: certificate
+      secret:
+        secretName: camunda-zeebe-gateway-generated
+        items:
+          - key: tls.crt
+            path: tls.crt
+        defaultMode: 420
+    - name: key
+      secret:
+        secretName: camunda-zeebe-gateway-generated
+        items:
+          - key: tls.key
+            path: tls.key
+        defaultMode: 420
+  ingress:
+    grpc:
+      annotations:
+        route.openshift.io/termination: reencrypt
+        route.openshift.io/destination-ca-certificate-secret: camunda-zeebe-gateway-generated
+      className: openshift-default
+      tls:
+        enabled: true
+        secretName: ci-distro-ultrawombat-com
+    rest:
+      annotations:
+        route.openshift.io/termination: reencrypt
+        route.openshift.io/destination-ca-certificate-secret: camunda-zeebe-gateway-generated
+      className: openshift-default
+      tls:
+        enabled: true
+        secretName: ci-distro-ultrawombat-com
 
 #
 # Elasticsearch.
