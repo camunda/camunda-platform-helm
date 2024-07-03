@@ -2,8 +2,8 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-9.3.7"></a>
-## [camunda-platform-9.3.7](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-9.3.7) (2024-06-28)
+<a name="camunda-platform-9.3.8"></a>
+## [camunda-platform-9.3.8](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-9.3.8) (2024-07-03)
 
 ### Ci
 
@@ -18,7 +18,7 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 Supported versions:
 
 - Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
-- Helm values: [9.3.7](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.7#parameters)
+- Helm values: [9.3.8](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.8#parameters)
 - Helm CLI: [3.15.2](https://github.com/helm/helm/releases/tag/v3.15.2)
 
 Camunda images:
@@ -47,8 +47,8 @@ Non-Camunda images:
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-9.3.7.tgz \
-  --bundle camunda-platform-9.3.7.cosign.bundle \
+cosign verify-blob camunda-platform-9.3.8.tgz \
+  --bundle camunda-platform-9.3.8.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2014/merge"
+  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2105/merge"
 ```
