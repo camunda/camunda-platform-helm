@@ -12,9 +12,6 @@ on:
   pull_request:
     types:
       - labeled
-  push:
-    branches:
-      - release-please--branches--main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -25,7 +22,7 @@ permissions:
   
 jobs:
   release:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -157,7 +154,7 @@ jobs:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
   post-release:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     needs: release
     runs-on: ubuntu-latest
     permissions:
