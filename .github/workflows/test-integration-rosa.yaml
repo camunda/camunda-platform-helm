@@ -57,7 +57,7 @@ on:
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
-  CI_DEPLOYMENT_TTL: "${{ inputs.deployment-ttl }}"
+  CI_DEPLOYMENT_TTL: "${{ inputs.deployment-ttl || '' }}"
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
 
   # please keep those variables synced with test-integration-template.yml
@@ -374,7 +374,7 @@ jobs:
 
       - name: Delete on-demand ROSA HCP Cluster
         uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@34eef55d18c7d3d84a79bfc0d305c92bd3dccc45 # main
-        if: always() && env.CI_DEPLOYMENT_TTL != ''
+        if: always() && env.CI_DEPLOYMENT_TTL == ''
         timeout-minutes: 125
         env:
           AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
