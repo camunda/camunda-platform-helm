@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euox pipefail
 
 # Check dependencies.
 dep_names="awk git gomplate helm jq tr yq"
