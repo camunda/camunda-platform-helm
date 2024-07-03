@@ -11,14 +11,14 @@
   "packages": {
     "charts/camunda-platform-latest": {
       "package-name": "camunda-platform-8.5",
-      "extra-label": "version/8.5",
+      "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md"
     },
     "charts/camunda-platform-8.4": {
       "package-name": "camunda-platform-8.4",
-      "extra-label": "version/8.4",
+      "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md",
@@ -32,7 +32,7 @@
     },
     "charts/camunda-platform-8.3": {
       "package-name": "camunda-platform-8.3",
-      "extra-label": "version/8.3",
+      "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md",
@@ -46,7 +46,7 @@
     },
     "charts/camunda-platform-8.2": {
       "package-name": "camunda-platform-8.2",
-      "extra-label": "version/8.2",
+      "extra-label": "version/8.2,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md",
