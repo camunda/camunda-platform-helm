@@ -175,7 +175,7 @@ jobs:
         fi
 
     - name: Launch tests
-      uses: ./.github/actions/chart-test-recipes
+      uses: ./.github/actions/chart-test
       with:
         platform: "${{ matrix.distro.platform }}"
         type: "${{ matrix.distro.type }}"

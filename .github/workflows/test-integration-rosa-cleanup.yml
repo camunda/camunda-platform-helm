@@ -1,5 +1,4 @@
----
-name: Daily cleanup ROSA cluster
+name: "Test - Integration - ROSA Daily cleanup"
 
 on:
   pull_request:
