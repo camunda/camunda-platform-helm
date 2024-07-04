@@ -77,11 +77,12 @@ runs:
         TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
 
         if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
+          # maximum 63 characters
           TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
         fi
 
         if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-          TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
+          TEST_NAMESPACE="${TEST_NAMESPACE}-u"
         fi
 
         echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
@@ -91,7 +92,7 @@ runs:
         # Deployment identifier.
         TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
         if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-          TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
+          TEST_IDENTIFIER="${TEST_IDENTIFIER}-u"
         fi
         echo "TEST_IDENTIFIER=${TEST_IDENTIFIER}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
 
