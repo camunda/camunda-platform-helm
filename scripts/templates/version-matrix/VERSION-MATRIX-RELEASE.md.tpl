@@ -1,18 +1,19 @@
 {{- $release := ds "release" -}}
 {{- $releaseHeader := conv.ToBool (getenv "VERSION_MATRIX_RELEASE_HEADER" "true") -}}
+{{- $chartDir := printf "charts/camunda-platform-%s" $release.app -}}
 {{- if $releaseHeader -}}
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda {{ $release.app }} Helm Chart Version Matrix
 {{- end }}
 
-{{- range $release.charts }}
-{{- /* TODO: Unify charts image once gomplate v4 is released using coll.JQ */ -}}
+{{- range $chartVersion := $release.charts }}
+{{- $gitRef := printf "camunda-platform-%s" $chartVersion -}}
 {{- $vars := dict
   "app_version" $release.app
-  "chart_version" .
-  "chart_images_camunda" (versionMatrix "--chart-images-camunda" . | strings.Trim "\n")
-  "chart_images_non_camunda" (versionMatrix "--chart-images-non-camunda" . | strings.Trim "\n")
-  "helm_cli_version" (versionMatrix "--helm-cli-version" (printf "camunda-platform-%s" .) | strings.Trim " ")
+  "chart_version" $chartVersion
+  "chart_images_camunda" (chartImagesCamunda $chartDir $chartVersion | strings.Trim "\n")
+  "chart_images_non_camunda" (chartImagesNonCamunda $chartDir $chartVersion | strings.Trim "\n")
+  "helm_cli_version" (helmCLIVersion $gitRef | strings.Trim " ")
 }}
 
 {{- $helmCLIVersion := ternary

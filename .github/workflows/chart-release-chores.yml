@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - .github/workflows/chart-release-chores.yml
+      - .github/config/release-please/release-please-config.json
       - .github/config/release-please/.release-please-manifest.json
 
 permissions:
@@ -69,11 +70,10 @@ jobs:
           git fetch origin main:main
 
           # Update PR title with changed versions.
-          title="$(jq -r '."group-pull-request-title-pattern"' ${RELEASE_PLEASE_CONFIG})"
           versions="$(git log -p main..HEAD -- ${RELEASE_PLEASE_MANIFEST} |
                 awk -F ": " '/^+ /{gsub(/[",]/,""); printf "%s%s",sep,$2; sep=", "} END{print ""}')"
           pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
-          gh pr edit "${pr_nubmer}" --title "${title} ${versions}"
+          gh pr edit "${pr_nubmer}" --title "chore(release): Camunda Platform Helm Chart ${versions}"
 
           # Set PR project.
           gh pr edit "${pr_nubmer}" --add-project "Distribution Team"

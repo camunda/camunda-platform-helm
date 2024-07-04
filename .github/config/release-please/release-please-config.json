@@ -1,7 +1,7 @@
 {
   "release-type": "helm",
-  "group-pull-request-title-pattern": "Release Camunda Platform Helm Chart",
-  "pull-request-title-pattern": "Camunda Platform Helm Chart ${component}/${version}",
+  "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart",
+  "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${component}/${version}",
   "extra-label": "automation/release-please,release/pr,kind/chore,chart/camunda-platform",
   "skip-github-release": true,
   "separate-pull-requests": false,
@@ -10,13 +10,17 @@
   "draft": false,
   "packages": {
     "charts/camunda-platform-latest": {
-      "component": "camunda-platform-latest",
-      "extra-label": "version/8.5",
+      "package-name": "camunda-platform-8.5",
+      "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform",
+      "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md"
     },
     "charts/camunda-platform-8.4": {
-      "component": "camunda-platform-8.4",
-      "extra-label": "version/8.4",
+      "package-name": "camunda-platform-8.4",
+      "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform",
+      "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
@@ -27,8 +31,10 @@
       ]
     },
     "charts/camunda-platform-8.3": {
-      "component": "camunda-platform-8.3",
-      "extra-label": "version/8.3",
+      "package-name": "camunda-platform-8.3",
+      "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform",
+      "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
@@ -39,8 +45,10 @@
       ]
     },
     "charts/camunda-platform-8.2": {
-      "component": "camunda-platform-8.2",
-      "extra-label": "version/8.2",
+      "package-name": "camunda-platform-8.2",
+      "extra-label": "version/8.2,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform",
+      "include-v-in-tag": false,
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {

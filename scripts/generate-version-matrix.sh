@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euox pipefail
 
 # Check dependencies.
 dep_names="awk git gomplate helm jq tr yq"
@@ -13,7 +13,7 @@ for dep_name in ${dep_names}; do
 done
 
 CHART_NAME="${CHART_NAME:-camunda-platform}"
-CHART_DIR="${CHART_DIR:-${CHART_NAME-latest}}"
+CHART_DIR="${CHART_DIR:-charts/camunda-platform-latest}"
 CHART_SOURCE="${CHART_SOURCE:-camunda/$CHART_NAME}"
 # Add unsupported Camunda version to reduce generation time.
 CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[01])'
@@ -42,6 +42,7 @@ get_versions_filtered () {
 # Get all images used in a certain Helm chart.
 get_chart_images () {
     chart_version="${1}"
+    test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-latest"
     helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
       --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
     tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
@@ -136,20 +137,20 @@ while test -n "${1:-}"; do
           shift
           ;;
         --chart-images-camunda)
-          test -n "${2:-}" || (
-            echo "[ERROR] Helm chart version is needed as an arg for this option";
+          test -n "${3:-}" || (
+            echo "[ERROR] Chart dir and Helm chart version are needed as an arg for this option";
             exit 1
           )
-          get_chart_images "${2}" | grep "camunda"
-          shift
+          CHART_DIR="${2}" get_chart_images "${3}" | grep "camunda"
+          shift 2
           ;;
         --chart-images-non-camunda)
-          test -n "${2:-}" || (
-            echo "[ERROR] Helm chart version is needed as an arg for this option";
+          test -n "${3:-}" || (
+            echo "[ERROR] Chart dir and Helm chart version are needed as an arg for this option";
             exit 1
           )
-          get_chart_images "${2}" | grep -v "camunda"
-          shift
+          CHART_DIR="${2}" get_chart_images "${3}" | grep -v "camunda"
+          shift 2
           ;;
         *)
           print_help

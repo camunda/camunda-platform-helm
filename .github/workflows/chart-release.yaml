@@ -22,7 +22,7 @@ permissions:
   
 jobs:
   release:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -90,6 +90,7 @@ jobs:
       - name: Pre-Release - Previous versions
         run: |
           rm -rf charts/camunda-platform-latest
+          rm -rf charts/camunda-platform-alpha
       - name: Run Chart Releaser - Previous versions
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
         with:
@@ -106,6 +107,7 @@ jobs:
       - name: Pre-Release - Latest version
         run: |
           rm -rf charts/camunda-platform-8*
+          rm -rf charts/camunda-platform-alpha
       - name: Run Chart Releaser - Latest version
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
         with:
@@ -152,7 +154,7 @@ jobs:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
   post-release:
-    if: ${{ contains(github.event.*.labels.*.name, 'release') || github.event.inputs.trigger }}
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     needs: release
     runs-on: ubuntu-latest
     permissions:
@@ -162,7 +164,6 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           # The verification step happens in the "release" branch before merging into the "main" branch.
-          ref: release
           fetch-depth: 0
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
