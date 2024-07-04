@@ -222,7 +222,7 @@ jobs:
 
             : # we configure the whole cluster using this generic template
             cd ./.distribution-kube/clusters/rosa-hcp-on-demand/
-            kustomize build --enable-helm ./ | kubectl apply -f - 
+            kustomize build --load-restrictor LoadRestrictionsNone --enable-helm ./ | kubectl apply -f - 
 
             : # configure specific configurations for the ci
             cd ${{ github.workspace }}/.github/config/rosa-on-demand/
