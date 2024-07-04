@@ -222,6 +222,8 @@ jobs:
 
             : # we configure the whole cluster using this generic template
             cd ./.distribution-kube/clusters/rosa-hcp-on-demand/
+            : # we need to ensure uniqueness of the dns
+            yq -ei '.txtOwnerId = "${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
             kustomize build --load-restrictor LoadRestrictionsNone --enable-helm ./ | kubectl apply -f - 
 
             : # configure specific configurations for the ci
@@ -230,7 +232,6 @@ jobs:
             : # configure external dns
             export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
             envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
-            yq -ei '.txtOwnerId = "${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
 
             : # configure ExternalSecretStore replication from the permanent ROSA cluster
             export EXTERNAL_SECRET_STORE_SA_TOKEN=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_TOKEN }}
