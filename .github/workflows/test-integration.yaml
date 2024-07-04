@@ -7,6 +7,8 @@ on:
     - '.github/workflows/test-integration.yaml'
     - '.github/actions/gke-login/**'
     - '.github/actions/workflow-vars/**'
+    - '.github/actions/test-type-vars/**'
+    - '.github/actions/chart-test/**'
     - '.tool-versions'
     - 'charts/camunda-platform-latest/**'
     types: [opened, closed, reopened, synchronize]
