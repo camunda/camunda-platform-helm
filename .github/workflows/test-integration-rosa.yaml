@@ -389,7 +389,7 @@ jobs:
 
   report:
     name: "Report failures"
-    if: always()
+    if: failure()
     runs-on: ubuntu-latest
     needs:
       - launch-tests
@@ -397,7 +397,7 @@ jobs:
     steps:
       - name: Notify in Slack in case of failure
         id: slack-notification
-        if: failure() && github.event_name == 'schedule'
+        if: github.event_name == 'schedule'
         uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
