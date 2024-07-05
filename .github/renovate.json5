@@ -90,11 +90,13 @@
       "groupName": "tool-versions",
       "addLabels": ["deps/tools"],
       "matchFileNames": [".tool-versions"],
+      "schedule": ["every weekend"],
     },
     {
       "groupName": "github-actions",
       "addLabels": ["deps/github-actions"],
       "matchManagers": ["github-actions"],
+      "schedule": ["every weekend"],
     },
 
     //
