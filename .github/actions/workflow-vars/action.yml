@@ -6,135 +6,105 @@ inputs:
     default: "install"
   ingress-hostname-base:
     description: The base of the Ingress hostname.
-    required: true
   platform:
     description: The deployment cloud platform like GKE or ROSA.
-    required: true
   deployment-ttl:
     description: |
       Define a ttl for the lifespan of the deployment
+    required: false
     default: ""
-  type:
-    description: The platform type platform like openshift or kubernetes.
-    required: true
+    type: string
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
-    required: true
   chart-dir:
     description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
-    required: true
-
-# NOTE: every outputs variable will also be set in the environment using "TEST_" prefix and capitalize
+# NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
   identifier:
     description: The unique identifier of the deployment where the workflow could be triggered by pull_request or workflow_dispatch.
-    value: ${{ steps.vars.outputs.TEST_IDENTIFIER }}
+    value: ${{ steps.vars.outputs.identifier }}
   ingress-host:
     description: Ingress hostname that will be used in the test
-    value: ${{ steps.vars.outputs.TEST_INGRESS_HOST }}
-  github-workflow-job-id:
-    description: "The github workflow job id"
-    value: ${{ steps.vars.outputs.GITHUB_WORKFLOW_JOB_ID }}
-  github-workflow-run-id:
-    description: "The github workflow run id"
-    value: ${{ steps.vars.outputs.GITHUB_WORKFLOW_RUN_ID }}
-  test-namespace:
-    description: "The name of the namespace to use for tests"
-    value: ${{ steps.vars.outputs.TEST_NAMESPACE }}
-  cluster-type:
-    description: "The cluster type for tests"
-    value: ${{ steps.vars.outputs.TEST_CLUSTER_TYPE }}  
-  chart-version:
-    description: "The chart version"
-    value: ${{ steps.vars-chart.outputs.TEST_CHART_VERSION }}
+    value: ${{ steps.vars.outputs.ingress-host }}
 
 runs:
   using: composite
   steps:
-    - name: Set workflow vars
-      id: vars
-      shell: bash
-      run: |
-        # Generate workflow vars.
-        rand_gen() {
-          python -c "import random, string; print(''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(20)))"
-        }
+  - name: Set workflow vars
+    id: vars
+    shell: bash
+    run: |
+      # Generate workflow vars.
+      rand_gen() {
+        python -c "import random, string; print(''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(20)))"
+      }
 
-        is_pr() {
-          echo ${{ github.event.pull_request.number }} | grep -q .
-        }
+      is_pr() {
+        echo ${{ github.event.pull_request.number }} | grep -q .
+      }
 
-        # NOTE: We should use the matrix job id var once it's available.
-        # https://github.com/orgs/community/discussions/40291
-        GITHUB_WORKFLOW_JOB_ID=$(rand_gen | cut -c 1-6)
+      # NOTE: We should use the matrix job id var once it's available.
+      # https://github.com/orgs/community/discussions/40291
+      GITHUB_WORKFLOW_JOB_ID=$(rand_gen | cut -c 1-6)
 
-        # Workflow.
-        echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-        echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
+      echo "Env vars:"
 
-        # Namespace.
-        TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
-        TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+      # Workflow.
+      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
+      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
 
-        if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
-          # maximum 63 characters
-          TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
+      # Namespace.
+      TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
+      TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+
+      if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
+      fi
+
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
+      fi
+
+      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_ENV
+
+      echo "Output vars:"
+
+      # Deployment identifier.
+      TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
+      fi
+      echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
+
+      # Ingress hostname.
+      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
+      if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
+        TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
+      fi
+      # The var is needed in some non-shell steps.
+      echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+
+  - name: Set workflow vars - Chart version
+    shell: bash
+    run: |
+      # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
+      # then upgraded from the PR branch to ensure upgradability.
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+        git fetch origin main:main --no-tags
+        TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
+        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+
+        # Alpha should be always upgraded from latest version.
+        if [[ $(echo "${TEST_CHART_VERSION}" | grep 'alpha') ]]; then
+          TEST_CHART_VERSION="$(git show main:charts/camunda-platform-latest/Chart.yaml | yq '.version')"
+          echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
         fi
-
-        if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-          TEST_NAMESPACE="${TEST_NAMESPACE}-u"
-        fi
-
-        echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-
-        echo "TEST_CLUSTER_TYPE=${{ inputs.type }}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-
-        # Deployment identifier.
-        TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
-        if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-          TEST_IDENTIFIER="${TEST_IDENTIFIER}-u"
-        fi
-        echo "TEST_IDENTIFIER=${TEST_IDENTIFIER}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-
-        # Ingress hostname.
-        TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
-        if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
-          TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
-        fi
-        # The var is needed in some non-shell steps.
-        echo "TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-
-
-    - name: Set workflow vars - Chart version
-      shell: bash
-      id: vars-chart
-      run: |
-        # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
-        # then upgraded from the PR branch to ensure upgradability.
-        if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-          current_branch=$(git symbolic-ref --short HEAD)
-
-          if [ "$current_branch" != "main" ]; then
-              # Perform the fetch operation
-              git fetch origin main:main --no-tags
-          else
-              echo "You are currently on the 'main' branch. Fetch operation not performed."
-          fi
-
-          TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
-          echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-
-          # Alpha should be always upgraded from latest version.
-          if [[ $(echo "${TEST_CHART_VERSION}" | grep 'alpha') ]]; then
-            TEST_CHART_VERSION="$(git show main:charts/camunda-platform-latest/Chart.yaml | yq '.version')"
-            echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"
-          fi
-        fi
+      fi
 
     # Avoid confusion about the chart version since we only change the version during the release process
     # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
-    - name: Set chart version
-      shell: bash
-      run: |
-        chart_version="$(echo ${{ inputs.chart-dir }} | sed 's/camunda-platform/0.0.0-ci-snapshot/g')" \
+  - name: Set chart version
+    shell: bash
+    run: |
+      chart_version="$(echo ${{ inputs.chart-dir }} | sed 's/camunda-platform/0.0.0-ci-snapshot/g')" \
         yq -i '.version = env(chart_version)' charts/${{ inputs.chart-dir }}/Chart.yaml

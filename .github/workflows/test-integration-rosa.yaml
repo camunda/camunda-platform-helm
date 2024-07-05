@@ -10,7 +10,6 @@ on:
       - '.github/workflows/configs/test-integration-rosa-matrix.yaml'
       - '.github/workflows/test-integration-rosa.yaml'
       - '.github/actions/workflow-vars/**'
-      - '.github/actions/chart-test/**'
       - '.github/actions/test-type-vars/**'
       - '.github/workflows/fixtures/clusters/rosa-hcp-on-demand/**'
       - '.github/workflows/fixtures/modules/**'
@@ -285,7 +284,6 @@ jobs:
 
   launch-tests:
     name: "Launch tests"
-    runs-on: ubuntu-latest
     needs:
       - define-matrix
       - read-cluster-vars
@@ -295,56 +293,19 @@ jobs:
       matrix:
         distro: ${{ fromJson(needs.define-matrix.outputs.platform_matrix) }}
         flow: ${{ fromJson(needs.define-matrix.outputs.flow_matrix) }}
-    steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-        with:
-          fetch-depth: 1
-          ref: ${{ inputs.camunda-helm-git-ref }}
-
-      - name: Set up Kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ fromJson(needs.read-kube-configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}" | base64 --decode > encrypted_kubeconfig.enc
-          openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
-          rm encrypted_kubeconfig.enc
-          chmod 600 $HOME/.kube/config
-
-      # when TEST_IDENTIFIER is empty (in case of a push event or other), we must provide a fallback value that is unique
-      - name: Ensure identifier is set and append cluster name
-        run: |
-          INPUTS_IDENTIFIER="${{ env.INPUTS_IDENTIFIER }}"
-          if [ -z "$INPUTS_IDENTIFIER" ]; then
-            INPUTS_IDENTIFIER="$(git rev-parse --short ${{ github.sha }})"
-          fi
-
-          echo "INPUTS_IDENTIFIER=$INPUTS_IDENTIFIER-${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}" | tee -a "$GITHUB_ENV"
-
-      # Used to create/delete GitHub environment.
-      # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
-      - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-github-token
-        with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-
-      - name: Launch tests
-        uses: ./.github/actions/chart-test
-        with:
-          platform: "${{ matrix.distro.platform }}"
-          type: "${{ matrix.distro.type }}"
-
-          identifier: "${{ env.INPUTS_IDENTIFIER }}"
-          deployment-ttl: "${{ env.CI_DEPLOYMENT_TTL }}"
-          flow: "${{ matrix.flow }}"
-          test-enabled: "${{ env.INPUTS_TEST_ENABLED }}"
-
-          caller-git-ref: ${{ env.INPUTS_CALLER_GIT_REF }}
-          extra-values: ${{ env.INPUTS_EXTRA_VALUES }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-          chart-dir: ${{ env.INPUTS_CHART_DIR }}
-
-          gh-token: ${{ steps.generate-github-token.outputs.token }}
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      caller-git-ref: ${{ env.INPUTS_CALLER_GIT_REF }}
+      chart-dir: ${{ env.INPUTS_CHART_DIR }}
+      deployment-ttl: "${{ env.CI_DEPLOYMENT_TTL }}"
+      extra-values: ${{ env.INPUTS_EXTRA_VALUES }}
+      flows: "${{ matrix.flow }}"
+      identifier: "${{ env.INPUTS_IDENTIFIER }}"
+      ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+      platforms: "gke,rosa"
+      test-enabled: "${{ env.INPUTS_TEST_ENABLED }}"
+      type: "${{ matrix.distro.type }}"
   
   cleanup-clusters:
     name: "Cleanup ROSA clusters"
