@@ -48,6 +48,9 @@ on:
       auth-data:
         required: false
         type: string
+      cluster-type:
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -116,7 +119,7 @@ jobs:
               if: false
 
     env:
-      TEST_CLUSTER_TYPE: ${{ matrix.distro.type }}
+      TEST_CLUSTER_TYPE: ${{ matrix.distro.type || inputs.cluster-type }}
 
     steps:
       - name: Print workflow inputs
