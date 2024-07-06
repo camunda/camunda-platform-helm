@@ -55,6 +55,7 @@ on:
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
+  CI_MATRIX_FILE: ".github/workflows/configs/test-integration-rosa-matrix.yaml"
 
   # please keep those variables synced with test-integration-template.yml
   TEST_AWS_REGION: "eu-central-1"
@@ -67,104 +68,55 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
-  WORKFLOW_INPUTS_FLOWS: ${{ inputs.flows || '[\"install\", \"upgrade\"]' }}
 
 # limit to a single execution per actor of this workflow
 concurrency:
   group: "${{ github.workflow }}-${{ github.actor }}"
 
 jobs:
-  define-vars:
-    name: Define vars
+  clusters-info:
+    name: Define Matrix
     runs-on: ubuntu-latest
     outputs:
-      caller_git_ref: ${{ steps.test-integration-workflow.outputs.caller_git_ref }}
-      camunda_helm_dir: ${{ steps.test-integration-workflow.outputs.camunda_helm_dir }}
-      extra_values: ${{ steps.test-integration-workflow.outputs.extra_values }}
-      flow_matrix: ${{ steps.matrix.outputs.flow_matrix }}
       platform_matrix: ${{ steps.matrix.outputs.platform_matrix }}
-      test_enabled: ${{ steps.test-integration-workflow.outputs.test_enabled }}
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
+
       - id: matrix
         # we define a global matrix in an external file due to https://github.com/orgs/community/discussions/26284
         run: |
-          platform_matrix=$(yq -I0 '.matrix.distro' -o=json  .github/workflows/configs/test-integration-rosa-matrix.yaml)
-          echo "platform_matrix=$platform_matrix"
-          echo "platform_matrix=$platform_matrix" >> "$GITHUB_OUTPUT"
-          echo "flow_matrix=${{ env.WORKFLOW_INPUTS_FLOWS }}"
-          echo "flow_matrix=${{ env.WORKFLOW_INPUTS_FLOWS }}" >> "$GITHUB_OUTPUT"
-      - id: test-integration-workflow
-        run: |
-          test_integration_workflow_inputs () {
-            cat << EOF
-              caller_git_ref=${{ inputs.caller-git-ref || github.event.pull_request.head.sha || github.sha }}
-              camunda_helm_dir=${{ inputs.camunda-helm-dir || 'camunda-platform-latest' }}
-              extra_values=${{ inputs.extra-values || '' }}
-              test_enabled=${{ inputs.test-enabled || 'true' }}
-          EOF
-          }
-          test_integration_workflow_inputs | while read INPUT; do
-            echo "${INPUT}" | tee -a "$GITHUB_OUTPUT"
+          #
+          # Generate cluster name.
+          cluster_name_input="${{ inputs.cluster_name }}"
+          distro_indexes="$(yq '.matrix.distro | to_entries | .[] | .key' ${CI_MATRIX_FILE})"
+
+          # Loop over clusters.
+          # Vars are exported to pass them to yq instead of local inline syntax.
+          for distro_index in ${distro_indexes}; do
+            export distro_index=${distro_index}
+            export cluster_id="$(uuidgen | head -c 8)"
+            # export cluster_name_fallback="helm-repo-run-${{ github.run_id }}-sfx-${cluster_id}"
+            export cluster_name_fallback="hci-${cluster_id}"
+            export cluster_name=${cluster_name_input:-${cluster_name_fallback}}
+            yq -i '.matrix.distro[env(distro_index)].clusterName = env(cluster_name)' ${CI_MATRIX_FILE}
+            yq -i '.matrix.distro[env(distro_index)].id = env(cluster_id)' ${CI_MATRIX_FILE}
           done
 
-  define-variables:
-    name: Define variables
-    runs-on: ubuntu-latest
-    needs:
-      - define-vars
-    strategy:
-      fail-fast: false
-      matrix:
-        distro: ${{ fromJson(needs.define-vars.outputs.platform_matrix) }}
-    steps:
-      - name: Define ROSA cluster name
-        id: rosa-cluster-name
-        run: |
-          if [ -z "${{ inputs.cluster_name }}" ]; then
-            identifier="rand-$(uuidgen | head -c 8)-${{ matrix.distro.name }}"
-          else
-            identifier="${{ inputs.cluster_name }}-${{ matrix.distro.name }}"
-          fi
-
-          : # ensure that the name of the cluster is unique 
-          sha_identifier=$(echo -n "$identifier" | sha1sum | cut -c1-10)
-          rosa_cluster_name="c-$sha_identifier"
-          echo "rosa_cluster_name=$rosa_cluster_name"
-          echo "rosa_cluster_name=$rosa_cluster_name" >> "$GITHUB_OUTPUT"
-
-      ## Write for matrix outputs workaround
-      - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
-        id: out
-        with:
-          matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ matrix.distro.name }}
-          outputs: |-
-            cluster_name: ${{ steps.rosa-cluster-name.outputs.rosa_cluster_name }}
-
-  read-cluster-vars:
-    name: Read cluster variables
-    runs-on: ubuntu-latest
-    needs: [ define-variables ]
-    steps:
-      - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
-        id: read
-        with:
-          matrix-step-name: define-variables
-    outputs:
-      result: "${{ steps.read.outputs.result }}"
+          # Get updated matrix.
+          platform_matrix="$(yq '.matrix' --indent=0 --output-format json ${CI_MATRIX_FILE})"
+          echo "${platform_matrix}" | jq
+          echo "platform_matrix=${platform_matrix}" > "$GITHUB_OUTPUT"
 
   prepare-clusters:
     name: Prepare clusters
     needs:
-      - define-vars
-      - read-cluster-vars
+      - clusters-info
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJson(needs.define-vars.outputs.platform_matrix) }}
+        distro: ${{ fromJson(needs.clusters-info.outputs.platform_matrix).distro }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -187,7 +139,7 @@ jobs:
           admin-username: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME }}
           admin-password: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD }}
           s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
-          cluster-name: ${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}
+          cluster-name: ${{ matrix.distro.clusterName }}
           aws-region: ${{ env.TEST_AWS_REGION }}
           replicas: 10
           openshift-version: "${{ matrix.distro.version }}"
@@ -226,7 +178,7 @@ jobs:
             : # we configure the whole cluster using this generic template
             cd ./.distribution-kube/clusters/rosa-hcp-on-demand/
             : # we need to ensure uniqueness of the dns
-            yq -ei '.txtOwnerId = "${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}"' external-dns/helm-chart/external-dns-values.yaml
+            yq -ei '.txtOwnerId = "${{ matrix.distro.clusterName }}"' external-dns/helm-chart/external-dns-values.yaml
             kustomize build --load-restrictor LoadRestrictionsNone --enable-helm ./ | kubectl apply -f - 
 
             : # configure specific configurations for the ci
@@ -276,7 +228,7 @@ jobs:
   read-kube-configs:
     name: "Read kube configs from matrix"
     runs-on: ubuntu-latest
-    needs: [ prepare-clusters ]
+    needs: prepare-clusters
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
         id: read
@@ -286,40 +238,38 @@ jobs:
       kubeconfig: "${{ steps.read.outputs.result }}"
 
   run-integration-tests:
-    name: "Run integration tests"
+    name: "Run integration tests - ${{ matrix.distro.name }}"
     needs:
-      - define-vars
-      - read-cluster-vars
+      - clusters-info
       - read-kube-configs
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJson(needs.define-vars.outputs.platform_matrix) }}
-        flow: ${{ fromJson(needs.define-vars.outputs.flow_matrix) }}
+        distro: ${{ fromJson(needs.clusters-info.outputs.platform_matrix).distro }}
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
       cluster-type: "openshift"
       platforms: "rosa"
-      identifier: "${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}"
+      flows: "install,upgrade"
       auth-data: "${{ fromJson(needs.read-kube-configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}"
-      caller-git-ref: "${{ needs.define-vars.outputs.caller_git_ref }}"
-      camunda-helm-dir: "${{ needs.define-vars.outputs.camunda_helm_dir }}"
-      extra-values: "${{ needs.define-vars.outputs.extra_values }}"
-      flows: "${{ matrix.flow }}"
+      identifier: "helm-repo-${{ matrix.distro.id }}"
+      caller-git-ref: "${{ inputs.caller-git-ref }}"
+      camunda-helm-dir: "${{ inputs.camunda-helm-dir }}"
+      extra-values: "${{ inputs.extra-values }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha || github.sha }}"
 
   cleanup-clusters:
     name: "Cleanup ROSA clusters"
     if: always()
     runs-on: ubuntu-latest
     needs:
-      - define-vars
-      - read-cluster-vars
+      - clusters-info
       - run-integration-tests
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJson(needs.define-vars.outputs.platform_matrix) }}
+        distro: ${{ fromJson(needs.clusters-info.outputs.platform_matrix).distro }}
     steps:
       # Used to create/delete GitHub environment.
       # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
@@ -345,7 +295,7 @@ jobs:
         with:
           rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
           s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
-          cluster-name: ${{ fromJson(needs.read-cluster-vars.outputs.result).cluster_name[matrix.distro.name] }}
+          cluster-name: ${{ matrix.distro.clusterName }}
           aws-region: ${{ env.TEST_AWS_REGION }}
 
   report:
