@@ -15,3 +15,10 @@ matrix:
       # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4.14(\.(?<patch>\d+))?$  
       version: 4.14.24
       platform: rosa
+  scenario:
+    - name: Chart Setup
+      desc: Setup chart in production-like setup with Ingress and TLS.
+      flow: install
+    - name: Chart Upgrade
+      desc: Upgrade chart from the latest released version to the current branch.
+      flow: upgrade

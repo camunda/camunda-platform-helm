@@ -207,36 +207,42 @@ jobs:
           outputs: |-
             kubeconfig_raw: ${{ steps.export_kube_config.outputs.kubeconfig_raw }}
 
-  read-kube-configs:
+  access-info:
     name: "Read kube configs from matrix"
     runs-on: ubuntu-latest
     needs: prepare-clusters
+    outputs:
+      kubeconfig: "${{ steps.read-workflow.outputs.result }}"
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
-        id: read
+        id: read-workflow
         with:
           matrix-step-name: prepare-clusters
-    outputs:
-      kubeconfig: "${{ steps.read.outputs.result }}"
 
-  run-integration-tests:
+  integration-tests:
     name: "Run integration tests - ${{ matrix.distro.name }}"
     needs:
       - clusters-info
-      - read-kube-configs
+      - access-info
     strategy:
       fail-fast: false
       matrix:
         distro: ${{ fromJson(needs.clusters-info.outputs.platform-matrix).distro }}
+        scenario: ${{ fromJson(needs.clusters-info.outputs.platform-matrix).scenario }}
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
+      matrix-data: |
+        {
+          "distro": [${{ toJson(matrix.distro) }}],
+          "scenario": [${{ toJson(matrix.scenario) }}]
+        }
       cluster-type: "openshift"
       platforms: "rosa"
-      flows: "${{ inputs.flows }}"
-      identifier: "${{ matrix.distro.clusterName }}"
-      auth-data: "${{ fromJson(needs.read-kube-configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}"
-      camunda-helm-dir: "${{ inputs.camunda-helm-dir || 'camunda-platform-latest' }}"
+      flows: "${{ matrix.scenario.flow }}"
+      identifier: "${{ matrix.distro.clusterName }}-${{ matrix.scenario.flow }}"
+      auth-data: "${{ fromJson(needs.access-info.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}"
+      camunda-helm-dir: "${{ inputs.camunda-helm-dir }}"
       extra-values: "${{ inputs.extra-values }}"
       camunda-helm-git-ref: "${{ inputs.camunda-helm-git-ref }}"
 
@@ -246,7 +252,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - clusters-info
-      - run-integration-tests
+      - integration-tests
     strategy:
       fail-fast: false
       matrix:
@@ -284,7 +290,7 @@ jobs:
     if: failure()
     runs-on: ubuntu-latest
     needs:
-      - run-integration-tests
+      - integration-tests
       - cleanup-clusters
     steps:
       - name: Notify in Slack in case of failure

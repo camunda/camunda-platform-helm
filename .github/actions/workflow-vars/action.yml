@@ -13,7 +13,6 @@ inputs:
       Define a ttl for the lifespan of the deployment
     required: false
     default: ""
-    type: string
   identifier-base:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
   chart-dir:
@@ -61,7 +60,7 @@ runs:
         TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
       fi
 
-      echo "TEST_NAMESPACE=${TEST_NAMESPACE}" | tee -a $GITHUB_ENV
+      echo "TEST_NAMESPACE=$(echo ${TEST_NAMESPACE} | head -c 63)" | tee -a $GITHUB_ENV
 
       echo "Output vars:"
 
