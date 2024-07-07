@@ -1,0 +1,313 @@
+name: "Test - Integration - ROSA - Template"
+
+# description: This workflow perform integration tests against ROSA platform, it only prepares the cluster to run the tests
+
+on:
+  workflow_call:
+    inputs:
+      cluster-name:
+        description: The unique identifier of used in the cluster name, will be random if not provided.
+        default: ""
+        type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform-latest
+        type: string
+      camunda-helm-git-ref:
+        default: main
+        type: string
+      caller-git-ref:
+        default: main
+        type: string
+      deployment-ttl:
+        description: |
+          Define a ttl for the lifespan of the deployment
+          NOTE: Currently, any ttl will be handled as a 24h deployment
+        required: false # TODO: configure a way to handle ttl for permanent clusters see https://github.com/camunda/camunda-platform-helm/pull/1816#discussion_r1658465380
+        default: ""
+        type: string
+      flows:
+        default: install,upgrade
+        type: string
+      test-enabled:
+        default: true
+        type: boolean
+      extra-values:
+        description: Pass extra values to the Helm chart.
+        default: ""
+        type: string
+
+env:
+  # Vars with "CI_" prefix are used in the CI workflow only.
+  # Vars with "TEST_" prefix are used in the test runner tool (Task).
+  CI_MATRIX_FILE: ".github/config/rosa-on-demand/test-integration-rosa-matrix.yaml"
+
+  # please keep those variables synced with test-integration-template.yml
+  TEST_AWS_REGION: "eu-central-1"
+  TF_S3_BUCKET: "${{ secrets.DISTRO_CI_OPENSHIFT_TFSTATE_BUCKET }}"
+
+  # Docker Hub auth to avoid image pull rate limit.
+  TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
+  TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
+  TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
+  # Camunda registry auth to access WebModeler Docker image since it's not public.
+  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+
+# limit to a single execution per actor of this workflow
+concurrency:
+  group: "${{ github.workflow }}-${{ github.actor }}"
+
+jobs:
+  clusters-info:
+    name: Define Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      platform-matrix: ${{ steps.matrix.outputs.platform-matrix }}
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: 0
+
+      - id: matrix
+        # we define a global matrix in an external file due to https://github.com/orgs/community/discussions/26284
+        run: |
+          #
+          # Generate cluster name.
+          distro_indexes="$(yq '.matrix.distro | to_entries | .[] | .key' ${CI_MATRIX_FILE})"
+
+          # Loop over clusters.
+          # Vars are exported to pass them to yq instead of local inline syntax.
+          for distro_index in ${distro_indexes}; do
+            cluster_name_input="${{ inputs.cluster-name }}"
+            cluster_name_fallback="hci-$(uuidgen | head -c 8)"
+            export cluster_name="${cluster_name_input:-${cluster_name_fallback}}"
+            export distro_index="${distro_index}"
+            yq -i '.matrix.distro[env(distro_index)].clusterName = env(cluster_name)' ${CI_MATRIX_FILE}
+          done
+
+          # Get updated matrix.
+          platform_matrix="$(yq '.matrix' --indent=0 --output-format json ${CI_MATRIX_FILE})"
+          echo "${platform_matrix}" | jq
+          echo "platform-matrix=${platform_matrix}" > "$GITHUB_OUTPUT"
+
+  prepare-clusters:
+    name: Prepare clusters
+    needs:
+      - clusters-info
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: ${{ fromJson(needs.clusters-info.outputs.platform-matrix).distro }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Authenticate to AWS
+        run: |
+          aws configure set aws_secret_access_key ${{ secrets.DISTRO_CI_AWS_SECRET_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+
+      - name: Create ROSA cluster and login
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@408ad133d0da2362b84b144774ef0e5866aa2e61 # main
+        timeout-minutes: 125
+        env:
+          AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
+        with:
+          rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
+          admin-username: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME }}
+          admin-password: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD }}
+          s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+          cluster-name: ${{ matrix.distro.clusterName }}
+          aws-region: ${{ env.TEST_AWS_REGION }}
+          replicas: 10
+          openshift-version: "${{ matrix.distro.version }}"
+
+      # this token is used to clone the github repository containing the base modules
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Clone the distribution GitOps repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          repository: "camunda/distribution"
+          ref: "main"
+          path: "./.distribution-kube/"
+          fetch-depth: 0
+          token: "${{ steps.generate-github-token.outputs.token }}"
+
+      - name: Configure on-demand cluster ROSA
+        timeout-minutes: 10
+        # we need to retry as CRDs can take some time to be installed
+        uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 40
+          shell: bash
+          retry_wait_seconds: 15
+          command: |
+            : # see https://github.com/nick-fields/retry/issues/133
+            set -o errexit
+            set -o pipefail
+
+            : # we configure the whole cluster using this generic template
+            cd ./.distribution-kube/clusters/rosa-hcp-on-demand/
+            : # we need to ensure uniqueness of the dns
+            yq -ei '.txtOwnerId = "${{ matrix.distro.clusterName }}"' external-dns/helm-chart/external-dns-values.yaml
+            kustomize build --load-restrictor LoadRestrictionsNone --enable-helm ./ | kubectl apply -f - 
+
+            : # configure specific configurations for the ci
+            cd ${{ github.workspace }}/.github/config/rosa-on-demand/
+
+            : # configure external dns
+            export EXTERNAL_DNS_GCP_SERVICE_ACCOUNT=${{ secrets.DISTRO_CI_ON_DEMAND_EXTERNAL_DNS_GCP_SERVICE_ACCOUNT }}
+            envsubst < external-dns/secret.yaml.tpl > external-dns/secret.yaml
+
+            : # configure ExternalSecretStore replication from the permanent ROSA cluster
+            export EXTERNAL_SECRET_STORE_SA_TOKEN=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_TOKEN }}
+            export EXTERNAL_SECRET_STORE_SA_SERVICE_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_SERVICE_CA }}
+            export EXTERNAL_SECRET_STORE_SA_CA=${{ secrets.DISTRO_CI_OPENSHIFT_EXTERNAL_SECRET_STORE_SA_CA }}
+            envsubst < distribution-team/secret.yaml.tpl > distribution-team/secret.yaml
+            yq -ei '.spec.provider.kubernetes.server.url = "${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_URL }}"' distribution-team/external-cluster-secretstore.yaml
+
+            : # apply
+            kustomize build ./ | kubectl apply -f - 
+                
+            echo "Waiting for global state to converge"
+            sleep 30
+                
+            while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
+                echo "Waiting for all pods to be Running or Completed"
+                sleep 5
+            done
+
+            kubectl get all --all-namespaces
+
+      - name: Export kubeconfig and encrypt it # this is required to pass matrix outputs securely using artifacts
+        id: export_kube_config
+        run: |
+          echo "$(kubectl config view --raw)" > kubeconfig.yaml 2>/dev/null
+          openssl enc -aes-256-cbc -salt -in kubeconfig.yaml -out encrypted_kubeconfig.enc -pass pass:"${GITHUB_TOKEN}" -pbkdf2
+          encrypted_kubeconfig_base64=$(base64 -w 0 encrypted_kubeconfig.enc)
+          echo "kubeconfig_raw=${encrypted_kubeconfig_base64}" >> "$GITHUB_OUTPUT"
+
+      ## Write for matrix outputs workaround
+      - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
+        id: out
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.distro.name }}
+          outputs: |-
+            kubeconfig_raw: ${{ steps.export_kube_config.outputs.kubeconfig_raw }}
+
+  read-kube-configs:
+    name: "Read kube configs from matrix"
+    runs-on: ubuntu-latest
+    needs: prepare-clusters
+    steps:
+      - uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # v1
+        id: read
+        with:
+          matrix-step-name: prepare-clusters
+    outputs:
+      kubeconfig: "${{ steps.read.outputs.result }}"
+
+  run-integration-tests:
+    name: "Run integration tests - ${{ matrix.distro.name }}"
+    needs:
+      - clusters-info
+      - read-kube-configs
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: ${{ fromJson(needs.clusters-info.outputs.platform-matrix).distro }}
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      cluster-type: "openshift"
+      platforms: "rosa"
+      flows: "${{ inputs.flows }}"
+      identifier: "${{ matrix.distro.clusterName }}"
+      auth-data: "${{ fromJson(needs.read-kube-configs.outputs.kubeconfig).kubeconfig_raw[matrix.distro.name] }}"
+      camunda-helm-dir: "${{ inputs.camunda-helm-dir || 'camunda-platform-latest' }}"
+      extra-values: "${{ inputs.extra-values }}"
+      camunda-helm-git-ref: "${{ inputs.camunda-helm-git-ref }}"
+
+  cleanup-clusters:
+    name: "Cleanup ROSA clusters"
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - clusters-info
+      - run-integration-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: ${{ fromJson(needs.clusters-info.outputs.platform-matrix).distro }}
+    steps:
+      # Used to create/delete GitHub environment.
+      # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+
+      - name: Authenticate to AWS
+        run: |
+          aws configure set aws_secret_access_key ${{ secrets.DISTRO_CI_AWS_SECRET_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set region ${{ env.TEST_AWS_REGION }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+          aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
+
+      - name: Delete on-demand ROSA HCP Cluster
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@408ad133d0da2362b84b144774ef0e5866aa2e61 # main
+        if: always()
+        timeout-minutes: 125
+        env:
+          AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
+        with:
+          rh-token: ${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}
+          s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
+          cluster-name: ${{ matrix.distro.clusterName }}
+          aws-region: ${{ env.TEST_AWS_REGION }}
+
+  report:
+    name: "Report failures"
+    if: failure()
+    runs-on: ubuntu-latest
+    needs:
+      - run-integration-tests
+      - cleanup-clusters
+    steps:
+      - name: Notify in Slack in case of failure
+        id: slack-notification
+        if: github.event_name == 'schedule'
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          payload: |
+            {
+              "unfurl_links": false,
+              "unfurl_media": false,
+              "text": "${{ github.event.repository.name }} (${{ github.server_url }}/${{ github.repository }}) scheduled workflow: ${{ github.workflow }} failed! Please check: ${{ env.WORKFLOW_URL }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":automation-platform-failure: :mechanic: <${{ github.server_url }}/${{ github.repository }}|[${{ github.event.repository.name }}]> scheduled workflow: ${{ github.workflow }} failed! \n :link: Please check: ${{ env.WORKFLOW_URL }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.DISTRO_CI_SLACK_BOT_TOKEN }}
+          WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
