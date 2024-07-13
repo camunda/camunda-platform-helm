@@ -13,15 +13,13 @@
       "package-name": "camunda-platform-8.5",
       "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
-      "include-v-in-tag": false,
-      "changelog-path": "CHANGELOG.md"
+      "include-v-in-tag": false
     },
     "charts/camunda-platform-8.4": {
       "package-name": "camunda-platform-8.4",
       "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
-      "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
           "type": "yaml",
@@ -35,7 +33,6 @@
       "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
-      "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
           "type": "yaml",
@@ -49,7 +46,6 @@
       "extra-label": "version/8.2,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
-      "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
           "type": "yaml",
