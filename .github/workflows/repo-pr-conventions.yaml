@@ -24,6 +24,7 @@ jobs:
             ci
             chore
             chore(deps)
+            chore(release)
           # Configure additional validation for the subject based on a regex.
           # Ensures the subject doesn't start with an uppercase character.
           subjectPattern: ^(?![A-Z]).+$
