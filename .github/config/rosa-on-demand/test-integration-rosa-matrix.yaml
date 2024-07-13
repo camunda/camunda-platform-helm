@@ -1,0 +1,24 @@
+matrix:
+  distro:
+    # /!\ BEFORE ADDING/REMOVING A VERSION:
+    # /!\ Please keep this matrix synced with the official documentation: https://github.com/camunda/camunda-docs/blob/main/docs/self-managed/setup/deploy/openshift/redhat-openshift.md?plain=1#L2
+    # According to https://access.redhat.com/support/policy/updates/openshift, this matrix should reference the last 4 (may change) supported versions of OpenShift
+    - name: OpenShift 4.15
+      type: openshift
+      # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
+      version: 4.15.11
+      # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
+      # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.
+      platform: rosa
+    - name: OpenShift 4.14 # TODO: when you will add to this matrix OpenShift 4.16, please duplicate this block for 4.15 (pay attention the the renovate regex)
+      type: openshift
+      # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4.14(\.(?<patch>\d+))?$  
+      version: 4.14.24
+      platform: rosa
+  scenario:
+    - name: Chart Setup
+      desc: Setup chart in production-like setup with Ingress and TLS.
+      flow: install
+    - name: Chart Upgrade
+      desc: Upgrade chart from the latest released version to the current branch.
+      flow: upgrade

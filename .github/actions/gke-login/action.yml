@@ -42,4 +42,6 @@ runs:
     run: chmod 600 $KUBECONFIG
   - name: Check credentials
     shell: bash
-    run: kubectl auth can-i create deployment
+    run: |
+      kubectl auth can-i create deployment
+      kubectl version

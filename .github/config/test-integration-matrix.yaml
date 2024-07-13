@@ -1,0 +1,33 @@
+matrix:
+  distro:
+    - name: Kubernetes
+      type: kubernetes
+      platform: gke
+      secret:
+        cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
+        cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
+        workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
+        service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
+      if: ${{ contains(inputs.platforms, 'gke') }}
+    - name: OpenShift
+      type: openshift
+      platform: rosa
+      secret:
+        server-url: DISTRO_CI_OPENSHIFT_CLUSTER_URL
+        username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+        password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+      if: ${{ contains(inputs.platforms, 'rosa') }}
+  scenario:
+    - name: Chart Setup
+      desc: Setup chart in production-like setup with Ingress and TLS.
+      flow: install
+      if: ${{ contains(inputs.flows, 'install') }}
+    - name: Chart Upgrade
+      desc: Upgrade chart from the latest released version to the current branch.
+      flow: upgrade
+      if: ${{ contains(inputs.flows, 'upgrade') }}
+  exclude:
+    - distro:
+        if: false
+    - scenario:
+        if: false
