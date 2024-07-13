@@ -1071,6 +1071,7 @@ zeebeGateway:
   ## @param zeebeGateway.extraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
   extraVolumeMounts: []
   ## @param zeebeGateway.extraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
+  #
   extraVolumes: []
   ## @param zeebeGateway.extraInitContainers (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors
   extraInitContainers: []
