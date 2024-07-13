@@ -19,6 +19,7 @@ env:
 
 jobs:
   chores:
+    if: github.head_ref == 'release-please--branches--main'
     name: Generate release files
     runs-on: ubuntu-latest
     steps:
