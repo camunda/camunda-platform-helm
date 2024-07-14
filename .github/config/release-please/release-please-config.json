@@ -1,8 +1,5 @@
 {
-  "release-type": "helm",
   "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart",
-  "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${component}/${version}",
-  "extra-label": "automation/release-please,release/pr,kind/chore,chart/camunda-platform",
   "skip-github-release": true,
   "separate-pull-requests": false,
   "bump-minor-pre-major": false,
@@ -10,11 +7,13 @@
   "draft": false,
   "packages": {
     "charts/camunda-platform-latest": {
+      "release-type": "helm",
       "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false
     },
     "charts/camunda-platform-8.4": {
+      "release-type": "helm",
       "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
@@ -27,6 +26,7 @@
       ]
     },
     "charts/camunda-platform-8.3": {
+      "release-type": "helm",
       "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
@@ -39,6 +39,7 @@
       ]
     },
     "charts/camunda-platform-8.2": {
+      "release-type": "helm",
       "extra-label": "version/8.2,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false,
