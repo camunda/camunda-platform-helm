@@ -83,6 +83,10 @@ jobs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      with:
+        # This is needed if the workflow is triggered by workflow_call.
+        repository: camunda/camunda-platform-helm
+        ref: ${{ inputs.camunda-helm-git-ref }}
     - name: Generate workflow matrix
       id: generate-workflow-matrix
       env:
