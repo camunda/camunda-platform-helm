@@ -2,7 +2,7 @@
 set -euo pipefail
 
 main () {
-    git fetch origin main:main
+    test "$(git branch --show-current)" != "main" && git fetch origin main:main
 
     chart_dir="${1}"
     chart_file="${chart_dir}/Chart.yaml"

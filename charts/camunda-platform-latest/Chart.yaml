@@ -50,7 +50,6 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  dummy: dummy
   camunda.io/helmCLIVersion: "3.15.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
