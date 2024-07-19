@@ -130,10 +130,6 @@ in your repo (the URL will show in the PR or the GH deployment section).
 
 #### Multi Namespace
 
-> **Warning**
->
-> This is a pre-alpha feature and not for external use.
-
 ```yaml
 jobs:
   ...
