@@ -9,13 +9,15 @@ of the CI pipelines.
 
 ## Camunda Helm chart deployment
 
-The Distro team provides a GitHub Actions Workflow to deploy the Camunda Helm chart via GitHub Actions. This workflow is customizable and supports different patterns. For example: disabling integration tests, single namespace, multi namespace, persistent setup with a defined ttl (not deleted after the workflow is done), and more.
+The Distro team provides a GitHub Actions Workflow to deploy the Camunda Helm chart via GitHub Actions. This workflow is customizable and supports different patterns. For example, disabling integration tests, single namespace, multi namespace, persistent setup with a defined TTL (not deleted after the workflow), and more.
 
-The GitHub Actions workflow is defined in the [test-integration-template.yaml](../.github/workflows/test-integration-template.yaml) within the Camunda Platform Helm repository and could be used by other repos within Camunda organizations.
+Check out the Camunda apps repo full working example [camunda-helm-integration.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-helm-integration.yml).
 
 ### Workflow inputs
 
 These inputs allow you to customize Helm chart deployments for integration testing.
+
+In most cases, you just need to set `identifier`, `camunda-helm-dir`, and `extra-values`.
 
 ```yaml
 jobs:
@@ -36,38 +38,8 @@ jobs:
       # Required: false
       camunda-helm-dir: 'camunda-platform-latest'
 
-      # Git reference for the Camunda Helm chart repository 
-      # Default: 'main'
-      # Required: false
-      camunda-helm-git-ref: 'main'
-
-      # Git reference of the caller's repository (branch, tag, or commit SHA) that initiated the workflow
-      # Default: 'main'
-      # Required: false
-      caller-git-ref: ''
-
-      # Define a ttl for the deployment after the workflow is completed
-      # Note: All persistent deployments will be deleted frequently to save costs
-      # Default: ""
-      # Required: false
-      deployment-ttl:
-
-      # Specifies the cloud platform that is currently used
-      # Default: 'gke'
-      # Required: false
-      platforms: ''
-
-      # Types of operations to perform with the Helm chart, like install, upgrade
-      # Default: 'install'
-      # Required: false
-      flows: ''
-
-      # Flag to enable or disable the execution of test scenarios after Helm chart deployment
-      # Default: true
-      # Required: false
-      test-enabled:
-
       # Pass extra values to the Helm chart during deployment
+      # Default: ''
       # Required: false
       extra-values: |
         global:
@@ -76,6 +48,37 @@ jobs:
         console:
           image:
             tag: xyz
+
+      # Git reference for the Camunda Helm chart repository 
+      # Default: 'main'
+      # Required: false
+      camunda-helm-git-ref: 'main'
+
+      # Git reference of the caller's repository (branch, tag, or commit SHA) that initiated the workflow
+      # Default: 'main'
+      # Required: false
+      caller-git-ref: 'main'
+
+      # Define a ttl for the deployment after the workflow is completed
+      # Note: All persistent deployments will be deleted frequently to save costs
+      # Default: ""
+      # Required: false
+      deployment-ttl: ''
+
+      # Specifies the cloud platform that is currently used
+      # Default: 'gke'
+      # Required: false
+      platforms: 'gke'
+
+      # Types of operations to perform with the Helm chart, like install, upgrade
+      # Default: 'install'
+      # Required: false
+      flows: 'install'
+
+      # Flag to enable or disable the execution of test scenarios after Helm chart deployment
+      # Default: true
+      # Required: false
+      test-enabled: true
 ```
 
 > [!NOTE]
