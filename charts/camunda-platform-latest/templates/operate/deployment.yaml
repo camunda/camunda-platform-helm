@@ -35,7 +35,7 @@ spec:
         {{- end }}
         {{- if .Values.operate.migration.enabled }}
         - name: migration
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
           command: ['/bin/sh', '/usr/local/operate/bin/migrate']
           {{- if .Values.operate.containerSecurityContext }}
           securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
