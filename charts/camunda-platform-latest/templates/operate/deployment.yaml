@@ -80,6 +80,28 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.operate.migration.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/operate/config/application.yml
+              subPath: application.yml
+            - name: tmp
+              mountPath: /tmp
+            - name: camunda
+              mountPath: /camunda
+            {{- range $key, $val := .Values.operate.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/operate/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/operate/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
+            {{- if .Values.operate.extraVolumeMounts }}
+            {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- end }}
       containers:
         - name: operate
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
