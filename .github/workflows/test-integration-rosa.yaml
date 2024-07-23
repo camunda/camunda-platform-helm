@@ -7,8 +7,9 @@ on:
     - cron: '0 3 * * 1,3,5' # Runs at 3 AM on Monday, Wednesday, and Friday
   pull_request:
     paths:
-      - '.github/workflows/configs/test-integration-rosa-matrix.yaml'
+      - '.github/config/test-integration-rosa-matrix.yaml'
       - '.github/workflows/test-integration-rosa.yaml'
+      - '.github/workflows/test-integration-rosa-template.yaml'
       - '.github/actions/workflow-vars/**'
       - '.github/actions/test-type-vars/**'
 
