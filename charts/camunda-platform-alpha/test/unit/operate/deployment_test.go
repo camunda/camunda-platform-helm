@@ -1012,7 +1012,7 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
 
-func (s *deploymentTemplateTest) TestDefaultStrategy() {
+func (s *deploymentTemplateTest) TestRecreateStrategy() {
 	// given
 	options := &helm.Options{
 		SetValues:      map[string]string{},
@@ -1027,7 +1027,7 @@ func (s *deploymentTemplateTest) TestDefaultStrategy() {
 	// then
 	strategy := deployment.Spec.Strategy
 
-	s.Require().Equal(string(strategy.Type), "")
+	s.Require().Equal(string(strategy.Type), "Recreate")
 }
 
 func (s *deploymentTemplateTest) TestDefinedStrategy() {
