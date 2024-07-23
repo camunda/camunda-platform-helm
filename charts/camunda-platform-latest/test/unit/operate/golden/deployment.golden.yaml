@@ -42,8 +42,8 @@ spec:
         []
       initContainers:
         - name: migration
-          image: camunda/optimize:8.5.3
-          command: [ '/bin/sh', '/usr/local/operate/bin/migrate' ]
+          image: camunda/operate:8.5.4
+          command: ['/bin/sh', '/usr/local/operate/bin/migrate']
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
