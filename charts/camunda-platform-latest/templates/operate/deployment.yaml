@@ -69,9 +69,17 @@ spec:
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
             {{- end }}
+            {{- if .Values.global.elasticsearch.enabled }}
+            - name: OPERATE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: OPERATE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.global.elasticsearch.url.port | quote }}
+            {{- end }}
             {{- with .Values.operate.migration.env }}
             {{- toYaml . | nindent 8 }}
             {{- end }}
+          resources:
+            {{- toYaml .Values.operate.migration.resources | nindent 12 }}
       containers:
         - name: operate
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
