@@ -1772,7 +1772,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `elasticsearch`                                                        |              |                                 |
 | `elasticsearch.enabled`                                                |              | `true`                          |
 | `elasticsearch.image.repository`                                       |              | `bitnami/elasticsearch`         |
-| `elasticsearch.image.tag`                                              |              | `8.12.2`                        |
+| `elasticsearch.image.tag`                                              |              | `8.14.3`                        |
 | `elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem` |              | `true`                          |
 | `elasticsearch.master.masterOnly`                                      |              | `false`                         |
 | `elasticsearch.master.heapSize`                                        |              | `1024m`                         |
