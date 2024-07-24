@@ -41,7 +41,37 @@ spec:
       imagePullSecrets:
         []
       initContainers:
-        []
+        - name: migration
+          image: camunda/operate:8.6.0-alpha3
+          command: ['/bin/sh', '/usr/local/operate/bin/migrate']
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_HOST
+              value: "camunda-platform-test-elasticsearch"
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/operate/config/application.yml
+              subPath: application.yml
+            - name: tmp
+              mountPath: /tmp
+            - name: camunda
+              mountPath: /camunda
       containers:
         - name: operate
           image: camunda/operate:8.6.0-alpha3
