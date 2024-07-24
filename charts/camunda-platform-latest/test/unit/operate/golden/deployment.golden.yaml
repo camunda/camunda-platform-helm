@@ -53,9 +53,9 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: OPERATE_ELASTICSEARCH_HOST
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
-            - name: OPERATE_ELASTICSEARCH_HTTP_PORT
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
           resources:
             limits:
