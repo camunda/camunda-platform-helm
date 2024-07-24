@@ -5,18 +5,9 @@ and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 <a name="camunda-platform-8.2.30"></a>
 ## [camunda-platform-8.2.30](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.2.30) (2024-07-24)
 
-### Ci
-
-* automate release chores ([#2013](https://github.com/camunda/camunda-platform-helm/issues/2013))
-
 ### Fix
 
-* added recreate strategy to all Operate deployments ([#2143](https://github.com/camunda/camunda-platform-helm/issues/2143))
-
-### Refactor
-
-* remove the global image tag value and use it from the components - 8.2, 8.3, and 8.4 ([#2080](https://github.com/camunda/camunda-platform-helm/issues/2080))
-* update zeebe gateway readiness probe endpoint
+* added recreate strategy to all Operate deployments (#2143)
 
 ### Release Info
 

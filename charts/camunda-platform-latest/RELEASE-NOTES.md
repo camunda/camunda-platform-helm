@@ -2,35 +2,19 @@ The changelog is automatically generated using [git-chglog](https://github.com/g
 and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
 
-<a name="camunda-platform-10.3.0"></a>
-## [camunda-platform-10.3.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-10.3.0) (2024-07-24)
-
-### Ci
-
-* automate release chores ([#2013](https://github.com/camunda/camunda-platform-helm/issues/2013))
-
-### Feat
-
-* configurable update strategy ([#2036](https://github.com/camunda/camunda-platform-helm/issues/2036))
-* support dnsPolicy and dnsConfig for all components ([#2009](https://github.com/camunda/camunda-platform-helm/issues/2009))
-* add console auth vars ([#1782](https://github.com/camunda/camunda-platform-helm/issues/1782))
+<a name="camunda-platform-10.2.1"></a>
+## [camunda-platform-10.2.1](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-10.2.1) (2024-07-24)
 
 ### Fix
 
-* added recreate strategy to all Operate deployments ([#2143](https://github.com/camunda/camunda-platform-helm/issues/2143))
-* identity base url not configured ([#2028](https://github.com/camunda/camunda-platform-helm/issues/2028))
-* unauthenticated external elasticsearch no longer forces password… ([#1990](https://github.com/camunda/camunda-platform-helm/issues/1990))
-
-### Refactor
-
-* remove the global image tag value and use it from the components ([#2069](https://github.com/camunda/camunda-platform-helm/issues/2069))
+* added recreate strategy to all Operate deployments (#2143)
 
 ### Release Info
 
 Supported versions:
 
 - Camunda applications: [8.5](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.5&expanded=true)
-- Helm values: [10.3.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/10.3.0#parameters)
+- Helm values: [10.2.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/10.2.1#parameters)
 - Helm CLI: [3.15.3](https://github.com/helm/helm/releases/tag/v3.15.3)
 
 Camunda images:
@@ -60,8 +44,8 @@ Non-Camunda images:
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-10.3.0.tgz \
-  --bundle camunda-platform-10.3.0.cosign.bundle \
+cosign verify-blob camunda-platform-10.2.1.tgz \
+  --bundle camunda-platform-10.2.1.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2127/merge"
 ```
