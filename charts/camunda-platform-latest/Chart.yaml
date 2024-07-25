@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.2.0
+version: 10.2.1
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -50,7 +50,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.15.2"
+  camunda.io/helmCLIVersion: "3.15.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -66,6 +66,8 @@ annotations:
       description: "support dnsPolicy and dnsConfig for all components"
     - kind: added
       description: "add console auth vars"
+    - kind: fixed
+      description: "added recreate strategy to all Operate deployments"
     - kind: fixed
       description: "identity base url not configured"
     - kind: fixed

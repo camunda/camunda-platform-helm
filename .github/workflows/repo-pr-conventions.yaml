@@ -28,6 +28,8 @@ jobs:
           # Configure additional validation for the subject based on a regex.
           # Ensures the subject doesn't start with an uppercase character.
           subjectPattern: ^(?![A-Z]).+$
+          ignoreLabels: |
+            release/pr
           # When using "Squash and merge" on a PR with only one commit, GitHub
           # will suggest using that commit message instead of the PR title for the
           # merge commit, and it's easy to commit this by mistake. Enable this option
