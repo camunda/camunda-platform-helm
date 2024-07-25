@@ -6,12 +6,13 @@ on:
       - main
     paths:
       - .github/config/release-please/.release-please-manifest.json
+  workflow_dispatch: { }
 
 permissions:
   contents: write
 
 env:
-  RELEASE_PLEASE_CONFIG: ".github/config/release-please/release-please-config.json"
+  RELEASE_PLEASE_CONFIG_FILE: ".github/config/release-please/release-please-config.json"
 
 jobs:
   # A workaround for https://github.com/googleapis/release-please/issues/2202
