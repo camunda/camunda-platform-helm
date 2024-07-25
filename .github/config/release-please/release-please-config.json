@@ -5,17 +5,18 @@
   "bump-minor-pre-major": false,
   "prerelease": false,
   "draft": false,
+  "last-release-sha": "e098c6f7f1d6870acde813b2d38f3db33f89e662",
   "packages": {
     "charts/camunda-platform-latest": {
       "release-type": "helm",
       "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-latest",
       "include-v-in-tag": false
     },
     "charts/camunda-platform-8.4": {
       "release-type": "helm",
       "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-8.4",
       "include-v-in-tag": false,
       "extra-files": [
         {
@@ -28,7 +29,7 @@
     "charts/camunda-platform-8.3": {
       "release-type": "helm",
       "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-8.3",
       "include-v-in-tag": false,
       "extra-files": [
         {
@@ -41,7 +42,7 @@
     "charts/camunda-platform-8.2": {
       "release-type": "helm",
       "extra-label": "version/8.2,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-8.2",
       "include-v-in-tag": false,
       "extra-files": [
         {

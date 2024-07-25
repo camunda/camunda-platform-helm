@@ -1,4 +1,4 @@
-git-chglog 0.15.4
+git-cliff 2.4.0
 golang 1.22.5
 gomplate v4.1.0
 helm 3.15.3

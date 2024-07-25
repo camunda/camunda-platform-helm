@@ -9,6 +9,10 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
+
 jobs:
   release-please:
     name: Run Release Please
@@ -24,5 +28,5 @@ jobs:
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
           # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
-          config-file: .github/config/release-please/release-please-config.json
-          manifest-file: .github/config/release-please/.release-please-manifest.json
+          config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
+          manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"

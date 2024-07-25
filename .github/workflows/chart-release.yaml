@@ -163,11 +163,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
-          # The verification step happens in the "release" branch before merging into the "main" branch.
+          # The verification step happens in the release branch before merging into the "main" branch.
           fetch-depth: 0
+          ref: release-please--branches--main
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-      # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
         with:
