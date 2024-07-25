@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: operate
     app.kubernetes.io/version: "8.5.4"
 data:
-  application.yaml: |
+  application.yml: |
     spring:
       profiles:
         active: "identity-auth"

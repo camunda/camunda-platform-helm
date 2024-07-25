@@ -62,7 +62,7 @@ spec:
               memory: 1Gi
           volumeMounts:
             - name: config
-              mountPath: /usr/local/operate/config/application.yaml
+              mountPath: /usr/local/operate/config/application.yml
               subPath: application.yml
             - name: tmp
               mountPath: /tmp

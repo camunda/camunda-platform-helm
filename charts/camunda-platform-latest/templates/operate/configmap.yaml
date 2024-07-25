@@ -7,10 +7,10 @@ metadata:
     {{- include "operate.labels" . | nindent 4 }}
 data:
   {{- if .Values.operate.configuration }}
-  application.yaml: |
+  application.yml: |
     {{ .Values.operate.configuration | indent 4 | trim }}
   {{- else }}
-  application.yaml: |
+  application.yml: |
     {{- if .Values.operate.contextPath }}
     server:
       servlet:

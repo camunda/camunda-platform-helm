@@ -76,7 +76,7 @@ spec:
             {{- toYaml .Values.operate.migration.resources | nindent 12 }}
           volumeMounts:
             - name: config
-              mountPath: /usr/local/operate/config/application.yaml
+              mountPath: /usr/local/operate/config/application.yml
               subPath: application.yml
             - name: tmp
               mountPath: /tmp
