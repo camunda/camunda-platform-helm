@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.2.29
+version: 8.2.30
 appVersion: 8.2.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
@@ -72,8 +72,6 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "remove the global image tag value and use it from the components - 8.2, 8.3, and 8.4"
-    - kind: changed
-      description: "update zeebe gateway readiness probe endpoint"
-  camunda.io/helmCLIVersion: 3.15.2
+    - kind: fixed
+      description: "Added recreate strategy to all Operate deployments"
+  camunda.io/helmCLIVersion: 3.15.3
