@@ -20,10 +20,17 @@ jobs:
     name: Update release-please config
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
+          token: ${{ steps.generate-github-token.outputs.token }}
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
