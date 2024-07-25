@@ -4,10 +4,15 @@ on:
   push:
     branches:
       - main
+      - aa-fix-release-errors
 
 permissions:
   contents: write
   pull-requests: write
+
+env:
+  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/release-please-config.jsonx
 
 jobs:
   release-please:
@@ -20,9 +25,21 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          ref: aa-fix-release-errors
+          fetch-depth: 0
+      # A workaround for https://github.com/googleapis/release-please/issues/2202
+      - name: Get latest release commit
+        run: |
+          last_release_sha="$(git log -n1 --pretty=format:'%H' --grep='chore(release):')"
+          cat "${RELEASE_PLEASE_CONFIG_FILE}"  |
+            jq --arg last_release_sha "${last_release_sha}" '."last-release-sha" = $last_release_sha' |
+              tee "${RELEASE_PLEASE_CONFIG_FILE}"
       - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
           # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
-          config-file: .github/config/release-please/release-please-config.json
-          manifest-file: .github/config/release-please/.release-please-manifest.json
+          config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
+          manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"

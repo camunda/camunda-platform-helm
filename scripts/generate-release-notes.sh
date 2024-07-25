@@ -8,9 +8,7 @@ main () {
     chart_file="${chart_dir}/Chart.yaml"
     chart_name="$(yq '.name' ${chart_file})"
     chart_version="$(yq '.version' ${chart_file})"
-    chart_version_previous="$(git show main:${chart_file} | yq '.version')"
     chart_tag="${chart_name}-${chart_version}"
-    chart_tag_previous="${chart_name}-${chart_version_previous}"
 
     #
     # Early exit if the tag already exists.
@@ -26,10 +24,10 @@ main () {
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
     git-chglog                                      \
         --output "${chart_dir}/RELEASE-NOTES.md"    \
-        --tag-filter-pattern "${chart_tag}"         \
+        --tag-filter-pattern "${chart_name}"        \
         --next-tag "${chart_tag}"                   \
         --path "${chart_dir}"                       \
-        "${chart_tag_previous}".."${chart_tag}"
+        "${chart_tag}"
 
     #
     # Update ArtifactHub "changes" annotation in the Chart.yaml file.
