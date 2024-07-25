@@ -826,8 +826,8 @@ camunda.operate:
 		}
 	}
 	s.Require().Equal("config", volumeMount.Name)
-	s.Require().Equal("/usr/local/operate/config/application.yaml", volumeMount.MountPath)
-	s.Require().Equal("application.yaml", volumeMount.SubPath)
+	s.Require().Equal("/usr/local/operate/config/application.yml", volumeMount.MountPath)
+	s.Require().Equal("application.yml", volumeMount.SubPath)
 
 	s.Require().Equal("config", volume.Name)
 	s.Require().Equal("camunda-platform-test-operate-configuration", volume.ConfigMap.Name)
