@@ -919,7 +919,7 @@ func (s *deploymentTemplateTest) TestTasklistWithLog4j2Configuration() {
 	s.Require().Equal("config", volume.Name)
 	s.Require().Equal("camunda-platform-test-tasklist-configuration", volume.ConfigMap.Name)
 }
-func (s *deploymentTemplateTest) TestDefaultStrategy() {
+func (s *deploymentTemplateTest) TestRecreateStrategy() {
 	// given
 	options := &helm.Options{
 		SetValues:      map[string]string{},
@@ -934,7 +934,7 @@ func (s *deploymentTemplateTest) TestDefaultStrategy() {
 	// then
 	strategy := deployment.Spec.Strategy
 
-	s.Require().Equal(string(strategy.Type), "")
+	s.Require().Equal(string(strategy.Type), "Recreate")
 }
 
 func (s *deploymentTemplateTest) TestDefinedStrategy() {
