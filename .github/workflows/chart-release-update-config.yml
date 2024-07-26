@@ -40,7 +40,7 @@ jobs:
           last_release_commit="$(git log -n1 --pretty=format:'%H' --grep='chore(release):')"
           cat "${RELEASE_PLEASE_CONFIG_FILE}"  |
             jq --arg last_release_commit "${last_release_commit}" \
-              '."last-release-sha" = $last_release_commit' | tee "${RELEASE_PLEASE_CONFIG_FILE}"
+              '(."last-release-sha", ."bootstrap-sha") = $last_release_commit' | tee "${RELEASE_PLEASE_CONFIG_FILE}"
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4

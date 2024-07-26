@@ -5,6 +5,7 @@
   "bump-minor-pre-major": false,
   "prerelease": false,
   "draft": false,
+  "bootstrap-sha": "d22f30cde760a062e1646fe62dbb16a57caec4a3",
   "last-release-sha": "d22f30cde760a062e1646fe62dbb16a57caec4a3",
   "packages": {
     "charts/camunda-platform-latest": {
