@@ -501,6 +501,20 @@ Zeebe templates.
   {{- printf "%s://%s" $proto .Values.zeebeGateway.ingress.grpc.host -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Zeebe Gateway REST internal URL.
+*/}}
+{{ define "camundaPlatform.zeebeGatewayRESTURL" }}
+  {{- if .Values.zeebe.enabled -}}
+    {{-
+      printf "http://%s:%v%s"
+        (include "zeebe.fullname.gateway" .)
+        .Values.zeebeGateway.service.restPort
+        (.Values.zeebeGateway.contextPath | default "")
+    -}}
+  {{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
