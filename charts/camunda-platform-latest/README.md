@@ -957,7 +957,6 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `operate.retention.minimumAge`                              | defines how old the data must be, before the data is deleted as a duration.                                                                                                  | `30d`                        |
 | `operate.configuration`                                     | if specified, contents will be used as the application.yaml                                                                                                                  | `""`                         |
 | `operate.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as the log4j2.xml                                                                                 | `{}`                         |
-| `operate.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                         |
 | `operate.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `""`                         |
 | `operate.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `{}`                         |
 
@@ -1057,7 +1056,6 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `tasklist.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as log4j2.xml                                                                                     | `{}`                         |
 | `tasklist.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                    | `""`                         |
 | `tasklist.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                      | `{}`                         |
-| `tasklist.strategy`                                          | can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy                                      | `{}`                         |
 
 ### Optimize Parameters
 
