@@ -8,8 +8,6 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  strategy:
-    type: Recreate
   replicas: 1
   {{- if .Values.operate.strategy }}
   strategy:

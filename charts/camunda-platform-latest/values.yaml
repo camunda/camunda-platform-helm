@@ -1420,8 +1420,6 @@ operate:
   configuration: ""
   ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
-  ## @param operate.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
-  strategy: {}
   ## @param operate.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param operate.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1662,8 +1660,6 @@ tasklist:
   dnsPolicy: ""
   ## @param tasklist.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
-  ## @param tasklist.strategy can be used to configure the deployments update strategy https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
-  strategy: {}
 
 #############################################
  #####

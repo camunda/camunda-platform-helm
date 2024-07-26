@@ -5,6 +5,8 @@ metadata:
   labels: {{- include "tasklist.labels" . | nindent 4 }}
   annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
