@@ -109,7 +109,7 @@ data:
       zeebe:
         # Gateway address
         gatewayAddress: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
-        restAddress: "http://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.restPort }}"
+        restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
       {{- if .Values.tasklist.retention.enabled }}
       archiver:
         ilmEnabled: true
