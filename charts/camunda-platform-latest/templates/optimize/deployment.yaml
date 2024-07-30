@@ -8,9 +8,9 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
   strategy:
-    {{- .Values.optimize.strategy | toYaml | nindent 4 }}
+    type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       {{- include "optimize.matchLabels" . | nindent 6 }}

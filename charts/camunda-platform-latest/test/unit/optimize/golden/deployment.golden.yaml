@@ -15,9 +15,9 @@ metadata:
   annotations:
     {}
 spec:
-  replicas: 1
   strategy:
     type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       app: camunda-platform

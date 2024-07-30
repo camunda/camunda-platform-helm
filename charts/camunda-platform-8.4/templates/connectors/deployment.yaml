@@ -6,6 +6,8 @@ metadata:
   labels: {{- include "connectors.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: {{ .Values.connectors.replicas }}
   selector:
     matchLabels: {{- include "connectors.matchLabels" . | nindent 6 }}

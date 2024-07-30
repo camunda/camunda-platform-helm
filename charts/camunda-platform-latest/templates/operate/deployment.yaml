@@ -11,10 +11,6 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
-  {{- if .Values.operate.strategy }}
-  strategy:
-    {{- .Values.operate.strategy | toYaml | nindent 4 }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "operate.matchLabels" . | nindent 6 }}
