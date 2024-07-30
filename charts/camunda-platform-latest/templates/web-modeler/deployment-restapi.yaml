@@ -6,11 +6,9 @@ metadata:
   labels: {{- include "webModeler.restapi.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.webModeler.restapi.strategy }}
   strategy:
-    {{- .Values.webModeler.restapi.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
+  replicas: 1
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
   template:

@@ -8,11 +8,9 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: {{ .Values.console.replicas }}
-  {{- if .Values.console.strategy }}
   strategy:
-    {{- .Values.console.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
+  replicas: {{ .Values.console.replicas }}
   selector:
     matchLabels:
       {{- include "console.matchLabels" . | nindent 6 }}
