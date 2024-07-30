@@ -72,42 +72,7 @@ zeebe-gateway:
       external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
-  enabled: true
-  contextPath: "/"
-  image:
-    pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
-  managed:
-    releases:
-    - name: camunda-platform-dev
-      namespace: camunda-dev
-      version: 8.2.10
-      components:
-      - name: Console
-        url: "https://example-dev.camunda.com/"
-      - name: Optimize
-        url: "https://example-dev.camunda.com/optimize"
-      - name: Operate
-        url: "https://example-dev.camunda.com/operate"
-      - name: WebModeler WebApp
-        url: "https://example-dev.camunda.com/modeler"
-      - name: zeebeGateway
-        url: "grpc://zeebe-example-dev.camunda.com/"
-    - name: camunda-platform-stage
-      namespace: camunda-stage
-      version: 8.2.11
-      components:
-      - name: Console
-        url: "https://example-stage.camunda.com/"
-      - name: Optimize
-        url: "https://example-stage.camunda.com/optimize"
-      - name: Operate
-        url: "https://example-stage.camunda.com/operate"
-      - name: WebModeler WebApp
-        url: "https://example-stage.camunda.com/modeler"
-      - name: zeebeGateway
-        url: "grpc://zeebe-example-stage.camunda.com/"
+  enabled: false
 
 elasticsearch:
   maxUnavailable: 0
