@@ -6,11 +6,9 @@ metadata:
   labels: {{- include "webModeler.websockets.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.webModeler.websockets.strategy }}
   strategy:
-    {{- .Values.webModeler.websockets.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: Recreate
+  replicas: 1
   selector:
     matchLabels: {{- include "webModeler.websockets.matchLabels" . | nindent 6 }}
   template:
