@@ -132,6 +132,7 @@ spec:
             httpGet:
               # NOTE: WebApp doesn't support contextPath for health endpoints.
               path: /health/readiness
+              scheme: HTTP
               port: http-management
             initialDelaySeconds: 15
             periodSeconds: 30
