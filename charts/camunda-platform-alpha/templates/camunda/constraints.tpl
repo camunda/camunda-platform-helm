@@ -112,7 +112,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
     {{- end }}
 
     {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.mail.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.mail.existingSecret.name" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.restapi.mail.existingSecret.name" }}
     {{- end }}
 
     {{- if $existingSecretsNotConfigured }}
