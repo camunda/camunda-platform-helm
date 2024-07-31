@@ -45,6 +45,9 @@ identity:
     existingSecret: "integration-test"
 
 identityKeycloak:
+  postgresql:
+    auth:
+      existingSecret: "integration-test"
   auth:
     existingSecret: "integration-test"
 
