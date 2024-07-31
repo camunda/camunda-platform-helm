@@ -284,7 +284,7 @@ Elasticsearch and Opensearch templates.
 {{- end -}}
 
 {{/*
-[elasticsearch] Get name of elasticsearch auth existing secret. For more details:
+[elasticsearch] Get name of opensearch auth existing secret. For more details:
 https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
 */}}
 {{- define "elasticsearch.authExistingSecret" -}}

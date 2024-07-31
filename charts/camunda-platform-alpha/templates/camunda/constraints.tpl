@@ -69,6 +69,15 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
+
+{{/*
+[opensearch] when existingSecret is provided for opensearch then password field should be empty
+*/}}
+{{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
+  {{- $errorMessage := "[camunda][error] global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set." -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
@@ -278,10 +287,3 @@ when global elasticsearch is enabled then either external elasticsearch should b
 {{- end }}
 */}}
 
-{{/*
-[opensearch] when existingSecret is provided for opensearch then password field should be empty
-{{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-  {{- $errorMessage := "[camunda][error] global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-*/}}
