@@ -143,6 +143,7 @@ data:
   management-password: <base64-encoded-secret> # used for keycloak
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
+  smtp-password: <base64-encoded-secret> # used for web modeler mail
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -179,6 +180,7 @@ data:
   management-password: <base64-encoded-secret> # used for keycloak
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
+  smtp-password: <base64-encoded-secret> # used for web modeler mail
 
 The following values inside your values.yaml need to be set but were not:
       `
