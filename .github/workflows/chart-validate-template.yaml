@@ -61,7 +61,7 @@ jobs:
           make helm.dependency-update
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-      - name: Install OpenShift Tools
+      - name: Install Chart Verifier
         uses: redhat-actions/openshift-tools-installer@v1
         with:
           source: "github"
