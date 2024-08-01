@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/update-goldenfiles.yaml"
+      - ".github/workflows/chart-update-readme-and-golden-files.yaml"
       - "charts/**"
 
 permissions:
