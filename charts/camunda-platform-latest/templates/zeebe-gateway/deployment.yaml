@@ -60,6 +60,10 @@ spec:
               value: {{ .Values.zeebeGateway.javaOpts | quote }}
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
+            - name: ZEEBE_GATEWAY_NETWORK_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_NETWORK_PORT
+              value: {{  .Values.zeebeGateway.service.grpcPort | quote }}
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
