@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   chores:
-    name: Update Golden Files
+    name: Update README And Golden Files
     runs-on: ubuntu-latest
     steps:
       #
@@ -36,12 +36,29 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
       #
+      # Dependencies.
+      #
+      - name: Install dependencies
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install readme-generator-for-helm
+        run: npm install -g @bitnami/readme-generator-for-helm
+      #
       # Update
       #
       - name: Update golden files
         run: |
           chartPath="${CHANGED_CHARTS}" \
             make go.update-golden-only
+      - name: Run readme generator
+        run: |
+          git fetch origin main:main
+          echo "Updating README.md"
+          chartPath="$(ct list-changed | tr '\n' ' ')" \
+            make helm.readme-update
+          git diff --exit-code || (
+            echo "Please ensure to run: make helm.readme-update";
+            exit 1;
+          )
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
