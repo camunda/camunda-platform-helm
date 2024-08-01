@@ -27,7 +27,6 @@ spec:
   template:
     metadata:
       annotations:
-        {}
       labels:
         app: camunda-platform
         app.kubernetes.io/name: camunda-platform

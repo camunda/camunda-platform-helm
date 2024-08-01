@@ -302,9 +302,12 @@ zeebe:
   pvcSize: "32Gi"
   # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
   pvcAccessModes: ["ReadWriteOnce"]
-  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
+  ## @param zeebe.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
+  # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
   pvcStorageClassName: ''
-
+  ## @param zeebe.pvcSelector can be used to specify a label selector for Zeebe's persistent volume claims for further filtering of the set of persistent volumes to select.
+  # https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector
+  pvcSelector: {}
   # ExtraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
   # ExtraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters

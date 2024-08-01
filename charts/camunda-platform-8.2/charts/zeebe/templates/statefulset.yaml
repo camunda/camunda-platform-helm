@@ -212,7 +212,18 @@ spec:
       name: data
     spec:
       accessModes: {{ .Values.pvcAccessModes }}
+      {{- if .Values.pvcStorageClassName }}
+      {{- if (eq "-" .Values.pvcStorageClassName) }}
+      storageClassName: ""
+      {{- else }}
       storageClassName: {{ .Values.pvcStorageClassName }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.pvcSelector }}
+      {{- with .Values.pvcSelector }}
+      selector: {{ toYaml . | nindent 10 }}
+      {{- end }}
+      {{- end }}
       resources:
         requests:
           storage: {{ .Values.pvcSize | quote }}

@@ -232,7 +232,16 @@ spec:
       spec:
         accessModes: {{ .Values.zeebe.pvcAccessModes }}
         {{- if .Values.zeebe.pvcStorageClassName }}
+        {{- if (eq "-" .Values.zeebe.pvcStorageClassName) }}
+        storageClassName: ""
+        {{- else }}
         storageClassName: {{ .Values.zeebe.pvcStorageClassName }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.zeebe.pvcSelector }}
+        {{- with .Values.zeebe.pvcSelector }}
+        selector: {{ toYaml . | nindent 10 }}
+        {{- end }}
         {{- end }}
         resources:
           requests:
