@@ -59,6 +59,14 @@ jobs:
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
           make helm.dependency-update
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Install OpenShift Tools
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          source: "github"
+          chart-verifier: "latest"
       # Lint.
       - name: Run Helm lint
         run: |
@@ -69,6 +77,10 @@ jobs:
           ct lint --charts charts/${{ inputs.camunda-helm-dir }} \
             --lint-conf .github/config/chart-testing.yaml \
             --config .github/config/chart-testing.yaml
+      - name: Run OpenShift Verifier
+        run: |
+          cd charts/${{ inputs.camunda-helm-dir }}
+          chart-verifier verify .
       - name: Run YAMLlint
         run: |
           # Call yamllint via asdf because there is an issue loading the correct version of yamllint in GHA workflow.
