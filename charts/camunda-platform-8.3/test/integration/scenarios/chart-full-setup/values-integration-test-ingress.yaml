@@ -81,8 +81,6 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
-  auth:
-    existingSecret: "integration-test"
 
 zeebe-gateway:
   ingress:

@@ -71,14 +71,10 @@ webModeler:
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
-      existingSecret:
-        name: "integration-test"
 
 # database used by Web Modeler
 postgresql:
   enabled: true
-  auth:
-    existingSecret: "integration-test"
 
 zeebe-gateway:
   ingress:
