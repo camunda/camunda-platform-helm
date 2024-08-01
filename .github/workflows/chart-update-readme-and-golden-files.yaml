@@ -1,4 +1,4 @@
-name: "Chart - Update Golden Files"
+name: "Chart - Update Golden Files and README"
 
 on:
   pull_request:
