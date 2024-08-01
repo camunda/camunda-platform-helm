@@ -73,10 +73,6 @@ spec:
               value: "-XX:+ExitOnOutOfMemoryError"
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: camunda-platform-test-zeebe:26502
-            - name: ZEEBE_GATEWAY_NETWORK_HOST
-              value: 0.0.0.0
-            - name: ZEEBE_GATEWAY_NETWORK_PORT
-              value: "26500"
             - name: ZEEBE_GATEWAY_CLUSTER_HOST
               valueFrom:
                 fieldRef:
