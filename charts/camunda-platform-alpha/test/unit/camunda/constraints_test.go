@@ -114,3 +114,19 @@ func (s *constraintTemplateTest) TestExistingSecretConstraintInWarningModeDoesNo
 	// then
 	s.Require().Nil(err)
 }
+
+func (s *ConstraintsTemplateTest) TestContextPathAndRestPathForZeebeGatewayConstraintBothValuesShouldBeTheSame() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebeGateway.ingress.rest.enabled": "true",
+			"zeebeGateway.ingress.rest.path":    "/zeebe",
+			"zeebeGateway.contextPath":          "/zeebeRest",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
+
+	s.Require().Error(err, "[camunda][error] zeebeGateway.ingress.rest.path and zeebeGateway.contextPath must have the same value.")
+
+}
