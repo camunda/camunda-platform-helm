@@ -127,6 +127,6 @@ func (s *ConstraintsTemplateTest) TestContextPathAndRestPathForZeebeGatewayConst
 
 	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
 
-	s.Require().Error(err, "[camunda][error] zeebeGateway.ingress.rest.path and zeebeGateway.contextPath must have the same value.")
+	s.Require().ErrorContains(err, "[camunda][error]")
 
 }
