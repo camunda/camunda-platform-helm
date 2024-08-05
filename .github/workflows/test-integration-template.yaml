@@ -8,6 +8,11 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
+      camunda-helm-repo:
+        description: The Helm repo which is used during the upgrade flow.
+        required: false
+        default: camunda/camunda-platform
+        type: string
       camunda-helm-dir:
         required: false
         default: camunda-platform-latest
@@ -16,13 +21,17 @@ on:
         required: false
         default: main
         type: string
+      camunda-helm-upgrade-version:
+        description: The Helm chart released version to upgrade from.
+        required: false
+        default: ""
+        type: string
       caller-git-ref:
         required: false
         default: main
         type: string
       deployment-ttl:
-        description: |
-          Define a ttl for the lifespan of the deployment
+        description: Define a TTL for the lifespan of the deployment.
         required: false
         default: ""
         type: string
@@ -67,6 +76,8 @@ env:
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
+  # The Helm repo which is used during the upgrade flow.
+  TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
@@ -188,6 +199,7 @@ jobs:
           identifier-base: ${{ inputs.identifier }}
           ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
       - name: Set test type vars
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
