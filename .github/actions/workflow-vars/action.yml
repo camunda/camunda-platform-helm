@@ -17,6 +17,11 @@ inputs:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
   chart-dir:
     description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
+  chart-upgrade-version:
+    description: The Helm chart released version to upgrade from.
+    required: false
+    default: ""
+
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
   identifier:
@@ -85,16 +90,16 @@ runs:
       # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
       # then upgraded from the PR branch to ensure upgradability.
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-        test "$(git branch --show-current)" != "main" &&
-          git fetch origin main:main --no-tags
-        TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
-        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
-
-        # Alpha should be always upgraded from latest version.
-        if [[ $(echo "${TEST_CHART_VERSION}" | grep 'alpha') ]]; then
-          TEST_CHART_VERSION="$(git show main:charts/camunda-platform-latest/Chart.yaml | yq '.version')"
-          echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+        # The Alpha chart is stored on the OCI Helm registry and uses different versioning.
+        if [[ $(echo "${{ inputs.chart-upgrade-version }}" | grep 'alpha') ]]; then
+          TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
+        else
+          # Other released charts.
+          test "$(git branch --show-current)" != "main" &&
+            git fetch origin main:main --no-tags
+          TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
         fi
+        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
       fi
 
     # Avoid confusion about the chart version since we only change the version during the release process

@@ -52,5 +52,8 @@ jobs:
       identifier: "${{ github.event.pull_request.number }}-intg-alpha"
       platforms: "gke"
       flows: "install,upgrade"
+      camunda-helm-repo: "oci://ghcr.io/camunda/helm/camunda-platform"
       camunda-helm-dir: "camunda-platform-alpha"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      # We need to set the var here as the Alpha is stored on the OCI Helm registry and uses different versioning.
+      camunda-helm-upgrade-version: "0.0.0-snapshot-alpha"
