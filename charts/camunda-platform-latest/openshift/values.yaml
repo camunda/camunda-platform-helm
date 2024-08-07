@@ -51,6 +51,7 @@ identityKeycloak:
     runAsUser: null
   # omit the values below if identityKeycloak.postgresql.enabled is false
   postgresql:
+    # omit the values below if identityKeycloak.postgresql.primary.enabled is false
     primary:
       podSecurityContext:
         fsGroup: null
