@@ -3104,10 +3104,10 @@ postgresql:
     ## @param postgresql.primary.extraVolumes[2].name
     ## @param postgresql.primary.extraVolumes[2].emptyDir
     extraVolumes:
-    - name: tmp
-      emptyDir: {}
-    - name: config
-      emptyDir: {}
+    # - name: tmp
+    #   emptyDir: {}
+    # - name: config
+    #   emptyDir: {}
     - name: postgresql-tmp
       emptyDir: {}
     ## @param postgresql.primary.extraVolumeMounts[0].mountPath
@@ -3117,12 +3117,12 @@ postgresql:
     ## @param postgresql.primary.extraVolumeMounts[2].mountPath
     ## @param postgresql.primary.extraVolumeMounts[2].name
     extraVolumeMounts:
-    - mountPath: /tmp
-      name: tmp
-    - mountPath: /opt/bitnami/postgresql/conf
-      name: config
-    - mountPath: /opt/bitnami/postgresql/tmp
-      name: postgresql-tmp
+    # - mountPath: /tmp
+    #   name: tmp
+    # - mountPath: /opt/bitnami/postgresql/conf
+    #   name: config
+    # - mountPath: /opt/bitnami/postgresql/tmp
+    #   name: postgresql-tmp
     ## @param postgresql.primary.containerSecurityContext.enabled
     ## @param postgresql.primary.containerSecurityContext.privileged
     ## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
