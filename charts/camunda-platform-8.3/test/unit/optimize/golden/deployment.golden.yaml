@@ -41,7 +41,7 @@ spec:
         []
       initContainers:
         - name: migration
-          image: camunda/optimize:8.3.11
+          image: camunda/optimize:8.3.12
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -64,7 +64,7 @@ spec:
               name: camunda
       containers:
         - name: optimize
-          image: camunda/optimize:8.3.11
+          image: camunda/optimize:8.3.12
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
