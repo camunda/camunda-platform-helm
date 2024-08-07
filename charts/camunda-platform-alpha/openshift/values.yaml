@@ -216,6 +216,16 @@ zeebeGateway:
     runAsUser: null
 
 #
+# Console
+#
+# omit the values below if console.enabled is false
+console:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+#
 # Elasticsearch.
 #
 
