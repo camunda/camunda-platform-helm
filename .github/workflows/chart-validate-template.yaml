@@ -60,7 +60,7 @@ jobs:
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
           make helm.dependency-update
       - name: Install Chart Verifier
-        uses: redhat-actions/openshift-tools-installer@v1
+        uses: redhat-actions/openshift-tools-installer@bee649bbedc67b5bfc2f2de4b19498e11c2e8775 # v1
         with:
           source: "github"
           chart-verifier: "latest"
