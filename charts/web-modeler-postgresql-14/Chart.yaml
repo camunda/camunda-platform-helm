@@ -31,7 +31,7 @@ keywords:
 maintainers:
 - name: VMware, Inc.
   url: https://github.com/bitnami/charts
-name: postgresql
+name: web-modeler-postgresql
 sources:
 - https://github.com/bitnami/charts/tree/main/bitnami/postgresql
 version: 14.3.3
