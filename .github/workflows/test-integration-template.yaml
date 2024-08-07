@@ -64,6 +64,7 @@ on:
         required: false
         type: string
       camunda-helm-post-render:
+        description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
         default: true
         type: boolean
