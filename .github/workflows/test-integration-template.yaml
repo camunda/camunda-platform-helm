@@ -63,6 +63,11 @@ on:
       matrix-data:
         required: false
         type: string
+      camunda-helm-post-render:
+        description: Set to true if you would like to run the post-renderer script for OpenShift
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -251,6 +256,7 @@ jobs:
       - name: 🌟 Setup Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --values /tmp/extra-values-file.yaml
@@ -267,6 +273,7 @@ jobs:
       - name: 🌟 Upgrade Camunda chart 🌟
         if: matrix.scenario.flow == 'upgrade'
         env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --values /tmp/extra-values-file.yaml
