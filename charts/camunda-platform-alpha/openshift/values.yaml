@@ -51,6 +51,7 @@ identityKeycloak:
     runAsUser: null
   # omit the values below if identityKeycloak.postgresql.enabled is false
   postgresql:
+    enabled: true
     # omit the values below if identityKeycloak.postgresql.primary.enabled is false
     primary:
       podSecurityContext:
@@ -72,7 +73,6 @@ identityKeycloak:
 
 # omit the values below if identityPostgresql.enabled is false
 identityPostgresql:
-  enabled: true
   global:
     compatibility:
       ## Compatibility adaptations for Openshift

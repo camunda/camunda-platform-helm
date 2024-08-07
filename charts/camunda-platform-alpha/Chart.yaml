@@ -32,8 +32,8 @@ dependencies:
   # WebModeler Dependencies.
   - name: web-modeler-postgresql
     alias: postgresql
-    repository: "file://../web-modeler-postgresql"
-    version: 11.x.x
+    repository: "file://../web-modeler-postgresql-14"
+    version: 14.x.x
     condition: "postgresql.enabled"
   # Shared Dependencies.
   - name: elasticsearch
