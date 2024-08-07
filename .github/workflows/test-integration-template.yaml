@@ -63,6 +63,10 @@ on:
       matrix-data:
         required: false
         type: string
+      camunda-helm-post-render:
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
