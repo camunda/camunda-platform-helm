@@ -3097,40 +3097,6 @@ postgresql:
     existingSecret: ""
 
   primary:
-    ## @param postgresql.primary.extraVolumes[0].name
-    ## @param postgresql.primary.extraVolumes[0].emptyDir
-    ## @param postgresql.primary.extraVolumes[1].name
-    ## @param postgresql.primary.extraVolumes[1].emptyDir
-    ## @param postgresql.primary.extraVolumes[2].name
-    ## @param postgresql.primary.extraVolumes[2].emptyDir
-    extraVolumes:
-    # - name: tmp
-    #   emptyDir: {}
-    # - name: config
-    #   emptyDir: {}
-    - name: postgresql-tmp
-      emptyDir: {}
-    ## @param postgresql.primary.extraVolumeMounts[0].mountPath
-    ## @param postgresql.primary.extraVolumeMounts[0].name
-    ## @param postgresql.primary.extraVolumeMounts[1].mountPath
-    ## @param postgresql.primary.extraVolumeMounts[1].name
-    ## @param postgresql.primary.extraVolumeMounts[2].mountPath
-    ## @param postgresql.primary.extraVolumeMounts[2].name
-    extraVolumeMounts:
-    # - mountPath: /tmp
-    #   name: tmp
-    # - mountPath: /opt/bitnami/postgresql/conf
-    #   name: config
-    # - mountPath: /opt/bitnami/postgresql/tmp
-    #   name: postgresql-tmp
-    ## @param postgresql.primary.containerSecurityContext.enabled
-    ## @param postgresql.primary.containerSecurityContext.privileged
-    ## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-    ## @param postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-    ## @param postgresql.primary.containerSecurityContext.runAsNonRoot
-    ## @param postgresql.primary.containerSecurityContext.runAsUser
-    ## @param postgresql.primary.containerSecurityContext.capabilities.drop
-    ## @param postgresql.primary.containerSecurityContext.seccompProfile.type
     containerSecurityContext:
       enabled: true
       allowPrivilegeEscalation: false
