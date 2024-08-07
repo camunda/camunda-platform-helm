@@ -22,29 +22,6 @@ identity:
 
 # omit the values below if identityKeycloak.enabled is false
 identityKeycloak:
-  global:
-    compatibility:
-      ## Compatibility adaptations for Openshift
-      openshift:
-        ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
-        adaptSecurityContext: force
-  initContainers:
-  - name: copy-camunda-theme
-    image: "{{ .Values.global.identity.image | default \"camunda/identity:latest\" }}"
-    imagePullPolicy: "{{ .Values.global.identity.imagePullPolicy | default \"Always\" }}"
-    command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
-    securityContext:
-      privileged: false
-      readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      capabilities:
-        drop: ["ALL"]
-      seccompProfile:
-        type: RuntimeDefault
-    volumeMounts:
-    - name: camunda-theme
-      mountPath: /mnt
   podSecurityContext:
     fsGroup: null
   containerSecurityContext:
@@ -206,12 +183,6 @@ zeebeGateway:
 
 # omit the values below if elasticsearch.enabled is false
 elasticsearch:
-  global:
-    compatibility:
-      ## Compatibility adaptations for Openshift
-      openshift:
-        ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
-        adaptSecurityContext: force
   master:
     podSecurityContext:
       fsGroup: null
