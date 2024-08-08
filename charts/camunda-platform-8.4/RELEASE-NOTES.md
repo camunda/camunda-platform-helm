@@ -12,9 +12,9 @@ Camunda images:
 
 - docker.io/camunda/connectors-bundle:8.4.10
 - docker.io/camunda/identity:8.4.10
-- docker.io/camunda/operate:8.4.10
+- docker.io/camunda/operate:8.4.11
 - docker.io/camunda/optimize:8.4.7
-- docker.io/camunda/tasklist:8.4.10
+- docker.io/camunda/tasklist:8.4.11
 - docker.io/camunda/zeebe:8.4.10
 - registry.camunda.cloud/console/console-sm:8.4.60
 - registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.8

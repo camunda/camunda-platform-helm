@@ -12,9 +12,9 @@ Camunda images:
 
 - docker.io/camunda/connectors-bundle:8.3.15
 - docker.io/camunda/identity:8.3.15
-- docker.io/camunda/operate:8.3.13
+- docker.io/camunda/operate:8.3.14
 - docker.io/camunda/optimize:8.3.12
-- docker.io/camunda/tasklist:8.3.14
+- docker.io/camunda/tasklist:8.3.15
 - docker.io/camunda/zeebe:8.3.14
 - registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.3.10
 - registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.3.10

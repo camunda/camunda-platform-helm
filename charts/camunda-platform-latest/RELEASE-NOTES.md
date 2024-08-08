@@ -13,11 +13,11 @@ Camunda images:
 - docker.io/camunda/connectors-bundle:8.5.5
 - docker.io/camunda/identity:8.5.4
 - docker.io/camunda/identity:latest
-- docker.io/camunda/operate:8.5.4
+- docker.io/camunda/operate:8.5.5
 - docker.io/camunda/optimize:8.5.4
-- docker.io/camunda/tasklist:8.5.3
+- docker.io/camunda/tasklist:8.5.4
 - docker.io/camunda/zeebe:8.5.6
-- registry.camunda.cloud/console/console-sm:8.5.87
+- registry.camunda.cloud/console/console-sm:8.5.88
 - registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.5.6
 - registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.5.6
 - registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.5.6
