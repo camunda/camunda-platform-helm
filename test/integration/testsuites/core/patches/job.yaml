@@ -12,26 +12,26 @@ spec:
         - name: VENOM_VAR_CONSOLE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-console-identity-secret
+              name: integration-test
               key: console-secret
               optional: true
         - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-tasklist-identity-secret
+              name: integration-test
               key: tasklist-secret
         - name: VENOM_VAR_OPERATE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-operate-identity-secret
+              name: integration-test
               key: operate-secret
         - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-optimize-identity-secret
+              name: integration-test
               key: optimize-secret
         - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-connectors-identity-secret
+              name: integration-test
               key: connectors-secret

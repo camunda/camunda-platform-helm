@@ -129,7 +129,7 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
     {{- end }}
 
     {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.mail.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.mail.existingSecret.name" }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.restapi.mail.existingSecret.name" }}
     {{- end }}
 
     {{- if $existingSecretsNotConfigured }}
@@ -160,6 +160,7 @@ data:
   management-password: <base64-encoded-secret> # used for keycloak
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
+  smtp-password: <base64-encoded-secret> # used for web modeler mail
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -196,6 +197,7 @@ data:
   management-password: <base64-encoded-secret> # used for keycloak
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
+  smtp-password: <base64-encoded-secret> # used for web modeler mail
 
 The following values inside your values.yaml need to be set but were not:
       `

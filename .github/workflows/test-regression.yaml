@@ -84,3 +84,4 @@ jobs:
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
