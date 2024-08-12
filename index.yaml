@@ -2,7 +2,27 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
-      artifacthub.io/changes: ""
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Add volumeClaimTemplates label selector in zeebe statefulSet"
+        - kind: added
+          description: "Support migration init container for operate"
+        - kind: changed
+          description: "Make web-modeler restapi database password secret optional"
+        - kind: changed
+          description: "Hardcoding strategy for all components and removing ability to configure strategy"
+        - kind: fixed
+          description: "Changed restAddress in Tasklist with helper function"
+        - kind: fixed
+          description: "Template grpc url in console config"
+        - kind: fixed
+          description: "Add constraint for contextPath and rest path to be the same for zeebe gateway"
+        - kind: fixed
+          description: "Use correct operate image for version label"
+        - kind: fixed
+          description: "Drop namespace from zeebe advertisedHost and initialContactPoints"
+        - kind: fixed
+          description: "ExistingSecret for OpenSearch password can be used without defining password literal"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
         - name: Camunda 8 docs
@@ -619,7 +639,11 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-10.0.2/camunda-platform-10.0.2.tgz
     version: 10.0.2
   - annotations:
-      artifacthub.io/changes: ""
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Add volumeClaimTemplates label selector in zeebe statefulSet"
+        - kind: changed
+          description: "Hardcoding strategy for all components and removing ability to configure strategy"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
         - name: Camunda 8 docs
@@ -1635,7 +1659,11 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-9.0.0/camunda-platform-9.0.0.tgz
     version: 9.0.0
   - annotations:
-      artifacthub.io/changes: ""
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Add volumeClaimTemplates label selector in zeebe statefulSet"
+        - kind: changed
+          description: "Hardcoding strategy for all components and removing ability to configure strategy"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
         - name: Camunda 8 docs
@@ -2683,7 +2711,11 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.0/camunda-platform-8.3.0.tgz
     version: 8.3.0
   - annotations:
-      artifacthub.io/changes: ""
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Add volumeClaimTemplates label selector in zeebe statefulSet"
+        - kind: changed
+          description: "Hardcoding strategy for all components and removing ability to configure strategy"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
         - name: Camunda Platform 8 docs
