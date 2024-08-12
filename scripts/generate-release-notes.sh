@@ -4,7 +4,8 @@ set -euox pipefail
 
 main () {
     test "$(git branch --show-current)" != "main" && git fetch origin main:main
-    latest_release_commit="$(git log main -n1 --pretty=format:'%H' --grep='chore(release): Camunda Platform Helm Chart')"
+    release_please_config=".github/config/release-please/release-please-config.json"
+    latest_release_commit="$(git show main:${release_please_config} | jq -r '."bootstrap-sha"')"
     cliff_config_file=".github/config/cliff.toml"
 
     chart_dir="${1}"
