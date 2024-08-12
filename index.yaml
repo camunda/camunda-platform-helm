@@ -558,6 +558,63 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-10.0.2/camunda-platform-10.0.2.tgz
     version: 10.0.2
   - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.3
+    apiVersion: v2
+    appVersion: 8.4.x
+    created: "2024-08-12T12:46:30.856603356Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 9.3.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.19.4
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 29c7cc5c0cbbb881cdae7bb548de90f40d476d4011891351eec58815f095ca4b
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-9.3.9/camunda-platform-9.3.9.tgz
+    version: 9.3.9
+  - annotations:
       artifacthub.io/changes: |
         - kind: fixed
           description: "added recreate strategy to all Operate deployments"
@@ -1516,6 +1573,63 @@ entries:
     urls:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-9.0.0/camunda-platform-9.0.0.tgz
     version: 9.0.0
+  - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.3
+    apiVersion: v2
+    appVersion: 8.3.x
+    created: "2024-08-12T12:46:30.63421129Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.3.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.13.13
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 5ad25713d2048457b264631f96c7781b61d45bedf85c26e72e26cbf77d4c006a
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.16/camunda-platform-8.3.16.tgz
+    version: 8.3.16
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
@@ -2507,6 +2621,83 @@ entries:
     urls:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.0/camunda-platform-8.3.0.tgz
     version: 8.3.0
+  - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.3
+    apiVersion: v2
+    appVersion: 8.2.x
+    created: "2024-08-12T12:46:30.407859349Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.2.x
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.2.x
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.2.x
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.2.x
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.2.x
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.2.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.3
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: 22dcedb9b361827682878e09f789501412404772f1c40bcfd77519054db7c7d9
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.2.31/camunda-platform-8.2.31.tgz
+    version: 8.2.31
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
@@ -9032,6 +9223,47 @@ entries:
   web-modeler-postgresql:
   - annotations:
       category: Database
+      images: |
+        - name: os-shell
+          image: docker.io/bitnami/os-shell:12-debian-12-r16
+        - name: postgres-exporter
+          image: docker.io/bitnami/postgres-exporter:0.15.0-debian-12-r14
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:16.2.0-debian-12-r8
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 16.2.0
+    created: "2024-08-12T12:46:31.229300772Z"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: PostgreSQL (Postgres) is an open source object-relational database
+      known for reliability and data integrity. ACID-compliant, it supports foreign
+      keys, joins, views, triggers and stored procedures.
+    digest: c08bca4b422c2e481ea6831f57cbd37054f796f6109bff124bd5cef496768939
+    home: https://bitnami.com
+    icon: https://bitnami.com/assets/stacks/postgresql/img/postgresql-stack-220x234.png
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - sql
+    - replication
+    - cluster
+    maintainers:
+    - name: VMware, Inc.
+      url: https://github.com/bitnami/charts
+    name: web-modeler-postgresql
+    sources:
+    - https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/web-modeler-postgresql-14.3.3/web-modeler-postgresql-14.3.3.tgz
+    version: 14.3.3
+  - annotations:
+      category: Database
     apiVersion: v2
     appVersion: 14.5.0
     created: "2024-05-01T16:11:11.853178279Z"
@@ -10954,4 +11186,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-07-25T12:54:30.990518999Z"
+generated: "2024-08-12T12:46:31.229930398Z"
