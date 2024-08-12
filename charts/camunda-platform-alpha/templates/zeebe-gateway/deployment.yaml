@@ -114,7 +114,7 @@ spec:
             {{ .Values.zeebeGateway.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
           {{- if .Values.zeebeGateway.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.zeebeGateway.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.zeebeGateway.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           {{- if .Values.zeebeGateway.startupProbe.enabled }}
           startupProbe:
@@ -177,7 +177,7 @@ spec:
       dnsPolicy: {{ .Values.zeebeGateway.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.zeebeGateway.podSecurityContext }}
-      securityContext: {{- toYaml .Values.zeebeGateway.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.zeebeGateway.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
 {{- with .Values.zeebeGateway.nodeSelector }}
       nodeSelector:

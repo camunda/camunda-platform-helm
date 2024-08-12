@@ -31,7 +31,7 @@ spec:
           image: {{ include "webModeler.restapi.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.webModeler.restapi.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.webModeler.restapi.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.restapi.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -157,7 +157,7 @@ spec:
       dnsPolicy: {{ .Values.webModeler.restapi.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.webModeler.restapi.podSecurityContext }}
-      securityContext: {{- toYaml .Values.webModeler.restapi.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.restapi.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.webModeler.restapi.nodeSelector }}
       nodeSelector:
