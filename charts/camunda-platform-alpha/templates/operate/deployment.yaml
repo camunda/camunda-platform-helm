@@ -38,7 +38,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
           command: ['/bin/sh', '/usr/local/operate/bin/migrate']
           {{- if .Values.operate.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.operate.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
@@ -101,7 +101,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.operate.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.operate.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -334,7 +334,7 @@ spec:
       dnsPolicy: {{ .Values.operate.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.operate.podSecurityContext }}
-      securityContext: {{- toYaml .Values.operate.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.operate.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
 {{- with .Values.operate.nodeSelector }}
       nodeSelector:
