@@ -69,11 +69,11 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
-              value: "$(K8S_NAME).$(K8S_SERVICE_NAME)"
+              value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
             - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
               value:
               {{- range (untilStep 0 (int .Values.zeebe.clusterSize) 1) }}
-                $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME):{{$.Values.zeebe.service.internalPort}},
+                $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:{{$.Values.zeebe.service.internalPort}},
               {{- end }}
             - name: ZEEBE_LOG_LEVEL
               value: {{ .Values.zeebe.logLevel | quote }}
