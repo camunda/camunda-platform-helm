@@ -140,7 +140,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type || inputs.cluster-type }}
 
     steps:
-      - name: Print workflow inputs
+      - name: ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: echo "$GITHUB_CONTEXT"
@@ -194,7 +194,7 @@ jobs:
           openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
-      - name: Set workflow vars
+      - name: ℹ️ Set workflow vars ℹ️
         id: vars
         uses: ./.github/actions/workflow-vars
         with:
