@@ -128,8 +128,6 @@ jobs:
             chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
             CHART_PACKAGES="${CHART_PACKAGES} camunda-platform-${chart_version}.tgz"
           done
-          CHART_PACKAGES="$(find release-packages -maxdepth 1 -name "camunda-platform*.tgz" \
-            -exec basename {} \; | xargs)"
           echo "CHART_PACKAGES=${CHART_PACKAGES}" | tee -a $GITHUB_ENV
       - name: Sign Helm chart with Cosign
         run: |
