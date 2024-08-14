@@ -123,8 +123,11 @@ jobs:
       # Sign and upload the signature of the chart package.
       - name: Set Helm chart vars
         run: |
-          CHART_PACKAGES="$(find release-packages -maxdepth 1 -name "camunda-platform*.tgz" \
-            -exec basename {} \; | xargs)"
+          CHART_PACKAGES=""
+          for chart_dir in $(ct list-changed | tr '\n' ' '); do
+            chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
+            CHART_PACKAGES="${CHART_PACKAGES} camunda-platform-${chart_version}.tgz"
+          done
           echo "CHART_PACKAGES=${CHART_PACKAGES}" | tee -a $GITHUB_ENV
       - name: Sign Helm chart with Cosign
         run: |
