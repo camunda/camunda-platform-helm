@@ -7,10 +7,10 @@ metadata:
     {{- include "tasklist.labels" . | nindent 4 }}
 data:
   {{- if .Values.tasklist.configuration }}
-  application.yml: |
+  application.yaml: |
     {{ .Values.tasklist.configuration | indent 4 | trim }}
   {{- else }}
-  application.yml: |
+  application.yaml: |
     {{- if .Values.tasklist.contextPath }}
     server:
       servlet:

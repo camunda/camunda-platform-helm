@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: tasklist
     app.kubernetes.io/version: "8.5.3"
 data:
-  application.yml: |
+  application.yaml: |
     spring:
       profiles:
         active: identity-auth

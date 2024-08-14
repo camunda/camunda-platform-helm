@@ -868,8 +868,8 @@ camunda.tasklist:
 		}
 	}
 	s.Require().Equal("config", volumeMount.Name)
-	s.Require().Equal("/usr/local/tasklist/config/application.yml", volumeMount.MountPath)
-	s.Require().Equal("application.yml", volumeMount.SubPath)
+	s.Require().Equal("/usr/local/tasklist/config/application.yaml", volumeMount.MountPath)
+	s.Require().Equal("application.yaml", volumeMount.SubPath)
 
 	s.Require().Equal("config", volume.Name)
 	s.Require().Equal("camunda-platform-test-tasklist-configuration", volume.ConfigMap.Name)
