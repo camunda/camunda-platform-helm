@@ -207,3 +207,8 @@ jobs:
 #### Persistent deployment
 
 If you have long-running workflows with multiple jobs, you can set `deployment-ttl: 1d` which will keep the deployment namespace for 1 day and not delete it after the workflow is done.
+
+
+#### Non-ephemeral infrastracture
+
+By default, all of our CI workloads are working on preemptable nodes, meaning the workflows should be fault-tolerant and have a retry mechanism. If your team needs a stable, non-ephemeral infrastracture, please contact the Distribution team for institutions.
