@@ -173,8 +173,8 @@ spec:
           {{- end }}
           volumeMounts:
             - name: config
-              mountPath: /usr/local/operate/config/application.yml
-              subPath: application.yml
+              mountPath: /usr/local/operate/config/application.yaml
+              subPath: application.yaml
             - name: tmp
               mountPath: /tmp
             - name: camunda

@@ -17,7 +17,6 @@ package operate
 import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
@@ -66,7 +65,7 @@ func (s *configMapTemplateTest) TestContainerShouldAddContextPath() {
 	var configmapApplication OperateConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -91,7 +90,7 @@ func (s *configMapTemplateTest) TestContainerShouldDisableOperateIntegration() {
 	var configmapApplication OperateConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -115,7 +114,7 @@ func (s *configMapTemplateTest) TestOperateMultiTenancyEnabled() {
 	var configmapApplication OperateConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -139,7 +138,7 @@ func (s *configMapTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
 	var configmapApplication OperateConfigYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
