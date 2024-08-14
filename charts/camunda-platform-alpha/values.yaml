@@ -3376,7 +3376,7 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.14.3
+    tag: 8.15.0
   master:
     containerSecurityContext:
     ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem
