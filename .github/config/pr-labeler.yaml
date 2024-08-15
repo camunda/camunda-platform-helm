@@ -1,0 +1,83 @@
+#
+# Components.
+
+component/connectors:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/connectors/**'
+
+component/console:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/console/**'
+
+component/identity:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/identity/**'
+        - 'charts/camunda-platform-*/charts/identity/**'
+
+component/operate:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/operate/**'
+        - 'charts/camunda-platform-*/charts/operate/**'
+
+component/optimize:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/optimize/**'
+        - 'charts/camunda-platform-*/charts/optimize/**'
+
+component/monitoring:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/service-monitor/**'
+
+component/tasklist:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/tasklist/**'
+        - 'charts/camunda-platform-*/charts/tasklist/**'
+
+component/web-modeler:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/web-modeler/**'
+
+component/zeebe:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/zeebe/**'
+        - 'charts/camunda-platform-*/charts/zeebe/**'
+        - 'charts/camunda-platform-*/templates/zeebe-gateway/**'
+        - 'charts/camunda-platform-*/charts/zeebe-gateway/**'
+#
+# Tools.
+
+tool/github-actions:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/actions/**'
+        - '.github/workflows/**'
+
+tool/release-please:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/config/release-please/**'
+        
+tool/renovatebot:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/renovate.json5'
+
+tool/asdf:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.tool-versions'
+
+tool/script:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'Makefile'
+        - 'scripts/**'

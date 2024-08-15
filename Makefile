@@ -190,24 +190,6 @@ release.generate-and-commit: release.generate-notes
 	git add $(chartPath);\
 	git commit -m "chore: add generated files for camunda-platform $(chartVersion)"
 
-.PHONY: release.generate-pr-url
-release.generate-pr-url:
-	@echo "\n\n###################################\n"
-	@echo "Open the release PR using this URL:"
-	@echo "https://github.com/camunda/camunda-platform-helm/compare/main...release?expand=1&template=release_template.md&title=Release%20Camunda%20Platform%20Helm%20Chart%20v$(chartVersion)&labels=camunda-platform,chore"
-	@echo "\n###################################\n\n"
-
-.PHONY: release.chores
-release.chores:
-	git checkout main
-	git pull --tags
-	git switch -C release
-	@$(MAKE) release.bump-chart-version-and-commit
-	@$(MAKE) release.generate-and-commit
-	git push -fu origin release
-	@$(MAKE) release.generate-pr-url
-	git checkout main
-
 .PHONY: release.verify-components-version
 release.verify-components-version:
 	@bash scripts/verify-components-version.sh
@@ -226,3 +208,7 @@ release.generate-version-matrix-released:
 release.generate-version-matrix-unreleased:
 	@bash scripts/generate-version-matrix.sh --init
 	@bash scripts/generate-version-matrix.sh --unreleased
+
+.PHONY: release.set-prs-version-label
+release.set-prs-version-label:
+	@bash scripts/set-prs-version-label.sh

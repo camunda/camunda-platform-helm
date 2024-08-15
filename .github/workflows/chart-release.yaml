@@ -178,6 +178,9 @@ jobs:
           timeout_minutes: 5
           retry_wait_seconds: 10
           command: make release.verify-components-version
+      - name: Label PRs with app and chart version
+        run: |
+          make release.set-prs-version-label
       - name: Generate version matrix
         run: |
           make helm.repos-add
