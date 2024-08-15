@@ -53,6 +53,10 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
               value: "true"
               {{- end }}
+              {{- if .Values.global.opensearch.aws.enabled }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
+              value: "true"
+              {{- end }}
             - name: CAMUNDA_OPTIMIZE_DATABASE
               value: opensearch
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
@@ -129,6 +133,10 @@ spec:
             {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
+              {{- if .Values.global.opensearch.aws.enabled }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
               {{- end }}
             - name: CAMUNDA_OPTIMIZE_DATABASE

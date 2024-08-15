@@ -94,6 +94,9 @@ data:
       {{- if .Values.global.opensearch.enabled }}
       database: opensearch
       opensearch:
+        {{- if .Values.global.opensearch.aws.enabled }}
+        awsEnabled: true
+        {{- end }}
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         {{- if .Values.global.opensearch.auth.username }}
         username: {{ .Values.global.opensearch.auth.username | quote }}
