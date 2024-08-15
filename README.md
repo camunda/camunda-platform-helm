@@ -20,12 +20,12 @@
 ## Overview
 
 Camunda 8 Self-Managed Helm charts repo. Camunda 8 Helm chart is an umbrella chart
-for different components. Some are internal (sub-charts), and some are external (third-party).
+for different components. Some are internal components, and some are external (third-party).
 The dependency management is fully automated and managed by Helm itself.
 
 <p align="center">
   <img
-    alt="Camunda 8 Self-Managed Helm charts architecture diagram"
+    alt="Camunda 8 Self-Managed Helm charts architecture diagram."
     src="imgs/camunda-platform-8-self-managed-architecture-diagram-combined-ingress.png"
     width="60%"
   />
@@ -44,19 +44,18 @@ For more details about the Camunda 8 Helm chart versioning, please read the [ver
 
 ## Installation
 
-Find out more details about different installation and deployment options
-on the [Camunda 8 Helm chart readme](./charts/camunda-platform-latest/README.md).
+Find more installation and deployment options
+on the [Camunda 8 Helm chart installation](https://docs.camunda.io/docs/self-managed/setup/install/#versioning).
 
 ## Guides
 
 Default values cannot cover every use case, so we have
 [Camunda 8 deploy guides](https://docs.camunda.io/docs/self-managed/setup/guides/).
-The guides have detailed examples for different use cases like Ingress setup.
+The guides have detailed examples of use cases, such as Ingress setup.
 
 ## Issues
 
-Please create a [new issue](https://github.com/camunda/camunda-platform-helm/issues) if you found any problem
-with the Camunda 8 Helm charts.
+If you find any problem with the Camunda 8 Helm charts, create a [new issue](https://github.com/camunda/camunda-platform-helm/issues).
 
 ## Contributing
 
@@ -65,7 +64,7 @@ We value all feedback and contributions. To start contributing to this project, 
 - **Don't create a PR without opening [an issue](https://github.com/camunda/camunda-platform-helm/issues/new/choose)
   and discussing it first.**
 - Familiarize yourself with the
-[contribution guide](https://github.com/camunda/camunda-platform-helm/blob/main/docs/contributing.md).
+[contribution guide](./docs/contributing.md).
 - Find more information about configuring and deploying the Camunda 8
   [Helm chart](./charts/camunda-platform-latest/README.md).
 

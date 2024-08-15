@@ -4,6 +4,7 @@ In this repo, we have many [GitHub Actions workflows](../.github/workflows) for 
 of the CI pipelines.
 
 - [Camunda Helm chart deployment](#camunda-helm-chart-deployment)
+  - [⭐ Getting Started ⭐](#-getting-started-)
   - [Workflow inputs](#workflow-inputs)
   - [Workflow patterns](#workflow-patterns)
 
@@ -11,11 +12,19 @@ of the CI pipelines.
 
 The Distro team provides a GitHub Actions Workflow to deploy the Camunda Helm chart via GitHub Actions. This workflow is customizable and supports different patterns. For example, disabling integration tests, single namespace, multi namespace, persistent setup with a defined TTL (not deleted after the workflow), and more.
 
-Check out the Camunda apps repo full working example [camunda-helm-integration.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-helm-integration.yml).
+### ⭐ Getting Started ⭐
+
+The quickest way to use this workflow is the example template:
+
+- Copy [test-helm-chart.yaml](../.github/workflows/examples/test-helm-chart.yaml) to your repo under `.github/workflows/test-helm-chart.yaml`.
+- Replace `<USE_CASE>` in that file with a clear identifier for your use case (e.g., `my-team-dev-env`).
+- **Done! 🎉** The Helm chart integration test will run with each PR in your repo.
+
+You can see the workflow in action on the Camunda apps repo: [Camunda Helm Chart Integration Test](https://github.com/camunda/camunda/actions/workflows/camunda-helm-integration.yml).
 
 ### Workflow inputs
 
-These inputs allow you to customize Helm chart deployments for integration testing.
+These inputs allow you to customize Helm chart deployments.
 
 In most cases, you just need to set `identifier`, `camunda-helm-dir`, and `extra-values`.
 
@@ -29,7 +38,7 @@ jobs:
     with:
       # Unique identifier used in the deployment hostname
       # Required: true
-      identifier: 'dev-console-sm'
+      identifier: 'console-team-dev-env'
 
       # A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
       # The latest supported chart doesn't have a version in its directory name like `camunda-platform`.
@@ -81,6 +90,9 @@ jobs:
       test-enabled: true
 ```
 
+<details>
+  <summary>ℹ️ Notes ℹ️</summary>
+  
 > [!NOTE]
 > - Adjust `identifier`, `caller-git-ref`, `flows`, `test-enabled`, and `extra-values` as needed for your specific testing scenario.
 > - The `identifier` is essential for distinguishing between different deployments, particularly useful in environments with multiple parallel deployments.
@@ -91,13 +103,14 @@ jobs:
 > The default behavior in the integration tests workflow is to delete the test resources 
 > after the test is finished. To keep the deployment for at least one day, you need to set `deployment-ttl: 1d`.
 > and you need to rerun the workflow again when you need the deployment to be persistent with a defined deployment-ttl.
-Example deployment-ttl values:
-360s: 360 seconds
-10m: 10 minutes
-24h: 24 hours
-7d: 7 days
-2w: 2 weeks
+> Example deployment-ttl values:
+> 360s: 360 seconds
+> 10m: 10 minutes
+> 24h: 24 hours
+> 7d: 7 days
+> 2w: 2 weeks
 
+</details>
 
 ### Workflow patterns
 
@@ -130,6 +143,8 @@ jobs:
 
 Adding that will run Camunda Helm chart integration tests and add the deployment URL
 in your repo (the URL will show in the PR or the GH deployment section).
+
+Check the example in the [getting started](#-getting-started-) section for more details.
 
 #### Multi Namespace
 
