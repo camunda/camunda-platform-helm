@@ -70,7 +70,7 @@ jobs:
 
       # Define a ttl for the deployment after the workflow is completed
       # Note: All persistent deployments will be deleted frequently to save costs
-      # Default: ""
+      # Default: ''
       # Required: false
       deployment-ttl: ''
 
@@ -88,6 +88,12 @@ jobs:
       # Default: true
       # Required: false
       test-enabled: true
+
+      # Define the infrastructure that will be used to run the deployment.
+      # Default: 'preemptible'
+      # Required: false
+      infra-type: 'preemptible'
+
 ```
 
 <details>

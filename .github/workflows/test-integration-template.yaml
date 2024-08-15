@@ -38,6 +38,10 @@ on:
       platforms:
         default: gke
         type: string
+      infra-type:
+        description: Define the infrastructure that will be used to run the deployment.
+        default: "preemptible"
+        type: string
       flows:
         required: false
         default: install
@@ -259,6 +263,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
@@ -276,6 +281,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
