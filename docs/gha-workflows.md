@@ -93,22 +93,24 @@ jobs:
 <details>
   <summary>ℹ️ Notes ℹ️</summary>
   
-> [!NOTE]
-> - Adjust `identifier`, `caller-git-ref`, `flows`, `test-enabled`, and `extra-values` as needed for your specific testing scenario.
-> - The `identifier` is essential for distinguishing between different deployments, particularly useful in environments with multiple parallel deployments.
-> - For `extra-values`, ensure the YAML format is correct and that the values specified meet the requirements for your environment.
-> - For more details on how to use these inputs within the workflow or to modify them for specific testing needs, refer to the official [GitHub Actions documentation](https://docs.github.com/en/actions).
+**General**
 
-> [!NOTE]
-> The default behavior in the integration tests workflow is to delete the test resources 
-> after the test is finished. To keep the deployment for at least one day, you need to set `deployment-ttl: 1d`.
-> and you need to rerun the workflow again when you need the deployment to be persistent with a defined deployment-ttl.
-> Example deployment-ttl values:
-> 360s: 360 seconds
-> 10m: 10 minutes
-> 24h: 24 hours
-> 7d: 7 days
-> 2w: 2 weeks
+- Adjust `identifier`, `caller-git-ref`, `flows`, `test-enabled`, and `extra-values` as needed for your specific testing scenario.
+- The `identifier` is essential for distinguishing between different deployments, particularly useful in environments with multiple parallel deployments.
+- For `extra-values`, ensure the YAML format is correct and that the values specified meet the requirements for your environment.
+- For more details on how to use these inputs within the workflow or to modify them for specific testing needs, refer to the official [GitHub Actions documentation](https://docs.github.com/en/actions).
+
+**Lifecycle**
+
+- The default behavior in the integration tests workflow is to delete the test resources after the test is finished.
+- To keep the deployment for at least one day, you need to set `deployment-ttl: 1d`.
+-  You need to rerun the workflow when you need the deployment to be persistent with a defined deployment-ttl.
+- Example of `deployment-ttl` values:
+  - `360s`: 360 seconds
+  - `10m`: 10 minutes
+  - `24h`: 24 hours
+  - `7d`: 7 days
+  - `2w`: 2 weeks
 
 </details>
 
