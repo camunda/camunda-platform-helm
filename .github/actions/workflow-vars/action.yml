@@ -9,8 +9,7 @@ inputs:
   platform:
     description: The deployment cloud platform like GKE or ROSA.
   deployment-ttl:
-    description: |
-      Define a ttl for the lifespan of the deployment
+    description: Define a ttl for the lifespan of the deployment
     required: false
     default: ""
   identifier-base:
