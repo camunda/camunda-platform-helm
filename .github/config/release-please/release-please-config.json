@@ -111,5 +111,6 @@
       "hidden": false
     }
   ],
+  "pull-request-footer": "MultiRegion CI Status: ![multiregion workflow](https://github.com/camunda/c8-multi-region/actions/workflows/nightly_aws_operational_procedure.yml/badge.svg)\nThis PR was generated with [Release Please](https://github.com/googleapis/release-please). See [documentation](https://github.com/googleapis/release-please#release-please).",
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
 }
