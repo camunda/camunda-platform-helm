@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.3.1
+version: 10.3.2
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -61,4 +61,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Dynamically set advertisedHosts based on multiregion"
+      description: "AdvertisedHost relies on global.multiregion.regions and not global.multiregion.enabled"
