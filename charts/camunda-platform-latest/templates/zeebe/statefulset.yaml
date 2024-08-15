@@ -64,7 +64,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
-              {{- if .Values.global.multiregion.enabled }}
+              {{- if gt (int .Values.global.multiregion.regions) 1 }}
               value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
               {{- else }}
               value: "$(K8S_NAME).$(K8S_SERVICE_NAME)"
