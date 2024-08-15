@@ -19,7 +19,7 @@ spec:
         {{- toYaml .Values.identity.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/zeebe/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
       {{- if .Values.identity.podAnnotations }}
         {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
       {{- end }}
