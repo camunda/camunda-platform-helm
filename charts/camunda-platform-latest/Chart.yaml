@@ -61,4 +61,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Dynamically set advertisedHosts based on multiregion"
+      description: "AdvertisedHost relies on global.multiregion.regions and not global.multiregion.enabled"
