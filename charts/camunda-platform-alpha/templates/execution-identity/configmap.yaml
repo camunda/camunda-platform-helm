@@ -1,0 +1,28 @@
+{{- if .Values.execution-identity.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "execution-identity.fullname" . }}-configuration
+  labels:
+    {{- include "execution-identity.labels" . | nindent 4 }}
+data:
+  application.yaml: |-
+    {{- if .Values.execution-identity.configuration }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.execution-identity.configuration "context" $ ) | nindent 4 }}
+    {{- else }}
+    # https://docs.camunda.io/docs/self-managed/execution-identity-deployment/configuration/
+    camunda:
+      execution-identity:
+        oAuth:
+          audience: {{ .Values.global.identity.auth.execution-identity.audience | quote }}
+          clientId: {{ .Values.global.identity.auth.execution-identity.clientId | quote }}
+          issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+          jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+          type: {{ include "camundaPlatform.authType" . | quote }}
+          wellKnown: {{ .Values.global.identity.auth.execution-identity.wellKnown | quote }}
+        managed:
+          method: plain
+          releases:
+            {{- include "camundaPlatform.releaseInfo" . | nindent 10 }}
+    {{- end }}
+{{- end }}

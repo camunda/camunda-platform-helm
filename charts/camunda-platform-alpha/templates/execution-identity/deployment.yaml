@@ -1,0 +1,154 @@
+{{- if .Values.execution-identity.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "execution-identity.fullname" . }}
+  labels:
+    {{- include "execution-identity.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.execution-identity.replicas }}
+  selector:
+    matchLabels:
+      {{- include "execution-identity.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/execution-identity/configmap.yaml") . | sha256sum }}
+      {{- with .Values.execution-identity.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "execution-identity.matchLabels" . | nindent 8 }}
+        {{- if .Values.execution-identity.podLabels }}
+          {{- toYaml .Values.execution-identity.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "execution-identity.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.execution-identity.initContainers | default list | toYaml | nindent 8) $ }}
+      serviceAccountName: {{ include "execution-identity.serviceAccountName" . }}
+      {{- if .Values.execution-identity.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.execution-identity.dnsConfig | nindent 8 }}
+      {{- end execution-identity
+      {{- if .Values.execution-identity.dnsPolicy }}
+      dnsPolicy: {{ .Values.execution-identity.dnsPolicy | quote }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.execution-identity.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.execution-identity) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.execution-identity.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.execution-identity.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            - name: NODE_ENV
+              value: prod
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
+            - name: KEYCLOAK_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.execution-identity.keycloak.realm | quote }}
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: execution-identity
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: execution-identity
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: {{ .Values.execution-identity.contextPath | quote }}
+          {{- if .Values.execution-identity.env}}
+            {{ .Values.execution-identity.env | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.execution-identity.envFrom }}
+          envFrom:
+            {{- .Values.execution-identity.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: management
+              containerPort: 9100
+              protocol: TCP
+          {{- if .Values.execution-identity.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.execution-identity.startupProbe.probePath }}
+              scheme: {{ .Values.execution-identity.startupProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.execution-identity.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.execution-identity.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.execution-identity.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.execution-identity.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.execution-identity.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.execution-identity.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.execution-identity.readinessProbe.probePath }}
+              scheme: {{ .Values.execution-identity.readinessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.execution-identity.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.execution-identity.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.execution-identity.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.execution-identity.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.execution-identity.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.execution-identity.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.execution-identity.livenessProbe.probePath }}
+              scheme: {{ .Values.execution-identity.livenessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.execution-identity.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.execution-identity.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.execution-identity.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.execution-identity.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.execution-identity.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.execution-identity.command}}
+          command: {{ toYaml .Values.execution-identity.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.execution-identity.resources | nindent 12 }}
+          volumeMounts:
+            - name: execution-identity-configuration
+              mountPath: /var/run/config
+          {{- if .Values.execution-identity.extraVolumeMounts }}
+            {{- .Values.execution-identity.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+      {{- if .Values.execution-identity.sidecars }}
+        {{- .Values.execution-identity.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: execution-identity-configuration
+          configMap:
+            name: {{ include "execution-identity.fullname" . }}-configuration
+      {{- if .Values.execution-identity.extraVolumes }}
+        {{- .Values.execution-identity.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.execution-identity.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.execution-identity.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.execution-identity.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
