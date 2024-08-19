@@ -70,7 +70,7 @@ spec:
               value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
             {{- end }}
             {{- with .Values.operate.migration.env }}
-            {{- toYaml . | nindent 8 }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           resources:
             {{- toYaml .Values.operate.migration.resources | nindent 12 }}

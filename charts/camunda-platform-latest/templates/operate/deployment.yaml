@@ -76,7 +76,7 @@ spec:
               value: {{ .Values.global.elasticsearch.url.port | quote }}
             {{- end }}
             {{- with .Values.operate.migration.env }}
-            {{- toYaml . | nindent 8 }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           resources:
             {{- toYaml .Values.operate.migration.resources | nindent 12 }}
