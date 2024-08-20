@@ -2150,7 +2150,7 @@ executionIdentity:
       ## @param executionIdentity.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
       ## @param executionIdentity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-executionIdentity
+      secretName: camunda-platform-execution-identity
 
   ## @extra executionIdentity.podSecurityContext defines the security options the executionIdentity broker pod should be run with
   podSecurityContext:

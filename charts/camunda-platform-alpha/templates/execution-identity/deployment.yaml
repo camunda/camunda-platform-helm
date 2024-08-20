@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/executionIdentity/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/execution-identity/configmap.yaml") . | sha256sum }}
       {{- with .Values.executionIdentity.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -124,7 +124,7 @@ spec:
           resources:
             {{- toYaml .Values.executionIdentity.resources | nindent 12 }}
           volumeMounts:
-            - name: executionIdentity-configuration
+            - name: execution-identity-configuration
               mountPath: /var/run/config
           {{- if .Values.executionIdentity.extraVolumeMounts }}
             {{- .Values.executionIdentity.extraVolumeMounts | toYaml | nindent 12 }}
@@ -133,7 +133,7 @@ spec:
         {{- .Values.executionIdentity.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
-        - name: executionIdentity-configuration
+        - name: execution-identity-configuration
           configMap:
             name: {{ include "executionIdentity.fullname" . }}-configuration
       {{- if .Values.executionIdentity.extraVolumes }}

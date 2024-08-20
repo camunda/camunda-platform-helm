@@ -1,13 +1,13 @@
 {{/*
-Expand the name of the chart.
+Get the default app name.
 */}}
 {{- define "executionIdentity.name" -}}
-    {{- default .Chart.Name .Values.executionIdentity.nameOverride | trunc 63 | trimSuffix "-" }}
+execution-identity
 {{- end }}
 
 {{- define "executionIdentity.fullname" -}}
     {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "executionIdentity"
+        "componentName" "execution-identity"
         "componentValues" .Values.executionIdentity
         "context" $
     ) -}}
@@ -24,7 +24,7 @@ Create chart name and version as used by the chart label.
 Defines extra labels for executionIdentity.
 */}}
 {{- define "executionIdentity.extraLabels" -}}
-app.kubernetes.io/component: executionIdentity
+app.kubernetes.io/component: execution-identity
 app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.executionIdentity) | quote }}
 {{- end -}}
 
@@ -41,7 +41,7 @@ Selector labels
 */}}
 {{- define "executionIdentity.matchLabels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: executionIdentity
+app.kubernetes.io/component: execution-identity
 {{- end -}}
 
 {{/*
