@@ -34,7 +34,7 @@ spec:
       serviceAccountName: {{ include "executionIdentity.serviceAccountName" . }}
       {{- if .Values.executionIdentity.dnsConfig }}
       dnsConfig: {{- toYaml .Values.executionIdentity.dnsConfig | nindent 8 }}
-      {{- end executionIdentity
+      {{- end }}
       {{- if .Values.executionIdentity.dnsPolicy }}
       dnsPolicy: {{ .Values.executionIdentity.dnsPolicy | quote }}
       {{- end }}
