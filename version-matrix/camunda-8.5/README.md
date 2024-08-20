@@ -1,6 +1,18 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8.5 Helm Chart Version Matrix
 
+- [Helm chart 10.3.2](#helm-chart-1032)
+- [Helm chart 10.3.1](#helm-chart-1031)
+- [Helm chart 10.3.0](#helm-chart-1030)
+- [Helm chart 10.2.1](#helm-chart-1021)
+- [Helm chart 10.2.0](#helm-chart-1020)
+- [Helm chart 10.1.1](#helm-chart-1011)
+- [Helm chart 10.1.0](#helm-chart-1010)
+- [Helm chart 10.0.5](#helm-chart-1005)
+- [Helm chart 10.0.4](#helm-chart-1004)
+- [Helm chart 10.0.3](#helm-chart-1003)
+- [Helm chart 10.0.2](#helm-chart-1002)
+
 ## Helm chart 10.3.2
 
 Supported versions:

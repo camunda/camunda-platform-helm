@@ -4,6 +4,9 @@
 {{- if $releaseHeader -}}
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda {{ $release.app }} Helm Chart Version Matrix
+{{ range $chartVersion := $release.charts }}
+- {{ printf "[Helm chart %s](#helm-chart-%s)" $chartVersion ($chartVersion | strings.ReplaceAll "." "") }}
+{{- end }}
 {{- end }}
 
 {{- range $chartVersion := $release.charts }}
