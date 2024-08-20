@@ -1,6 +1,24 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8.4 Helm Chart Version Matrix
 
+- [Helm chart 9.3.9](#helm-chart-939)
+- [Helm chart 9.3.8](#helm-chart-938)
+- [Helm chart 9.3.7](#helm-chart-937)
+- [Helm chart 9.3.6](#helm-chart-936)
+- [Helm chart 9.3.5](#helm-chart-935)
+- [Helm chart 9.3.4](#helm-chart-934)
+- [Helm chart 9.3.3](#helm-chart-933)
+- [Helm chart 9.3.2](#helm-chart-932)
+- [Helm chart 9.3.1](#helm-chart-931)
+- [Helm chart 9.3.0](#helm-chart-930)
+- [Helm chart 9.2.0](#helm-chart-920)
+- [Helm chart 9.1.2](#helm-chart-912)
+- [Helm chart 9.1.1](#helm-chart-911)
+- [Helm chart 9.1.0](#helm-chart-910)
+- [Helm chart 9.0.2](#helm-chart-902)
+- [Helm chart 9.0.1](#helm-chart-901)
+- [Helm chart 9.0.0](#helm-chart-900)
+
 ## Helm chart 9.3.9
 
 Supported versions:

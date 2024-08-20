@@ -1,6 +1,37 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8.2 Helm Chart Version Matrix
 
+- [Helm chart 8.2.31](#helm-chart-8231)
+- [Helm chart 8.2.30](#helm-chart-8230)
+- [Helm chart 8.2.29](#helm-chart-8229)
+- [Helm chart 8.2.28](#helm-chart-8228)
+- [Helm chart 8.2.27](#helm-chart-8227)
+- [Helm chart 8.2.26](#helm-chart-8226)
+- [Helm chart 8.2.25](#helm-chart-8225)
+- [Helm chart 8.2.24](#helm-chart-8224)
+- [Helm chart 8.2.23](#helm-chart-8223)
+- [Helm chart 8.2.22](#helm-chart-8222)
+- [Helm chart 8.2.20](#helm-chart-8220)
+- [Helm chart 8.2.19](#helm-chart-8219)
+- [Helm chart 8.2.18](#helm-chart-8218)
+- [Helm chart 8.2.17](#helm-chart-8217)
+- [Helm chart 8.2.16](#helm-chart-8216)
+- [Helm chart 8.2.15](#helm-chart-8215)
+- [Helm chart 8.2.13](#helm-chart-8213)
+- [Helm chart 8.2.12](#helm-chart-8212)
+- [Helm chart 8.2.11](#helm-chart-8211)
+- [Helm chart 8.2.10](#helm-chart-8210)
+- [Helm chart 8.2.9](#helm-chart-829)
+- [Helm chart 8.2.8](#helm-chart-828)
+- [Helm chart 8.2.7](#helm-chart-827)
+- [Helm chart 8.2.6](#helm-chart-826)
+- [Helm chart 8.2.5](#helm-chart-825)
+- [Helm chart 8.2.4](#helm-chart-824)
+- [Helm chart 8.2.3](#helm-chart-823)
+- [Helm chart 8.2.2](#helm-chart-822)
+- [Helm chart 8.2.1](#helm-chart-821)
+- [Helm chart 8.2.0](#helm-chart-820)
+
 ## Helm chart 8.2.31
 
 Supported versions:

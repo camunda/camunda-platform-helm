@@ -1,6 +1,24 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8.3 Helm Chart Version Matrix
 
+- [Helm chart 8.3.16](#helm-chart-8316)
+- [Helm chart 8.3.15](#helm-chart-8315)
+- [Helm chart 8.3.14](#helm-chart-8314)
+- [Helm chart 8.3.13](#helm-chart-8313)
+- [Helm chart 8.3.12](#helm-chart-8312)
+- [Helm chart 8.3.11](#helm-chart-8311)
+- [Helm chart 8.3.10](#helm-chart-8310)
+- [Helm chart 8.3.9](#helm-chart-839)
+- [Helm chart 8.3.8](#helm-chart-838)
+- [Helm chart 8.3.7](#helm-chart-837)
+- [Helm chart 8.3.6](#helm-chart-836)
+- [Helm chart 8.3.5](#helm-chart-835)
+- [Helm chart 8.3.4](#helm-chart-834)
+- [Helm chart 8.3.3](#helm-chart-833)
+- [Helm chart 8.3.2](#helm-chart-832)
+- [Helm chart 8.3.1](#helm-chart-831)
+- [Helm chart 8.3.0](#helm-chart-830)
+
 ## Helm chart 8.3.16
 
 Supported versions:
