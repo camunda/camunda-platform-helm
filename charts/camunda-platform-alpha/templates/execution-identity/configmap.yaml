@@ -32,6 +32,6 @@ data:
     zeebe:
       gateway:
         cluster:
-          initial-contact-points: zeebe:26502
+          initial-contact-points: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
           member-id: identity
 {{- end }}
