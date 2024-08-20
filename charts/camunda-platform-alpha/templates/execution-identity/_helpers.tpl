@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "execution-identity.name" -}}
-    {{- default .Chart.Name .Values.execution-identity.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- define "executionIdentity.name" -}}
+    {{- default .Chart.Name .Values.executionIdentity.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "execution-identity.fullname" -}}
+{{- define "executionIdentity.fullname" -}}
     {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "execution-identity"
-        "componentValues" .Values.execution-identity
+        "componentName" "executionIdentity"
+        "componentValues" .Values.executionIdentity
         "context" $
     ) -}}
 {{- end -}}
