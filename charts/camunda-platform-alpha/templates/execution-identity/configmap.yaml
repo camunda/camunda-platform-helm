@@ -10,19 +10,28 @@ data:
     {{- if .Values.executionIdentity.configuration }}
       {{- include "common.tplvalues.render" ( dict "value" .Values.executionIdentity.configuration "context" $ ) | nindent 4 }}
     {{- else }}
-    # https://docs.camunda.io/docs/self-managed/executionIdentity-deployment/configuration/
-    camunda:
-      executionIdentity:
-        oAuth:
-          audience: {{ .Values.global.identity.auth.executionIdentity.audience | quote }}
-          clientId: {{ .Values.global.identity.auth.executionIdentity.clientId | quote }}
-          issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-          jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-          type: {{ include "camundaPlatform.authType" . | quote }}
-          wellKnown: {{ .Values.global.identity.auth.executionIdentity.wellKnown | quote }}
-        managed:
-          method: plain
-          releases:
-            {{- include "camundaPlatform.releaseInfo" . | nindent 10 }}
     {{- end }}
+
+    spring:
+      profiles:
+        active: "identity,auth-basic"
+
+    # Camunda Database configuration
+    {{- if .Values.global.elasticsearch.enabled }}
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: {{ .Values.global.elasticsearch.clusterName }}
+      {{- if .Values.global.elasticsearch.external }}
+      username: {{ .Values.global.elasticsearch.auth.username | quote }}
+      {{- end }}
+      # Elasticsearch full url
+      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+    {{- end }}
+
+    zeebe:
+      gateway:
+        cluster:
+          initial-contact-points: zeebe:26502
+          member-id: identity
 {{- end }}
