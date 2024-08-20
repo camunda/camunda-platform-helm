@@ -16,40 +16,40 @@ Expand the name of the chart.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "execution-identity.chart" -}}
+{{- define "executionIdentity.chart" -}}
     {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
-Defines extra labels for execution-identity.
+Defines extra labels for executionIdentity.
 */}}
-{{- define "execution-identity.extraLabels" -}}
-app.kubernetes.io/component: execution-identity
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.execution-identity) | quote }}
+{{- define "executionIdentity.extraLabels" -}}
+app.kubernetes.io/component: executionIdentity
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.executionIdentity) | quote }}
 {{- end -}}
 
 {{/*
 Common labels
 */}}
-{{- define "execution-identity.labels" -}}
+{{- define "executionIdentity.labels" -}}
 {{- template "camundaPlatform.labels" . }}
-{{ template "execution-identity.extraLabels" . }}
+{{ template "executionIdentity.extraLabels" . }}
 {{- end -}}
 
 {{/*
 Selector labels
 */}}
-{{- define "execution-identity.matchLabels" -}}
+{{- define "executionIdentity.matchLabels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: execution-identity
+app.kubernetes.io/component: executionIdentity
 {{- end -}}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "execution-identity.serviceAccountName" -}}
+{{- define "executionIdentity.serviceAccountName" -}}
     {{- include "camundaPlatform.serviceAccountName" (dict
-        "component" "execution-identity"
+        "component" "executionIdentity"
         "context" $
     ) -}}
 {{- end -}}
@@ -57,9 +57,9 @@ Create the name of the service account to use
 {{/*
 Get the image pull secrets.
 */}}
-{{- define "execution-identity.imagePullSecrets" -}}
+{{- define "executionIdentity.imagePullSecrets" -}}
     {{- include "camundaPlatform.imagePullSecrets" (dict
-        "component" "execution-identity"
+        "component" "executionIdentity"
         "context" $
     ) -}}
 {{- end }}

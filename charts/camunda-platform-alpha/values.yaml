@@ -1966,70 +1966,70 @@ optimize:
 #       #  #  #      #    # #    #   #   # #    # #   ##       # #    # #      #   ##   #   #   #     #
 ###### #    # ######  ####   ####    #   #  ####  #    #       # #####  ###### #    #   #   #   #     #
 #########################################################################################################
-## @section Execution-identity Parameters
-## @extra execution-identity configuration for execution-identity.
-execution-identity:
-  ## @param execution-identity.enabled if true, the execution-identity deployment and its related resources are deployed via a helm release
+## @section executionIdentity Parameters
+## @extra executionIdentity configuration for executionIdentity.
+executionIdentity:
+  ## @param executionIdentity.enabled if true, the executionIdentity deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @param execution-identity.configuration Configuration passed directly to execution-identity as YAML file. More details on [execution-identity official documentations](https://docs.camunda.io/docs/self-managed/execution-identity-deployment/configuration/)
+  ## @param executionIdentity.configuration Configuration passed directly to executionIdentity as YAML file. More details on [executionIdentity official documentations](https://docs.camunda.io/docs/self-managed/executionIdentity-deployment/configuration/)
   configuration: ""
 
-  ## execution-identity.image configuration to configure the execution-identity image specifics
+  ## executionIdentity.image configuration to configure the executionIdentity image specifics
   image:
-    ## @param execution-identity.image.registry can be used to set container image registry.
-    registry: registry.camunda.cloud
-    ## @param execution-identity.image.repository defines which image repository to use
-    repository: execution-identity/execution-identity-sm
-    ## @param execution-identity.image.tag can be used to set the Docker image tag for the execution-identity image (overwrites global.image.tag)
-    # renovate: datasource=docker depName=camunda/execution-identity lookupName=registry.camunda.cloud/execution-identity/execution-identity-sm
-    tag: latest
-    ## @param execution-identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @param executionIdentity.image.registry can be used to set container image registry.
+    registry: ""
+    ## @param executionIdentity.image.repository defines which image repository to use
+    repository: camunda/camunda
+    ## @param executionIdentity.image.tag can be used to set the Docker image tag for the executionIdentity image (overwrites global.image.tag)
+    # renovate: datasource=docker depName=camunda/executionIdentity lookupName=registry.camunda.cloud/executionIdentity/executionIdentity-sm
+    tag: SNAPSHOT
+    ## @param executionIdentity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  ## @param execution-identity.sidecars can be used to attach extra containers to the execution-identity deployment
+  ## @param executionIdentity.sidecars can be used to attach extra containers to the executionIdentity deployment
   sidecars: []
 
-  ## @param execution-identity.replicas Number of execution-identity replicas
+  ## @param executionIdentity.replicas Number of executionIdentity replicas
   replicas: 1
 
-  ## execution-identity.keycloak configuration to configure Keycloak authentication settings.
+  ## executionIdentity.keycloak configuration to configure Keycloak authentication settings.
   keycloak:
-    ## @param execution-identity.keycloak.realm Specifies the Keycloak realm used for authentication.
+    ## @param executionIdentity.keycloak.realm Specifies the Keycloak realm used for authentication.
     realm: "camunda-platform"
 
-  ## @param execution-identity.contextPath can be used to make execution-identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  ## @param executionIdentity.contextPath can be used to make executionIdentity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param execution-identity.initContainers can be used to set up extra init containers for the application Pod
+  ## @param executionIdentity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @param execution-identity.podAnnotations can be used to define extra execution-identity pod annotations
+  ## @param executionIdentity.podAnnotations can be used to define extra executionIdentity pod annotations
   podAnnotations: {}
-  ## @param execution-identity.podLabels can be used to define extra execution-identity pod labels
+  ## @param executionIdentity.podLabels can be used to define extra executionIdentity pod labels
   podLabels: {}
 
-  ## @param execution-identity.logging configuration for the execution-identity logging. This template will be directly included in the Operate configuration YAML file
+  ## @param executionIdentity.logging configuration for the executionIdentity logging. This template will be directly included in the Operate configuration YAML file
   logging: {}
 
-  ## execution-identity.service configuration to configure the execution-identity service.
+  ## executionIdentity.service configuration to configure the executionIdentity service.
   service:
-    ## @param execution-identity.service.annotations can be used to define annotations, which will be applied to the execution-identity service
+    ## @param executionIdentity.service.annotations can be used to define annotations, which will be applied to the executionIdentity service
     annotations: {}
-    ## @param execution-identity.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    ## @param executionIdentity.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @param execution-identity.service.port defines the port number where the web application will be available
+    ## @param executionIdentity.service.port defines the port number where the web application will be available
     port: 80
-    ## @param execution-identity.service.serverName defines the port name where the web application will be available
+    ## @param executionIdentity.service.serverName defines the port name where the web application will be available
     serverName: http
-    ## @param execution-identity.service.managementPort defines the management port used to access metrics and app status
+    ## @param executionIdentity.service.managementPort defines the management port used to access metrics and app status
     managementPort: 9100
 
-  ## execution-identity.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param execution-identity.resources.requests.memory
-  ## @param execution-identity.resources.limits.cpu
-  ## @param execution-identity.resources.limits.memory
-  ## @param execution-identity.resources.requests.cpu
+  ## executionIdentity.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param executionIdentity.resources.requests.memory
+  ## @param executionIdentity.resources.limits.cpu
+  ## @param executionIdentity.resources.limits.memory
+  ## @param executionIdentity.resources.requests.cpu
   resources:
     requests:
       cpu: 1
@@ -2038,157 +2038,157 @@ execution-identity:
       cpu: 2
       memory: 2Gi
 
-  ## @param execution-identity.env can be used to set extra environment variables in each app container
+  ## @param executionIdentity.env can be used to set extra environment variables in each app container
   env: []
-  ## @param execution-identity.envFrom list of environment variables to import from configMapRef and secretRef
+  ## @param executionIdentity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
-  ## @param execution-identity.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  ## @param executionIdentity.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
-  ## @param execution-identity.extraVolumes can be used to define extra volumes for the execution-identity pods, useful for TLS and self-signed certificates
+  ## @param executionIdentity.extraVolumes can be used to define extra volumes for the executionIdentity pods, useful for TLS and self-signed certificates
   extraVolumes: []
-  ## @param execution-identity.extraVolumeMounts can be used to mount extra volumes for the execution-identity pods, useful for TLS and self-signed certificates
+  ## @param executionIdentity.extraVolumeMounts can be used to mount extra volumes for the executionIdentity pods, useful for TLS and self-signed certificates
   extraVolumeMounts: []
 
-  ## execution-identity.startupProbe configuration
+  ## executionIdentity.startupProbe configuration
   startupProbe:
-    ## @param execution-identity.startupProbe.enabled if true, the startup probe is enabled in app container
+    ## @param executionIdentity.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param execution-identity.startupProbe.scheme defines the startup probe scheme used on calling the probePath
+    ## @param executionIdentity.startupProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
-    ## @param execution-identity.startupProbe.probePath defines the startup probe route used on the app
+    ## @param executionIdentity.startupProbe.probePath defines the startup probe route used on the app
     probePath: /health/readiness
-    ## @param execution-identity.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param executionIdentity.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param execution-identity.startupProbe.periodSeconds defines how often the probe is executed
+    ## @param executionIdentity.startupProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param execution-identity.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param executionIdentity.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param execution-identity.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param executionIdentity.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param execution-identity.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param executionIdentity.startupProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## execution-identity.readinessProbe configuration
+  ## executionIdentity.readinessProbe configuration
   readinessProbe:
-    ## @param execution-identity.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    ## @param executionIdentity.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param execution-identity.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
+    ## @param executionIdentity.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
-    ## @param execution-identity.readinessProbe.probePath defines the readiness probe route used on the app
+    ## @param executionIdentity.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /health/readiness
-    ## @param execution-identity.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param executionIdentity.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param execution-identity.readinessProbe.periodSeconds defines how often the probe is executed
+    ## @param executionIdentity.readinessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param execution-identity.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param executionIdentity.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param execution-identity.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param executionIdentity.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param execution-identity.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param executionIdentity.readinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## execution-identity.livenessProbe configuration
+  ## executionIdentity.livenessProbe configuration
   livenessProbe:
-    ## @param execution-identity.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    ## @param executionIdentity.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param execution-identity.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
+    ## @param executionIdentity.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
-    ## @param execution-identity.livenessProbe.probePath defines the liveness probe route used on the app
+    ## @param executionIdentity.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /health/liveness
-    ## @param execution-identity.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param executionIdentity.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param execution-identity.livenessProbe.periodSeconds defines how often the probe is executed
+    ## @param executionIdentity.livenessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param execution-identity.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    ## @param executionIdentity.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
     successThreshold: 1
-    ## @param execution-identity.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    ## @param executionIdentity.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
     failureThreshold: 5
-    ## @param execution-identity.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param executionIdentity.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## execution-identity.metrics configuration
+  ## executionIdentity.metrics configuration
   metrics:
-    ## @param execution-identity.metrics.prometheus Prometheus metrics endpoint
+    ## @param executionIdentity.metrics.prometheus Prometheus metrics endpoint
     prometheus: /prometheus
 
-  ## execution-identity.serviceAccount configuration for the service account where the execution-identity pods are assigned to
+  ## executionIdentity.serviceAccount configuration for the service account where the executionIdentity pods are assigned to
   serviceAccount:
-    ## @param execution-identity.serviceAccount.enabled if true, enables the execution-identity service account
+    ## @param executionIdentity.serviceAccount.enabled if true, enables the executionIdentity service account
     enabled: true
-    ## @param execution-identity.serviceAccount.name can be used to set the name of the execution-identity service account
+    ## @param executionIdentity.serviceAccount.name can be used to set the name of the executionIdentity service account
     name: ""
-    ## @param execution-identity.serviceAccount.annotations can be used to set the annotations of the Operate service account
+    ## @param executionIdentity.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
-    ## @param execution-identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    ## @param executionIdentity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
   ingress:
-    ## @param execution-identity.ingress.enabled if true, an ingress resource is deployed with the execution-identity deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param executionIdentity.ingress.enabled if true, an ingress resource is deployed with the executionIdentity deployment. Only useful if an ingress controller is available, like nginx.
     enabled: false
-    ## @param execution-identity.ingress.className defines the class or configuration of ingress which should be used by the controller
+    ## @param executionIdentity.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
-    ## @param execution-identity.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip execution-identity.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip execution-identity.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip execution-identity.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+    ## @param executionIdentity.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @skip executionIdentity.ingress.annotations.ingress.kubernetes.io/rewrite-target
+    ## @skip executionIdentity.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+    ## @skip executionIdentity.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-    ## @param execution-identity.ingress.path defines the path which is associated with the execution-identity service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## @param executionIdentity.ingress.path defines the path which is associated with the executionIdentity service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
-    ## @param execution-identity.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    ## @param executionIdentity.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
-    ## @param execution-identity.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## @param executionIdentity.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
     host: ""
-    ## execution-identity.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    ## executionIdentity.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
-      ## @param execution-identity.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      ## @param executionIdentity.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
       enabled: false
-      ## @param execution-identity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-execution-identity
+      ## @param executionIdentity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: camunda-platform-executionIdentity
 
-  ## @extra execution-identity.podSecurityContext defines the security options the execution-identity broker pod should be run with
+  ## @extra executionIdentity.podSecurityContext defines the security options the executionIdentity broker pod should be run with
   podSecurityContext:
-    ## @param execution-identity.podSecurityContext.runAsNonRoot run as non root
+    ## @param executionIdentity.podSecurityContext.runAsNonRoot run as non root
     runAsNonRoot: true
-    ## @param execution-identity.podSecurityContext.fsGroup
+    ## @param executionIdentity.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @extra execution-identity.podSecurityContext.seccompProfile
+    ## @extra executionIdentity.podSecurityContext.seccompProfile
     seccompProfile:
-      ## @param execution-identity.podSecurityContext.seccompProfile.type
+      ## @param executionIdentity.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
-  # ContainerSecurityContext defines the security options the execution-identity broker container should be run with
+  # ContainerSecurityContext defines the security options the executionIdentity broker container should be run with
   containerSecurityContext:
-    ## @param execution-identity.containerSecurityContext.allowPrivilegeEscalation
+    ## @param executionIdentity.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
-    ## @param execution-identity.containerSecurityContext.privileged
+    ## @param executionIdentity.containerSecurityContext.privileged
     privileged: false
-    ## @param execution-identity.containerSecurityContext.readOnlyRootFilesystem
+    ## @param executionIdentity.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
-    ## @param execution-identity.containerSecurityContext.runAsNonRoot
+    ## @param executionIdentity.containerSecurityContext.runAsNonRoot
     runAsNonRoot: true
-    ## @param execution-identity.containerSecurityContext.runAsUser
+    ## @param executionIdentity.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @extra execution-identity.containerSecurityContext.seccompProfile
+    ## @extra executionIdentity.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param execution-identity.containerSecurityContext.seccompProfile.type
+      ## @param executionIdentity.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
-  ## @param execution-identity.nodeSelector can be used to define on which nodes the execution-identity pods should run
+  ## @param executionIdentity.nodeSelector can be used to define on which nodes the executionIdentity pods should run
   nodeSelector: {}
-  ## @param execution-identity.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ## @param executionIdentity.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @param execution-identity.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ## @param executionIdentity.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
-  ## @param execution-identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+  ## @param executionIdentity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
-  ## @param execution-identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+  ## @param executionIdentity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
 ############################################

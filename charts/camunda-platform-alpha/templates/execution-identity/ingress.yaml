@@ -1,37 +1,37 @@
-{{- if and .Values.execution-identity.enabled .Values.execution-identity.ingress.enabled -}}
+{{- if and .Values.executionIdentity.enabled .Values.executionIdentity.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "execution-identity.fullname" . }}
+  name: {{ include "executionIdentity.fullname" . }}
   labels:
-    {{- include "execution-identity.labels" . | nindent 4 }}
-{{- with .Values.execution-identity.ingress.annotations }}
+    {{- include "executionIdentity.labels" . | nindent 4 }}
+{{- with .Values.executionIdentity.ingress.annotations }}
   annotations:
    {{- tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
 spec:
-  ingressClassName: {{ .Values.execution-identity.ingress.className }}
+  ingressClassName: {{ .Values.executionIdentity.ingress.className }}
   rules:
-    {{- if .Values.execution-identity.ingress.host }}
-    - host: {{ .Values.execution-identity.ingress.host }}
+    {{- if .Values.executionIdentity.ingress.host }}
+    - host: {{ .Values.executionIdentity.ingress.host }}
       http:
     {{- else }}
     - http:
     {{- end }}
         paths:
-          - path: {{ .Values.execution-identity.ingress.path }}
-            pathType: {{ .Values.execution-identity.ingress.pathType }}
+          - path: {{ .Values.executionIdentity.ingress.path }}
+            pathType: {{ .Values.executionIdentity.ingress.pathType }}
             backend:
               service:
-                name: {{ include "execution-identity.fullname" . }}
+                name: {{ include "executionIdentity.fullname" . }}
                 port:
                   number: 80
-  {{- if .Values.execution-identity.ingress.tls.enabled }}
+  {{- if .Values.executionIdentity.ingress.tls.enabled }}
   tls:
     - hosts:
-        - {{ .Values.execution-identity.ingress.host }}
-      {{- if .Values.execution-identity.ingress.tls.secretName }}
-      secretName: {{ .Values.execution-identity.ingress.tls.secretName }}
+        - {{ .Values.executionIdentity.ingress.host }}
+      {{- if .Values.executionIdentity.ingress.tls.secretName }}
+      secretName: {{ .Values.executionIdentity.ingress.tls.secretName }}
       {{- end }}
   {{- end }}
 {{- end }}
