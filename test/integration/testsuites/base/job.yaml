@@ -16,13 +16,16 @@ spec:
       initContainers:
       - name: download-tools
         image: alpine
+        envFrom:
+        - configMapRef:
+            name: venom-env-vars
         command:
         - sh
         - -c
         # TODO: Check if we can use asdf here to unify and simplify tools management.
         - |
           echo "Downloading additional tools";
-          wget https://github.com/camunda/camunda/releases/download/8.2.4/zbctl -O /tools/zbctl
+          wget https://github.com/camunda/camunda/releases/download/${ZEEBE_VERSION}/zbctl -O /tools/zbctl
           chmod +x /tools/zbctl
           echo Finished downloading;
         volumeMounts:
