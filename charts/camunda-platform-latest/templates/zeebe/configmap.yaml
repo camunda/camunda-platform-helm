@@ -44,6 +44,12 @@ data:
               aws:
                 enabled: true
               {{- end}}
+              {{- if .Values.zeebe.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
+                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+              {{- end }}
         {{- else -}}
           {{ " {}" }}
         {{- end }}
