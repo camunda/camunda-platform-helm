@@ -1,9 +1,10 @@
-# Basic test for older Camunda 8 Helm charts.
-name: "Test - Regression"
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Maintenance"
 
 on:
   pull_request:
     paths:
+      - '.github/workflows/test-version-maintenance.yaml'
       - 'charts/camunda-platform-8*/**'
   workflow_dispatch: { }
 
