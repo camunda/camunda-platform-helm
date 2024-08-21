@@ -10,16 +10,3 @@ global:
     openshift:
       ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
       adaptSecurityContext: force
-
-#
-# Elasticsearch.
-#
-
-# omit the values below if elasticsearch.enabled is false
-elasticsearch:
-  # If needed, OpenShift TuneD operator will be used to set sysctl vm.max_map_count.
-  # Apply the manifest "openshift-tuned.yaml" before install Camunda 8 chart.
-  sysctlImage:
-    enabled: false
-  commonLabels:
-    tuned.openshift.io/elasticsearch: ""

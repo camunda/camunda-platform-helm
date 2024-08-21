@@ -66,6 +66,9 @@ Zeebe Gateway.
     {{- $_ := set .Values.zeebeGateway.ingress "grpc" (deepCopy $zgIngress | mergeOverwrite .Values.zeebeGateway.ingress.grpc) -}}
 {{- end -}}
 
+{{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
+    {{- $_ := set .Values.elasticsearch.sysctlImage "enabled" false -}}
+{{- end -}}
 
 {{/*
 Elasticsearch.
