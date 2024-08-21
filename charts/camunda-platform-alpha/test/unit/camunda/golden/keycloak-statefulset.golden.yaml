@@ -60,7 +60,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: init-quarkus-directory
-          image: docker.io/bitnami/keycloak:23.0.7
+          image: docker.io/camunda/keycloak:23.0.7-debian-12-r5
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -88,30 +88,9 @@ spec:
             - name: empty-dir
               mountPath: /quarkus
               subPath: app-quarkus-dir
-        - command:
-          - sh
-          - -c
-          - cp -a /app/keycloak-theme/* /mnt
-          image: 'camunda/identity:latest'
-          imagePullPolicy: 'Always'
-          name: copy-camunda-theme
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1001
-            seccompProfile:
-              type: RuntimeDefault
-          volumeMounts:
-          - mountPath: /mnt
-            name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:23.0.7
+          image: docker.io/camunda/keycloak:23.0.7-debian-12-r5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -185,8 +164,6 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/keycloak/lib/quarkus
               subPath: app-quarkus-dir
-            - mountPath: /opt/bitnami/keycloak/themes/identity
-              name: camunda-theme
             - mountPath: /opt/bitnami/keycloak/data/tmp
               name: data-tmp
       volumes:
@@ -194,6 +171,3 @@ spec:
           emptyDir: {}
         - emptyDir: {}
           name: data-tmp
-        - emptyDir:
-            sizeLimit: 10Mi
-          name: camunda-theme
