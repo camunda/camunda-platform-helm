@@ -2285,7 +2285,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: bitnami/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 23.0.7
+    tag: 25.0.4
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
