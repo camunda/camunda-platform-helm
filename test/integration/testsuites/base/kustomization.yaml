@@ -4,6 +4,10 @@ kind: Kustomization
 resources:
 - job.yaml
 
+images:
+- name: ovhcom/venom
+  newTag: v1.2.0
+
 configMapGenerator:
 - name: venom-tests-common
   options:

@@ -226,14 +226,12 @@ testcases:
     body: '{}'
     retry: 3
     delay: 15
-    # TODO: Remove it after debugging Operate issue.
     info: |
       = Request Body: {{ .result.request.body }}
       = Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-    # NOTE: JSON keys are lowercased automatically, the original key is "bpmnProcessId".
-    - result.bodyjson.items.items{{ .index }}.bpmnprocessid ShouldEqual {{ .value.id }}
+    - result.bodyjson.items.items{{ .index }}.bpmnProcessId ShouldEqual {{ .value.id }}
 
 - name: TEST - Check Connectors webhook
   steps:
