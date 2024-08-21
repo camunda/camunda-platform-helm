@@ -65,20 +65,6 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
-            - name: NODE_ENV
-              value: prod
-            - name: KEYCLOAK_INTERNAL_BASE_URL
-              value: "http://camunda-platform-test-keycloak:80/auth"
-            - name: KEYCLOAK_BASE_URL
-              value: "http://localhost:18080/auth"
-            - name: KEYCLOAK_REALM
-              value: "camunda-platform"
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: executionIdentity
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: executionIdentity
-            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
-              value: ""
           ports:
             - name: http
               containerPort: 8080

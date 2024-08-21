@@ -54,20 +54,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            - name: NODE_ENV
-              value: prod
-            - name: KEYCLOAK_INTERNAL_BASE_URL
-              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
-            - name: KEYCLOAK_BASE_URL
-              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
-            - name: KEYCLOAK_REALM
-              value: {{ .Values.executionIdentity.keycloak.realm | quote }}
-            - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: executionIdentity
-            - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: executionIdentity
-            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
-              value: {{ .Values.executionIdentity.contextPath | quote }}
           {{- if .Values.executionIdentity.env}}
             {{ .Values.executionIdentity.env | toYaml | nindent 12 }}
           {{- end }}
