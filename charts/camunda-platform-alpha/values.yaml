@@ -2298,9 +2298,9 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     ## @param identityKeycloak.image.repository image repo
-    repository: bitnami/keycloak
+    repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 23.0.7
+    tag: 23.0.7-debian-12-r5
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
