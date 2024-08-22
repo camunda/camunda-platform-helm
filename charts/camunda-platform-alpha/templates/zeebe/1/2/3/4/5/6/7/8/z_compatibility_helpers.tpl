@@ -70,6 +70,11 @@ Zeebe Gateway.
     {{- $_ := set .Values.elasticsearch.sysctlImage "enabled" false -}}
 {{- end -}}
 
+{{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
+    {{- if not (hasKey .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch") -}}
+        {{- $_ := set .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch" "" -}}
+    {{- end -}}
+{{- end -}}
 {{/*
 Elasticsearch.
 
