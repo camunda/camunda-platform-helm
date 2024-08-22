@@ -60,7 +60,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-write-dirs
-          image: docker.io/bitnami/keycloak:23.0.7
+          image: docker.io/bitnami/keycloak:25.0.4
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -123,7 +123,7 @@ spec:
             name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:23.0.7
+          image: docker.io/bitnami/keycloak:25.0.4
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
