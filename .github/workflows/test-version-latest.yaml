@@ -1,11 +1,11 @@
-# Basic test for Alpha Camunda 8 Helm charts.
-name: "Test - Alpha"
+# Basic test for latest Camunda 8 Helm charts.
+name: "Test - Latest"
 
 on:
   pull_request:
     paths:
-      - '.github/workflows/test-alpha.yaml'
-      - 'charts/camunda-platform-alpha/**'
+      - '.github/workflows/test-version-latest.yaml'
+      - 'charts/camunda-platform-latest/**'
   workflow_dispatch: { }
 
 concurrency:
@@ -24,23 +24,23 @@ permissions:
 
 jobs:
   validation:
-    name: Validation - Camunda Alpha
+    name: Validation - Camunda Latest
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-vald-alpha"
-      camunda-helm-dir: "camunda-platform-alpha"
+      identifier: "${{ github.event.pull_request.number }}-vald-latest"
+      camunda-helm-dir: "camunda-platform-latest"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   unit:
-    name: Unit Test - Camunda Alpha
+    name: Unit Test - Camunda Latest
     uses: ./.github/workflows/test-unit-template.yml
     with:
-      identifier: "${{ github.event.pull_request.number }}-unit-alpha"
-      camunda-helm-dir: "camunda-platform-alpha"
+      identifier: "${{ github.event.pull_request.number }}-unit-latest"
+      camunda-helm-dir: "camunda-platform-latest"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
-    name: Integration Test - Camunda Alpha
+    name: Integration Test - Camunda Latest
     needs: [validation, unit]
     permissions:
       contents: read
@@ -49,12 +49,10 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-intg-alpha"
+      identifier: "${{ github.event.pull_request.number }}-intg-latest"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke,rosa"
       flows: "install,upgrade"
-      camunda-helm-repo: "oci://ghcr.io/camunda/helm/camunda-platform"
-      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-dir: "camunda-platform-latest"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-      # We need to set the var here as the Alpha is stored on the OCI Helm registry and uses different versioning.
-      camunda-helm-upgrade-version: "0.0.0-snapshot-alpha"
-      camunda-helm-post-render: false
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
