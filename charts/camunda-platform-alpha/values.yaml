@@ -47,8 +47,14 @@ global:
     ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
     existingSecretKey:
     ## @param global.compatibility.openshift.adaptSecurityContext
+  ## Compatibility adaptations for Kubernetes platforms
+  ##
   compatibility:
+    ## Compatibility adaptations for Openshift
+    ##
     openshift:
+      ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+      ##
       adaptSecurityContext: disabled
   ## Multitenancy configuration.
   ## @extra global.multitenancy
@@ -2244,10 +2250,14 @@ identityPostgresql:
   ##
   enabled: false
   global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
     compatibility:
       ## Compatibility adaptations for Openshift
+      ##
       openshift:
-        ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param identityPostgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
         adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   # https://hub.docker.com/r/bitnami/postgresql/tags
   ## @param identityPostgresql.image.repository PostgreSQL repo
@@ -2286,10 +2296,14 @@ identityKeycloak:
   ## @param identityKeycloak.enabled Enable Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
   enabled: true
   global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
     compatibility:
       ## Compatibility adaptations for Openshift
+      ##
       openshift:
-        ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param identityKeycloak.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
         adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
   nameOverride: "keycloak"
@@ -3052,10 +3066,14 @@ postgresql:
   # Note: If WebModeler is enabled, and WebModeler Postgresql is disabled, the external database configuration must be set under "webModeler.restapi.externalDatabase".
   enabled: false
   global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
     compatibility:
       ## Compatibility adaptations for Openshift
+      ##
       openshift:
-        ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param postgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
         adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   ## @param postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use "postgresql" which is already used for Keycloak's database.
@@ -3077,6 +3095,14 @@ postgresql:
     ## @param postgresql.auth.existingSecret can be used to provide the name of an existing secret resource containing the database password
     existingSecret: ""
 
+  ## @param postgresql.primary.containerSecurityContext.enabled
+  ## @param postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
+  ## @param postgresql.primary.containerSecurityContext.privileged
+  ## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
+  ## @param postgresql.primary.containerSecurityContext.runAsNonRoot
+  ## @param postgresql.primary.containerSecurityContext.runAsUser
+  ## @param postgresql.primary.containerSecurityContext.capabilities.drop
+  ## @param postgresql.primary.containerSecurityContext.seccompProfile.type
   primary:
     containerSecurityContext:
       enabled: true
@@ -3353,10 +3379,14 @@ elasticsearch:
   ## @param elasticsearch.enabled
   enabled: true
   global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
     compatibility:
       ## Compatibility adaptations for Openshift
+      ##
       openshift:
-        ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param elasticsearch.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
         adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
