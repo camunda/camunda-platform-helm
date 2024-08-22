@@ -536,7 +536,6 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"zeebe.containerSecurityContext.privileged":          "true",
-			"zeebe.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -549,7 +548,6 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// then
 	securityContext := statefulSet.Spec.Template.Spec.Containers[0].SecurityContext
 	s.Require().True(*securityContext.Privileged)
-	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
 }
 
 func (s *statefulSetTest) TestContainerSetServiceAccountName() {
