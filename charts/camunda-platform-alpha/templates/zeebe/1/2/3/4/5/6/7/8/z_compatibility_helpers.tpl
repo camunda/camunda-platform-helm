@@ -2,7 +2,7 @@
 TODO: Remove the whole file just before 8.6 release.
 NOTE: We need to load this file first thing before all other resources to support backward compatibility.
 
-      Helm prioritizes files that are deeply nested in subdirectories when it's determining the render order.
+      Helm prioritizes files that are deeply nested in subdirectories when it is determining the render order.
       see the sort function in Helm:
       https://github.com/helm/helm/blob/d58d7b376265338e059ff11c71267b5a6cf504c3/pkg/engine/engine.go#L347-L356
       
@@ -68,9 +68,9 @@ Zeebe Gateway.
 
 {{/*
 OpenShift.
-The `elasticsearch.sysctlImage` container adjusts the machine's virtual memory and file descriptors needed for Elasticsearch.
+The `elasticsearch.sysctlImage` container adjusts the virtual memory and file descriptors of the machine needed for Elasticsearch.
 By default, the `sysctlImage` container will fail on OpenShift because it requires privileged mode.
-Also, recent OpenShift versions (> 4.10) have adjusted the machine's virtual memory by default.
+Also, recent OpenShift versions (> 4.10) have adjusted the virtual memory of the machine by default.
 */}}
 {{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
     {{- $_ := set .Values.elasticsearch.sysctlImage "enabled" false -}}
