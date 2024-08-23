@@ -70,7 +70,7 @@ spec:
               containerPort: 8080
               protocol: TCP
             - name: management
-              containerPort: 9100
+              containerPort: 9600
               protocol: TCP
           readinessProbe:
             httpGet:
