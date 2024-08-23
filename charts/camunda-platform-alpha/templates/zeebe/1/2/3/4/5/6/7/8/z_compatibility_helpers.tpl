@@ -67,11 +67,16 @@ Zeebe Gateway.
 {{- end -}}
 
 {{/*
-OpenShift
+OpenShift - If `adaptSecurityContext` is set to force then set `elasticsearch.sysctlImage` to false.
 */}}
 {{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
     {{- $_ := set .Values.elasticsearch.sysctlImage "enabled" false -}}
 {{- end -}}
+
+
+{{/*
+OpenShift - If `adaptSecurityContext` is set to force then set the label. Without this label the helm upgrade will fail for OpenShift because it is also set for the volumeClaimTemplate.
+*/}}
 
 {{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
     {{- if not (hasKey .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch") -}}
