@@ -36,7 +36,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.tasklist.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.tasklist.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -270,7 +270,7 @@ spec:
       dnsPolicy: {{ .Values.tasklist.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.tasklist.podSecurityContext }}
-      securityContext: {{- toYaml .Values.tasklist.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.tasklist.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
 {{- with .Values.tasklist.nodeSelector }}
       nodeSelector:

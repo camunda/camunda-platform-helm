@@ -2,7 +2,7 @@
 TODO: Remove the whole file just before 8.6 release.
 NOTE: We need to load this file first thing before all other resources to support backward compatibility.
 
-      Helm prioritizes files that are deeply nested in subdirectories when it's determining the render order.
+      Helm prioritizes files that are deeply nested in subdirectories when it is determining the render order.
       see the sort function in Helm:
       https://github.com/helm/helm/blob/d58d7b376265338e059ff11c71267b5a6cf504c3/pkg/engine/engine.go#L347-L356
       
@@ -66,7 +66,28 @@ Zeebe Gateway.
     {{- $_ := set .Values.zeebeGateway.ingress "grpc" (deepCopy $zgIngress | mergeOverwrite .Values.zeebeGateway.ingress.grpc) -}}
 {{- end -}}
 
+{{/*
+OpenShift.
+The `elasticsearch.sysctlImage` container adjusts the virtual memory and file descriptors of the machine needed for Elasticsearch.
+By default, the `sysctlImage` container will fail on OpenShift because it requires privileged mode.
+Also, recent OpenShift versions (> 4.10) have adjusted the virtual memory of the machine by default.
+*/}}
+{{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
+    {{- $_ := set .Values.elasticsearch.sysctlImage "enabled" false -}}
+{{- end -}}
 
+
+{{/*
+OpenShift.
+The label `tuned.openshift.io/elasticsearch` is added to ensure compatibility with the previous Camunda Helm charts.
+Without this label, the Helm upgrade will fail for OpenShift because it is already set for the volumeClaimTemplate.
+*/}}
+
+{{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
+    {{- if not (hasKey .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch") -}}
+        {{- $_ := set .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch" "" -}}
+    {{- end -}}
+{{- end -}}
 {{/*
 Elasticsearch.
 
