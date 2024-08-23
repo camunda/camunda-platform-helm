@@ -67,10 +67,10 @@ Zeebe Gateway.
 {{- end -}}
 
 {{/*
-OpenShift
-If `adaptSecurityContext` is set to force then set `elasticsearch.sysctlImage` to false.
-Elasticsearch fails to schedule if it is set to true. It increases the machine's virtual memory needed for ES instance.Values.
-This is already adjusted by default in OpenShift.
+OpenShift.
+The `elasticsearch.sysctlImage` container adjusts the machine's virtual memory and file descriptors needed for Elasticsearch.
+By default, the `sysctlImage` container will fail on OpenShift because it requires privileged mode.
+Also, recent OpenShift versions (> 4.10) have adjusted the machine's virtual memory by default.
 */}}
 {{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
     {{- $_ := set .Values.elasticsearch.sysctlImage "enabled" false -}}
@@ -78,8 +78,9 @@ This is already adjusted by default in OpenShift.
 
 
 {{/*
-OpenShift
-Without this label, the Helm upgrade will fail for OpenShift because it is also set for the volumeClaimTemplate.
+OpenShift.
+The label `tuned.openshift.io/elasticsearch` is added to ensure compatibility with the previous Camunda Helm charts.
+Without this label, the Helm upgrade will fail for OpenShift because it is already set for the volumeClaimTemplate.
 */}}
 
 {{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
