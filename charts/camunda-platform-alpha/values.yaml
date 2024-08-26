@@ -529,7 +529,7 @@ console:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -1324,7 +1324,7 @@ operate:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param operate.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -1667,7 +1667,7 @@ tasklist:
       memory: 2Gi
 
   ingress:
-    ## @param tasklist.ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param tasklist.ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param tasklist.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -1923,7 +1923,7 @@ optimize:
       memory: 2Gi
 
   ingress:
-    ## @param optimize.ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param optimize.ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param optimize.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -2180,7 +2180,7 @@ identity:
     automountServiceAccountToken: true
 
   ingress:
-    ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param identity.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -3013,7 +3013,7 @@ webModeler:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the WebModeler deployment. Only useful if an Ingress controller like NGINX is available.
+    ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the WebModeler deployment. Only useful if an Ingress controller like NGINX is available. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param webModeler.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -3293,7 +3293,7 @@ connectors:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param connectors.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
