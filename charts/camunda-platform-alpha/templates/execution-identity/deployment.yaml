@@ -54,21 +54,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: identity, auth-basic
-            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
-              value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
-            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.name
-            - name: CAMUNDA_DATABASE_TYPE
-              value: elasticsearch
-            - name: CAMUNDA_DATABASE_CLUSTERNAME
-              value: {{ .Values.global.elasticsearch.clusterName }}
-            - name: CAMUNDA_DATABASE_URL
-              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
 
           {{- if .Values.executionIdentity.env}}
             {{ .Values.executionIdentity.env | toYaml | nindent 12 }}
@@ -127,7 +112,7 @@ spec:
             {{- toYaml .Values.executionIdentity.resources | nindent 12 }}
           volumeMounts:
             - name: execution-identity-configuration
-              mountPath: /var/run/config
+              mountPath: /usr/local/camunda/config
           {{- if .Values.executionIdentity.extraVolumeMounts }}
             {{- .Values.executionIdentity.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}

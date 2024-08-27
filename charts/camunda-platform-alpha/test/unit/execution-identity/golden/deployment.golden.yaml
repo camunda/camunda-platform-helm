@@ -65,21 +65,6 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
-            - name: SPRING_PROFILES_ACTIVE
-              value: identity, auth-basic
-            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
-              value: camunda-platform-test-zeebe:26502
-            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.name
-            - name: CAMUNDA_DATABASE_TYPE
-              value: elasticsearch
-            - name: CAMUNDA_DATABASE_CLUSTERNAME
-              value: elasticsearch
-            - name: CAMUNDA_DATABASE_URL
-              value: "http://camunda-platform-test-elasticsearch:9200"
           ports:
             - name: http
               containerPort: 8080
@@ -106,7 +91,7 @@ spec:
               memory: 1Gi
           volumeMounts:
             - name: execution-identity-configuration
-              mountPath: /var/run/config
+              mountPath: /usr/local/camunda/config
       volumes:
         - name: execution-identity-configuration
           configMap:
