@@ -2312,7 +2312,7 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     ## @param identityKeycloak.image.repository image repo
-    repository: bitnami/keycloak
+    repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
     tag: 25.0.4
 
