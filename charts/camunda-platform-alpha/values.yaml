@@ -2023,7 +2023,7 @@ executionIdentity:
     ## @param executionIdentity.service.serverName defines the port name where the web application will be available
     serverName: http
     ## @param executionIdentity.service.managementPort defines the management port used to access metrics and app status
-    managementPort: 9100
+    managementPort: 9600
 
   ## executionIdentity.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param executionIdentity.resources.requests.memory
@@ -2056,7 +2056,7 @@ executionIdentity:
     ## @param executionIdentity.startupProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param executionIdentity.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /health/readiness
+    probePath: /actuator/health
     ## @param executionIdentity.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -2076,7 +2076,7 @@ executionIdentity:
     ## @param executionIdentity.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param executionIdentity.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /health/readiness
+    probePath: /actuator/health
     ## @param executionIdentity.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
@@ -2096,7 +2096,7 @@ executionIdentity:
     ## @param executionIdentity.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param executionIdentity.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health/liveness
+    probePath: /actuator/health
     ## @param executionIdentity.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30

@@ -20,7 +20,7 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    - port: 9100
+    - port: 9600
       name: management
       targetPort: management
       protocol: TCP
