@@ -60,7 +60,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-write-dirs
-          image: docker.io/bitnami/keycloak:25.0.4
+          image: docker.io/camunda/keycloak:25.0.4
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -100,30 +100,9 @@ spec:
           volumeMounts:
            - name: empty-dir
              mountPath: /emptydir
-        - command:
-          - sh
-          - -c
-          - cp -a /app/keycloak-theme/* /mnt
-          image: 'camunda/identity:latest'
-          imagePullPolicy: 'Always'
-          name: copy-camunda-theme
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1001
-            seccompProfile:
-              type: RuntimeDefault
-          volumeMounts:
-          - mountPath: /mnt
-            name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:25.0.4
+          image: docker.io/camunda/keycloak:25.0.4
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -210,8 +189,6 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/keycloak/data
               subPath: app-data-dir
-            - mountPath: /opt/bitnami/keycloak/themes/identity
-              name: camunda-theme
             - mountPath: /opt/bitnami/keycloak/data/tmp
               name: data-tmp
       volumes:
@@ -219,6 +196,3 @@ spec:
           emptyDir: {}
         - emptyDir: {}
           name: data-tmp
-        - emptyDir:
-            sizeLimit: 10Mi
-          name: camunda-theme

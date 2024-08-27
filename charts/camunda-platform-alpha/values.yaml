@@ -46,7 +46,16 @@ global:
     existingSecret:
     ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
     existingSecretKey:
-
+    ## @param global.compatibility.openshift.adaptSecurityContext
+  ## Compatibility adaptations for Kubernetes platforms
+  ##
+  compatibility:
+    ## Compatibility adaptations for Openshift
+    ##
+    openshift:
+      ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+      ##
+      adaptSecurityContext: disabled
   ## Multitenancy configuration.
   ## @extra global.multitenancy
   multitenancy:
@@ -520,7 +529,7 @@ console:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -1315,7 +1324,7 @@ operate:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param operate.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -1658,7 +1667,7 @@ tasklist:
       memory: 2Gi
 
   ingress:
-    ## @param tasklist.ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param tasklist.ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param tasklist.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -1914,7 +1923,7 @@ optimize:
       memory: 2Gi
 
   ingress:
-    ## @param optimize.ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param optimize.ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param optimize.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -2171,7 +2180,7 @@ identity:
     automountServiceAccountToken: true
 
   ingress:
-    ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param identity.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -2240,6 +2249,16 @@ identityPostgresql:
   ## @param identityPostgresql.enabled Enable Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
   ##
   enabled: false
+  global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
+    compatibility:
+      ## Compatibility adaptations for Openshift
+      ##
+      openshift:
+        ## @param identityPostgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
+        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   # https://hub.docker.com/r/bitnami/postgresql/tags
   ## @param identityPostgresql.image.repository PostgreSQL repo
   ## @param identityPostgresql.image.tag PostgreSQL image tag
@@ -2276,6 +2295,16 @@ identityPostgresql:
 identityKeycloak:
   ## @param identityKeycloak.enabled Enable Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
   enabled: true
+  global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
+    compatibility:
+      ## Compatibility adaptations for Openshift
+      ##
+      openshift:
+        ## @param identityKeycloak.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
+        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
   nameOverride: "keycloak"
 
@@ -2283,7 +2312,7 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     ## @param identityKeycloak.image.repository image repo
-    repository: bitnami/keycloak
+    repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
     tag: 25.0.4
 
@@ -2337,53 +2366,13 @@ identityKeycloak:
   ## @skip identityKeycloak.extraVolumes [object] Extra volumes for keycloak
   ## @skip identityKeycloak.extraVolumes[0].name
   ## @skip identityKeycloak.extraVolumes[0].emptyDir
-  ## @skip identityKeycloak.extraVolumes[1].name
-  ## @skip identityKeycloak.extraVolumes[1].emptyDir
   extraVolumes:
   - name: data-tmp
     emptyDir: {}
-  - name: camunda-theme
-    emptyDir:
-      sizeLimit: 10Mi
-
-  initContainers:
-  ## @param identityKeycloak.initContainers[0].name
-  ## @param identityKeycloak.initContainers[0].image
-  ## @param identityKeycloak.initContainers[0].imagePullPolicy
-  ## @param identityKeycloak.initContainers[0].command
-  ## @param identityKeycloak.initContainers[0].securityContext.privileged
-  ## @param identityKeycloak.initContainers[0].securityContext.readOnlyRootFilesystem
-  ## @param identityKeycloak.initContainers[0].securityContext.allowPrivilegeEscalation
-  ## @param identityKeycloak.initContainers[0].securityContext.runAsNonRoot
-  ## @param identityKeycloak.initContainers[0].securityContext.runAsUser
-  ## @param identityKeycloak.initContainers[0].securityContext.capabilities.drop
-  ## @param identityKeycloak.initContainers[0].securityContext.seccompProfile.type
-  ## @param identityKeycloak.initContainers[0].volumeMounts[0].name
-  ## @param identityKeycloak.initContainers[0].volumeMounts[0].mountPath
-  - name: copy-camunda-theme
-    image: "{{ .Values.global.identity.image | default \"camunda/identity:latest\" }}"
-    imagePullPolicy: "{{ .Values.global.identity.imagePullPolicy | default \"Always\" }}"
-    command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
-    securityContext:
-      privileged: false
-      readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      runAsUser: 1001
-      capabilities:
-        drop: ["ALL"]
-      seccompProfile:
-        type: RuntimeDefault
-    volumeMounts:
-    - name: camunda-theme
-      mountPath: /mnt
+ 
   ## @param identityKeycloak.extraVolumeMounts[0].name
   ## @param identityKeycloak.extraVolumeMounts[0].mountPath
-  ## @param identityKeycloak.extraVolumeMounts[1].mountPath
-  ## @param identityKeycloak.extraVolumeMounts[1].name
   extraVolumeMounts:
-  - name: camunda-theme
-    mountPath: /opt/bitnami/keycloak/themes/identity
   - name: data-tmp
     mountPath: /opt/bitnami/keycloak/data/tmp
 
@@ -3024,7 +3013,7 @@ webModeler:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the WebModeler deployment. Only useful if an Ingress controller like NGINX is available.
+    ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the WebModeler deployment. Only useful if an Ingress controller like NGINX is available. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param webModeler.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -3076,6 +3065,16 @@ postgresql:
   ## @param postgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
   # Note: If WebModeler is enabled, and WebModeler Postgresql is disabled, the external database configuration must be set under "webModeler.restapi.externalDatabase".
   enabled: false
+  global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
+    compatibility:
+      ## Compatibility adaptations for Openshift
+      ##
+      openshift:
+        ## @param postgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
+        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   ## @param postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
@@ -3096,6 +3095,14 @@ postgresql:
     ## @param postgresql.auth.existingSecret can be used to provide the name of an existing secret resource containing the database password
     existingSecret: ""
 
+  ## @param postgresql.primary.containerSecurityContext.enabled
+  ## @param postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
+  ## @param postgresql.primary.containerSecurityContext.privileged
+  ## @param postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
+  ## @param postgresql.primary.containerSecurityContext.runAsNonRoot
+  ## @param postgresql.primary.containerSecurityContext.runAsUser
+  ## @param postgresql.primary.containerSecurityContext.capabilities.drop
+  ## @param postgresql.primary.containerSecurityContext.seccompProfile.type
   primary:
     containerSecurityContext:
       enabled: true
@@ -3286,7 +3293,7 @@ connectors:
     automountServiceAccountToken: false
 
   ingress:
-    ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx.
+    ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
     enabled: false
     ## @param connectors.ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
@@ -3371,6 +3378,16 @@ connectors:
 elasticsearch:
   ## @param elasticsearch.enabled
   enabled: true
+  global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
+    compatibility:
+      ## Compatibility adaptations for Openshift
+      ##
+      openshift:
+        ## @param elasticsearch.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
+        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository

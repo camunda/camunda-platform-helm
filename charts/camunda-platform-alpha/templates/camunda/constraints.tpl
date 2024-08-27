@@ -52,6 +52,14 @@ Fail with a message if global.identity.auth.identity.existingSecret is set and g
 {{- end }}
 
 {{/*
+Fail with a message if adaptSecurityContext has any value other than "force" or "disabled".
+*/}}
+{{- if not (has .Values.global.compatibility.openshift.adaptSecurityContext (list "force" "disabled")) }}
+  {{- $errorMessage := "[camunda][error] Invalid value for adaptSecurityContext. The value must be either 'force' or 'disabled'." -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+{{- end }}
+
+{{/*
 Fail with a message if Identity is disabled and identityKeycloak is enabled.
 */}}
 {{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}

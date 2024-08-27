@@ -33,7 +33,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.identity.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.identity.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -323,7 +323,7 @@ spec:
       dnsPolicy: {{ .Values.identity.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.identity.podSecurityContext }}
-      securityContext: {{- toYaml .Values.identity.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.identity.nodeSelector }}
       nodeSelector:

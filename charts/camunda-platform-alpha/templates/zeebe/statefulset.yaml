@@ -48,7 +48,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.zeebe.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.zeebe.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.zeebe.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -254,7 +254,7 @@ spec:
       dnsPolicy: {{ .Values.zeebe.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.zeebe.podSecurityContext }}
-      securityContext: {{- toYaml .Values.zeebe.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.zeebe.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
 {{- with .Values.zeebe.nodeSelector }}
       nodeSelector:
