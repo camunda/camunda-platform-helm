@@ -54,6 +54,8 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            - name: PLAY_ENABLED
+              value: "true"
             - name: NODE_OPTIONS
               value: "--max-old-space-size=128"
             - name: PUSHER_APP_ID
