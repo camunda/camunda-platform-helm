@@ -257,6 +257,19 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{/*
+[web-modeler] Check if username and password is provided for the SMTP server
+*/}}
+{{- define "webModeler.restapi.mail.authEnabled" -}}
+  {{- $authEnabled := false -}}
+  {{- if and (typeIs "string" .Values.webModeler.restapi.mail.smtpUser) (ne .Values.webModeler.restapi.mail.smtpUser "") }}
+    {{- if or (and (typeIs "string" .Values.webModeler.restapi.mail.smtpPassword) (ne .Values.webModeler.restapi.mail.smtpPassword "")) .Values.webModeler.restapi.mail.existingSecret }}
+      {{- $authEnabled = true }}
+    {{- end }}
+  {{- end }}
+  {{- $authEnabled -}}
+{{- end -}}
+
+{{/*
 [web-modeler] Get the full name of the Kubernetes objects from the postgresql dependency chart
 */}}
 {{- define "webModeler.postgresql.fullname" -}}
