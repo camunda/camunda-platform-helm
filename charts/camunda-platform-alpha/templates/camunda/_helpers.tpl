@@ -252,7 +252,7 @@ Get the external url for keycloak
     {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
   {{ else if .Values.identityKeycloak.enabled -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.global.identity.keycloak.contextPath -}}
+    {{- printf "%s://%s%s" $proto (.Values.global.ingress.host | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
 {{- end -}}
 
@@ -368,6 +368,19 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
     {{- else if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values .component "contextPath") -}} 
+    {{- else -}}
+      {{- $portMapping := (dict
+      "operate" "8081"
+      "identity" "8080"
+      "tasklist" "8082"
+      "optimize" "8083"
+      "webapp" "8084"
+      "websockets" "8085"
+      "console" "8087"
+      "connectors" "8086"
+      "zeebeGateway" "26500"
+      ) -}}
+      {{- printf "http://localhost:%s" (get $portMapping .component) -}} 
     {{- end -}}
   {{- end -}}
 {{- end -}}
@@ -503,9 +516,11 @@ Zeebe templates.
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.zeebeGateway.contextPath -}}
-  {{- else -}}
+  {{- else if .Values.zeebeGateway.ingress.rest.enabled -}}
     {{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.rest.tls.enabled -}}
     {{- printf "%s://%s%s" $proto .Values.zeebeGateway.ingress.rest.host .Values.zeebeGateway.contextPath -}} 
+  {{- else -}}
+    {{- printf "http://localhost:8088" -}}
   {{- end -}}
 {{- end -}}
 
@@ -514,7 +529,7 @@ Zeebe templates.
 */}}
 {{- define "camundaPlatform.zeebeGatewayGRPCExternalURL" -}}
   {{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.grpc.tls.enabled -}}
-  {{- printf "%s://%s" $proto (tpl .Values.zeebeGateway.ingress.grpc.host .) -}}
+  {{- printf "%s://%s" $proto (tpl .Values.zeebeGateway.ingress.grpc.host . | default "localhost:26500") -}}
 {{- end -}}
 
 {{/*
