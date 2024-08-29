@@ -137,7 +137,7 @@ We recommend using Helm on KIND for local environments, as the Helm configuratio
 and much closer to production systems.
 
 For more details, follow the Camunda 8
-[local Kubernetes cluster guide](https://docs.camunda.io/docs/self-managed/setup/guides/local-kubernetes-cluster/).
+[local Kubernetes cluster guide](https://docs.camunda.io/docs/self-managed/setup/deploy/local/local-kubernetes-cluster/).
 
 ### OpenShift
 
