@@ -8,8 +8,8 @@ identity:
   - name: KEYCLOAK_CLIENTS_2_SECRET
     valueFrom:
       secretKeyRef:
-        name: integration-test
-        key: client-secret
+        name: integration-credentials-autogen
+        key: identity-admin-client-password
   - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
     value: /dummy
   - name: KEYCLOAK_CLIENTS_2_ROOT_URL

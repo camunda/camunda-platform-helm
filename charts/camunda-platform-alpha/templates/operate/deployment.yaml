@@ -158,7 +158,7 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
-                  key: operate-secret
+                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
@@ -168,7 +168,7 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
-                  key: operate-secret
+                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
               {{- end }}
             - name: ZEEBE_CLIENT_ID
               value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
@@ -177,12 +177,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
