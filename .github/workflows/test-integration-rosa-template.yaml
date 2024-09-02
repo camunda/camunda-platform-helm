@@ -188,29 +188,7 @@ jobs:
                 sleep 5
             done
 
-            while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
-                echo "Waiting for all pods to be Running or Completed"
-                sleep 5
-            done
-
-            echo "Checking ExternalSecrets"
-            while true; do
-                externalsecret_status=$(kubectl get externalsecret --all-namespaces --no-headers 2>/dev/null)
-                
-                if [ -z "$externalsecret_status" ]; then
-                    echo "No ExternalSecrets found in all namespaces. Waiting..."
-                else
-                    unsynced_secret_count=$(echo "$externalsecret_status" | grep -v 'Synced' | wc -l)
-                    if [ "$unsynced_secret_count" -eq 0 ]; then
-                        echo "All ExternalSecrets are synced."
-                        break
-                    else
-                        echo "Waiting for all ExternalSecrets to be synced..."
-                    fi
-                fi
-                
-                sleep 10
-            done
+            kubectl get all --all-namespaces
 
       - name: Export kubeconfig and encrypt it # this is required to pass matrix outputs securely using artifacts
         id: export_kube_config
