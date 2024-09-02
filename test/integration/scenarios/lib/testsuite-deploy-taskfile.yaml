@@ -25,6 +25,10 @@ tasks:
         kustomize edit add configmap venom-tests --disableNameSuffixHash \
           --from-file=files/testsuite-{{ .testID }}.yaml
       )
+    # Add testsuites secrets patch.
+    - |
+      cp -a {{ .chartDir }}/test/integration/testsuites/core/patches/* \
+        ../../testsuites/core/patches/
     - |
       kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars | kubectl apply -n $TEST_NAMESPACE -f -
     # Add imagePullSecrets if needed.

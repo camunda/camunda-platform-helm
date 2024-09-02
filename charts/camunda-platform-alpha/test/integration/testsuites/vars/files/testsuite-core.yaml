@@ -22,6 +22,9 @@ testcases:
   - name: "{{ .value.component }}"
     type: http
     range:
+    - component: Connectors
+      clientID: connectors
+      clientSecret: "{{ .CONNECTORS_CLIENT_SECRET }}"
     - component: Tasklist
       clientID: tasklist
       clientSecret: "{{ .TASKLIST_CLIENT_SECRET }}"
@@ -31,9 +34,9 @@ testcases:
     - component: Optimize
       clientID: optimize
       clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
-    - component: Connectors
-      clientID: connectors
-      clientSecret: "{{ .CONNECTORS_CLIENT_SECRET }}"
+    - component: Zeebe
+      clientID: zeebe
+      clientSecret: "{{ .ZEEBE_CLIENT_SECRET }}"
     method: POST
     url: "{{ .coreVars.authURL }}"
     headers:

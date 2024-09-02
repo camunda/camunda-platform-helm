@@ -49,7 +49,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "connectors.authCredentialsSecretName" . }}
-                  key: connectors-secret
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
           {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.connectors.inbound.mode "oauth" }}
@@ -58,12 +58,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
-                  key: connectors-secret
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
-                  key: connectors-secret
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
               {{- end }}
             {{- end }}
             - name: ZEEBE_CLIENT_ID
@@ -73,12 +73,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}

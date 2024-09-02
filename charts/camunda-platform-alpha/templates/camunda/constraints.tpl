@@ -157,17 +157,19 @@ metadata:
   name: identity-secret-for-components
 type: Opaque
 data:
-  operate-secret: <base64-encoded-secret>
-  tasklist-secret: <base64-encoded-secret>
-  optimize-secret: <base64-encoded-secret>
+  # Ideneity apps auth.
   connectors-secret: <base64-encoded-secret>
   console-secret: <base64-encoded-secret>
-  keycloak-secret: <base64-encoded-secret>
+  operate-secret: <base64-encoded-secret>
+  optimize-secret: <base64-encoded-secret>
+  tasklist-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
-  admin-password: <base64-encoded-secret> # used for keycloak
-  management-password: <base64-encoded-secret> # used for keycloak
+  # Ideneity Keycloak.
+  admin-password: <base64-encoded-secret>.
+  # Ideneity Keycloak PostgreSQL.
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
+  # Web Modeler.
   smtp-password: <base64-encoded-secret> # used for web modeler mail
 
 The following values inside your values.yaml need to be set but were not:
@@ -194,17 +196,19 @@ metadata:
   name: identity-secret-for-components
 type: Opaque
 data:
-  operate-secret: <base64-encoded-secret>
-  tasklist-secret: <base64-encoded-secret>
-  optimize-secret: <base64-encoded-secret>
+  # Ideneity apps auth.
   connectors-secret: <base64-encoded-secret>
   console-secret: <base64-encoded-secret>
-  keycloak-secret: <base64-encoded-secret>
+  operate-secret: <base64-encoded-secret>
+  optimize-secret: <base64-encoded-secret>
+  tasklist-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
-  admin-password: <base64-encoded-secret> # used for keycloak
-  management-password: <base64-encoded-secret> # used for keycloak
+  # Ideneity Keycloak.
+  admin-password: <base64-encoded-secret>.
+  # Ideneity Keycloak PostgreSQL.
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
+  # Web Modeler.
   smtp-password: <base64-encoded-secret> # used for web modeler mail
 
 The following values inside your values.yaml need to be set but were not:

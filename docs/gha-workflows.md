@@ -63,6 +63,13 @@ jobs:
       # Required: false
       camunda-helm-git-ref: 'main'
 
+
+      # Auto-generate credentials or copy them from external secret. Valid options: auto-generated or external-secret
+      # New optional auto-generated secrets are only supported in Camunda 8.6 chart and above.
+      # Default: 'auto-generated'
+      # Required: false
+      camunda-helm-credentials-source: 'auto-generated'
+
       # Git reference of the caller's repository (branch, tag, or commit SHA) that initiated the workflow
       # Default: 'main'
       # Required: false
