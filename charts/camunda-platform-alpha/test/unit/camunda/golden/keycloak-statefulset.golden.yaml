@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 23.0.7
+    app.kubernetes.io/version: 25.0.4
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -31,7 +31,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 23.0.7
+        app.kubernetes.io/version: 25.0.4
         app.kubernetes.io/component: keycloak
     spec:
       serviceAccountName: camunda-platform-test-keycloak
@@ -59,16 +59,22 @@ spec:
         sysctls: []
       enableServiceLinks: true
       initContainers:
-        - name: init-quarkus-directory
-          image: docker.io/bitnami/keycloak:23.0.7
+        - name: prepare-write-dirs
+          image: docker.io/camunda/keycloak:25.0.4
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
           args:
             - -ec
             - |
-              #!/bin/bash
-              cp -r /opt/bitnami/keycloak/lib/quarkus/* /quarkus
+              . /opt/bitnami/scripts/liblog.sh
+
+              info "Copying writable dirs to empty dir"
+              # In order to not break the application functionality we need to make some
+              # directories writable, so we need to copy it to an empty dir volume
+              cp -r --preserve=mode /opt/bitnami/keycloak/lib/quarkus /emptydir/app-quarkus-dir
+              cp -r --preserve=mode /opt/bitnami/keycloak/data /emptydir/app-data-dir
+              info "Copy operation completed"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -76,42 +82,27 @@ spec:
               - ALL
             privileged: false
             readOnlyRootFilesystem: true
-            runAsGroup: 0
+            runAsGroup: 1001
             runAsNonRoot: true
             runAsUser: 1001
+            seLinuxOptions: {}
             seccompProfile:
               type: RuntimeDefault
+          resources:
+            limits:
+              cpu: 750m
+              ephemeral-storage: 2Gi
+              memory: 768Mi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 50Mi
+              memory: 512Mi
           volumeMounts:
-            - name: empty-dir
-              mountPath: /tmp
-              subPath: tmp-dir
-            - name: empty-dir
-              mountPath: /quarkus
-              subPath: app-quarkus-dir
-        - command:
-          - sh
-          - -c
-          - cp -a /app/keycloak-theme/* /mnt
-          image: 'camunda/identity:latest'
-          imagePullPolicy: 'Always'
-          name: copy-camunda-theme
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1001
-            seccompProfile:
-              type: RuntimeDefault
-          volumeMounts:
-          - mountPath: /mnt
-            name: camunda-theme
+           - name: empty-dir
+             mountPath: /emptydir
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:23.0.7
+          image: docker.io/camunda/keycloak:25.0.4
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -120,9 +111,10 @@ spec:
               - ALL
             privileged: false
             readOnlyRootFilesystem: true
-            runAsGroup: 0
+            runAsGroup: 1001
             runAsNonRoot: true
             runAsUser: 1001
+            seLinuxOptions: {}
             seccompProfile:
               type: RuntimeDefault
           env:
@@ -145,26 +137,35 @@ spec:
                   key: password
             - name: KEYCLOAK_HTTP_RELATIVE_PATH
               value: "/auth/"
+            - name: KC_SPI_ADMIN_REALM
+              value: "master"
             - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
               value: 'false'
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-keycloak-env-vars
+          resources:
+            limits:
+              cpu: 750m
+              ephemeral-storage: 2Gi
+              memory: 768Mi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 50Mi
+              memory: 512Mi
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
-            - name: infinispan
+            - name: discovery
               containerPort: 7800
-              protocol: TCP
           livenessProbe:
             failureThreshold: 3
             initialDelaySeconds: 300
             periodSeconds: 1
             successThreshold: 1
             timeoutSeconds: 5
-            httpGet:
-              path: /auth/
+            tcpSocket:
               port: http
           readinessProbe:
             failureThreshold: 3
@@ -180,13 +181,17 @@ spec:
               mountPath: /tmp
               subPath: tmp-dir
             - name: empty-dir
+              mountPath: /bitnami
+              subPath: app-volume-dir
+            - name: empty-dir
               mountPath: /opt/bitnami/keycloak/conf
               subPath: app-conf-dir
             - name: empty-dir
               mountPath: /opt/bitnami/keycloak/lib/quarkus
               subPath: app-quarkus-dir
-            - mountPath: /opt/bitnami/keycloak/themes/identity
-              name: camunda-theme
+            - name: empty-dir
+              mountPath: /opt/bitnami/keycloak/data
+              subPath: app-data-dir
             - mountPath: /opt/bitnami/keycloak/data/tmp
               name: data-tmp
       volumes:
@@ -194,6 +199,3 @@ spec:
           emptyDir: {}
         - emptyDir: {}
           name: data-tmp
-        - emptyDir:
-            sizeLimit: 10Mi
-          name: camunda-theme

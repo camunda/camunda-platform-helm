@@ -536,7 +536,6 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"zeebe.containerSecurityContext.privileged":          "true",
-			"zeebe.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -549,7 +548,6 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// then
 	securityContext := statefulSet.Spec.Template.Spec.Containers[0].SecurityContext
 	s.Require().True(*securityContext.Privileged)
-	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
 }
 
 func (s *statefulSetTest) TestContainerSetServiceAccountName() {
@@ -942,40 +940,4 @@ func (s *statefulSetTest) TestSetDnsPolicyAndDnsConfig() {
 	}
 
 	require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
-}
-
-func (s *statefulSetTest) TestDefaultStrategy() {
-	// given
-	options := &helm.Options{
-		SetValues:      map[string]string{},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	updateStrategy := statefulSet.Spec.UpdateStrategy
-	s.Require().Contains(string(updateStrategy.Type), "RollingUpdate")
-}
-
-func (s *statefulSetTest) TestDefinedStrategy() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"zeebe.strategy.type": "OnDelete",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	updateStrategy := statefulSet.Spec.UpdateStrategy
-	s.Require().Contains(string(updateStrategy.Type), "OnDelete")
 }

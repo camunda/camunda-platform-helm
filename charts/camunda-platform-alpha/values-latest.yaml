@@ -19,42 +19,42 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.6.0-alpha3
+    tag: 8.6.0-alpha4
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
-    tag: 8.6.0-alpha3
+    tag: 8.6.0-alpha4
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.6.0-alpha3-rc3
+    tag: 8.6.0-alpha4
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.6.0-alpha3
+    tag: 8.6.0-alpha4
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.0-alpha3
+    tag: 8.6.0-alpha4
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.0-alpha3
+    tag: 8.6.0-alpha4
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.0-alpha3
+    tag: 8.6.0-alpha4
 
 #
 # Identity
@@ -64,7 +64,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.6.0-alpha3
+    tag: 8.6.0-alpha4
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
@@ -75,7 +75,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       repository: bitnami/postgresql
-      tag: 15.7.0
+      tag: 15.8.0
 
 #
 # Elasticsearch
@@ -85,4 +85,4 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.12.2
+    tag: 8.15.0

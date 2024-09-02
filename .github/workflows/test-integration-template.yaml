@@ -8,6 +8,11 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
+      camunda-helm-repo:
+        description: The Helm repo which is used during the upgrade flow.
+        required: false
+        default: camunda/camunda-platform
+        type: string
       camunda-helm-dir:
         required: false
         default: camunda-platform-latest
@@ -16,18 +21,26 @@ on:
         required: false
         default: main
         type: string
+      camunda-helm-upgrade-version:
+        description: The Helm chart released version to upgrade from.
+        required: false
+        default: ""
+        type: string
       caller-git-ref:
         required: false
         default: main
         type: string
       deployment-ttl:
-        description: |
-          Define a ttl for the lifespan of the deployment
+        description: Define a TTL for the lifespan of the deployment.
         required: false
         default: ""
         type: string
       platforms:
         default: gke
+        type: string
+      infra-type:
+        description: Define the infrastructure that will be used to run the deployment.
+        default: "preemptible"
         type: string
       flows:
         required: false
@@ -54,6 +67,11 @@ on:
       matrix-data:
         required: false
         type: string
+      camunda-helm-post-render:
+        description: Set to true if you would like to run the post-renderer script for OpenShift
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -67,6 +85,8 @@ env:
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
+  # The Helm repo which is used during the upgrade flow.
+  TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
@@ -82,22 +102,31 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-      with:
-        # This is needed if the workflow is triggered by workflow_call.
-        repository: camunda/camunda-platform-helm
-        ref: ${{ inputs.camunda-helm-git-ref }}
-    - name: Generate workflow matrix
-      id: generate-workflow-matrix
-      env:
-          CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
-          # Use GH env to safly load JSON matrix input.
-          CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
-      run: |
-        matrix_defult="$(yq '.matrix' --indent=0 --output-format json ${CI_MATRIX_FILE})"
-        matrix="${CI_MATRIX_INPUT:-${matrix_defult}}"
-        echo "${matrix}" | jq
-        echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          # This is needed if the workflow is triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+      - name: Generate workflow matrix
+        id: generate-workflow-matrix
+        env:
+            CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
+            # Use GH env to safly load JSON matrix input.
+            CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
+        run: |
+          # TODO: Find a better way to handle GitHub Actions expressions substitution.
+          # Substitute vars.
+          export INPUTS_PLATFORMS_GKE=${{ contains(inputs.platforms, 'gke') }}
+          export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
+          export INPUTS_FLOWS_INSTALL=${{ contains(inputs.flows, 'install') }}
+          export INPUTS_FLOWS_UPGRADE=${{ contains(inputs.flows, 'upgrade') }}
+          cat ${CI_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
+          # Read matrix YAML file.
+          matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
+          matrix="${CI_MATRIX_INPUT:-${matrix_defult}}"
+          # Print and set matrix JSON object as an output.
+          echo "${matrix}" | jq
+          echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
 
   test:
     if: github.event.action != 'closed'
@@ -115,7 +144,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type || inputs.cluster-type }}
 
     steps:
-      - name: Print workflow inputs
+      - name: ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: echo "$GITHUB_CONTEXT"
@@ -169,7 +198,7 @@ jobs:
           openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
-      - name: Set workflow vars
+      - name: ℹ️ Set workflow vars ℹ️
         id: vars
         uses: ./.github/actions/workflow-vars
         with:
@@ -179,6 +208,7 @@ jobs:
           identifier-base: ${{ inputs.identifier }}
           ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
       - name: Set test type vars
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
@@ -230,8 +260,10 @@ jobs:
       - name: 🌟 Setup Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
@@ -246,8 +278,10 @@ jobs:
       - name: 🌟 Upgrade Camunda chart 🌟
         if: matrix.scenario.flow == 'upgrade'
         env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec

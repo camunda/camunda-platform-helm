@@ -41,6 +41,27 @@ data:
         active: auth
     {{- end }}
 
+    # Camunda Database configuration
+    {{- if .Values.global.elasticsearch.enabled }}
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: {{ .Values.global.elasticsearch.clusterName }}
+      {{- if .Values.global.elasticsearch.external }}
+      username: {{ .Values.global.elasticsearch.auth.username | quote }}
+      {{- end }}
+      # Elasticsearch full url
+      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+    {{- end }}
+    {{- if .Values.global.opensearch.enabled }}
+    camunda.database:
+      type: opensearch
+      url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+      {{- if .Values.global.opensearch.auth.username }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      {{- end }}
+    {{- end }}
+
     # Tasklist configuration file
     camunda.tasklist:
       {{- if .Values.global.multitenancy.enabled }}
@@ -109,7 +130,7 @@ data:
       zeebe:
         # Gateway address
         gatewayAddress: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
-        restAddress: "http://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.restPort }}"
+        restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
       {{- if .Values.tasklist.retention.enabled }}
       archiver:
         ilmEnabled: true

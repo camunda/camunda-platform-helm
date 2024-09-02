@@ -15,20 +15,38 @@ global:
   identity:
     auth:
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      connectors:
+        existingSecret:
+          name: "integration-test"
       operate:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/operate"
+        existingSecret:
+          name: "integration-test"
       tasklist:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/tasklist"
+        existingSecret:
+          name: "integration-test"
       optimize:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        existingSecret:
+          name: "integration-test"
       webModeler:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      zeebe:
+        existingSecret:
+          name: "integration-test"
 
 identity:
   contextPath: "/identity"
   fullURL: "https://{{ .Values.global.ingress.host }}/identity"
   firstUser:
     existingSecret: "integration-test"
+  keycloak:
+    auth:
+      existingSecret: "integration-test"
+    postgresql:
+      auth:
+        existingSecret: "integration-test"
 
 operate:
   contextPath: "/operate"
@@ -72,42 +90,7 @@ zeebe-gateway:
       external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
-  enabled: true
-  contextPath: "/"
-  image:
-    pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
-  managed:
-    releases:
-    - name: camunda-platform-dev
-      namespace: camunda-dev
-      version: 8.2.10
-      components:
-      - name: Console
-        url: "https://example-dev.camunda.com/"
-      - name: Optimize
-        url: "https://example-dev.camunda.com/optimize"
-      - name: Operate
-        url: "https://example-dev.camunda.com/operate"
-      - name: WebModeler WebApp
-        url: "https://example-dev.camunda.com/modeler"
-      - name: zeebeGateway
-        url: "grpc://zeebe-example-dev.camunda.com/"
-    - name: camunda-platform-stage
-      namespace: camunda-stage
-      version: 8.2.11
-      components:
-      - name: Console
-        url: "https://example-stage.camunda.com/"
-      - name: Optimize
-        url: "https://example-stage.camunda.com/optimize"
-      - name: Operate
-        url: "https://example-stage.camunda.com/operate"
-      - name: WebModeler WebApp
-        url: "https://example-stage.camunda.com/modeler"
-      - name: zeebeGateway
-        url: "grpc://zeebe-example-stage.camunda.com/"
+  enabled: false
 
 elasticsearch:
   maxUnavailable: 0

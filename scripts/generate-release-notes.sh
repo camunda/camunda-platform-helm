@@ -1,16 +1,18 @@
 #!/bin/bash
-set -euo pipefail
+set -euox pipefail
+
 
 main () {
-    git fetch origin main:main
+    test "$(git branch --show-current)" != "main" && git fetch origin main:main
+    release_please_config=".github/config/release-please/release-please-config.json"
+    latest_release_commit="$(git show main:${release_please_config} | jq -r '."bootstrap-sha"')"
+    cliff_config_file=".github/config/cliff.toml"
 
     chart_dir="${1}"
     chart_file="${chart_dir}/Chart.yaml"
     chart_name="$(yq '.name' ${chart_file})"
     chart_version="$(yq '.version' ${chart_file})"
-    chart_version_previous="$(git show main:${chart_file} | yq '.version')"
     chart_tag="${chart_name}-${chart_version}"
-    chart_tag_previous="${chart_name}-${chart_version_previous}"
 
     #
     # Early exit if the tag already exists.
@@ -24,24 +26,29 @@ main () {
 
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
-    git-chglog                                      \
+    git-cliff ${latest_release_commit}..            \
+        --config "${cliff_config_file}"             \
         --output "${chart_dir}/RELEASE-NOTES.md"    \
-        --tag-filter-pattern "${chart_tag}"         \
-        --next-tag "${chart_tag}"                   \
-        --path "${chart_dir}"                       \
-        "${chart_tag_previous}".."${chart_tag}"
+        --include-path "${chart_dir}/**"            \
+        --tag "${chart_tag}"
+
+    cat "${chart_dir}/RELEASE-NOTES.md"
 
     #
     # Update ArtifactHub "changes" annotation in the Chart.yaml file.
     # https://artifacthub.io/docs/topics/annotations/helm/#supported-annotations
-    change_types="$(yq e '.options.commits.filters.Type | join(" ")' .chglog/config.yml)"
+    change_types () {
+        yq -oy "${cliff_config_file}" |
+          yq '[.git.commit_parsers[].group] | join(" ")' |
+            tr -d '[:punct:]' | tr -d '[:digit:]'
+    }
 
     # 
     declare -A kac_map
     kac_map+=(
-        ["feat"]=added
-        ["refactor"]=changed
-        ["fix"]=fixed
+        ["Features"]=added
+        ["Refactor"]=changed
+        ["Fixes"]=fixed
     )
 
     # Workaround to rest with empty literal block which is not possible in yq.
@@ -52,10 +59,10 @@ main () {
     artifacthub_changes_tmp="/tmp/changes-for-artifacthub.yaml.tmp"
     echo -e 'annotations:\n  artifacthub.io/changes: |' > "${artifacthub_changes_tmp}"
 
-    for change_type in ${change_types}; do
+    for change_type in $(change_types); do
         change_type_section=$(sed -rn "/^\#+\s${change_type^}/,/^#/p" "${chart_dir}/RELEASE-NOTES.md")
         if [[ -n "${change_type_section}" && "${!kac_map[@]}" =~ "${change_type}" ]]; then
-            echo "${change_type_section}" | egrep '^\*' | sed 's/^* //g' | while read commit_message; do
+            echo "${change_type_section}" | egrep '^\-' | sed 's/^- //g' | while read commit_message; do
                 echo "    - kind: ${kac_map[${change_type}]}"
                 echo "      description: \"$(echo ${commit_message} | sed -r "s/ \(.+\)$//")\""
             done >> "${artifacthub_changes_tmp}"

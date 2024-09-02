@@ -11,11 +11,13 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.6.0-alpha3"
+    app.kubernetes.io/version: "8.6.0-alpha4"
   annotations:
     {}
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app: camunda-platform
@@ -33,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: "8.6.0-alpha3"
+        app.kubernetes.io/version: "8.6.0-alpha4"
       annotations:
     spec:
       imagePullSecrets:
@@ -42,7 +44,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.6.0-alpha3
+          image: camunda/connectors-bundle:8.6.0-alpha4
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

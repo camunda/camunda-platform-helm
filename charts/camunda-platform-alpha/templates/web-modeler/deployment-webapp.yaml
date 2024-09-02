@@ -6,11 +6,9 @@ metadata:
   labels: {{- include "webModeler.webapp.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.webModeler.webapp.strategy }}
   strategy:
-    {{- .Values.webModeler.webapp.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
+  replicas: 1
   selector:
     matchLabels: {{- include "webModeler.webapp.matchLabels" . | nindent 6 }}
   template:
@@ -33,7 +31,7 @@ spec:
           image: {{ include "webModeler.webapp.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.webModeler.webapp.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.webModeler.webapp.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.webapp.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -43,6 +41,8 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: NODE_ENV
               value: "production"
+            - name: PLAY_ENABLED
+              value: "true"
             - name: NODE_OPTIONS
               value: "--max-old-space-size=128"
             - name: PUSHER_APP_ID
@@ -152,7 +152,7 @@ spec:
       dnsPolicy: {{ .Values.webModeler.webapp.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.webModeler.webapp.podSecurityContext }}
-      securityContext: {{- toYaml .Values.webModeler.webapp.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.webapp.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.webModeler.webapp.nodeSelector }}
       nodeSelector:

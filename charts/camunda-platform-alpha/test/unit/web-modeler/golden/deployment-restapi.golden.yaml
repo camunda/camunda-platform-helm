@@ -14,6 +14,8 @@ metadata:
   annotations:
     {}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels:
@@ -39,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-restapi
-          image: "camunda/web-modeler-restapi:8.6.0-alpha3"
+          image: "camunda/web-modeler-restapi:8.6.0-alpha4"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

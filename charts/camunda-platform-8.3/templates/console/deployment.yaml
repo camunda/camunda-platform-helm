@@ -6,6 +6,8 @@ metadata:
   labels:
     {{- include "console.labels" . | nindent 4 }}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: {{ .Values.console.replicaCount }}
   selector:
     matchLabels:

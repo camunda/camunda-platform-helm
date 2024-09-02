@@ -6,11 +6,9 @@ metadata:
   labels: {{- include "webModeler.restapi.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.webModeler.restapi.strategy }}
   strategy:
-    {{- .Values.webModeler.restapi.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
+  replicas: 1
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
   template:
@@ -38,11 +36,13 @@ spec:
           env:
             - name: JAVA_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
+            {{- if or (not .Values.webModeler.restapi.externalDatabase.enabled) .Values.webModeler.restapi.externalDatabase.password }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "webModeler.restapi.databaseSecretName" . }}
                   key: {{ include "webModeler.restapi.databaseSecretKey" . }}
+            {{- end }}
             {{- $smtpSecretName := (include "webModeler.restapi.smtpSecretName" .) }}
             {{- if $smtpSecretName }}
             - name: RESTAPI_MAIL_PASSWORD
@@ -91,6 +91,7 @@ spec:
           startupProbe:
             httpGet:
               path: {{ .Values.webModeler.restapi.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.startupProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.restapi.startupProbe.periodSeconds }}
@@ -102,6 +103,7 @@ spec:
           readinessProbe:
             httpGet:
               path: {{ .Values.webModeler.restapi.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.readinessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.restapi.readinessProbe.periodSeconds }}
@@ -113,6 +115,7 @@ spec:
           livenessProbe:
             httpGet:
               path: {{ .Values.webModeler.restapi.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.livenessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.restapi.livenessProbe.periodSeconds }}

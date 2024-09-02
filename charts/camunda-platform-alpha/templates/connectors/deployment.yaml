@@ -7,10 +7,8 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   replicas: {{ .Values.connectors.replicas }}
-  {{- if .Values.connectors.strategy }}
   strategy:
-    {{- .Values.connectors.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
   selector:
     matchLabels: {{- include "connectors.matchLabels" . | nindent 6 }}
   template:
@@ -34,7 +32,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.connectors.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.connectors.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.connectors.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           ports:
             - containerPort: {{ .Values.connectors.service.serverPort }}
@@ -174,7 +172,7 @@ spec:
       dnsPolicy: {{ .Values.connectors.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.connectors.podSecurityContext }}
-      securityContext: {{- toYaml .Values.connectors.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.connectors.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.connectors.nodeSelector }}
       nodeSelector:

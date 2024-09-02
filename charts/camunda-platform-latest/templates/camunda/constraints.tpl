@@ -60,6 +60,22 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
+{{/*
+Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.path are not the same
+*/}}
+{{- if and .Values.zeebeGateway.ingress.rest.enabled (ne .Values.zeebeGateway.ingress.rest.path .Values.zeebeGateway.contextPath) }}
+  {{- $errorMessage := "[camunda][error] zeebeGateway.ingress.rest.path and zeebeGateway.contextPath must have the same value."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+[opensearch] when existingSecret is provided for opensearch then password field should be empty
+*/}}
+{{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
+  {{- $errorMessage := "[camunda][error] global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set." -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
 
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
@@ -270,10 +286,3 @@ when global elasticsearch is enabled then either external elasticsearch should b
 {{- end }}
 */}}
 
-{{/*
-[opensearch] when existingSecret is provided for opensearch then password field should be empty
-{{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-  {{- $errorMessage := "[camunda][error] global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-*/}}

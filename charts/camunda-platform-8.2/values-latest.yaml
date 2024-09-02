@@ -23,7 +23,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags?page=&page_size=&ordering=&name=8.2
   image:
     repository: camunda/optimize
-    tag: 8.2.12
+    tag: 8.2.13
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.2
@@ -35,7 +35,7 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.2.16
+    tag: 8.2.18
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.2
@@ -55,7 +55,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags?page=&page_size=&ordering=&name=8.2
   image:
     repository: camunda/identity
-    tag: 8.2.29
+    tag: 8.2.30
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags?page=&page_size=&ordering=&name=8.2
     image:
@@ -75,7 +75,7 @@ elasticsearch:
   # https://hub.docker.com/r/elastic/elasticsearch/tags
   image: docker.elastic.co/elasticsearch/elasticsearch
   # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
-  imageTag: 7.17.22
+  imageTag: 7.17.23
 
 retentionPolicy:
   # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags

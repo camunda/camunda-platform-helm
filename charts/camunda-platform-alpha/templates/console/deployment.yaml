@@ -8,11 +8,9 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: {{ .Values.console.replicas }}
-  {{- if .Values.console.strategy }}
   strategy:
-    {{- .Values.console.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
+  replicas: {{ .Values.console.replicas }}
   selector:
     matchLabels:
       {{- include "console.matchLabels" . | nindent 6 }}
@@ -40,15 +38,13 @@ spec:
       {{- if .Values.console.dnsPolicy }}
       dnsPolicy: {{ .Values.console.dnsPolicy | quote }}
       {{- end }}
-      securityContext:
-        {{- toYaml .Values.console.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.console.podSecurityContext "context" $) | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.console.containerSecurityContext }}
-          securityContext:
-            {{- toYaml .Values.console.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.console.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY

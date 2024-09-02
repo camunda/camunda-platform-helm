@@ -1,0 +1,50 @@
+name: "Chart - Release - Update Config"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/config/release-please/.release-please-manifest.json
+  workflow_dispatch: { }
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_PLEASE_CONFIG_FILE: ".github/config/release-please/release-please-config.json"
+
+jobs:
+  # A workaround for https://github.com/googleapis/release-please/issues/2202
+  update-config:
+    name: Update release-please config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.generate-github-token.outputs.token }}
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Get latest release commit
+        run: |
+          last_release_commit="$(git log -n1 --pretty=format:'%H' --grep='chore(release):')"
+          cat "${RELEASE_PLEASE_CONFIG_FILE}"  |
+            jq --arg last_release_commit "${last_release_commit}" \
+              '(."last-release-sha", ."bootstrap-sha") = $last_release_commit' | tee "${RELEASE_PLEASE_CONFIG_FILE}"
+      - name: Git pull
+        run: git pull --rebase --autostash .
+      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        with:
+          author_name: "distro-ci[bot]"
+          author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
+          message: "chore(release): update release-please config"

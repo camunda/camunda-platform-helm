@@ -10,11 +10,13 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.4.9"
+    app.kubernetes.io/version: "8.4.10"
     app.kubernetes.io/component: zeebe-gateway
   annotations:
     {}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: 2
   selector:
     matchLabels:
@@ -32,7 +34,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.4.9"
+        app.kubernetes.io/version: "8.4.10"
         app.kubernetes.io/component: zeebe-gateway
       annotations:
         {}
@@ -43,7 +45,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: camunda/zeebe:8.4.9
+          image: camunda/zeebe:8.4.10
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9600

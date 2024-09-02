@@ -10,11 +10,13 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.29"
+    app.kubernetes.io/version: "8.2.31"
     app.kubernetes.io/component: connectors
   annotations:
     {}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels:
@@ -32,7 +34,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.29"
+        app.kubernetes.io/version: "8.2.31"
         app.kubernetes.io/component: connectors
     spec:
       imagePullSecrets:

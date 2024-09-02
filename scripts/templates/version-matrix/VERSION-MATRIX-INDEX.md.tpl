@@ -19,7 +19,7 @@ For the best experience, please remember:
 
 {{ range (ds "versions") }}
 {{- $appVersion := .app }}
-## Camunda {{ $appVersion }}
+## [Camunda {{ $appVersion }}](./camunda-{{ $appVersion }})
 
 {{ range .charts -}}
 ### [Helm chart {{ . }}](./camunda-{{ $appVersion }}/#helm-chart-{{ . | regexp.Replace "\\."  "" }})

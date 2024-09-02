@@ -10,11 +10,13 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: 8.4.7
+    app.kubernetes.io/version: 8.4.8
     app.kubernetes.io/component: restapi
   annotations:
     {}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels:
@@ -32,7 +34,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: 8.4.7
+        app.kubernetes.io/version: 8.4.8
         app.kubernetes.io/component: restapi
     spec:
       imagePullSecrets:
@@ -41,7 +43,7 @@ spec:
         []
       containers:
         - name: web-modeler-restapi
-          image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.7"
+          image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.8"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -123,6 +125,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /health/readiness
+              scheme: HTTP
               port: http-management
             initialDelaySeconds: 30
             periodSeconds: 30

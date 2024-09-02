@@ -8,9 +8,9 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
   strategy:
-    {{- .Values.optimize.strategy | toYaml | nindent 4 }}
+    type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       {{- include "optimize.matchLabels" . | nindent 6 }}
@@ -38,7 +38,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           {{- if .Values.optimize.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -66,7 +66,7 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if .Values.global.opensearch.auth.password}}
+            {{- if or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -121,7 +121,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.optimize.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -149,7 +149,7 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if .Values.global.opensearch.auth.password}}
+            {{- if or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -320,7 +320,7 @@ spec:
       dnsPolicy: {{ .Values.optimize.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.optimize.podSecurityContext }}
-      securityContext: {{- toYaml .Values.optimize.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
 {{- with .Values.optimize.nodeSelector }}
       nodeSelector:

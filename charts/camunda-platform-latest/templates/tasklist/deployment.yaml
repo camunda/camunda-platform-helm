@@ -8,11 +8,9 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.tasklist.strategy }}
   strategy:
-    {{- .Values.tasklist.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       {{- include "tasklist.matchLabels" . | nindent 6 }}
@@ -57,7 +55,7 @@ spec:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password}}
+            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
             - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:

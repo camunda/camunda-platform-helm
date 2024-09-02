@@ -10,11 +10,13 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.16"
+    app.kubernetes.io/version: "8.2.18"
     app.kubernetes.io/component: websockets
   annotations:
     {}
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -32,14 +34,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.16"
+        app.kubernetes.io/version: "8.2.18"
         app.kubernetes.io/component: websockets
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-websockets
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.2.16"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.2.18"
         imagePullPolicy: IfNotPresent
         env:
           - name: APP_NAME
@@ -71,7 +73,9 @@ spec:
           name: http
           protocol: TCP
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /up
+            scheme: HTTP
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30

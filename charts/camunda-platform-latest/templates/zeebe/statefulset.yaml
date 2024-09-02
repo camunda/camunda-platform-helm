@@ -21,7 +21,7 @@ spec:
       {{- include "zeebe.matchLabels.broker" . | nindent 6 }}
   serviceName: {{ include "zeebe.names.broker" . }}
   updateStrategy:
-    {{- .Values.zeebe.strategy | toYaml | nindent 4 }}
+    type: RollingUpdate
   podManagementPolicy: Parallel
   template:
     metadata:
@@ -64,7 +64,11 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
+              {{- if gt (int .Values.global.multiregion.regions) 1 }}
               value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
+              {{- else }}
+              value: "$(K8S_NAME).$(K8S_SERVICE_NAME)"
+              {{- end }}
             - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
               value:
               {{- range (untilStep 0 (int .Values.zeebe.clusterSize) 1) }}
@@ -81,7 +85,7 @@ spec:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password}}
+            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -261,7 +265,16 @@ spec:
       spec:
         accessModes: {{ .Values.zeebe.pvcAccessModes }}
         {{- if .Values.zeebe.pvcStorageClassName }}
+        {{- if (eq "-" .Values.zeebe.pvcStorageClassName) }}
+        storageClassName: ""
+        {{- else }}
         storageClassName: {{ .Values.zeebe.pvcStorageClassName }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.zeebe.pvcSelector }}
+        {{- with .Values.zeebe.pvcSelector }}
+        selector: {{ toYaml . | nindent 10 }}
+        {{- end }}
         {{- end }}
         resources:
           requests:

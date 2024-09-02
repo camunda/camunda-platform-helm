@@ -6,11 +6,9 @@ metadata:
   labels: {{- include "webModeler.webapp.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.webModeler.webapp.strategy }}
   strategy:
-    {{- .Values.webModeler.webapp.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
+  replicas: 1
   selector:
     matchLabels: {{- include "webModeler.webapp.matchLabels" . | nindent 6 }}
   template:
@@ -38,6 +36,8 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            - name: PLAY_ENABLED
+              value: "true"
             - name: NODE_OPTIONS
               value: "--max-old-space-size=128"
             - name: PUSHER_APP_ID
@@ -86,6 +86,7 @@ spec:
             httpGet:
               {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.startupProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.webapp.startupProbe.periodSeconds }}
@@ -98,6 +99,7 @@ spec:
             httpGet:
               {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.readinessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.webapp.readinessProbe.periodSeconds }}
@@ -110,6 +112,7 @@ spec:
             httpGet:
               {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.livenessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.webapp.livenessProbe.periodSeconds }}

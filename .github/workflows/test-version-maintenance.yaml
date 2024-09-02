@@ -1,0 +1,88 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Maintenance"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-version-maintenance.yaml'
+      - 'charts/camunda-platform-8*/**'
+  workflow_dispatch: { }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
+  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+  KUBECONFIG: .github/config/kubeconfig
+
+permissions:
+  contents: read
+
+jobs:
+  init:
+    name: Generate chart matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+    - name: Generate chart versions
+      id: generate-chart-versions
+      uses: ./.github/actions/generate-chart-matrix
+      with:
+        charts-path: "charts/camunda-platform-8*"
+
+  validation:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Validation - Camunda ${{ matrix.version }}
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  unit:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Unit Test - Camunda ${{ matrix.version }}
+    needs: [init]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  integration:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Integration Test - Camunda ${{ matrix.version }}
+    needs: [init, validation, unit]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      platforms: "gke"
+      flows: "install,upgrade"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"

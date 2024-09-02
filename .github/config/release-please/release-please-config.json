@@ -5,17 +5,19 @@
   "bump-minor-pre-major": false,
   "prerelease": false,
   "draft": false,
+  "bootstrap-sha": "2a6762e158b22b42c3ac3580c89c163b59059636",
+  "last-release-sha": "2a6762e158b22b42c3ac3580c89c163b59059636",
   "packages": {
     "charts/camunda-platform-latest": {
       "release-type": "helm",
       "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-latest",
       "include-v-in-tag": false
     },
     "charts/camunda-platform-8.4": {
       "release-type": "helm",
       "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-8.4",
       "include-v-in-tag": false,
       "extra-files": [
         {
@@ -28,7 +30,7 @@
     "charts/camunda-platform-8.3": {
       "release-type": "helm",
       "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-8.3",
       "include-v-in-tag": false,
       "extra-files": [
         {
@@ -41,7 +43,7 @@
     "charts/camunda-platform-8.2": {
       "release-type": "helm",
       "extra-label": "version/8.2,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform",
+      "component": "camunda-platform-8.2",
       "include-v-in-tag": false,
       "extra-files": [
         {
@@ -78,12 +80,36 @@
     }
   },
   "changelog-sections": [
-    { "type": "feat", "section": "Features", "hidden": false },
-    { "type": "fix", "section": "Bug Fixes", "hidden": false },
-    { "type": "chore", "section": "Miscellaneous", "hidden": true },
-    { "type": "docs", "section": "Documentation", "hidden": false },
-    { "type": "deps", "section": "Dependencies", "hidden": true },
-    { "type": "refactor", "section": "Refactors", "hidden": false }
+    {
+      "type": "feat",
+      "section": "Features",
+      "hidden": false
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes",
+      "hidden": false
+    },
+    {
+      "type": "chore",
+      "section": "Miscellaneous",
+      "hidden": true
+    },
+    {
+      "type": "docs",
+      "section": "Documentation",
+      "hidden": false
+    },
+    {
+      "type": "deps",
+      "section": "Dependencies",
+      "hidden": true
+    },
+    {
+      "type": "refactor",
+      "section": "Refactors",
+      "hidden": false
+    }
   ],
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
 }

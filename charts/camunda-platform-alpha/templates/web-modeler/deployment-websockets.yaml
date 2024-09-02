@@ -6,11 +6,9 @@ metadata:
   labels: {{- include "webModeler.websockets.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.webModeler.websockets.strategy }}
   strategy:
-    {{- .Values.webModeler.websockets.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: Recreate
+  replicas: 1
   selector:
     matchLabels: {{- include "webModeler.websockets.matchLabels" . | nindent 6 }}
   template:
@@ -33,8 +31,7 @@ spec:
           image: {{ include "webModeler.websockets.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.webModeler.websockets.containerSecurityContext }}
-          securityContext:
-          {{- toYaml .Values.webModeler.websockets.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.websockets.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -139,7 +136,7 @@ spec:
       dnsPolicy: {{ .Values.webModeler.websockets.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.webModeler.websockets.podSecurityContext }}
-      securityContext: {{- toYaml .Values.webModeler.websockets.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.websockets.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.webModeler.websockets.nodeSelector }}
       nodeSelector:

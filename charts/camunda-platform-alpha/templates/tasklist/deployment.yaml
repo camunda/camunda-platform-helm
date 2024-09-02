@@ -8,11 +8,9 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.tasklist.strategy }}
   strategy:
-    {{- .Values.tasklist.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       {{- include "tasklist.matchLabels" . | nindent 6 }}
@@ -38,7 +36,7 @@ spec:
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.tasklist.containerSecurityContext }}
-          securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.tasklist.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
@@ -61,14 +59,24 @@ spec:
                 secretKeyRef:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password}}
+            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
             - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
@@ -262,7 +270,7 @@ spec:
       dnsPolicy: {{ .Values.tasklist.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.tasklist.podSecurityContext }}
-      securityContext: {{- toYaml .Values.tasklist.podSecurityContext | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.tasklist.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
 {{- with .Values.tasklist.nodeSelector }}
       nodeSelector:

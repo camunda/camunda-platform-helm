@@ -10,11 +10,13 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.16"
+    app.kubernetes.io/version: "8.2.18"
     app.kubernetes.io/component: webapp
   annotations:
     {}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels:
@@ -32,14 +34,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.16"
+        app.kubernetes.io/version: "8.2.18"
         app.kubernetes.io/component: webapp
     spec:
       imagePullSecrets:
         []
       containers:
       - name: web-modeler-webapp
-        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.2.16"
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.2.18"
         imagePullPolicy: IfNotPresent
         env:
           - name: NODE_ENV
@@ -122,6 +124,7 @@ spec:
           httpGet:
             # NOTE: WebApp doesn't support contextPath for health endpoints.
             path: /health/readiness
+            scheme: HTTP
             port: http-management
           initialDelaySeconds: 15
           periodSeconds: 30

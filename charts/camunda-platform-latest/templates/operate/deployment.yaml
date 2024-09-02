@@ -8,11 +8,9 @@ metadata:
   annotations:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.operate.strategy }}
   strategy:
-    {{- .Values.operate.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       {{- include "operate.matchLabels" . | nindent 6 }}
@@ -32,7 +30,78 @@ spec:
       imagePullSecrets:
         {{- include "operate.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.operate.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- if .Values.operate.initContainers }}
+          {{- tpl (.Values.operate.initContainers | toYaml | nindent 8) $ }}
+        {{- end }}
+        {{- if .Values.operate.migration.enabled }}
+        - name: migration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
+          command: ['/bin/sh', '/usr/local/operate/bin/migrate']
+          {{- if .Values.operate.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password}}
+            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
+            {{- end }}
+            {{- if .Values.global.elasticsearch.enabled }}
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.global.elasticsearch.url.port | quote }}
+            {{- end }}
+            {{- with .Values.operate.migration.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.operate.migration.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/operate/config/application.yml
+              subPath: application.yml
+            - name: tmp
+              mountPath: /tmp
+            - name: camunda
+              mountPath: /camunda
+            {{- range $key, $val := .Values.operate.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/operate/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/operate/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
+            {{- if .Values.operate.extraVolumeMounts }}
+            {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- end }}
       containers:
         - name: operate
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
@@ -53,7 +122,7 @@ spec:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password}}
+            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
             - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:

@@ -73,7 +73,7 @@ jobs:
           chartPath="$(ct list-changed | tr '\n' ' ')" \
             make helm.dependency-update
       - name: cosign-installer
-        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
+        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
       - name: Tidy up
         run: |
           # Clean up badges from readme to avoid showing them in Artifact Hub.
@@ -123,8 +123,11 @@ jobs:
       # Sign and upload the signature of the chart package.
       - name: Set Helm chart vars
         run: |
-          CHART_PACKAGES="$(find release-packages -maxdepth 1 -name "camunda-platform*.tgz" \
-            -exec basename {} \; | xargs)"
+          CHART_PACKAGES=""
+          for chart_dir in $(ct list-changed | tr '\n' ' '); do
+            chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
+            CHART_PACKAGES="${CHART_PACKAGES} camunda-platform-${chart_version}.tgz"
+          done
           echo "CHART_PACKAGES=${CHART_PACKAGES}" | tee -a $GITHUB_ENV
       - name: Sign Helm chart with Cosign
         run: |
@@ -163,11 +166,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
-          # The verification step happens in the "release" branch before merging into the "main" branch.
+          # The verification step happens in the release branch before merging into the "main" branch.
           fetch-depth: 0
+          ref: release-please--branches--main
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-      # NOTE: This simple test is under review. So it could fail (it should be fixed in that case).
       - name: Simple smoke test
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
         with:
@@ -175,6 +178,9 @@ jobs:
           timeout_minutes: 5
           retry_wait_seconds: 10
           command: make release.verify-components-version
+      - name: Label PRs with app and chart version
+        run: |
+          make release.set-prs-version-label
       - name: Generate version matrix
         run: |
           make helm.repos-add
@@ -184,4 +190,4 @@ jobs:
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore: Generate version matrix"
+          message: "chore: Generate version matrix [skip ci]"

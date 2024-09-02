@@ -4,6 +4,7 @@ vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" | default ">0.0.0" | quote }}'
 
 dotenv:
 - ../vars/common.env
@@ -54,10 +55,12 @@ tasks:
       echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
+      echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
     - |
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
-        helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }}
+        helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }} \
+          --version {{ .TEST_CHART_VERSION }}
       fi
     - |
       # Create the local chart package to install.
@@ -68,7 +71,7 @@ tasks:
     deps: [init.seed]
     cmds:
     - helm install integration {{ .TEST_CHART_NAME }}
-        --version {{ .TEST_CHART_VERSION | default ">0.0.0" | quote }}
+        --version {{ .TEST_CHART_VERSION }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress.yaml

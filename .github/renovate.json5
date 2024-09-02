@@ -110,6 +110,14 @@
       "matchDepPatterns": ["k8s.io/.*"],
       "allowedVersions": "<0.28.0"
     },
+    // Some asdf plugins use the "v" prefix, so we extract the version without it.
+    {
+      "matchFileNames": [".tool-versions"],
+      "matchPackageNames": [
+        "gomplate",
+      ],
+      "extractVersion": "^v(?<version>.*)$",
+    },
 
     //
     // Camunda charts.

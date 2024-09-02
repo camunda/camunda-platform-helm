@@ -10,11 +10,13 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.2.12"
+    app.kubernetes.io/version: "8.2.13"
     app.kubernetes.io/component: optimize
   annotations:
     {}
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -32,14 +34,14 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/version: "8.2.12"
+        app.kubernetes.io/version: "8.2.13"
         app.kubernetes.io/component: optimize
     spec:
       imagePullSecrets:
         []
       containers:
       - name: optimize
-        image: "camunda/optimize:8.2.12"
+        image: "camunda/optimize:8.2.13"
         imagePullPolicy: IfNotPresent
         env:
           - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED

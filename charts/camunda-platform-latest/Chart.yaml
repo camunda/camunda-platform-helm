@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.2.0
+version: 10.3.2
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -50,8 +50,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  dummy: dummy
-  camunda.io/helmCLIVersion: "3.15.2"
+  camunda.io/helmCLIVersion: "3.15.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -61,15 +60,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "configurable update strategy"
-    - kind: added
-      description: "support dnsPolicy and dnsConfig for all components"
-    - kind: added
-      description: "add console auth vars"
     - kind: fixed
-      description: "identity base url not configured"
-    - kind: fixed
-      description: "unauthenticated external elasticsearch no longer forces password…"
-    - kind: changed
-      description: "remove the global image tag value and use it from the components"
+      description: "AdvertisedHost relies on global.multiregion.regions and not global.multiregion.enabled"

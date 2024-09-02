@@ -6,6 +6,8 @@ metadata:
   labels: {{- include "webModeler.restapi.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
@@ -120,6 +122,7 @@ spec:
           startupProbe:
             httpGet:
               path: {{ .Values.webModeler.restapi.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.startupProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.restapi.startupProbe.periodSeconds }}
@@ -131,6 +134,7 @@ spec:
           readinessProbe:
             httpGet:
               path: {{ .Values.webModeler.restapi.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.readinessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.restapi.readinessProbe.periodSeconds }}
@@ -142,6 +146,7 @@ spec:
           livenessProbe:
             httpGet:
               path: {{ .Values.webModeler.restapi.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.livenessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.restapi.livenessProbe.periodSeconds }}

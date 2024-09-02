@@ -11,10 +11,12 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: operate
-    app.kubernetes.io/version: "8.6.0-alpha3"
+    app.kubernetes.io/version: "8.6.0-alpha4"
   annotations:
     {}
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -33,16 +35,42 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: operate
-        app.kubernetes.io/version: "8.6.0-alpha3"
+        app.kubernetes.io/version: "8.6.0-alpha4"
       annotations:
     spec:
       imagePullSecrets:
         []
       initContainers:
-        []
+        - name: migration
+          image: camunda/operate:8.6.0-alpha4
+          command: ['/bin/sh', '/usr/local/operate/bin/migrate']
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/operate/config/application.yaml
+              subPath: application.yaml
+            - name: tmp
+              mountPath: /tmp
+            - name: camunda
+              mountPath: /camunda
       containers:
         - name: operate
-          image: camunda/operate:8.6.0-alpha3
+          image: camunda/operate:8.6.0-alpha4
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

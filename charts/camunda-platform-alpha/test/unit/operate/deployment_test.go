@@ -412,7 +412,6 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"operate.containerSecurityContext.privileged":          "true",
-			"operate.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -425,7 +424,6 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// then
 	securityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
 	s.Require().True(*securityContext.Privileged)
-	s.Require().EqualValues("NET_ADMIN", securityContext.Capabilities.Add[0])
 }
 
 // https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
@@ -1010,42 +1008,4 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 	}
 
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
-}
-
-func (s *deploymentTemplateTest) TestDefaultStrategy() {
-	// given
-	options := &helm.Options{
-		SetValues:      map[string]string{},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	strategy := deployment.Spec.Strategy
-
-	s.Require().Equal(string(strategy.Type), "")
-}
-
-func (s *deploymentTemplateTest) TestDefinedStrategy() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"operate.strategy.type": "Recreate",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	strategy := deployment.Spec.Strategy
-
-	s.Require().Equal(string(strategy.Type), "Recreate")
 }

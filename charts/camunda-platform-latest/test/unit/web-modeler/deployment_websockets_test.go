@@ -80,9 +80,10 @@ func (s *websocketsDeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                         "true",
-			"webModeler.restapi.mail.fromAddress":        "example@example.com",
-			"webModeler.websockets.startupProbe.enabled": "true",
+			"webModeler.enabled":                           "true",
+			"webModeler.restapi.mail.fromAddress":          "example@example.com",
+			"webModeler.websockets.startupProbe.enabled":   "true",
+			"webModeler.websockets.startupProbe.probePath": "/healthz",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -95,16 +96,18 @@ func (s *websocketsDeploymentTemplateTest) TestContainerStartupProbe() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
 
-	s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http", probe.HTTPGet.Port.StrVal)
 }
 
 func (s *websocketsDeploymentTemplateTest) TestContainerReadinessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                           "true",
-			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"webModeler.websockets.readinessProbe.enabled": "true",
+			"webModeler.enabled":                             "true",
+			"webModeler.restapi.mail.fromAddress":            "example@example.com",
+			"webModeler.websockets.readinessProbe.enabled":   "true",
+			"webModeler.websockets.readinessProbe.probePath": "/healthz",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -117,16 +120,18 @@ func (s *websocketsDeploymentTemplateTest) TestContainerReadinessProbe() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0].ReadinessProbe
 
-	s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http", probe.HTTPGet.Port.StrVal)
 }
 
 func (s *websocketsDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                          "true",
-			"webModeler.restapi.mail.fromAddress":         "example@example.com",
-			"webModeler.websockets.livenessProbe.enabled": "true",
+			"webModeler.enabled":                            "true",
+			"webModeler.restapi.mail.fromAddress":           "example@example.com",
+			"webModeler.websockets.livenessProbe.enabled":   "true",
+			"webModeler.websockets.livenessProbe.probePath": "/healthz",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -139,7 +144,40 @@ func (s *websocketsDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
 
-	s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http", probe.HTTPGet.Port.StrVal)
+}
+
+// Web-Modeler Websockets doesn't support contextPath for health endpoints.
+func (s *websocketsDeploymentTemplateTest) TestContainerProbesWithContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                             "true",
+			"webModeler.restapi.mail.fromAddress":            "example@example.com",
+			"webModeler.contextPath":                         "/test",
+			"webModeler.websockets.startupProbe.enabled":     "true",
+			"webModeler.websockets.startupProbe.probePath":   "/start",
+			"webModeler.websockets.readinessProbe.enabled":   "true",
+			"webModeler.websockets.readinessProbe.probePath": "/ready",
+			"webModeler.websockets.livenessProbe.enabled":    "true",
+			"webModeler.websockets.livenessProbe.probePath":  "/live",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0]
+
+	s.Require().Equal("/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/live", probe.LivenessProbe.HTTPGet.Path)
 }
 
 func (s *websocketsDeploymentTemplateTest) TestContainerSetSidecar() {
@@ -238,48 +276,4 @@ func (s *websocketsDeploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 	}
 
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
-}
-
-func (s *websocketsDeploymentTemplateTest) TestDefaultStrategy() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                  "true",
-			"webModeler.restapi.mail.fromAddress": "example@example.com",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	strategy := deployment.Spec.Strategy
-
-	s.Require().Equal("", string(strategy.Type))
-
-}
-
-func (s *websocketsDeploymentTemplateTest) TestDefinedStrategy() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                  "true",
-			"webModeler.restapi.mail.fromAddress": "example@example.com",
-			"webModeler.websockets.strategy.type": "Recreate",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	strategy := deployment.Spec.Strategy
-
-	s.Require().Equal("Recreate", string(strategy.Type))
 }

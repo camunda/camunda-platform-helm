@@ -6,6 +6,8 @@ metadata:
   labels: {{- include "webModeler.webapp.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
+  strategy:
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels: {{- include "webModeler.webapp.matchLabels" . | nindent 6 }}
@@ -116,6 +118,7 @@ spec:
           httpGet:
             # NOTE: WebApp doesn't support contextPath for health endpoints.
             path: {{ .Values.webModeler.webapp.startupProbe.probePath }}
+            scheme: {{ .Values.webModeler.webapp.startupProbe.scheme }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.webapp.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.webapp.startupProbe.periodSeconds }}
@@ -128,6 +131,7 @@ spec:
           httpGet:
             # NOTE: WebApp doesn't support contextPath for health endpoints.
             path: {{ .Values.webModeler.webapp.readinessProbe.probePath }}
+            scheme: {{ .Values.webModeler.webapp.readinessProbe.scheme }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.webapp.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.webapp.readinessProbe.periodSeconds }}
@@ -140,6 +144,7 @@ spec:
           httpGet:
             # NOTE: WebApp doesn't support contextPath for health endpoints.
             path: {{ .Values.webModeler.webapp.livenessProbe.probePath }}
+            scheme: {{ .Values.webModeler.webapp.livenessProbe.scheme }}
             port: http-management
           initialDelaySeconds: {{ .Values.webModeler.webapp.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webModeler.webapp.livenessProbe.periodSeconds }}

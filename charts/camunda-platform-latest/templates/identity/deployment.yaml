@@ -6,11 +6,9 @@ metadata:
   labels: {{- include "identity.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  replicas: 1
-  {{- if .Values.identity.strategy }}
   strategy:
-    {{- .Values.identity.strategy | toYaml | nindent 4 }}
-  {{- end }}
+    type: RollingUpdate
+  replicas: 1
   selector:
     matchLabels: {{- include "identity.matchLabels" . | nindent 6 }}
   template:
@@ -21,7 +19,7 @@ spec:
         {{- toYaml .Values.identity.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/zeebe/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
       {{- if .Values.identity.podAnnotations }}
         {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
       {{- end }}
