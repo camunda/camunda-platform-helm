@@ -5,7 +5,7 @@ matrix:
     # According to https://access.redhat.com/support/policy/updates/openshift, this matrix should reference the last 4 (may change) supported versions of OpenShift
     - name: OpenShift 4.16
       type: openshift
-      # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
+      # renovate: datasource=custom.rosa-camunda depName=red-hat-openshift versioning=regex:^4(\.(?<minor>\d+))?(\.(?<patch>\d+))?$
       version: 4.16.8
       # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
       # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.
@@ -13,7 +13,7 @@ matrix:
 
     - name: OpenShift 4.15
       type: openshift
-      # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4.15(\.(?<patch>\d+))?$  
+      # renovate: datasource=custom.rosa-camunda depName=red-hat-openshift versioning=regex:^4.15(\.(?<patch>\d+))?$  
       version: 4.15.21
       # /!\ Warning: When a new minor version of OpenShift is released, you must update all N-1, N-2, and N-3 versions in this matrix.
       # rationale: Red Hat supports the last four minor versions of OpenShift. Therefore, to ensure compatibility and support, we must test against these versions. For more details, refer to the official support policy at https://endoflife.date/red-hat-openshift.
@@ -21,7 +21,7 @@ matrix:
 
     - name: OpenShift 4.14
       type: openshift
-      # renovate: datasource=endoflife-date depName=red-hat-openshift versioning=regex:^4.14(\.(?<patch>\d+))?$  
+      # renovate: datasource=custom.rosa-camunda depName=red-hat-openshift versioning=regex:^4.14(\.(?<patch>\d+))?$  
       version: 4.14.33
       platform: rosa
   scenario:
