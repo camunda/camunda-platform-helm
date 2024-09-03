@@ -97,12 +97,12 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
-                  key: optimize-secret
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
-                  key: optimize-secret
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
               {{- end }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: {{ include "optimize.authAudience" . | quote }}

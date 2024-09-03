@@ -62,12 +62,12 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}
-                  key: tasklist-secret
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
-                  key: tasklist-secret
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
               {{- end }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: {{ include "tasklist.authAudience" . | quote }}
@@ -86,12 +86,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}

@@ -7,36 +7,30 @@ spec:
     spec:
       containers:
       - name: venom
-        # All env vars here assume that the Helm deployment is called "integration".
         env:
-        # Used to access get token from Keycloak to access Camunda APIs.
+        # Console uses client type "Public" so it's not tested in the machine-to-machine tests.
         - name: VENOM_VAR_TEST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
-              key: client-secret
-        - name: VENOM_VAR_CONSOLE_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: integration-test
-              key: console-secret
+              name: integration-test-credentials
+              key: identity-admin-client-password
         - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: tasklist-secret
         - name: VENOM_VAR_OPERATE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: operate-secret
         - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: optimize-secret
         - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: connectors-secret
