@@ -12,30 +12,30 @@ spec:
         - name: VENOM_VAR_TEST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-credentials-autogen
+              name: integration-test-credentials
               key: identity-admin-client-password
         - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-credentials-autogen
+              name: integration-test-credentials
               key: identity-connectors-client-password
         - name: VENOM_VAR_OPERATE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-credentials-autogen
+              name: integration-test-credentials
               key: identity-operate-client-password
         - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-credentials-autogen
+              name: integration-test-credentials
               key: identity-optimize-client-password
         - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-credentials-autogen
+              name: integration-test-credentials
               key: identity-tasklist-client-password
         - name: VENOM_VAR_ZEEBE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-credentials-autogen
+              name: integration-test-credentials
               key: identity-zeebe-client-password
