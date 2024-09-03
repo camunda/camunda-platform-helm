@@ -48,12 +48,12 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
-                  key: operate-secret
+                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
-                  key: operate-secret
+                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
               {{- end }}
             - name: KEYCLOAK_INIT_CONSOLE_SECRET
               {{- if and .Values.global.identity.auth.console.existingSecret (not (typeIs "string" .Values.global.identity.auth.console.existingSecret)) }}
@@ -65,12 +65,12 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.console.existingSecret "context" $) }}
-                  key: console-secret
+                  key: {{ .Values.global.identity.auth.console.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "console") }}
-                  key: console-secret
+                  key: {{ .Values.global.identity.auth.console.existingSecretKey }}
               {{- end }}
             - name: KEYCLOAK_INIT_TASKLIST_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
@@ -82,12 +82,12 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: "{{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}"
-                  key: tasklist-secret
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
-                  key: tasklist-secret
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
               {{- end }}
             - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
@@ -99,12 +99,12 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
-                  key: optimize-secret
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
-                  key: optimize-secret
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
               {{- end }}
             - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
@@ -126,11 +126,11 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
-                  key: connectors-secret
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  key: connectors-secret
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
               {{- end }}
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
@@ -155,12 +155,12 @@ spec:
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
-                  key: zeebe-secret
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "M2M"

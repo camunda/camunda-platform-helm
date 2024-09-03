@@ -55,5 +55,4 @@ jobs:
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-latest"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-      camunda-helm-credentials-source: "external-secret"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
