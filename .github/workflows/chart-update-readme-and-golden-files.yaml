@@ -55,10 +55,6 @@ jobs:
           echo "Updating README.md"
           chartPath="$(ct list-changed | tr '\n' ' ')" \
             make helm.readme-update
-          git diff --exit-code || (
-            echo "Please ensure to run: make helm.readme-update";
-            exit 1;
-          )
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
