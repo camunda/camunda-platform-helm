@@ -31,12 +31,12 @@ If release name contains chart name it will be used as a full name.
 
 {{- define "identity.externalUrl" -}}
     {{- if .Values.fullURL -}}
-        {{ tpl .Values.fullURL $ | quote }}
+        {{- tpl .Values.fullURL $ | quote -}}
     {{- else -}}
         {{- if .Values.global.ingress.enabled -}}
-            {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-            {{ $host := .Values.global.ingress.host }}
-            {{ $path := .Values.contextPath | default "" -}}
+            {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+            {{- $host := .Values.global.ingress.host -}}
+            {{- $path := .Values.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
        {{- else if .Values.ingress.enabled -}}
             {{- $proto := ternary "https" "http" .Values.ingress.tls.enabled -}}
