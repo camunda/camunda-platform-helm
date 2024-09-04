@@ -9,7 +9,7 @@ identity:
     valueFrom:
       secretKeyRef:
         name: integration-test-credentials
-        key: client-secret
+        key: identity-admin-client-password
   - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
     value: /dummy
   - name: KEYCLOAK_CLIENTS_2_ROOT_URL

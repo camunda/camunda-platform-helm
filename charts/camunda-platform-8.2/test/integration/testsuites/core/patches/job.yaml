@@ -14,7 +14,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: integration-test-credentials
-              key: client-secret
+              key: identity-admin-client-password
         - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
