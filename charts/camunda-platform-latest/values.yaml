@@ -613,6 +613,8 @@ console:
 ## @section Zeebe Parameters
 ## @extra zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
 zeebe:
+  ## @param zeebe.test if true, all zeebe related resources are deployed via the helm release
+  test: false
   ## @param zeebe.enabled if true, all zeebe related resources are deployed via the helm release
   enabled: true
 
