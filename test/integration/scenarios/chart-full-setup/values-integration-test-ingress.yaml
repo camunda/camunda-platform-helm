@@ -28,7 +28,7 @@ global:
 identity:
   contextPath: "/identity"
   firstUser:
-    existingSecret: "integration-test"
+    existingSecret: "integration-test-credentials"
 
 operate:
   contextPath: "/operate"
