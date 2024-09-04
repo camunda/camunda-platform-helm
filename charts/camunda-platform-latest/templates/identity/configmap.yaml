@@ -41,6 +41,7 @@ data:
                 - audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
                   definition: read:*
         console:
+          test: "test"
           applications:
             - name: "Console"
               id: ${CAMUNDA_CONSOLE_CLIENT_ID:${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
