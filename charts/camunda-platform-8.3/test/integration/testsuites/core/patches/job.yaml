@@ -13,25 +13,25 @@ spec:
         - name: VENOM_VAR_TEST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: client-secret
         - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: tasklist-secret
         - name: VENOM_VAR_OPERATE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: operate-secret
         - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: optimize-secret
         - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test
+              name: integration-test-credentials
               key: connectors-secret
