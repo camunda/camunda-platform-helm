@@ -46,7 +46,6 @@ data:
         broker:
           gateway-address: {{ include "connectors.zeebeEndpoint" . | quote }}
         security:
-          test: "testvalue"
           plaintext: true
   {{- end }}
 
