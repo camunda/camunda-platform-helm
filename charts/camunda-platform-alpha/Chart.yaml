@@ -27,7 +27,7 @@ dependencies:
   - name: postgresql
     alias: identityPostgresql
     repository: https://charts.bitnami.com/bitnami
-    version: 14.x.x
+    version: 15.x.x
     condition: "identity.postgresql.enabled,identityPostgresql.enabled"
   # WebModeler Dependencies.
   - name: web-modeler-postgresql
