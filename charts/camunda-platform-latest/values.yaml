@@ -88,9 +88,10 @@ global:
     className: nginx
     ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -545,9 +546,10 @@ console:
     ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     ## @param console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     ## @param console.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -1149,10 +1151,10 @@ zeebeGateway:
       ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
       annotations:
-        ingress.kubernetes.io/rewrite-target: "/"
-        nginx.ingress.kubernetes.io/ssl-redirect: "false"
-        nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+        ingress.kubernetes.io/rewrite-target: '/'
+        nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+        nginx.ingress.kubernetes.io/backend-protocol: 'GRPC'
+        nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
       ## @param zeebeGateway.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
       ## @param zeebeGateway.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -1177,10 +1179,11 @@ zeebeGateway:
       ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
       annotations:
-        ingress.kubernetes.io/rewrite-target: "/"
-        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        ingress.kubernetes.io/rewrite-target: '/'
+        nginx.ingress.kubernetes.io/ssl-redirect: 'false'
         nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+        nginx.ingress.kubernetes.io/proxy-buffering: 'on'
       ## @param zeebeGateway.ingress.rest.path defines the path which is associated with the Zeebe gateway's REST service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
       ## @param zeebeGateway.ingress.rest.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -1334,9 +1337,10 @@ operate:
     ## @skip operate.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip operate.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     ## @param operate.ingress.path defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     ## @param operate.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -1671,9 +1675,10 @@ tasklist:
     ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     ## @param tasklist.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     ## @param tasklist.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -1927,9 +1932,10 @@ optimize:
     ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     ## @param optimize.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     ## @param optimize.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -2185,9 +2191,10 @@ identity:
     ## @skip identity.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip identity.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     ## @param identity.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     ## @param identity.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -2441,7 +2448,8 @@ identityKeycloak:
     ## @param identityKeycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
     annotations:
     ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
 
   ## @extra identityKeycloak.service configuration, to configure the service which is deployed along with keycloak
   service:
@@ -3060,9 +3068,10 @@ webModeler:
     ## @skip webModeler.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip webModeler.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     ## @extra webModeler.ingress.webapp configuration of the webapp ingress
     webapp:
       ## @param webModeler.ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the WebModeler web application will be available
@@ -3356,9 +3365,10 @@ connectors:
     ## @skip connectors.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
     ## @skip connectors.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
     ## @param connectors.ingress.path defines the path which is associated with the Connectors service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     ## @param connectors.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types

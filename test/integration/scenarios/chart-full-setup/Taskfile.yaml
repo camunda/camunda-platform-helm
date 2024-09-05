@@ -66,6 +66,12 @@ tasks:
       # Create the local chart package to install.
       pwd
       helm package {{ .TEST_CHART_DIR }}/
+    - |
+      test -f {{ .TEST_VALUES_BASE_DIR }}/pre-install/* || {
+        exit 0
+      }
+      export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
+      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install/*.sh
 
   setup.exec:
     deps: [init.seed]
