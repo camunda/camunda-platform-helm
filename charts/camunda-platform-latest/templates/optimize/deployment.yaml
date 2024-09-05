@@ -135,10 +135,6 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
               value: "true"
               {{- end }}
-              {{- if .Values.global.opensearch.aws.enabled }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
-              value: "true"
-              {{- end }}
             - name: CAMUNDA_OPTIMIZE_DATABASE
               value: opensearch
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
@@ -197,6 +193,10 @@ spec:
               value: "10000"
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
               value: "600000"
+            {{- end }}
+            {{- if .Values.global.opensearch.aws.enabled }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
+              value: "true"
             {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
