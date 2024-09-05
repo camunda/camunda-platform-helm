@@ -53,10 +53,6 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
               value: "true"
               {{- end }}
-              {{- if .Values.global.opensearch.aws.enabled }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
-              value: "true"
-              {{- end }}
             - name: CAMUNDA_OPTIMIZE_DATABASE
               value: opensearch
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
@@ -82,6 +78,10 @@ spec:
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.url.port | quote }}
+            {{- end }}
+            {{- if .Values.global.opensearch.aws.enabled }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
+              value: "true"
             {{- end }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
