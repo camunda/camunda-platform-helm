@@ -208,7 +208,7 @@ zeebe:
     # Image.repository defines which image repository to use
     repository: camunda/zeebe
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.30
+    tag: 8.2.31
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -435,7 +435,7 @@ zeebe-gateway:
     # Image.repository defines which image repository to use
     repository: camunda/zeebe
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.30
+    tag: 8.2.31
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -655,7 +655,7 @@ operate:
     # Image.repository defines which image repository to use
     repository: camunda/operate
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.29
+    tag: 8.2.30
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -835,7 +835,7 @@ tasklist:
     # Image.repository defines which image repository to use
     repository: camunda/tasklist
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.30
+    tag: 8.2.31
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1013,7 +1013,7 @@ optimize:
     # Image.repository defines which image repository to use
     repository: camunda/optimize
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.13
+    tag: 8.2.14
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1216,7 +1216,7 @@ identity:
     # Image.repository defines which image repository to use
     repository: camunda/identity
     # Image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.2.30
+    tag: 8.2.31
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
