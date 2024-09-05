@@ -339,7 +339,10 @@ data:
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
-
+    logging:
+{{- with .Values.identity.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
   {{- end }}
   {{- range $key, $val := .Values.identity.extraConfiguration }}
   {{ $key }}: |

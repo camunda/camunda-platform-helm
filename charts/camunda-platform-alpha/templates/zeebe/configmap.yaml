@@ -99,6 +99,10 @@ data:
         threads:
           cpuThreadCount: {{ .Values.zeebe.cpuThreadCount  | quote }}
           ioThreadCount: {{ .Values.zeebe.ioThreadCount  | quote }}
+    logging:
+{{- with .Values.zeebe.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
 
     # Camunda Database configuration
     {{- if .Values.global.elasticsearch.enabled }}
