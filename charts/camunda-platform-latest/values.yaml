@@ -2251,7 +2251,7 @@ identityPostgresql:
   ##
   image:
     repository: bitnami/postgresql
-    tag: 15.7.0
+    tag: 15.8.0
   ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
   ##
   nameOverride: identity-postgresql
@@ -2299,7 +2299,7 @@ identityKeycloak:
       ## @param identityKeycloak.postgresql.image.repository image repo
       repository: bitnami/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
-      tag: 15.7.0
+      tag: 15.8.0
     primary:
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
@@ -3111,7 +3111,7 @@ postgresql:
   ## @param postgresql.image.tag PostgreSQL image tag
   image:
     repository: bitnami/postgresql
-    tag: 14.12.0
+    tag: 14.13.0
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param postgresql.auth.username defines the name of the database user to be created for WebModeler
