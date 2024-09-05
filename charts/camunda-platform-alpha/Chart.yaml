@@ -45,10 +45,14 @@ dependencies:
     repository: https://charts.bitnami.com/bitnami
     version: 2.x.x
 maintainers:
-  - name: Zelldon
-    email: christopher.zell@camunda.com
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
+  - name: drodriguez-305
+    email: daniel.rodriguez@camunda.com
+  - name: hamza-m-masood
+    email: hamza.masood@camunda.com
+  - name: jessesimpson36
+    email: jesse.simpson@camunda.com
 annotations:
   camunda.io/helmCLIVersion: "3.15.3"
   artifacthub.io/links: |

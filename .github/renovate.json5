@@ -174,7 +174,7 @@
         "charts/camunda-platform-latest/values-latest.yaml"
       ],
       "matchDepNames": ["bitnami/elasticsearch"],
-      "allowedVersions": "~8.12.0"
+      "allowedVersions": "~8.15.0"
     },
     {
       // Disable Helm chart upgrades from bitnami/elasticsearch
