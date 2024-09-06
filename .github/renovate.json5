@@ -122,17 +122,6 @@
     //
     // Camunda charts.
     {
-      "matchPackageNames": ["/.*camunda.*/"],
-      "matchFileNames": [
-        "charts/camunda-platform-alpha/Chart.yaml",
-        "charts/camunda-platform-alpha/values*.yaml",
-      ],
-      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
-      // which is not the case.
-      "versionCompatibility": "^(?<version>\\d+\.\\d+\.\\d+-alpha[1-6])$",
-      "matchUpdateTypes": ["minor", "patch"]
-    },
-    {
       // Disable major version update for all Helm components.
       "enabled": false,
       "matchManagers": ["helmv3", "helm-values", "regex"],
@@ -181,6 +170,19 @@
       "matchDepNames": ["elasticsearch"],
       "matchPaths": ["charts/camunda-platform-8*/Chart.yaml"],
       "enabled": false
+    },
+    {
+      "enabled": true,
+      "matchPackageNames": ["/.*camunda.*/"],
+      "matchManagers": ["helmv3", "helm-values", "regex"],
+      "matchFileNames": [
+        "charts/camunda-platform-alpha/Chart.yaml",
+        "charts/camunda-platform-alpha/values*.yaml",
+      ],
+      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
+      // which is not the case.
+      "versionCompatibility": "^(?<version>\\d+\.\\d+\.\\d+-alpha[1-6])$",
+      "matchUpdateTypes": ["minor", "patch"]
     },
 
     //
