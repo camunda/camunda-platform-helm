@@ -55,6 +55,9 @@ jobs:
       #
       # Post Upgrade Tasks.
       #
+      - name: Set vars
+        run: |
+          echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
       - name: Update golden files
         run: |
           chartPath="${CHANGED_CHARTS}" \
