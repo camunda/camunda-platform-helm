@@ -48,6 +48,7 @@ global:
           name: "integration-test-credentials"
 
 identity:
+  contextPath: "/identity"
   keycloak:
     postgresql:
       auth:
