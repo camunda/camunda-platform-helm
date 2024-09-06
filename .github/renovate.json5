@@ -232,7 +232,7 @@
       "matchHost": "https://registry.camunda.cloud",
       "username": "ci-distribution",
       "encrypted": {
-        "password": "wcFMA/xDdHCJBTolAQ/7BSbgiur4KfMX0vgTM9T8Rt1pTqby5bR/RW6n/Iq5+bNU8pQne1W6zxaFEagkMMMTx/JtdWl88sDlGFqdG80Oik7Wbb7UDYl39Wdvax0DhmfkT1yqXYToyYz0rXpB9BIllAkfCy9ll8SbZqVBa/NoMPo2Fb8Hj/PiT4xG1U+YoWdsyXFLXz+jKEsRIKXC28ApxqJ7TN4iO5FEWrZIB4Bgtkg+x4FOpCTaS6fwui7FRxfFSGWTFkepr6R/lhPTDCHH7u65Mroff4IjUqfJ5dkGY+49QUGW45toaHXdXV9ZaBIMm+v6cNOOw92P+bidMdhIBLurOBqig24Jj02+wb5J9eKPBP1tvXW0vz1jwhOQIqRmV95zt5JCiQ7s/DByQnUsWfsJ3Vz9rbsUPLwspAhK3ayTl0ltrSj+LaejZei6Ny0Qq4LWTW14RjgLnABRhcK9iefCqVmLbRN+NQDcP0IxjHkFdGgxNaGPkb+jTC7CYJj9TKRHBabauXxvNGrggliUKAlOh8VmpQ1ZFoxryMDQK/HEP/qUU/TmzyAuAtSfrUdOlgYVBEQ7xGH1AfC7fhFUFohAcs4OGCKjbPTCM/LwH9o9zx4hEHh1bCjdgv98Ug4UgYpXBJPJ7Jc2Xng9nCUrkEPPX85kXTlT7T96a5p6CqKBkRNPES88Nj1adP7uANjSYgFIB59DO0tlvxUgBGo+NhjSNQl4wigI0Uc6JGysDb3qXH66nlymaZFzR5jrvqXU+iCMTf/yVyOdAcYQqh1wRHOmuuy0/AK/N0m4fFE3ldsmyV61oCUPxj1sjlNYd1Bte5fy"
+        "password": "{{ secrets.REGISTRY_CAMUNDA_CLOUD_PASSWORD }}"
       }
     }
   ]
