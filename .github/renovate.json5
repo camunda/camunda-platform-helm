@@ -122,7 +122,7 @@
     //
     // Camunda charts.
     {
-      "matchDepPatterns": [".*camunda.*"],
+      "matchPackageNames": ["/.*camunda.*/"],
       "matchFileNames": [
         "charts/camunda-platform-alpha/Chart.yaml",
         "charts/camunda-platform-alpha/values*.yaml",
