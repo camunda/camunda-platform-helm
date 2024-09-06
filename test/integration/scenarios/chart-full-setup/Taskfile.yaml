@@ -56,6 +56,8 @@ tasks:
       echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
       echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
+      # In case the Zeebe version has not been released officially yet.
+      echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
     - |
       # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
