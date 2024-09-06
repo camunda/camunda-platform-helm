@@ -110,7 +110,7 @@ zeebe-gateway:
       external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
-  enabled: true
+  enabled: false
   contextPath: "/"
   image:
     pullSecrets:
