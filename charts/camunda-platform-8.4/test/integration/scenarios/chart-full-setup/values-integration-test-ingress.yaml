@@ -49,6 +49,9 @@ global:
 
 identity:
   contextPath: "/identity"
+  fullURL: "https://{{ .Values.global.ingress.host }}/identity"
+
+  # Identity Keycloak.
   keycloak:
     postgresql:
       auth:
@@ -58,9 +61,10 @@ identity:
   firstUser:
     existingSecret: "integration-test-credentials"
 
-identityPostgresql:
-  auth:
-    existingSecret: "integration-test-credentials"
+  # Identity PostgreSQL.
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
 
 operate:
   contextPath: "/operate"
