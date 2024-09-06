@@ -50,7 +50,6 @@ spec:
               valueFrom:
                 secretKeyRef:
                   {{- /*
-                      REMOVE
                       Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
                       Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
                       and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
