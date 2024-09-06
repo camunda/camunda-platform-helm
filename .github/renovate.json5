@@ -174,7 +174,7 @@
     {
       "enabled": true,
       "matchPackageNames": ["/.*camunda.*/"],
-      "matchManagers": ["helmv3", "helm-values", "regex"],
+      "matchDatasources": ["helm", "docker", "regex"],
       "matchFileNames": [
         "charts/camunda-platform-alpha/Chart.yaml",
         "charts/camunda-platform-alpha/values*.yaml",
