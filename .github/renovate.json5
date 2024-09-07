@@ -164,12 +164,12 @@
         "charts/camunda-platform-latest/values.yaml",
         "charts/camunda-platform-latest/values-latest.yaml"
       ],
-      "matchDepNames": ["bitnami/elasticsearch"],
+      "matchPackageNames": ["bitnami/elasticsearch"],
       "allowedVersions": "~8.12.0"
     },
     {
-      // Disable Helm chart upgrades from bitnami/elasticsearch
-      "matchDepNames": ["elasticsearch"],
+      // Disable Helm chart upgrades from for elasticsearch chart.
+      "matchPackageNames": ["/.*elasticsearch.*/"],
       "matchPaths": ["charts/camunda-platform-8*/Chart.yaml"],
       "enabled": false
     },
