@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - '!renovate/**'
     paths:
       - ".github/workflows/chart-update-readme-and-golden-files.yaml"
       - "charts/**"
@@ -14,7 +13,18 @@ permissions:
   pull-requests: write
 
 jobs:
+  init:
+    # The workflow shouldn't run on renovatebot branches, we have another workflow for renovatebot.
+    if: ! contains(github.head_ref, 'renovate/')
+    name: Check conditions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conditions met
+        run: |
+          echo "Conditions met, move to the next job..."
+    
   chores:
+    needs: [init]
     name: Update README And Golden Files
     runs-on: ubuntu-latest
     steps:
