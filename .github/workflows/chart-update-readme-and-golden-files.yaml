@@ -4,8 +4,7 @@ on:
   pull_request:
     branches:
       - main
-    branches-ignore:
-      - 'renovate/**'
+      - '!renovate/**'
     paths:
       - ".github/workflows/chart-update-readme-and-golden-files.yaml"
       - "charts/**"
