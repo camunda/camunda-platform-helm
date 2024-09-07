@@ -27,28 +27,32 @@ dependencies:
   - name: postgresql
     alias: identityPostgresql
     repository: https://charts.bitnami.com/bitnami
-    version: 14.x.x
+    version: 15.x.x
     condition: "identity.postgresql.enabled,identityPostgresql.enabled"
   # WebModeler Dependencies.
   - name: web-modeler-postgresql
     alias: postgresql
-    repository: "file://../web-modeler-postgresql-14"
-    version: 14.x.x
+    repository: "file://../web-modeler-postgresql-15"
+    version: 15.x.x
     condition: "postgresql.enabled"
   # Shared Dependencies.
   - name: elasticsearch
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    version: 20.0.4
+    version: 21.3.11
     condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
     repository: https://charts.bitnami.com/bitnami
     version: 2.x.x
 maintainers:
-  - name: Zelldon
-    email: christopher.zell@camunda.com
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
+  - name: drodriguez-305
+    email: daniel.rodriguez@camunda.com
+  - name: hamza-m-masood
+    email: hamza.masood@camunda.com
+  - name: jessesimpson36
+    email: jesse.simpson@camunda.com
 annotations:
   camunda.io/helmCLIVersion: "3.15.3"
   artifacthub.io/links: |
