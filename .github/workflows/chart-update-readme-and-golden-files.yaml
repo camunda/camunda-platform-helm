@@ -15,7 +15,7 @@ permissions:
 jobs:
   init:
     # The workflow shouldn't run on renovatebot branches, we have another workflow for renovatebot.
-    if: ! contains(github.head_ref, 'renovate/')
+    if: ${{ !contains(github.head_ref, 'renovate/') }}
     name: Check conditions
     runs-on: ubuntu-latest
     steps:
