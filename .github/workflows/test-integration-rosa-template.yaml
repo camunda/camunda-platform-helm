@@ -112,7 +112,7 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
 
       - name: Create ROSA cluster and login
-        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@e97b03ea5c79b19a92b178952fb4a401d442ff10 # main
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@d5d392cc79f670b1569a1afeb07bbfdca79ef4e6 # main
         timeout-minutes: 125
         env:
           AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
@@ -274,7 +274,7 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
 
       - name: Delete on-demand ROSA HCP Cluster
-        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@e97b03ea5c79b19a92b178952fb4a401d442ff10 # main
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@d5d392cc79f670b1569a1afeb07bbfdca79ef4e6 # main
         if: always()
         timeout-minutes: 125
         env:
@@ -296,7 +296,7 @@ jobs:
       - name: Notify in Slack in case of failure
         id: slack-notification
         if: github.event_name == 'schedule'
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        uses: slackapi/slack-github-action@37ebaef184d7626c5f204ab8d3baff4262dd30f0 # v1.27.0
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |

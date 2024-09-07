@@ -5,8 +5,6 @@
   "labels": ["dependencies"],
   "dependencyDashboard": true,
   "separateMinorPatch": true,
-  // ignore the distro-ci[bot] which adds commits for readme updates
-  "gitIgnoredAuthors": ["122795778+distro-ci[bot]@users.noreply.github.com"],
   "minor": {
     "enabled": true
   },
