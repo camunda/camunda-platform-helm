@@ -61,8 +61,10 @@ global:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
@@ -617,9 +619,9 @@ zeebe-gateway:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/backend-protocol: 'GRPC'
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -725,8 +727,10 @@ operate:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.path defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -976,8 +980,10 @@ tasklist:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -1016,6 +1022,11 @@ optimize:
     tag: 8.2.14
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  # Migration configuration for Optimize migration
+  migration:
+    # Migration.enabled if true, run Optimize migration script as an init container
+    enabled: true
 
   # Sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
@@ -1149,8 +1160,10 @@ optimize:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -1360,8 +1373,10 @@ identity:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -1924,8 +1939,10 @@ webModeler:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.webapp configuration of the webapp ingress
     webapp:
       # Ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the Web Modeler web application will be available
@@ -2136,8 +2153,10 @@ connectors:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.path defines the path which is associated with the Connectors service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -2370,8 +2389,10 @@ console:
     className: nginx
     # Ingress.annotations defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: "/"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
     # Ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules

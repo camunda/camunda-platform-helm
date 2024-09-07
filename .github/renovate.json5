@@ -5,6 +5,8 @@
   "labels": ["dependencies"],
   "dependencyDashboard": true,
   "separateMinorPatch": true,
+  // ignore the distro-ci[bot] which adds commits for readme updates
+  "gitIgnoredAuthors": ["122795778+distro-ci[bot]@users.noreply.github.com"],
   "minor": {
     "enabled": true
   },
@@ -122,17 +124,6 @@
     //
     // Camunda charts.
     {
-      "matchDepPatterns": ["^camunda/.+"],
-      "matchFileNames": [
-        "charts/camunda-platform-alpha/Chart.yaml",
-        "charts/camunda-platform-alpha/values*.yaml",
-      ],
-      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
-      // which is not the case.
-      "versionCompatibility": "^(?<version>[^-]*)(-(?<compatibility>[^-]*))?$",
-      "matchUpdateTypes": ["minor", "patch"]
-    },
-    {
       // Disable major version update for all Helm components.
       "enabled": false,
       "matchManagers": ["helmv3", "helm-values", "regex"],
@@ -173,7 +164,7 @@
         "charts/camunda-platform-latest/values.yaml",
         "charts/camunda-platform-latest/values-latest.yaml"
       ],
-      "matchDepNames": ["bitnami/elasticsearch"],
+      "matchPackageNames": ["/.*elasticsearch.*/"],
       "allowedVersions": "~8.12.0"
     },
     {
@@ -184,14 +175,27 @@
         "charts/camunda-platform-alpha/values.yaml",
         "charts/camunda-platform-alpha/values-latest.yaml"
       ],
-      "matchDepNames": ["bitnami/elasticsearch"],
+      "matchPackageNames": ["/.*elasticsearch.*/"],
       "allowedVersions": "~8.15.0"
     },
     {
-      // Disable Helm chart upgrades from bitnami/elasticsearch
-      "matchDepNames": ["elasticsearch"],
+      // Disable Helm chart upgrades from for elasticsearch chart.
+      "matchPackageNames": ["/.*elasticsearch.*/"],
       "matchPaths": ["charts/camunda-platform-8*/Chart.yaml"],
       "enabled": false
+    },
+    {
+      "enabled": true,
+      "matchPackageNames": ["/.*camunda.*/"],
+      "matchDatasources": ["helm", "docker", "regex"],
+      "matchFileNames": [
+        "charts/camunda-platform-alpha/Chart.yaml",
+        "charts/camunda-platform-alpha/values*.yaml",
+      ],
+      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
+      // which is not the case.
+      "versionCompatibility": "^(?<version>\\d+\.\\d+\.\\d+-alpha[1-6])(?<compatibility>.*)$",
+      "versioning": "semver"
     },
 
     //

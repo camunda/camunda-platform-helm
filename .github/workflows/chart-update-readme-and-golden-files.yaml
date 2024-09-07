@@ -13,7 +13,18 @@ permissions:
   pull-requests: write
 
 jobs:
+  init:
+    # The workflow shouldn't run on renovatebot branches, we have another workflow for renovatebot.
+    if: ${{ !contains(github.head_ref, 'renovate/') }}
+    name: Check conditions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conditions met
+        run: |
+          echo "Conditions met, move to the next job..."
+    
   chores:
+    needs: [init]
     name: Update README And Golden Files
     runs-on: ubuntu-latest
     steps:
@@ -32,6 +43,7 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
+          token: "${{ steps.generate-github-token.outputs.token }}"
       #
       # Dependencies.
       #

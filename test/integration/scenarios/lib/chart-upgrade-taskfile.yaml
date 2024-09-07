@@ -8,7 +8,13 @@ vars:
 tasks:
   pre:
     cmds:
-    - echo "No pre setup task for this test."
+    - |
+      test -f {{ .TEST_VALUES_BASE_DIR }}/pre-upgrade/* || {
+        echo "No pre setup task for this test."
+        exit 0
+      }
+      export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
+      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-upgrade/*.sh
 
   # https://docs.camunda.io/docs/self-managed/setup/upgrade/
   exec:

@@ -39,6 +39,51 @@ spec:
     spec:
       imagePullSecrets:
         []
+      initContainers:
+      - name: migration
+        image: "camunda/optimize:8.2.14"
+        command: ['./upgrade/upgrade.sh', '--skip-warning']
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+            value: "true"
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+            value: "3"
+          - name: OPTIMIZE_ELASTICSEARCH_HOST
+            value: "elasticsearch-master"
+          - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+            value: "9200"
+          - name: SPRING_PROFILES_ACTIVE
+            value: "ccsm"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
+            value: "http://localhost:18080/auth/realms/camunda-platform"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+            value: "http://localhost:8083"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
+            value: "optimize"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-optimize-identity-secret"
+                key: optimize-secret
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
+            value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
+            value: "optimize-api"
+          - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+          - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
+            value: "false"
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+          requests:
+            cpu: 600m
+            memory: 1Gi
+        volumeMounts:
       containers:
       - name: optimize
         image: "camunda/optimize:8.2.14"
