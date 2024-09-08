@@ -1,7 +1,7 @@
 apiVersion: v2
 name: camunda-platform
 # renovate: datasource=github-tags depName=charts/camunda-platform-alpha packageName=camunda/camunda
-version: 8.6.0-alpha4
+version: 8.6.0-alpha5
 appVersion: 8.6.x
 description: |
   Camunda 8 Self-Managed Helm charts.
