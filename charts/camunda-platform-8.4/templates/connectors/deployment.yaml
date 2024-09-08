@@ -58,7 +58,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "connectors.authCredentialsSecretName" . }}
-                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+                  key: {{ .Values.connectors.inbound.auth.existingSecretKey }}
           {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.connectors.inbound.mode "oauth" }}
