@@ -158,10 +158,12 @@ spec:
                 - zeebe-broker
             topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: [ReadWriteOnce]
-      resources:
-        requests:
-          storage: "32Gi"
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: "32Gi"
