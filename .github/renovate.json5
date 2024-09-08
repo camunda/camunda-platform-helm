@@ -183,6 +183,14 @@
       "enabled": false
     },
     {
+      // Limit alpha chart version to alpha tags only.
+      "enabled": true,
+      "matchDatasources": ["github-tags"],
+      "matchPackageNames": ["camunda/camunda"],
+      "matchFileNames": ["charts/camunda-platform-alpha/Chart.yaml"],
+      "versioning": "regex:^(?<major>\\d+)(\.(?<minor>\\d+))(\.(?<patch>\\d+))(-(?<prerelease>alpha[1-6]))$"
+    },
+    {
       "enabled": true,
       "matchPackageNames": ["/.*camunda.*/"],
       "matchDatasources": ["helm", "docker", "regex"],
@@ -215,11 +223,11 @@
 
   "regexManagers": [
     {
-      // This is mainly used to update Camunda unified image tag.
+      // This is mainly used to Camunda alpha chart.
       "fileMatch": ["\\.yaml$"],
-      "datasourceTemplate":"github-releases",
+      "datasourceTemplate":"github-tags",
       "matchStrings": [
-        "# renovate: datasource=github-releases depName=(?<depName>.+?)( versioning=(?<versioning>.+?))?\\s+?tag: (?<currentValue>\\S+)"
+        "# renovate: datasource=github-tags depName=(?<depName>.+?)( versioning=(?<versioning>.+?))?(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?\\s+?version: (?<currentValue>\\S+)"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     },
