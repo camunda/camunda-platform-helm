@@ -1805,13 +1805,12 @@ optimize:
   ## @param optimize.podLabels can be used to define extra Optimize pod labels
   podLabels: {}
 
-  ## @extra optimize.logging configuration for the optimize logging. This template will be directly included in the optimize configuration YAML file
-  ## @param optimize.logging.level.ROOT
-  ## @param optimize.logging.level.io.camunda.optimize
-  logging:
-    level:
-      ROOT: INFO
-      org.camunda.optimize: INFO
+  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  logLevel: info
+  ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  upgradeLogLevel: info
+  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  esLogLevel: warn
 
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
