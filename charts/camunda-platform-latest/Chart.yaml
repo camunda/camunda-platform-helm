@@ -50,7 +50,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.15.3"
+  camunda.io/helmCLIVersion: "3.15.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -60,5 +60,25 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Adding play env var to web-modeler"
+    - kind: added
+      description: "Support optional chart secrets auto-generation"
+    - kind: added
+      description: "Support optional chart secrets auto-generation"
+    - kind: added
+      description: "Adding aws config in apps for OpenSearch"
     - kind: fixed
-      description: "AdvertisedHost relies on global.multiregion.regions and not global.multiregion.enabled"
+      description: "Enable secrets deprecation flag in alpha by default"
+    - kind: fixed
+      description: "Reload identity when its config changed"
+    - kind: fixed
+      description: "Correctly intend operate migration envs"
+    - kind: fixed
+      description: "Add zeebe opensearch retention to app config file"
+    - kind: fixed
+      description: "Gives port-forward hostnames to external urls when no ingress is…"
+    - kind: fixed
+      description: "Added helper function smtp auth for webmodeler"
+    - kind: fixed
+      description: "Correct ingress nginx annotation to activate proxy buffering by default"
