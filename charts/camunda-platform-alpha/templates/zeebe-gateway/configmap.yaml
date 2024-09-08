@@ -89,10 +89,6 @@ data:
           multitenancy:
             enabled: true
       {{- end }}
-    logging:
-{{- with .Values.zeebeGateway.logging }}
-{{ . | toYaml | indent 6 }}
-{{- end }}
 {{- end }}
 {{- range $key, $val := .Values.zeebeGateway.extraConfiguration }}
   {{ $key }}: |
