@@ -676,14 +676,6 @@ zeebe:
   ## @param zeebe.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
-  ## @extra zeebe.logging configuration for the zeebe logging. This template will be directly included in the zeebe configuration YAML file
-  ## @param zeebe.logging.level.ROOT
-  ## @param zeebe.logging.level.io.camunda.operate
-  logging:
-    level:
-      ROOT: INFO
-      io.camunda.zeebe: INFO
-
   ## @param zeebe.logLevel defines the log level which is used by the zeebe brokers
   logLevel: info
   ## @param zeebe.log4j2 can be used to overwrite the log4j2 configuration of the zeebe brokers
@@ -952,14 +944,6 @@ zeebeGateway:
   podAnnotations: {}
   ## @param zeebeGateway.podLabels can be used to define extra gateway pod labels
   podLabels: {}
-
-  ## @extra zeebeGateway.logging configuration for the zeebeGateway logging. This template will be directly included in the zeebeGateway configuration YAML file
-  ## @param zeebeGateway.logging.level.ROOT
-  ## @param zeebeGateway.logging.level.io.camunda.zeebeGateway
-  logging:
-    level:
-      ROOT: INFO
-      io.camunda.zeebeGateway: INFO
 
   ## @param zeebeGateway.logLevel defines the log level which is used by the gateway
   logLevel: info
@@ -1827,7 +1811,7 @@ optimize:
   logging:
     level:
       ROOT: INFO
-      io.camunda.optimize: INFO
+      org.camunda.optimize: INFO
 
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
