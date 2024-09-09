@@ -2,7 +2,7 @@
 # It meant to run in the post-release workflow and before merging the release PR.
 
 #!/bin/bash
-set -euo pipefail
+set -euox pipefail
 
 # Init.
 # Check dependencies.
@@ -69,9 +69,10 @@ ct list-changed | while read chart_dir; do
         # Label PR.
         gh pr edit "${pr_nubmer}" --add-label "${app_version_label},${chart_version_label}"
         # Label the PR's corresponding issue.
-        # TODO: Update the logic to work with multi issues (usually we don't have that).
-        issue_nubmer="$(get_issues_per_pr ${pr_nubmer})"
-        test -n "${issue_nubmer}" &&
-            gh issue edit "${issue_nubmer}" --add-label "${app_version_label},${chart_version_label}"
+        issue_nubmers="$(get_issues_per_pr ${pr_nubmer})"
+        echo -e "${issue_nubmers}" | while read issue_nubmer; do
+            test -n "${issue_nubmer}" &&
+                gh issue edit "${issue_nubmer}" --add-label "${app_version_label},${chart_version_label}"
+        done
     done
 done
