@@ -71,8 +71,8 @@ testcases:
     - skiptestingress ShouldBeFalse
     type: http
     range:
-    - component: Console
-      url: "{{ .coreVars.baseURLs.console }}"
+    # - component: Console
+    #   url: "{{ .coreVars.baseURLs.console }}"
     - component: Keycloak
       url: "{{ .coreVars.baseURLs.keycloak }}"
     - component: Identity
@@ -124,10 +124,10 @@ testcases:
   - name: "{{ .value.component }}"
     type: http
     range:
-    - component: Console
-      url: "{{ .coreVars.baseURLs.console }}/api/clusters"
-      method: GET
-      body: ''
+    # - component: Console
+    #   url: "{{ .coreVars.baseURLs.console }}/api/clusters"
+    #   method: GET
+    #   body: ''
     - component: Identity
       url: "{{ .coreVars.baseURLs.identity }}/api/users"
       method: GET

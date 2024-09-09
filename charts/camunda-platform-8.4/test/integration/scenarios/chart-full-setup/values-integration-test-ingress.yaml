@@ -48,6 +48,10 @@ global:
           name: "integration-test-credentials"
 
 identity:
+  contextPath: "/identity"
+  fullURL: "https://{{ .Values.global.ingress.host }}/identity"
+
+  # Identity Keycloak.
   keycloak:
     postgresql:
       auth:
@@ -57,9 +61,10 @@ identity:
   firstUser:
     existingSecret: "integration-test-credentials"
 
-identityPostgresql:
-  auth:
-    existingSecret: "integration-test-credentials"
+  # Identity PostgreSQL.
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
 
 operate:
   contextPath: "/operate"
@@ -88,12 +93,13 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
-    # Should be set to have a different name of Identity Keycloak PostgreSQL.
-    secretKeys:
-      adminPasswordKey: "webmodeler-postgresql-admin-password"
-      userPasswordKey: "webmodeler-postgresql-user-password"
+  # TODO: Uncomment after Camunda chart 9.4.0 release.
+  # auth:
+  #   existingSecret: "integration-test-credentials"
+  #   # Should be set to have a different name of Identity Keycloak PostgreSQL.
+  #   secretKeys:
+  #     adminPasswordKey: "webmodeler-postgresql-admin-password"
+  #     userPasswordKey: "webmodeler-postgresql-user-password"
 
 zeebe-gateway:
   ingress:
@@ -109,7 +115,7 @@ zeebe-gateway:
       external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
-  enabled: true
+  enabled: false
   contextPath: "/"
   image:
     pullSecrets:

@@ -24,8 +24,11 @@ spec:
         - -c
         # TODO: Check if we can use asdf here to unify and simplify tools management.
         - |
+          get_zbctl () {
+            wget https://github.com/camunda/camunda/releases/download/${1}/zbctl -O /tools/zbctl
+          }
           echo "Downloading additional tools";
-          wget https://github.com/camunda/camunda/releases/download/${ZEEBE_VERSION}/zbctl -O /tools/zbctl
+          get_zbctl "${ZEEBE_VERSION}" || get_zbctl "${ZEEBE_VERSION_FALLBACK}"
           chmod +x /tools/zbctl
           echo Finished downloading;
         volumeMounts:

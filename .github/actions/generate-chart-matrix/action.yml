@@ -13,7 +13,7 @@ runs:
   steps:
     - name: Get changed dirs
       id: changed-files
-      uses: tj-actions/changed-files@c65cd883420fd2eb864698a825fc4162dd94482c # v44
+      uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275 # v45
       with:
         dir_names: "true"
     - name: Generate matrix

@@ -13,13 +13,13 @@ console:
   # registry.camunda.cloud/console
   image:
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.95
+    tag: 8.5.97
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.6
+    tag: 8.5.7
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
@@ -30,7 +30,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.4
+    tag: 8.5.5
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
@@ -72,7 +72,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       repository: bitnami/postgresql
-      tag: 15.7.0
+      tag: 15.8.0
 
 #
 # Elasticsearch
