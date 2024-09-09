@@ -26,10 +26,10 @@ cliff_config_file=".github/config/cliff.toml"
 # Get PRs from commits in a certain chart dir.
 get_prs_per_chart_dir () {
     chart_dir="${1}"
-    git-cliff --context \
+    git cliff ${latest_release_commit}.. \
+        --context \
         --config "${cliff_config_file}" \
-        --include-path "${chart_dir}/**" \
-        ${latest_release_commit}.. |
+        --include-path "${chart_dir}/**" |
             jq '.[].commits[].message' | grep -Po '(?<=#)\d+'
 }
 
