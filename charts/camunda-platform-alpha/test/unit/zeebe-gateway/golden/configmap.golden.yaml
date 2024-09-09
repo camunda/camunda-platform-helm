@@ -50,7 +50,3 @@ data:
         network:
           host: 0.0.0.0
           port: "26500"
-    logging:
-      level:
-        ROOT: INFO
-        io.camunda.zeebeGateway: INFO

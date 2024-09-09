@@ -56,10 +56,6 @@ data:
         threads:
           cpuThreadCount: "3"
           ioThreadCount: "3"
-    logging:
-      level:
-        ROOT: INFO
-        io.camunda.zeebe: INFO
 
     # Camunda Database configuration
     camunda.database:
