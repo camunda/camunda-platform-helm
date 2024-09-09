@@ -2,7 +2,7 @@
 # It meant to run in the post-release workflow and before merging the release PR.
 
 #!/bin/bash
-set -euox pipefail
+set -euo pipefail
 
 # Init.
 # Check dependencies.
@@ -26,7 +26,7 @@ cliff_config_file=".github/config/cliff.toml"
 # Get PRs from commits in a certain chart dir.
 get_prs_per_chart_dir () {
     chart_dir="${1}"
-    git cliff ${latest_release_commit}.. \
+    git-cliff ${latest_release_commit}.. \
         --context \
         --config "${cliff_config_file}" \
         --include-path "${chart_dir}/**" |
@@ -69,18 +69,23 @@ ct list-changed | while read chart_dir; do
     # Create the chart version label if it doesn't exist.
     # We need to use grep because GH CLI doesn't support exact match.
     gh label list --search "${chart_version_label}" | grep "${chart_version_label}" ||
-        gh label create "${chart_version_label}" --color E99695 \
+        gh label create "${chart_version_label}" --color "0052CC" \
             --description "Issues and PRs related to chart version ${chart_version}"
 
     # Update GH PRs and Issues with the chart version.
     get_prs_per_chart_dir "${chart_dir}" | while read pr_nubmer; do
         # Label PR.
-        gh pr edit "${pr_nubmer}" --add-label "${app_version_label},${chart_version_label}"
+        printf "[PR ${pr_nubmer}] Labeling the PR with chart version label ${chart_version_label}"
+        printf -- " - %s\n" $(gh pr edit "${pr_nubmer}" --add-label "${app_version_label},${chart_version_label}")
         # Label the PR's corresponding issue.
         issue_nubmers="$(get_issues_per_pr ${pr_nubmer})"
-        test -z "${issue_nubmers}" && exit 0
+        test -z "${issue_nubmers}" && {
+            printf -- "- PR no. ${pr_nubmer} has no corresponding issues.\n"
+            continue
+        }
         echo -e "${issue_nubmers}" | while read issue_nubmer; do
-            gh issue edit "${issue_nubmer}" --add-label "${app_version_label},${chart_version_label}"
+            printf -- "- [Issue ${issue_nubmer}] Labeling the issue with chart version label ${chart_version_label}"
+            printf -- " - %s\n" $(gh issue edit "${issue_nubmer}" --add-label "${app_version_label},${chart_version_label}")
         done
     done
 done
