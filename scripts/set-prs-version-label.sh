@@ -65,6 +65,14 @@ ct list-changed | while read chart_dir; do
     echo -e "\nChart dir: ${chart_dir}"
     echo "Apps version: ${app_version}"
     echo "Chart version: ${chart_version}"
+
+    # Create the chart version label if it doesn't exist.
+    # We need to use grep because GH CLI doesn't support exact match.
+    gh label list --search "${chart_version_label}" | grep "${chart_version_label}" ||
+        gh label create "${chart_version_label}" --color E99695 \
+            --description "Issues and PRs related to chart version ${chart_version}"
+
+    # Update GH PRs and Issues with the chart version.
     get_prs_per_chart_dir "${chart_dir}" | while read pr_nubmer; do
         # Label PR.
         gh pr edit "${pr_nubmer}" --add-label "${app_version_label},${chart_version_label}"
