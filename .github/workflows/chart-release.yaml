@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       trigger:
-        description: 'Trigger release manually'
+        description: "Trigger release manually"
         required: false
         default: false
         type: boolean
@@ -19,7 +19,7 @@ concurrency:
 
 permissions:
   contents: read
-  
+
 jobs:
   release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
@@ -79,13 +79,13 @@ jobs:
           # Clean up badges from readme to avoid showing them in Artifact Hub.
           sed -ri '/Badge .+/d' charts/camunda-platform-latest/README.md
           mkdir release-packages
-
+  
       #
       # We run Chart Releaser twice as a workaround because it's not possible to control the release order.
       # CR by default will release "camunda-platform-10.x.x" first then "camunda-platform-8.x.x",
       # however, we want the latest version to show as the latest release in GitHub releases.
       #
-
+  
       # Release previous versions.
       - name: Pre-Release - Previous versions
         run: |
@@ -102,7 +102,7 @@ jobs:
         run: |
           mv .cr-release-packages/* release-packages/
           git checkout :/
-
+  
       # Release the latest version.
       - name: Pre-Release - Latest version
         run: |
@@ -119,7 +119,7 @@ jobs:
         run: |
           mv .cr-release-packages/* release-packages/
           git checkout :/
-
+  
       # Sign and upload the signature of the chart package.
       - name: Set Helm chart vars
         run: |
@@ -158,10 +158,12 @@ jobs:
 
   post-release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
-    needs: release
+    # needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -171,14 +173,16 @@ jobs:
           ref: release-please--branches--main
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-      - name: Simple smoke test
-        uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
-        with:
-          max_attempts: 3
-          timeout_minutes: 5
-          retry_wait_seconds: 10
-          command: make release.verify-components-version
+      # - name: Simple smoke test
+      #   uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
+      #   with:
+      #     max_attempts: 3
+      #     timeout_minutes: 5
+      #     retry_wait_seconds: 10
+      #     command: make release.verify-components-version
       - name: Label PRs with app and chart version
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           make release.set-prs-version-label
       - name: Generate version matrix

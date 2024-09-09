@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.3.9
+version: 9.4.0
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.3.x
+    version: 9.x.x
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT
@@ -58,5 +58,15 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
-  camunda.io/helmCLIVersion: 3.15.3
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Support optional chart secrets auto-generation"
+    - kind: fixed
+      description: "Enable secrets deprecation flag in alpha by default"
+    - kind: fixed
+      description: "Correct ingress nginx annotation to activate proxy buffering by default"
+    - kind: fixed
+      description: "Disable console in 8.4"
+    - kind: fixed
+      description: "Added contextpath to 8.4 identity"
+  camunda.io/helmCLIVersion: 3.15.4
