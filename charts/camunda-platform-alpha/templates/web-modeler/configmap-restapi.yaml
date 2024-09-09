@@ -87,7 +87,10 @@ data:
           resourceserver:
             jwt:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-
+    logging:
+{{- with .Values.webModeler.restapi.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
   {{- end }}
   {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
   {{ $key }}: |

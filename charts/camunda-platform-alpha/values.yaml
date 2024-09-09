@@ -2850,6 +2850,14 @@ webModeler:
     ## @param webModeler.restapi.podLabels can be used to define extra restapi pod labels
     podLabels: {}
 
+    ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
+    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/next/self-managed/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
+    ## @param webModeler.restapi.logging.level.io.grpc
+    logging:
+      level:
+        io.camunda.modeler: DEBUG
+        io.grpc: TRACE
+
     ## @param webModeler.restapi.env can be used to set extra environment variables in each restapi container
     env: []
     ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
