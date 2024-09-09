@@ -299,5 +299,5 @@ data:
         audience: "camunda-identity-resource-server"
     logging:
       level:
-        ROOT: INFO
+        ROOT: WARN
         io.camunda.identity: INFO

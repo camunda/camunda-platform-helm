@@ -1534,7 +1534,7 @@ tasklist:
 
   ## @extra tasklist.logging configuration for the tasklist logging. This template will be directly included in the tasklist configuration YAML file
   ## @param tasklist.logging.level.ROOT
-  ## @param tasklist.logging.level.io.camunda.tasklist
+  ## @param tasklist.logging.level.io.camunda.tasklist https://docs.camunda.io/docs/next/self-managed/tasklist-deployment/tasklist-configuration/#logging
   logging:
     level:
       ROOT: INFO
@@ -2049,7 +2049,7 @@ executionIdentity:
   ## @param executionIdentity.podLabels can be used to define extra executionIdentity pod labels
   podLabels: {}
 
-  ## @param executionIdentity.logging configuration for the executionIdentity logging. This template will be directly included in the Operate configuration YAML file
+  ## @param executionIdentity.logging configuration for the executionIdentity logging. This template will be directly included in the executionIdentity configuration YAML file
   logging: {}
 
   ## executionIdentity.service configuration to configure the executionIdentity service.
@@ -2310,10 +2310,10 @@ identity:
 
   ## @extra identity.logging configuration for the identity logging. This template will be directly included in the identity configuration YAML file
   ## @param identity.logging.level.ROOT
-  ## @param identity.logging.level.io.camunda.identity
+  ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/next/self-managed/identity/user-guide/configuration/configure-logging/#general-configuration-options
   logging:
     level:
-      ROOT: INFO
+      ROOT: WARN
       io.camunda.identity: INFO
 
   ## @extra identity.service configuration to configure the identity service.
