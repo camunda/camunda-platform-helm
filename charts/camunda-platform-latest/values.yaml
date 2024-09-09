@@ -3209,6 +3209,8 @@ connectors:
     auth:
       ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains Operate password (if inbound mode is credentials)
       existingSecret: ""
+      ## @param connectors.inbound.auth.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: "connectors-secret"
 
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
