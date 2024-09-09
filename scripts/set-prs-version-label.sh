@@ -70,9 +70,9 @@ ct list-changed | while read chart_dir; do
         gh pr edit "${pr_nubmer}" --add-label "${app_version_label},${chart_version_label}"
         # Label the PR's corresponding issue.
         issue_nubmers="$(get_issues_per_pr ${pr_nubmer})"
+        test -z "${issue_nubmers}" && exit 0
         echo -e "${issue_nubmers}" | while read issue_nubmer; do
-            test -n "${issue_nubmer}" &&
-                gh issue edit "${issue_nubmer}" --add-label "${app_version_label},${chart_version_label}"
+            gh issue edit "${issue_nubmer}" --add-label "${app_version_label},${chart_version_label}"
         done
     done
 done
