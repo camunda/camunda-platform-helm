@@ -21,140 +21,140 @@ permissions:
   contents: read
   
 jobs:
-  # release:
-  #   if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #     id-token: write
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-  #       with:
-  #         fetch-depth: 0
-  #     - name: Install env dependencies
-  #       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-  #     - name: Remove Dev Comments
-  #       run: |
-  #         TARGET_FILES=(
-  #           "charts/camunda-platform-*/values*.yaml"
-  #           "charts/camunda-platform-*/Chart.yaml"
-  #         )
-  #         for FILE in "${TARGET_FILES[@]}"; do
-  #           sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
-  #         done
-  #         echo "Dev comments removed:"
-  #         git --no-pager diff
-  #     - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4
-  #       with:
-  #         path: |
-  #           ~/.cache/go-build
-  #           ~/go/pkg/mod
-  #           ~/.asdf/installs/golang/*/packages/pkg/mod
-  #         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-go-
-  #     - name: Configure Git
-  #       run: |
-  #         git config user.name "$GITHUB_ACTOR"
-  #         git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-  #     - name: Install Chart Releaser
-  #       uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
-  #       with:
-  #         install_only: true
-  #       env:
-  #         CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-  #         CR_SKIP_EXISTING: 'true'
-  #     - name: Add Helm repos
-  #       run: |
-  #         make helm.repos-add
-  #     - name: Update Helm dependency
-  #       run: |
-  #         chartPath="$(ct list-changed | tr '\n' ' ')" \
-  #           make helm.dependency-update
-  #     - name: cosign-installer
-  #       uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
-  #     - name: Tidy up
-  #       run: |
-  #         # Clean up badges from readme to avoid showing them in Artifact Hub.
-  #         sed -ri '/Badge .+/d' charts/camunda-platform-latest/README.md
-  #         mkdir release-packages
-  #
-  #     #
-  #     # We run Chart Releaser twice as a workaround because it's not possible to control the release order.
-  #     # CR by default will release "camunda-platform-10.x.x" first then "camunda-platform-8.x.x",
-  #     # however, we want the latest version to show as the latest release in GitHub releases.
-  #     #
-  #
-  #     # Release previous versions.
-  #     - name: Pre-Release - Previous versions
-  #       run: |
-  #         rm -rf charts/camunda-platform-latest
-  #         rm -rf charts/camunda-platform-alpha
-  #     - name: Run Chart Releaser - Previous versions
-  #       uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
-  #       with:
-  #         config: .github/config/chart-releaser.yaml
-  #       env:
-  #         CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-  #         CR_SKIP_EXISTING: 'true'
-  #     - name: Post-Release - Previous versions
-  #       run: |
-  #         mv .cr-release-packages/* release-packages/
-  #         git checkout :/
-  #
-  #     # Release the latest version.
-  #     - name: Pre-Release - Latest version
-  #       run: |
-  #         rm -rf charts/camunda-platform-8*
-  #         rm -rf charts/camunda-platform-alpha
-  #     - name: Run Chart Releaser - Latest version
-  #       uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
-  #       with:
-  #         config: .github/config/chart-releaser.yaml
-  #       env:
-  #         CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-  #         CR_SKIP_EXISTING: 'true'
-  #     - name: Post-Release - Latest version
-  #       run: |
-  #         mv .cr-release-packages/* release-packages/
-  #         git checkout :/
-  #
-  #     # Sign and upload the signature of the chart package.
-  #     - name: Set Helm chart vars
-  #       run: |
-  #         CHART_PACKAGES=""
-  #         for chart_dir in $(ct list-changed | tr '\n' ' '); do
-  #           chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
-  #           CHART_PACKAGES="${CHART_PACKAGES} camunda-platform-${chart_version}.tgz"
-  #         done
-  #         echo "CHART_PACKAGES=${CHART_PACKAGES}" | tee -a $GITHUB_ENV
-  #     - name: Sign Helm chart with Cosign
-  #       run: |
-  #         for chart_package in ${CHART_PACKAGES}; do
-  #           echo "Package: ${chart_package}"
-  #           cosign sign-blob -y release-packages/${chart_package} \
-  #             --bundle "${chart_package%.*}.cosign.bundle"
-  #         done
-  #     - name: Verify signed Helm chart with Cosign
-  #       run: |
-  #         for chart_package in ${CHART_PACKAGES}; do
-  #           echo "Package: ${chart_package}"
-  #           cosign verify-blob release-packages/${chart_package} \
-  #             --bundle "${chart_package%.*}.cosign.bundle" \
-  #             --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
-  #             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-  #         done
-  #     - name: Upload Helm chart signature bundle
-  #       run: |
-  #         for chart_package in ${CHART_PACKAGES}; do
-  #           echo "Package: ${chart_package}"
-  #           gh release upload "${chart_package%.*}" \
-  #             "${chart_package%.*}.cosign.bundle" \
-  #             --repo "${GITHUB_REPOSITORY}"
-  #         done
-  #       env:
-  #         GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+  release:
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: 0
+      - name: Install env dependencies
+        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Remove Dev Comments
+        run: |
+          TARGET_FILES=(
+            "charts/camunda-platform-*/values*.yaml"
+            "charts/camunda-platform-*/Chart.yaml"
+          )
+          for FILE in "${TARGET_FILES[@]}"; do
+            sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
+          done
+          echo "Dev comments removed:"
+          git --no-pager diff
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Install Chart Releaser
+        uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
+        with:
+          install_only: true
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          CR_SKIP_EXISTING: 'true'
+      - name: Add Helm repos
+        run: |
+          make helm.repos-add
+      - name: Update Helm dependency
+        run: |
+          chartPath="$(ct list-changed | tr '\n' ' ')" \
+            make helm.dependency-update
+      - name: cosign-installer
+        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
+      - name: Tidy up
+        run: |
+          # Clean up badges from readme to avoid showing them in Artifact Hub.
+          sed -ri '/Badge .+/d' charts/camunda-platform-latest/README.md
+          mkdir release-packages
+
+      #
+      # We run Chart Releaser twice as a workaround because it's not possible to control the release order.
+      # CR by default will release "camunda-platform-10.x.x" first then "camunda-platform-8.x.x",
+      # however, we want the latest version to show as the latest release in GitHub releases.
+      #
+
+      # Release previous versions.
+      - name: Pre-Release - Previous versions
+        run: |
+          rm -rf charts/camunda-platform-latest
+          rm -rf charts/camunda-platform-alpha
+      - name: Run Chart Releaser - Previous versions
+        uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
+        with:
+          config: .github/config/chart-releaser.yaml
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          CR_SKIP_EXISTING: 'true'
+      - name: Post-Release - Previous versions
+        run: |
+          mv .cr-release-packages/* release-packages/
+          git checkout :/
+
+      # Release the latest version.
+      - name: Pre-Release - Latest version
+        run: |
+          rm -rf charts/camunda-platform-8*
+          rm -rf charts/camunda-platform-alpha
+      - name: Run Chart Releaser - Latest version
+        uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
+        with:
+          config: .github/config/chart-releaser.yaml
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          CR_SKIP_EXISTING: 'true'
+      - name: Post-Release - Latest version
+        run: |
+          mv .cr-release-packages/* release-packages/
+          git checkout :/
+
+      # Sign and upload the signature of the chart package.
+      - name: Set Helm chart vars
+        run: |
+          CHART_PACKAGES=""
+          for chart_dir in $(ct list-changed | tr '\n' ' '); do
+            chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
+            CHART_PACKAGES="${CHART_PACKAGES} camunda-platform-${chart_version}.tgz"
+          done
+          echo "CHART_PACKAGES=${CHART_PACKAGES}" | tee -a $GITHUB_ENV
+      - name: Sign Helm chart with Cosign
+        run: |
+          for chart_package in ${CHART_PACKAGES}; do
+            echo "Package: ${chart_package}"
+            cosign sign-blob -y release-packages/${chart_package} \
+              --bundle "${chart_package%.*}.cosign.bundle"
+          done
+      - name: Verify signed Helm chart with Cosign
+        run: |
+          for chart_package in ${CHART_PACKAGES}; do
+            echo "Package: ${chart_package}"
+            cosign verify-blob release-packages/${chart_package} \
+              --bundle "${chart_package%.*}.cosign.bundle" \
+              --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+          done
+      - name: Upload Helm chart signature bundle
+        run: |
+          for chart_package in ${CHART_PACKAGES}; do
+            echo "Package: ${chart_package}"
+            gh release upload "${chart_package%.*}" \
+              "${chart_package%.*}.cosign.bundle" \
+              --repo "${GITHUB_REPOSITORY}"
+          done
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
   post-release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
@@ -171,13 +171,13 @@ jobs:
           ref: release-please--branches--main
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-      # - name: Simple smoke test
-      #   uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
-      #   with:
-      #     max_attempts: 3
-      #     timeout_minutes: 5
-      #     retry_wait_seconds: 10
-      #     command: make release.verify-components-version
+      - name: Simple smoke test
+        uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 10
+          command: make release.verify-components-version
       - name: Label PRs with app and chart version
         run: |
           make release.set-prs-version-label
