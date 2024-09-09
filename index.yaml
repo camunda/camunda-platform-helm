@@ -767,6 +767,73 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Support optional chart secrets auto-generation"
+        - kind: fixed
+          description: "Enable secrets deprecation flag in alpha by default"
+        - kind: fixed
+          description: "Correct ingress nginx annotation to activate proxy buffering by default"
+        - kind: fixed
+          description: "Disable console in 8.4"
+        - kind: fixed
+          description: "Added contextpath to 8.4 identity"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.4
+    apiVersion: v2
+    appVersion: 8.4.x
+    created: "2024-09-09T13:09:45.71127989Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 9.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.19.4
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: b1cde0f357b8790aa1c1caef2bc210381d958f3a473b689bd0a4e20c4c1f297a
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-9.4.0/camunda-platform-9.4.0.tgz
+    version: 9.4.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Add volumeClaimTemplates label selector in zeebe statefulSet"
         - kind: changed
           description: "Hardcoding strategy for all components and removing ability to configure strategy"
@@ -1784,6 +1851,67 @@ entries:
     urls:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-9.0.0/camunda-platform-9.0.0.tgz
     version: 9.0.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Enable secrets deprecation flag in alpha by default"
+        - kind: fixed
+          description: "Correct ingress nginx annotation to activate proxy buffering by default"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.4
+    apiVersion: v2
+    appVersion: 8.3.x
+    created: "2024-09-09T13:09:45.403015487Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.3.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.13.13
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 2e7107ca057844761bf7ca9f2b935b74d88ce349403f12e3049aa5b95299dce5
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.17/camunda-platform-8.3.17.tgz
+    version: 8.3.17
   - annotations:
       artifacthub.io/changes: |
         - kind: added
@@ -2836,6 +2964,89 @@ entries:
     urls:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.3.0/camunda-platform-8.3.0.tgz
     version: 8.3.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Add optimize migration init container"
+        - kind: fixed
+          description: "Enable secrets deprecation flag in alpha by default"
+        - kind: fixed
+          description: "Correct ingress nginx annotation to activate proxy buffering by default"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda Platform 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda Platform 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda Platform 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.15.4
+    apiVersion: v2
+    appVersion: 8.2.x
+    created: "2024-09-09T13:09:45.159759441Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 8.2.x
+    - condition: operate.enabled
+      name: operate
+      repository: ""
+      version: 8.2.x
+    - condition: optimize.enabled
+      name: optimize
+      repository: ""
+      version: 8.2.x
+    - condition: tasklist.enabled
+      name: tasklist
+      repository: ""
+      version: 8.2.x
+    - condition: zeebe.enabled
+      name: zeebe
+      repository: ""
+      version: 8.2.x
+    - condition: zeebe.enabled
+      name: zeebe-gateway
+      repository: ""
+      version: 8.2.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.17.3
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 11.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    description: 'Camunda Platform 8 Self-Managed Helm charts. Camunda''s process
+      automation platform allows developers to design, automate and improve processes. '
+    digest: 15260d3b4dd170aca3c0d1ca46b010f3569ed7edbc685b23e8527d598f0ff338
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - bpm
+    - bpmn
+    - camunda-platform
+    - dmn
+    - process-engine
+    - workflow
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: Zelldon
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.2.32/camunda-platform-8.2.32.tgz
+    version: 8.2.32
   - annotations:
       artifacthub.io/changes: |
         - kind: added
@@ -9444,6 +9655,47 @@ entries:
       category: Database
       images: |
         - name: os-shell
+          image: docker.io/bitnami/os-shell:12-debian-12
+        - name: postgres-exporter
+          image: docker.io/bitnami/postgres-exporter:0.15.0-debian-12
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:16.4.0-debian-12-r7
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 16.4.0
+    created: "2024-09-09T13:09:46.364396411Z"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: PostgreSQL (Postgres) is an open source object-relational database
+      known for reliability and data integrity. ACID-compliant, it supports foreign
+      keys, joins, views, triggers and stored procedures.
+    digest: 1f41ab41b2012e894344470a703213b463c65e4472d7ab42647f0160eb1040e6
+    home: https://bitnami.com
+    icon: https://bitnami.com/assets/stacks/postgresql/img/postgresql-stack-220x234.png
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - sql
+    - replication
+    - cluster
+    maintainers:
+    - name: Broadcom, Inc. All Rights Reserved.
+      url: https://github.com/bitnami/charts
+    name: web-modeler-postgresql
+    sources:
+    - https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/web-modeler-postgresql-15.5.28/web-modeler-postgresql-15.5.28.tgz
+    version: 15.5.28
+  - annotations:
+      category: Database
+      images: |
+        - name: os-shell
           image: docker.io/bitnami/os-shell:12-debian-12-r16
         - name: postgres-exporter
           image: docker.io/bitnami/postgres-exporter:0.15.0-debian-12-r14
@@ -11405,4 +11657,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2024-08-15T13:35:48.621211839Z"
+generated: "2024-09-09T13:09:46.365053083Z"
