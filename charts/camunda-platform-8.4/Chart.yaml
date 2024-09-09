@@ -20,7 +20,7 @@ keywords:
 dependencies:
   # Camunda charts.
   - name: identity
-    version: 9.3.x
+    version: 9.x.x
     condition: "identity.enabled"
     import-values:
       # START DEV COMMENT
