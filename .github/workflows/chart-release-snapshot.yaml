@@ -57,12 +57,15 @@ jobs:
         - name: Helm Chart Latest rolling
           directory: charts/camunda-platform-latest
           versionSuffix: snapshot-latest
+          override: true
         - name: Helm Chart Alpha rolling
           directory: charts/camunda-platform-alpha
           versionSuffix: snapshot-alpha
+          override: true
         - name: Helm Chart Alpha versioned
           directory: charts/camunda-platform-alpha
           versionSuffix: ""
+          override: false
     defaults:
       run:
         shell: bash
@@ -95,7 +98,29 @@ jobs:
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Print Helm CLI version
         run: helm version
+      - name: ⭐ Check if the chart artifact should be published ⭐
+        id: vars
+        run: |
+          case "${{ matrix.chart.override }}" in
+            "true")
+              # For snapshots, the artifact is always overriden.
+              PUBLISH_ARTIFACT="true"
+              ;;
+            "false")
+              # If the artfact exists, then it will not republished.
+              helm pull oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \
+                --version ${{ env.CHART_VERSION }} 2> /dev/null
+              test $? -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
+              ;;
+            *)
+              echo "Unsupported value."
+              exit 1
+              ;;
+          esac
+          # Add the var to GH vars.
+          echo "PUBLISH_ARTIFACT=${PUBLISH_ARTIFACT}" | tee -a $GITHUB_ENV
       - name: Package and push Helm chart
+        if: env.PUBLISH_ARTIFACT == 'true'
         env:
           HELM_EXPERIMENTAL_OCI: 1
         run: |
@@ -107,26 +132,32 @@ jobs:
       #
       # Security signature.
       - name: Install Cosign CLI
+        if: env.PUBLISH_ARTIFACT == 'true'
         uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
       - name: Sign Helm chart with Cosign
+        if: env.PUBLISH_ARTIFACT == 'true'
         run: |
           cosign sign-blob -y ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
             --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle
       - name: Verify signed Helm chart with Cosign
+        if: env.PUBLISH_ARTIFACT == 'true'
         run: |
           cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
             --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
             --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Login to GitHub Container Registry
+        if: env.PUBLISH_ARTIFACT == 'true'
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install ORAS CLI
+        if: env.PUBLISH_ARTIFACT == 'true'
         uses: oras-project/setup-oras@ca28077386065e263c03428f4ae0c09024817c93 # v1
       - name: Upload Helm chart Cosign bundle
+        if: env.PUBLISH_ARTIFACT == 'true'
         run: |
           oras push ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }}.cosign.bundle \
             ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain
