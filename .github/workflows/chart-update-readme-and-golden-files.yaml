@@ -14,18 +14,30 @@ permissions:
 
 jobs:
   init:
-    # The workflow shouldn't run on renovatebot branches, we have another workflow for renovatebot.
-    if: ${{ !contains(github.head_ref, 'renovate/') }} ||
-        ${{ !contains(github.head_ref, 'release-please--') }}
-    name: Check conditions
+    name: Check Conditions
     runs-on: ubuntu-latest
     steps:
-      - name: Conditions met
+      # The workflow shouldn't run on some branches where we have independent workflows for them.
+      - name: Check conditions
+        id: conditions
         run: |
-          echo "Conditions met, move to the next job..."
+          set -x
+          SHOULD_RUN=true
+          case "${{ github.head_ref }}" in
+              "renovate/"*)
+                  SHOULD_RUN="false"
+                  ;;
+              "release-please--"*)
+                  SHOULD_RUN="false"
+              ;;
+          esac
+          echo "should-run=${SHOULD_RUN}" | tee -a ${GITHUB_OUTPUT}
+    outputs:
+      should-run: ${{ steps.conditions.outputs.should-run }}
     
   chores:
     needs: [init]
+    if: needs.init.outputs.should-run == 'true'
     name: Update README And Golden Files
     runs-on: ubuntu-latest
     steps:
