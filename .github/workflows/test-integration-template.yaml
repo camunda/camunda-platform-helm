@@ -147,7 +147,11 @@ jobs:
       - name: ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
-        run: echo "$GITHUB_CONTEXT"
+        run: |
+          echo "Workflow Input:"
+          echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
+          echo "Workflow Input - Extra Values:"
+          echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
