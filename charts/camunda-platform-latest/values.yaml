@@ -178,6 +178,16 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
+    ## @skip This is only used in Keycloak deployment to copy Camunda theme for Keycloak login page.
+    image:
+      ## @skip global.identity.image.registry can be used to set container image registry.
+      registry: "docker.io"
+      ## @skip global.identity.image.repository defines which image repository to use
+      repository: camunda/identity
+      ## @skip global.identity.image.tag can be set to overwrite the global tag, which should be used in that chart
+      tag: 8.5.5
+      ## @skip global.identity.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+      pullPolicy: IfNotPresent
     service:
       ## @param global.identity.service.url
       url:
@@ -2373,8 +2383,8 @@ identityKeycloak:
   ## @param identityKeycloak.initContainers[0].volumeMounts[0].name
   ## @param identityKeycloak.initContainers[0].volumeMounts[0].mountPath
   - name: copy-camunda-theme
-    image: "{{ .Values.global.identity.image | default \"camunda/identity:latest\" }}"
-    imagePullPolicy: "{{ .Values.global.identity.imagePullPolicy | default \"Always\" }}"
+    image: "{{ .Values.global.identity.image.registry }}/{{ .Values.global.identity.image.repository }}:{{ .Values.global.identity.image.tag }}"
+    imagePullPolicy: "{{ .Values.global.identity.image.pullPolicy | default \"Always\" }}"
     command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
     securityContext:
       privileged: false
