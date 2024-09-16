@@ -131,11 +131,7 @@ spec:
           {{- if .Values.zeebeGateway.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ if eq .Values.zeebeGateway.contextPath "/" }}
-                      {{- trimPrefix "/" .Values.zeebeGateway.readinessProbe.probePath }}
-                    {{ else }}
-                      {{- trimSuffix "/" .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.readinessProbe.probePath }}
-                    {{ end }}
+              path: {{ include "camundaPlatform.zeebeGatewayReadinessProbePath" . }}
               scheme: {{ .Values.zeebeGateway.readinessProbe.scheme }}
               port: {{ .Values.zeebeGateway.service.httpPort }}
             initialDelaySeconds: {{ .Values.zeebeGateway.readinessProbe.initialDelaySeconds }}
