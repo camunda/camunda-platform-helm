@@ -24,7 +24,7 @@ spec:
     - host: local
       http:
         paths:
-          - path: /
+          - path: /actuator/health/readiness
             pathType: Prefix
             backend:
               service:

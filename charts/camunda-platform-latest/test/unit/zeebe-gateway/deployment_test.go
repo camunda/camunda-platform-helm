@@ -826,3 +826,89 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
+func (s *deploymentTemplateTest) TestReadinessProbeWithContextPathAndIngressEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebeGateway.contextPath":            "/test",
+			"zeebeGateway.readinessProbe.enabled": "true",
+			"zeebeGateway.ingress.rest.path":      "/test",
+			"zeebeGateway.ingress.rest.enabled":   "true", // Ensure ingress is enabled
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	container := deployment.Spec.Template.Spec.Containers[0]
+	s.Require().Equal("/test/actuator/health/readiness", container.ReadinessProbe.HTTPGet.Path)
+}
+
+func (s *deploymentTemplateTest) TestReadinessProbeWithRootContextPathAndIngressEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebeGateway.contextPath":            "/",
+			"zeebeGateway.readinessProbe.enabled": "true",
+			"zeebeGateway.ingress.rest.path":      "/",
+			"zeebeGateway.ingress.rest.enabled":   "true", // Ensure ingress is enabled
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	container := deployment.Spec.Template.Spec.Containers[0]
+	s.Require().Equal("/actuator/health/readiness", container.ReadinessProbe.HTTPGet.Path)
+}
+
+func (s *deploymentTemplateTest) TestReadinessProbeWithEmptyContextPathAndIngressEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebeGateway.contextPath":            "",
+			"zeebeGateway.readinessProbe.enabled": "true",
+			"zeebeGateway.ingress.rest.path":      "/",
+			"zeebeGateway.ingress.rest.enabled":   "true", // Ensure ingress is enabled
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	container := deployment.Spec.Template.Spec.Containers[0]
+	s.Require().Equal("/actuator/health/readiness", container.ReadinessProbe.HTTPGet.Path)
+}
+func (s *deploymentTemplateTest) TestReadinessProbeWithTrailingSlashInContextPath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebeGateway.contextPath":            "/test/", // Context path with trailing slash
+			"zeebeGateway.readinessProbe.enabled": "true",
+			"zeebeGateway.ingress.rest.path":      "/test/",
+			"zeebeGateway.ingress.rest.enabled":   "true", // Ensure ingress is enabled
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	container := deployment.Spec.Template.Spec.Containers[0]
+	s.Require().Equal("/test/actuator/health/readiness", container.ReadinessProbe.HTTPGet.Path)
+}
