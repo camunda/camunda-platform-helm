@@ -547,24 +547,6 @@ Zeebe templates.
 {{- end -}}
 
 {{/*
-[camunda-platform] Zeebe Gateway Readiness Probe Path.
-*/}}
-{{- define "camundaPlatform.zeebeGatewayReadinessProbePath" -}}
-  {{- if eq .Values.zeebeGateway.contextPath "" -}}
-    {{- if eq .Values.zeebeGateway.ingress.rest.path "/" -}}
-      /{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
-    {{- else -}}
-      {{- trimSuffix "/" .Values.zeebeGateway.ingress.rest.path }}/{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
-    {{- end -}}
-  {{- else if eq .Values.zeebeGateway.contextPath "/" -}}
-    /{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
-  {{- else -}}
-    {{- trimSuffix "/" .Values.zeebeGateway.contextPath }}/{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
-  {{- end -}}
-{{- end -}}
-
-
-{{/*
 ********************************************************************************
 Release templates.
 ********************************************************************************

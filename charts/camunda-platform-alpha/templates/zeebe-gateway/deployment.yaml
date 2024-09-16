@@ -131,7 +131,7 @@ spec:
           {{- if .Values.zeebeGateway.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ include "camundaPlatform.zeebeGatewayReadinessProbePath" . }}
+              path: {{ include "zeebe.readinessProbePath.gateway" . }}
               scheme: {{ .Values.zeebeGateway.readinessProbe.scheme }}
               port: {{ .Values.zeebeGateway.service.httpPort }}
             initialDelaySeconds: {{ .Values.zeebeGateway.readinessProbe.initialDelaySeconds }}
