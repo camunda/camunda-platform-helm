@@ -19,11 +19,7 @@ spec:
     - http:
     {{- end }}
         paths:
-          - path: {{ if eq .Values.zeebeGateway.contextPath "/" }}
-                  {{ default "/" .Values.zeebeGateway.ingress.rest.path }}
-                {{ else }}
-                  {{- trimSuffix "/" .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.ingress.rest.path }}
-                {{ end }}
+          - path: {{ .Values.zeebeGateway.ingress.rest.path }}
             pathType: {{ .Values.zeebeGateway.ingress.rest.pathType }}
             backend:
               service:
