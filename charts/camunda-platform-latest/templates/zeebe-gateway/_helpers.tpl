@@ -65,3 +65,20 @@ app.kubernetes.io/component: zeebe-gateway
         "context" $
     ) -}}
 {{- end }}
+
+{{/*
+[zeebe-gateway] Generate readiness probe path based on contextPath and ingress.rest.path.
+*/}}
+{{- define "zeebe.readinessProbePath.gateway" -}}
+    {{- if eq .Values.zeebeGateway.contextPath "" -}}
+        {{- if eq .Values.zeebeGateway.ingress.rest.path "/" -}}
+            /{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
+        {{- else -}}
+            {{- trimSuffix "/" .Values.zeebeGateway.ingress.rest.path }}/{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
+        {{- end -}}
+    {{- else if eq .Values.zeebeGateway.contextPath "/" -}}
+        /{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
+    {{- else -}}
+        {{- trimSuffix "/" .Values.zeebeGateway.contextPath }}/{{ trimPrefix "/" (trimSuffix "/" .Values.zeebeGateway.readinessProbe.probePath) }}
+    {{- end -}}
+{{- end -}}
