@@ -31,16 +31,16 @@ dependencies:
         parent: global.identity.image
   # Dependency charts.
   - name: elasticsearch
-    repository: "oci://registry-1.docker.io/bitnamicharts"
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 19.13.13
     condition: elasticsearch.enabled
   - name: postgresql
-    repository: https://charts.bitnami.com/bitnami
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 11.x.x
     condition: postgresql.enabled
   # Helpers charts.
   - name: common
-    repository: https://charts.bitnami.com/bitnami
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 2.x.x
 maintainers:
   - name: Zelldon

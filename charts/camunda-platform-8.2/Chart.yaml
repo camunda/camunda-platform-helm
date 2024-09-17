@@ -50,12 +50,12 @@ dependencies:
     version: 7.17.3
     condition: "elasticsearch.enabled"
   - name: postgresql
-    repository: https://charts.bitnami.com/bitnami
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 11.x.x
     condition: "postgresql.enabled"
   # Helpers charts.
   - name: common
-    repository: https://charts.bitnami.com/bitnami
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 2.x.x
 maintainers:
   - name: Zelldon
