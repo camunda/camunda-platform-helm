@@ -6,10 +6,10 @@ type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
 dependencies:
   - name: keycloak
-    repository: https://charts.bitnami.com/bitnami
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 17.3.6
     condition: keycloak.enabled
   - name: postgresql
-    repository: https://charts.bitnami.com/bitnami
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 12.x.x
     condition: postgresql.enabled

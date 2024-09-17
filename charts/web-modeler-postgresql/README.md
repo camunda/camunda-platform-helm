@@ -78,7 +78,6 @@ kubectl delete pvc -l release=my-release
 | `global.postgresql.auth.secretKeys.replicationPasswordKey` | Name of key in existing secret to use for PostgreSQL credentials (overrides `auth.secretKeys.replicationPasswordKey`). Only used when `global.postgresql.auth.existingSecret` is set. | `""`  |
 | `global.postgresql.service.ports.postgresql`               | PostgreSQL service port (overrides `service.ports.postgresql`)                                                                                                                        | `""`  |
 
-
 ### Common parameters
 
 | Name                     | Description                                                                                  | Value           |
@@ -94,14 +93,13 @@ kubectl delete pvc -l release=my-release
 | `diagnosticMode.command` | Command to override all containers in the statefulset                                        | `["sleep"]`     |
 | `diagnosticMode.args`    | Args to override all containers in the statefulset                                           | `["infinity"]`  |
 
-
 ### PostgreSQL common parameters
 
 | Name                                     | Description                                                                                                                                                                                                                                                                                                                                   | Value                      |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
 | `image.registry`                         | PostgreSQL image registry                                                                                                                                                                                                                                                                                                                     | `docker.io`                |
 | `image.repository`                       | PostgreSQL image repository                                                                                                                                                                                                                                                                                                                   | `bitnami/postgresql`       |
-| `image.tag`                              | PostgreSQL image tag (immutable tags are recommended)                                                                                                                                                                                                                                                                                         | `14.5.0-debian-11-r35`     |
+| `image.tag`                              | PostgreSQL image tag (immutable tags are recommended)                                                                                                                                                                                                                                                                                         | `14.13.0`                  |
 | `image.digest`                           | PostgreSQL image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag                                                                                                                                                                                                                                    | `""`                       |
 | `image.pullPolicy`                       | PostgreSQL image pull policy                                                                                                                                                                                                                                                                                                                  | `IfNotPresent`             |
 | `image.pullSecrets`                      | Specify image pull secrets                                                                                                                                                                                                                                                                                                                    | `[]`                       |
@@ -156,7 +154,6 @@ kubectl delete pvc -l release=my-release
 | `tls.certKeyFilename`                    | Certificate key filename                                                                                                                                                                                                                                                                                                                      | `""`                       |
 | `tls.certCAFilename`                     | CA Certificate filename                                                                                                                                                                                                                                                                                                                       | `""`                       |
 | `tls.crlFilename`                        | File containing a Certificate Revocation List                                                                                                                                                                                                                                                                                                 | `""`                       |
-
 
 ### PostgreSQL Primary parameters
 
@@ -261,7 +258,6 @@ kubectl delete pvc -l release=my-release
 | `primary.persistence.selector`               | Selector to match an existing Persistent Volume (this value is evaluated as a template)                                  | `{}`                  |
 | `primary.persistence.dataSource`             | Custom PVC data source                                                                                                   | `{}`                  |
 
-
 ### PostgreSQL read only replica parameters (only used when `architecture` is set to `replication`)
 
 | Name                                              | Description                                                                                                              | Value                 |
@@ -352,7 +348,6 @@ kubectl delete pvc -l release=my-release
 | `readReplicas.persistence.selector`               | Selector to match an existing Persistent Volume (this value is evaluated as a template)                                  | `{}`                  |
 | `readReplicas.persistence.dataSource`             | Custom PVC data source                                                                                                   | `{}`                  |
 
-
 ### NetworkPolicy parameters
 
 | Name                                                                      | Description                                                                                                                                        | Value   |
@@ -372,7 +367,6 @@ kubectl delete pvc -l release=my-release
 | `networkPolicy.egressRules.denyConnectionsToExternal`                     | Enable egress rule that denies outgoing traffic outside the cluster, except for DNS (port 53).                                                     | `false` |
 | `networkPolicy.egressRules.customRules`                                   | Custom network policy rule                                                                                                                         | `{}`    |
 
-
 ### Volume Permissions parameters
 
 | Name                                                   | Description                                                                                                                       | Value                   |
@@ -380,14 +374,13 @@ kubectl delete pvc -l release=my-release
 | `volumePermissions.enabled`                            | Enable init container that changes the owner and group of the persistent volume                                                   | `false`                 |
 | `volumePermissions.image.registry`                     | Init container volume-permissions image registry                                                                                  | `docker.io`             |
 | `volumePermissions.image.repository`                   | Init container volume-permissions image repository                                                                                | `bitnami/bitnami-shell` |
-| `volumePermissions.image.tag`                          | Init container volume-permissions image tag (immutable tags are recommended)                                                      | `11-debian-11-r45`      |
+| `volumePermissions.image.tag`                          | Init container volume-permissions image tag (immutable tags are recommended)                                                      | `11-debian-11-r136`     |
 | `volumePermissions.image.digest`                       | Init container volume-permissions image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag | `""`                    |
 | `volumePermissions.image.pullPolicy`                   | Init container volume-permissions image pull policy                                                                               | `IfNotPresent`          |
 | `volumePermissions.image.pullSecrets`                  | Init container volume-permissions image pull secrets                                                                              | `[]`                    |
 | `volumePermissions.resources.limits`                   | Init container volume-permissions resource limits                                                                                 | `{}`                    |
 | `volumePermissions.resources.requests`                 | Init container volume-permissions resource requests                                                                               | `{}`                    |
 | `volumePermissions.containerSecurityContext.runAsUser` | User ID for the init container                                                                                                    | `0`                     |
-
 
 ### Other Parameters
 
@@ -401,7 +394,6 @@ kubectl delete pvc -l release=my-release
 | `rbac.rules`                                  | Custom RBAC rules to set                                                                                                                    | `[]`    |
 | `psp.create`                                  | Whether to create a PodSecurityPolicy. WARNING: PodSecurityPolicy is deprecated in Kubernetes v1.21 or later, unavailable in v1.25 or later | `false` |
 
-
 ### Metrics Parameters
 
 | Name                                            | Description                                                                                                | Value                       |
@@ -409,7 +401,7 @@ kubectl delete pvc -l release=my-release
 | `metrics.enabled`                               | Start a prometheus exporter                                                                                | `false`                     |
 | `metrics.image.registry`                        | PostgreSQL Prometheus Exporter image registry                                                              | `docker.io`                 |
 | `metrics.image.repository`                      | PostgreSQL Prometheus Exporter image repository                                                            | `bitnami/postgres-exporter` |
-| `metrics.image.tag`                             | PostgreSQL Prometheus Exporter image tag (immutable tags are recommended)                                  | `0.11.1-debian-11-r22`      |
+| `metrics.image.tag`                             | PostgreSQL Prometheus Exporter image tag (immutable tags are recommended)                                  | `0.15.0`                    |
 | `metrics.image.digest`                          | PostgreSQL image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag | `""`                        |
 | `metrics.image.pullPolicy`                      | PostgreSQL Prometheus Exporter image pull policy                                                           | `IfNotPresent`              |
 | `metrics.image.pullSecrets`                     | Specify image pull secrets                                                                                 | `[]`                        |
