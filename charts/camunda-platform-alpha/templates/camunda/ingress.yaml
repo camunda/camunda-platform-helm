@@ -54,7 +54,7 @@ spec:
                 name: {{ template "operate.fullname" . }}
                 port:
                   number: {{ .Values.operate.service.port }}
-            path: {{ .Values.operate.contextPath }}
+            path: /(operate/|$)({{ trimPrefix "/" .Values.operate.contextPath }}.*)
             pathType: {{ .Values.operate.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}

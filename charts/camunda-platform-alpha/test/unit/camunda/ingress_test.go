@@ -176,7 +176,7 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 	s.Require().Contains(output, "kind: Ingress")
 	s.Require().Contains(output, "path: /auth")
 	s.Require().Contains(output, "path: /identity")
-	s.Require().Contains(output, "path: /operate")
+	s.Require().Contains(output, "path: /(operate/|$)(operate.*)")
 	s.Require().Contains(output, "path: /optimize")
 	s.Require().Contains(output, "path: /tasklist")
 	s.Require().Contains(output, "path: /modeler")
