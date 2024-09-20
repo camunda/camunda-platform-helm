@@ -4,6 +4,7 @@ name: "Test - Maintenance"
 on:
   pull_request:
     paths:
+      - '.github/workflows/test-integration-template.yaml'
       - '.github/workflows/test-version-maintenance.yaml'
       - 'charts/camunda-platform-8*/**'
   workflow_dispatch: { }

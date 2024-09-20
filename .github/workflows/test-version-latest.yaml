@@ -4,6 +4,7 @@ name: "Test - Latest"
 on:
   pull_request:
     paths:
+      - '.github/workflows/test-integration-template.yaml'
       - '.github/workflows/test-version-latest.yaml'
       - 'charts/camunda-platform-latest/**'
   workflow_dispatch: { }
