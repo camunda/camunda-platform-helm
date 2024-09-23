@@ -185,7 +185,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.identity.firstUser.existingSecret }}
-                  key: "identity-firstuser-password"
+                  key: {{ .Values.identity.firstUser.existingSecretKey }}
             {{- else }}
             - name: KEYCLOAK_USERS_0_PASSWORD
               value: {{ .Values.identity.firstUser.password | quote }}
