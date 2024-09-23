@@ -1465,6 +1465,8 @@ identity:
       tls: false
       # Keycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
       extraTls: []
+      ## Keycloak.ingress.pathType defines Ingress path type.
+      pathType: Prefix
 
     # Keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:

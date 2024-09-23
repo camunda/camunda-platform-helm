@@ -2248,6 +2248,8 @@ identity:
       ## @skip identity.keycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
         nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
         nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      ## @param identity.keycloak.ingress.pathType defines Ingress path type.
+      pathType: Prefix
 
     ## @extra identity.keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:
