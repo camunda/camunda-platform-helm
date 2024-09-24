@@ -184,8 +184,12 @@ jobs:
             sleep 30
 
             : # Ensure ExternalSecrets are created
-            kubectl wait --for=condition=Ready externalsecrets --all-namespaces --timeout=300s
-                
+            for secret in $(kubectl get externalsecret -n distribution-team -o jsonpath='{.items[*].metadata.name}'); do
+              echo "Waiting for ExternalSecret: $secret"
+              kubectl describe externalsecret/$secret -n distribution-team
+              kubectl wait --for=condition=Ready externalsecret/$secret -n distribution-team --timeout=300s
+            done   
+
             while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
                 echo "Waiting for all pods to be Running or Completed"
                 sleep 5
