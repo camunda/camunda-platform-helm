@@ -264,8 +264,12 @@ jobs:
             fi
           fi
 
-          : # ensure external secrets are ready
-          kubectl wait --for=condition=Ready externalsecrets --all -n $TEST_NAMESPACE --timeout=300s
+          : # Ensure ExternalSecrets are created
+          for secret in $(kubectl get externalsecret -n distribution-team -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Waiting for ExternalSecret: $secret"
+            kubectl describe externalsecret/$secret -n distribution-team
+            kubectl wait --for=condition=Ready externalsecret/$secret -n distribution-team --timeout=300s
+          done   
 
       - name: Set Helm extra args
         run: |
