@@ -182,7 +182,14 @@ jobs:
                 
             echo "Waiting for global state to converge"
             sleep 30
-                
+
+            : # Ensure ExternalSecrets are created
+            for secret in $(kubectl get externalsecret -n distribution-team -o jsonpath='{.items[*].metadata.name}'); do
+              echo "Waiting for ExternalSecret: $secret"
+              kubectl describe externalsecret/$secret -n distribution-team
+              kubectl wait --for=condition=Ready externalsecret/$secret -n distribution-team --timeout=300s
+            done   
+
             while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
                 echo "Waiting for all pods to be Running or Completed"
                 sleep 5
