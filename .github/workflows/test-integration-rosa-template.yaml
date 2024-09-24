@@ -182,6 +182,9 @@ jobs:
                 
             echo "Waiting for global state to converge"
             sleep 30
+
+            : # Ensure ExternalSecrets are created
+            kubectl wait --for=condition=Ready externalsecrets --all-namespaces --timeout=300s
                 
             while kubectl get pods --all-namespaces | grep -E -q -v '(Running|Completed|STATUS)'; do
                 echo "Waiting for all pods to be Running or Completed"
