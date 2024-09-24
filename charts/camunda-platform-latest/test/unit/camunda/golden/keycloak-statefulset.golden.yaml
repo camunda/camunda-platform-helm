@@ -92,8 +92,8 @@ spec:
           - sh
           - -c
           - cp -a /app/keycloak-theme/* /mnt
-          image: 'camunda/identity:latest'
-          imagePullPolicy: 'Always'
+          image: 'docker.io/camunda/identity:8.5.5'
+          imagePullPolicy: 'IfNotPresent'
           name: copy-camunda-theme
           securityContext:
             allowPrivilegeEscalation: false

@@ -1465,6 +1465,8 @@ identity:
       tls: false
       # Keycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
       extraTls: []
+      ## Keycloak.ingress.pathType defines Ingress path type.
+      pathType: Prefix
 
     # Keycloak.service configuration, to configure the service which is deployed along with keycloak
     service:
@@ -2436,7 +2438,7 @@ elasticsearch:
   image: docker.elastic.co/elasticsearch/elasticsearch
 
   # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
-  imageTag: 7.17.23
+  imageTag: 7.17.24
 
   extraEnvs:
     - name: "xpack.security.enabled"

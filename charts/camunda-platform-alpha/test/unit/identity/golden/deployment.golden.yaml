@@ -146,6 +146,8 @@ spec:
             - name: KEYCLOAK_USERS_0_ROLES_4
               value: "Web Modeler"
             - name: KEYCLOAK_USERS_0_ROLES_5
+              value: "Web Modeler Admin"
+            - name: KEYCLOAK_USERS_0_ROLES_6
               value: "Console"
           resources:
             limits:

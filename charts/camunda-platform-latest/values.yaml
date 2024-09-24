@@ -178,6 +178,16 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other sub-charts
   identity:
+    ## @skip This is only used in Keycloak deployment to copy Camunda theme for Keycloak login page.
+    image:
+      ## @skip global.identity.image.registry can be used to set container image registry.
+      registry: "docker.io"
+      ## @skip global.identity.image.repository defines which image repository to use
+      repository: camunda/identity
+      ## @skip global.identity.image.tag can be set to overwrite the global tag, which should be used in that chart
+      tag: 8.5.5
+      ## @skip global.identity.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+      pullPolicy: IfNotPresent
     service:
       ## @param global.identity.service.url
       url:
@@ -394,7 +404,7 @@ console:
     repository: console/console-sm
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.97
+    tag: 8.5.108
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1233,7 +1243,7 @@ operate:
     ## @param operate.image.repository defines which image repository to use
     repository: camunda/operate
     ## @param operate.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.5.6
+    tag: 8.5.7
     ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2373,8 +2383,8 @@ identityKeycloak:
   ## @param identityKeycloak.initContainers[0].volumeMounts[0].name
   ## @param identityKeycloak.initContainers[0].volumeMounts[0].mountPath
   - name: copy-camunda-theme
-    image: "{{ .Values.global.identity.image | default \"camunda/identity:latest\" }}"
-    imagePullPolicy: "{{ .Values.global.identity.imagePullPolicy | default \"Always\" }}"
+    image: "{{ .Values.global.identity.image.registry }}/{{ .Values.global.identity.image.repository }}:{{ .Values.global.identity.image.tag }}"
+    imagePullPolicy: "{{ .Values.global.identity.image.pullPolicy | default \"Always\" }}"
     command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
     securityContext:
       privileged: false
@@ -2450,6 +2460,8 @@ identityKeycloak:
     ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
       nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
       nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+    ## @param identityKeycloak.ingress.pathType defines Ingress path type.
+    pathType: Prefix
 
   ## @extra identityKeycloak.service configuration, to configure the service which is deployed along with keycloak
   service:
@@ -2499,7 +2511,7 @@ webModeler:
     registry: registry.camunda.cloud
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.7
+    tag: 8.5.8
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the WebModeler images are pulled directly from Camunda's private registry.
     #
@@ -3209,6 +3221,8 @@ connectors:
     auth:
       ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains Operate password (if inbound mode is credentials)
       existingSecret: ""
+      ## @param connectors.inbound.auth.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: "connectors-secret"
 
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags

@@ -63,7 +63,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{/*
 Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.path are not the same
 */}}
-{{- if and .Values.zeebeGateway.ingress.rest.enabled (ne .Values.zeebeGateway.ingress.rest.path .Values.zeebeGateway.contextPath) }}
+{{- if and .Values.zeebeGateway.ingress.rest.enabled (ne (trimSuffix "/" .Values.zeebeGateway.ingress.rest.path) (trimSuffix "/" .Values.zeebeGateway.contextPath)) }}
   {{- $errorMessage := "[camunda][error] zeebeGateway.ingress.rest.path and zeebeGateway.contextPath must have the same value."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
