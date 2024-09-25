@@ -191,7 +191,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	// then
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
-	s.Require().Equal("registry.camunda.cloud/console/console-sm:a.b.c", containers[0].Image)
+	s.Require().Equal("camunda/console:a.b.c", containers[0].Image)
 }
 
 func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
@@ -214,7 +214,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	// then
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
-	s.Require().Equal("registry.camunda.cloud/console/console-sm:a.b.c", containers[0].Image)
+	s.Require().Equal("camunda/console:a.b.c", containers[0].Image)
 }
 
 func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSetting() {
@@ -235,7 +235,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	expectedContainerImage := "registry.camunda.cloud/console/console-sm:a.b.c"
+	expectedContainerImage := "camunda/console:a.b.c"
 	containers := deployment.Spec.Template.Spec.Containers
 	s.Require().Equal(1, len(containers))
 	s.Require().Equal(expectedContainerImage, containers[0].Image)

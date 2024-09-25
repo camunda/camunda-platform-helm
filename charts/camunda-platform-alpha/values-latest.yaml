@@ -10,10 +10,9 @@ global:
 
 console:
   # Camunda Enterprise repository.
-  # registry.camunda.cloud/console
+  # https://hub.docker.com/r/camunda/console/tags
   image:
-    # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: latest
+    tag: 8.6.0-alpha5
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -24,7 +23,7 @@ connectors:
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
-    tag: 8.6.0-alpha4
+    tag: 8.6.0-alpha5
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
