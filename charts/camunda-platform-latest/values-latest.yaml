@@ -18,13 +18,13 @@ console:
   # registry.camunda.cloud/console
   image:
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.108
+    tag: 8.5.111
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.7
+    tag: 8.5.8
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
