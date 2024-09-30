@@ -54,16 +54,18 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: NODE_ENV
               value: prod
+            {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
             - name: KEYCLOAK_INTERNAL_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
             - name: KEYCLOAK_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
             - name: KEYCLOAK_REALM
               value: {{ .Values.console.keycloak.realm | quote }}
+            {{- end }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: console-api
+              value: {{ .Values.global.identity.auth.console.audience | default "console-api" }}
             - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: console
+              value: {{ .Values.global.identity.auth.console.clientId | default "console" }}
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
               value: {{ .Values.console.contextPath | quote }}
           {{- if .Values.console.env}}
