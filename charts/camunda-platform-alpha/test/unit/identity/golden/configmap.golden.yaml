@@ -159,6 +159,8 @@ data:
               permissions:
                 - definition: write:*
                   description: "Write permission"
+                - definition: admin:*
+                  description: "Admin permission"
             - name: Web Modeler API
               audience: "web-modeler-public-api"
               permissions:
@@ -178,6 +180,15 @@ data:
                   definition: write:*
                 - audience: "camunda-identity-resource-server"
                   definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Web Modeler"
+              permissions:
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "web-modeler-api"
+                  definition: admin:*
         zeebe:
           apis:
             - name: Zeebe API

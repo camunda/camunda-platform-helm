@@ -166,6 +166,8 @@ data:
               permissions:
                 - definition: write:*
                   description: "Write permission"
+                - definition: admin:*
+                  description: "Admin permission"
             - name: Web Modeler API
               audience: {{ .Values.global.identity.auth.webModeler.publicApiAudience | default "web-modeler-public-api" | quote }}
               permissions:
@@ -185,6 +187,15 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
                   definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Web Modeler"
+              permissions:
+                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+                  definition: read:users
+                - audience: {{ .Values.global.identity.auth.webModeler.clientApiAudience | default "web-modeler-api" | quote }}
+                  definition: write:*
+                - audience: {{ .Values.global.identity.auth.webModeler.clientApiAudience | default "web-modeler-api" | quote }}
+                  definition: admin:*
         zeebe:
           apis:
             - name: Zeebe API
