@@ -68,6 +68,12 @@
         "charts/camunda-platform-latest/values*.yaml",
         "charts/camunda-platform-latest/go.*"
       ],
+    },
+    {
+      "matchPackageNames": ["!/.*camunda.*/"],
+      "matchFileNames": [
+        "charts/camunda-platform-latest/values*.yaml",
+      ],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
     },
     {
