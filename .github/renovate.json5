@@ -71,6 +71,13 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
     },
     {
+      "matchPackageNames": ["/.*camunda.*/"],
+      "matchFileNames": [
+        "charts/camunda-platform-latest/values*.yaml",
+      ],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+    },
+    {
       "groupName": "camunda-platform-alpha",
       "addLabels": ["version/8.6", "deps/charts"],
       "matchFileNames": [
