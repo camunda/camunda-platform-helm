@@ -11,20 +11,20 @@ global:
   identity:
     image:
       repository: camunda/identity
-      tag: 8.5.5
+      tag: 8.5.6
 
 console:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/console
   image:
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.111
+    tag: 8.5.112
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.8
+    tag: 8.5.9
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
