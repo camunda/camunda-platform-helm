@@ -112,7 +112,7 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
 
       - name: Create ROSA cluster and login
-        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@d5d392cc79f670b1569a1afeb07bbfdca79ef4e6 # main
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-create-cluster@d0471d28cb3eb13cd2212b63cc8e50d457d829c4 # main
         timeout-minutes: 125
         env:
           AWS_PROFILE: ${{ secrets.DISTRO_CI_AWS_PROFILE }}
@@ -281,7 +281,7 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.DISTRO_CI_AWS_ACCESS_KEY }} --profile=${{ secrets.DISTRO_CI_AWS_PROFILE }}
 
       - name: Delete on-demand ROSA HCP Cluster
-        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@d5d392cc79f670b1569a1afeb07bbfdca79ef4e6 # main
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-delete-cluster@d0471d28cb3eb13cd2212b63cc8e50d457d829c4 # main
         if: always()
         timeout-minutes: 125
         env:
