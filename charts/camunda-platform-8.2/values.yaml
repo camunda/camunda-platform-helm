@@ -2443,6 +2443,8 @@ elasticsearch:
   extraEnvs:
     - name: "xpack.security.enabled"
       value: "false"
+    - name: "ingest.geoip.downloader.enabled"
+      value: "false"
 
   replicas: 2
 
