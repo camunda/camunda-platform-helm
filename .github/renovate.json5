@@ -151,8 +151,20 @@
       ],
       "matchUpdateTypes": ["patch"]
     },
+   {
+      // Limit Elasticsearch version to latest supported version in Camunda maintenance charts.
+      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      "enabled": false,
+      "matchDatasources": ["docker"],
+      "matchPaths": [
+        "charts/camunda-platform-8*/values.yaml",
+        "charts/camunda-platform-8*/values-latest.yaml"
+      ],
+      "matchPackageNames": ["/.*elasticsearch.*/"],
+      "matchUpdateTypes": ["minor"]
+    },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda v8.5.
+      // Limit Elasticsearch version to latest supported version in Camunda latest chart.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": [
@@ -163,7 +175,7 @@
       "allowedVersions": "~8.12.0"
     },
     {
-      // Limit Elasticsearch version to latest supported version for Alpha
+      // Limit Elasticsearch version to latest supported version in Camunda alpha chart.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": [
@@ -175,9 +187,11 @@
     },
     {
       // Disable Helm chart upgrades from for elasticsearch chart.
+      "enabled": false,
       "matchPackageNames": ["/.*elasticsearch.*/"],
-      "matchPaths": ["charts/camunda-platform-8*/Chart.yaml"],
-      "enabled": false
+      "matchPaths": [
+        "charts/camunda-platform-8*/Chart.yaml",
+      ],
     },
     {
       // Limit alpha chart version to alpha tags only.
