@@ -16,6 +16,11 @@ metadata:
     {}
 data:
   application.yaml: |
+    # NOTE:
+    # It is possible to override the configuration via env vars following the Spring Boot convention.
+    # For example, the "identity.url" config path is presented as the "IDENTITY_URL" environment variable.
+    # However, it's not possilbe to mix between the configuration and environment variable for the same object
+    # like arrays and maps.
     identity:
       url: "http://localhost:8080"
 
@@ -27,16 +32,16 @@ data:
         connectors:
           applications:
             - name: Connectors
-              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
               type: m2m
-              secret: ${CAMUNDA_CONNECTORS_SECRET:${KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
                 - audience: "operate-api"
                   definition: read:*
         console:
           applications:
             - name: "Console"
-              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
               type: public
               root-url: "http://localhost:8080"
               redirect-uris:
@@ -75,9 +80,9 @@ data:
         operate:
           applications:
             - name: Operate
-              id: ${CAMUNDA_OPERATE_CLIENT_ID:${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
+              id: ${CAMUNDA_OPERATE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
               type: confidential
-              secret: ${CAMUNDA_OPERATE_SECRET:${KEYCLOAK_INIT_OPERATE_SECRET:}}
+              secret: ${CAMUNDA_OPERATE_SECRET:${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}}
               root-url: "http://localhost:8081"
               redirect-uris:
                 - "/identity-callback"
@@ -100,9 +105,9 @@ data:
         optimize:
           applications:
             - name: Optimize
-              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
               type: confidential
-              secret: ${CAMUNDA_OPTIMIZE_SECRET:${KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
               root-url: "http://localhost:8083"
               redirect-uris:
                 - "/api/authentication/callback"
@@ -123,9 +128,9 @@ data:
         tasklist:
           applications:
             - name: Tasklist
-              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
+              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${VALUES_KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
               type: confidential
-              secret: ${CAMUNDA_TASKLIST_SECRET:${KEYCLOAK_INIT_TASKLIST_SECRET:}}
+              secret: ${CAMUNDA_TASKLIST_SECRET:${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}}
               root-url: "http://localhost:8082"
               redirect-uris:
                 - "/identity-callback"
@@ -148,7 +153,7 @@ data:
         webmodeler:
           applications:
             - name: "Web Modeler"
-              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
               root-url: "http://localhost:8084"
               redirect-uris:
@@ -203,6 +208,40 @@ data:
                 - audience: "zeebe-api"
                   definition: write:*
     keycloak:
+      url: "http://camunda-platform-test-keycloak:80/auth"
+      setup:
+        user: "admin"
+        password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      init:
+        console:
+          secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
+        operate:
+          secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
+        tasklist:
+          secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
+        optimize:
+          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        webmodeler:
+          root-url: "http://localhost:8084"
+        zeebe:
+          name: "Zeebe"
+      # Clients are passed as environment variables.
+      clients:
+      users:
+        - username: "demo"
+          email: "demo@example.org"
+          firstName: "Demo"
+          lastName: "User"
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          roles:
+            - Connectors
+            - Console
+            - Identity
+            - Operate
+            - Optimize
+            - Tasklist
+            - Web Modeler
+            - Web Modeler Admin
       environment:
         clients:
           - name: Identity
@@ -219,32 +258,32 @@ data:
             - name: Tasklist
               id: tasklist
               type: confidential
-              secret: ${KEYCLOAK_INIT_TASKLIST_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
               root-url: "http://localhost:8082"
               redirect-uris:
                 - "/identity-callback"
         operate:
           clients:
             - name: Operate
-              id: ${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
+              id: ${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
               type: confidential
-              secret: ${KEYCLOAK_INIT_OPERATE_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
               root-url: "http://localhost:8081"
               redirect-uris:
                 - "/identity-callback"
         optimize:
           clients:
             - name: Optimize
-              id: ${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
+              id: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
               type: confidential
-              secret: ${KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
               root-url: "http://localhost:8083"
               redirect-uris:
                 - "/api/authentication/callback"
         console:
           clients:
             - name: "Console"
-              id: ${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
+              id: ${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
               type: public
               root-url: "http://localhost:8080"
               redirect-uris:
