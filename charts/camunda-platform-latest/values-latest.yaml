@@ -11,20 +11,20 @@ global:
   identity:
     image:
       repository: camunda/identity
-      tag: 8.5.6
+      tag: 8.6.0
 
 console:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/console
   image:
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.112
+    tag: 8.6.5
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.9
+    tag: 8.6.2
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
@@ -47,7 +47,7 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.8
+    tag: 8.6.0
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
