@@ -147,24 +147,6 @@
       "matchUpdateTypes": ["major"]
     },
     {
-      // Disable minor version update for previous Camunda releases which will only get patch updates.
-      "enabled": false,
-      "matchManagers": ["helmv3", "helm-values", "regex"],
-      "matchPaths": [
-        "charts/camunda-platform-8*/values*.yaml",
-      ],
-      "matchUpdateTypes": ["minor"]
-    },
-    {
-      // Enable non-major version update for current Camunda version.
-      "matchDatasources": ["helm", "docker", "regex"],
-      "matchPaths": [
-        "charts/camunda-platform-latest/values.yaml",
-        "charts/camunda-platform-latest/values-latest.yaml"
-      ],
-      "matchUpdateTypes": ["minor", "patch"]
-    },
-    {
       // Enable patch version update for previous Camunda version.
       "matchDatasources": ["helmv3", "helm-values", "docker", "regex"],
       "matchPaths": [
