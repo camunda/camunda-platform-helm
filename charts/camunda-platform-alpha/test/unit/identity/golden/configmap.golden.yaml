@@ -234,7 +234,6 @@ data:
           lastName: "User"
           password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
           roles:
-            - Connectors
             - Console
             - Identity
             - Operate
