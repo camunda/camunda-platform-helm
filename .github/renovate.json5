@@ -75,6 +75,9 @@
       "enabled": false,
       "matchPackageNames": ["/.*camunda.*/"],
       "matchFileNames": [
+        "charts/camunda-platform-8.2/values*.yaml",
+        "charts/camunda-platform-8.3/values*.yaml",
+        "charts/camunda-platform-8.4/values*.yaml",
         "charts/camunda-platform-latest/values*.yaml",
       ],
       "matchUpdateTypes": ["minor"],
