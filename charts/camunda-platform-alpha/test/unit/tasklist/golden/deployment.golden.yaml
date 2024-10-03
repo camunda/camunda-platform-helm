@@ -130,7 +130,7 @@ spec:
             periodSeconds: 30
             successThreshold: 1
             failureThreshold: 5
-            timeoutSeconds: 1
+            timeoutSeconds: 5
           volumeMounts:
             - name: config
               mountPath: /usr/local/tasklist/config/application.yaml
