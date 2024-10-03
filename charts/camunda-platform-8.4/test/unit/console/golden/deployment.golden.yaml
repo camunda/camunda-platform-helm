@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/version: "8.6.5"
+    app.kubernetes.io/version: "8.4.60"
     app.kubernetes.io/component: console
   annotations:
     {}
@@ -46,7 +46,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: camunda-platform
-          image: registry.camunda.cloud/console/console-sm:8.6.5
+          image: registry.camunda.cloud/console/console-sm:8.4.60
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
