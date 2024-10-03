@@ -1622,7 +1622,7 @@ tasklist:
     ## @param tasklist.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
     ## @param tasklist.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
+    timeoutSeconds: 5
 
   ## @extra tasklist.readinessProbe configuration
   readinessProbe:
@@ -1642,7 +1642,7 @@ tasklist:
     ## @param tasklist.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
     ## @param tasklist.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
+    timeoutSeconds: 5
 
   ## @extra tasklist.livenessProbe configuration
   livenessProbe:
@@ -1662,7 +1662,7 @@ tasklist:
     ## @param tasklist.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
     failureThreshold: 5
     ## @param tasklist.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
+    timeoutSeconds: 5
 
   ## Metrics configuration
   metrics:
