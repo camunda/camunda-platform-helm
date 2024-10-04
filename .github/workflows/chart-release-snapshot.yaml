@@ -7,7 +7,6 @@ on:
       - main
     paths:
       - .github/workflows/chart-release-snapshot.yaml
-      - charts/camunda-platform-latest/**
       - charts/camunda-platform-alpha/**
 
 jobs:
@@ -54,15 +53,35 @@ jobs:
       fail-fast: false
       matrix:
         chart:
-        - name: Helm Chart Latest rolling
-          directory: charts/camunda-platform-latest
+        - name: Helm Chart rolling - 8.2
+          directory: charts/camunda-platform-8.2
+          versionSuffix: snapshot-8.2
+          override: true
+        - name: Helm Chart rolling - 8.3
+          directory: charts/camunda-platform-8.3
+          versionSuffix: snapshot-8.3
+          override: true
+        - name: Helm Chart rolling - 8.4
+          directory: charts/camunda-platform-8.4
+          versionSuffix: snapshot-8.4
+          override: true
+        - name: Helm Chart rolling - 8.5
+          directory: charts/camunda-platform-8.5
+          versionSuffix: snapshot-8.5
+          override: true
+        - name: Helm Chart rolling - 8.6
+          directory: charts/camunda-platform-8.6
+          versionSuffix: snapshot-8.6
+          override: true
+        - name: Helm Chart rolling - Latest
+          directory: charts/camunda-platform-8.6
           versionSuffix: snapshot-latest
           override: true
-        - name: Helm Chart Alpha rolling
+        - name: Helm Chart rolling - Alpha
           directory: charts/camunda-platform-alpha
           versionSuffix: snapshot-alpha
           override: true
-        - name: Helm Chart Alpha versioned
+        - name: Helm Chart versioned - Alpha
           directory: charts/camunda-platform-alpha
           versionSuffix: ""
           override: false
@@ -109,8 +128,8 @@ jobs:
             "false")
               # If the artfact exists, then it will not republished.
               helm pull oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \
-                --version ${{ env.CHART_VERSION }} 2> /dev/null
-              test $? -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
+                --version ${{ env.CHART_VERSION }} 2> /dev/null && EXIT_CODE=0 || EXIT_CODE=1
+              test ${EXIT_CODE} -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
               ;;
             *)
               echo "Unsupported value."
@@ -119,13 +138,17 @@ jobs:
           esac
           # Add the var to GH vars.
           echo "PUBLISH_ARTIFACT=${PUBLISH_ARTIFACT}" | tee -a $GITHUB_ENV
+      - name: Helm dependency update
+        if: env.PUBLISH_ARTIFACT == 'true'
+        run: |
+          make -C ../.. helm.dependency-update \
+            chartPath=${{ matrix.chart.directory }}
       - name: Package and push Helm chart
         if: env.PUBLISH_ARTIFACT == 'true'
         env:
           HELM_EXPERIMENTAL_OCI: 1
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
-          helm dependency update
           helm package --version ${{ env.CHART_VERSION }} .
           helm push ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ env.REPOSITORY_NAME }}
           helm registry logout ghcr.io
