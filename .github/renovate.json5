@@ -36,7 +36,6 @@
       "matchFileNames": [
         "charts/camunda-platform-8.2/Chart.yaml",
         "charts/camunda-platform-8.2/values*.yaml",
-        "charts/camunda-platform-8.2/go.*"
       ],
       "matchUpdateTypes": ["patch", "pin", "digest"],
     },
@@ -46,7 +45,6 @@
       "matchFileNames": [
         "charts/camunda-platform-8.3/Chart.yaml",
         "charts/camunda-platform-8.3/values*.yaml",
-        "charts/camunda-platform-8.3/go.*"
       ],
       "matchUpdateTypes": ["patch", "pin", "digest"],
     },
@@ -56,35 +54,30 @@
       "matchFileNames": [
         "charts/camunda-platform-8.4/Chart.yaml",
         "charts/camunda-platform-8.4/values*.yaml",
-        "charts/camunda-platform-8.4/go.*"
       ],
       "matchUpdateTypes": ["patch", "pin", "digest"],
     },
     {
-      "groupName": "camunda-platform-latest",
+      "groupName": "camunda-platform-8.5",
       "addLabels": ["version/8.5", "deps/charts"],
       "matchFileNames": [
-        "charts/camunda-platform-latest/Chart.yaml",
-        "charts/camunda-platform-latest/values*.yaml",
-        "charts/camunda-platform-latest/go.*"
+        "charts/camunda-platform-8.5/Chart.yaml",
+        "charts/camunda-platform-8.5/values*.yaml",
       ],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
     },
     {
-      // Disable minor version update for Camunda components.
-      "enabled": false,
-      "matchPackageNames": ["/.*camunda.*/"],
+      "groupName": "camunda-platform-8.6",
+      "addLabels": ["version/8.6", "deps/charts"],
       "matchFileNames": [
-        "charts/camunda-platform-8.2/values*.yaml",
-        "charts/camunda-platform-8.3/values*.yaml",
-        "charts/camunda-platform-8.4/values*.yaml",
-        "charts/camunda-platform-latest/values*.yaml",
+        "charts/camunda-platform-8.6/Chart.yaml",
+        "charts/camunda-platform-8.6/values*.yaml",
       ],
-      "matchUpdateTypes": ["minor"],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
     },
     {
       "groupName": "camunda-platform-alpha",
-      "addLabels": ["version/8.6", "deps/charts"],
+      "addLabels": ["version/8.7", "deps/charts"],
       "matchFileNames": [
         "charts/camunda-platform-alpha/Chart.yaml",
         "charts/camunda-platform-alpha/values*.yaml",
@@ -154,41 +147,24 @@
       ],
       "matchUpdateTypes": ["patch"]
     },
-   {
-      // Limit dependencies versions to latest supported version in Camunda maintenance charts.
-      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
-      "enabled": false,
-      "matchDatasources": ["docker"],
-      "matchPaths": [
-        "charts/camunda-platform-8*/values.yaml",
-        "charts/camunda-platform-8*/values-latest.yaml",
-        "charts/camunda-platform-8*/Chart.yaml"
-      ],
-      "matchPackageNames": [
-        "/.*elasticsearch.*/",
-        "/.*keycloak.*/",
-        "/.*postgresql.*/"
-      ],
-      "matchUpdateTypes": ["minor"]
-    },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda latest chart.
+      // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": [
-        "charts/camunda-platform-latest/values.yaml",
-        "charts/camunda-platform-latest/values-latest.yaml"
+        "charts/camunda-platform-8.5/values.yaml",
+        "charts/camunda-platform-8.5/values-latest.yaml"
       ],
       "matchPackageNames": ["/.*elasticsearch.*/"],
       "allowedVersions": "~8.12.0"
     },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda alpha chart.
+      // Limit Elasticsearch version to latest supported version in Camunda 8.6 chart.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchPaths": [
-        "charts/camunda-platform-alpha/values.yaml",
-        "charts/camunda-platform-alpha/values-latest.yaml"
+        "charts/camunda-platform-8.6/values.yaml",
+        "charts/camunda-platform-8.6/values-latest.yaml"
       ],
       "matchPackageNames": ["/.*elasticsearch.*/"],
       "allowedVersions": "~8.15.0"
