@@ -143,8 +143,8 @@
       "enabled": false,
       "matchPackageNames": ["/.*camunda.*/"],
       "matchFileNames": [
-        "charts/camunda-platform-8*/values.yaml",
-        "charts/camunda-platform-8*/values-latest.yaml"
+        "charts/camunda-platform-8.*/values.yaml",
+        "charts/camunda-platform-8.*/values-latest.yaml"
       ],
       "matchUpdateTypes": ["minor"]
     },
@@ -152,8 +152,8 @@
       // Enable app patch version update in the previous Camunda Helm charts.
       "matchDatasources": ["helmv3", "helm-values", "docker", "regex"],
       "matchPaths": [
-        "charts/camunda-platform-8*/values.yaml",
-        "charts/camunda-platform-8*/values-latest.yaml"
+        "charts/camunda-platform-8.*/values.yaml",
+        "charts/camunda-platform-8.*/values-latest.yaml"
       ],
       "matchUpdateTypes": ["patch"]
     },
