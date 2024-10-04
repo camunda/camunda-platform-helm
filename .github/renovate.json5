@@ -250,13 +250,6 @@
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
-  ],
-
-  "hostRules": [
-    {
-      "hostType": "docker",
-      "username": "jessesimpson",
-      "password": process.env.SELF_HOSTED_DOCKER_PASSWORD,
-    }
   ]
+
 }
