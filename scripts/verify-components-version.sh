@@ -8,7 +8,8 @@ set -euo pipefail
 helm repo add camunda https://helm.camunda.io
 helm repo update
 
-chart_main_version="$(yq '.version' charts/camunda-platform-latest/Chart.yaml)"
+chart_main_dir=$(ls -d1 charts/camunda-platform-8* | tail -n1)
+chart_main_version="$(yq '.version' ${chart_main_dir}/Chart.yaml)"
 components_versions="$(helm template camunda/camunda-platform | grep -Po '(?<=helm.sh/chart: ).+' | sort | uniq)"
 components_count=2
 

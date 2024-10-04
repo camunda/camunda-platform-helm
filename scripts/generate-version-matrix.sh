@@ -13,7 +13,7 @@ for dep_name in ${dep_names}; do
 done
 
 CHART_NAME="${CHART_NAME:-camunda-platform}"
-CHART_DIR="${CHART_DIR:-charts/camunda-platform-latest}"
+CHART_DIR="${CHART_DIR:-charts/camunda-platform-alpha}"
 CHART_SOURCE="${CHART_SOURCE:-camunda/$CHART_NAME}"
 # Add unsupported Camunda version to reduce generation time.
 CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[01])'
@@ -42,7 +42,7 @@ get_versions_filtered () {
 # Get all images used in a certain Helm chart.
 get_chart_images () {
     chart_version="${1}"
-    test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-latest"
+    test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-alpha"
     helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
       --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
     tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
