@@ -72,10 +72,10 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add optimize migration init container"
-    - kind: fixed
-      description: "Enable secrets deprecation flag in alpha by default"
-    - kind: fixed
-      description: "Correct ingress nginx annotation to activate proxy buffering by default"
-  camunda.io/helmCLIVersion: 3.15.4
+    - kind: changed
+      description: "Using bitnami oci chart repository"
+    - kind: changed
+      description: "Default keycloak ingress pathType to Prefix"
+    - kind: changed
+      description: "Disable ingest.geoip.downloader.enabled"
+  camunda.io/helmCLIVersion: 3.16.1
