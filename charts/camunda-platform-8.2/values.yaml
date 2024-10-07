@@ -1406,7 +1406,7 @@ identity:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
         repository: bitnami/postgresql
-        tag: 15.4.0
+        tag: 15.8.0
 
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
