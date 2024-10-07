@@ -18,8 +18,13 @@ For the best experience, please remember:
 - During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions).
 
 
+## [Camunda 8.6](./camunda-8.6)
+
+### [Helm chart 11.0.0](./camunda-8.6/#helm-chart-1100)
+
 ## [Camunda 8.5](./camunda-8.5)
 
+### [Helm chart 10.4.1](./camunda-8.5/#helm-chart-1041)
 ### [Helm chart 10.4.0](./camunda-8.5/#helm-chart-1040)
 ### [Helm chart 10.3.2](./camunda-8.5/#helm-chart-1032)
 ### [Helm chart 10.3.1](./camunda-8.5/#helm-chart-1031)
@@ -35,6 +40,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.4](./camunda-8.4)
 
+### [Helm chart 9.4.1](./camunda-8.4/#helm-chart-941)
 ### [Helm chart 9.4.0](./camunda-8.4/#helm-chart-940)
 ### [Helm chart 9.3.9](./camunda-8.4/#helm-chart-939)
 ### [Helm chart 9.3.8](./camunda-8.4/#helm-chart-938)
@@ -56,6 +62,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.3](./camunda-8.3)
 
+### [Helm chart 8.3.18](./camunda-8.3/#helm-chart-8318)
 ### [Helm chart 8.3.17](./camunda-8.3/#helm-chart-8317)
 ### [Helm chart 8.3.16](./camunda-8.3/#helm-chart-8316)
 ### [Helm chart 8.3.15](./camunda-8.3/#helm-chart-8315)
@@ -77,6 +84,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.2](./camunda-8.2)
 
+### [Helm chart 8.2.33](./camunda-8.2/#helm-chart-8233)
 ### [Helm chart 8.2.32](./camunda-8.2/#helm-chart-8232)
 ### [Helm chart 8.2.31](./camunda-8.2/#helm-chart-8231)
 ### [Helm chart 8.2.30](./camunda-8.2/#helm-chart-8230)

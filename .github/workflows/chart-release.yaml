@@ -158,7 +158,7 @@ jobs:
 
   post-release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
-    # needs: release
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
