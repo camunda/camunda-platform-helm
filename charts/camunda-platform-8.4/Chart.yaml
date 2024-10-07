@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.4.0
+version: 9.4.1
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -59,14 +59,10 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support optional chart secrets auto-generation"
+    - kind: changed
+      description: "Using bitnami oci chart repository"
+    - kind: changed
+      description: "Default keycloak ingress pathType to Prefix"
     - kind: fixed
-      description: "Enable secrets deprecation flag in alpha by default"
-    - kind: fixed
-      description: "Correct ingress nginx annotation to activate proxy buffering by default"
-    - kind: fixed
-      description: "Disable console in 8.4"
-    - kind: fixed
-      description: "Added contextpath to 8.4 identity"
-  camunda.io/helmCLIVersion: 3.15.4
+      description: "Identity firstuser existingsecretkey has no effect"
+  camunda.io/helmCLIVersion: 3.16.1
