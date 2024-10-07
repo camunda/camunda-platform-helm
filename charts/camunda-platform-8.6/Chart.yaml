@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 11.0.0-alpha5
+version: 11.0.0
 appVersion: 8.6.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -54,7 +54,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.15.3"
+  camunda.io/helmCLIVersion: "3.16.1"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -65,13 +65,57 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
+      description: "Configure Webapps with REST v2 Api"
+    - kind: added
+      description: "Support dnsPolicy and dnsConfig for all components"
+    - kind: added
+      description: "Configurable update strategy"
+    - kind: added
+      description: "Add camunda license config into all components"
+    - kind: added
+      description: "Use web-modeler public docker images"
+    - kind: added
       description: "Add volumeClaimTemplates label selector in zeebe statefulSet"
     - kind: added
       description: "Support migration init container for operate"
     - kind: added
       description: "Configure camunda database to be used by v2 API"
+    - kind: added
+      description: "Adding `adaptSecurityContext` option in values.yaml for OpenShift SCC"
+    - kind: added
+      description: "Support Keycloak v25"
+    - kind: added
+      description: "Adding play env var to web-modeler"
+    - kind: added
+      description: "Support optional chart secrets auto-generation"
+    - kind: added
+      description: "Execution identity integration"
+    - kind: added
+      description: "Increase elasticsearch nodes to 3"
+    - kind: added
+      description: "Adding aws config in apps for OpenSearch"
+    - kind: changed
+      description: "Update Tasklist with monorepo configuration"
+    - kind: changed
+      description: "Configure Tasklist's management port"
+    - kind: changed
+      description: "Configure zeebe-gateway context path"
+    - kind: changed
+      description: "Configure operate management port"
+    - kind: changed
+      description: "Use gatewayAddress property instead of brokerContactPoint"
+    - kind: changed
+      description: "Remove the global image tag value and use it from the components"
     - kind: changed
       description: "Hardcoding strategy for all components and removing ability to configure strategy"
+    - kind: changed
+      description: "Using bitnami oci chart repository"
+    - kind: changed
+      description: "Default keycloak ingress pathType to Prefix"
+    - kind: changed
+      description: "Update console docker repository"
+    - kind: fixed
+      description: "Added recreate strategy to all Operate deployments"
     - kind: fixed
       description: "Changed restAddress in Tasklist with helper function"
     - kind: fixed
@@ -86,3 +130,37 @@ annotations:
       description: "Drop namespace from zeebe advertisedHost and initialContactPoints"
     - kind: fixed
       description: "ExistingSecret for OpenSearch password can be used without defining password literal"
+    - kind: fixed
+      description: "Remove openshift post-render script"
+    - kind: fixed
+      description: "Dynamically set advertisedHosts based on multiregion"
+    - kind: fixed
+      description: "AdvertisedHost relies on global.multiregion.regions and not global.multiregion.enabled"
+    - kind: fixed
+      description: "Enable secrets deprecation flag in alpha by default"
+    - kind: fixed
+      description: "Reload identity when its config changed"
+    - kind: fixed
+      description: "Correctly intend operate migration envs"
+    - kind: fixed
+      description: "Add zeebe opensearch retention to app config file"
+    - kind: fixed
+      description: "Gives port-forward hostnames to external urls when no ingress is…"
+    - kind: fixed
+      description: "Added helper function smtp auth for webmodeler"
+    - kind: fixed
+      description: "Correct ingress nginx annotation to activate proxy buffering by default"
+    - kind: fixed
+      description: "Double-slash issue in health check paths and constraints for Zeebe Gateway"
+    - kind: fixed
+      description: "Include opensearch env vars in operate initContainer"
+    - kind: fixed
+      description: "Warning added to NOTES about installationType"
+    - kind: fixed
+      description: "Rearranged env vars necessary for oidc to work with console"
+    - kind: fixed
+      description: "Identity baseUrl supplied regardless of multitenancy"
+    - kind: fixed
+      description: "Define Web Modeler Admin role in identity"
+    - kind: fixed
+      description: "Up tasklist timeoutSeconds to 5"
