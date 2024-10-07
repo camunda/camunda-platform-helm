@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.2.32
+version: 8.2.33
 appVersion: 8.2.x
 description: |
   Camunda Platform 8 Self-Managed Helm charts.
