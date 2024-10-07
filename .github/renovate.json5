@@ -143,8 +143,8 @@
       "enabled": false,
       "matchPackageNames": ["/.*camunda\/.*/"],
       "matchFileNames": [
-        "charts/camunda-platform-8.*/values.yaml",
-        "charts/camunda-platform-8.*/values-latest.yaml",
+        "charts/camunda-platform-8*/values.yaml",
+        "charts/camunda-platform-8*/values-latest.yaml",
         "charts/camunda-platform-latest/values.yaml",
         "charts/camunda-platform-latest/values-latest.yaml"
       ],
