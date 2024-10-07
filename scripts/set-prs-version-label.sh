@@ -30,7 +30,7 @@ get_prs_per_chart_dir () {
         --context \
         --config "${cliff_config_file}" \
         --include-path "${chart_dir}/**" |
-            jq '.[].commits[].message' | grep -Po '(?<=#)\d+'
+            jq '.[].commits[].message' | (grep -Po '(?<=#)\d+' || true)
 }
 
 # Get the issues fixed by a PR.
