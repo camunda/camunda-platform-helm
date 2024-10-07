@@ -158,7 +158,7 @@ jobs:
 
   post-release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
-    # needs: release
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -180,11 +180,11 @@ jobs:
       #     timeout_minutes: 5
       #     retry_wait_seconds: 10
       #     command: make release.verify-components-version
-      - name: Label PRs with app and chart version
-        env:
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: |
-          make release.set-prs-version-label
+      # - name: Label PRs with app and chart version
+      #   env:
+      #     GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      #   run: |
+      #     make release.set-prs-version-label
       - name: Generate version matrix
         run: |
           make helm.repos-add
