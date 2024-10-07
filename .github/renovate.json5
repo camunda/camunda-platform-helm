@@ -142,7 +142,7 @@
       // Disable app minor version update in the previous Camunda Helm charts.
       "enabled": false,
       "addLabels": ["66"],
-      "matchPackageNames": ["camunda\/.*/"],
+      "matchPackageNames": ["/camunda\/.*/"],
       "matchFileNames": [
         "charts/camunda-platform-8.2/values.yaml",
         "charts/camunda-platform-8.2/values-latest.yaml",
