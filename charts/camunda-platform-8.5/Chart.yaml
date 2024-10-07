@@ -59,16 +59,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: changed
-      description: "Default keycloak ingress pathType to Prefix"
-    - kind: changed
-      description: "Using bitnami oci chart repository"
-    - kind: fixed
-      description: "Identity firstuser existingsecretkey has no effect"
-    - kind: fixed
-      description: "Include opensearch env vars in operate initContainer"
-    - kind: fixed
-      description: "Double-slash issue in health check paths and constraints for Zeebe Gateway"
-    - kind: fixed
-      description: "Use named version of identity to copy camunda theme"
+  artifacthub.io/changes: ""
