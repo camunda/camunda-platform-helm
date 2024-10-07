@@ -1,6 +1,7 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8.4 Helm Chart Version Matrix
 
+- [Helm chart 9.4.1](#helm-chart-941)
 - [Helm chart 9.4.0](#helm-chart-940)
 - [Helm chart 9.3.9](#helm-chart-939)
 - [Helm chart 9.3.8](#helm-chart-938)
@@ -19,6 +20,35 @@
 - [Helm chart 9.0.2](#helm-chart-902)
 - [Helm chart 9.0.1](#helm-chart-901)
 - [Helm chart 9.0.0](#helm-chart-900)
+
+## Helm chart 9.4.1
+
+Supported versions:
+
+- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Helm values: [9.4.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.1#parameters)
+- Helm CLI: [3.16.1](https://github.com/helm/helm/releases/tag/v3.16.1)
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:8.4.13
+- docker.io/camunda/identity:8.4.12
+- docker.io/camunda/operate:8.4.13
+- docker.io/camunda/optimize:8.4.9
+- docker.io/camunda/tasklist:8.4.13
+- docker.io/camunda/zeebe:8.4.12
+- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.10
+- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.10
+- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.10
+
+Non-Camunda images:
+
+- docker.io/bitnami/elasticsearch:8.9.2
+- docker.io/bitnami/keycloak:22.0.5
+- docker.io/bitnami/os-shell:12-debian-12-r16
+- docker.io/bitnami/postgresql:14.5.0-debian-11-r35
+- docker.io/bitnami/postgresql:15.7.0
+
 
 ## Helm chart 9.4.0
 
