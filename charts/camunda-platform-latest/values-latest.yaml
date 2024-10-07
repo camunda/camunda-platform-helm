@@ -35,7 +35,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.6
+    tag: 8.6.0
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
