@@ -154,7 +154,9 @@
         "charts/camunda-platform-8.6/values.yaml",
         "charts/camunda-platform-8.6/values-latest.yaml",
         "charts/camunda-platform-8.7/values.yaml",
-        "charts/camunda-platform-8.7/values-latest.yaml"
+        "charts/camunda-platform-8.7/values-latest.yaml",
+        "charts/camunda-platform-latest/values.yaml",
+        "charts/camunda-platform-latest/values-latest.yaml"
       ],
       "matchUpdateTypes": ["minor"]
     },
