@@ -141,19 +141,21 @@
     {
       // Disable app minor version update in the previous Camunda Helm charts.
       "enabled": false,
-      "matchPackageNames": ["/.*camunda.*/"],
+      "matchPackageNames": ["/.*camunda\/.*/"],
       "matchFileNames": [
-        "charts/camunda-platform-8*/values.yaml",
-        "charts/camunda-platform-8*/values-latest.yaml"
+        "charts/camunda-platform-8.*/values.yaml",
+        "charts/camunda-platform-8.*/values-latest.yaml",
+        "charts/camunda-platform-latest/values.yaml",
+        "charts/camunda-platform-latest/values-latest.yaml"
       ],
       "matchUpdateTypes": ["minor"]
     },
     {
       // Enable app patch version update in the previous Camunda Helm charts.
       "matchDatasources": ["helmv3", "helm-values", "docker", "regex"],
-      "matchPaths": [
-        "charts/camunda-platform-8*/values.yaml",
-        "charts/camunda-platform-8*/values-latest.yaml"
+      "matchFileNames": [
+        "charts/camunda-platform-8.*/values.yaml",
+        "charts/camunda-platform-8.*/values-latest.yaml"
       ],
       "matchUpdateTypes": ["patch"]
     },
@@ -161,7 +163,7 @@
       // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
-      "matchPaths": [
+      "matchFileNames": [
         "charts/camunda-platform-8.5/values.yaml",
         "charts/camunda-platform-8.5/values-latest.yaml"
       ],
@@ -172,7 +174,7 @@
       // Limit Elasticsearch version to latest supported version in Camunda 8.6 chart.
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
-      "matchPaths": [
+      "matchFileNames": [
         "charts/camunda-platform-8.6/values.yaml",
         "charts/camunda-platform-8.6/values-latest.yaml"
       ],
