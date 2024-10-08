@@ -79,3 +79,4 @@ Please see [LICENSE](LICENSE) for details.
 
 For Camunda 8 components, please visit
 the [licensing information page](https://docs.camunda.io/docs/reference/licenses).
+
