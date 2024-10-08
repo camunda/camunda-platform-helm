@@ -1,5 +1,5 @@
 #
-# Camunda - Latest
+# Camunda Helm chart.
 #
 
 global:
@@ -8,56 +8,52 @@ global:
   image:
     tag:
 
-  identity:
-    image:
-      repository: camunda/identity
-      tag: 8.5.6
-
 console:
   # Camunda Enterprise repository.
-  # registry.camunda.cloud/console
+  # https://hub.docker.com/r/camunda/console/tags
   image:
-    # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.112
+    tag: 8.6.0
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.9
+    tag: 8.6.2
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
-    tag: 8.5.4
+    tag: 8.6.0
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.6
+    tag: 8.6.0
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
-    tag: 8.5.2
+    repository: camunda/tasklist
+    tag: 8.6.0
 
 webModeler:
-  # Camunda Enterprise repository.
-  # registry.camunda.cloud/web-modeler-ee
+  # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
-    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.9
+    # renovate: datasource=docker depName=camunda/web-modeler-restapi
+    tag: 8.6.1
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
-    tag: 8.5.3
+    repository: camunda/zeebe
+    tag: 8.6.0
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
-    tag: 8.5.3
+    repository: camunda/zeebe
+    tag: 8.6.0
 
 #
 # Identity
@@ -66,7 +62,8 @@ zeebeGateway:
 identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
-    tag: 8.5.5
+    repository: camunda/identity
+    tag: 8.6.0
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
@@ -87,4 +84,4 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.12.2
+    tag: 8.15.2
