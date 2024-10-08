@@ -14,15 +14,15 @@ Supported versions:
 Camunda images:
 
 - docker.io/camunda/connectors-bundle:8.6.2
-- docker.io/camunda/console:8.6.5
+- docker.io/camunda/console:8.6.7
 - docker.io/camunda/identity:8.6.0
 - docker.io/camunda/keycloak:25.0.6
 - docker.io/camunda/operate:8.6.0
 - docker.io/camunda/optimize:8.6.0
 - docker.io/camunda/tasklist:8.6.0
-- docker.io/camunda/web-modeler-restapi:8.6.0
-- docker.io/camunda/web-modeler-webapp:8.6.0
-- docker.io/camunda/web-modeler-websockets:8.6.0
+- docker.io/camunda/web-modeler-restapi:8.6.1
+- docker.io/camunda/web-modeler-webapp:8.6.1
+- docker.io/camunda/web-modeler-websockets:8.6.1
 - docker.io/camunda/zeebe:8.6.0
 
 Non-Camunda images:
