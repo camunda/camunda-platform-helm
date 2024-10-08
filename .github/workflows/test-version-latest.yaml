@@ -6,7 +6,6 @@ on:
     paths:
       - '.github/workflows/test-integration-template.yaml'
       - '.github/workflows/test-version-latest.yaml'
-      - 'charts/camunda-platform-latest/**'
   workflow_dispatch: { }
 
 concurrency:
@@ -29,7 +28,7 @@ jobs:
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}-vald-latest"
-      camunda-helm-dir: "camunda-platform-latest"
+      camunda-helm-dir: "camunda-platform-8.6"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   unit:
@@ -37,7 +36,7 @@ jobs:
     uses: ./.github/workflows/test-unit-template.yml
     with:
       identifier: "${{ github.event.pull_request.number }}-unit-latest"
-      camunda-helm-dir: "camunda-platform-latest"
+      camunda-helm-dir: "camunda-platform-8.6"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
@@ -54,6 +53,6 @@ jobs:
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke,rosa"
       flows: "install,upgrade"
-      camunda-helm-dir: "camunda-platform-latest"
+      camunda-helm-dir: "camunda-platform-8.6"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
