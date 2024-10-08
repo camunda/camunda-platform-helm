@@ -36,12 +36,13 @@ jobs:
           mkdir -p camunda-platform/values
 
           # Latest version.
-          cp -a main/charts/camunda-platform-latest/values-latest.yaml camunda-platform/values/values-latest.yaml
+          version_latest_dir="$(ls -d1 main/charts/camunda-platform-8* | tail -n1)"
+          cp -a ${version_latest_dir}/values-latest.yaml camunda-platform/values/values-latest.yaml
 
           # Previous versions.
           find main/charts -name "camunda-platform-*" | while read chart_id; do
               camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
-              echo "cp -a main/${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml";
+              echo "cp -a ${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml";
           done
 
           #
