@@ -273,7 +273,9 @@ spec:
 
   {{- if eq .Values.zeebe.persistenceType "disk" }}
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: data
         annotations:
           {{- toYaml .Values.zeebe.pvcAnnotations | nindent 10 }}
