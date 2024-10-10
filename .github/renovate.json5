@@ -242,5 +242,14 @@
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
+  ],
+
+  "hostRules": [
+    {
+      "hostType": "docker",
+      "matchHost": "https://registry.camunda.cloud",
+      "username": "ci-distribution",
+      "password": "{{ secrets.DISTRO_CAMUNDA_DOCKER_REGISTRY_PASSWORD }}"
+    }
   ]
 }
