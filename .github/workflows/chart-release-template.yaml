@@ -11,6 +11,10 @@ on:
         description: List of charts to release.
         required: true
         type: string
+      workflow-ref:
+        description: The reference of the workflow which will be used sign the chart OCI artifact in keyless mode.
+        required: true
+        type: string
 
 jobs:
   clean:
@@ -134,13 +138,13 @@ jobs:
         run: |
           cosign sign-blob -y ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
             --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle
-      # - name: Verify signed Helm chart with Cosign
-      #   if: env.PUBLISH_ARTIFACT == 'true'
-      #   run: |
-      #     cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
-      #       --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
-      #       --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
-      #       --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+      - name: Verify signed Helm chart with Cosign
+        if: env.PUBLISH_ARTIFACT == 'true'
+        run: |
+          cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
+            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/${{ inputs.workflow-ref }}@refs/heads/${{ inputs.branch }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Login to GitHub Container Registry
         if: env.PUBLISH_ARTIFACT == 'true'
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3

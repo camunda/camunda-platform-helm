@@ -15,6 +15,7 @@ jobs:
     uses: ./.github/workflows/chart-release-template.yaml
     with:
       branch: ${{ github.ref_name }}
+      workflow-ref: chart-release-template.yaml
       chart-matrix: |
         [
           {
