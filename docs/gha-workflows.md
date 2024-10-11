@@ -43,9 +43,9 @@ jobs:
       # A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
       # The latest supported chart doesn't have a version in its directory name like `camunda-platform`.
       # The previous releases have the Camunda version in their directory name e.g. `camunda-platform-8.4`.
-      # Default: 'camunda-platform-latest'
+      # Default: 'camunda-platform-alpha'
       # Required: false
-      camunda-helm-dir: 'camunda-platform-latest'
+      camunda-helm-dir: 'camunda-platform-alpha'
 
       # Pass extra values to the Helm chart during deployment
       # Default: ''

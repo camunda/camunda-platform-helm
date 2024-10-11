@@ -77,7 +77,7 @@ jobs:
       - name: Tidy up
         run: |
           # Clean up badges from readme to avoid showing them in Artifact Hub.
-          sed -ri '/Badge .+/d' charts/camunda-platform-latest/README.md
+          sed -ri '/Badge .+/d' charts/camunda-platform-8*/README.md
           mkdir release-packages
   
       #
@@ -85,11 +85,16 @@ jobs:
       # CR by default will release "camunda-platform-10.x.x" first then "camunda-platform-8.x.x",
       # however, we want the latest version to show as the latest release in GitHub releases.
       #
-  
+
+      - name: Get latest version name
+        run: |
+          latest_chart_version_dir="$(ls -d1 charts/camunda-platform-8* | tail -n1)"
+          echo "LATEST_CHART_VERSION_DIR=${latest_chart_version_dir}" | tee -a $GITHUB_ENV
+
       # Release previous versions.
       - name: Pre-Release - Previous versions
         run: |
-          rm -rf charts/camunda-platform-latest
+          rm -rf ${LATEST_CHART_VERSION_DIR}
           rm -rf charts/camunda-platform-alpha
       - name: Run Chart Releaser - Previous versions
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
@@ -106,7 +111,7 @@ jobs:
       # Release the latest version.
       - name: Pre-Release - Latest version
         run: |
-          rm -rf charts/camunda-platform-8*
+          rm -rf $(ls -d1 charts/camunda-platform-8* | head -n -1)
           rm -rf charts/camunda-platform-alpha
       - name: Run Chart Releaser - Latest version
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
