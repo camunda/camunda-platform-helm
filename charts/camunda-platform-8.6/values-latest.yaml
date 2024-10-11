@@ -35,7 +35,7 @@ tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.6.0
+    tag: 8.6.2
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
@@ -47,13 +47,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.0
+    tag: 8.6.2
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.0
+    tag: 8.6.2
 
 #
 # Identity
