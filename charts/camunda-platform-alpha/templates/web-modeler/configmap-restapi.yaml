@@ -26,7 +26,7 @@ data:
         pusher:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
           port: {{ .Values.webModeler.websockets.service.port }}
-    
+
         security:
           jwt:
             issuer:
@@ -40,6 +40,32 @@ data:
 
         server:
           url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+
+        {{- if or .Values.zeebe.enabled .Values.webModeler.restapi.clusters }}
+        clusters:
+          {{- if .Values.webModeler.restapi.clusters }}
+            {{- .Values.webModeler.restapi.clusters | toYaml | nindent 10 }}
+          {{- else}}
+          - id: "default-cluster"
+            name: {{ tpl .Values.global.zeebeClusterName . | quote }}
+            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
+            authentication: {{ .Values.global.identity.auth.enabled | ternary "OAUTH" "NONE" | quote }}
+            url:
+              zeebe:
+                grpc: "grpc://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
+                rest: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+              operate: {{ include "camundaPlatform.operateURL" . | quote }}
+              tasklist: {{ include "camundaPlatform.tasklistURL" . | quote }}
+            oauth:
+              url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
+              audience:
+                zeebe: {{ include "zeebe.audience" . | quote }}
+                operate: {{ include "operate.authAudience" . | quote }}
+                tasklist: {{ include "tasklist.authAudience" . | quote }}
+              scope: {{ include "zeebe.tokenScope" . | quote }}
+          {{- end }}
+        {{- end }}
+
     spring:
       datasource:
         url: {{ include "webModeler.restapi.databaseUrl" . | quote }}
