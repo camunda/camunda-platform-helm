@@ -157,16 +157,16 @@ metadata:
   name: identity-secret-for-components
 type: Opaque
 data:
-  # Ideneity apps auth.
+  # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
   console-secret: <base64-encoded-secret>
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
-  # Ideneity Keycloak.
+  # Identity Keycloak.
   admin-password: <base64-encoded-secret>.
-  # Ideneity Keycloak PostgreSQL.
+  # Identity Keycloak PostgreSQL.
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
   # Web Modeler.
@@ -196,16 +196,16 @@ metadata:
   name: identity-secret-for-components
 type: Opaque
 data:
-  # Ideneity apps auth.
+  # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
   console-secret: <base64-encoded-secret>
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
-  # Ideneity Keycloak.
+  # Identity Keycloak.
   admin-password: <base64-encoded-secret>.
-  # Ideneity Keycloak PostgreSQL.
+  # Identity Keycloak PostgreSQL.
   postgres-password: <base64-encoded-secret> # used for postgresql admin password
   password: <base64-encoded-secret> # used for postgresql user password
   # Web Modeler.
