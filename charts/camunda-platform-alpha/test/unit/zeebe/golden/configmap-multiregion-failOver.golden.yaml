@@ -23,6 +23,19 @@ data:
               url: "http://camunda-platform-test-elasticsearch:9200"
               index:
                 prefix: "zeebe-record"
+          camundaExporter:
+            className: "io.camunda.exporter.CamundaExporter"
+            args:
+              connect:
+                type: elasticsearch
+                url: 
+                  "http://camunda-platform-test-elasticsearch:9200"
+                
+              index:
+                prefix: 
+                  "zeebe-record"
+                
+              createSchema: true
         gateway:
           enable: true
           network:
