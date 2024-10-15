@@ -50,6 +50,45 @@ data:
                 minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
+          {{- end }}
+        {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+          camundaExporter:
+            className: "io.camunda.exporter.CamundaExporter"
+            args:
+              connect:
+                type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else if .Values.global.opensearch.enabled }}opensearch{{ end }}
+                url: {{ if .Values.global.elasticsearch.enabled }}
+                  {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+                {{ else if .Values.global.opensearch.enabled }}
+                  {{ include "camundaPlatform.opensearchURL" . | quote }}
+                {{ end }}
+                {{- if or (.Values.global.elasticsearch.enabled) (.Values.global.opensearch.enabled) }}
+              {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
+              authentication:
+                username: {{ if .Values.global.elasticsearch.enabled }}
+                  {{- if .Values.global.elasticsearch.auth.username }}
+                  {{ .Values.global.elasticsearch.auth.username | quote }}
+                  {{- end }}
+                {{ else if .Values.global.opensearch.enabled }}
+                  {{- if .Values.global.opensearch.auth.username }}
+                  {{ .Values.global.opensearch.auth.username | quote }}
+                  {{- end }}
+                {{ end }}
+              {{- end }}
+              index:
+                prefix: {{ if .Values.global.elasticsearch.enabled }}
+                  {{ .Values.global.elasticsearch.prefix | quote }}
+                {{ else if .Values.global.opensearch.enabled }}
+                  {{ .Values.global.opensearch.prefix | quote }}
+                {{ end }}
+              {{- if .Values.zeebe.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
+                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+              {{- end }}
+              createSchema: true
+        {{- end }}
         {{- else -}}
           {{ " {}" }}
         {{- end }}
