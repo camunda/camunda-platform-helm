@@ -32,9 +32,7 @@ data:
                   "http://camunda-platform-test-elasticsearch:9200"
                 
               index:
-                prefix: 
-                  "zeebe-record"
-                
+                prefix: "zeebe-record"
               createSchema: true
         gateway:
           enable: true
