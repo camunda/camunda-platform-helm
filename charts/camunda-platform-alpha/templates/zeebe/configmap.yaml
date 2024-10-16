@@ -75,12 +75,10 @@ data:
                   {{- end }}
                 {{ end }}
               {{- end }}
+              {{- if .Values.global.elasticsearch.enabled }}
               index:
-                prefix: {{ if .Values.global.elasticsearch.enabled }}
-                  {{ .Values.global.elasticsearch.prefix | quote }}
-                {{ else if .Values.global.opensearch.enabled }}
-                  {{ .Values.global.opensearch.prefix | quote }}
-                {{ end }}
+                prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+              {{- end }}
               {{- if .Values.zeebe.retention.enabled }}
               retention:
                 enabled: true
