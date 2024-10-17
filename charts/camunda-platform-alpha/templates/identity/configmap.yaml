@@ -11,6 +11,11 @@ data:
     {{ .Values.identity.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
+    # NOTE:
+    # It is possible to override the configuration via env vars following the Spring Boot convention.
+    # For example, the "identity.url" config path is presented as the "IDENTITY_URL" environment variable.
+    # However, it's not possilbe to mix between the configuration and environment variable for the same object
+    # like arrays and maps.
     identity:
       url: {{ include "identity.externalUrl" . | quote }}
       {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
@@ -30,20 +35,25 @@ data:
         issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 
+      {{- if ne .Values.global.identity.auth.type "KEYCLOAK"}}
+      initial-claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
+      initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
+      {{- end }}
+
       component-presets:
         connectors:
           applications:
             - name: Connectors
-              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
               type: m2m
-              secret: ${CAMUNDA_CONNECTORS_SECRET:${KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
                 - audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
                   definition: read:*
         console:
           applications:
             - name: "Console"
-              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
               type: public
               root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
               redirect-uris:
@@ -82,9 +92,9 @@ data:
         operate:
           applications:
             - name: Operate
-              id: ${CAMUNDA_OPERATE_CLIENT_ID:${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
+              id: ${CAMUNDA_OPERATE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
               type: confidential
-              secret: ${CAMUNDA_OPERATE_SECRET:${KEYCLOAK_INIT_OPERATE_SECRET:}}
+              secret: ${CAMUNDA_OPERATE_SECRET:${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}}
               root-url: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
@@ -107,9 +117,9 @@ data:
         optimize:
           applications:
             - name: Optimize
-              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
               type: confidential
-              secret: ${CAMUNDA_OPTIMIZE_SECRET:${KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
               root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
@@ -130,9 +140,9 @@ data:
         tasklist:
           applications:
             - name: Tasklist
-              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
+              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${VALUES_KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
               type: confidential
-              secret: ${CAMUNDA_TASKLIST_SECRET:${KEYCLOAK_INIT_TASKLIST_SECRET:}}
+              secret: ${CAMUNDA_TASKLIST_SECRET:${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}}
               root-url: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
@@ -155,7 +165,7 @@ data:
         webmodeler:
           applications:
             - name: "Web Modeler"
-              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
               root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
               redirect-uris:
@@ -213,6 +223,43 @@ data:
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
     keycloak:
+      url: {{ include "identity.keycloak.url" . | quote }}
+      setup:
+        user: {{ include "identity.keycloak.authAdminUser" . | quote }}
+        password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      init:
+        console:
+          secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
+        operate:
+          secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
+        tasklist:
+          secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
+        optimize:
+          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        webmodeler:
+          root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+        zeebe:
+          name: "Zeebe"
+      # Clients are passed as environment variables.
+      clients:
+      users:
+        {{- if .Values.identity.firstUser.enabled }}
+        - username: {{ .Values.identity.firstUser.username | quote }}
+          email: {{ .Values.identity.firstUser.email | quote }}
+          firstName: {{ .Values.identity.firstUser.firstName | quote }}
+          lastName: {{ .Values.identity.firstUser.lastName | quote }}
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          {{- if .Values.global.identity.auth.enabled }}
+          roles:
+            - Console
+            - Identity
+            - Operate
+            - Optimize
+            - Tasklist
+            - Web Modeler
+            - Web Modeler Admin
+          {{- end }}
+        {{- end }}
       environment:
         clients:
           - name: Identity
@@ -233,32 +280,32 @@ data:
             - name: Tasklist
               id: tasklist
               type: confidential
-              secret: ${KEYCLOAK_INIT_TASKLIST_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
               root-url: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
         operate:
           clients:
             - name: Operate
-              id: ${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
+              id: ${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
               type: confidential
-              secret: ${KEYCLOAK_INIT_OPERATE_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
               root-url: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
         optimize:
           clients:
             - name: Optimize
-              id: ${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
+              id: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
               type: confidential
-              secret: ${KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
               root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
         console:
           clients:
             - name: "Console"
-              id: ${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
+              id: ${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
               type: public
               root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
               redirect-uris:
