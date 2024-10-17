@@ -73,7 +73,7 @@ data:
               {{- end }}
               createSchema: true
         {{- else }}
-          {}
+          {{ " {}" }}
         {{- end }}
         gateway:
           enable: true
