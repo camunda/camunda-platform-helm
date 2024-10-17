@@ -27,7 +27,7 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
         with:
           fetch-depth: 0
           token: ${{ steps.generate-github-token.outputs.token }}

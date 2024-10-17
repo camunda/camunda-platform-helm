@@ -71,7 +71,7 @@ jobs:
       CHART_NAME: "camunda-platform"
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
         with:
           fetch-depth: 0
           ref: ${{ inputs.branch }}
@@ -132,7 +132,7 @@ jobs:
       # Security signature.
       - name: Install Cosign CLI
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
       - name: Sign Helm chart with Cosign
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
