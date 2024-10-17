@@ -52,7 +52,7 @@ data:
               {{- end }}
           {{- end }}
         {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
-          camundaExporter:
+          CamundaExporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
@@ -64,7 +64,6 @@ data:
                 {{ end }}
                 {{- if or (.Values.global.elasticsearch.enabled) (.Values.global.opensearch.enabled) }}
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
-              authentication:
                 username: {{ if .Values.global.elasticsearch.enabled }}
                   {{- if .Values.global.elasticsearch.auth.username }}
                   {{ .Values.global.elasticsearch.auth.username | quote }}
