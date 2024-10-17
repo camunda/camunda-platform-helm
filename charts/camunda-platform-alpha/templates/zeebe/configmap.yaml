@@ -56,23 +56,10 @@ data:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
-                type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else if .Values.global.opensearch.enabled }}opensearch{{ end }}
-                url: {{ if .Values.global.elasticsearch.enabled }}
-                  {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-                {{ else if .Values.global.opensearch.enabled }}
-                  {{ include "camundaPlatform.opensearchURL" . | quote }}
-                {{ end }}
-                {{- if or (.Values.global.elasticsearch.enabled) (.Values.global.opensearch.enabled) }}
+                type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
+                url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
-                username: {{ if .Values.global.elasticsearch.enabled }}
-                  {{- if .Values.global.elasticsearch.auth.username }}
-                  {{ .Values.global.elasticsearch.auth.username | quote }}
-                  {{- end }}
-                {{ else if .Values.global.opensearch.enabled }}
-                  {{- if .Values.global.opensearch.auth.username }}
-                  {{ .Values.global.opensearch.auth.username | quote }}
-                  {{- end }}
-                {{ end }}
+                username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
               {{- end }}
               {{- if .Values.global.elasticsearch.enabled }}
               index:
@@ -85,9 +72,8 @@ data:
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
               createSchema: true
-        {{- end }}
-        {{- else -}}
-          {{ " {}" }}
+        {{- else }}
+          {}
         {{- end }}
         gateway:
           enable: true
