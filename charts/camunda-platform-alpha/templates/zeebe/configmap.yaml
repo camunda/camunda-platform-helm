@@ -72,7 +72,7 @@ data:
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
               createSchema: true
-        {{- else }}
+        {{- else -}}
           {{ " {}" }}
         {{- end }}
         gateway:
