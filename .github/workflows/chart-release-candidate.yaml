@@ -43,5 +43,11 @@ jobs:
             "directory": "charts/camunda-platform-8.6",
             "versionSuffix": "rc-8.6",
             "override": true
+          },
+          {
+            "name": "Helm Chart Alpha",
+            "directory": "charts/camunda-platform-alpha",
+            "versionSuffix": "rc-alpha",
+            "override": true
           }
         ]
