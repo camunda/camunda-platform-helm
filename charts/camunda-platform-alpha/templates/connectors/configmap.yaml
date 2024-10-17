@@ -48,7 +48,10 @@ data:
         security:
           plaintext: true
   {{- end }}
-
+    logging:
+{{- with .Values.connectors.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
   {{- range $key, $val := .Values.connectors.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
