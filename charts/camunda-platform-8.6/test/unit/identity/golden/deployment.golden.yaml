@@ -149,11 +149,6 @@ spec:
               value: "Web Modeler Admin"
             - name: KEYCLOAK_USERS_0_ROLES_6
               value: "Console"
-            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-identity-identity-secret
-                  key: identity-secret
           resources:
             limits:
               cpu: 2000m
