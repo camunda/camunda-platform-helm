@@ -237,6 +237,7 @@ spec:
                   */}}
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "identity") }}
                   key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+              {{- end }}
             {{- end }}
             {{- end }}
             {{- else }}
