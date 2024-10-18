@@ -216,6 +216,7 @@ spec:
               value: "Web Modeler Admin"
             - name: KEYCLOAK_USERS_0_ROLES_6
               value: "Console"
+              {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -226,6 +227,7 @@ spec:
                   */}}
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "identity") }}
                   key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+              {{- end }}
             {{- end }}
             {{- end }}
             {{- else }}
