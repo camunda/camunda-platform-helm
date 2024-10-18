@@ -331,6 +331,30 @@ identity:
       mountPath: /opt/bitnami/keycloak/themes/identity
 ```
 
+## Identity auth existing secrets
+
+To configure client secrets for the components, you can use `global.identity.auth.<component>.existingSecret`. It will accept the actual client secret as a value:
+
+```yaml
+global:
+  identity:
+    auth:
+      <component>:
+        existingSecret: "my very secret client secret"
+```
+
+As secrets should not be exposed like this, you can also refer to a secret inside kubernetes:
+
+```yaml
+global:
+  identity:
+    auth:
+      <component>:
+        existingSecret:
+          name: "name of the secret that contains the client secret"
+        existingSecretKey: "key for the client secret inside the secret" # this defaults to <component>-secret
+```
+
 ## Development
 
 For development purposes, you might want to deploy and test the charts without creating a new helm chart release.
