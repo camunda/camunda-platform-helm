@@ -17,6 +17,7 @@ spec:
   template:
     metadata:
       labels:
+        test: test
         {{- include "operate.labels" . | nindent 8 }}
         {{- if .Values.operate.podLabels }}
           {{- toYaml .Values.operate.podLabels | nindent 8 }}
