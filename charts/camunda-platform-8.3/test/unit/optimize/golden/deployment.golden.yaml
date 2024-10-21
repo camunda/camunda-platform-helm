@@ -53,6 +53,8 @@ spec:
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: "3"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+              value: zeebe-record
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
@@ -76,6 +78,8 @@ spec:
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: "3"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+              value: zeebe-record
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
