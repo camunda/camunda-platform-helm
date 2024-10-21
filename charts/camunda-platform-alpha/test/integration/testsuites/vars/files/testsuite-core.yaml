@@ -11,8 +11,17 @@ vars:
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
 
 testcases:
+<<<<<<< HEAD
 
 - name: Core test suite is disabled
+=======
+# https://docs.camunda.io/docs/self-managed/identity/user-guide/generating-m2m-tokens/
+- name: TEST - Generating machine-to-machine token
+  description: |
+    Test generating tokens from Keycloak for components that use client type "CONFIDENTIAL".
+    This test will not work with type "PUBLIC" because "Public client not allowed to retrieve service account".
+    https://datatracker.ietf.org/doc/html/rfc6749#section-2.1
+>>>>>>> feb83bd5 (Update testsuite-core.yaml)
   steps:
   - type: exec
     script: echo 'Core test suite is disabled till full 8.7 refactor'
@@ -304,4 +313,212 @@ testcases:
 #     - result.body ShouldContainSubstring identity
 #     - result.body ShouldContainSubstring optimize
 #     - result.body ShouldContainSubstring web-modeler-restapi
+<<<<<<< HEAD
 #     - result.body ShouldContainSubstring core
+=======
+#     - result.body ShouldContainSubstring zeebe
+#     - result.body ShouldContainSubstring zeebe-gateway
+
+  ########################################################portforward checks##################################
+- name: TEST - portforward for camunda
+  steps:
+  - name: run command svc camunda-zeebe-gateway
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-zeebe-gateway 26500:26500
+    retry: 2
+    delay: 10
+  - name: Check camunda-zeebe-gateway
+    type: http
+    method: GET
+    url: "http://localhost:26500"
+    retry: 2
+    delay: 10
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+  ##################################################
+  - name: run command for svc/camunda-operate  
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-operate  8081:80
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-operate  
+    type: http
+    method: GET
+    url: "http://localhost:8081"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+  ########################################################
+
+  - name: run command svc/camunda-tasklist 
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-tasklist 8082:80
+    retry: 2
+    delay: 10
+  - name: Check camunda-tasklist
+    type: http
+    method: GET
+    url: "http://localhost:8082"
+    retry: 2
+    delay: 10
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+  ##################################################
+  - name: run command for svc/camunda-optimize 
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-optimize 8083:80
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-optimize
+    type: http
+    method: GET
+    url: "http://localhost:8083"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+  ########################################################
+
+  - name: run command for svc/camunda-connectors
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-connectors 8088:8080
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-connectors
+    type: http
+    method: GET
+    url: "http://localhost:8088"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+       ######################################################  
+
+  - name: run command for svc/camunda-web-modeler-webapp
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-web-modeler-webapp 8084:80
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-web-modeler-webapp
+    type: http
+    method: GET
+    url: "http://localhost:8084"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+  
+       ######################################################  
+
+  - name: run command for svc/camunda-web-modeler-websockets
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-web-modeler-websockets 8085:80
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-web-modeler-websockets 
+    type: http
+    method: GET
+    url: "http://localhost:8085"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+  
+       ######################################################  
+
+  - name: run command for svc/camunda-keycloak
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-keycloak 18080:80
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-keycloak
+    type: http
+    method: GET
+    url: "http://localhost:18080"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+  
+  ########################################################
+
+  - name: run command for svc/camunda-console
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-console 8087:80
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-operate  
+    type: http
+    method: GET
+    url: "http://localhost:8087"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+  
+       ######################################################  
+
+  - name: run command for svc/camunda-keycloak
+    type: exec
+    script: |
+       kubectl port-forward svc/camunda-keycloak 18080:80
+    retry: 2
+    delay: 1
+  - name: Check svc/camunda-keycloak
+    type: http
+    method: GET
+    url: "http://localhost:18080"
+    retry: 2
+    delay: 1
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+     - result.statuscode ShouldEqual 200
+
+  
+>>>>>>> feb83bd5 (Update testsuite-core.yaml)
