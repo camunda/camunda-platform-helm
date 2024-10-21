@@ -26,6 +26,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Operate Parameters](#operate-parameters)
   - [Tasklist Parameters](#tasklist-parameters)
   - [Optimize Parameters](#optimize-parameters)
+  - [executionIdentity Parameters](#executionidentity-parameters)
   - [Identity Parameters](#identity-parameters)
   - [Identity - PostgreSQL Parameters](#identity---postgresql-parameters)
   - [Identity - Keycloak Parameters](#identity---keycloak-parameters)
@@ -380,7 +381,7 @@ Dependency operate did not declare a repository. Assuming it exists in the chart
 Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
 Dependency identity did not declare a repository. Assuming it exists in the charts directory
 Deleting outdated charts
-helm dependency update charts/camunda-platform-latest/charts/identity
+helm dependency update charts/camunda-platform/charts/identity
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "bitnami" chart repository

@@ -395,7 +395,7 @@ Dependency operate did not declare a repository. Assuming it exists in the chart
 Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
 Dependency identity did not declare a repository. Assuming it exists in the charts directory
 Deleting outdated charts
-helm dependency update charts/camunda-platform-latest/charts/identity
+helm dependency update charts/camunda-platform/charts/identity
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "bitnami" chart repository

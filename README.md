@@ -40,7 +40,7 @@ The dependency management is fully automated and managed by Helm itself.
 
 ## Versioning
 
-For more details about the Camunda 8 Helm chart versioning, please read the [versioning scheme](./charts/camunda-platform-latest/#versioning).
+For more details about the Camunda 8 Helm chart versioning, please read the [versioning scheme](https://docs.camunda.io/docs/self-managed/setup/install/#versioning).
 
 ## Installation
 
@@ -66,7 +66,7 @@ We value all feedback and contributions. To start contributing to this project, 
 - Familiarize yourself with the
 [contribution guide](./docs/contributing.md).
 - Find more information about configuring and deploying the Camunda 8
-  [Helm chart](./charts/camunda-platform-latest/README.md).
+  [Helm chart](./charts/camunda-platform-alpha/README.md).
 
 ## Releasing
 
