@@ -118,7 +118,6 @@ spec:
             - name: KEYCLOAK_CLIENTS_0_ID
               value: connectors
             - name: KEYCLOAK_CLIENTS_0_SECRET
-            - name: KEYCLOAK_CLIENTS_0_SECRET
               {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
