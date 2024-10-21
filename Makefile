@@ -1,6 +1,6 @@
 # Makefile for managing the Helm charts
 MAKEFLAGS += --silent
-chartPath ?= charts/camunda-platform-alpha
+chartPath ?= charts/camunda-platform-*
 chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName = camunda-platform-test
 

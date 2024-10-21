@@ -7,36 +7,36 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 - [Dependencies](#dependencies)
 - [Versioning](#versioning)
 - [Installation](#installation)
-    - [Local Kubernetes](#local-kubernetes)
-    - [OpenShift](#openshift)
+  - [Local Kubernetes](#local-kubernetes)
+  - [OpenShift](#openshift)
 - [Backporting](#backporting)
 - [Uninstalling Charts](#uninstalling-charts)
 - [Configuration](#configuration)
 - [Notes on Configuration](#notes-on-configuration)
-    - [Web Modeler](#web-modeler)
-    - [Elasticsearch](#elasticsearch)
-    - [Keycloak](#keycloak)
+  - [Web Modeler](#web-modeler)
+  - [Elasticsearch](#elasticsearch)
+  - [Keycloak](#keycloak)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
-    - [Global parameters](#global-parameters)
-    - [Console Parameters](#console-parameters)
-    - [Zeebe Parameters](#zeebe-parameters)
-    - [ZeebeGateway Parameters](#zeebegateway-parameters)
-    - [Operate Parameters](#operate-parameters)
-    - [Tasklist Parameters](#tasklist-parameters)
-    - [Optimize Parameters](#optimize-parameters)
-    - [Identity Parameters](#identity-parameters)
-    - [Identity - PostgreSQL Parameters](#identity---postgresql-parameters)
-    - [Identity - Keycloak Parameters](#identity---keycloak-parameters)
-    - [WebModeler Parameters](#webmodeler-parameters)
-    - [WebModeler - RestAPI Parameters](#webmodeler---restapi-parameters)
-    - [WebModeler - WebApp Parameters](#webmodeler---webapp-parameters)
-    - [WebModeler - WebSockets Parameters](#webmodeler---websockets-parameters)
-    - [WebModeler - PostgreSQL Parameters](#webmodeler---postgresql-parameters)
-    - [Connectors Parameters](#connectors-parameters)
-    - [Elasticsearch Parameters](#elasticsearch-parameters)
-    - [Prometheus Parameters](#prometheus-parameters)
+  - [Global parameters](#global-parameters)
+  - [Console Parameters](#console-parameters)
+  - [Zeebe Parameters](#zeebe-parameters)
+  - [ZeebeGateway Parameters](#zeebegateway-parameters)
+  - [Operate Parameters](#operate-parameters)
+  - [Tasklist Parameters](#tasklist-parameters)
+  - [Optimize Parameters](#optimize-parameters)
+  - [Identity Parameters](#identity-parameters)
+  - [Identity - PostgreSQL Parameters](#identity---postgresql-parameters)
+  - [Identity - Keycloak Parameters](#identity---keycloak-parameters)
+  - [WebModeler Parameters](#webmodeler-parameters)
+  - [WebModeler - RestAPI Parameters](#webmodeler---restapi-parameters)
+  - [WebModeler - WebApp Parameters](#webmodeler---webapp-parameters)
+  - [WebModeler - WebSockets Parameters](#webmodeler---websockets-parameters)
+  - [WebModeler - PostgreSQL Parameters](#webmodeler---postgresql-parameters)
+  - [Connectors Parameters](#connectors-parameters)
+  - [Elasticsearch Parameters](#elasticsearch-parameters)
+  - [Prometheus Parameters](#prometheus-parameters)
 
 ## Architecture
 
@@ -396,7 +396,7 @@ Dependency operate did not declare a repository. Assuming it exists in the chart
 Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
 Dependency identity did not declare a repository. Assuming it exists in the charts directory
 Deleting outdated charts
-helm dependency update charts/camunda-platform-latest/charts/identity
+helm dependency update charts/camunda-platform/charts/identity
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "camunda-platform" chart repository
 ...Successfully got an update from the "bitnami" chart repository

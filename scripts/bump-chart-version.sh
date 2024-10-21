@@ -22,7 +22,7 @@ fi
 
 # Chart name is hard-coded since we only have 1 main chart,
 # but it could be customized in case we have more in the future.
-chart_name="camunda-platform-latest"
+chart_name="camunda-platform-alpha"
 
 # When changing the major version, export "is_major_version=1",
 # that will increment the major version and set the patch version to zero.
