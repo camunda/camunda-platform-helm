@@ -43,9 +43,9 @@ type CamundaYAML struct {
 }
 
 type CamundaIdentityYAML struct {
-	Audience string `yaml:"audience"`
-	ClientId string `yaml:"client-id"`
-	BaseUrl string `yaml:"baseUrl"`
-	Issuer string `yaml:"issuer"`
+	Audience         string `yaml:"audience"`
+	ClientId         string `yaml:"client-id"`
+	BaseUrl          string `yaml:"baseUrl"`
+	Issuer           string `yaml:"issuer"`
 	IssuerBackendUrl string `yaml:"issuerBackendUrl"`
 }

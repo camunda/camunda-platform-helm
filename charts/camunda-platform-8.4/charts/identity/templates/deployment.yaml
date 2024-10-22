@@ -248,7 +248,7 @@ spec:
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: {{ include "identity.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+              {{- if or (typeIs "string" .Values.global.identity.auth.identity.existingSecret) (empty .Values.global.identity.auth.identity.existingSecret) }}
               value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
               {{- else }}
               valueFrom:

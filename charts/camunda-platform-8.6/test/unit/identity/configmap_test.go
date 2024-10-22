@@ -208,12 +208,12 @@ func (s *configMapSpringTemplateTest) TestConfigMapAuthIssuerBackendUrlWhenKeycl
 func (s *configMapSpringTemplateTest) TestConfigMapClientIdWhenClientSecretSet() {
 	// given
 	options := &helm.Options{
-		SetValues:      map[string]string{
-			"global.identity.auth.type": "GENERIC",
-			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
-			"global.identity.auth.issuer": "https://my.idp.org",
-			"global.identity.auth.identity.audience": "identity-client",
-			"global.identity.auth.identity.clientId": "identity-client",
+		SetValues: map[string]string{
+			"global.identity.auth.type":                    "GENERIC",
+			"global.identity.auth.issuerBackendUrl":        "https://my.idp.org",
+			"global.identity.auth.issuer":                  "https://my.idp.org",
+			"global.identity.auth.identity.audience":       "identity-client",
+			"global.identity.auth.identity.clientId":       "identity-client",
 			"global.identity.auth.identity.existingSecret": "superSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

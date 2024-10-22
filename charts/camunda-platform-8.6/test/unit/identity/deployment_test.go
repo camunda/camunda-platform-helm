@@ -449,7 +449,7 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.containerSecurityContext.privileged":          "true",
+			"identity.containerSecurityContext.privileged": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -1113,12 +1113,12 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeGeneric() {
 	// given
 	options := &helm.Options{
-		SetValues:      map[string]string{
-			"global.identity.auth.type": "GENERIC",
-			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
-			"global.identity.auth.issuer": "https://my.idp.org",
-			"global.identity.auth.identity.audience": "identity-client",
-			"global.identity.auth.identity.clientId": "identity-client",
+		SetValues: map[string]string{
+			"global.identity.auth.type":                    "GENERIC",
+			"global.identity.auth.issuerBackendUrl":        "https://my.idp.org",
+			"global.identity.auth.issuer":                  "https://my.idp.org",
+			"global.identity.auth.identity.audience":       "identity-client",
+			"global.identity.auth.identity.clientId":       "identity-client",
 			"global.identity.auth.identity.existingSecret": "superSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -1133,7 +1133,7 @@ func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeGeneric() 
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			Name:  "CAMUNDA_IDENTITY_CLIENT_SECRET",
 			Value: "superSecret",
 		})
 }
@@ -1141,12 +1141,12 @@ func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeGeneric() 
 func (s *deploymentTemplateTest) TestClientSecretRefWhenAuthTypeGeneric() {
 	// given
 	options := &helm.Options{
-		SetValues:      map[string]string{
-			"global.identity.auth.type": "GENERIC",
-			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
-			"global.identity.auth.issuer": "https://my.idp.org",
-			"global.identity.auth.identity.audience": "identity-client",
-			"global.identity.auth.identity.clientId": "identity-client",
+		SetValues: map[string]string{
+			"global.identity.auth.type":                         "GENERIC",
+			"global.identity.auth.issuerBackendUrl":             "https://my.idp.org",
+			"global.identity.auth.issuer":                       "https://my.idp.org",
+			"global.identity.auth.identity.audience":            "identity-client",
+			"global.identity.auth.identity.clientId":            "identity-client",
 			"global.identity.auth.identity.existingSecret.name": "super-secret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -1174,12 +1174,12 @@ func (s *deploymentTemplateTest) TestClientSecretRefWhenAuthTypeGeneric() {
 func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeMicrosoft() {
 	// given
 	options := &helm.Options{
-		SetValues:      map[string]string{
-			"global.identity.auth.type": "MICROSOFT",
-			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
-			"global.identity.auth.issuer": "https://my.idp.org",
-			"global.identity.auth.identity.audience": "identity-client",
-			"global.identity.auth.identity.clientId": "identity-client",
+		SetValues: map[string]string{
+			"global.identity.auth.type":                    "MICROSOFT",
+			"global.identity.auth.issuerBackendUrl":        "https://my.idp.org",
+			"global.identity.auth.issuer":                  "https://my.idp.org",
+			"global.identity.auth.identity.audience":       "identity-client",
+			"global.identity.auth.identity.clientId":       "identity-client",
 			"global.identity.auth.identity.existingSecret": "superSecret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -1194,7 +1194,7 @@ func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeMicrosoft(
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env,
 		corev1.EnvVar{
-			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			Name:  "CAMUNDA_IDENTITY_CLIENT_SECRET",
 			Value: "superSecret",
 		})
 }
@@ -1202,12 +1202,12 @@ func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeMicrosoft(
 func (s *deploymentTemplateTest) TestClientSecretRefWhenAuthTypeMicrosoft() {
 	// given
 	options := &helm.Options{
-		SetValues:      map[string]string{
-			"global.identity.auth.type": "MICROSOFT",
-			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
-			"global.identity.auth.issuer": "https://my.idp.org",
-			"global.identity.auth.identity.audience": "identity-client",
-			"global.identity.auth.identity.clientId": "identity-client",
+		SetValues: map[string]string{
+			"global.identity.auth.type":                         "MICROSOFT",
+			"global.identity.auth.issuerBackendUrl":             "https://my.idp.org",
+			"global.identity.auth.issuer":                       "https://my.idp.org",
+			"global.identity.auth.identity.audience":            "identity-client",
+			"global.identity.auth.identity.clientId":            "identity-client",
 			"global.identity.auth.identity.existingSecret.name": "super-secret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
