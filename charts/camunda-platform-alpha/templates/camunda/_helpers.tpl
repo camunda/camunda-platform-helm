@@ -556,6 +556,9 @@ Release templates.
 - name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   version: {{ .Chart.Version }}
+  tags:
+  - dev
+  custom-properties: []
   components:
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
