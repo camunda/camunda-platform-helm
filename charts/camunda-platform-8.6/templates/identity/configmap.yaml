@@ -289,7 +289,6 @@ data:
         audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
         {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
         client-id: {{ include "identity.authClientId" . | default "camunda-identity"  | quote }}
-        client-secret: {{ include "identity.authClientSecret" . | quote }}
         {{- end }}
         {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}

@@ -4,6 +4,7 @@ type IdentityConfigYAML struct {
 	Identity IdentityYAML `yaml:"identity"`
 	Server   ServerYAML   `yaml:"server"`
 	Spring   SpringYAML   `yaml:"spring"`
+	Camunda  CamundaYAML  `yaml:"camunda"`
 }
 
 type IdentityYAML struct {
@@ -35,4 +36,16 @@ type SpringYAML struct {
 type DataSourceYAML struct {
 	Url      string `yaml:"url"`
 	Username string `yaml:"username"`
+}
+
+type CamundaYAML struct {
+	Identity CamundaIdentityYAML `yaml:"identity"`
+}
+
+type CamundaIdentityYAML struct {
+	Audience         string `yaml:"audience"`
+	ClientId         string `yaml:"client-id"`
+	BaseUrl          string `yaml:"baseUrl"`
+	Issuer           string `yaml:"issuer"`
+	IssuerBackendUrl string `yaml:"issuerBackendUrl"`
 }
