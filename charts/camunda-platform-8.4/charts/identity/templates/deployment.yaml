@@ -248,7 +248,14 @@ spec:
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: {{ include "identity.authClientId" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              value: {{ include "identity.authClientSecret" . | quote }}
+              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+              value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
+                  key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+              {{- end }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: {{ include "identity.authAudience" . | quote }}
             - name: CAMUNDA_OPERATE_AUDIENCE
