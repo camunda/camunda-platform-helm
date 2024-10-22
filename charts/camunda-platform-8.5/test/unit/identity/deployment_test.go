@@ -1111,3 +1111,125 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
+
+func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeGeneric() {
+	// given
+	options := &helm.Options{
+		SetValues:      map[string]string{
+			"global.identity.auth.type": "GENERIC",
+			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
+			"global.identity.auth.issuer": "https://my.idp.org",
+			"global.identity.auth.identity.audience": "identity-client",
+			"global.identity.auth.identity.clientId": "identity-client",
+			"global.identity.auth.identity.existingSecret": "superSecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			Value: "superSecret",
+		})
+}
+
+func (s *deploymentTemplateTest) TestClientSecretRefWhenAuthTypeGeneric() {
+	// given
+	options := &helm.Options{
+		SetValues:      map[string]string{
+			"global.identity.auth.type": "GENERIC",
+			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
+			"global.identity.auth.issuer": "https://my.idp.org",
+			"global.identity.auth.identity.audience": "identity-client",
+			"global.identity.auth.identity.clientId": "identity-client",
+			"global.identity.auth.identity.existingSecret.name": "super-secret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "super-secret"},
+					Key:                  "identity-secret",
+				},
+			},
+		})
+}
+
+func (s *deploymentTemplateTest) TestClientSecretPlaintextWhenAuthTypeMicrosoft() {
+	// given
+	options := &helm.Options{
+		SetValues:      map[string]string{
+			"global.identity.auth.type": "MICROSOFT",
+			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
+			"global.identity.auth.issuer": "https://my.idp.org",
+			"global.identity.auth.identity.audience": "identity-client",
+			"global.identity.auth.identity.clientId": "identity-client",
+			"global.identity.auth.identity.existingSecret": "superSecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			Value: "superSecret",
+		})
+}
+
+func (s *deploymentTemplateTest) TestClientSecretRefWhenAuthTypeMicrosoft() {
+	// given
+	options := &helm.Options{
+		SetValues:      map[string]string{
+			"global.identity.auth.type": "MICROSOFT",
+			"global.identity.auth.issuerBackendUrl": "https://my.idp.org",
+			"global.identity.auth.issuer": "https://my.idp.org",
+			"global.identity.auth.identity.audience": "identity-client",
+			"global.identity.auth.identity.clientId": "identity-client",
+			"global.identity.auth.identity.existingSecret.name": "super-secret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env,
+		corev1.EnvVar{
+			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "super-secret"},
+					Key:                  "identity-secret",
+				},
+			},
+		})
+}
