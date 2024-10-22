@@ -857,3 +857,22 @@ func (s *deploymentTemplateTest) TestOptimizeMultiTenancyEnabled() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED", Value: "true"})
 }
+
+func (s *deploymentTemplateTest) TestOptimizeCustomZeebeName() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.prefix": "custom-prefix",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_ZEEBE_NAME", Value: "custom-prefix"})
+}
