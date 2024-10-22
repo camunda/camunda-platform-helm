@@ -218,15 +218,15 @@ spec:
               value: "Console"
               {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+                {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
               value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
                   key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+                {{- end }}
               {{- end }}
-            {{- end }}
             {{- end }}
             {{- end }}
             {{- else }}
