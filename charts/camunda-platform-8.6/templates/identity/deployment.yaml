@@ -216,6 +216,13 @@ spec:
               value: "Web Modeler Admin"
             - name: KEYCLOAK_USERS_0_ROLES_6
               value: "Console"
+            {{- end }}
+            {{- end }}
+            {{- else }}
+            - name: IDENTITY_INITIAL_CLAIM_NAME
+              value: {{ .Values.global.identity.auth.identity.initialClaimName }}
+            - name: IDENTITY_INITIAL_CLAIM_VALUE
+              value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
               {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
                 {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
@@ -227,13 +234,6 @@ spec:
                   key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
                 {{- end }}
               {{- end }}
-            {{- end }}
-            {{- end }}
-            {{- else }}
-            - name: IDENTITY_INITIAL_CLAIM_NAME
-              value: {{ .Values.global.identity.auth.identity.initialClaimName }}
-            - name: IDENTITY_INITIAL_CLAIM_VALUE
-              value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
             {{- end }}
             {{- end }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
