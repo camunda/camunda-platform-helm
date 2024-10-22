@@ -225,7 +225,7 @@ spec:
               value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
             {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if or (typeIs "string" .Values.global.identity.auth.identity.existingSecret) (empty .Values.global.identity.auth.identity.existingSecret) }}
+              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
               value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
               {{- else }}
               valueFrom:
