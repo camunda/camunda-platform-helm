@@ -228,6 +228,7 @@ spec:
               {{- end }}
             {{- end }}
             {{- end }}
+            {{- end }}
             {{- else }}
             - name: IDENTITY_INITIAL_CLAIM_NAME
               value: {{ .Values.global.identity.auth.identity.initialClaimName }}
