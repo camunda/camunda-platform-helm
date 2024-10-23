@@ -1456,7 +1456,6 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 
 ### WebModeler Parameters
 
-
 | Name                           | Description                                                                                                                                   | Value      |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `webModeler.enabled`           | if true, the WebModeler deployment and its related resources are deployed via a helm release                                                  | `false`    |
@@ -1467,7 +1466,6 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.image.tag`         | can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)                                               | `SNAPSHOT` |
 | `webModeler.image.pullSecrets` | can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod  | `[]`       |
 | `webModeler.contextPath`       | can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. | `""`       |
-
 
 ### WebModeler - RestAPI Parameters
 
