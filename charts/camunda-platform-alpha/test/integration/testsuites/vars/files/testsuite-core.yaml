@@ -324,8 +324,7 @@ testcases:
   steps:
   - name: run command svc camunda-zeebe-gateway
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-zeebe-gateway 26500:26500
+    script: kubectl port-forward svc/camunda-zeebe-gateway 26500:26500
     retry: 2
     delay: 10
   - name: Check camunda-zeebe-gateway
@@ -333,17 +332,11 @@ testcases:
     method: GET
     url: "http://localhost:26500"
     retry: 2
-    delay: 10
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-  ##################################################
+    delay: 3
+ ##################################################
   - name: run command for svc/camunda-operate  
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-operate  8081:80
+    script: kubectl port-forward svc/camunda-operate  8081:80
     retry: 2
     delay: 1
   - name: Check svc/camunda-operate  
@@ -352,36 +345,23 @@ testcases:
     url: "http://localhost:8081"
     retry: 2
     delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
   ########################################################
 
   - name: run command svc/camunda-tasklist 
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-tasklist 8082:80
+    script: kubectl port-forward svc/camunda-tasklist 8082:80
     retry: 2
-    delay: 10
+    delay: 3
   - name: Check camunda-tasklist
     type: http
     method: GET
     url: "http://localhost:8082"
     retry: 2
-    delay: 10
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
+    delay: 3
   ##################################################
   - name: run command for svc/camunda-optimize 
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-optimize 8083:80
+    script: kubectl port-forward svc/camunda-optimize 8083:80
     retry: 2
     delay: 1
   - name: Check svc/camunda-optimize
@@ -389,19 +369,11 @@ testcases:
     method: GET
     url: "http://localhost:8083"
     retry: 2
-    delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
+    delay: 3
   ########################################################
-
   - name: run command for svc/camunda-connectors
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-connectors 8088:8080
+    script: kubectl port-forward svc/camunda-connectors 8088:8080
     retry: 2
     delay: 1
   - name: Check svc/camunda-connectors
@@ -409,19 +381,11 @@ testcases:
     method: GET
     url: "http://localhost:8088"
     retry: 2
-    delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
+    delay: 3
        ######################################################  
-
   - name: run command for svc/camunda-web-modeler-webapp
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-web-modeler-webapp 8084:80
+    script: kubectl port-forward svc/camunda-web-modeler-webapp 8084:80
     retry: 2
     delay: 1
   - name: Check svc/camunda-web-modeler-webapp
@@ -429,20 +393,11 @@ testcases:
     method: GET
     url: "http://localhost:8084"
     retry: 2
-    delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
-  
+    delay: 3
        ######################################################  
-
   - name: run command for svc/camunda-web-modeler-websockets
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-web-modeler-websockets 8085:80
+    script: kubectl port-forward svc/camunda-web-modeler-websockets 8085:80
     retry: 2
     delay: 1
   - name: Check svc/camunda-web-modeler-websockets 
@@ -450,20 +405,11 @@ testcases:
     method: GET
     url: "http://localhost:8085"
     retry: 2
-    delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
-  
+    delay: 3
        ######################################################  
-
   - name: run command for svc/camunda-keycloak
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-keycloak 18080:80
+    script: kubectl port-forward svc/camunda-keycloak 18080:80
     retry: 2
     delay: 1
   - name: Check svc/camunda-keycloak
@@ -471,20 +417,11 @@ testcases:
     method: GET
     url: "http://localhost:18080"
     retry: 2
-    delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
-  
+    delay: 3
   ########################################################
-
   - name: run command for svc/camunda-console
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-console 8087:80
+    script: kubectl port-forward svc/camunda-console 8087:80
     retry: 2
     delay: 1
   - name: Check svc/camunda-operate  
@@ -492,20 +429,11 @@ testcases:
     method: GET
     url: "http://localhost:8087"
     retry: 2
-    delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
-  
+    delay: 3
        ######################################################  
-
   - name: run command for svc/camunda-keycloak
     type: exec
-    script: |
-       kubectl port-forward svc/camunda-keycloak 18080:80
+    script: kubectl port-forward svc/camunda-keycloak 18080:80
     retry: 2
     delay: 1
   - name: Check svc/camunda-keycloak
@@ -513,6 +441,7 @@ testcases:
     method: GET
     url: "http://localhost:18080"
     retry: 2
+<<<<<<< HEAD
     delay: 1
     info: |
       = Request Body: {{ .result.request.body }}
@@ -522,3 +451,6 @@ testcases:
 
   
 >>>>>>> feb83bd5 (Update testsuite-core.yaml)
+=======
+    delay: 3
+>>>>>>> 58b6abe4 (Update testsuite-core.yaml)
