@@ -29,6 +29,9 @@ data:
           releases:
           - name: camunda-platform-test
             namespace: camunda-platform
+            tags:
+            - dev
+            custom-properties: []
             components:
             - name: Console
               id: console
