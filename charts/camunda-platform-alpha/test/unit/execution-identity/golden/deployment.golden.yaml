@@ -50,7 +50,7 @@ spec:
       containers:
         - name: camunda-platform
           image: camunda/camunda:SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

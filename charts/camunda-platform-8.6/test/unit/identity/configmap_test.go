@@ -1,6 +1,10 @@
 package identity
 
 import (
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -8,9 +12,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 type configMapSpringTemplateTest struct {
@@ -202,4 +203,34 @@ func (s *configMapSpringTemplateTest) TestConfigMapAuthIssuerBackendUrlWhenKeycl
 	s.NotEmpty(configmap.Data)
 
 	s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
+}
+
+func (s *configMapSpringTemplateTest) TestConfigMapClientIdWhenClientSecretSet() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.type":                    "GENERIC",
+			"global.identity.auth.issuerBackendUrl":        "https://my.idp.org",
+			"global.identity.auth.issuer":                  "https://my.idp.org",
+			"global.identity.auth.identity.audience":       "identity-client",
+			"global.identity.auth.identity.clientId":       "identity-client",
+			"global.identity.auth.identity.existingSecret": "superSecret",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication IdentityConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.NotEmpty(configmap.Data)
+	s.Require().Equal("identity-client", configmapApplication.Camunda.Identity.ClientId)
 }
