@@ -71,7 +71,7 @@ spec:
       containers:
         - name: operate
           image: camunda/operate:SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

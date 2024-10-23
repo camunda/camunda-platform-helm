@@ -83,7 +83,7 @@ spec:
       containers:
         - name: optimize
           image: camunda/optimize:8-SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

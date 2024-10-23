@@ -45,7 +45,7 @@ spec:
       containers:
         - name: connectors
           image: camunda/connectors-bundle:SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

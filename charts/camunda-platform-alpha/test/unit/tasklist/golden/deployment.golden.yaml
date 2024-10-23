@@ -45,7 +45,7 @@ spec:
       containers:
         - name: tasklist
           image: camunda/tasklist:SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

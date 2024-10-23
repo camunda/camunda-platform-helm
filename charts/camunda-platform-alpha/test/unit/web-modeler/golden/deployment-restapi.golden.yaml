@@ -42,7 +42,7 @@ spec:
       containers:
         - name: web-modeler-restapi
           image: "camunda/web-modeler-restapi:SNAPSHOT"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

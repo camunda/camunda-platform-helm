@@ -42,7 +42,7 @@ spec:
       containers:
         - name: web-modeler-webapp
           image: "camunda/web-modeler-webapp:SNAPSHOT"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
