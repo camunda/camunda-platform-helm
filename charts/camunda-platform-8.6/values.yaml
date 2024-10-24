@@ -419,7 +419,7 @@ console:
   tls:
   ## @param console.tls.enabled Enable TLS traffic for console
   enabled: false
-  ## @param tls.existingSecret The name of the existing secret that contains the TLS certificates
+  ## @param tls.existingSecret The name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.
   existingSecret: ""
   ## @param tls.certKeyFilename Certificate Key filename
   certKeyFilename: ""
