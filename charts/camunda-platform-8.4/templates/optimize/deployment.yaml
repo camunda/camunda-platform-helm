@@ -44,6 +44,8 @@ spec:
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: {{ .Values.optimize.partitionCount | quote }}
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+              value: {{ .Values.global.elasticsearch.prefix }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
@@ -76,6 +78,8 @@ spec:
               value: "true"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
               value: {{ .Values.optimize.partitionCount | quote }}
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+              value: {{ .Values.global.elasticsearch.prefix }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
