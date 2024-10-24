@@ -52,6 +52,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: {{ printf "/usr/local/console/certificates/%s" .Values.console.tls.certKeyFilename | quote }}
             - name: NODE_ENV
               value: prod
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
@@ -126,6 +128,11 @@ spec:
           volumeMounts:
             - name: console-configuration
               mountPath: /var/run/config
+          {{- if .Values.console.tls.enabled }}
+            - name: console-certificates
+              mountPath: /usr/local/console/certificates
+              readOnly: true
+          {{- end }}
           {{- if .Values.console.extraVolumeMounts }}
             {{- .Values.console.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -136,6 +143,11 @@ spec:
         - name: console-configuration
           configMap:
             name: {{ include "console.fullname" . }}-configuration
+      {{- if .Values.console.tls.enabled }}
+        - name: console-certificates
+          secret:
+            secretName: {{ .Valuels.console.tls.existingSecret }}
+      {{- end }}
       {{- if .Values.console.extraVolumes }}
         {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
