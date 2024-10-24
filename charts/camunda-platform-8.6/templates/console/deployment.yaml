@@ -146,7 +146,7 @@ spec:
       {{- if .Values.console.tls.enabled }}
         - name: console-certificates
           secret:
-            secretName: {{ .Valuels.console.tls.existingSecret }}
+            secretName: {{ .Values.console.tls.existingSecret }}
       {{- end }}
       {{- if .Values.console.extraVolumes }}
         {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
