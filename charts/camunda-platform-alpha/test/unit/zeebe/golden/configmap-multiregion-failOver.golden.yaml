@@ -29,8 +29,6 @@ data:
               connect:
                 type: elasticsearch
                 url: "http://camunda-platform-test-elasticsearch:9200"
-              index:
-                prefix: "zeebe-record"
               createSchema: true
         gateway:
           enable: true
