@@ -359,7 +359,7 @@ jobs:
         run: |
           mkdir -p logs
           kubectl get pods -n "$TEST_NAMESPACE" > "logs/pod_status.txt"
-          for pod in $( kubectl get pods -n "$TEST_NAMESPACE" ); do
+          for pod in $( kubectl get pods -n "$TEST_NAMESPACE" | awk '{print $1}' | grep -v NAME ); do 
             kubectl logs -n "$TEST_NAMESPACE" "$pod" > "logs/$pod.txt"
           done
 
