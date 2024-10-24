@@ -353,6 +353,22 @@ jobs:
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info
+
+      - name: Get pod logs
+        if: always()
+        run: |
+          mkdir -p logs
+          for pod in $( kubectl get pods -n "$TEST_NAMESPACE" ); do
+            kubectl logs -n "$TEST_NAMESPACE" "$pod" > "logs/$pod.txt"
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pod-logs-${{ matrix.os }}
+          path: ./logs/*
+          retention-days: 1
+
       - name: Cleanup GitHub deployment
         if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
