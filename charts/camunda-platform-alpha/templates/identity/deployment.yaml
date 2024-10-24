@@ -185,6 +185,17 @@ spec:
               value: {{ .Values.identity.firstUser.password | quote }}
             {{- end }}
             {{- end }}
+            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+              value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
+                  key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+              {{- end }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}

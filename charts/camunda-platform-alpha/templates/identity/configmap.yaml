@@ -263,13 +263,9 @@ data:
       environment:
         clients:
           - name: Identity
-            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             id: {{  printf "%s" (include "identity.authClientId" .) | default "camunda-identity" | quote }}
-            {{- else }}
-            id: "camunda-identity"
-            {{- end }}
             type: CONFIDENTIAL
-            secret: ${IDENTITY_CLIENT_SECRET:}
+            secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
             root-url: {{ include "identity.externalUrl" . | quote }}
             redirect-uris:
               - "/auth/login-callback"

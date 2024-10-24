@@ -246,7 +246,7 @@ data:
           - name: Identity
             id: "camunda-identity"
             type: CONFIDENTIAL
-            secret: ${IDENTITY_CLIENT_SECRET:}
+            secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
             root-url: "http://localhost:8080"
             redirect-uris:
               - "/auth/login-callback"
