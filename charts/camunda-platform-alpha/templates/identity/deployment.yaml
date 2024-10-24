@@ -43,7 +43,7 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
-            - name: KEYCLOAK_INIT_OPERATE_SECRET
+            - name: VALUES_KEYCLOAK_INIT_OPERATE_SECRET
               {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -60,7 +60,7 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
               {{- end }}
-            - name: KEYCLOAK_INIT_CONSOLE_SECRET
+            - name: VALUES_KEYCLOAK_INIT_CONSOLE_SECRET
               {{- if and .Values.global.identity.auth.console.existingSecret (not (typeIs "string" .Values.global.identity.auth.console.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -77,7 +77,7 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "console") }}
                   key: {{ .Values.global.identity.auth.console.existingSecretKey }}
               {{- end }}
-            - name: KEYCLOAK_INIT_TASKLIST_SECRET
+            - name: VALUES_KEYCLOAK_INIT_TASKLIST_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -94,7 +94,7 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
               {{- end }}
-            - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
+            - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -111,10 +111,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
               {{- end }}
-            - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-            - name: KEYCLOAK_INIT_ZEEBE_NAME
-              value: "Zeebe"
             {{- /* TODO: Use ".Values.identity.connectors.inbound.mode=oauth" as a condition when we migrate
                  to flat chart structure. Also then remove the optional flag from the secret. */}}
             - name: KEYCLOAK_CLIENTS_0_NAME
@@ -173,56 +169,33 @@ spec:
               value: "zeebe-api"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
-            - name: KEYCLOAK_URL
-              value: {{ include "identity.keycloak.url" . | quote }}
-            - name: KEYCLOAK_SETUP_USER
-              value: {{ include "identity.keycloak.authAdminUser" . | quote }}
-            - name: KEYCLOAK_SETUP_PASSWORD
+            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "identity.keycloak.authExistingSecret" . }}
                   key: {{ include "identity.keycloak.authExistingSecretKey" . }}
             {{- if .Values.identity.firstUser.enabled }}
-            - name: KEYCLOAK_USERS_0_USERNAME
-              value: {{ .Values.identity.firstUser.username | quote }}
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
             {{- if .Values.identity.firstUser.existingSecret }}
-            - name: KEYCLOAK_USERS_0_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.identity.firstUser.existingSecret }}
                   key: {{ .Values.identity.firstUser.existingSecretKey }}
             {{- else }}
-            - name: KEYCLOAK_USERS_0_PASSWORD
               value: {{ .Values.identity.firstUser.password | quote }}
             {{- end }}
-            - name: KEYCLOAK_USERS_0_EMAIL
-              value: {{ .Values.identity.firstUser.email | quote }}
-            - name: KEYCLOAK_USERS_0_FIRST_NAME
-              value: {{ .Values.identity.firstUser.firstName | quote }}
-            - name: KEYCLOAK_USERS_0_LAST_NAME
-              value: {{ .Values.identity.firstUser.lastName | quote }}
-            - name: KEYCLOAK_USERS_0_ROLES_0
-              value: "Identity"
-            {{- if .Values.global.identity.auth.enabled }}
-            - name: KEYCLOAK_USERS_0_ROLES_1
-              value: "Operate"
-            - name: KEYCLOAK_USERS_0_ROLES_2
-              value: "Tasklist"
-            - name: KEYCLOAK_USERS_0_ROLES_3
-              value: "Optimize"
-            - name: KEYCLOAK_USERS_0_ROLES_4
-              value: "Web Modeler"
-            - name: KEYCLOAK_USERS_0_ROLES_5
-              value: "Web Modeler Admin"
-            - name: KEYCLOAK_USERS_0_ROLES_6
-              value: "Console"
             {{- end }}
+            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+              value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
+                  key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+              {{- end }}
             {{- end }}
-            {{- else }}
-            - name: IDENTITY_INITIAL_CLAIM_NAME
-              value: {{ .Values.global.identity.auth.identity.initialClaimName }}
-            - name: IDENTITY_INITIAL_CLAIM_VALUE
-              value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
             {{- end }}
             {{- end }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
