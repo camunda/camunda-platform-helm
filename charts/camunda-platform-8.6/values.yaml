@@ -416,13 +416,14 @@ console:
   ## @param console.replicas Number of Console replicas
   replicas: 1
 
+  ## console.tls Configure the Console TLS options
   tls:
-  ## @param console.tls.enabled Enable TLS traffic for console
-  enabled: false
-  ## @param tls.existingSecret The name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.
-  existingSecret: ""
-  ## @param tls.certKeyFilename Certificate Key filename
-  certKeyFilename: ""
+    ## @param console.tls.enabled Enable TLS traffic for console
+    enabled: false
+    ## @param tls.existingSecret The name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.
+    existingSecret: ""
+    ## @param tls.certKeyFilename Certificate Key filename
+    certKeyFilename: ""
   ## console.keycloak configuration to configure Keycloak authentication settings.
   keycloak:
     ## @param console.keycloak.realm Specifies the Keycloak realm used for authentication.
