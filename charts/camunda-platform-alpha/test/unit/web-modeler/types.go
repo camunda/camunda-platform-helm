@@ -29,7 +29,8 @@ type IdentityYAML struct {
 	Type    string `yaml:"type"`
 }
 type ModelerYAML struct {
-	Security SecurityYAML `yaml:"security"`
+	Security SecurityYAML  `yaml:"security"`
+	Clusters []ClusterYAML `yaml:"clusters"`
 }
 
 type SecurityYAML struct {
@@ -48,6 +49,38 @@ type IssuerYAML struct {
 type AudienceYAML struct {
 	InternalAPI string `yaml:"internal-api"`
 	PublicAPI   string `yaml:"public-api"`
+}
+
+type ClusterYAML struct {
+	Id             string    `yaml:"id"`
+	Name           string    `yaml:"name"`
+	Version        string    `yaml:"version"`
+	Authentication string    `yaml:"authentication"`
+	Url            UrlYAML   `yaml:"url"`
+	Oauth          OAuthYAML `yaml:"oauth"`
+}
+
+type UrlYAML struct {
+	Zeebe    ZeebeUrlYAML `yaml:"zeebe"`
+	Operate  string       `yaml:"operate"`
+	Tasklist string       `yaml:"tasklist"`
+}
+
+type ZeebeUrlYAML struct {
+	Grpc string `yaml:"grpc"`
+	Rest string `yaml:"rest"`
+}
+
+type OAuthYAML struct {
+	Url      string            `yaml:"url"`
+	Scope    string            `yaml:"scope"`
+	Audience OAuthAudienceYAML `yaml:"audience"`
+}
+
+type OAuthAudienceYAML struct {
+	Zeebe    string `yaml:"zeebe"`
+	Operate  string `yaml:"operate"`
+	Tasklist string `yaml:"tasklist"`
 }
 
 // Web App ---
