@@ -252,7 +252,7 @@ global:
       ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other sub-charts
       identity:
         ## @param global.identity.auth.identity.clientId defines the client id, which is used by Identity in authentication flows.
-        clientId: identity
+        clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
         ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
