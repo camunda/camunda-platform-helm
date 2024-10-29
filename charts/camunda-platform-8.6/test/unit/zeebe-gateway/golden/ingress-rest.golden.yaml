@@ -23,7 +23,7 @@ spec:
   rules:
     - http:
         paths:
-          - path: /actuator/health/readiness
+          - path: /
             pathType: Prefix
             backend:
               service:

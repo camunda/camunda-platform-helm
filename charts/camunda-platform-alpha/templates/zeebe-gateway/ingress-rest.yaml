@@ -19,7 +19,7 @@ spec:
     - http:
     {{- end }}
         paths:
-          - path: {{ include "zeebe.readinessProbePath.gateway" . }}
+          - path: {{ .Values.zeebeGateway.ingress.rest.path }}
             pathType: {{ .Values.zeebeGateway.ingress.rest.pathType }}
             backend:
               service:
