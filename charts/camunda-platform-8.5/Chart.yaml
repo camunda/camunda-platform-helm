@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.4.2
+version: 10.4.3
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -50,7 +50,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.16.1"
+  camunda.io/helmCLIVersion: "3.16.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -59,4 +59,12 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: changed
+      description: "Move identity remaining env vars to config"
+    - kind: changed
+      description: "Parametrized hard-coded identity auth vars"
+    - kind: fixed
+      description: "Identity secret should be referenced"
+    - kind: fixed
+      description: "Set optimize global elasticsearch prefix"
