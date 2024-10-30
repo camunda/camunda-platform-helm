@@ -71,8 +71,7 @@ data:
 
       identity:
         redirectRootUrl: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix .Values.tasklist.contextPath | quote }}
-        userAccessRestrictions:
-          enabled: {{ .Values.tasklist.identity.userAccessRestrictions.enabled }}
+        userAccessRestrictionsEnabled: {{ .Values.tasklist.identity.userAccessRestrictions.enabled }}
 
       # Set Tasklist username and password.
       # If user with <username> does not exists it will be created.
