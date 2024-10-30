@@ -59,12 +59,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: changed
-      description: "Move identity remaining env vars to config"
-    - kind: changed
-      description: "Parametrized hard-coded identity auth vars"
-    - kind: fixed
-      description: "Identity secret should be referenced"
-    - kind: fixed
-      description: "Set optimize global elasticsearch prefix"
+  artifacthub.io/changes: ""
