@@ -60,9 +60,9 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: "Using bitnami oci chart repository"
-    - kind: changed
-      description: "Default keycloak ingress pathType to Prefix"
+      description: "Parametrized hard-coded identity auth vars"
     - kind: fixed
-      description: "Identity firstuser existingsecretkey has no effect"
-  camunda.io/helmCLIVersion: 3.16.1
+      description: "Identity secret should be referenced"
+    - kind: fixed
+      description: "Set optimize global elasticsearch prefix"
+  camunda.io/helmCLIVersion: 3.16.2

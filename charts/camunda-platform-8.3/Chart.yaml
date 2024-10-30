@@ -57,8 +57,6 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Using bitnami oci chart repository"
-    - kind: changed
-      description: "Default keycloak ingress pathType to Prefix"
-  camunda.io/helmCLIVersion: 3.16.1
+    - kind: fixed
+      description: "Set optimize global elasticsearch prefix"
+  camunda.io/helmCLIVersion: 3.16.2
