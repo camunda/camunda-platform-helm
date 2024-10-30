@@ -5,8 +5,8 @@
   "bump-minor-pre-major": false,
   "prerelease": false,
   "draft": false,
-  "bootstrap-sha": "0b42a864c0bc541880d0c1446bf03311fd9d8247",
-  "last-release-sha": "0b42a864c0bc541880d0c1446bf03311fd9d8247",
+  "bootstrap-sha": "67aacf2c55c5100b6ee90f3436067d9521ba33c7",
+  "last-release-sha": "67aacf2c55c5100b6ee90f3436067d9521ba33c7",
   "packages": {
     "charts/camunda-platform-8.6": {
       "release-type": "helm",
