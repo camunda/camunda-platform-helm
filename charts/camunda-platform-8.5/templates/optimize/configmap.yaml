@@ -49,7 +49,7 @@ data:
         ccsm:
           redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
     api:
-      audience: "optimize-api"
+      audience: {{ include "optimize.authAudience" . | quote }}
       jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
     {{- end }}
   {{- end }}

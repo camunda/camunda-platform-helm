@@ -340,13 +340,13 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Define variables related to authentication.
 */}}
 {{- define "webModeler.authClientId" -}}
-  {{- .Values.global.identity.auth.webModeler.clientId -}}
+  {{- .Values.global.identity.auth.webModeler.clientId | default "web-modeler" -}}
 {{- end -}}
 
 {{- define "webModeler.authClientApiAudience" -}}
-  {{- .Values.global.identity.auth.webModeler.clientApiAudience -}}
+  {{- .Values.global.identity.auth.webModeler.clientApiAudience | default "web-modeler-api" -}}
 {{- end -}}
 
 {{- define "webModeler.authPublicApiAudience" -}}
-  {{- .Values.global.identity.auth.webModeler.publicApiAudience -}}
+  {{- .Values.global.identity.auth.webModeler.publicApiAudience | default "web-modeler-public-api" -}}
 {{- end -}}

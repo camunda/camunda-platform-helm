@@ -65,5 +65,5 @@ Defines match labels for optimize, which are extended by sub-charts and should b
 {{- end -}}
 
 {{- define "optimize.authAudience" -}}
-  {{- .Values.global.identity.auth.optimize.audience -}}
+  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}

@@ -69,7 +69,7 @@ spec:
             - name: KEYCLOAK_REALM
               value: "camunda-platform"
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: console-api
+              value: "console-api"
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH

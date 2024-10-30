@@ -156,9 +156,9 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: |
-          echo "Workflow Input:"
+          echo "Workflow Inputs:"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
-          echo "Workflow Input - Extra Values:"
+          echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:

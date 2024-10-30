@@ -51,6 +51,12 @@ jobs:
     env:
       chartPath: "charts/${{ inputs.camunda-helm-dir }}"
     steps:
+    - name: ℹ️ Print workflow inputs ℹ️
+      env:
+        GITHUB_CONTEXT: ${{ toJson(inputs) }}
+      run: |
+        echo "Workflow Inputs:"
+        echo "${GITHUB_CONTEXT}"
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
     - name: Install env dependencies
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3

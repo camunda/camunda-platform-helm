@@ -62,5 +62,5 @@ app.kubernetes.io/component: operate
 {{- end -}}
 
 {{- define "operate.authAudience" -}}
-  {{- .Values.global.identity.auth.operate.audience -}}
+  {{- .Values.global.identity.auth.operate.audience | default "operate-api" -}}
 {{- end -}}

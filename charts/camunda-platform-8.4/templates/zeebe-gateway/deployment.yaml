@@ -80,7 +80,7 @@ spec:
             - name: CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ include "zeebe.audience" . | quote }}
+              value: {{ include "zeebe.authAudience" . | quote }}
             {{- end }}
             {{- if .Values.global.multitenancy.enabled }}
             - name: ZEEBE_GATEWAY_MULTITENANCY_ENABLED

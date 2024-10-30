@@ -143,7 +143,7 @@ spec:
             - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
               value: /
             - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: operate-api
+              value: {{ include "operate.authAudience" . | quote }}
             - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
               value: "read:*"
             - name: KEYCLOAK_CLIENTS_1_NAME
@@ -170,7 +170,7 @@ spec:
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "M2M"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: "zeebe-api"
+              value: {{ include "zeebe.authAudience" . | quote }}
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
             - name: KEYCLOAK_URL

@@ -70,10 +70,10 @@ app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "
     ) -}}
 {{- end }}
 
-{{- define "zeebe.audience"}}
-    {{- .Values.global.identity.auth.zeebe.audience -}}
+{{- define "zeebe.authAudience" }}
+    {{- .Values.global.identity.auth.zeebe.audience | default "zeebe-api" -}}
 {{- end -}}
 
-{{- define "zeebe.tokenScope"}}
+{{- define "zeebe.authTokenScope" }}
     {{- .Values.global.identity.auth.zeebe.tokenScope -}}
 {{- end -}}

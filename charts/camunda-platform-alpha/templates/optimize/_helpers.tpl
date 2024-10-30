@@ -63,5 +63,5 @@ app.kubernetes.io/component: optimize
 {{- end -}}
 
 {{- define "optimize.authAudience" -}}
-  {{- .Values.global.identity.auth.optimize.audience -}}
+  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
