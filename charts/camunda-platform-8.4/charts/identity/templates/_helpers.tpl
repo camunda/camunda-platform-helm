@@ -222,11 +222,11 @@ This is mainly used to access the external Keycloak service in the global Ingres
 {{- end -}}
 
 {{- define "identity.authClientId" -}}
-  {{- .Values.global.identity.auth.identity.clientId -}}
+  {{- .Values.global.identity.auth.identity.clientId | default "camunda-identity" -}}
 {{- end -}}
 
 {{- define "identity.authAudience" -}}
-  {{- .Values.global.identity.auth.identity.audience -}}
+  {{- .Values.global.identity.auth.identity.audience | default "camunda-identity-resource-server" -}}
 {{- end -}}
 
 {{- define "identity.authClientSecret" -}}

@@ -65,5 +65,5 @@ app.kubernetes.io/component: tasklist
 {{- end -}}
 
 {{- define "tasklist.authAudience" -}}
-  {{- .Values.global.identity.auth.tasklist.audience -}}
+  {{- .Values.global.identity.auth.tasklist.audience | default "tasklist-api" -}}
 {{- end -}}

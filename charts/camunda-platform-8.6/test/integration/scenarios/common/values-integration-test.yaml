@@ -27,11 +27,11 @@ identity:
     value: write
   # Operate access.
   - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
-    value: operate-api
+    value: "operate-api"
   - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
     value: "read:*"
   - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
-    value: operate-api
+    value: "operate-api"
   - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
     value: "write:*"
   # Tasklist access.

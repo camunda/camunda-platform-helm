@@ -19,7 +19,7 @@ data:
       {{- end }}
 
       {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
-      client-id: {{ include "identity.authClientId" . | default "camunda-identity" | quote }}
+      client-id: {{ include "identity.authClientId" . | quote }}
       client-secret: {{ include "identity.authClientSecret" . | quote }}
       {{- end }}
 
@@ -38,7 +38,7 @@ data:
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
-                - audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
+                - audience: {{ include "operate.authAudience" . | quote }}
                   definition: read:*
         console:
           applications:
@@ -50,7 +50,7 @@ data:
                 - "/"
           apis:
             - name: Console API
-              audience: {{ .Values.global.identity.auth.console.audience | default "console-api" | quote }}
+              audience: {{ include "console.authAudience" . | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
@@ -58,12 +58,12 @@ data:
             - name: "Console"
               description: "Grants full access to Console"
               permissions:
-                - audience: {{ .Values.global.identity.auth.console.audience | default "console-api" | quote }}
+                - audience: {{ include "console.authAudience" . | quote }}
                   definition: write:*
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
-              audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+              audience: {{ include "identity.authAudience" . | quote }}
               permissions:
                 - definition: read
                   description: "Read permission"
@@ -75,9 +75,9 @@ data:
             - name: "Identity"
               description: "Provides full access to Identity"
               permissions:
-                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+                - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read
-                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+                - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
         operate:
           applications:
@@ -90,7 +90,7 @@ data:
                 - "/identity-callback"
           apis:
             - name: Operate API
-              audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
+              audience: {{ include "operate.authAudience" . | quote }}
               permissions:
                 - definition: read:*
                   description: "Read permission"
@@ -100,9 +100,9 @@ data:
             - name: "Operate"
               description: "Grants full access to Operate"
               permissions:
-                - audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
+                - audience: {{ include "operate.authAudience" . | quote }}
                   definition: read:*
-                - audience: {{ include "operate.authAudience" . | default "operate-api" | quote }}
+                - audience: {{ include "operate.authAudience" . | quote }}
                   definition: write:*
         optimize:
           applications:
@@ -115,7 +115,7 @@ data:
                 - "/api/authentication/callback"
           apis:
             - name: Optimize API
-              audience: {{ include "optimize.authAudience" . | default "optimize-api" | quote }}
+              audience: {{ include "optimize.authAudience" . | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
@@ -123,9 +123,9 @@ data:
             - name: "Optimize"
               description: "Grants full access to Optimize"
               permissions:
-                - audience: {{ include "optimize.authAudience" . | default "optimize-api" | quote }}
+                - audience: {{ include "optimize.authAudience" . | quote }}
                   definition: write:*
-                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+                - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         tasklist:
           applications:
@@ -138,7 +138,7 @@ data:
                 - "/identity-callback"
           apis:
             - name: Tasklist API
-              audience: {{ include "tasklist.authAudience" . | default "tasklist-api" | quote }}
+              audience: {{ include "tasklist.authAudience" . | quote }}
               permissions:
                 - definition: read:*
                   description: "Read permission"
@@ -148,9 +148,9 @@ data:
             - name: "Tasklist"
               description: "Grants full access to Tasklist"
               permissions:
-                - audience: {{ include "tasklist.authAudience" . | default "tasklist-api" | quote }}
+                - audience: {{ include "tasklist.authAudience" . | quote }}
                   definition: read:*
-                - audience: {{ include "tasklist.authAudience" . | default "tasklist-api" | quote }}
+                - audience: {{ include "tasklist.authAudience" . | quote }}
                   definition: write:*
         webmodeler:
           applications:
@@ -162,12 +162,12 @@ data:
                 - "/login-callback"
           apis:
             - name: Web Modeler Internal API
-              audience: {{ .Values.global.identity.auth.webModeler.clientApiAudience | default "web-modeler-api" | quote }}
+              audience: {{ include "webModeler.authClientApiAudience" . | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
             - name: Web Modeler API
-              audience: {{ .Values.global.identity.auth.webModeler.publicApiAudience | default "web-modeler-public-api" | quote }}
+              audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
               permissions:
                 - definition: create:*
                   description: "Allows create access for all resources"
@@ -181,14 +181,14 @@ data:
             - name: "Web Modeler"
               description: "Grants full access to Web Modeler"
               permissions:
-                - audience: {{ .Values.global.identity.auth.webModeler.clientApiAudience | default "web-modeler-api" | quote }}
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: write:*
-                - audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+                - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         zeebe:
           apis:
             - name: Zeebe API
-              audience: {{ .Values.global.identity.auth.zeebe.audience | default "zeebe-api" | quote }}
+              audience: {{ include "zeebe.authAudience" . | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
@@ -196,7 +196,7 @@ data:
             - name: "Zeebe"
               description: "Grants full access to the Zeebe API"
               permissions:
-                - audience: {{ .Values.global.identity.auth.zeebe.audience | default "zeebe-api" | quote }}
+                - audience: {{ include "zeebe.authAudience" . | quote }}
                   definition: write:*
 
     {{- if .Values.global.identity.auth.enabled }}
@@ -271,9 +271,9 @@ data:
 
     camunda:
       identity:
-        audience: {{ include "identity.authAudience" . | default "camunda-identity-resource-server" | quote }}
+        audience: {{ include "identity.authAudience" . | quote }}
         {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
-        client-id: {{ include "identity.authClientId" . | default "camunda-identity"  | quote }}
+        client-id: {{ include "identity.authClientId" .  | quote }}
         {{- end }}
         {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}

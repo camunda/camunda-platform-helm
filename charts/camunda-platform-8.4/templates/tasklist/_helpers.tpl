@@ -67,5 +67,5 @@ Defines match labels for tasklist, which are extended by sub-charts and should b
 {{- end -}}
 
 {{- define "tasklist.authAudience" -}}
-  {{- .Values.global.identity.auth.tasklist.audience -}}
+  {{- .Values.global.identity.auth.tasklist.audience | default "tasklist-api" -}}
 {{- end -}}

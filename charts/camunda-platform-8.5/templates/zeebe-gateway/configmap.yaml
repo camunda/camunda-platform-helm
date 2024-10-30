@@ -42,7 +42,7 @@ data:
         {{- if .Values.global.identity.auth.enabled }}
         type: {{ include "camundaPlatform.authType" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-        audience: {{ include "zeebe.audience" . | quote }}
+        audience: {{ include "zeebe.authAudience" . | quote }}
         baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
         {{- end }}
     {{- end }}

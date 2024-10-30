@@ -107,7 +107,7 @@ spec:
             - name: CAMUNDA_IDENTITY_AUDIENCE
               value: {{ include "optimize.authAudience" . | quote }}
             - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
-              value: "optimize-api"
+              value: {{ include "optimize.authAudience" . | quote }}
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
               value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
               {{- end }}

@@ -51,7 +51,7 @@ spec:
             - name: KEYCLOAK_REALM
               value: camunda-platform
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: console-api
+              value: {{ include "console.authAudience" . | quote }}
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH

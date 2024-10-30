@@ -28,6 +28,12 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
+      - name: ℹ️ Print workflow inputs ℹ️
+        env:
+          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+        run: |
+          echo "Workflow Inputs:"
+          echo "${GITHUB_CONTEXT}"
       # Checkout.
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4

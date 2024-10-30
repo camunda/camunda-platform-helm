@@ -65,5 +65,5 @@ Defines match labels for operate, which are extended by sub-charts and should be
 {{- end -}}
 
 {{- define "operate.authAudience" -}}
-  {{- .Values.global.identity.auth.operate.audience -}}
+  {{- .Values.global.identity.auth.operate.audience | default "operate-api" -}}
 {{- end -}}

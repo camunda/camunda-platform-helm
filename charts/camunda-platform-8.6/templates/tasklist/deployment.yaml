@@ -121,10 +121,10 @@ spec:
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: ZEEBE_TOKEN_AUDIENCE
-              value: {{ include "zeebe.audience" . | quote }}
+              value: {{ include "zeebe.authAudience" . | quote }}
             {{- if .Values.global.identity.auth.zeebe.tokenScope }}
             - name: ZEEBE_TOKEN_SCOPE
-              value: {{ include "zeebe.tokenScope" . | quote }}
+              value: {{ include "zeebe.authTokenScope" . | quote }}
             {{- end }}
             - name: HOME
               value: /parent
