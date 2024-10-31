@@ -109,6 +109,12 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-optimize-identity-secret
                   key: optimize-secret
+            - name: OPTIMIZE_LOG_LEVEL
+              value: "info"
+            - name: UPGRADE_LOG_LEVEL
+              value: "info"
+            - name: ES_LOG_LEVEL
+              value: "warn"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars

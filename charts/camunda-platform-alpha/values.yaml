@@ -1532,6 +1532,14 @@ tasklist:
   ## @param tasklist.podLabels can be used to define extra tasklist pod labels
   podLabels: {}
 
+  ## @extra tasklist.logging configuration for the tasklist logging. This template will be directly included in the tasklist configuration YAML file
+  ## @param tasklist.logging.level.ROOT
+  ## @param tasklist.logging.level.io.camunda.tasklist https://docs.camunda.io/docs/next/self-managed/tasklist-deployment/tasklist-configuration/#logging
+  logging:
+    level:
+      ROOT: INFO
+      io.camunda.tasklist: INFO
+
   ## @extra tasklist.configMap configuration which will be applied to the mounted config map.
   configMap:
     ## @param tasklist.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
@@ -1797,6 +1805,13 @@ optimize:
   ## @param optimize.podLabels can be used to define extra Optimize pod labels
   podLabels: {}
 
+  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  logLevel: info
+  ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  upgradeLogLevel: info
+  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  esLogLevel: warn
+
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
   ## @param optimize.env can be used to set extra environment variables in each Optimize container
@@ -2034,7 +2049,7 @@ executionIdentity:
   ## @param executionIdentity.podLabels can be used to define extra executionIdentity pod labels
   podLabels: {}
 
-  ## @param executionIdentity.logging configuration for the executionIdentity logging. This template will be directly included in the Operate configuration YAML file
+  ## @param executionIdentity.logging configuration for the executionIdentity logging. This template will be directly included in the executionIdentity configuration YAML file
   logging: {}
 
   ## executionIdentity.service configuration to configure the executionIdentity service.
@@ -2292,6 +2307,14 @@ identity:
   podAnnotations: {}
   ## @param identity.podLabels can be used to define extra Identity pod labels
   podLabels: {}
+
+  ## @extra identity.logging configuration for the identity logging. This template will be directly included in the identity configuration YAML file
+  ## @param identity.logging.level.ROOT
+  ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/next/self-managed/identity/user-guide/configuration/configure-logging/#general-configuration-options
+  logging:
+    level:
+      ROOT: WARN
+      io.camunda.identity: INFO
 
   ## @extra identity.service configuration to configure the identity service.
   service:
@@ -2826,6 +2849,14 @@ webModeler:
     podAnnotations: {}
     ## @param webModeler.restapi.podLabels can be used to define extra restapi pod labels
     podLabels: {}
+
+    ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
+    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/next/self-managed/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
+    ## @param webModeler.restapi.logging.level.io.grpc
+    logging:
+      level:
+        io.camunda.modeler: DEBUG
+        io.grpc: TRACE
 
     ## @param webModeler.restapi.env can be used to set extra environment variables in each restapi container
     env: []
@@ -3470,7 +3501,7 @@ connectors:
   ## @param connectors.podLabels can be used to define extra Connectors pod labels
   podLabels: {}
 
-  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the Operate configuration YAML file
+  ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the connector configuration YAML file
   ## @param connectors.logging.level.io.camunda.connector
   logging:
     level:

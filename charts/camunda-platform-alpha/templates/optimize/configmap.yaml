@@ -55,7 +55,6 @@ data:
     {{- end }}
   {{- end }}
 
-
   {{- if .Values.global.identity.auth.enabled }}
   application-ccsm.yaml: |
     camunda:
