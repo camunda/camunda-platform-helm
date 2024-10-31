@@ -22,7 +22,8 @@
 #   * [if true] for toggles
 #   * [configuration] for section/group of variables
 
-
+#------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------#
 ##########################################
  #####
 #     # #       ####  #####    ##   #
@@ -32,6 +33,8 @@
 #     # #      #    # #    # #    # #
  #####  ######  ####  #####  #    # ######
 ##########################################
+#------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------#
 
 # Global configuration for variables which can be accessed by all sub charts
 ## @section Global parameters
@@ -248,14 +251,9 @@ global:
       ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
       publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
 
-      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other sub-charts
-      connectors:
-        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
-        clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-        ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: connectors-secret
+      #######################
+      # Management Group
+      #######################
 
       ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other sub-charts
       identity:
@@ -277,64 +275,6 @@ global:
         ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Identity to configure initial mapping rules.
         initialClaimValue:
 
-      ## @extra global.identity.auth.operate configuration to configure Operate authentication specifics on global level, which can be accessed by other sub-charts
-      operate:
-        ## @param global.identity.auth.operate.clientId defines the client id, which is used by Operate in authentication flows.
-        clientId: operate
-        ## @param global.identity.auth.operate.audience defines the audience, which is used by Operate.
-        audience: operate-api
-        ## @param global.identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
-        existingSecret:
-        ## @param global.identity.auth.operate.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: operate-secret
-        ## @param global.identity.auth.operate.redirectUrl defines the redirect URL, which is used by Keycloak to access Operate.
-        # Should be publicly accessible, the default value works if a port-forward to Operate is created to 8081.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8081"
-
-      ## @extra global.identity.auth.tasklist configuration to configure Tasklist authentication specifics on global level, which can be accessed by other sub-charts
-      tasklist:
-        ## @param global.identity.auth.tasklist.clientId defines the client id, which is used by Tasklist in authentication flows.
-        clientId: tasklist
-        ## @param global.identity.auth.tasklist.audience defines the audience, which is used by Tasklist.
-        audience: tasklist-api
-        ## @param global.identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-        ## @param global.identity.auth.tasklist.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: tasklist-secret
-        ## @param global.identity.auth.tasklist.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be publicly accessible, the default value works if a port-forward to Tasklist is created to 8082.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8082"
-
-      ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other sub-charts
-      optimize:
-        ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in authentication flows.
-        clientId: optimize
-        ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
-        audience: optimize-api
-        ## @param global.identity.auth.optimize.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-        ## @param global.identity.auth.optimize.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: optimize-secret
-        ## @param global.identity.auth.optimize.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Optimize.
-        # Should be publicly accessible, the default value works if a port-forward to Optimize is created to 8083.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8083"
-
-      ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other sub-charts
-      webModeler:
-        ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
-        clientId: web-modeler
-        ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by WebModeler's client API.
-        clientApiAudience: web-modeler-api
-        ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by WebModeler's public API.
-        publicApiAudience: web-modeler-public-api
-        ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
-        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8084"
-
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other sub-charts
       console:
         ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
@@ -352,17 +292,43 @@ global:
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
 
-      ## @extra global.identity.auth.zeebe configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts
-      zeebe:
-        ## @param global.identity.auth.zeebe.clientId defines the client id, which is used by Zeebe in authentication flows.
-        clientId: zeebe
-        ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+      ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other sub-charts
+      webModeler:
+        ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
+        clientId: web-modeler
+        ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by WebModeler's client API.
+        clientApiAudience: web-modeler-api
+        ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by WebModeler's public API.
+        publicApiAudience: web-modeler-public-api
+        ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
+        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8084"
+
+      #######################
+      # Orchestration Group
+      #######################
+
+      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other sub-charts
+      connectors:
+        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
+        clientId: connectors
+        ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         existingSecret:
-        ## @param global.identity.auth.zeebe.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: zeebe-secret
-        ## @param global.identity.auth.zeebe.audience defines the audience, which is used by Zeebe.
-        audience: zeebe-api
-        ## @param global.identity.auth.zeebe.tokenScope defines the token scope, which is used by Zeebe.
+        ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: connectors-secret
+
+      ## @extra global.identity.auth.core configuration to configure authentication specifics on global level, which can be accessed by other sub-charts
+      core:
+        ## @param global.identity.auth.core.clientId defines the client id, which is used by Core in authentication flows.
+        clientId: core
+        ## @param global.identity.auth.core.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        existingSecret:
+        ## @param global.identity.auth.core.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: core-secret
+        ## @param global.identity.auth.core.audience defines the audience, which is used by Core.
+        audience: core-api
+        ## @param global.identity.auth.core.tokenScope defines the token scope, which is used by Core.
         tokenScope:
 
   # Multiregion options for Zeebe
@@ -379,1858 +345,21 @@ global:
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
-#################################################
- #####
-#     #  ####  #    #  ####   ####  #      ######
-#       #    # ##   # #      #    # #      #
-#       #    # # #  #  ####  #    # #      #####
-#       #    # #  # #      # #    # #      #
-#     # #    # #   ## #    # #    # #      #
- #####   ####  #    #  ####   ####  ###### ######
-#################################################
 
-## @section Console Parameters
-## @extra console configuration for the Console.
-console:
-  ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
-  enabled: false
+#------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------#
+#############################################################################################################
+ #     #                                                                   #####                              
+ ##   ##   ##   #    #   ##    ####  ###### #    # ###### #    # #####    #     # #####   ####  #    # #####  
+ # # # #  #  #  ##   #  #  #  #    # #      ##  ## #      ##   #   #      #       #    # #    # #    # #    # 
+ #  #  # #    # # #  # #    # #      #####  # ## # #####  # #  #   #      #  #### #    # #    # #    # #    # 
+ #     # ###### #  # # ###### #  ### #      #    # #      #  # #   #      #     # #####  #    # #    # #####  
+ #     # #    # #   ## #    # #    # #      #    # #      #   ##   #      #     # #   #  #    # #    # #      
+ #     # #    # #    # #    #  ####  ###### #    # ###### #    #   #       #####  #    #  ####   ####  #      
+#############################################################################################################
+#------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------#
 
-  ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
-  configuration: ""
-
-  ## console.image configuration to configure the Console image specifics
-  # https://hub.docker.com/r/camunda/console/tags
-  image:
-    ## @param console.image.registry can be used to set container image registry.
-    registry: ""
-    ## @param console.image.repository defines which image repository to use
-    repository: camunda/console
-    ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: SNAPSHOT
-    ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @param console.sidecars can be used to attach extra containers to the console deployment
-  sidecars: []
-
-  ## @param console.replicas Number of Console replicas
-  replicas: 1
-
-  ## console.keycloak configuration to configure Keycloak authentication settings.
-  keycloak:
-    ## @param console.keycloak.realm Specifies the Keycloak realm used for authentication.
-    realm: "camunda-platform"
-
-  ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
-
-  ## @param console.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-
-  ## @param console.podAnnotations can be used to define extra Console pod annotations
-  podAnnotations: {}
-  ## @param console.podLabels can be used to define extra Console pod labels
-  podLabels: {}
-
-  ## @param console.logging configuration for the Console logging. This template will be directly included in the Operate configuration YAML file
-  logging: {}
-
-  ## console.service configuration to configure the Console service.
-  service:
-    ## @param console.service.annotations can be used to define annotations, which will be applied to the Console service
-    annotations: {}
-    ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param console.service.port defines the port number where the web application will be available
-    port: 80
-    ## @param console.service.serverName defines the port name where the web application will be available
-    serverName: http
-    ## @param console.service.managementPort defines the management port used to access metrics and app status
-    managementPort: 9100
-
-  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param console.resources.requests.memory
-  ## @param console.resources.limits.cpu
-  ## @param console.resources.limits.memory
-  ## @param console.resources.requests.cpu
-  resources:
-    requests:
-      cpu: 1
-      memory: 1Gi
-    limits:
-      cpu: 2
-      memory: 2Gi
-
-  ## @param console.env can be used to set extra environment variables in each app container
-  env: []
-  ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @param console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @param console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumes: []
-  ## @param console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumeMounts: []
-
-  ## console.startupProbe configuration
-  startupProbe:
-    ## @param console.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param console.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /health/readiness
-    ## @param console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param console.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param console.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.readinessProbe configuration
-  readinessProbe:
-    ## @param console.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param console.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /health/readiness
-    ## @param console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param console.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.livenessProbe configuration
-  livenessProbe:
-    ## @param console.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health/liveness
-    ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param console.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.metrics configuration
-  metrics:
-    ## @param console.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /prometheus
-
-  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
-  serviceAccount:
-    ## @param console.serviceAccount.enabled if true, enables the Console service account
-    enabled: true
-    ## @param console.serviceAccount.name can be used to set the name of the Console service account
-    name: ""
-    ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
-    annotations: {}
-    ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ingress:
-    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param console.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
-    host: ""
-    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-console
-
-  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
-  podSecurityContext:
-    ## @param console.podSecurityContext.runAsNonRoot run as non root
-    runAsNonRoot: true
-    ## @param console.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra console.podSecurityContext.seccompProfile
-    seccompProfile:
-    ## @param console.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  # ContainerSecurityContext defines the security options the Console broker container should be run with
-  containerSecurityContext:
-    ## @param console.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param console.containerSecurityContext.privileged
-    privileged: false
-    ## @param console.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param console.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param console.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra console.containerSecurityContext.seccompProfile
-    seccompProfile:
-    ## @param console.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
-  nodeSelector: {}
-  ## @param console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
-  ## @param console.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
-
-###################################
-#######
-     #  ###### ###### #####  ######
-    #   #      #      #    # #
-   #    #####  #####  #####  #####
-  #     #      #      #    # #
- #      #      #      #    # #
-####### ###### ###### #####  ######
-###################################
-## @section Zeebe Parameters
-## @extra zeebe configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.
-zeebe:
-  ## @param zeebe.enabled if true, all zeebe related resources are deployed via the helm release
-  enabled: true
-
-  ## @param zeebe.debug if true, extra info is printed.
-  debug: false
-
-  ## @extra zeebe.image configuration to configure the zeebe image specifics
-  image:
-     ## @param zeebe.image.registry can be used to set container image registry.
-    registry: ""
-     ## @param zeebe.image.repository defines which image repository to use
-    repository: camunda/zeebe
-     ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: SNAPSHOT
-     ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @param zeebe.sidecars can be used to attach extra containers to the zeebe deployment
-  sidecars: []
-
-  ## @param zeebe.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
-  clusterSize: "3"
-  ## @param zeebe.partitionCount defines how many zeebe partitions are set up in the cluster
-  partitionCount: "3"
-  ## @param zeebe.replicationFactor defines how each partition is replicated, the value defines the number of nodes
-  replicationFactor: "3"
-  ## @extra zeebe.env can be used to set extra environment variables in each zeebe broker container
-  env:
-    ## @param zeebe.env[0].name
-    ## @param zeebe.env[0].value
-    ## @param zeebe.env[1].name
-    ## @param zeebe.env[1].value
-    ## @param zeebe.env[2].name
-    ## @param zeebe.env[2].value
-    - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
-      value: "5m"
-    - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
-      value: "2GB"
-    - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
-      value: "3GB"
-  ## @param zeebe.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @extra zeebe.configMap configuration which will be applied to the mounted config map.
-  configMap:
-     ## @param zeebe.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
-    defaultMode: 0754
-  ## @param zeebe.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-
-  ## @param zeebe.logLevel defines the log level which is used by the zeebe brokers
-  logLevel: info
-  ## @param zeebe.log4j2 can be used to overwrite the log4j2 configuration of the zeebe brokers
-  log4j2: ''
-  ## @param zeebe.javaOpts can be used to set java options for the zeebe brokers
-  javaOpts: >-
-    -XX:+HeapDumpOnOutOfMemoryError
-    -XX:HeapDumpPath=/usr/local/zeebe/data
-    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
-    -XX:+ExitOnOutOfMemoryError
-
-  ## @extra zeebe.service configuration for the broker service
-  service:
-    ## @param zeebe.service.annotations can be used to define annotations, which will be applied to the Zeebe service
-    annotations: {}
-    ## @param zeebe.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param zeebe.service.httpPort defines the port of the http endpoint, where for example metrics are provided
-    httpPort: 9600
-    ## @param zeebe.service.httpName defines the name of the http endpoint, where for example metrics are provided
-    httpName: "http"
-    ## @param zeebe.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
-    commandPort: 26501
-    ## @param zeebe.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
-    commandName: "command"
-    ## @param zeebe.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-    internalPort: 26502
-    ## @param zeebe.service.internalName defines the name of the internal api endpoint, which is used for internal communication
-    internalName: "internal"
-    ## @param zeebe.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
-    extraPorts: []
-      # - name: hazelcast
-      #   protocol: TCP
-      #   port: 5701
-      #   targetPort: 5701
-
-  ## @extra global.zeebe.ServiceAccount configuration for the service account where the broker pods are assigned to
-  serviceAccount:
-    ## @param zeebe.serviceAccount.enabled if true, enables the broker service account
-    enabled: true
-    ## @param zeebe.serviceAccount.name can be used to set the name of the broker service account
-    name: ""
-    ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
-    annotations: {}
-    ## @param zeebe.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ## @param zeebe.cpuThreadCount defines how many threads can be used for the processing on each broker pod
-  cpuThreadCount: "3"
-  ## @param zeebe.ioThreadCount defines how many threads can be used for the exporting on each broker pod
-  ioThreadCount: "3"
-  ## @extra zeebe.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @extra zeebe.resources.requests
-  ## @param zeebe.resources.requests.cpu
-  ## @param zeebe.resources.requests.memory
-  ## @param zeebe.resources.limits.cpu
-  ## @param zeebe.resources.limits.memory
-  resources:
-    requests:
-      cpu: 800m
-      memory: 1200Mi
-    limits:
-      cpu: 960m
-      memory: 1920Mi
-
-  ## @param zeebe.persistenceType defines the type of persistence which is used by Zeebe. Possible values are: disk, local and memory.
-  #   disk  - means a persistence volume claim is configured and used
-  #   local - means the data is stored into the container, no volumeMount nor volume nor claim is configured
-  #   memory   - means zeebe uses a tmpfs for the data persistence, be aware that this takes the limits into account
-  persistenceType: disk
-  ## @param zeebe.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
-  pvcSize: "32Gi"
-  ## @param zeebe.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
-  pvcAccessModes: ["ReadWriteOnce"]
-  ## @param zeebe.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
-  # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
-  pvcStorageClassName: ''
-  ## @param zeebe.pvcAnnotations can be used to specify custom annotations for Zeebe's persistent volume claims, enhancing storage configuration flexibility.
-  pvcAnnotations: {}
-  ## @param zeebe.pvcSelector can be used to specify a label selector for Zeebe's persistent volume claims for further filtering of the set of persistent volumes to select.
-  # https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector
-  pvcSelector: {}
-  ## @param zeebe.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
-  extraVolumes: []
-  ## @param zeebe.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
-  extraVolumeMounts: []
-  ## @param zeebe.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
-  extraInitContainers: []
-  ## @param zeebe.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-
-  ## @param zeebe.podAnnotations can be used to define extra broker pod annotations
-  podAnnotations: {}
-  ## @param zeebe.podLabels can be used to define extra broker pod labels
-  podLabels: {}
-  ## @extra zeebe.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
-  podDisruptionBudget:
-    ## @param zeebe.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
-    enabled: false
-    ## @param zeebe.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
-    minAvailable:
-    ## @param zeebe.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
-    maxUnavailable: 1
-
-  ## @extra zeebe.podSecurityContext defines the security options the Zeebe broker pod should be run with
-  podSecurityContext:
-    ## @param zeebe.podSecurityContext.runAsNonRoot run as non root
-    runAsNonRoot: true
-    ## @param zeebe.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra zeebe.podSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param zeebe.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra zeebe.containerSecurityContext defines the security options the Zeebe broker container should be run with
-  containerSecurityContext:
-    ## @param zeebe.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param zeebe.containerSecurityContext.privileged
-    privileged: false
-    ## @param zeebe.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param zeebe.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param zeebe.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra zeebe.containerSecurityContext.seccompProfile
-    seccompProfile:
-    ## @param zeebe.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra zeebe.startupProbe configuration
-  startupProbe:
-    ## @param zeebe.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param zeebe.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param zeebe.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /actuator/health/startup
-    ## @param zeebe.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param zeebe.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param zeebe.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param zeebe.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param zeebe.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra zeebe.readinessProbe configuration
-  readinessProbe:
-    ## @param zeebe.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param zeebe.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param zeebe.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /actuator/health/readiness
-    ## @param zeebe.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param zeebe.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param zeebe.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param zeebe.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param zeebe.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra zeebe.livenessProbe configuration
-  livenessProbe:
-    ## @param zeebe.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param zeebe.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param zeebe.livenessProbe.probePath defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849
-    probePath: /actuator/health/readiness
-    ## @param zeebe.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param zeebe.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param zeebe.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param zeebe.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param zeebe.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## Metrics configuration
-  metrics:
-    ## @param zeebe.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /actuator/prometheus
-
-  ## @param zeebe.nodeSelector can be used to define on which nodes the broker pods should run
-  nodeSelector: {}
-  ## @param zeebe.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @extra global.zeebe.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  # The default defined PodAntiAffinity allows constraining on which nodes the Zeebe pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
-  # It uses a hard requirement for scheduling and works based on the Zeebe pod labels
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @skip zeebe.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - key: "app.kubernetes.io/component"
-                operator: In
-                values:
-                  - zeebe-broker
-          topologyKey: "kubernetes.io/hostname"
-
-  ## @param zeebe.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
-  priorityClassName: ""
-
-  retention:
-    ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
-    enabled: false
-    ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-    minimumAge: 30d
-    ## @param zeebe.retention.policyName defines the name of the created and applied ILM policy.
-    policyName: zeebe-record-retention-policy
-
-  ## @param zeebe.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
-  ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
-  ## @param zeebe.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param zeebe.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
-
-# Zeebe.
- ####    ##   ##### ###### #    #   ##   #   #
-#    #  #  #    #   #      #    #  #  #   # #
-#      #    #   #   #####  #    # #    #   #
-#  ### ######   #   #      # ## # ######   #
-#    # #    #   #   #      ##  ## #    #   #
- ####  #    #   #   ###### #    # #    #   #
-## @section ZeebeGateway Parameters
-## @extra Gateway configuration to define properties related to the standalone gateway
-zeebeGateway:
-  ## @param zeebeGateway.replicas defines how many standalone gateways are deployed
-  replicas: 2
-  ## @extra zeebeGateway.image configuration to configure the ZeebeGateway image specifics
-  image:
-    ## @param zeebeGateway.image.registry can be used to set container image registry.
-    registry: ""
-    ## @param zeebeGateway.image.repository defines which image repository to use
-    repository: camunda/zeebe
-    ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: SNAPSHOT
-    ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @param zeebeGateway.sidecars can be used to attach extra containers to the ZeebeGateway deployment
-  sidecars: []
-
-  ## @param zeebeGateway.podAnnotations can be used to define extra gateway pod annotations
-  podAnnotations: {}
-  ## @param zeebeGateway.podLabels can be used to define extra gateway pod labels
-  podLabels: {}
-
-  ## @param zeebeGateway.logLevel defines the log level which is used by the gateway
-  logLevel: info
-  ## @param zeebeGateway.log4j2 can be used to overwrite the log4j2 configuration of the gateway
-  log4j2: ''
-  ## @param zeebeGateway.javaOpts can be used to set java options for the ZeebeGateway
-  javaOpts: >-
-    -XX:+ExitOnOutOfMemoryError
-
-  ## @param zeebeGateway.env can be used to set extra environment variables in each gateway container
-  env: []
-  ## @param zeebeGateway.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @extra zeebeGateway.configMap configuration which will be applied to the mounted config map.
-  configMap:
-    ## @param zeebeGateway.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
-    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
-    defaultMode: 0744
-  ## @param zeebeGateway.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-
-  ## @extra zeebeGateway.podDisruptionBudget configuration to configure a pod disruption budget for the gateway pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
-  podDisruptionBudget:
-    ## @param zeebeGateway.podDisruptionBudget.enabled if true a pod disruption budget is defined for the gateways
-    enabled: false
-    ## @param zeebeGateway.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
-    minAvailable: 1
-    ## @param zeebeGateway.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
-    maxUnavailable:
-
-  ## @extra zeebeGateway.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param zeebeGateway.resources.requests.cpu
-  ## @param zeebeGateway.resources.requests.memory
-  ## @param zeebeGateway.resources.limits.cpu
-  ## @param zeebeGateway.resources.limits.memory
-  resources:
-    requests:
-      cpu: 400m
-      memory: 450Mi
-    limits:
-      cpu: 400m
-      memory: 450Mi
-
-  ## @param zeebeGateway.priorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
-  priorityClassName: ""
-
-  ## @extra zeebeGateway.podSecurityContext defines the security options the gateway pod should be run wit
-  podSecurityContext:
-    ## @param zeebeGateway.podSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param zeebeGateway.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra zeebeGateway.podSecurityContext.seccompProfile
-    seccompProfile:
-    ## @param zeebeGateway.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra zeebeGateway.containerSecurityContext defines the security options the gateway container should be run with
-  containerSecurityContext:
-    ## @param zeebeGateway.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param zeebeGateway.containerSecurityContext.privileged
-    privileged: false
-    ## @param zeebeGateway.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param zeebeGateway.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param zeebeGateway.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra zeebeGateway.containerSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param zeebeGateway.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra zeebeGateway.startupProbe configuration
-  startupProbe:
-    ## @param zeebeGateway.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param zeebeGateway.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param zeebeGateway.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /actuator/health/startup
-    ## @param zeebeGateway.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param zeebeGateway.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param zeebeGateway.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param zeebeGateway.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param zeebeGateway.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra zeebeGateway.readinessProbe configuration
-  readinessProbe:
-    ## @param zeebeGateway.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param zeebeGateway.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param zeebeGateway.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /actuator/health/readiness
-    ## @param zeebeGateway.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    ## @extra zeebeGateway.the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param zeebeGateway.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param zeebeGateway.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param zeebeGateway.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param zeebeGateway.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra zeebeGateway.livenessProbe configuration
-  livenessProbe:
-    ## @param zeebeGateway.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param zeebeGateway.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param zeebeGateway.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
-    ## @param zeebeGateway.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    initialDelaySeconds: 30
-    ## @param zeebeGateway.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param zeebeGateway.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param zeebeGateway.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param zeebeGateway.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## Metrics configuration
-  metrics:
-    ## @param zeebeGateway.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /actuator/prometheus
-
-  ## @param zeebeGateway.nodeSelector can be used to define on which nodes the gateway pods should run
-  nodeSelector: {}
-  ## @param zeebeGateway.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @extra zeebeGateway.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  # The default defined PodAntiAffinity allows constraining on which nodes the ZeebeGateway pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
-  # It uses a hard requirement for scheduling and works based on the ZeebeGateway pod labels
-  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @skip zeebeGateway.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - key: "app.kubernetes.io/component"
-                operator: In
-                values:
-                  - zeebe-gateway
-          topologyKey: "kubernetes.io/hostname"
-
-  ## @param zeebeGateway.extraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
-  extraVolumeMounts: []
-  ## @param zeebeGateway.extraVolumes can be used to define extra volumes for the gateway pods, useful for enabling tls between gateway and broker
-  extraVolumes: []
-  ## @param zeebeGateway.extraInitContainers (Deprecated - use `initContainers` instead) can be used to set up extra init containers for the gateway pods, useful for adding interceptors
-  extraInitContainers: []
-  ## @param zeebeGateway.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-
-  ## @extra zeebeGateway.service configuration for the gateway service
-  service:
-    ## @param zeebeGateway.service.annotations can be used to define annotations, which will be applied to the zeebe-gateway service
-    annotations: {}
-    ## @param zeebeGateway.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param zeebeGateway.service.loadBalancerIP defines public ip of the load balancer if the type is LoadBalancer
-    loadBalancerIP: ""
-    ## @param zeebeGateway.service.loadBalancerSourceRanges defines list of allowed source ip address ranges if the type is LoadBalancer
-    loadBalancerSourceRanges: []
-    ## @param zeebeGateway.service.httpPort defines the port of the http endpoint, where for example metrics are provided
-    httpPort: 9600
-    ## @param zeebeGateway.service.httpName defines the name of the http endpoint, where for example metrics are provided
-    httpName: "http"
-    ## @param zeebeGateway.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcPort: 26500
-    ## @param zeebeGateway.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcName: "gateway"
-    ## @param zeebeGateway.service.restPort defines the REST port of the gateway REST endpoint, where client commands (REST) are sent to
-    restPort: 8080
-    ## @param zeebeGateway.service.restName defines the name of the gateway REST endpoint, where client commands (REST) are sent to
-    restName: "rest"
-    ## @param zeebeGateway.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-    internalPort: 26502
-    ## @param zeebeGateway.service.internalName defines the name of the internal api endpoint, which is used for internal communication
-    internalName: "internal"
-
-  ## @extra zeebeGateway.serviceAccount configuration for the service account where the gateway pods are assigned to
-  serviceAccount:
-    ## @param zeebeGateway.serviceAccount.enabled if true, enables the gateway service account
-    enabled: true
-    ## @param zeebeGateway.serviceAccount.name can be used to set the name of the gateway service account
-    name: ""
-    ## @param zeebeGateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
-    annotations: {}
-    ## @param zeebeGateway.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ingress:
-    grpc:
-      ## @param zeebeGateway.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
-      enabled: false
-      ## @param zeebeGateway.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
-      className: nginx
-      ## @param zeebeGateway.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-      ## @skip zeebeGateway.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
-      ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-      ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      ## @skip zeebeGateway.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-      annotations:
-        ingress.kubernetes.io/rewrite-target: '/'
-        nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-        nginx.ingress.kubernetes.io/backend-protocol: 'GRPC'
-        nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      ## @param zeebeGateway.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-      path: /
-      ## @param zeebeGateway.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-      pathType: Prefix
-      ## @param zeebeGateway.ingress.grpc.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-      # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
-      host: ""
-      ## @extra zeebeGateway.ingress.grpc.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-      tls:
-        ## @param zeebeGateway.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-        enabled: false
-        ## @param zeebeGateway.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-zeebe-gateway-grpc
-    rest:
-      ## @param zeebeGateway.ingress.rest.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
-      enabled: false
-      ## @param zeebeGateway.ingress.rest.className defines the class or configuration of ingress which should be used by the controller
-      className: nginx
-      ## @param zeebeGateway.ingress.rest.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-      ## @skip zeebeGateway.ingress.rest.annotations.ingress.kubernetes.io/rewrite-target
-      ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-      ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      ## @skip zeebeGateway.ingress.rest.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-      annotations:
-        ingress.kubernetes.io/rewrite-target: '/'
-        nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-        nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-        nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-      ## @param zeebeGateway.ingress.rest.path defines the path which is associated with the Zeebe gateway's REST service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-      path: /
-      ## @param zeebeGateway.ingress.rest.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-      pathType: Prefix
-      ## @param zeebeGateway.ingress.rest.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-      # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
-      host: ""
-      ## @extra zeebeGateway.ingress.rest.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-      tls:
-        ## @param zeebeGateway.ingress.rest.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-        enabled: false
-        ## @param zeebeGateway.ingress.rest.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-zeebe-gateway-rest
-
-  # contextPath: "/zeebe"
-  ## @param zeebeGateway.contextPath can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
-
-  ## @param zeebeGateway.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
-  ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
-  ## @param zeebeGateway.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param zeebeGateway.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
-
-################################################
- #####
-#     # #####  ###### #####    ##   ##### ######
-#     # #    # #      #    #  #  #    #   #
-#     # #    # #####  #    # #    #   #   #####
-#     # #####  #      #####  ######   #   #
-#     # #      #      #   #  #    #   #   #
- #####  #      ###### #    # #    #   #   ######
-################################################
-## @section Operate Parameters
-## @extra.operate configuration for the Operate sub chart.
-operate:
-  ## @param operate.enabled if true, the Operate deployment and its related resources are deployed via a helm release
-  enabled: true
-
-  ## @extra operate.image configuration to configure the Operate image specifics
-  image:
-    ## @param operate.image.registry can be used to set container image registry.
-    registry: ""
-    ## @param operate.image.repository defines which image repository to use
-    repository: camunda/operate
-    ## @param operate.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: SNAPSHOT
-    ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @extra operate.migration configuration for Operate migration
-  migration:
-    ## @param operate.migration.enabled if true, run Operate migration script as an init container
-    enabled: true
-    ## @param operate.migration.env can be used to set environment variables for Operate migration init container
-    env: []
-
-    ## @extra operate.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    ## @param operate.migration.resources.requests.cpu
-    ## @param operate.migration.resources.requests.memory
-    ## @param operate.migration.resources.limits.cpu
-    ## @param operate.migration.resources.limits.memory
-    resources:
-      requests:
-        cpu: 600m
-        memory: 1Gi
-      limits:
-        cpu: 2000m
-        memory: 2Gi
-
-  ## @param operate.sidecars can be used to attach extra containers to the operate deployment
-  sidecars: []
-  ## @param operate.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-  # contextPath: "/operate"
-  ## @param operate.contextPath can be used to make Operate web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
-
-  ## @param operate.podAnnotations can be used to define extra Operate pod annotations
-  podAnnotations: {}
-  ## @param operate.podLabels can be used to define extra Operate pod labels
-  podLabels: {}
-
-  ## @extra operate.logging configuration for the Operate logging. This template will be directly included in the Operate configuration YAML file
-  ## @param operate.logging.level.ROOT
-  ## @param operate.logging.level.io.camunda.operate
-  logging:
-    level:
-      ROOT: INFO
-      io.camunda.operate: INFO
-
-  ## @extra operate.service configuration to configure the Operate service.
-  service:
-    ## @param operate.service.annotations can be used to define annotations, which will be applied to the Operate service
-    annotations: {}
-    ## @param operate.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param operate.service.port defines the port of the service, where the Operate web application will be available
-    port: 80
-    ## @param operate.service.managementPort defines the management port of the service
-    managementPort: 9600
-    ## @param operate.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-    internalPort: 26502
-    ## @param operate.service.internalName defines the name of the internal api endpoint, which is used for internal communication
-    internalName: "internal"
-
-  ## @extra operate.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param operate.resources.requests.cpu
-  ## @param operate.resources.requests.memory
-  ## @param operate.resources.limits.cpu
-  ## @param operate.resources.limits.memory
-  resources:
-    requests:
-      cpu: 600m
-      memory: 400Mi
-    limits:
-      cpu: 2000m
-      memory: 2Gi
-
-  ## @param operate.env can be used to set extra environment variables in each Operate container
-  env: []
-  ## @param operate.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @extra operate.configMap configuration which will be applied to the mounted config map.
-  configMap:
-    ## @param operate.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
-    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
-    defaultMode: 0744
-  ## @param operate.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @param operate.extraVolumes can be used to define extra volumes for the Operate pods, useful for tls and self-signed certificates
-  extraVolumes: []
-  ## @param operate.extraVolumeMounts can be used to mount extra volumes for the Operate pods, useful for tls and self-signed certificates
-  extraVolumeMounts: []
-
-  ## @extra operate.serviceAccount configuration for the service account where the Operate pods are assigned to
-  serviceAccount:
-    ## @param operate.serviceAccount.enabled if true, enables the Operate service account
-    enabled: true
-    ## @param operate.serviceAccount.name can be used to set the name of the Operate service account
-    name: ""
-    ## @param operate.serviceAccount.annotations can be used to set the annotations of the Operate service account
-    annotations: {}
-    ## @param operate.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ingress:
-    ## @param operate.ingress.enabled if true, an ingress resource is deployed with the Operate deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param operate.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param operate.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip operate.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip operate.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip operate.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param operate.ingress.path defines the path which is associated with the Operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param operate.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param operate.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    ## @extra Ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param operate.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param operate.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-operate
-
-  ## @extra operate.podSecurityContext defines the security options the Operate pod should be run with
-  podSecurityContext:
-    ## @param operate.podSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param operate.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra operate.podSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param operate.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra operate.containerSecurityContext defines the security options the Operate container should be run with
-  containerSecurityContext:
-    ## @param operate.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param operate.containerSecurityContext.privileged
-    privileged: false
-    ## @param operate.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param operate.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param operate.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra operate.containerSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param operate.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra operate.startupProbe configuration
-  startupProbe:
-    ## @param operate.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param operate.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param operate.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /actuator/health/readiness
-    ## @param operate.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param operate.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param operate.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param operate.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param operate.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra operate.readinessProbe configuration
-  readinessProbe:
-    ## @param operate.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param operate.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param operate.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /actuator/health/readiness
-    ## @param operate.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param operate.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param operate.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param operate.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param operate.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra operate.livenessProbe configuration
-  livenessProbe:
-    ## @param operate.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param operate.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param operate.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
-    ## @param operate.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param operate.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param operate.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param operate.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param operate.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## Metrics configuration
-  metrics:
-    ## @param operate.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /actuator/prometheus
-
-  ## @param operate.nodeSelector can be used to define on which nodes the Operate pods should run
-  nodeSelector: {}
-  ## @param operate.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @param operate.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
-
-  # Retention can be used to define the data in Elasticsearch (ILM).
-  retention:
-    ## @param operate.retention.enabled if true, the ILM Policy is created and applied to the index templates.
-    enabled: false
-    ## @param operate.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-    minimumAge: 30d
-
-  ## @param operate.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
-  ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
-  ## @param operate.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param operate.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
-
-##################################################
-#######
-   #      ##    ####  #    # #      #  ####  #####
-   #     #  #  #      #   #  #      # #        #
-   #    #    #  ####  ####   #      #  ####    #
-   #    ######      # #  #   #      #      #   #
-   #    #    # #    # #   #  #      # #    #   #
-   #    #    #  ####  #    # ###### #  ####    #
-##################################################
-## @section Tasklist Parameters
-# Tasklist configuration for the tasklist sub chart.
-tasklist:
-  ## @param tasklist.enabled if true, the tasklist deployment and its related resources are deployed via a helm release
-  enabled: true
-
-  ## @extra tasklist.image configuration to configure the tasklist image specifics
-  image:
-    ## @param tasklist.image.registry can be used to set container image registry.
-    registry: ""
-    ## @param tasklist.image.repository defines which image repository to use
-    repository: camunda/tasklist
-    ## @param tasklist.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: SNAPSHOT
-    ## @param tasklist.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @param tasklist.sidecars can be used to attach extra containers to the tasklist deployment
-  sidecars: []
-  ## @param tasklist.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-  # contextPath: "/tasklist"
-  ## @param tasklist.contextPath can be used to make Tasklist web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
-
-  ## @param tasklist.env can be used to set extra environment variables on each Tasklist container
-  env: []
-  ## @param tasklist.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @param tasklist.podAnnotations can be used to define extra Tasklist pod annotations
-  podAnnotations: {}
-  ## @param tasklist.podLabels can be used to define extra tasklist pod labels
-  podLabels: {}
-
-  ## @extra tasklist.logging configuration for the tasklist logging. This template will be directly included in the tasklist configuration YAML file
-  ## @param tasklist.logging.level.ROOT
-  ## @param tasklist.logging.level.io.camunda.tasklist https://docs.camunda.io/docs/next/self-managed/tasklist-deployment/tasklist-configuration/#logging
-  logging:
-    level:
-      ROOT: INFO
-      io.camunda.tasklist: INFO
-
-  ## @extra tasklist.configMap configuration which will be applied to the mounted config map.
-  configMap:
-    ## @param tasklist.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
-    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
-    defaultMode: 0744
-  ## @param tasklist.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @extra tasklist.service configuration to configure the tasklist service.
-  service:
-    ## @param tasklist.service.annotations can be used to define annotations, which will be applied to the Tasklist service
-    annotations: {}
-    ## @param tasklist.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param tasklist.service.port defines the port of the service, where the tasklist web application will be available
-    port: 80
-    ## @param tasklist.service.managementPort defines the management port of the service
-    managementPort: 9600
-    ## @param tasklist.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-    internalPort: 26502
-    ## @param tasklist.service.internalName defines the name of the internal api endpoint, which is used for internal communication
-    internalName: "internal"
-
-  ## @extra tasklist.identity configures app user management.
-  identity:
-    userAccessRestrictions:
-      ## @param tasklist.identity.userAccessRestrictions.enabled if true, enables the identity user access restrictions
-      enabled: true
-
-  ## @param tasklist.extraVolumes can be used to define extra volumes for the Tasklist pods, useful for tls and self-signed certificates
-  extraVolumes: []
-  ## @param tasklist.extraVolumeMounts can be used to mount extra volumes for the Tasklist pods, useful for tls and self-signed certificates
-  extraVolumeMounts: []
-
-  ## @extra tasklist.serviceAccount configuration for the service account where the Tasklist pods are assigned to
-  serviceAccount:
-    ## @param tasklist.serviceAccount.enabled if true, enables the Tasklist service account
-    enabled: true
-    ## @param tasklist.serviceAccount.name can be used to set the name of the Tasklist service account
-    name: ""
-    ## @param tasklist.serviceAccount.annotations can be used to set the annotations of the Tasklist service account
-    annotations: {}
-    ## @param tasklist.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ## @extra tasklist.podSecurityContext defines the security options the Tasklist pod should be run with
-  podSecurityContext:
-    ## @param tasklist.podSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param tasklist.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra tasklist.podSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param tasklist.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra tasklist.containerSecurityContext defines the security options the Tasklist container should be run with
-  containerSecurityContext:
-  ## @param tasklist.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param tasklist.containerSecurityContext.privileged
-    privileged: false
-    ## @param tasklist.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param tasklist.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param tasklist.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra tasklist.containerSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param tasklist.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra tasklist.startupProbe configuration
-  startupProbe:
-    ## @param tasklist.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param tasklist.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param tasklist.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /actuator/health/readiness
-    ## @param tasklist.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param tasklist.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param tasklist.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param tasklist.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param tasklist.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 5
-
-  ## @extra tasklist.readinessProbe configuration
-  readinessProbe:
-    ## @param tasklist.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param tasklist.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param tasklist.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /actuator/health/readiness
-    ## @param tasklist.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param tasklist.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param tasklist.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param tasklist.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param tasklist.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 5
-
-  ## @extra tasklist.livenessProbe configuration
-  livenessProbe:
-    ## @param tasklist.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param tasklist.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param tasklist.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health/liveness
-    ## @param tasklist.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param tasklist.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param tasklist.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param tasklist.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param tasklist.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 5
-
-  ## Metrics configuration
-  metrics:
-    ## @param tasklist.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /actuator/prometheus
-
-  ## @param tasklist.nodeSelector can be used to define on which nodes the Tasklist pods should run
-  nodeSelector: {}
-  ## @param tasklist.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @param tasklist.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
-
-  ## @extra tasklist.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param tasklist.resources.requests.cpu
-  ## @param tasklist.resources.requests.memory
-  ## @param tasklist.resources.limits.cpu
-  ## @param tasklist.resources.limits.memory
-  resources:
-    requests:
-      cpu: 400m
-      memory: 1Gi
-    limits:
-      cpu: 1000m
-      memory: 2Gi
-
-  ingress:
-    ## @param tasklist.ingress.enabled if true, an ingress resource is deployed with the tasklist deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param tasklist.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param tasklist.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip tasklist.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip tasklist.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param tasklist.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param tasklist.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param tasklist.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    tls:
-      ## @param tasklist.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param tasklist.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-tasklist
-
-  # Retention can be used to define the data in Elasticsearch (ILM).
-  retention:
-    ## @param tasklist.retention.enabled if true, the ILM Policy is created and applied to the index templates.
-    enabled: false
-    ## @param tasklist.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-    minimumAge: 30d
-
-  ## @param tasklist.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
-  ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
-  ## @param tasklist.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param tasklist.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
-
-#############################################
- #####
-#     # #####  ##### # #    # # ###### ######
-#     # #    #   #   # ##  ## #     #  #
-#     # #    #   #   # # ## # #    #   #####
-#     # #####    #   # #    # #   #    #
-#     # #        #   # #    # #  #     #
- #####  #        #   # #    # # ###### ######
-#############################################
-## @section Optimize Parameters
-# Optimize configuration for the Optimize sub chart.
-optimize:
-  ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
-  enabled: true
-
-  ## @extra optimize.image configuration to configure the Optimize image specifics
-  # https://hub.docker.com/r/camunda/optimize/tags
-  image:
-    ## @param optimize.image.registry can be used to set container image registry
-    registry: ""
-    ## @param optimize.image.repository defines which image repository to use
-    repository: camunda/optimize
-    ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8-SNAPSHOT
-    ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @extra optimize.migration configuration for Optimize migration
-  migration:
-    ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
-    enabled: true
-    ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container
-    env: []
-
-    ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    ## @param optimize.migration.resources.requests.cpu
-    ## @param optimize.migration.resources.requests.memory
-    ## @param optimize.migration.resources.limits.cpu
-    ## @param optimize.migration.resources.limits.memory
-    resources:
-      requests:
-        cpu: 600m
-        memory: 1Gi
-      limits:
-        cpu: 2000m
-        memory: 2Gi
-
-  ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
-  sidecars: []
-
-  # contextPath: "/optimize"
-  ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
-
-  ## @extra optimize.configMap configuration which will be applied to the mounted config map.
-  configMap:
-    ## @param optimize.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
-    # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
-    defaultMode: 0754
-
-  ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations
-  podAnnotations: {}
-  ## @param optimize.podLabels can be used to define extra Optimize pod labels
-  podLabels: {}
-
-  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
-  logLevel: info
-  ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
-  upgradeLogLevel: info
-  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
-  esLogLevel: warn
-
-  ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
-  partitionCount: "3"
-  ## @param optimize.env can be used to set extra environment variables in each Optimize container
-  env: []
-  ## @param optimize.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @param optimize.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @param optimize.extraVolumes can be used to define extra volumes for the Optimize pods, useful for tls and self-signed certificates
-  extraVolumes: []
-  ## @param optimize.extraVolumeMounts can be used to mount extra volumes for the Optimize pods, useful for tls and self-signed certificates
-  extraVolumeMounts: []
-  ## @param optimize.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-  ## @extra optimize.serviceAccount configuration for the service account where the Optimize pods are assigned to
-  serviceAccount:
-    ## @param optimize.serviceAccount.enabled if true, enables the Optimize service account
-    enabled: true
-    ## @param optimize.serviceAccount.name can be used to set the name of the Optimize service account
-    name: ""
-    ## @param optimize.serviceAccount.annotations can be used to set the annotations of the Optimize service account
-    annotations: {}
-    ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ## @extra optimize.service configuration to configure the Optimize service.
-  service:
-    ## @param optimize.service.annotations can be used to define annotations, which will be applied to the Optimize service
-    annotations: {}
-    ## @param optimize.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param optimize.service.port defines the port of the service, where the Optimize web application will be available
-    port: 80
-    ## @param optimize.service.managementPort defines the port where actuator will be available. Also required to reach backup API
-    managementPort: 8092
-
-  ## @extra optimize.podSecurityContext defines the security options the Optimize pod should be run with
-  podSecurityContext:
-    ## @param optimize.podSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param optimize.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra optimize.podSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param optimize.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra optimize.containerSecurityContext defines the security options the Optimize container should be run with
-  containerSecurityContext:
-    ## @param optimize.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param optimize.containerSecurityContext.privileged
-    privileged: false
-    ## @param optimize.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param optimize.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param optimize.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra optimize.containerSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param optimize.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @extra optimize.startupProbe configuration
-  startupProbe:
-    ## @param optimize.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param optimize.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param optimize.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /api/readyz
-    ## @param optimize.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param optimize.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param optimize.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param optimize.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param optimize.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra optimize.readinessProbe configuration
-  readinessProbe:
-    ## @param optimize.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param optimize.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param optimize.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /api/readyz
-    ## @param optimize.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param optimize.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param optimize.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param optimize.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param optimize.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## @extra optimize.livenessProbe configuration
-  livenessProbe:
-    ## @param optimize.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param optimize.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
-    ## @param optimize.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /api/readyz
-    ## @param optimize.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param optimize.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param optimize.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param optimize.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param optimize.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## Metrics configuration
-  metrics:
-    ## @param optimize.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /actuator/prometheus
-
-  ## @param optimize.nodeSelector can be used to define on which nodes the Optimize pods should run
-  nodeSelector: {}
-  ## @param optimize.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @param optimize.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
-
-  ## @extra optimize.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param optimize.resources.requests.cpu
-  ## @param optimize.resources.requests.memory
-  ## @param optimize.resources.limits.cpu
-  ## @param optimize.resources.limits.memory
-  resources:
-    requests:
-      cpu: 600m
-      memory: 1Gi
-    limits:
-      cpu: 2000m
-      memory: 2Gi
-
-  ingress:
-    ## @param optimize.ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param optimize.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param optimize.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip optimize.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param optimize.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param optimize.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param optimize.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    ## @extra optimize.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param optimize.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param optimize.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-optimize
-
-  ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
-  configuration: ""
-  ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
-  extraConfiguration: {}
-  ## @param optimize.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param optimize.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
-
-#########################################################################################################
-###### #    # ######  ####  #    # ##### #  ####  #    #       # #####  ###### #    # ##### # ##### #   #
-#       #  #  #      #    # #    #   #   # #    # ##   #       # #    # #      ##   #   #   #   #    # #
-#####    ##   #####  #      #    #   #   # #    # # #  # ##### # #    # #####  # #  #   #   #   #     #
-#        ##   #      #      #    #   #   # #    # #  # #       # #    # #      #  # #   #   #   #     #
-#       #  #  #      #    # #    #   #   # #    # #   ##       # #    # #      #   ##   #   #   #     #
-###### #    # ######  ####   ####    #   #  ####  #    #       # #####  ###### #    #   #   #   #     #
-#########################################################################################################
-## @section executionIdentity Parameters
-## @extra executionIdentity configuration for executionIdentity.
-executionIdentity:
-  ## @param executionIdentity.enabled if true, the executionIdentity deployment and its related resources are deployed via a helm release
-  enabled: false
-
-  ## @param executionIdentity.configuration Configuration passed directly to executionIdentity as YAML file. More details on [executionIdentity official documentations](https://docs.camunda.io/docs/self-managed/executionIdentity-deployment/configuration/)
-  configuration: ""
-
-  ## executionIdentity.image configuration to configure the executionIdentity image specifics
-  image:
-    ## @param executionIdentity.image.registry can be used to set container image registry.
-    registry: ""
-    ## @param executionIdentity.image.repository defines which image repository to use
-    repository: camunda/camunda
-    ## @param executionIdentity.image.tag can be used to set the Docker image tag for the executionIdentity image (overwrites global.image.tag)
-    # renovate: datasource=docker depName=camunda/executionIdentity lookupName=registry.camunda.cloud/executionIdentity/executionIdentity-sm
-    tag: SNAPSHOT
-    ## @param executionIdentity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @param executionIdentity.sidecars can be used to attach extra containers to the executionIdentity deployment
-  sidecars: []
-
-  ## @param executionIdentity.replicas Number of executionIdentity replicas
-  replicas: 1
-
-  ## executionIdentity.keycloak configuration to configure Keycloak authentication settings.
-  keycloak:
-    ## @param executionIdentity.keycloak.realm Specifies the Keycloak realm used for authentication.
-    realm: "camunda-platform"
-
-  ## @param executionIdentity.contextPath can be used to make executionIdentity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
-
-  ## @param executionIdentity.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-
-  ## @param executionIdentity.podAnnotations can be used to define extra executionIdentity pod annotations
-  podAnnotations: {}
-  ## @param executionIdentity.podLabels can be used to define extra executionIdentity pod labels
-  podLabels: {}
-
-  ## @param executionIdentity.logging configuration for the executionIdentity logging. This template will be directly included in the executionIdentity configuration YAML file
-  logging: {}
-
-  ## executionIdentity.service configuration to configure the executionIdentity service.
-  service:
-    ## @param executionIdentity.service.annotations can be used to define annotations, which will be applied to the executionIdentity service
-    annotations: {}
-    ## @param executionIdentity.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param executionIdentity.service.port defines the port number where the web application will be available
-    port: 80
-    ## @param executionIdentity.service.serverName defines the port name where the web application will be available
-    serverName: http
-    ## @param executionIdentity.service.managementPort defines the management port used to access metrics and app status
-    managementPort: 9600
-
-  ## executionIdentity.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param executionIdentity.resources.requests.memory
-  ## @param executionIdentity.resources.limits.cpu
-  ## @param executionIdentity.resources.limits.memory
-  ## @param executionIdentity.resources.requests.cpu
-  resources:
-    requests:
-      cpu: 1
-      memory: 1Gi
-    limits:
-      cpu: 2
-      memory: 2Gi
-
-  ## @param executionIdentity.env can be used to set extra environment variables in each app container
-  env: []
-  ## @param executionIdentity.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @param executionIdentity.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @param executionIdentity.extraVolumes can be used to define extra volumes for the executionIdentity pods, useful for TLS and self-signed certificates
-  extraVolumes: []
-  ## @param executionIdentity.extraVolumeMounts can be used to mount extra volumes for the executionIdentity pods, useful for TLS and self-signed certificates
-  extraVolumeMounts: []
-
-  ## executionIdentity.startupProbe configuration
-  startupProbe:
-    ## @param executionIdentity.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param executionIdentity.startupProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param executionIdentity.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /actuator/health
-    ## @param executionIdentity.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param executionIdentity.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param executionIdentity.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param executionIdentity.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param executionIdentity.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## executionIdentity.readinessProbe configuration
-  readinessProbe:
-    ## @param executionIdentity.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param executionIdentity.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param executionIdentity.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /actuator/health
-    ## @param executionIdentity.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param executionIdentity.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param executionIdentity.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param executionIdentity.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param executionIdentity.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## executionIdentity.livenessProbe configuration
-  livenessProbe:
-    ## @param executionIdentity.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param executionIdentity.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param executionIdentity.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /actuator/health
-    ## @param executionIdentity.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param executionIdentity.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param executionIdentity.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param executionIdentity.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param executionIdentity.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## executionIdentity.metrics configuration
-  metrics:
-    ## @param executionIdentity.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /prometheus
-
-  ## executionIdentity.serviceAccount configuration for the service account where the executionIdentity pods are assigned to
-  serviceAccount:
-    ## @param executionIdentity.serviceAccount.enabled if true, enables the executionIdentity service account
-    enabled: true
-    ## @param executionIdentity.serviceAccount.name can be used to set the name of the executionIdentity service account
-    name: ""
-    ## @param executionIdentity.serviceAccount.annotations can be used to set the annotations of the Operate service account
-    annotations: {}
-    ## @param executionIdentity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ingress:
-    ## @param executionIdentity.ingress.enabled if true, an ingress resource is deployed with the executionIdentity deployment. Only useful if an ingress controller is available, like nginx.
-    enabled: false
-    ## @param executionIdentity.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param executionIdentity.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip executionIdentity.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip executionIdentity.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip executionIdentity.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param executionIdentity.ingress.path defines the path which is associated with the executionIdentity service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param executionIdentity.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param executionIdentity.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
-    host: ""
-    ## executionIdentity.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param executionIdentity.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param executionIdentity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-execution-identity
-
-  ## @extra executionIdentity.podSecurityContext defines the security options the executionIdentity broker pod should be run with
-  podSecurityContext:
-    ## @param executionIdentity.podSecurityContext.runAsNonRoot run as non root
-    runAsNonRoot: true
-    ## @param executionIdentity.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra executionIdentity.podSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param executionIdentity.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  # ContainerSecurityContext defines the security options the executionIdentity broker container should be run with
-  containerSecurityContext:
-    ## @param executionIdentity.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param executionIdentity.containerSecurityContext.privileged
-    privileged: false
-    ## @param executionIdentity.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param executionIdentity.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param executionIdentity.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra executionIdentity.containerSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param executionIdentity.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @param executionIdentity.nodeSelector can be used to define on which nodes the executionIdentity pods should run
-  nodeSelector: {}
-  ## @param executionIdentity.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @param executionIdentity.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
-  ## @param executionIdentity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param executionIdentity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
 
 ############################################
 ###
@@ -2246,10 +375,9 @@ executionIdentity:
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: If using Keycloak, Identity is required by Optimize and WebModeler.
-  #       If you need neither Optimize nor WebModeler, make sure to disable both the Identity authentication and the applications by setting:
+  # Note: If using Keycloak, Identity is required by WebModeler.
+  #       If you don't need WebModeler, make sure to disable both the Identity authentication and the applications by setting:
   #         global.identity.auth.enabled=false
-  #         optimize.enabled=false
   #         webModeler.enabled=false
   enabled: true
 
@@ -2476,7 +604,7 @@ identity:
       nginx.ingress.kubernetes.io/ssl-redirect: 'false'
       nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
       nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param identity.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## @param identity.ingress.path defines the path which is associated with the service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     path: /
     ## @param identity.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
@@ -2749,6 +877,242 @@ identityKeycloak:
     ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
     passwordSecretKey: "admin-password"
 
+
+#################################################
+ #####
+#     #  ####  #    #  ####   ####  #      ######
+#       #    # ##   # #      #    # #      #
+#       #    # # #  #  ####  #    # #      #####
+#       #    # #  # #      # #    # #      #
+#     # #    # #   ## #    # #    # #      #
+ #####   ####  #    #  ####   ####  ###### ######
+#################################################
+
+## @section Console Parameters
+## @extra console configuration for the Console.
+console:
+  ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
+  enabled: false
+
+  ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
+  configuration: ""
+
+  ## console.image configuration to configure the Console image specifics
+  # https://hub.docker.com/r/camunda/console/tags
+  image:
+    ## @param console.image.registry can be used to set container image registry.
+    registry: ""
+    ## @param console.image.repository defines which image repository to use
+    repository: camunda/console
+    ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
+    tag: SNAPSHOT
+    ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
+
+  ## @param console.sidecars can be used to attach extra containers to the console deployment
+  sidecars: []
+
+  ## @param console.replicas Number of Console replicas
+  replicas: 1
+
+  ## console.keycloak configuration to configure Keycloak authentication settings.
+  keycloak:
+    ## @param console.keycloak.realm Specifies the Keycloak realm used for authentication.
+    realm: "camunda-platform"
+
+  ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
+
+  ## @param console.initContainers can be used to set up extra init containers for the application Pod
+  initContainers: []
+
+  ## @param console.podAnnotations can be used to define extra Console pod annotations
+  podAnnotations: {}
+  ## @param console.podLabels can be used to define extra Console pod labels
+  podLabels: {}
+
+  ## @param console.logging configuration for the Console logging. This template will be directly included in the configuration YAML file
+  logging: {}
+
+  ## console.service configuration to configure the Console service.
+  service:
+    ## @param console.service.annotations can be used to define annotations, which will be applied to the Console service
+    annotations: {}
+    ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    ## @param console.service.port defines the port number where the web application will be available
+    port: 80
+    ## @param console.service.serverName defines the port name where the web application will be available
+    serverName: http
+    ## @param console.service.managementPort defines the management port used to access metrics and app status
+    managementPort: 9100
+
+  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param console.resources.requests.memory
+  ## @param console.resources.limits.cpu
+  ## @param console.resources.limits.memory
+  ## @param console.resources.requests.cpu
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+
+  ## @param console.env can be used to set extra environment variables in each app container
+  env: []
+  ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
+  ## @param console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  ## @param console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumes: []
+  ## @param console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumeMounts: []
+
+  ## console.startupProbe configuration
+  startupProbe:
+    ## @param console.startupProbe.enabled if true, the startup probe is enabled in app container
+    enabled: false
+    ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.startupProbe.probePath defines the startup probe route used on the app
+    probePath: /health/readiness
+    ## @param console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.startupProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.readinessProbe configuration
+  readinessProbe:
+    ## @param console.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    enabled: true
+    ## @param console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.readinessProbe.probePath defines the readiness probe route used on the app
+    probePath: /health/readiness
+    ## @param console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.readinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.livenessProbe configuration
+  livenessProbe:
+    ## @param console.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    enabled: false
+    ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
+    probePath: /health/liveness
+    ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.livenessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    successThreshold: 1
+    ## @param console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    failureThreshold: 5
+    ## @param console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.metrics configuration
+  metrics:
+    ## @param console.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /prometheus
+
+  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
+  serviceAccount:
+    ## @param console.serviceAccount.enabled if true, enables the Console service account
+    enabled: true
+    ## @param console.serviceAccount.name can be used to set the name of the Console service account
+    name: ""
+    ## @param console.serviceAccount.annotations can be used to set the annotations of the service account
+    annotations: {}
+    ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
+
+  ingress:
+    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
+    enabled: false
+    ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
+    className: nginx
+    ## @param console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+    ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
+    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+    annotations:
+      ingress.kubernetes.io/rewrite-target: '/'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+    ## @param console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    path: /
+    ## @param console.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+    pathType: Prefix
+    ## @param console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
+    host: ""
+    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    tls:
+      ## @param console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: camunda-platform-console
+
+  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
+  podSecurityContext:
+    ## @param console.podSecurityContext.runAsNonRoot run as non root
+    runAsNonRoot: true
+    ## @param console.podSecurityContext.fsGroup
+    fsGroup: 1001
+    ## @extra console.podSecurityContext.seccompProfile
+    seccompProfile:
+    ## @param console.podSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+
+  # ContainerSecurityContext defines the security options the Console broker container should be run with
+  containerSecurityContext:
+    ## @param console.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param console.containerSecurityContext.privileged
+    privileged: false
+    ## @param console.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param console.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param console.containerSecurityContext.runAsUser
+    runAsUser: 1001
+    ## @extra console.containerSecurityContext.seccompProfile
+    seccompProfile:
+    ## @param console.containerSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+
+  ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
+  nodeSelector: {}
+  ## @param console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: []
+  ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: {}
+  ## @param console.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+  dnsPolicy: ""
+  ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+  dnsConfig: {}
 
 #######################################################################
 #     #               #     #
@@ -3446,6 +1810,22 @@ postgresql:
       runAsNonRoot: true
       fsGroup: 1001
 
+
+#------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------#
+############################################################################################################################
+ #######                                                                                  #####                              
+ #     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #    #     # #####   ####  #    # #####  
+ #     # #    # #    # #    # #      #        #   #    #  #  #    #   # #    # ##   #    #       #    # #    # #    # #    # 
+ #     # #    # #      ###### #####   ####    #   #    # #    #   #   # #    # # #  #    #  #### #    # #    # #    # #    # 
+ #     # #####  #      #    # #           #   #   #####  ######   #   # #    # #  # #    #     # #####  #    # #    # #####  
+ #     # #   #  #    # #    # #      #    #   #   #   #  #    #   #   # #    # #   ##    #     # #   #  #    # #    # #      
+ ####### #    #  ####  #    # ######  ####    #   #    # #    #   #   #  ####  #    #     #####  #    #  ####   ####  #      
+############################################################################################################################
+#------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------#
+
+
 #####################################################################
  #####
 #     #  ####  #    # #    # ######  ####  #####  ####  #####   ####
@@ -3467,7 +1847,7 @@ connectors:
     mode: oauth
     ## @extra connectors.inbound.auth configuration of the credentials authentication.
     auth:
-      ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains Operate password (if inbound mode is credentials)
+      ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains password (if inbound mode is credentials)
       existingSecret: ""
       ## @param connectors.inbound.auth.existingSecretKey defines the key within the existing secret object.
       existingSecretKey: "connectors-secret"
@@ -3612,7 +1992,7 @@ connectors:
     enabled: true
     ## @param connectors.serviceAccount.name can be used to set the name of the Connectors service account
     name: ""
-    ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account
+    ## @param connectors.serviceAccount.annotations can be used to set the annotations of the service account
     annotations: {}
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
@@ -3686,6 +2066,307 @@ connectors:
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+  dnsConfig: {}
+
+############################
+ #####                       
+#     #  ####  #####  ######
+#       #    # #    # #     
+#       #    # #    # ##### 
+#       #    # #####  #     
+#     # #    # #   #  #     
+ #####   ####  #    # ######
+############################
+
+## @section Orchestration Core Parameters
+## @extra core configuration for the Orchestration Core.
+core:
+  ## @param core.enabled if true, all related resources are deployed via the helm release
+  enabled: true
+
+  ## @param core.debug if true, extra info is printed.
+  debug: false
+
+  ## @extra core.image configuration to configure the image specifics
+  image:
+     ## @param core.image.registry can be used to set container image registry.
+    registry: ""
+     ## @param core.image.repository defines which image repository to use
+    repository: camunda/camunda
+     ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag: SNAPSHOT
+     ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
+
+  ## @param core.sidecars can be used to attach extra containers to the deployment
+  sidecars: []
+
+  ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  clusterSize: "3"
+  ## @param core.partitionCount defines how many partitions are set up in the cluster
+  partitionCount: "3"
+  ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
+  replicationFactor: "3"
+  ## @extra core.env can be used to set extra environment variables in each broker container
+  env:
+    ## @param core.env[0].name
+    ## @param core.env[0].value
+    ## @param core.env[1].name
+    ## @param core.env[1].value
+    ## @param core.env[2].name
+    ## @param core.env[2].value
+    - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
+      value: "5m"
+    - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
+      value: "2GB"
+    - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
+      value: "3GB"
+  ## @param core.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
+  ## @extra core.configMap configuration which will be applied to the mounted config map.
+  configMap:
+     ## @param core.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    defaultMode: 0754
+  ## @param core.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+
+  ## @param core.logLevel defines the log level which is used
+  logLevel: info
+  ## @param core.log4j2 can be used to overwrite the log4j2 configuration
+  log4j2: ''
+  ## @param core.javaOpts can be used to set java options
+  javaOpts: >-
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/zeebe/data
+    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+    -XX:+ExitOnOutOfMemoryError
+
+  ## @extra core.service configuration for the broker service
+  service:
+    ## @param core.service.annotations can be used to define annotations, which will be applied to the service
+    annotations: {}
+    ## @param core.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    ## @param core.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 9600
+    ## @param core.service.httpName defines the name of the http endpoint, where for example metrics are provided
+    httpName: "http"
+    ## @param core.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
+    commandPort: 26501
+    ## @param core.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    commandName: "command"
+    ## @param core.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    internalPort: 26502
+    ## @param core.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    internalName: "internal"
+    ## @param core.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
+    extraPorts: []
+      # - name: hazelcast
+      #   protocol: TCP
+      #   port: 5701
+      #   targetPort: 5701
+
+  ## @extra global.core.ServiceAccount configuration for the service account where the broker pods are assigned to
+  serviceAccount:
+    ## @param core.serviceAccount.enabled if true, enables the broker service account
+    enabled: true
+    ## @param core.serviceAccount.name can be used to set the name of the broker service account
+    name: ""
+    ## @param core.serviceAccount.annotations can be used to set the annotations of the broker service account
+    annotations: {}
+    ## @param core.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
+
+  ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
+  cpuThreadCount: "3"
+  ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ioThreadCount: "3"
+  ## @extra core.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @extra core.resources.requests
+  ## @param core.resources.requests.cpu
+  ## @param core.resources.requests.memory
+  ## @param core.resources.limits.cpu
+  ## @param core.resources.limits.memory
+  resources:
+    requests:
+      cpu: 800m
+      memory: 1200Mi
+    limits:
+      cpu: 960m
+      memory: 1920Mi
+
+  ## @param core.persistenceType defines the type of persistence which is used by core. Possible values are: disk, local and memory.
+  #   disk  - means a persistence volume claim is configured and used
+  #   local - means the data is stored into the container, no volumeMount nor volume nor claim is configured
+  #   memory   - means it uses a tmpfs for the data persistence, be aware that this takes the limits into account
+  persistenceType: disk
+  pvc:
+    ## @param core.pvc.size defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+    size: "32Gi"
+    ## @param core.pvc.accessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+    accessModes: ["ReadWriteOnce"]
+    ## @param core.pvc.storageClassName can be used to set the storage class name which should be used by the persistent volume claim.
+    # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
+    storageClassName: ''
+    ## @param core.pvc.annotations can be used to specify custom annotations for persistent volume claims, enhancing storage configuration flexibility.
+    annotations: {}
+    ## @param core.pvc.selector can be used to specify a label selector for persistent volume claims for further filtering of the set of persistent volumes to select.
+    # https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector
+    selector: {}
+  ## @param core.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
+  extraVolumes: []
+  ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  extraVolumeMounts: []
+  ## @param core.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  extraInitContainers: []
+  ## @param core.initContainers can be used to set up extra init containers for the application Pod
+  initContainers: []
+
+  ## @param core.podAnnotations can be used to define extra broker pod annotations
+  podAnnotations: {}
+  ## @param core.podLabels can be used to define extra broker pod labels
+  podLabels: {}
+  ## @extra core.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    ## @param core.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
+    enabled: false
+    ## @param core.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    minAvailable:
+    ## @param core.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    maxUnavailable: 1
+
+  ## @extra core.podSecurityContext defines the security options the pod should be run with
+  podSecurityContext:
+    ## @param core.podSecurityContext.runAsNonRoot run as non root
+    runAsNonRoot: true
+    ## @param core.podSecurityContext.fsGroup
+    fsGroup: 1001
+    ## @extra core.podSecurityContext.seccompProfile
+    seccompProfile:
+      ## @param core.podSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+
+  ## @extra core.containerSecurityContext defines the security options the container should be run with
+  containerSecurityContext:
+    ## @param core.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param core.containerSecurityContext.privileged
+    privileged: false
+    ## @param core.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param core.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param core.containerSecurityContext.runAsUser
+    runAsUser: 1001
+    ## @extra core.containerSecurityContext.seccompProfile
+    seccompProfile:
+    ## @param core.containerSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+
+  ## @extra core.startupProbe configuration
+  startupProbe:
+    ## @param core.startupProbe.enabled if true, the startup probe is enabled in app container
+    enabled: false
+    ## @param core.startupProbe.scheme defines the startup probe schema used on calling the probePath
+    scheme: HTTP
+    ## @param core.startupProbe.probePath defines the startup probe route used on the app
+    probePath: /actuator/health/startup
+    ## @param core.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param core.startupProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param core.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param core.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param core.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## @extra core.readinessProbe configuration
+  readinessProbe:
+    ## @param core.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    enabled: true
+    ## @param core.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+    scheme: HTTP
+    ## @param core.readinessProbe.probePath defines the readiness probe route used on the app
+    probePath: /actuator/health/readiness
+    ## @param core.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param core.readinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param core.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param core.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param core.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## @extra core.livenessProbe configuration
+  livenessProbe:
+    ## @param core.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    enabled: false
+    ## @param core.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+    scheme: HTTP
+    ## @param core.livenessProbe.probePath defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849
+    probePath: /actuator/health/readiness
+    ## @param core.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param core.livenessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param core.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    successThreshold: 1
+    ## @param core.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    failureThreshold: 5
+    ## @param core.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## Metrics configuration
+  metrics:
+    ## @param core.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /actuator/prometheus
+
+  ## @param core.nodeSelector can be used to define on which nodes the broker pods should run
+  nodeSelector: {}
+  ## @param core.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: []
+  ## @extra global.core.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  # It uses a hard requirement for scheduling and works based on the pod labels
+  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "app.kubernetes.io/component"
+                operator: In
+                values:
+                  - core
+          topologyKey: "kubernetes.io/hostname"
+
+  ## @param core.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  priorityClassName: ""
+
+  retention:
+    ## @param core.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    enabled: false
+    ## @param core.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    minimumAge: 30d
+    ## @param core.retention.policyName defines the name of the created and applied ILM policy.
+    policyName: core-record-retention-policy
+
+  ## @param core.configuration if specified, contents will be used as the application.yaml
+  configuration: ""
+  ## @param core.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration: {}
+  ## @param core.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+  dnsPolicy: ""
+  ## @param core.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
 #####################################################################################
@@ -3764,7 +2445,6 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
-
 
 #####################################################################
 ######
