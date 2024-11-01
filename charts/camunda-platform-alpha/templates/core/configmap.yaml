@@ -1,14 +1,14 @@
-{{- if .Values.zeebe.enabled -}}
+{{- if .Values.core.enabled -}}
 kind: ConfigMap
 metadata:
-  name: {{ include "zeebe.fullname.broker" . }}-configuration
+  name: {{ include "core.fullname" . }}-configuration
   labels:
-    {{- include "zeebe.labels.broker" . | nindent 4 }}
+    {{- include "core.labels" . | nindent 4 }}
 apiVersion: v1
 data:
-  {{- if .Values.zeebe.configuration }}
+  {{- if .Values.core.configuration }}
   application.yaml: |
-    {{ .Values.zeebe.configuration | indent 4 | trim }}
+    {{ .Values.core.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     zeebe:
@@ -16,7 +16,7 @@ data:
         exporters:
         {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
           elasticsearch:
-            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            className: "io.camunda.core.exporter.ElasticsearchExporter"
             args:
               {{- if .Values.global.elasticsearch.external }}
               authentication:
@@ -25,15 +25,15 @@ data:
               url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
               index:
                 prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-              {{- if .Values.zeebe.retention.enabled }}
+              {{- if .Values.core.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
-                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+                minimumAge: {{ .Values.core.retention.minimumAge | quote }}
+                policyName: {{ .Values.core.retention.policyName | quote }}
               {{- end }}
         {{- else if .Values.global.opensearch.enabled }}
           opensearch:
-            className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            className: "io.camunda.core.exporter.opensearch.OpensearchExporter"
             args:
               url: {{ include "camundaPlatform.opensearchURL" . | quote }}
               {{- if .Values.global.opensearch.auth.username }}
@@ -44,11 +44,11 @@ data:
               aws:
                 enabled: true
               {{- end}}
-              {{- if .Values.zeebe.retention.enabled }}
+              {{- if .Values.core.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
-                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+                minimumAge: {{ .Values.core.retention.minimumAge | quote }}
+                policyName: {{ .Values.core.retention.policyName | quote }}
               {{- end }}
           {{- end }}
         {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
@@ -61,11 +61,11 @@ data:
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
                 username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
               {{- end }}
-              {{- if .Values.zeebe.retention.enabled }}
+              {{- if .Values.core.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
-                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+                minimumAge: {{ .Values.core.retention.minimumAge | quote }}
+                policyName: {{ .Values.core.retention.policyName | quote }}
               {{- end }}
               createSchema: true
         {{- else -}}
@@ -82,19 +82,19 @@ data:
         network:
           host: 0.0.0.0
           commandApi:
-            port: {{ .Values.zeebe.service.commandPort }}
+            port: {{ .Values.core.service.commandPort }}
           internalApi:
-            port: {{ .Values.zeebe.service.internalPort }}
+            port: {{ .Values.core.service.internalPort }}
           monitoringApi:
-            port: {{  .Values.zeebe.service.httpPort | quote }}
+            port: {{  .Values.core.service.httpPort | quote }}
         cluster:
-          clusterSize: {{ .Values.zeebe.clusterSize | quote }}
-          replicationFactor: {{ .Values.zeebe.replicationFactor | quote }}
-          partitionsCount: {{ .Values.zeebe.partitionCount | quote }}
+          clusterSize: {{ .Values.core.clusterSize | quote }}
+          replicationFactor: {{ .Values.core.replicationFactor | quote }}
+          partitionsCount: {{ .Values.core.partitionCount | quote }}
           clusterName: {{ tpl .Values.global.zeebeClusterName . }}
         threads:
-          cpuThreadCount: {{ .Values.zeebe.cpuThreadCount  | quote }}
-          ioThreadCount: {{ .Values.zeebe.ioThreadCount  | quote }}
+          cpuThreadCount: {{ .Values.core.cpuThreadCount  | quote }}
+          ioThreadCount: {{ .Values.core.ioThreadCount  | quote }}
 
     # Camunda Database configuration
     {{- if .Values.global.elasticsearch.enabled }}
@@ -129,13 +129,13 @@ data:
 {{- end }}
 
     if [ "$(ls -A /exporters/)" ]; then
-      mkdir -p /usr/local/zeebe/exporters/
-      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+      mkdir -p /usr/local/camunda/exporters/
+      cp -a /exporters/*.jar /usr/local/camunda/exporters/
     else
       echo "No exporters available."
     fi
 
-    {{- if .Values.zeebe.debug }}
+    {{- if .Values.core.debug }}
 
     env
     {{- end }}
@@ -144,18 +144,18 @@ data:
     then
       trap : TERM INT; sleep infinity & wait
     else
-      exec /usr/local/zeebe/bin/broker
+      exec /usr/local/camunda/bin/broker
     fi
 {{- else }}
-    exec /usr/local/zeebe/bin/broker
+    exec /usr/local/camunda/bin/broker
 {{- end }}
 
   broker-log4j2.xml: |
-  {{- if .Values.zeebe.log4j2 }}
-    {{ .Values.zeebe.log4j2 | indent 4 | trim }}
+  {{- if .Values.core.log4j2 }}
+    {{ .Values.core.log4j2 | indent 4 | trim }}
   {{- end }}
 
-  {{- range $key, $val := .Values.zeebe.extraConfiguration }}
+  {{- range $key, $val := .Values.core.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
   {{- end }}

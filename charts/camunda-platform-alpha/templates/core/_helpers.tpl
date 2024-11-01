@@ -1,20 +1,20 @@
 {{/* vim: set filetype=mustache: */}}
 
 {{/*
-[zeebe] Create a default fully qualified app name.
+[core] Create a default fully qualified app name.
 */}}
-{{- define "zeebe.fullname.broker" -}}
+{{- define "core.fullname" -}}
     {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "zeebe"
-        "componentValues" .Values.zeebe
+        "componentName" "core"
+        "componentValues" .Values.core
         "context" $
     ) -}}
 {{- end -}}
 
 {{/*
-[zeebe] Common names.
+[core] Common names.
 */}}
-{{- define "zeebe.names.broker" -}}
+{{- define "core.brokerName" -}}
     {{- if .Values.global.zeebeClusterName -}}
         {{- tpl .Values.global.zeebeClusterName . | trunc 63 | trimSuffix "-" | quote -}}
     {{- else -}}
@@ -23,60 +23,48 @@
 {{- end -}}
 
 {{/*
-[zeebe] Defines extra labels for zeebe.
+[core] Defines extra labels for core.
 */}}
-{{ define "zeebe.extraLabels.broker" -}}
-app.kubernetes.io/component: zeebe-broker
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
+{{ define "core.extraLabels" -}}
+app.kubernetes.io/component: core
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) | quote }}
 {{- end }}
 
 {{/*
-[zeebe] Define common labels for zeebe, combining the match labels and transient labels, which might change on updating
+[core] Define common labels for core, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
-{{- define "zeebe.labels.broker" -}}
+{{- define "core.labels" -}}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
-    {{- include "zeebe.extraLabels.broker" . }}
+    {{- include "core.extraLabels" . }}
 {{- end -}}
 
 {{/*
-[zeebe] Defines match labels for zeebe, which are extended by sub-charts and should be used in matchLabels selectors.
+[core] Defines match labels for core, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
-{{- define "zeebe.matchLabels.broker" -}}
+{{- define "core.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: zeebe-broker
+app.kubernetes.io/component: core
 {{- end -}}
 
 {{/*
-[zeebe] Create the name of the service account to use.
+[core] Create the name of the service account to use.
 */}}
-{{- define "zeebe.serviceAccountName.broker" -}}
-    {{- if .Values.zeebe.serviceAccount.enabled -}}
-        {{- default (include "zeebe.fullname.broker" .) .Values.zeebe.serviceAccount.name -}}
+{{- define "core.serviceAccountName" -}}
+    {{- if .Values.core.serviceAccount.enabled -}}
+        {{- default (include "core.fullname" .) .Values.core.serviceAccount.name -}}
     {{- else -}}
-        {{- default "default" .Values.zeebe.serviceAccount.name -}}
+        {{- default "default" .Values.core.serviceAccount.name -}}
     {{- end -}}
 {{- end -}}
 
 {{/*
-[zeebe] Get the image pull secrets.
+[core] Get the image pull secrets.
 */}}
-{{- define "zeebe.imagePullSecrets.broker" -}}
+{{- define "core.imagePullSecrets" -}}
     {{- include "camundaPlatform.imagePullSecrets" (dict
-        "component" "zeebe"
+        "component" "core"
         "context" $
     ) -}}
 {{- end }}
-
-{{/*
-[zeebe] Define variables related to authentication.
-*/}}
-{{- define "zeebe.authAudience" }}
-    {{- .Values.global.identity.auth.zeebe.audience | default "zeebe-api" -}}
-{{- end -}}
-
-{{- define "zeebe.authTokenScope" }}
-    {{- .Values.global.identity.auth.zeebe.tokenScope -}}
-{{- end -}}
-

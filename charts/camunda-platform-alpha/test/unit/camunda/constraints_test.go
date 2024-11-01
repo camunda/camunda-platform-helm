@@ -70,7 +70,7 @@ func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayError
 		SetValues: map[string]string{
 			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 			"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
-			"global.identity.auth.zeebe.existingSecret.name":       "zeebe-secret",
+			"global.identity.auth.core.existingSecret.name":       "zeebe-secret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -79,7 +79,7 @@ func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayError
 	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
 
 	// then
-	s.Require().NotContains(err.Error(), "global.identity.auth.zeebe.existingSecret")
+	s.Require().NotContains(err.Error(), "global.identity.auth.core.existingSecret")
 }
 func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentThatsDisabled() {
 	// given

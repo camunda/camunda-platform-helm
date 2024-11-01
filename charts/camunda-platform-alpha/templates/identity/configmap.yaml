@@ -48,7 +48,7 @@ data:
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
-                - audience: {{ include "operate.authAudience" . | quote }}
+                - audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
                   definition: read:*
         console:
           applications:
@@ -100,7 +100,7 @@ data:
                 - "/identity-callback"
           apis:
             - name: Operate API
-              audience: {{ include "operate.authAudience" . | quote }}
+              audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
               permissions:
                 - definition: read:*
                   description: "Read permission"
@@ -110,9 +110,9 @@ data:
             - name: "Operate"
               description: "Grants full access to Operate"
               permissions:
-                - audience: {{ include "operate.authAudience" . | quote }}
+                - audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
                   definition: read:*
-                - audience: {{ include "operate.authAudience" . | quote }}
+                - audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
                   definition: write:*
         optimize:
           applications:
@@ -125,7 +125,7 @@ data:
                 - "/api/authentication/callback"
           apis:
             - name: Optimize API
-              audience: {{ include "optimize.authAudience" . | quote }}
+              audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
@@ -133,7 +133,7 @@ data:
             - name: "Optimize"
               description: "Grants full access to Optimize"
               permissions:
-                - audience: {{ include "optimize.authAudience" . | quote }}
+                - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
@@ -148,7 +148,7 @@ data:
                 - "/identity-callback"
           apis:
             - name: Tasklist API
-              audience: {{ include "tasklist.authAudience" . | quote }}
+              audience: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
               permissions:
                 - definition: read:*
                   description: "Read permission"
@@ -158,9 +158,9 @@ data:
             - name: "Tasklist"
               description: "Grants full access to Tasklist"
               permissions:
-                - audience: {{ include "tasklist.authAudience" . | quote }}
+                - audience: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
                   definition: read:*
-                - audience: {{ include "tasklist.authAudience" . | quote }}
+                - audience: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
                   definition: write:*
         webmodeler:
           applications:
@@ -209,7 +209,7 @@ data:
         zeebe:
           apis:
             - name: Zeebe API
-              audience: {{ include "zeebe.authAudience" . | quote }}
+              audience: {{ include "camundaPlatform.authAudienceCore" . | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
@@ -217,7 +217,7 @@ data:
             - name: "Zeebe"
               description: "Grants full access to the Zeebe API"
               permissions:
-                - audience: {{ include "zeebe.authAudience" . | quote }}
+                - audience: {{ include "camundaPlatform.authAudienceCore" . | quote }}
                   definition: write:*
 
     {{- if .Values.global.identity.auth.enabled }}

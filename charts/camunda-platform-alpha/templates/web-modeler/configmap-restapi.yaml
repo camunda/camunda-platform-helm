@@ -52,16 +52,16 @@ data:
             authentication: {{ .Values.global.identity.auth.enabled | ternary "OAUTH" "NONE" | quote }}
             url:
               zeebe:
-                grpc: "grpc://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
+                grpc: "grpc://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.core.service.grpcPort }}"
                 rest: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
               operate: {{ include "camundaPlatform.operateURL" . | quote }}
               tasklist: {{ include "camundaPlatform.tasklistURL" . | quote }}
             oauth:
               url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
               audience:
-                zeebe: {{ include "zeebe.authAudience" . | quote }}
-                operate: {{ include "operate.authAudience" . | quote }}
-                tasklist: {{ include "tasklist.authAudience" . | quote }}
+                zeebe: {{ include "camundaPlatform.authAudienceCore" . | quote }}
+                operate: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
+                tasklist: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
               scope: {{ include "zeebe.authTokenScope" . | quote }}
           {{- end }}
         {{- end }}

@@ -44,28 +44,6 @@ Identity.
     {{- $_ := set .Values "identityPostgresql" (deepCopy .Values.identity.postgresql | mergeOverwrite .Values.identityPostgresql) -}}
 {{- end -}}
 
-
-{{/*
-Zeebe Gateway.
-*/}}
-
-{{- if (index .Values "zeebe-gateway") -}}
-    {{- $_ := set .Values "zeebeGateway" (deepCopy (index .Values "zeebe-gateway") | mergeOverwrite .Values.zeebeGateway) -}}
-{{- end -}}
-
-{{- if .Values.zeebeGateway.service.gatewayName -}}
-    {{- $_ := set .Values.zeebeGateway.service "grpcName" .Values.zeebeGateway.service.gatewayName -}}
-{{- end -}}
-
-{{- if .Values.zeebeGateway.service.gatewayPort -}}
-    {{- $_ := set .Values.zeebeGateway.service "grpcPort" .Values.zeebeGateway.service.gatewayPort -}}
-{{- end -}}
-
-{{- if .Values.zeebeGateway.ingress.enabled -}}
-    {{- $zgIngress := omit .Values.zeebeGateway.ingress "rest" -}}
-    {{- $_ := set .Values.zeebeGateway.ingress "grpc" (deepCopy $zgIngress | mergeOverwrite .Values.zeebeGateway.ingress.grpc) -}}
-{{- end -}}
-
 {{/*
 OpenShift.
 The `elasticsearch.sysctlImage` container adjusts the virtual memory and file descriptors of the machine needed for Elasticsearch.

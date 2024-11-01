@@ -69,16 +69,6 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{- end }}
 
 {{/*
-Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.path are not the same
-*/}}
-{{- if and .Values.zeebeGateway.ingress.rest.enabled (ne (trimSuffix "/" .Values.zeebeGateway.ingress.rest.path) (trimSuffix "/" .Values.zeebeGateway.contextPath)) }}
-  {{- $errorMessage := "[camunda][error] zeebeGateway.ingress.rest.path and zeebeGateway.contextPath must have the same value."
-  -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-
-
-{{/*
 [opensearch] when existingSecret is provided for opensearch then password field should be empty
 */}}
 {{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
@@ -100,24 +90,12 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret.name" }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.operate.enabled) (not .Values.global.identity.auth.operate.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.operate.existingSecret.name" }}
-    {{- end }}
-
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.tasklist.enabled) (not .Values.global.identity.auth.tasklist.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.tasklist.existingSecret.name" }}
-    {{- end }}
-
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.tasklist.enabled) (not .Values.global.identity.auth.optimize.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.optimize.existingSecret.name" }}
-    {{- end }}
-
     {{ if and (.Values.global.identity.auth.enabled) (.Values.console.enabled) (not .Values.global.identity.auth.console.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.console.existingSecret.name" }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.zeebe.enabled) (not .Values.global.identity.auth.zeebe.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.zeebe.existingSecret.name" }}
+    {{ if and (.Values.global.identity.auth.enabled) (.Values.core.enabled) (not .Values.global.identity.auth.core.existingSecret) }}
+      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.core.existingSecret.name" }}
     {{- end }}
 
     {{ if and (.Values.identityKeycloak.enabled) (not .Values.identityKeycloak.auth.existingSecret) }}
@@ -163,7 +141,7 @@ data:
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
-  zeebe-secret: <base64-encoded-secret>
+  core-secret: <base64-encoded-secret>
   # Identity Keycloak.
   admin-password: <base64-encoded-secret>.
   # Identity Keycloak PostgreSQL.
@@ -202,7 +180,7 @@ data:
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
-  zeebe-secret: <base64-encoded-secret>
+  core-secret: <base64-encoded-secret>
   # Identity Keycloak.
   admin-password: <base64-encoded-secret>.
   # Identity Keycloak PostgreSQL.
