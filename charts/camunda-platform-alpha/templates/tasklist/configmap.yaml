@@ -95,6 +95,12 @@ data:
         {{- if .Values.global.elasticsearch.external }}
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
         {{- end }}
+        {{- if .Values.global.elasticsearch.numberOfShards }}
+        numberOfShards: {{ .Values.global.elasticsearch.numberOfShards }}
+        {{- end }}
+        {{- if .Values.global.elasticsearch.numberOfReplicas }}
+        numberOfReplicas: {{ .Values.global.elasticsearch.numberOfReplicas }}
+        {{- end }}
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name
@@ -123,6 +129,13 @@ data:
         {{- if .Values.global.opensearch.auth.username }}
         username: {{ .Values.global.opensearch.auth.username | quote }}
         {{- end }}
+        {{- if .Values.global.opensearch.numberOfShards }}
+        numberOfShards: {{ .Values.global.opensearch.numberOfShards }}
+        {{- end }}
+        {{- if .Values.global.opensearch.numberOfReplicas }}
+        numberOfReplicas: {{ .Values.global.opensearch.numberOfReplicas }}
+        {{- end }}
+    
       zeebeOpensearch:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         {{- if .Values.global.opensearch.auth.username }}

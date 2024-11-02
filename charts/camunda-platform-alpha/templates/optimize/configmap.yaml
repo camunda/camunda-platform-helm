@@ -35,8 +35,29 @@ data:
           enabled: "true"
         {{- end }}
       {{- end }}
+      {{- if or ( .Values.global.elasticsearch.numberOfShards ) ( .Values.global.elasticsearch.numberOfReplicas ) }}
+      settings:
+        index:
+        {{- if .Values.global.elasticsearch.numberOfShards }}
+          number_of_shards: {{ .Values.global.elasticsearch.numberOfShards }}
+        {{- end }}
+        {{- if .Values.global.elasticsearch.numberOfReplicas }}
+          number_of_replicas: {{ .Values.global.elasticsearch.numberOfReplicas }}
+        {{- end }}
+    
+      {{- end }}
     {{- end }}
-
+    {{- if and ( .Values.global.opensearch.enabled ) (or ( .Values.global.opensearch.numberOfShards ) ( .Values.global.opensearch.numberOfReplicas ))}}
+    opensearch:
+      settings:
+        index:
+        {{- if .Values.global.opensearch.numberOfShards }}
+          number_of_shards: {{ .Values.global.opensearch.numberOfShards }}
+        {{- end }}
+        {{- if .Values.global.opensearch.numberOfReplicas }}
+          number_of_replicas: {{ .Values.global.opensearch.numberOfReplicas }}
+        {{- end }}
+    {{- end }}
     spring:
       profiles:
         active: "ccsm"

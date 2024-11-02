@@ -160,6 +160,10 @@ global:
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
+    ## @param global.elasticsearch.numberOfShards Elasticsearch.numberOfShards defines the number of shards
+    numberOfShards: ""
+    ## @param global.elasticsearch.numberOfReplicas Elasticsearch.numberOfReplicas defines the number of replicas
+    numberOfReplicas: ""
   # Opensearch configuration which is shared between the sub charts
   ## @extra global.opensearch
   ## @param global.opensearch.enabled enabled external opensearch
@@ -192,6 +196,10 @@ global:
       protocol: https
       host:
       port: 443
+    ## @param global.opensearch.numberOfShards Elasticsearch.numberOfShards defines the number of shards
+    numberOfShards: ""
+    ## @param global.opensearch.numberOfReplicas Elasticsearch.numberOfReplicas defines the number of replicas
+    numberOfReplicas: ""
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
