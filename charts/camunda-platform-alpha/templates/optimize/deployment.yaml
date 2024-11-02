@@ -208,6 +208,12 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
+            - name: OPTIMIZE_LOG_LEVEL
+              value: {{ .Values.optimize.logLevel | quote }}
+            - name: UPGRADE_LOG_LEVEL
+              value: {{ .Values.optimize.upgradeLogLevel | quote }}
+            - name: ES_LOG_LEVEL
+              value: {{ .Values.optimize.esLogLevel | quote }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}

@@ -156,6 +156,10 @@ data:
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
     # Enable or disable metrics
     #management.metrics.export.prometheus.enabled: false
+    logging:
+{{- with .Values.tasklist.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
   {{- end }}
   {{- range $key, $val := .Values.tasklist.extraConfiguration }}
   {{ $key }}: |
