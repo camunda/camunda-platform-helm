@@ -48,7 +48,7 @@ data:
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
-                - audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
+                - audience: {{ include "core.authAudience" . | quote }}
                   definition: read:*
         console:
           applications:
@@ -89,30 +89,30 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        operate:
+        core:
           applications:
-            - name: Operate
-              id: ${CAMUNDA_OPERATE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
+            - name: Core
+              id: ${CAMUNDA_CORE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CORE_CLIENT_ID:core}}
               type: confidential
-              secret: ${CAMUNDA_OPERATE_SECRET:${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
+              secret: ${CAMUNDA_CORE_SECRET:${VALUES_KEYCLOAK_INIT_CORE_SECRET:}}
+              root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
           apis:
-            - name: Operate API
-              audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
+            - name: Core API
+              audience: {{ include "core.authAudience" . | quote }}
               permissions:
                 - definition: read:*
                   description: "Read permission"
                 - definition: write:*
                   description: "Write permission"
           roles:
-            - name: "Operate"
+            - name: "Core"
               description: "Grants full access to Operate"
               permissions:
-                - audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
+                - audience: {{ include "core.authAudience" . | quote }}
                   definition: read:*
-                - audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
+                - audience: {{ include "core.authAudience" . | quote }}
                   definition: write:*
         optimize:
           applications:
@@ -137,31 +137,6 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
-        tasklist:
-          applications:
-            - name: Tasklist
-              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${VALUES_KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
-              type: confidential
-              secret: ${CAMUNDA_TASKLIST_SECRET:${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
-              redirect-uris:
-                - "/identity-callback"
-          apis:
-            - name: Tasklist API
-              audience: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
-              permissions:
-                - definition: read:*
-                  description: "Read permission"
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Tasklist"
-              description: "Grants full access to Tasklist"
-              permissions:
-                - audience: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
-                  definition: read:*
-                - audience: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
-                  definition: write:*
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -209,7 +184,7 @@ data:
         zeebe:
           apis:
             - name: Zeebe API
-              audience: {{ include "camundaPlatform.authAudienceCore" . | quote }}
+              audience: {{ include "core.authAudience" . | quote }}
               permissions:
                 - definition: write:*
                   description: "Write permission"
@@ -217,7 +192,7 @@ data:
             - name: "Zeebe"
               description: "Grants full access to the Zeebe API"
               permissions:
-                - audience: {{ include "camundaPlatform.authAudienceCore" . | quote }}
+                - audience: {{ include "core.authAudience" . | quote }}
                   definition: write:*
 
     {{- if .Values.global.identity.auth.enabled }}
@@ -271,22 +246,13 @@ data:
               - "/auth/login-callback"
       # The presets key should be removed when 8.6.0 of the applications are released
       presets:
-        tasklist:
+        core:
           clients:
-            - name: Tasklist
-              id: tasklist
+            - name: Core
+              id: core
               type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
-              redirect-uris:
-                - "/identity-callback"
-        operate:
-          clients:
-            - name: Operate
-              id: ${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
-              type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
+              secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
+              root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
         optimize:

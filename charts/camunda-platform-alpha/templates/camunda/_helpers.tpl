@@ -508,25 +508,10 @@ Identity Auth.
 ********************************************************************************
 */}}
 
-{{- define "camundaPlatform.authAudienceOperate" -}}
-  {{- .Values.global.identity.auth.operate.audience | default "operate-api" -}}
-{{- end -}}
-
 {{- define "camundaPlatform.authAudienceOptimize" -}}
   {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
-{{- define "camundaPlatform.authAudienceTasklist" -}}
-  {{- .Values.global.identity.auth.tasklist.audience | default "tasklist-api" -}}
-{{- end -}}
-
-{{- define "camundaPlatform.authAudienceCore" }}
-    {{- .Values.global.identity.auth.core.audience | default "core-api" -}}
-{{- end -}}
-
-{{- define "camundaPlatform.authTokenScopeCore" }}
-    {{- .Values.global.identity.auth.core.tokenScope -}}
-{{- end -}}
 
 {{/*
 ********************************************************************************

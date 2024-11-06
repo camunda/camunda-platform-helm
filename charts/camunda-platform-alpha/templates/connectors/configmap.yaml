@@ -36,7 +36,7 @@ data:
       {{- if .Values.global.identity.auth.enabled }}
       {{- if eq .Values.connectors.inbound.mode "oauth" }}
       identity:
-        audience: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
+        audience: {{ include "core.authAudience" . | quote }}
         client-id: {{ include "connectors.authClientId" . | quote }}
       {{- end }}
       {{- end }}

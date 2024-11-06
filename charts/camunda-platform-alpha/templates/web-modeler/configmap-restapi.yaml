@@ -59,10 +59,10 @@ data:
             oauth:
               url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
               audience:
-                zeebe: {{ include "camundaPlatform.authAudienceCore" . | quote }}
-                operate: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
-                tasklist: {{ include "camundaPlatform.authAudienceTasklist" . | quote }}
-              scope: {{ include "zeebe.authTokenScope" . | quote }}
+                zeebe: {{ include "core.authAudience" . | quote }}
+                operate: {{ include "core.authAudience" . | quote }}
+                tasklist: {{ include "core.authAudience" . | quote }}
+              scope: {{ include "core.authTokenScope" . | quote }}
           {{- end }}
         {{- end }}
 

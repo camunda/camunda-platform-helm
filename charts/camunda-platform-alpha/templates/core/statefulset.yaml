@@ -68,6 +68,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: VALUES_CAMUNDA_CORE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "core.authClientSecretName" . }}
+                  key: {{ include "core.authClientSecretKey" . }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.core.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
@@ -140,9 +145,9 @@ spec:
               mountPath: /usr/local/camunda/certificates/externaldb.jks
               subPath: externaldb.jks
             {{- end }}
-            - name: config
-              mountPath: /usr/local/bin/startup.sh
-              subPath: startup.sh
+            # - name: config
+            #   mountPath: /usr/local/bin/startup.sh
+            #   subPath: startup.sh
             {{- if not ( eq .Values.core.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/camunda/data

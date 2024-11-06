@@ -43,74 +43,21 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
-            - name: VALUES_KEYCLOAK_INIT_OPERATE_SECRET
-              {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
+            - name: VALUES_KEYCLOAK_INIT_CORE_SECRET
               valueFrom:
                 secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
-                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
-              {{- end }}
+                  name: {{ include "core.authClientSecretName" . }}
+                  key: {{ include "core.authClientSecretKey" . }}
             - name: VALUES_KEYCLOAK_INIT_CONSOLE_SECRET
-              {{- if and .Values.global.identity.auth.console.existingSecret (not (typeIs "string" .Values.global.identity.auth.console.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.console.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.console.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "console") }}
-                  key: {{ .Values.global.identity.auth.console.existingSecretKey }}
-              {{- end }}
-            - name: VALUES_KEYCLOAK_INIT_TASKLIST_SECRET
-              {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
-              valueFrom:
-                secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: "{{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}"
-                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
-                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
-              {{- end }}
+                  name: {{ include "console.authClientSecretName" . }}
+                  key: {{ include "console.authClientSecretKey" . }}
             - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
-              {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
-                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- end }}
+                  name: {{ include "optimize.authClientSecretName" . }}
+                  key: {{ include "optimize.authClientSecretKey" . }}
             {{- /* TODO: Use ".Values.identity.connectors.inbound.mode=oauth" as a condition when we migrate
                  to flat chart structure. Also then remove the optional flag from the secret. */}}
             - name: KEYCLOAK_CLIENTS_0_NAME
@@ -118,28 +65,16 @@ spec:
             - name: KEYCLOAK_CLIENTS_0_ID
               value: connectors
             - name: KEYCLOAK_CLIENTS_0_SECRET
-              {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
-                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- end }}
+                  name: {{ include "connectors.authClientSecretName" . }}
+                  key: {{ include "connectors.authClientSecretKey" . }}
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
               value: http://placeholder
             - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
               value: /
             - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: {{ include "camundaPlatform.authAudienceOperate" . | quote }}
+              value: {{ include "core.authAudience" . | quote }}
             - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
               value: "read:*"
             - name: KEYCLOAK_CLIENTS_1_NAME
@@ -147,26 +82,14 @@ spec:
             - name: KEYCLOAK_CLIENTS_1_ID
               value: "zeebe"
             - name: KEYCLOAK_CLIENTS_1_SECRET
-              {{- if and .Values.global.identity.auth.core.existingSecret (not (typeIs "string" .Values.global.identity.auth.core.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.core.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.core.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
-                  key: {{ .Values.global.identity.auth.core.existingSecretKey }}
-              {{- end }}
+                  name: {{ include "core.authClientSecretName" . }}
+                  key: {{ include "core.authClientSecretKey" . }}
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "M2M"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: {{ include "camundaPlatform.authAudienceCore" . | quote }}
+              value: {{ include "core.authAudience" . | quote }}
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
             - name: VALUES_KEYCLOAK_SETUP_PASSWORD

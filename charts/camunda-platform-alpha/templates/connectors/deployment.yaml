@@ -83,7 +83,7 @@ spec:
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: ZEEBE_TOKEN_AUDIENCE
-              value: {{ include "camundaPlatform.authAudienceCore" . | quote }}
+              value: {{ include "core.authAudience" . | quote }}
             {{- if .Values.global.identity.auth.core.tokenScope }}
             - name: ZEEBE_TOKEN_SCOPE
               value: {{ include "zeebe.authTokenScope" . | quote }}

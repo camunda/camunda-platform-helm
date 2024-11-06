@@ -11,6 +11,40 @@ data:
     {{ .Values.core.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
+    {{- if .Values.global.identity.auth.enabled }}
+    spring:
+      profiles:
+        active: identity-auth
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+          client:
+            provider:
+              oidcclient:
+                issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            registration:
+              oidcclient:
+                client-id: {{ include "core.authClientId" . | quote }}
+                client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+                authorization-grant-type: authorization_code
+                redirect-uri: http://localhost:8080/login/oauth2/code/oidcclient2
+                provider: oidcclient
+                scope: openid,profile
+    {{- else }}
+    spring:
+      profiles:
+        active: auth
+    {{- end }}
+
+    {{- if .Values.core.contextPath }}
+    management:
+      server:
+        base-path: {{ .Values.core.contextPath | quote }}
+    {{- end }}
+
     zeebe:
       broker:
         exporters:
@@ -72,13 +106,24 @@ data:
           {{ " {}" }}
         {{- end }}
         gateway:
-          enable: true
-          network:
-            port: 26500
+          {{- if .Values.global.identity.auth.enabled }}
           security:
-            enabled: false
             authentication:
-              mode: none
+              mode: identity
+          {{- end }}
+          monitoring:
+            host: 0.0.0.0
+            port: {{ .Values.core.service.httpPort | quote }}
+          cluster:
+            clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+            port: {{ .Values.core.service.internalPort | quote }}
+          network:
+            host: 0.0.0.0
+            port: {{ .Values.core.service.grpcPort | quote }}
+          {{- if .Values.global.multitenancy.enabled }}
+          multitenancy:
+            enabled: true
+          {{- end }}
         network:
           host: 0.0.0.0
           commandApi:
@@ -96,59 +141,193 @@ data:
           cpuThreadCount: {{ .Values.core.cpuThreadCount  | quote }}
           ioThreadCount: {{ .Values.core.ioThreadCount  | quote }}
 
-    # Camunda Database configuration
-    {{- if .Values.global.elasticsearch.enabled }}
-    camunda.database:
-      type: elasticsearch
-      # Cluster name
-      clusterName: {{ .Values.global.elasticsearch.clusterName }}
-      {{- if .Values.global.elasticsearch.external }}
-      username: {{ .Values.global.elasticsearch.auth.username | quote }}
+
+    camunda:
+
+      {{- if .Values.global.identity.auth.enabled }}
+      identity:
+        clientId: {{ include "core.authClientId" . | quote }}
+        audience: {{ include "core.authAudience" . | quote }}
       {{- end }}
-      # Elasticsearch full url
-      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-    {{- end }}
-    {{- if .Values.global.opensearch.enabled }}
-    camunda.database:
-      type: opensearch
-      url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-      {{- if .Values.global.opensearch.auth.username }}
-      username: {{ .Values.global.opensearch.auth.username | quote }}
+
+      #
+      # Camunda Database Configuration.
+      #
+      {{- if .Values.global.elasticsearch.enabled }}
+      database:
+        type: elasticsearch
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        {{- if .Values.global.elasticsearch.external }}
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- end }}
+        # Elasticsearch full url
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
       {{- end }}
+      {{- if .Values.global.opensearch.enabled }}
+      database:
+        type: opensearch
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        {{- if .Values.global.opensearch.auth.username }}
+        username: {{ .Values.global.opensearch.auth.username | quote }}
+        {{- end }}
+      {{- end }}
+
+      #
+      # Camunda Operate Configuration.
+      #
+      operate:
+        {{- if .Values.global.opensearch.enabled }}
+        database: opensearch
+        {{- end }}
+        {{- if .Values.global.multitenancy.enabled }}
+        multiTenancy:
+          enabled: true
+        {{- end }}
+        {{- if .Values.global.identity.auth.enabled }}
+        identity:
+          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | trimSuffix .Values.core.contextPath | quote }}
+        {{- end }}
+      
+        # ELS instance to store Operate data
+        {{- if .Values.global.elasticsearch.enabled }}
+        elasticsearch:
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          {{- if .Values.global.elasticsearch.external }}
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+        # ELS instance to export Zeebe data to
+        zeebeElasticsearch:
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: {{ .Values.global.elasticsearch.prefix }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+          {{- if .Values.global.elasticsearch.external }}
+          # Elasticsearch username
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}"
+        {{- if .Values.global.opensearch.enabled }}
+        opensearch:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.aws.enabled }}
+          awsEnabled: true
+          {{- end }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        zeebeOpensearch:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.core.retention.enabled }}
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.core.retention.minimumAge }}
+        {{- end }}
+
+      #
+      # Camunda Tasklist Configuration.
+      #
+      tasklist:
+        {{- if .Values.global.multitenancy.enabled }}
+        multiTenancy:
+          enabled: true
+        {{- end }}
+
+        identity:
+          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | trimSuffix .Values.core.contextPath | quote }}
+
+        # Set Tasklist username and password.
+        # If user with <username> does not exists it will be created.
+        # Default: demo/demo
+        #username:
+        #password:
+        {{- if .Values.global.elasticsearch.enabled }}
+        # ELS instance to store Tasklist data
+        elasticsearch:
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+          {{- if .Values.global.elasticsearch.external }}
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+        # ELS instance to export Zeebe data to
+        zeebeElasticsearch:
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: {{ .Values.global.elasticsearch.prefix }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+          {{- if .Values.global.elasticsearch.external }}
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.global.opensearch.enabled }}
+        database: opensearch
+        opensearch:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.aws.enabled }}
+          awsEnabled: true
+          {{- end }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        zeebeOpensearch:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: {{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}
+          restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+        {{- if .Values.core.retention.enabled }}
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.core.retention.minimumAge }}
+        {{- end }}
+
     {{- end }}
-  {{- end }}
-
-  startup.sh: |
-    #!/usr/bin/env bash
-    set -eux -o pipefail
-    
-{{- if eq .Values.global.multiregion.installationType "failOver" }}
-    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 2 * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}
-{{- else }}
-    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}
-{{- end }}
-
-    if [ "$(ls -A /exporters/)" ]; then
-      mkdir -p /usr/local/camunda/exporters/
-      cp -a /exporters/*.jar /usr/local/camunda/exporters/
-    else
-      echo "No exporters available."
-    fi
-
-    {{- if .Values.core.debug }}
-
-    env
-    {{- end }}
-{{- if eq .Values.global.multiregion.installationType "failBack" }}
-    if [ $[${K8S_NAME##*-} % 2] -eq 0 ]
-    then
-      trap : TERM INT; sleep infinity & wait
-    else
-      exec /usr/local/camunda/bin/broker
-    fi
-{{- else }}
-    exec /usr/local/camunda/bin/broker
-{{- end }}
 
   broker-log4j2.xml: |
   {{- if .Values.core.log4j2 }}
