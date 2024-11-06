@@ -77,7 +77,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "core") }}
                   key: {{ .Values.global.identity.auth.core.existingSecretKey }}
               {{- end }}
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
@@ -86,7 +86,7 @@ spec:
               value: {{ include "core.authAudience" . | quote }}
             {{- if .Values.global.identity.auth.core.tokenScope }}
             - name: ZEEBE_TOKEN_SCOPE
-              value: {{ include "zeebe.authTokenScope" . | quote }}
+              value: {{ include "core.authTokenScope" . | quote }}
             {{- end }}
           {{- end }}
           {{- if .Values.connectors.env}}

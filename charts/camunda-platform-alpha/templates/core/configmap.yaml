@@ -17,14 +17,14 @@ data:
         active: identity-auth
       security:
         oauth2:
-          resourceserver:
-            jwt:
-              issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+          # resourceserver:
+          #   jwt:
+          #     issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+          #     jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
           client:
             provider:
               oidcclient:
-                issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+                issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "" | quote }}
             registration:
               oidcclient:
                 client-id: {{ include "core.authClientId" . | quote }}

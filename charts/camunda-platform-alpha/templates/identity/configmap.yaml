@@ -108,7 +108,7 @@ data:
                   description: "Write permission"
           roles:
             - name: "Core"
-              description: "Grants full access to Operate"
+              description: "Grants full access to Core"
               permissions:
                 - audience: {{ include "core.authAudience" . | quote }}
                   definition: read:*
@@ -205,16 +205,12 @@ data:
       init:
         console:
           secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
-        operate:
-          secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
-        tasklist:
-          secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
+        core:
+          secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         webmodeler:
           root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-        zeebe:
-          name: "Zeebe"
       # Clients are passed as environment variables.
       clients:
       users:
@@ -226,11 +222,10 @@ data:
           password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
           {{- if .Values.global.identity.auth.enabled }}
           roles:
-            - Console
             - Identity
-            - Operate
+            - Console
+            - Core
             - Optimize
-            - Tasklist
             - Web Modeler
             - Web Modeler Admin
           {{- end }}

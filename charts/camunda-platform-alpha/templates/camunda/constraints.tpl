@@ -138,9 +138,7 @@ data:
   # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
   console-secret: <base64-encoded-secret>
-  operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
-  tasklist-secret: <base64-encoded-secret>
   core-secret: <base64-encoded-secret>
   # Identity Keycloak.
   admin-password: <base64-encoded-secret>.
@@ -177,9 +175,7 @@ data:
   # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
   console-secret: <base64-encoded-secret>
-  operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
-  tasklist-secret: <base64-encoded-secret>
   core-secret: <base64-encoded-secret>
   # Identity Keycloak.
   admin-password: <base64-encoded-secret>.
