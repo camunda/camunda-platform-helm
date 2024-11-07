@@ -650,7 +650,7 @@ identity:
   externalDatabase:
     enabled: false
     host: ""
-    port: ""
+    port: 443
     username: ""
     database: ""
     password: ""
