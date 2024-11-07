@@ -235,7 +235,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the name of the secret resource that contains the SMTP password.
 */}}
 {{- define "webModeler.restapi.smtpSecretName" -}}
-  {{- if or (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.smtpPassword }} 
+  {{- if or (and (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) (ne .Values.webModeler.restapi.mail.existingSecret "")) .Values.webModeler.restapi.mail.smtpPassword }} 
       {{- (include "webModeler.restapi.fullname" .) }}
   {{- else if and (typeIs "map[string]interface {}" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.existingSecret.name }}
       {{- .Values.webModeler.restapi.mail.existingSecret.name }}
