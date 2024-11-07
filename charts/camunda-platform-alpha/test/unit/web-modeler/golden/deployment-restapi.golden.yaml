@@ -64,6 +64,11 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-postgresql-web-modeler
                   key: password
+            - name: RESTAPI_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler-restapi
+                  key: smtp-password
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
