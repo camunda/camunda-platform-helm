@@ -14,7 +14,7 @@ data:
     {{- if .Values.global.identity.auth.enabled }}
     spring:
       profiles:
-        active: identity-auth
+        active: identity, operate, tasklist, broker, auth-oidc
       security:
         oauth2:
           # resourceserver:
@@ -39,87 +39,33 @@ data:
         active: auth
     {{- end }}
 
-    {{- if .Values.core.contextPath }}
     management:
       server:
+        port: {{ .Values.core.service.httpPort }}
+        {{- if .Values.core.contextPath }}
         base-path: {{ .Values.core.contextPath | quote }}
-    {{- end }}
+        {{- end }}
+
+    server:
+      address: 0.0.0.0
+      port: {{  .Values.core.service.restPort }}
+      {{- if .Values.core.contextPath }}
+      servlet:
+        context-path: {{ .Values.core.contextPath | quote }}
+      {{- end }}
 
     zeebe:
       broker:
-        exporters:
-        {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
-          elasticsearch:
-            className: "io.camunda.core.exporter.ElasticsearchExporter"
-            args:
-              {{- if .Values.global.elasticsearch.external }}
-              authentication:
-                username: {{ .Values.global.elasticsearch.auth.username | quote }}
-              {{- end }}
-              url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-              index:
-                prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-              {{- if .Values.core.retention.enabled }}
-              retention:
-                enabled: true
-                minimumAge: {{ .Values.core.retention.minimumAge | quote }}
-                policyName: {{ .Values.core.retention.policyName | quote }}
-              {{- end }}
-        {{- else if .Values.global.opensearch.enabled }}
-          opensearch:
-            className: "io.camunda.core.exporter.opensearch.OpensearchExporter"
-            args:
-              url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-              {{- if .Values.global.opensearch.auth.username }}
-              authentication:
-                username: {{ .Values.global.opensearch.auth.username | quote }}
-              {{- end }}
-              {{- if .Values.global.opensearch.aws.enabled }}
-              aws:
-                enabled: true
-              {{- end}}
-              {{- if .Values.core.retention.enabled }}
-              retention:
-                enabled: true
-                minimumAge: {{ .Values.core.retention.minimumAge | quote }}
-                policyName: {{ .Values.core.retention.policyName | quote }}
-              {{- end }}
-          {{- end }}
-        {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
-          CamundaExporter:
-            className: "io.camunda.exporter.CamundaExporter"
-            args:
-              connect:
-                type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
-                url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
-              {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
-                username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
-              {{- end }}
-              {{- if .Values.core.retention.enabled }}
-              retention:
-                enabled: true
-                minimumAge: {{ .Values.core.retention.minimumAge | quote }}
-                policyName: {{ .Values.core.retention.policyName | quote }}
-              {{- end }}
-              createSchema: true
-        {{- else -}}
-          {{ " {}" }}
-        {{- end }}
         gateway:
+          enable: true
+          network:
+            host: 0.0.0.0
+            port: {{ .Values.core.service.grpcPort }}
           {{- if .Values.global.identity.auth.enabled }}
           security:
             authentication:
               mode: identity
           {{- end }}
-          monitoring:
-            host: 0.0.0.0
-            port: {{ .Values.core.service.httpPort | quote }}
-          cluster:
-            clusterName: {{ tpl .Values.global.zeebeClusterName . }}
-            port: {{ .Values.core.service.internalPort | quote }}
-          network:
-            host: 0.0.0.0
-            port: {{ .Values.core.service.grpcPort | quote }}
           {{- if .Values.global.multitenancy.enabled }}
           multitenancy:
             enabled: true
@@ -130,8 +76,6 @@ data:
             port: {{ .Values.core.service.commandPort }}
           internalApi:
             port: {{ .Values.core.service.internalPort }}
-          monitoringApi:
-            port: {{  .Values.core.service.httpPort | quote }}
         cluster:
           clusterSize: {{ .Values.core.clusterSize | quote }}
           replicationFactor: {{ .Values.core.replicationFactor | quote }}
@@ -140,7 +84,6 @@ data:
         threads:
           cpuThreadCount: {{ .Values.core.cpuThreadCount  | quote }}
           ioThreadCount: {{ .Values.core.ioThreadCount  | quote }}
-
 
     camunda:
 

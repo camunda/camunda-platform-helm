@@ -26,6 +26,12 @@ spec:
     - port: {{ .Values.core.service.commandPort }}
       protocol: TCP
       name: {{ default "command" .Values.core.service.commandName }}
+    - port: {{ .Values.core.service.grpcPort }}
+      protocol: TCP
+      name: {{ default "grpc-api" .Values.core.service.grpcName }}
+    - port: {{ .Values.core.service.restPort }}
+      protocol: TCP
+      name: {{ default "rest-api" .Values.core.service.restName }}
     {{- if .Values.core.service.extraPorts}}
     {{ .Values.core.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}

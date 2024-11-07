@@ -2344,11 +2344,11 @@ core:
     ## @param core.containerSecurityContext.privileged
     privileged: false
     ## @param core.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     ## @param core.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
+    runAsNonRoot: false
     ## @param core.containerSecurityContext.runAsUser
-    runAsUser: 1001
+    runAsUser: 0
     ## @extra core.containerSecurityContext.seccompProfile
     seccompProfile:
     ## @param core.containerSecurityContext.seccompProfile.type
@@ -2376,7 +2376,7 @@ core:
   ## @extra core.readinessProbe configuration
   readinessProbe:
     ## @param core.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
+    enabled: false
     ## @param core.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
     ## @param core.readinessProbe.probePath defines the readiness probe route used on the app
