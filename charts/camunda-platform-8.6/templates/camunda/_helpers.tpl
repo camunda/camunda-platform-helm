@@ -561,7 +561,11 @@ Release templates.
   {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
 
   {{- if .Values.console.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.console.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
   - name: Console
     id: console
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
@@ -570,7 +574,11 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.identity.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
     id: keycloak
     version: {{ .Values.identityKeycloak.image.tag }}
@@ -584,7 +592,11 @@ Release templates.
   {{- end }}
 
   {{- if .Values.operate.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "operate.fullname" .) .Release.Namespace .Values.operate.service.managementPort }}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.operate.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "operate.fullname" .) .Release.Namespace .Values.operate.service.managementPort }}
   - name: Operate
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
@@ -594,7 +606,11 @@ Release templates.
   {{- end }}
 
   {{- if .Values.optimize.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s" (include "optimize.fullname" .) .Release.Namespace }}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.optimize.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
     id: optimize
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
@@ -604,7 +620,11 @@ Release templates.
   {{- end }}
 
   {{- if .Values.tasklist.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.managementPort }}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.tasklist.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "tasklist.fullname" .) .Release.Namespace .Values.tasklist.service.managementPort }}
   - name: Tasklist
     id: tasklist
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
@@ -614,7 +634,11 @@ Release templates.
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.webModeler.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
   - name: WebModeler WebApp
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
@@ -624,7 +648,11 @@ Release templates.
   {{- end }}
 
   {{- if .Values.zeebe.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort }}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.zeebe.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "zeebe.names.gateway" . | trimAll "\"") .Release.Namespace .Values.zeebeGateway.service.httpPort }}
   - name: Zeebe Gateway
     id: zeebeGateway
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}
@@ -633,7 +661,11 @@ Release templates.
       http: {{ include "camundaPlatform.zeebeGatewayExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.zeebeGateway.contextPath .Values.zeebeGateway.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.zeebeGateway.contextPath .Values.zeebeGateway.metrics.prometheus }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.broker" . | trimAll "\"") .Release.Namespace .Values.zeebe.service.httpPort }}
+  {{- $proto := "http" -}}
+  {{- if eq (lower .Values.zeebeGateway.readinessProbe.scheme) "https" -}}
+  {{- $proto = "https" -}}
+  {{- end -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "zeebe.names.broker" . | trimAll "\"") .Release.Namespace .Values.zeebe.service.httpPort }}
   - name: Zeebe
     id: zeebe
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
