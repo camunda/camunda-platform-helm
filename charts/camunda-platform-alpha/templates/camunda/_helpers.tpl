@@ -593,7 +593,8 @@ Release templates.
   {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
 
   {{- if .Values.console.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
+  {{-  $proto := (lower .Values.console.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
   - name: Console
     id: console
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
@@ -602,7 +603,8 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
+  {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
     id: keycloak
     version: {{ .Values.identityKeycloak.image.tag }}
@@ -616,7 +618,8 @@ Release templates.
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
+  {{-  $proto := (lower .Values.webModeler.webapp.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
   - name: WebModeler WebApp
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
@@ -626,7 +629,8 @@ Release templates.
   {{- end }}
 
   {{- if .Values.optimize.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s" (include "optimize.fullname" .) .Release.Namespace }}
+  {{-  $proto := (lower .Values.optimize.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
     id: optimize
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
@@ -636,7 +640,8 @@ Release templates.
   {{- end }}
 
   {{- if .Values.core.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "core.fullname" . | trimAll "\"") .Release.Namespace .Values.core.service.managementPort }}
+  {{-  $proto := (lower .Values.core.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "core.fullname" . | trimAll "\"") .Release.Namespace .Values.core.service.managementPort }}
   - name: Operate
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}
