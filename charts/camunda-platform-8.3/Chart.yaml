@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.3.20
+version: 8.3.21
 appVersion: 8.3.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -56,5 +56,7 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Update postgresql image tag to avoid bitnami broken release"
   camunda.io/helmCLIVersion: 3.16.2
