@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "SNAPSHOT"
 spec:
-  maxUnavailable: 1
+  minAvailable: 3
   selector:
     matchLabels:
       app: camunda-platform
