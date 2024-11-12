@@ -1949,7 +1949,7 @@ identity:
     ##
     image:
       repository: bitnami/postgresql
-      tag: 15.7.0
+      tag: 15.7.0-debian-12-r19
     ## @param identity.postgresql.nameOverride the name used for Identity PostgreSQL.
     ##
     nameOverride: identity-postgresql
@@ -2007,7 +2007,7 @@ identity:
         ## @param identity.keycloak.postgresql.image.repository image repo
         repository: bitnami/postgresql
         ## @param identity.keycloak.postgresql.image.tag image tag
-        tag: 15.7.0
+        tag: 15.7.0-debian-12-r19
       primary:
         ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].name
         ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].emptyDir
