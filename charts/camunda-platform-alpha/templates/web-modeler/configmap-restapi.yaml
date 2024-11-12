@@ -41,14 +41,14 @@ data:
         server:
           url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
 
-        {{- if or .Values.zeebe.enabled .Values.webModeler.restapi.clusters }}
+        {{- if or .Values.core.enabled .Values.webModeler.restapi.clusters }}
         clusters:
           {{- if .Values.webModeler.restapi.clusters }}
             {{- .Values.webModeler.restapi.clusters | toYaml | nindent 10 }}
           {{- else}}
           - id: "default-cluster"
             name: {{ tpl .Values.global.zeebeClusterName . | quote }}
-            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
+            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) | quote }}
             authentication: {{ .Values.global.identity.auth.enabled | ternary "OAUTH" "NONE" | quote }}
             url:
               zeebe:

@@ -50,6 +50,7 @@ spec:
           {{- if .Values.core.containerSecurityContext }}
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
+          command: ["bash", "/usr/local/bin/startup.sh"]
           env:
             - name: CAMUNDA_LICENSE_KEY
               valueFrom:
@@ -149,9 +150,9 @@ spec:
               mountPath: /usr/local/camunda/certificates/externaldb.jks
               subPath: externaldb.jks
             {{- end }}
-            # - name: config
-            #   mountPath: /usr/local/bin/startup.sh
-            #   subPath: startup.sh
+            - name: config
+              mountPath: /usr/local/bin/startup.sh
+              subPath: startup.sh
             {{- if not ( eq .Values.core.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/camunda/data

@@ -207,75 +207,14 @@ The following values inside your values.yaml need to be set but were not:
 {{/*
 TODO: Enable for 8.7 cycle.
 
-Fail with a message if global.zeebePort is set since now it's used from Zeebe Gateway values:
-"zeebeGateway.service.grpcPort".
-Chart Version: 10.0.0
-{{- if (.Values.global.zeebePort) }}
+Fail with a message when old values syntax is used.
+Chart Version: 12.0.0
+
+{{- if (TBA) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "The global Zeebe Gateway port \"global.zeebePort\" is deprecated. Please remove it."
-      "It is now used directly via \"zeebeGateway.service.grpcPort\"."
+      "TBA"
+      "TBA"
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 */}}
-
-{{/*
-TODO: Enable for 8.7 cycle.
-
-********************************************************************************
-elasticsearch and opensearch constraints
-********************************************************************************
-*/}}
-
-{{/*
-ensuring external elasticsearch and external opensearch to be mutually exclusive
-{{- if and .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
-  {{- $errorMessage := "[camunda][error] global.elasticsearch.enabled and global.opensearch.enabled cannot both be true." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-*/}}
-
-
-{{/*
-when external elasticsearch is enabled then global elasticsearch should be enabled
-{{- if and .Values.global.elasticsearch.external ( not .Values.global.elasticsearch.enabled ) }}
-  {{- $errorMessage := "[camunda][error] global.elasticsearch should be enabled with global.elasticsearch.external" -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-*/}}
-
-
-{{/*
-ensuring internal and external elasticsearch to be mutually exclusive
-{{- if and .Values.global.elasticsearch.external .Values.elasticsearch.enabled }}
-  {{- $errorMessage := "[camunda][error] global.elasticsearch.external and elasticsearch.enabled cannot both be true." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-*/}}
-
-{{/*
-ensuring internal and external opensearch to be mutually exclusive
-{{- if and .Values.global.opensearch.enabled .Values.elasticsearch.enabled }}
-  {{- $errorMessage := "[camunda][error] global.opensearch.enabled and elasticsearch.enabled cannot both be true." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-*/}}
-
-{{/*
-when global elasticsearch is enabled then either external elasticsearch should be enabled or internal elasticsearch should be enabled
-{{- if .Values.global.elasticsearch.enabled -}}
-  {{- if and (not .Values.global.elasticsearch.external) (not .Values.elasticsearch.enabled) -}}
-  {{- $errorMessage := "[camunda][error] global.elasticsearch.enabled is true, but neither global.elasticsearch.external.enabled nor elasticsearch.enabled is true" -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-  {{- end -}}
-{{- end -}}
-*/}}
-
-{{/*
-[elasticsearch] when existingSecret is provided for elasticsearch then password field should be empty
-{{- if and .Values.global.elasticsearch.auth.existingSecret .Values.global.elasticsearch.auth.password }}
-  {{- $errorMessage := "[camunda][error] global.elasticsearch.auth.existingSecret and global.elasticsearch.auth.password cannot both be set." -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-*/}}
-

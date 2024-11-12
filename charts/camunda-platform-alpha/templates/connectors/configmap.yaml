@@ -17,6 +17,9 @@ data:
       servlet:
         context-path: {{ .Values.connectors.contextPath | quote }}
     {{- end }}
+    operate:
+      client:
+        profile: {{ include "connectors.operateClientProfile" . | quote }}
     camunda:
       {{- if eq .Values.connectors.inbound.mode "disabled" }}
       connector:
@@ -38,6 +41,7 @@ data:
       identity:
         audience: {{ include "core.authAudience" . | quote }}
         client-id: {{ include "connectors.authClientId" . | quote }}
+        client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
       {{- end }}
       {{- end }}
 

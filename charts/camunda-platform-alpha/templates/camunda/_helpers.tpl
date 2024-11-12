@@ -349,7 +349,7 @@ Operate templates.
 */}}
 {{ define "camundaPlatform.operateURL" }}
   {{- if .Values.core.enabled -}}
-    {{- print "http://" -}}{{- include "core.fullname" . -}}:{{- .Values.core.service.port -}}
+    {{- print "http://" -}}{{- include "core.fullname" . -}}:{{- .Values.core.service.httpPort -}}
     {{- .Values.core.contextPath -}}/operate
   {{- end -}}
 {{- end -}}
