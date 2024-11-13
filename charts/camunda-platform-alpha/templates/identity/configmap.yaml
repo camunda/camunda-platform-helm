@@ -97,7 +97,8 @@ data:
               secret: ${CAMUNDA_CORE_SECRET:${VALUES_KEYCLOAK_INIT_CORE_SECRET:}}
               root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
               redirect-uris:
-                - "/identity-callback"
+                - "/login/oauth2/code/core"
+                - "/core/login/oauth2/code/core"
           apis:
             - name: "Core API"
               audience: {{ include "core.authAudience" . | quote }}

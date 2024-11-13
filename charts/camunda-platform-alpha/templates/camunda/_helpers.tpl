@@ -509,7 +509,7 @@ Identity Auth.
 */}}
 
 {{- define "camundaPlatform.authAudienceOptimize" -}}
-  {{- .Values.global.identity.auth.optimize.audience | default "core-api" -}}
+  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
 

@@ -30,16 +30,11 @@ global:
         existingSecret:
           name: "integration-test-credentials"
         existingSecretKey: "identity-console-client-password"
-      operate:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/operate"
+      core:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/core"
         existingSecret:
           name: "integration-test-credentials"
-        existingSecretKey: "identity-operate-client-password"
-      tasklist:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/tasklist"
-        existingSecret:
-          name: "integration-test-credentials"
-        existingSecretKey: "identity-tasklist-client-password"
+        existingSecretKey: "identity-core-client-password"
       optimize:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
         existingSecret:
@@ -47,10 +42,6 @@ global:
         existingSecretKey: "identity-optimize-client-password"
       webModeler:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
-      zeebe:
-        existingSecret:
-          name: "integration-test-credentials"
-        existingSecretKey: "identity-zeebe-client-password"
 
 identity:
   contextPath: "/identity"
@@ -99,19 +90,19 @@ postgresql:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
 
-zeebeGateway:
-  contextPath: "/zeebe"
+core:
+  contextPath: "/core"
   ingress:
     grpc:
       enabled: true
       className: nginx
-      host: "zeebe-{{ .Values.global.ingress.host }}"
+      host: "core-{{ .Values.global.ingress.host }}"
       tls:
         enabled: true
         # A wildcard certificate will be used.
         secretName: camunda-platform-zeebe-gateway
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/hostname: "core-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:

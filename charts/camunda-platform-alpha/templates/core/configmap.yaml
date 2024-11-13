@@ -20,6 +20,8 @@ data:
   application.yaml: |
     {{- if .Values.global.identity.auth.enabled }}
     spring:
+      server:
+        context-path: {{ .Values.core.contextPath | quote }}
       profiles:
         active: "identity,operate,tasklist,broker,auth-oidc"
       security:
@@ -27,15 +29,17 @@ data:
           client:
             provider:
               oidcclient:
-                issuer-uri: {{ include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "" | quote }}
+                {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
+                issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | default $issuerURIDefault | quote }}
             registration:
               oidcclient:
                 client-id: {{ include "core.authClientId" . | quote }}
                 client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
                 authorization-grant-type: authorization_code
-                redirect-uri: http://{{ include "core.fullname" . }}:8080/login/oauth2/code/core
+                {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
+                redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
                 provider: oidcclient
-                scope: openid,{{ include "core.authClientId" . }}
+                scope: openid,profile
 
     {{- else }}
     spring:
@@ -221,7 +225,7 @@ data:
         {{- end }}
         {{- if .Values.global.identity.auth.enabled }}
         identity:
-          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | trimSuffix .Values.core.contextPath | quote }}
+          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
         {{- end }}
       
         # ELS instance to store Operate data
@@ -294,7 +298,7 @@ data:
         {{- end }}
 
         identity:
-          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | trimSuffix .Values.core.contextPath | quote }}
+          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.
