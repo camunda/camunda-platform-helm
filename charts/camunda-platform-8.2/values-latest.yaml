@@ -65,7 +65,7 @@ identity:
       # https://hub.docker.com/r/bitnami/postgresql/tags?page=&page_size=&ordering=&name=8.2
       image:
         repository: bitnami/postgresql
-        tag: 15.4.0
+        tag: 15.8.0
 
 #
 # Elasticsearch
