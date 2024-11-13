@@ -45,7 +45,7 @@ identity:
   # #   value: "write:*"
   # # Optimize access.
   # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
-  #   value: optimize-api
+  #   value: core-api
   # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
   #   value: "write:*"
   # # # Zeebe access.

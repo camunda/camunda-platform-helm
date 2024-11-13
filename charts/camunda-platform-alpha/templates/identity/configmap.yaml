@@ -106,11 +106,6 @@ data:
                   description: "Read permission"
                 - definition: write:*
                   description: "Write permission"
-            - name: "Core"
-              description: "Grants full access to the Core API"
-              permissions:
-                - audience: {{ include "core.authAudience" . | quote }}
-                  definition: "write:*"
           roles:
             - name: "Core"
               description: "Grants full access to Core"

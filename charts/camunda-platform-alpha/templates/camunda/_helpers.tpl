@@ -416,9 +416,9 @@ Tasklist templates.
 [camunda-platform] Tasklist internal URL.
 */}}
 {{ define "camundaPlatform.tasklistURL" }}
-  {{- if .Values.tasklist.enabled -}}
-    {{- print "http://" -}}{{- include "tasklist.fullname" . -}}:{{- .Values.tasklist.service.port -}}
-    {{- .Values.tasklist.contextPath -}}
+  {{- if .Values.core.enabled -}}
+    {{- print "http://" -}}{{- include "core.fullname" . -}}:{{- .Values.core.service.httpPort -}}
+    {{- .Values.core.contextPath -}}/tasklist
   {{- end -}}
 {{- end -}}
 
@@ -509,7 +509,7 @@ Identity Auth.
 */}}
 
 {{- define "camundaPlatform.authAudienceOptimize" -}}
-  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
+  {{- .Values.global.identity.auth.optimize.audience | default "core-api" -}}
 {{- end -}}
 
 
@@ -538,9 +538,9 @@ Zeebe templates.
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.core.contextPath -}}
-  {{- else if .Values.core.ingress.rest.enabled -}}
-    {{ $proto := ternary "https" "http" .Values.core.ingress.rest.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto .Values.core.ingress.rest.host .Values.core.contextPath -}}
+  {{- else if .Values.core.ingress.http.enabled -}}
+    {{ $proto := ternary "https" "http" .Values.core.ingress.http.tls.enabled -}}
+    {{- printf "%s://%s%s" $proto .Values.core.ingress.http.host .Values.core.contextPath -}}
   {{- else -}}
     {{- printf "http://localhost:8088" -}}
   {{- end -}}

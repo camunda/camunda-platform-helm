@@ -148,9 +148,9 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 - Zeebe Gateway gRPC: {{  include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
 {{- end }}
 
-{{- if .Values.core.ingress.rest.enabled }}
-{{ $proto := ternary "https" "http" .Values.core.ingress.rest.tls.enabled -}}
-- Zeebe Gateway REST: {{ $proto }}://{{ tpl .Values.core.ingress.rest.host $ }}
+{{- if .Values.core.ingress.http.enabled }}
+{{ $proto := ternary "https" "http" .Values.core.ingress.http.tls.enabled -}}
+- Zeebe Gateway REST: {{ $proto }}://{{ tpl .Values.core.ingress.http.host $ }}
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}

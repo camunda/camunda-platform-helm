@@ -2222,38 +2222,38 @@ core:
         enabled: false
         ## @param core.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: camunda-platform-zeebe-gateway-grpc
-    rest:
-      ## @param core.ingress.rest.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
+    http:
+      ## @param core.ingress.http.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
       enabled: false
-      ## @param core.ingress.rest.className defines the class or configuration of ingress which should be used by the controller
+      ## @param core.ingress.http.className defines the class or configuration of ingress which should be used by the controller
       className: nginx
-      ## @param core.ingress.rest.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-      ## @skip core.ingress.rest.annotations.ingress.kubernetes.io/rewrite-target
-      ## @skip core.ingress.rest.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-      ## @skip core.ingress.rest.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      ## @skip core.ingress.rest.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      ## @param core.ingress.http.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+      ## @skip core.ingress.http.annotations.ingress.kubernetes.io/rewrite-target
+      ## @skip core.ingress.http.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+      ## @skip core.ingress.http.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## @skip core.ingress.http.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
       annotations:
         ingress.kubernetes.io/rewrite-target: '/'
         nginx.ingress.kubernetes.io/ssl-redirect: 'false'
         nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
         nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
         nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-      ## @param core.ingress.rest.path defines the path which is associated with the Zeebe gateway's REST service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      ## @param core.ingress.http.path defines the path which is associated with the Core HTTP service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
-      ## @param core.ingress.rest.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      ## @param core.ingress.http.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
       pathType: Prefix
-      ## @param core.ingress.rest.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      ## @param core.ingress.http.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
       host: ""
-      ## @extra core.ingress.rest.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      ## @extra core.ingress.http.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
-        ## @param core.ingress.rest.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+        ## @param core.ingress.http.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
         enabled: false
-        ## @param core.ingress.rest.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-zeebe-gateway-rest
+        ## @param core.ingress.http.tls.secretName defines the secret name which contains the TLS private key and certificate
+        secretName: camunda-platform-core-http
 
-  # contextPath: "/zeebe"
-  ## @param core.contextPath can be used to make Zeebe web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  # contextPath: "/core"
+  ## @param core.contextPath can be used to make Core web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
   ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
