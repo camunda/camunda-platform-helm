@@ -11,7 +11,7 @@ global:
   identity:
     image:
       repository: camunda/identity
-      tag: 8.5.8
+      tag: 8.5.9
 
 console:
   # Camunda Enterprise repository.
@@ -77,7 +77,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       repository: bitnami/postgresql
-      tag: 15.8.0-debian-12-r23
+      tag: 15.8.0-debian-12-r26
 
 #
 # Elasticsearch
