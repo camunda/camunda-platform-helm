@@ -78,9 +78,9 @@ spec:
             - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
               value: "read:*"
             - name: KEYCLOAK_CLIENTS_1_NAME
-              value: "Zeebe"
+              value: "Core"
             - name: KEYCLOAK_CLIENTS_1_ID
-              value: "zeebe"
+              value: "core"
             - name: KEYCLOAK_CLIENTS_1_SECRET
               valueFrom:
                 secretKeyRef:

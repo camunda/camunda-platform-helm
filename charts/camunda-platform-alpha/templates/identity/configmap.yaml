@@ -99,13 +99,18 @@ data:
               redirect-uris:
                 - "/identity-callback"
           apis:
-            - name: Core API
+            - name: "Core API"
               audience: {{ include "core.authAudience" . | quote }}
               permissions:
                 - definition: read:*
                   description: "Read permission"
                 - definition: write:*
                   description: "Write permission"
+            - name: "Core"
+              description: "Grants full access to the Core API"
+              permissions:
+                - audience: {{ include "core.authAudience" . | quote }}
+                  definition: "write:*"
           roles:
             - name: "Core"
               description: "Grants full access to Core"
@@ -181,19 +186,6 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
-        zeebe:
-          apis:
-            - name: Zeebe API
-              audience: {{ include "core.authAudience" . | quote }}
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Zeebe"
-              description: "Grants full access to the Zeebe API"
-              permissions:
-                - audience: {{ include "core.authAudience" . | quote }}
-                  definition: write:*
 
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
