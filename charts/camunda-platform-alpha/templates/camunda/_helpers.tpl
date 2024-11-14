@@ -560,9 +560,9 @@ Zeebe templates.
 {{ define "camundaPlatform.zeebeGatewayRESTURL" }}
   {{- if .Values.core.enabled -}}
     {{-
-      printf "http://%s:%v%s"
+      printf "http://%s:%v%s/v1"
         (include "core.fullname" .)
-        .Values.core.service.restPort
+        .Values.core.service.httpPort
         (.Values.core.contextPath | default "")
     -}}
   {{- end -}}

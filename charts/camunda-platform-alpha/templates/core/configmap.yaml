@@ -47,15 +47,15 @@ data:
 
     management:
       server:
-        port: {{ .Values.core.service.httpPort }}
+        port: {{ .Values.core.service.managementPort }}
         {{- if .Values.core.contextPath }}
         base-path: {{ .Values.core.contextPath | quote }}
         {{- end }}
 
     server:
-      forward-headers-strategy: framework
+      forward-headers-strategy: native
       address: 0.0.0.0
-      port: {{ .Values.core.service.restPort }}
+      port: {{ .Values.core.service.managementPort }}
       {{- if .Values.core.contextPath }}
       servlet:
         context-path: {{ .Values.core.contextPath | quote }}

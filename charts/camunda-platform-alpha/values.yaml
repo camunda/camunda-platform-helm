@@ -116,9 +116,6 @@ global:
       nginx.ingress.kubernetes.io/proxy-buffering: 'on'
       nginx.ingress.kubernetes.io/affinity: "cookie"
       nginx.ingress.kubernetes.io/affinity-mode: "persistent"
-      nginx.ingress.kubernetes.io/session-cookie-name: "route"
-      nginx.ingress.kubernetes.io/session-cookie-path: "/"
-      nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
       nginx.ingress.kubernetes.io/session-cookie-expires: "3600"
       nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -2134,9 +2131,9 @@ core:
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @extra core.env can be used to set extra environment variables in each broker container
-  env:
-    - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
-      value: TRACE
+  env: []
+    # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
+    #   value: TRACE
   ## @param core.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
   ## @extra core.configMap configuration which will be applied to the mounted config map.
@@ -2164,7 +2161,7 @@ core:
     ## @param core.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param core.service.httpPort defines the port of the http endpoint, where for example metrics are provided
-    httpPort: 9600
+    httpPort: 8080
     ## @param core.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
     ## @param core.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
@@ -2185,10 +2182,10 @@ core:
     grpcPort: 26500
     ## @param core.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
     grpcName: "gateway"
-    ## @param core.service.restPort defines the REST port of the gateway REST endpoint, where client commands (REST) are sent to
-    restPort: 8080
-    ## @param core.service.restName defines the name of the gateway REST endpoint, where client commands (REST) are sent to
-    restName: "rest"
+    ## @param core.service.managementPort
+    managementPort: 9600
+    ## @param core.service.managementName
+    managementName: "server"
 
   ## @extra global.core.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:

@@ -96,22 +96,23 @@ spec:
           command: {{ toYaml .Values.core.command | nindent 10 }}
           {{- end }}
           ports:
-            - containerPort: {{ .Values.core.service.httpPort  }}
-              name: {{ default "http" .Values.core.service.httpName  }}
-            - containerPort: {{ .Values.core.service.commandPort  }}
-              name: {{ default "command" .Values.core.service.commandName  }}
-            - containerPort: {{ .Values.core.service.internalPort  }}
-              name: {{ default "internal" .Values.core.service.internalName  }}
-            - containerPort: {{ .Values.core.service.grpcPort  }}
-              name: {{ default "gateway" .Values.core.service.grpcName  }}
-            - containerPort: {{ .Values.core.service.restPort  }}
-              name: {{ default "rest" .Values.core.service.restName  }}
+            - containerPort: {{ .Values.core.service.httpPort }}
+              name: {{ default "http" .Values.core.service.httpName }}
+            - containerPort: {{ .Values.core.service.commandPort }}
+              name: {{ default "command" .Values.core.service.commandName }}
+            - containerPort: {{ .Values.core.service.internalPort }}
+              name: {{ default "internal" .Values.core.service.internalName }}
+            - containerPort: {{ .Values.core.service.managementPort }}
+              name: {{ default "management" .Values.core.service.managementName }}
+            - containerPort: {{ .Values.core.service.grpcPort }}
+              name: {{ default "gateway" .Values.core.service.grpcName }}
+
           {{- if .Values.core.startupProbe.enabled }}
           startupProbe:
             httpGet:
               path: {{ .Values.core.contextPath }}{{ .Values.core.startupProbe.probePath }}
               scheme: {{ .Values.core.startupProbe.scheme }}
-              port: {{ .Values.core.service.httpPort  }}
+              port: {{ .Values.core.service.httpPort }}
             initialDelaySeconds: {{ .Values.core.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.core.startupProbe.periodSeconds }}
             successThreshold: {{ .Values.core.startupProbe.successThreshold }}
@@ -123,7 +124,7 @@ spec:
             httpGet:
               path: {{ .Values.core.contextPath }}{{ .Values.core.readinessProbe.probePath }}
               scheme: {{ .Values.core.readinessProbe.scheme }}
-              port: {{ .Values.core.service.httpPort  }}
+              port: {{ .Values.core.service.httpPort }}
             initialDelaySeconds: {{ .Values.core.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.core.readinessProbe.periodSeconds }}
             successThreshold: {{ .Values.core.readinessProbe.successThreshold }}
@@ -135,7 +136,7 @@ spec:
             httpGet:
               path: {{ .Values.core.contextPath }}{{ .Values.core.livenessProbe.probePath }}
               scheme: {{ .Values.core.livenessProbe.scheme }}
-              port: {{ .Values.core.service.httpPort  }}
+              port: {{ .Values.core.service.httpPort }}
             initialDelaySeconds: {{ .Values.core.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.core.livenessProbe.periodSeconds }}
             successThreshold: {{ .Values.core.livenessProbe.successThreshold }}

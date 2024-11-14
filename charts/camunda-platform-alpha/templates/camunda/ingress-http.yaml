@@ -67,14 +67,6 @@ spec:
           {{- end }}
         {{- /* Orchestration Group */ -}}
           {{- if and .Values.core.enabled .Values.core.contextPath }}
-          # # Core - Zeebe.
-          # - backend:
-          #     service:
-          #       name: {{ template "core.fullname" . }}
-          #       port:
-          #         number: {{ .Values.core.service.restPort }}
-          #   path: {{ .Values.core.contextPath }}/zeebe
-          #   pathType: {{ .Values.core.ingress.http.pathType | default .Values.global.ingress.pathType }}
           # Core.
           - backend:
               service:
