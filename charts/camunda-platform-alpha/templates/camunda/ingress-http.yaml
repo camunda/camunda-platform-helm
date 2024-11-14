@@ -20,13 +20,13 @@ spec:
         paths:
         {{- /* Management Group */ -}}
           {{- if and .Values.console.enabled .Values.console.contextPath }}
-          - backend:
-              service:
-                name: {{ template "console.fullname" . }}
-                port:
-                  number: {{ .Values.console.service.port }}
-            path: {{ .Values.console.contextPath }}
-            pathType: {{ .Values.console.ingress.pathType | default .Values.global.ingress.pathType }}
+          # - backend:
+          #     service:
+          #       name: {{ template "console.fullname" . }}
+          #       port:
+          #         number: {{ .Values.console.service.port }}
+          #   path: {{ .Values.console.contextPath }}
+          #   pathType: {{ .Values.console.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if .Values.identity.enabled }}
           {{- if or .Values.identityKeycloak.enabled .Values.global.identity.keycloak.internal }}
@@ -66,14 +66,14 @@ spec:
             pathType: {{ .Values.webModeler.ingress.websockets.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
         {{- /* Orchestration Group */ -}}
-          {{- if and .Values.core.enabled .Values.core.contextPath }}
+          {{- if .Values.core.enabled }}
           # Core - Zeebe.
           - backend:
               service:
                 name: {{ template "core.fullname" . }}
                 port:
                   number: {{ .Values.core.service.restPort }}
-            path: {{ .Values.core.contextPath }}
+            path: {{ .Values.core.contextPath }}/zeebe
             pathType: {{ .Values.core.ingress.http.pathType | default .Values.global.ingress.pathType }}
           # Core - Identity.
           - backend:

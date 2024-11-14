@@ -98,7 +98,6 @@ data:
               root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/core"
-                - "/core/login/oauth2/code/core"
           apis:
             - name: "Core API"
               audience: {{ include "core.authAudience" . | quote }}

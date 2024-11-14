@@ -60,8 +60,8 @@ identityKeycloak:
     existingSecret: "integration-test-credentials"
     passwordSecretKey: "identity-keycloak-admin-password"
 
-core:
-  contextPath: "/core"
+# core:
+#   contextPath: "/core"
 
 optimize:
   contextPath: "/optimize"
@@ -91,7 +91,7 @@ postgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 core:
-  contextPath: "/core"
+  # contextPath: "/core"
   ingress:
     grpc:
       enabled: true

@@ -227,7 +227,7 @@ data:
         {{- end }}
         {{- if .Values.global.identity.auth.enabled }}
         identity:
-          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
+          redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/operate"
         {{- end }}
       
         # ELS instance to store Operate data
@@ -300,7 +300,7 @@ data:
         {{- end }}
 
         identity:
-          redirectRootUrl: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
+          redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/tasklist"
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.
