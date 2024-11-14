@@ -441,6 +441,8 @@ Web Modeler templates.
       {{- else -}}
         {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values.webModeler "contextPath") -}} 
       {{- end -}}
+    {{- else -}}
+      {{- printf "http://localhost:8084" -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
