@@ -20,8 +20,6 @@ data:
   application.yaml: |
     {{- if .Values.global.identity.auth.enabled }}
     spring:
-      server:
-        context-path: {{ .Values.core.contextPath | quote }}
       profiles:
         active: "identity,operate,tasklist,broker,auth-oidc"
       security:
@@ -35,7 +33,7 @@ data:
               oidcclient:
                 client-id: {{ include "core.authClientId" . | quote }}
                 client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-                authorization-grant-type: authorization_code
+                # authorization-grant-type: authorization_code
                 {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
                 redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
                 provider: oidcclient
@@ -55,6 +53,7 @@ data:
         {{- end }}
 
     server:
+      forward-headers-strategy: framework
       address: 0.0.0.0
       port: {{ .Values.core.service.restPort }}
       {{- if .Values.core.contextPath }}
@@ -182,6 +181,9 @@ data:
         {{- end }}
 
     camunda:
+      rest:
+        query:
+          enabled: true
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:
