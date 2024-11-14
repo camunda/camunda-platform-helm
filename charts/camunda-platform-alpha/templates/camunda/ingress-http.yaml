@@ -20,13 +20,13 @@ spec:
         paths:
         {{- /* Management Group */ -}}
           {{- if and .Values.console.enabled .Values.console.contextPath }}
-          # - backend:
-          #     service:
-          #       name: {{ template "console.fullname" . }}
-          #       port:
-          #         number: {{ .Values.console.service.port }}
-          #   path: {{ .Values.console.contextPath }}
-          #   pathType: {{ .Values.console.ingress.pathType | default .Values.global.ingress.pathType }}
+          - backend:
+              service:
+                name: {{ template "console.fullname" . }}
+                port:
+                  number: {{ .Values.console.service.port }}
+            path: {{ .Values.console.contextPath }}
+            pathType: {{ .Values.console.ingress.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
           {{- if .Values.identity.enabled }}
           {{- if or .Values.identityKeycloak.enabled .Values.global.identity.keycloak.internal }}

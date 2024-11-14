@@ -55,7 +55,7 @@ data:
     server:
       forward-headers-strategy: native
       address: 0.0.0.0
-      port: {{ .Values.core.service.managementPort }}
+      port: {{ .Values.core.service.httpPort }}
       {{- if .Values.core.contextPath }}
       servlet:
         context-path: {{ .Values.core.contextPath | quote }}

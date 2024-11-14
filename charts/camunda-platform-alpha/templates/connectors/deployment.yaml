@@ -53,14 +53,14 @@ spec:
           {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.connectors.inbound.mode "oauth" }}
-            - name: VALUES_CAMUNDA_CORE_CLIENT_PASSWORD
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "connectors.authClientSecretName" . }}
                   key: {{ include "connectors.authClientSecretKey" . }}
             {{- end }}
             - name: ZEEBE_CLIENT_ID
-              value: {{ include "connectors.authClientId" . | quote }}
+              value: {{ include "core.authClientId" . | quote }}
             - name: ZEEBE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
