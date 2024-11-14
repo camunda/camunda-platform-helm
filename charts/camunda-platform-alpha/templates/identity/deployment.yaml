@@ -89,8 +89,6 @@ spec:
             - name: KEYCLOAK_CLIENTS_1_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
-              value: /core/login/oauth2/code/core
-            - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_1
               value: /login/oauth2/code/core
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "Confidential"

@@ -91,7 +91,7 @@ postgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 core:
-  # contextPath: "/core"
+  contextPath: "/core"
   ingress:
     grpc:
       enabled: true
