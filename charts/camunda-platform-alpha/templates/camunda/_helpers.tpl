@@ -632,6 +632,16 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
   {{- end }}
 
+  {{- if .Values.optimize.enabled }}
+  {{- $baseURLInternal := printf "http://%s.%s" (include "optimize.fullname" .) .Release.Namespace }}
+  - name: Optimize
+    id: optimize
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+    url: {{ include "camundaPlatform.optimizeExternalURL" . }}
+    readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
+    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
+  {{- end }}
+
   {{- if .Values.core.enabled }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "core.fullname" . | trimAll "\"") .Release.Namespace .Values.core.service.managementPort }}
   - name: Operate

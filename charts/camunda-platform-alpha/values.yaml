@@ -114,10 +114,10 @@ global:
       nginx.ingress.kubernetes.io/ssl-redirect: 'false'
       nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
       nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-      nginx.ingress.kubernetes.io/affinity: "cookie"
-      nginx.ingress.kubernetes.io/affinity-mode: "persistent"
-      nginx.ingress.kubernetes.io/session-cookie-expires: "3600"
-      nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
+      nginx.ingress.kubernetes.io/affinity: 'cookie'
+      nginx.ingress.kubernetes.io/affinity-mode: 'persistent'
+      nginx.ingress.kubernetes.io/session-cookie-name: 'route'
+      nginx.ingress.kubernetes.io/session-cookie-path: '/'
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
     ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
     host: ""
