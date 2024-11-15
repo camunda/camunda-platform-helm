@@ -2268,7 +2268,7 @@ identityPostgresql:
   ##
   image:
     repository: bitnami/postgresql
-    tag: 15.8.0-debian-12-r26
+    tag: 15.9.0-debian-12-r0
   ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
   ##
   nameOverride: identity-postgresql
@@ -2316,7 +2316,7 @@ identityKeycloak:
       ## @param identityKeycloak.postgresql.image.repository image repo
       repository: bitnami/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
-      tag: 15.8.0-debian-12-r26
+      tag: 15.9.0-debian-12-r0
     primary:
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
