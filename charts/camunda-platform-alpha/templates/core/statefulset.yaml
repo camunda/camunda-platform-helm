@@ -112,7 +112,7 @@ spec:
             httpGet:
               path: {{ .Values.core.contextPath }}{{ .Values.core.startupProbe.probePath }}
               scheme: {{ .Values.core.startupProbe.scheme }}
-              port: {{ .Values.core.service.httpPort }}
+              port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.core.startupProbe.periodSeconds }}
             successThreshold: {{ .Values.core.startupProbe.successThreshold }}
@@ -124,7 +124,7 @@ spec:
             httpGet:
               path: {{ .Values.core.contextPath }}{{ .Values.core.readinessProbe.probePath }}
               scheme: {{ .Values.core.readinessProbe.scheme }}
-              port: {{ .Values.core.service.httpPort }}
+              port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.core.readinessProbe.periodSeconds }}
             successThreshold: {{ .Values.core.readinessProbe.successThreshold }}
@@ -136,7 +136,7 @@ spec:
             httpGet:
               path: {{ .Values.core.contextPath }}{{ .Values.core.livenessProbe.probePath }}
               scheme: {{ .Values.core.livenessProbe.scheme }}
-              port: {{ .Values.core.service.httpPort }}
+              port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.core.livenessProbe.periodSeconds }}
             successThreshold: {{ .Values.core.livenessProbe.successThreshold }}

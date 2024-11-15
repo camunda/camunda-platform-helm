@@ -389,7 +389,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
 [camunda-platform] Operate external URL.
 */}}
 {{- define "camundaPlatform.operateExternalURL" }}
-  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "operate" "context" .)) -}}
+  {{- printf "%s/operate" (include "camundaPlatform.coreExternalURL" .) -}}
 {{- end -}}
 
 
@@ -426,7 +426,21 @@ Tasklist templates.
 [camunda-platform] Tasklist external URL.
 */}}
 {{- define "camundaPlatform.tasklistExternalURL" }}
-  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "tasklist" "context" .)) -}}
+  {{- printf "%s/tasklist" (include "camundaPlatform.coreExternalURL" .) -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Core Identity templates.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-platform] Core Identity external URL.
+*/}}
+{{- define "camundaPlatform.coreIdentityExternalURL" }}
+  {{- printf "%s/identity" (include "camundaPlatform.coreExternalURL" .) -}}
 {{- end -}}
 
 
@@ -534,7 +548,7 @@ Zeebe templates.
 {{/*
 [camunda-platform] Zeebe Gateway external URL.
 */}}
-{{- define "camundaPlatform.zeebeGatewayExternalURL" }}
+{{- define "camundaPlatform.coreExternalURL" }}
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.core.contextPath -}}
@@ -619,13 +633,34 @@ Release templates.
   {{- end }}
 
   {{- if .Values.core.enabled }}
-  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "core.fullname" . | trimAll "\"") .Release.Namespace .Values.core.service.httpPort }}
+  {{- $baseURLInternal := printf "http://%s.%s:%v" (include "core.fullname" . | trimAll "\"") .Release.Namespace .Values.core.service.managementPort }}
+  - name: Operate
+    id: operate
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}
+    url: {{ include "camundaPlatform.operateExternalURL" . }}
+    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
+
+  - name: Tasklist
+    id: tasklist
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}
+    url: {{ include "camundaPlatform.tasklistExternalURL" . }}
+    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
+
+  - name: Core Identity
+    id: coreIdentity
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}
+    url: {{ include "camundaPlatform.coreIdentityExternalURL" . }}
+    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
+
   - name: Zeebe Gateway
     id: zeebeGateway
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}
     urls:
       grpc: {{ include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
-      http: {{ include "camundaPlatform.zeebeGatewayExternalURL" . }}
+      http: {{ include "camundaPlatform.coreExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
   {{- end }}
