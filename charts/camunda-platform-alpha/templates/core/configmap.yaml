@@ -18,7 +18,7 @@ data:
     {{ .Values.core.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
-    {{- if .Values.global.identity.auth.enabled }}
+    {{ if .Values.global.identity.auth.enabled }}
     spring:
       profiles:
         active: "identity,operate,tasklist,broker,auth-oidc"

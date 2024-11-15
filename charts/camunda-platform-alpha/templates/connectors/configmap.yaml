@@ -17,41 +17,43 @@ data:
       servlet:
         context-path: {{ .Values.connectors.contextPath | quote }}
     {{- end }}
-    operate:
-      client:
-        profile: {{ include "connectors.operateClientProfile" . | quote }}
-    camunda:
-      {{- if eq .Values.connectors.inbound.mode "disabled" }}
-      connector:
-        polling:
-          enabled: false
-        webhook:
-          enabled: false
-      {{- end }}
-      {{- if or (eq .Values.connectors.inbound.mode "credentials") (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") ) }}
-      operate:
-        client:
-          url: {{ include "camundaPlatform.operateURL" . | quote }}
-          {{- if eq .Values.connectors.inbound.mode "credentials" }}
-          username: connectors
-          {{- end }}
-      {{- end }}
-      {{- if .Values.global.identity.auth.enabled }}
-      {{- if eq .Values.connectors.inbound.mode "oauth" }}
-      identity:
-        audience: {{ include "core.authAudience" . | quote }}
-        client-id: {{ include "connectors.authClientId" . | quote }}
-        client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
-      {{- end }}
-      {{- end }}
 
-    zeebe:
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: metrics,health,prometheus
+      endpoint:
+        health:
+          show-details: always
+          show-components: always
+          group:
+            readiness:
+              include:
+              - zeebeClient
+              - operate
+      context-path: /actuator
+
+    camunda:
       client:
-        broker:
-          gateway-address: {{ include "connectors.zeebeEndpoint" . | quote }}
-        security:
-          plaintext: true
-  {{- end }}
+        zeebe:
+          defaults:
+            worker-threads: 10
+            max-jobs-active: 32
+            stream-enabled: true
+          gateway-url: http://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}
+        identity:
+          base-url: {{ include "camundaPlatform.identityURL" . | quote }}
+          audience: {{ include "core.authAudience" . | quote }}
+        operate:
+          base-url: http://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}{{ .Values.core.contextPath }}/v1
+        auth:
+          issuer: {{ include "camundaPlatform.authIssuerUrl" . }}
+          client-id: {{ include "connectors.authClientId" . | quote }}
+          client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+          oidc-type: keycloak
+        mode: {{ include "connectors.operateClientProfile" . }}
+
     logging:
 {{- with .Values.connectors.logging }}
 {{ . | toYaml | indent 6 }}
@@ -60,4 +62,5 @@ data:
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
   {{- end }}
+{{- end }}
 {{- end }}

@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "core.fullname" . }}
+  name: {{ printf "%s-zeebe" .Release.Name }}
   labels:
     {{- include "core.labels" . | nindent 4 }}
   annotations:
