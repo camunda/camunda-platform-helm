@@ -24,25 +24,25 @@ permissions:
   contents: read
 
 jobs:
-  # validation:
-  #   name: Validation - Camunda Alpha
-  #   uses: ./.github/workflows/chart-validate-template.yaml
-  #   with:
-  #     identifier: "${{ github.event.pull_request.number }}-vald-alpha"
-  #     camunda-helm-dir: "camunda-platform-alpha"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  validation:
+    name: Validation - Camunda Alpha
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-alpha"
+      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  # unit:
-  #   name: Unit Test - Camunda Alpha
-  #   uses: ./.github/workflows/test-unit-template.yml
-  #   with:
-  #     identifier: "${{ github.event.pull_request.number }}-unit-alpha"
-  #     camunda-helm-dir: "camunda-platform-alpha"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  unit:
+    name: Unit Test - Camunda Alpha
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-alpha"
+      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
     name: Integration Test - Camunda Alpha
-    # needs: [validation, unit]
+    needs: [validation, unit]
     permissions:
       contents: read
       id-token: write

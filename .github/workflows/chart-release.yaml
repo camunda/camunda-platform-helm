@@ -21,8 +21,25 @@ permissions:
   contents: read
 
 jobs:
+  release-alpha:
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    name: Camunda Alpha
+    uses: ./.github/workflows/chart-release-template.yaml
+    with:
+      branch: ${{ github.ref_name }}
+      workflow-ref: chart-release-template.yaml
+      chart-matrix: |
+        [
+          {
+            "name": "Helm Chart Alpha",
+            "directory": "charts/camunda-platform-alpha",
+            "override": false
+          }
+        ]
+
   release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    name: Camunda Stable
     runs-on: ubuntu-latest
     permissions:
       contents: write
