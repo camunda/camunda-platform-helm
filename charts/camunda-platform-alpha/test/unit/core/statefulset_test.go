@@ -145,8 +145,8 @@ func (s *statefulSetTest) TestContainerSetImageNameSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.image.registry":  "global.custom.registry.io",
-			"global.image.tag":       "8.x.x",
+			"global.image.registry": "global.custom.registry.io",
+			"global.image.tag":      "8.x.x",
 			"core.image.registry":   "subchart.custom.registry.io",
 			"core.image.repository": "camunda/camunda-test",
 			"core.image.tag":        "snapshot",
@@ -187,7 +187,7 @@ func (s *statefulSetTest) TestContainerSetImagePullSecretsSubChart() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.pullSecrets[0].name": "SecretNameGlobal",
-			"core.image.pullSecrets[0].name":  "SecretNameSubChart",
+			"core.image.pullSecrets[0].name":   "SecretNameSubChart",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -279,7 +279,7 @@ func (s *statefulSetTest) TestContainerOverwriteGlobalImageTag() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.tag": "a.b.c",
-			"core.image.tag":  "",
+			"core.image.tag":   "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -301,7 +301,7 @@ func (s *statefulSetTest) TestContainerOverwriteImageTagWithChartDirectSetting()
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.image.tag": "x.y.z",
-			"core.image.tag":  "a.b.c",
+			"core.image.tag":   "a.b.c",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -516,7 +516,7 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"core.containerSecurityContext.privileged":          "true",
+			"core.containerSecurityContext.privileged": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

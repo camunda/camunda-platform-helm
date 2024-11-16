@@ -470,9 +470,9 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                                                          "true",
-			"webModeler.restapi.mail.fromAddress":                                         "example@example.com",
-			"webModeler." + s.component + ".containerSecurityContext.privileged":          "true",
+			"webModeler.enabled":                                                 "true",
+			"webModeler.restapi.mail.fromAddress":                                "example@example.com",
+			"webModeler." + s.component + ".containerSecurityContext.privileged": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

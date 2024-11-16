@@ -33,6 +33,7 @@ data:
             registration:
               oidcclient:
                 client-id: "core"
+                client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
                 # authorization-grant-type: authorization_code
                 redirect-uri: "http://localhost:8082/login/oauth2/code/core"
                 provider: oidcclient

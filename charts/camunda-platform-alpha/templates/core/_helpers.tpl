@@ -93,5 +93,5 @@ app.kubernetes.io/component: core
 {{- end -}}
 
 {{- define "core.authTokenScope" -}}
-    {{- .Values.global.identity.auth.core.tokenScope | default "core" -}}
+    {{- .Values.global.identity.auth.core.tokenScope -}}
 {{- end -}}

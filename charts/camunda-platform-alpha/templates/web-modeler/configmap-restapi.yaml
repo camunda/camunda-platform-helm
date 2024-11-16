@@ -52,7 +52,7 @@ data:
             authentication: {{ .Values.global.identity.auth.enabled | ternary "OAUTH" "NONE" | quote }}
             url:
               zeebe:
-                grpc: "grpc://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.core.service.grpcPort }}"
+                grpc: "grpc://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}"
                 rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}/v1"
               operate: {{ include "camundaPlatform.operateURL" . | quote }}
               tasklist: {{ include "camundaPlatform.tasklistURL" . | quote }}

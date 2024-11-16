@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "SNAPSHOT"
+    app.kubernetes.io/version: "8.7.0-alpha1"
   annotations:
     {}
 data:
@@ -36,7 +36,7 @@ data:
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
-                - audience: "operate-api"
+                - audience: "core-api"
                   definition: read:*
         console:
           applications:
@@ -77,30 +77,30 @@ data:
                   definition: read
                 - audience: "camunda-identity-resource-server"
                   definition: write
-        operate:
+        core:
           applications:
-            - name: Operate
-              id: ${CAMUNDA_OPERATE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
+            - name: Core
+              id: ${CAMUNDA_CORE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CORE_CLIENT_ID:core}}
               type: confidential
-              secret: ${CAMUNDA_OPERATE_SECRET:${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}}
-              root-url: "http://localhost:8081"
+              secret: ${CAMUNDA_CORE_SECRET:${VALUES_KEYCLOAK_INIT_CORE_SECRET:}}
+              root-url: "http://localhost:8082"
               redirect-uris:
-                - "/identity-callback"
+                - "/login/oauth2/code/core"
           apis:
-            - name: Operate API
-              audience: "operate-api"
+            - name: "Core API"
+              audience: "core-api"
               permissions:
                 - definition: read:*
                   description: "Read permission"
                 - definition: write:*
                   description: "Write permission"
           roles:
-            - name: "Operate"
-              description: "Grants full access to Operate"
+            - name: "Core"
+              description: "Grants full access to Core"
               permissions:
-                - audience: "operate-api"
+                - audience: "core-api"
                   definition: read:*
-                - audience: "operate-api"
+                - audience: "core-api"
                   definition: write:*
         optimize:
           applications:
@@ -125,31 +125,6 @@ data:
                   definition: write:*
                 - audience: "camunda-identity-resource-server"
                   definition: read:users
-        tasklist:
-          applications:
-            - name: Tasklist
-              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${VALUES_KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
-              type: confidential
-              secret: ${CAMUNDA_TASKLIST_SECRET:${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}}
-              root-url: "http://localhost:8082"
-              redirect-uris:
-                - "/identity-callback"
-          apis:
-            - name: Tasklist API
-              audience: "tasklist-api"
-              permissions:
-                - definition: read:*
-                  description: "Read permission"
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Tasklist"
-              description: "Grants full access to Tasklist"
-              permissions:
-                - audience: "tasklist-api"
-                  definition: read:*
-                - audience: "tasklist-api"
-                  definition: write:*
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -194,19 +169,6 @@ data:
                   definition: write:*
                 - audience: "web-modeler-api"
                   definition: admin:*
-        zeebe:
-          apis:
-            - name: Zeebe API
-              audience: "zeebe-api"
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Zeebe"
-              description: "Grants full access to the Zeebe API"
-              permissions:
-                - audience: "zeebe-api"
-                  definition: write:*
     keycloak:
       url: "http://camunda-platform-test-keycloak:80/auth"
       setup:
@@ -215,16 +177,12 @@ data:
       init:
         console:
           secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
-        operate:
-          secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
-        tasklist:
-          secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
+        core:
+          secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         webmodeler:
           root-url: "http://localhost:8084"
-        zeebe:
-          name: "Zeebe"
       # Clients are passed as environment variables.
       clients:
       users:
@@ -234,11 +192,10 @@ data:
           lastName: "User"
           password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
           roles:
-            - Console
             - Identity
-            - Operate
+            - Console
+            - Core
             - Optimize
-            - Tasklist
             - Web Modeler
             - Web Modeler Admin
       environment:
@@ -252,22 +209,13 @@ data:
               - "/auth/login-callback"
       # The presets key should be removed when 8.6.0 of the applications are released
       presets:
-        tasklist:
+        core:
           clients:
-            - name: Tasklist
-              id: tasklist
+            - name: Core
+              id: core
               type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_TASKLIST_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
               root-url: "http://localhost:8082"
-              redirect-uris:
-                - "/identity-callback"
-        operate:
-          clients:
-            - name: Operate
-              id: ${VALUES_KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
-              type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_OPERATE_SECRET:}
-              root-url: "http://localhost:8081"
               redirect-uris:
                 - "/identity-callback"
         optimize:
@@ -299,5 +247,5 @@ data:
         audience: "camunda-identity-resource-server"
     logging:
       level:
-        ROOT: WARN
-        io.camunda.identity: INFO
+        ROOT: DEBUG
+        io.camunda.identity: DEBUG
