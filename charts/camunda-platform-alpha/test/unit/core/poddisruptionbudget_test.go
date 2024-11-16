@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zeebe
+package core
 
 import (
+	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -24,10 +25,26 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	coreV1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/policy/v1"
 )
 
-type serviceTest struct {
+func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "poddisruptionbudget",
+		Templates:      []string{"templates/core/poddisruptionbudget.yaml"},
+		SetValues:      map[string]string{"core.podDisruptionBudget.enabled": "true"},
+	})
+}
+
+type podDisruptionBudgetTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -35,63 +52,36 @@ type serviceTest struct {
 	templates []string
 }
 
-func TestServiceTemplate(t *testing.T) {
+func TestDeploymentTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &serviceTest{
+	suite.Run(t, &podDisruptionBudgetTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/zeebe/service.yaml"},
+		templates: []string{"templates/core/poddisruptionbudget.yaml"},
 	})
 }
 
-func (s *serviceTest) TestContainerSetGlobalAnnotations() {
+func (s *podDisruptionBudgetTest) TestContainerMinAvailableMutualExclusiveWithMaxUnavailable() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.annotations.foo": "bar",
+			"core.podDisruptionBudget.enabled":      "true",
+			"core.podDisruptionBudget.minAvailable": "1",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var service coreV1.Service
-	helm.UnmarshalK8SYaml(s.T(), output, &service)
+	var podDisruptionBudget v1.PodDisruptionBudget
+	helm.UnmarshalK8SYaml(s.T(), output, &podDisruptionBudget)
 
 	// then
-	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
-}
-
-func (s *serviceTest) TestExtraPorts() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"zeebe.service.extraPorts[0].name":       "hazelcast",
-			"zeebe.service.extraPorts[0].protocol":   "TCP",
-			"zeebe.service.extraPorts[0].port":       "5701",
-			"zeebe.service.extraPorts[0].targetPort": "5701",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var service coreV1.Service
-	helm.UnmarshalK8SYaml(s.T(), output, &service)
-
-	// then
-	expectedPort := int32(5701)
-	expectedName := "hazelcast"
-	expectedTargetPort := int32(5701)
-	ports := service.Spec.Ports
-
-	s.Require().Equal(expectedPort, ports[3].Port)
-	s.Require().Equal(expectedName, ports[3].Name)
-	s.Require().Equal(expectedTargetPort, ports[3].TargetPort.IntVal)
-
+	s.Require().EqualValues(1, podDisruptionBudget.Spec.MinAvailable.IntVal)
+	s.Require().Nil(podDisruptionBudget.Spec.MaxUnavailable)
 }

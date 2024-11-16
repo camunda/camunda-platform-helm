@@ -370,7 +370,7 @@ data:
 
     {{- end }}
 
-  broker-log4j2.xml: |
+  log4j2.xml: |
   {{- if .Values.core.log4j2 }}
     {{ .Values.core.log4j2 | indent 4 | trim }}
   {{- end }}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operate
+package core
 
 import (
 	"camunda-platform/test/unit/utils"
@@ -30,7 +30,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	templateNames := []string{"service", "serviceaccount", "deployment", "configmap"}
+	templateNames := []string{"service", "serviceaccount", "statefulset", "configmap"}
 
 	for _, name := range templateNames {
 		suite.Run(t, &utils.TemplateGoldenTest{
@@ -38,7 +38,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			Release:        "camunda-platform-test",
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
-			Templates:      []string{"templates/operate/" + name + ".yaml"},
+			Templates:      []string{"templates/core/" + name + ".yaml"},
 			IgnoredLines: []string{
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.

@@ -24,14 +24,10 @@ testcases:
       url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
     - component: Optimize
       url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
-    - component: Operate
-      url: "{{ .preflightVars.baseURLs.operate }}/actuator/health/readiness"
-    - component: Tasklist
-      url: "{{ .preflightVars.baseURLs.tasklist }}/actuator/health/readiness"
+    - component: Core
+      url: "{{ .preflightVars.baseURLs.core }}/actuator/health/readiness"
     - component: Connectors
       url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
-    - component: ZeebeGateway
-      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/readiness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
@@ -75,14 +71,10 @@ testcases:
       url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
     - component: Optimize
       url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
-    - component: Operate
-      url: "{{ .preflightVars.baseURLs.operate }}/actuator/health/liveness"
-    - component: Tasklist
-      url: "{{ .preflightVars.baseURLs.tasklist }}/actuator/health/liveness"
+    - component: Core
+      url: "{{ .preflightVars.baseURLs.core }}/actuator/health/liveness"
     - component: Connectors
       url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/liveness"
-    - component: ZeebeGateway
-      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/liveness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3

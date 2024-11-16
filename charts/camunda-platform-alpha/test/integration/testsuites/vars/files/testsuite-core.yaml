@@ -25,18 +25,15 @@ testcases:
     - component: Connectors
       clientID: connectors
       clientSecret: "{{ .CONNECTORS_CLIENT_SECRET }}"
-    - component: Tasklist
-      clientID: tasklist
-      clientSecret: "{{ .TASKLIST_CLIENT_SECRET }}"
     - component: Operate
       clientID: operate
       clientSecret: "{{ .OPERATE_CLIENT_SECRET }}"
     - component: Optimize
       clientID: optimize
       clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
-    - component: Zeebe
-      clientID: zeebe
-      clientSecret: "{{ .ZEEBE_CLIENT_SECRET }}"
+    - component: Core
+      clientID: core
+      clientSecret: "{{ .CORE_CLIENT_SECRET }}"
     method: POST
     url: "{{ .coreVars.authURL }}"
     headers:
@@ -84,8 +81,6 @@ testcases:
       url: "{{ .coreVars.baseURLs.operate }}"
     - component: Optimize
       url: "{{ .coreVars.baseURLs.optimize }}"
-    - component: Tasklist
-      url: "{{ .coreVars.baseURLs.tasklist }}"
     - component: WebModeler
       url: "{{ .coreVars.baseURLs.webModeler }}"
     method: GET
@@ -140,11 +135,6 @@ testcases:
       url: "{{ .coreVars.baseURLs.operate }}/v1/process-definitions/search"
       method: POST
       body: '{}'
-    - component: Tasklist
-      docs: https://docs.camunda.io/docs/self-managed/tasklist-deployment/tasklist-authentication/
-      url: "{{ .coreVars.baseURLs.tasklist }}/graphql"
-      method: POST
-      body: '{"query": "{tasks(query:{}){id name}}"}'
     method: "{{ .value.method }}"
     url: "{{ .value.url }}"
     headers:
@@ -197,14 +187,14 @@ testcases:
     - result.statuscode ShouldEqual 200
     - result.body ShouldNotContainSubstring error
 
-- name: TEST - Interacting with Zeebe Gateway
+- name: TEST - Interacting with Core
   steps:
-  - name: Check Zeebe Gateway status - gRPC
+  - name: Check Core status - gRPC
     type: exec
     script: |
-      zbctl --clientCache=/tmp/zeebe \
+      zbctl --clientCache=/tmp/zbctl \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
-          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGRPC }}" \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.coreGRPC }}" \
           {{ .coreVars.zbctl.extraArgs }} \
           status
     retry: 2
@@ -217,10 +207,10 @@ testcases:
     - result.systemout ShouldContainSubstring "Leader, Healthy"
     - result.systemout ShouldNotContainSubstring Unhealthy
     - result.timeseconds ShouldBeLessThan 1
-  - name: Check Zeebe Gateway status - REST
+  - name: Check Core status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.zeebeGatewayREST }}/v1/topology"
+    url: "{{ .coreVars.baseURLs.coreREST }}/v1/topology"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -235,7 +225,7 @@ testcases:
 
 - name: TEST - Deploying BPMN process
   steps:
-  - name: Deploy BPMN process to Zeebe - {{ .value.name }}
+  - name: Deploy BPMN process to Core - {{ .value.name }}
     type: exec
     range:
     - name: Basic
@@ -243,9 +233,9 @@ testcases:
     - name: Inbound Connector
       file: test-inbound-process.bpmn
     script: |
-      zbctl --clientCache=/tmp/zeebe \
+      zbctl --clientCache=/tmp/zbctl \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
-          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGRPC }}" \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.coreGRPC }}" \
           {{ .coreVars.zbctl.extraArgs }} \
           deploy /mnt/fixtures/{{ .value.file }}
     # info: |
@@ -314,7 +304,5 @@ testcases:
 #     - result.body ShouldContainSubstring identity
 #     - result.body ShouldContainSubstring operate
 #     - result.body ShouldContainSubstring optimize
-#     - result.body ShouldContainSubstring tasklist
 #     - result.body ShouldContainSubstring web-modeler-restapi
-#     - result.body ShouldContainSubstring zeebe
-#     - result.body ShouldContainSubstring zeebe-gateway
+#     - result.body ShouldContainSubstring core

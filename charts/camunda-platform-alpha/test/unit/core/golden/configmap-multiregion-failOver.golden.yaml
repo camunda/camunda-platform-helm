@@ -1,0 +1,211 @@
+---
+# Source: camunda-platform/templates/core/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-core-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: core
+    app.kubernetes.io/version: "8.7.0-alpha1"
+apiVersion: v1
+data:
+  startup.sh: |
+    # The Node ID depends on the Pod name so it cannot be templated in the StatefulSet level.
+    export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}"
+    echo "export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID}" >> ~/.bashrc
+
+    exec /usr/local/camunda/bin/camunda
+  application.yaml: |
+    
+    spring:
+      profiles:
+        active: "identity,operate,tasklist,broker,auth-oidc"
+      security:
+        oauth2:
+          client:
+            provider:
+              oidcclient:
+                issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
+            registration:
+              oidcclient:
+                client-id: "core"
+                client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+                # authorization-grant-type: authorization_code
+                redirect-uri: "http://localhost:8082/login/oauth2/code/core"
+                provider: oidcclient
+                scope: openid,profile
+
+    management:
+      server:
+        port: 9600
+
+    server:
+      forward-headers-strategy: framework
+      address: 0.0.0.0
+      port: 8080
+
+    zeebe:
+      host: 0.0.0.0
+      log:
+        level: "info"
+
+      broker:
+        # zeebe.broker.experimental
+        experimental:
+          engine:
+            authorization:
+              enableAuthorization: true
+
+        # zeebe.broker.gateway
+        gateway:
+          enable: true
+          network:
+            host: 0.0.0.0
+            port: 26500
+
+        # zeebe.broker.network
+        network:
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          host: 0.0.0.0
+          commandApi:
+            port: 26501
+          internalApi:
+            port: 26502
+
+        # zeebe.broker.cluster
+        cluster:
+          initialContactPoints:
+            - ${K8S_SERVICE_NAME}-0.${K8S_SERVICE_NAME}:26502
+            - ${K8S_SERVICE_NAME}-1.${K8S_SERVICE_NAME}:26502
+            - ${K8S_SERVICE_NAME}-2.${K8S_SERVICE_NAME}:26502
+          clusterSize: "3"
+          replicationFactor: "3"
+          partitionsCount: "3"
+          clusterName: camunda-platform-test-zeebe
+
+        # zeebe.broker.data
+        data:
+          snapshotPeriod: 5m
+          freeSpace:
+            processing: 2GB
+            replication: 3GB
+
+        # zeebe.broker.threads
+        threads:
+          cpuThreadCount: "3"
+          ioThreadCount: "3"
+
+        # zeebe.broker.exporters
+        exporters:
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              url: "http://camunda-platform-test-elasticsearch:9200"
+              index:
+                prefix: "zeebe-record"
+          CamundaExporter:
+            className: "io.camunda.exporter.CamundaExporter"
+            args:
+              connect:
+                type: elasticsearch
+                url: "http://camunda-platform-test-elasticsearch:9200"
+              createSchema: true
+
+    camunda:
+      rest:
+        query:
+          enabled: true
+      identity:
+        clientId: "core"
+        audience: "core-api"
+
+      #
+      # Camunda Database Configuration.
+      #
+      database:
+        type: elasticsearch
+        # Cluster name
+        clusterName: elasticsearch
+        # Elasticsearch full url
+        url: "http://camunda-platform-test-elasticsearch:9200"
+
+      #
+      # Camunda Operate Configuration.
+      #
+      operate:
+        identity:
+          redirectRootUrl: "http://localhost:8082/operate"
+      
+        # ELS instance to store Operate data
+        elasticsearch:
+          # Cluster name
+          clusterName: elasticsearch
+          # Host
+          host: camunda-platform-test-elasticsearch
+          # Transport port
+          port: 9200
+          # Elasticsearch full url
+          url: "http://camunda-platform-test-elasticsearch:9200"
+        # ELS instance to export Zeebe data to
+        zeebeElasticsearch:
+          # Cluster name
+          clusterName: elasticsearch
+          # Host
+          host: camunda-platform-test-elasticsearch
+          # Transport port
+          port: 9200
+          # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: zeebe-record
+          # Elasticsearch full url
+          url: "http://camunda-platform-test-elasticsearch:9200"
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "camunda-platform-test-core:26500"
+
+      #
+      # Camunda Tasklist Configuration.
+      #
+      tasklist:
+
+        identity:
+          redirectRootUrl: "http://localhost:8082/tasklist"
+
+        # Set Tasklist username and password.
+        # If user with <username> does not exists it will be created.
+        # Default: demo/demo
+        #username:
+        #password:
+        # ELS instance to store Tasklist data
+        elasticsearch:
+          # Cluster name
+          clusterName: elasticsearch
+          # Host
+          host: camunda-platform-test-elasticsearch
+          # Transport port
+          port: 9200
+          # Elasticsearch full url
+          url: "http://camunda-platform-test-elasticsearch:9200"
+        # ELS instance to export Zeebe data to
+        zeebeElasticsearch:
+          # Cluster name
+          clusterName: elasticsearch
+          # Host
+          host: camunda-platform-test-elasticsearch
+          # Transport port
+          port: 9200
+          # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: zeebe-record
+          # Elasticsearch full url
+          url: "http://camunda-platform-test-elasticsearch:9200"
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: camunda-platform-test-core:26500
+          restAddress: "http://camunda-platform-test-core:8080"
+
+  log4j2.xml: |

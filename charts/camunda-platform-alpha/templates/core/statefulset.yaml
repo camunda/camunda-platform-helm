@@ -165,7 +165,7 @@ spec:
             {{- if .Values.core.log4j2 }}
             - name: config
               mountPath: /usr/local/camunda/config/log4j2.xml
-              subPath: broker-log4j2.xml
+              subPath: log4j2.xml
             {{- end }}
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zeebe
+package core
 
 import (
 	"camunda-platform/test/unit/camunda"
@@ -48,7 +48,7 @@ func TestConfigmapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/zeebe/configmap.yaml"},
+		templates: []string{"templates/core/configmap.yaml"},
 	})
 }
 
@@ -63,8 +63,8 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-log4j2",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
-		SetValues:      map[string]string{"zeebe.log4j2": "<xml>\n</xml>"},
+		Templates:      []string{"templates/core/configmap.yaml"},
+		SetValues:      map[string]string{"core.log4j2": "<xml>\n</xml>"},
 	})
 }
 
@@ -79,7 +79,7 @@ func TestGoldenConfigmapWithMultiregionNormal(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
+		Templates:      []string{"templates/core/configmap.yaml"},
 		SetValues: map[string]string{
 			"global.multiregion.regions":          "1",
 			"global.multiregion.regionId":         "0",
@@ -99,7 +99,7 @@ func TestGoldenConfigmapWithMultiregionFailOver(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-multiregion-failOver",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
+		Templates:      []string{"templates/core/configmap.yaml"},
 		SetValues: map[string]string{
 			"global.multiregion.regions":          "1",
 			"global.multiregion.regionId":         "0",
@@ -119,7 +119,7 @@ func TestGoldenConfigmapWithMultiregionFailBack(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-multiregion-failBack",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
+		Templates:      []string{"templates/core/configmap.yaml"},
 		SetValues: map[string]string{
 			"global.multiregion.regions":          "1",
 			"global.multiregion.regionId":         "0",
@@ -137,7 +137,7 @@ func (s *configmapTemplateTest) TestContainerShouldContainExporterClassPerDefaul
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
 	var configmap corev1.ConfigMap
-	var configmapApplication camunda.ZeebeApplicationYAML
+	var configmapApplication camunda.CoreApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 
