@@ -35,8 +35,7 @@ data:
 
       identity:
         redirectRootUrl: "http://localhost:8082"
-        userAccessRestrictions:
-          enabled: "true"
+        userAccessRestrictionsEnabled: true
 
       # Set Tasklist username and password.
       # If user with <username> does not exists it will be created.
