@@ -70,7 +70,7 @@ func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayError
 		SetValues: map[string]string{
 			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 			"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
-			"global.identity.auth.zeebe.existingSecret.name":       "zeebe-secret",
+			"global.identity.auth.core.existingSecret.name":        "zeebe-secret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -79,25 +79,9 @@ func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayError
 	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
 
 	// then
-	s.Require().NotContains(err.Error(), "global.identity.auth.zeebe.existingSecret")
+	s.Require().NotContains(err.Error(), "global.identity.auth.core.existingSecret")
 }
-func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentThatsDisabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
-			"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
-			"operate.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
 
-	// when
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().NotContains(err.Error(), "global.identity.auth.operate.existingSecret")
-}
 func (s *constraintTemplateTest) TestExistingSecretConstraintInWarningModeDoesNotPreventInstall() {
 	// given
 	options := &helm.Options{
@@ -113,20 +97,4 @@ func (s *constraintTemplateTest) TestExistingSecretConstraintInWarningModeDoesNo
 
 	// then
 	s.Require().Nil(err)
-}
-
-func (s *ConstraintsTemplateTest) TestContextPathAndRestPathForZeebeGatewayConstraintBothValuesShouldBeTheSame() {
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"zeebeGateway.ingress.rest.enabled": "true",
-			"zeebeGateway.ingress.rest.path":    "/zeebe",
-			"zeebeGateway.contextPath":          "/zeebeRest",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-
-	s.Require().ErrorContains(err, "[camunda][error]")
-
 }

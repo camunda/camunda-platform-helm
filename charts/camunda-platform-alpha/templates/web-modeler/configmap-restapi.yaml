@@ -41,28 +41,28 @@ data:
         server:
           url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
 
-        {{- if or .Values.zeebe.enabled .Values.webModeler.restapi.clusters }}
+        {{- if or .Values.core.enabled .Values.webModeler.restapi.clusters }}
         clusters:
           {{- if .Values.webModeler.restapi.clusters }}
             {{- .Values.webModeler.restapi.clusters | toYaml | nindent 10 }}
           {{- else}}
           - id: "default-cluster"
             name: {{ tpl .Values.global.zeebeClusterName . | quote }}
-            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
+            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) | quote }}
             authentication: {{ .Values.global.identity.auth.enabled | ternary "OAUTH" "NONE" | quote }}
             url:
               zeebe:
-                grpc: "grpc://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
-                rest: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+                grpc: "grpc://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}"
+                rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}/v1"
               operate: {{ include "camundaPlatform.operateURL" . | quote }}
               tasklist: {{ include "camundaPlatform.tasklistURL" . | quote }}
             oauth:
               url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
               audience:
-                zeebe: {{ include "zeebe.authAudience" . | quote }}
-                operate: {{ include "operate.authAudience" . | quote }}
-                tasklist: {{ include "tasklist.authAudience" . | quote }}
-              scope: {{ include "zeebe.authTokenScope" . | quote }}
+                zeebe: {{ include "core.authAudience" . | quote }}
+                operate: {{ include "core.authAudience" . | quote }}
+                tasklist: {{ include "core.authAudience" . | quote }}
+              scope: {{ include "core.authTokenScope" . | quote }}
           {{- end }}
         {{- end }}
 

@@ -179,23 +179,11 @@ spec:
               value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
-                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- end }}
-              {{- end }}
+                  name: {{ include "optimize.authClientSecretName" . }}
+                  key: {{ include "optimize.authClientSecretKey" . }}
+            {{- end }}
             {{- if .Values.global.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
               value: "true"

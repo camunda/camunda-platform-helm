@@ -1,0 +1,37 @@
+{{- if and .Values.core.enabled .Values.core.ingress.grpc.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-grpc
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+{{- with .Values.core.ingress.grpc.annotations }}
+  annotations:
+  {{- tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.core.ingress.grpc.className }}
+  rules:
+    {{- if .Values.core.ingress.grpc.host }}
+    - host: {{ tpl .Values.core.ingress.grpc.host $ }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          - path: {{ .Values.core.ingress.grpc.path }}
+            pathType: {{ .Values.core.ingress.grpc.pathType }}
+            backend:
+              service:
+                name: {{ include "core.fullname" . }}
+                port:
+                  number: {{ .Values.core.service.grpcPort }}
+  {{- if .Values.core.ingress.grpc.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ tpl .Values.core.ingress.grpc.host $ }}
+      {{- if .Values.core.ingress.grpc.tls.secretName }}
+      secretName: {{ .Values.core.ingress.grpc.tls.secretName }}
+      {{- end }}
+  {{- end }}
+{{- end }}
