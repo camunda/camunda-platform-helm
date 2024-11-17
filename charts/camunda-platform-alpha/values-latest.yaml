@@ -74,7 +74,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       repository: bitnami/postgresql
-      tag: 15.8.0-debian-12-r23
+      tag: 15.8.0-debian-12-r26
 
 #
 # Elasticsearch
@@ -84,4 +84,4 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.15.3
+    tag: 8.15.4
