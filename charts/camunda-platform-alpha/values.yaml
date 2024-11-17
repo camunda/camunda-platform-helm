@@ -1967,8 +1967,9 @@ connectors:
 
   ## @extra connectors.readinessProbe configuration
   readinessProbe:
+    # TODO: Enalbe the readiness again once the Zeebe client in Connectors is updated (it should be done before 8.7 release).
     ## @param connectors.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
+    enabled: false
     ## @param connectors.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param connectors.readinessProbe.probePath defines the readiness probe route used on the app
@@ -2130,7 +2131,7 @@ core:
   partitionCount: "3"
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @extra core.env can be used to set extra environment variables in each broker container
+  ## @param core.env can be used to set extra environment variables in each broker container
   env: []
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
     #   value: TRACE
