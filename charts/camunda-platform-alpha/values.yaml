@@ -2132,9 +2132,14 @@ core:
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param core.env can be used to set extra environment variables in each broker container
-  env: []
-    # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
-    #   value: TRACE
+  env:
+    - name: LOGGING_LEVEL_IO_CAMUNDA
+      value: DEBUG
+    - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
+      value: TRACE
+    - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
+      value: TRACE
+
   ## @param core.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
   ## @extra core.configMap configuration which will be applied to the mounted config map.
