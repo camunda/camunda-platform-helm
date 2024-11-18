@@ -6,8 +6,8 @@ on:
       - main
     paths:
       - .github/workflows/chart-release-snapshot.yaml
-      - charts/camunda-platform-alpha/*
-      - charts/camunda-platform-8.6/*
+      - charts/camunda-platform-alpha/**
+      - charts/camunda-platform-8.6/**
 
 jobs:
   release:
