@@ -11,7 +11,7 @@ on:
 
 jobs:
   release:
-    name: Release Candidate
+    name: Release Snapshot
     uses: ./.github/workflows/chart-release-template.yaml
     with:
       branch: ${{ github.ref_name }}
