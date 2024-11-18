@@ -12,14 +12,10 @@
 {{- end -}}
 
 {{/*
-[core] Common names.
+[core] The old name used in PVC which is used to avoid upgrade downtime.
 */}}
-{{- define "core.brokerName" -}}
-    {{- if .Values.global.zeebeClusterName -}}
-        {{- tpl .Values.global.zeebeClusterName . | trunc 63 | trimSuffix "-" | quote -}}
-    {{- else -}}
-        {{- printf "%s-broker" .Release.Name | trunc 63 | trimSuffix "-" | quote -}}
-    {{- end -}}
+{{- define "core.legacyName" -}}
+    {{- printf "%s-zeebe" .Release.Name -}}
 {{- end -}}
 
 {{/*
