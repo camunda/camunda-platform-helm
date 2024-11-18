@@ -16,7 +16,7 @@ data:
   startup.sh: |
     # The Node ID depends on the Pod name so it cannot be templated in the StatefulSet level.
     export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}"
-    echo "export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID}" >> ~/.bashrc
+    echo "export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID}"
 
     exec /usr/local/camunda/bin/camunda
   application.yaml: |
@@ -78,10 +78,13 @@ data:
 
         # zeebe.broker.cluster
         cluster:
+          # The value of "nodeId" is set via the "ZEEBE_BROKER_CLUSTER_NODEID" env var.
+          # As it depends on the Pod name, which cannot be templated at the installation time.
+          # nodeId:
           initialContactPoints:
-            - ${K8S_SERVICE_NAME}-0.${K8S_SERVICE_NAME}:26502
-            - ${K8S_SERVICE_NAME}-1.${K8S_SERVICE_NAME}:26502
-            - ${K8S_SERVICE_NAME}-2.${K8S_SERVICE_NAME}:26502
+            - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+            - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+            - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
           clusterSize: "3"
           replicationFactor: "3"
           partitionsCount: "3"
