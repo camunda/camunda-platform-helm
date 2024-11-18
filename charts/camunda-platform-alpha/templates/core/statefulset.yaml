@@ -69,11 +69,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            {{- if .Values.global.identity.auth.enabled }}
             - name: VALUES_CAMUNDA_CORE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "core.authClientSecretName" . }}
                   key: {{ include "core.authClientSecretKey" . }}
+            {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.core.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
