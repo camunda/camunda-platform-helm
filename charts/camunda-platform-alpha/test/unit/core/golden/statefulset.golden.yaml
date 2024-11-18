@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: camunda-platform-test-core
+  name: camunda-platform-test-zeebe
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

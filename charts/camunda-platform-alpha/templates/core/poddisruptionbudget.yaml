@@ -2,7 +2,7 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "core.brokerName" . }}
+  name: {{ include "core.fullname" . }}
   labels:
     {{- include "core.labels" . | nindent 4 }}
 spec:
