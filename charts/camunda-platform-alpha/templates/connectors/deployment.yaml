@@ -53,40 +53,26 @@ spec:
           {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.connectors.inbound.mode "oauth" }}
-            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
-                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- end }}
+                  name: {{ include "connectors.authClientSecretName" . }}
+                  key: {{ include "connectors.authClientSecretKey" . }}
             {{- end }}
             - name: ZEEBE_CLIENT_ID
-              value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
+              value: {{ include "core.authClientId" . | quote }}
             - name: ZEEBE_CLIENT_SECRET
-              {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
-                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
-              {{- end }}
+                  name: {{ include "core.authClientSecretName" . }}
+                  key: {{ include "core.authClientSecretKey" . }}
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: ZEEBE_TOKEN_AUDIENCE
-              value: {{ include "zeebe.authAudience" . | quote }}
-            {{- if .Values.global.identity.auth.zeebe.tokenScope }}
+              value: {{ include "core.authAudience" . | quote }}
+            {{- if (include "core.authTokenScope" .) }}
             - name: ZEEBE_TOKEN_SCOPE
-              value: {{ include "zeebe.authTokenScope" . | quote }}
+              value: {{ include "core.authTokenScope" . | quote }}
             {{- end }}
           {{- end }}
           {{- if .Values.connectors.env}}

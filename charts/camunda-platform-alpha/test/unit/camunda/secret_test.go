@@ -60,19 +60,15 @@ func (s *secretTest) TestContainerGenerateSecret() {
 	s.templates = []string{
 		"templates/camunda/secret-connectors.yaml",
 		"templates/camunda/secret-console.yaml",
-		"templates/camunda/secret-operate.yaml",
 		"templates/camunda/secret-optimize.yaml",
-		"templates/camunda/secret-tasklist.yaml",
-		"templates/camunda/secret-zeebe.yaml",
+		"templates/camunda/secret-core.yaml",
 	}
 
 	s.secretName = []string{
 		"connectors-secret",
 		"console-secret",
-		"operate-secret",
 		"optimize-secret",
-		"tasklist-secret",
-		"zeebe-secret",
+		"core-secret",
 	}
 
 	s.Require().GreaterOrEqual(6, len(s.templates))

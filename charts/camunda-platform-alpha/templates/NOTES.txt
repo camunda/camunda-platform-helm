@@ -21,43 +21,16 @@
   - Docker Image used for Console: {{ .Values.console.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
   {{- end }}
-- Zeebe:
-  - Enabled: {{ .Values.zeebe.enabled }}
-  {{- if .Values.zeebe.enabled }}
-    {{- if .Values.zeebe.image.tag }}
-  - Docker Image used for Zeebe: {{ .Values.zeebe.image.repository }}:{{ .Values.zeebe.image.tag }}
+- Core:
+  - Enabled: {{ .Values.core.enabled }}
+  {{- if .Values.core.enabled }}
+    {{- if .Values.core.image.tag }}
+  - Docker Image used for Zeebe: {{ .Values.core.image.repository }}:{{ .Values.core.image.tag }}
     {{- else }}
-  - Docker Image used for Zeebe: {{ .Values.zeebe.image.repository }}:{{ .Values.global.image.tag }}
+  - Docker Image used for Zeebe: {{ .Values.core.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
-  {{- end }}
-- Operate:
-  - Enabled: {{ .Values.operate.enabled }}
-  {{- if .Values.operate.enabled }}
-    {{- if .Values.operate.image.tag }}
-  - Docker Image used for Operate: {{ .Values.operate.image.repository }}:{{ .Values.operate.image.tag }}
-    {{- else }}
-  - Docker Image used for Operate: {{ .Values.operate.image.repository }}:{{ .Values.global.image.tag }}
-    {{- end }}
-  {{- end }}
-- Tasklist:
-  - Enabled: {{ .Values.tasklist.enabled }}
-  {{- if .Values.tasklist.enabled }}
-    {{- if .Values.tasklist.image.tag }}
-  - Docker Image used for Tasklist: {{ .Values.tasklist.image.repository }}:{{ .Values.tasklist.image.tag }}
-    {{- else }}
-  - Docker Image used for Tasklist: {{ .Values.tasklist.image.repository }}:{{ .Values.global.image.tag }}
-    {{- end }}
-  {{- end }}
-- Optimize:
-  - Enabled: {{ .Values.optimize.enabled }}
-  {{- if .Values.optimize.enabled }}
-    {{- if .Values.optimize.image.tag }}
-  - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.optimize.image.tag }}
-    {{- else }}
-  - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.global.image.tag }}
-    {{- end }}
   {{- end }}
 - Connectors:
   - Enabled: {{ .Values.connectors.enabled }}
@@ -99,7 +72,7 @@ The Cluster itself is not exposed as a service which means that you can use `kub
 
 Now you can connect your workers and clients to `localhost:26500`
 
-{{ if or (.Values.zeebe.enabled) (.Values.operate.enabled) (.Values.tasklist.enabled) (.Values.optimize.enabled) (.Values.identity.enabled) }}
+{{ if or (.Values.core.enabled) (.Values.identity.enabled) }}
 ### Connecting to Web apps
 
 As part of the Helm charts, an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
@@ -110,18 +83,6 @@ If you don't have an ingress controller you can use `kubectl port-forward` to ac
 {{ if .Values.identity.enabled -}}
 Identity:
 > kubectl port-forward svc/{{ .Release.Name }}-identity 8080:80
-{{- end }}
-{{ if .Values.operate.enabled -}}
-Operate:
-> kubectl port-forward svc/{{ .Release.Name }}-operate  8081:80
-{{- end }}
-{{ if .Values.tasklist.enabled -}}
-Tasklist:
-> kubectl port-forward svc/{{ .Release.Name }}-tasklist 8082:80
-{{- end }}
-{{ if .Values.optimize.enabled -}}
-Optimize:
-> kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
 {{ if .Values.webModeler.enabled -}}
 Web Modeler:
@@ -167,22 +128,13 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{ if .Values.identityKeycloak.enabled -}}
 - Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
 {{- end }}
-{{- if or (.Values.identity.enabled) (.Values.operate.enabled) (.Values.optimize.enabled) (.Values.tasklist.enabled) (.Values.webModeler.enabled) }}
+{{- if or (.Values.identity.enabled) (.Values.webModeler.enabled) }}
 - Web Applications:
   {{ if .Values.console.enabled -}}
   - Console: {{ include "camundaPlatform.consoleExternalURL" . }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
   - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
-  {{- end }}
-  {{ if .Values.operate.enabled -}}
-  - Operate: {{ include "camundaPlatform.operateExternalURL" . }}
-  {{- end }}
-  {{ if .Values.optimize.enabled -}}
-  - Optimize: {{ include "camundaPlatform.optimizeExternalURL" . }}
-  {{- end }}
-  {{ if .Values.tasklist.enabled -}}
-  - Tasklist: {{ include "camundaPlatform.tasklistExternalURL" . }}
   {{- end }}
   {{ if .Values.webModeler.enabled -}}
   - WebModeler WebApp: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
@@ -191,43 +143,13 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- end }}
 
-{{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) (.Values.identityKeycloak.ingress.enabled) }}
-## Separated Ingress
-
-{{ if .Values.identityKeycloak.ingress.enabled -}}
-- Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
-{{- end }}
-{{- if or (.Values.identity.ingress.enabled) (.Values.operate.ingress.enabled) (.Values.optimize.ingress.enabled) (.Values.tasklist.ingress.enabled) (.Values.webModeler.ingress.enabled) }}
-- Web Applications:
-  {{ if .Values.console.ingress.enabled -}}
-  - Console: {{ include "camundaPlatform.consoleExternalURL" . }}
-  {{- end }}
-  {{ if .Values.identity.ingress.enabled -}}
-  - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
-  {{- end }}
-  {{ if .Values.operate.ingress.enabled -}}
-  - Operate: {{ include "camundaPlatform.operateExternalURL" . }}
-  {{- end }}
-  {{ if .Values.optimize.ingress.enabled -}}
-  - Optimize: {{ include "camundaPlatform.optimizeExternalURL" . }}
-  {{- end }}
-  {{ if .Values.tasklist.ingress.enabled -}}
-  - Tasklist: {{ include "camundaPlatform.tasklistExternalURL" . }}
-  {{- end }}
-  {{ if .Values.webModeler.ingress.enabled -}}
-  - WebModeler WebApp: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
-  - WebModeler WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
-  {{- end }}
-{{- end }}
-{{- end }}
-
-{{- if .Values.zeebeGateway.ingress.grpc.enabled }}
+{{- if .Values.core.ingress.grpc.enabled }}
 - Zeebe Gateway gRPC: {{  include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
 {{- end }}
 
-{{- if .Values.zeebeGateway.ingress.rest.enabled }}
-{{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.rest.tls.enabled -}}
-- Zeebe Gateway REST: {{ $proto }}://{{ tpl .Values.zeebeGateway.ingress.rest.host $ }}
+{{- if .Values.core.ingress.http.enabled }}
+{{ $proto := ternary "https" "http" .Values.core.ingress.http.tls.enabled -}}
+- Zeebe Gateway REST: {{ $proto }}://{{ tpl .Values.core.ingress.http.host $ }}
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}

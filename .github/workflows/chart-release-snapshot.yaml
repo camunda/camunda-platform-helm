@@ -6,12 +6,12 @@ on:
       - main
     paths:
       - .github/workflows/chart-release-snapshot.yaml
-      - charts/camunda-platform-alpha/*
-      - charts/camunda-platform-8.6/*
+      - charts/camunda-platform-alpha/**
+      - charts/camunda-platform-8.6/**
 
 jobs:
   release:
-    name: Release Candidate
+    name: Release Snapshot
     uses: ./.github/workflows/chart-release-template.yaml
     with:
       branch: ${{ github.ref_name }}

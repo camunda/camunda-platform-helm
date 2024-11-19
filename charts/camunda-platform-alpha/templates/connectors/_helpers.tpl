@@ -13,7 +13,7 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{ define "connectors.zeebeEndpoint" }}
-  {{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- .Values.zeebeGateway.service.grpcPort -}}
+  {{- include "core.fullname" . | replace "\"" "" -}}:{{- .Values.core.service.grpcPort -}}
 {{- end -}}
 
 {{- define "connectors.fullname" -}}
@@ -79,3 +79,23 @@ app.kubernetes.io/component: connectors
 {{- define "connectors.imagePullSecrets" -}}
 {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
 {{- end }}
+
+{{- define "connectors.authClientSecretName" -}}
+    {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) -}}
+        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) -}}
+    {{- else -}}
+        {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") -}}
+    {{- end -}}
+{{- end -}}
+
+{{- define "connectors.authClientSecretKey" -}}
+    {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+{{- end -}}
+
+{{- define "connectors.operateClientProfile" -}}
+    {{- if or (eq .Values.connectors.inbound.mode "credentials") (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth")) -}}
+    oidc
+    {{- else -}}
+    simple
+    {{- end -}}
+{{- end -}}

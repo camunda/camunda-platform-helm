@@ -33,10 +33,8 @@ func TestGoldenDefaultsTemplateSecrets(t *testing.T) {
 	templateNames := []string{
 		"secret-connectors",
 		"secret-console",
-		"secret-operate",
 		"secret-optimize",
-		"secret-tasklist",
-		"secret-zeebe",
+		"secret-core",
 	}
 
 	for _, name := range templateNames {

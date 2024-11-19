@@ -8,6 +8,12 @@
   "bootstrap-sha": "186fc3fd6a52d52c4d8a532c493b6de99bf9a272",
   "last-release-sha": "186fc3fd6a52d52c4d8a532c493b6de99bf9a272",
   "packages": {
+    "charts/camunda-platform-alpha": {
+      "release-type": "helm",
+      "extra-label": "version/alpha,version/8.7,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform-alpha",
+      "include-v-in-tag": false
+    },
     "charts/camunda-platform-8.6": {
       "release-type": "helm",
       "extra-label": "version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",

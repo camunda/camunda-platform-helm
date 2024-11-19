@@ -332,8 +332,8 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":                                      "true",
-			"connectors.containerSecurityContext.privileged":          "true",
+			"connectors.enabled":                             "true",
+			"connectors.containerSecurityContext.privileged": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -756,27 +756,26 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 
 	for _, envvar := range env {
 		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_PASSWORD", envvar.Name)
 	}
 
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_ID", Value: "zeebe"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_ID", Value: "core"})
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{
 			Name: "ZEEBE_CLIENT_SECRET",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-zeebe-identity-secret"},
-					Key:                  "zeebe-secret",
+					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-core-identity-secret"},
+					Key:                  "core-secret",
 				},
 			},
 		})
 	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_AUTHORIZATION_SERVER_URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_TOKEN_AUDIENCE", Value: "zeebe-api"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_TOKEN_AUDIENCE", Value: "core-api"})
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{
-			Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+			Name: "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-connectors-identity-secret"},

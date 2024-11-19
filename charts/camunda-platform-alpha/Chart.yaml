@@ -1,7 +1,7 @@
 apiVersion: v2
 name: camunda-platform
 # renovate: datasource=github-tags depName=charts/camunda-platform-alpha packageName=camunda/camunda
-version: 12.0.0-alpha1
+version: 8.7.0-alpha1
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -23,7 +23,7 @@ dependencies:
   - name: keycloak
     alias: identityKeycloak
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 22.2.6
+    version: 23.0.0
     condition: "identity.keycloak.enabled,identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
@@ -39,7 +39,7 @@ dependencies:
   # Shared Dependencies.
   - name: elasticsearch
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 21.3.22
+    version: 21.3.25
     condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
