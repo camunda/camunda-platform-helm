@@ -197,24 +197,20 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- if .Values.global.multiregion.installationType }}
-    {{- $installationTypeMessage := "[camunda][warning]\nDEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer support the global.multiregion.installationType option. This is replaced with a new procedure for managing multi-region installations documented here:\nhttps://docs.camunda.io/docs/self-managed/operational-guides/multi-region/dual-region-operational-procedure/\nPlease unset this option to remove the warning.\n" }}
-    {{ printf "\n%s" $installationTypeMessage }}
-  {{- end }}
 {{- end }}
 
-
 {{/*
-TODO: Enable for 8.7 cycle.
+Camunda 8.7 cycle deprecated keys.
 
 Fail with a message when old values syntax is used.
 Chart Version: 12.0.0
+*/}}
 
-{{- if (TBA) }}
-  {{- $errorMessage := printf "[camunda][error] %s %s"
-      "TBA"
-      "TBA"
+{{- if hasKey .Values.global.multiregion "installationType" }}
+  {{- $errorMessage := printf "[camunda][error] %s %s %s"
+      "The option \"global.multiregion.installationType\" has been removed."
+      "Use application API's for multi-region failover/failback operations."
+      "More details: https://docs.camunda.io/docs/self-managed/operational-guides/multi-region/dual-region-operational-procedure/"
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
-*/}}
