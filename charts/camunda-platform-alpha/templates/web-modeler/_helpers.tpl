@@ -305,8 +305,6 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.publicWebsocketHost" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.host }}
-  {{- else }}
-    {{- .Values.webModeler.ingress.enabled | ternary .Values.webModeler.ingress.websockets.host .Values.webModeler.websockets.publicHost }}
   {{- end }}
 {{- end -}}
 
@@ -317,11 +315,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
   {{- else }}
-    {{- if .Values.webModeler.ingress.enabled }}
-      {{- .Values.webModeler.ingress.websockets.tls.enabled | ternary "443" "80" }}
-    {{- else }}
-      {{- .Values.webModeler.websockets.publicPort }}
-    {{- end }}
+    {{- .Values.webModeler.websockets.publicPort }}
   {{- end }}
 {{- end -}}
 
@@ -331,8 +325,6 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.websocketTlsEnabled" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.tls.enabled }}
-  {{- else }}
-    {{- and .Values.webModeler.ingress.enabled .Values.webModeler.ingress.websockets.tls.enabled }}
   {{- end }}
 {{- end -}}
 

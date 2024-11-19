@@ -362,10 +362,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
 */}}
 {{- define "camundaPlatform.getExternalURL" -}}
   {{- if (index .context.Values .component "enabled") -}}
-    {{- if (index .context.Values .component "ingress" "enabled") }}
-      {{- $proto := ternary "https" "http" (index .context.Values .component "ingress" "tls" "enabled") -}}
-      {{- printf "%s://%s" $proto (index .context.Values .component "ingress" "host") -}}
-    {{- else if $.context.Values.global.ingress.enabled -}}
+    {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values .component "contextPath") -}}
     {{- else -}}
@@ -455,11 +452,7 @@ Web Modeler templates.
 
 {{- define "camundaPlatform.getExternalURLModeler" -}}
   {{- if .context.Values.webModeler.enabled -}}
-    {{- $ingress := .context.Values.webModeler.ingress }}
-    {{- if index $ingress "enabled" }}
-      {{- $proto := ternary "https" "http" (index $ingress .component "tls" "enabled") -}}
-      {{- printf "%s://%s" $proto (index $ingress .component "host") -}}
-    {{- else if $.context.Values.global.ingress.enabled -}}
+    {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- if eq .component "websockets" }}
         {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (include "webModeler.websocketContextPath" .context) -}}

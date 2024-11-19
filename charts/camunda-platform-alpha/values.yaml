@@ -613,34 +613,6 @@ identity:
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: true
 
-  ingress:
-    ## @param identity.ingress.enabled if true, an ingress resource is deployed with the identity deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param identity.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param identity.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip identity.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip identity.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip identity.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param identity.ingress.path defines the path which is associated with the service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param identity.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param identity.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    ## @extra identity.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param identity.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param identity.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-identity
-
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
   ## @param identity.externalDatabase.enabled
@@ -1069,34 +1041,6 @@ console:
     annotations: {}
     ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
-
-  ingress:
-    ## @param console.ingress.enabled if true, an ingress resource is deployed with the Console deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param console.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param console.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip console.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip console.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param console.ingress.path defines the path which is associated with the Console service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param console.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param console.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all http traffic, if specified the rule applies to that host.
-    host: ""
-    ## console.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param console.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param console.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-console
 
   ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
   podSecurityContext:
@@ -1715,47 +1659,6 @@ webModeler:
     ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
-  ingress:
-    ## @param webModeler.ingress.enabled if true, an Ingress resource will be deployed with the WebModeler deployment. Only useful if an Ingress controller like NGINX is available. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param webModeler.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param webModeler.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip webModeler.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip webModeler.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip webModeler.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @extra webModeler.ingress.webapp configuration of the webapp ingress
-    webapp:
-      ## @param webModeler.ingress.webapp.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name on which the WebModeler web application will be available
-      # Note: The value must be different from ingress.websockets.host
-      host: ""
-      ## @param webModeler.ingress.webapp.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-      pathType: Prefix
-      ## @extra webModeler.ingress.webapp.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-      tls:
-        ## @param webModeler.ingress.webapp.tls.enabled if true, TLS will be configured on the ingress resource
-        enabled: false
-        ## @param webModeler.ingress.webapp.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-webmodeler-webapp
-    ## @extra webModeler.ingress.websockets configuration of the websockets ingress
-    websockets:
-      ## @param webModeler.ingress.websockets.host defines the host of the ingress rule, see https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules; this is the host name the WebModeler client in the browser will use to connect to the WebSockets server
-      # Note: The value must be different from ingress.webapp.host
-      host: ""
-      ## @param webModeler.ingress.websockets.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-      pathType: Prefix
-      ## @extra webModeler.ingress.websockets.tls configuration for TLS on the ingress resource, see https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-      tls:
-        ## @param webModeler.ingress.websockets.tls.enabled if true, TLS will be configured on the ingress resource
-        enabled: false
-        ## @param webModeler.ingress.websockets.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-webmodeler-websockets
-
 # WebModeler.
 #####   ####   ####  #####  ####  #####  ######  ####   ####  #
 #    # #    # #        #   #    # #    # #      #      #    # #
@@ -2020,34 +1923,6 @@ connectors:
     annotations: {}
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
-
-  ingress:
-    ## @param connectors.ingress.enabled if true, an ingress resource is deployed with the Connectors deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param connectors.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param connectors.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip connectors.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip connectors.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip connectors.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param connectors.ingress.path defines the path which is associated with the Connectors service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param connectors.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param connectors.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    ## @extra connectors.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param connectors.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param connectors.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-connectors
 
   ## @extra connectors.podSecurityContext defines the security options the Connectors pod should be run with
   podSecurityContext:
@@ -2679,34 +2554,6 @@ optimize:
     limits:
       cpu: 2000m
       memory: 2Gi
-
-  ingress:
-    ## @param optimize.ingress.enabled if true, an ingress resource is deployed with the Optimize deployment. Only useful if an ingress controller is available, like nginx. Warning, separated ingress is deprecated and will be removed in the next release, please use global.ingress instead.
-    enabled: false
-    ## @param optimize.ingress.className defines the class or configuration of ingress which should be used by the controller
-    className: nginx
-    ## @param optimize.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    ## @skip optimize.ingress.annotations.ingress.kubernetes.io/rewrite-target
-    ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-    ## @skip optimize.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-    annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-    ## @param optimize.ingress.path defines the path which is associated with the operate service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    path: /
-    ## @param optimize.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
-    pathType: Prefix
-    ## @param optimize.ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    # If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
-    host: ""
-    ## @extra optimize.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    tls:
-      ## @param optimize.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
-      enabled: false
-      ## @param optimize.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
-      secretName: camunda-platform-optimize
 
   ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
   configuration: ""

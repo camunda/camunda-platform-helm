@@ -77,7 +77,6 @@ Now you can connect your workers and clients to `localhost:26500`
 
 
 As part of the Helm charts, an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
-In order to deploy the ingress manifest, set `<service>.ingress.enabled` to `true`. Example: `operate.ingress.enabled=true`
 
 If you don't have an ingress controller you can use `kubectl port-forward` to access the deployed web application from outside the cluster:
 
@@ -111,7 +110,7 @@ as well, otherwise, a login will not be possible. Make sure you use `18080` as a
 {{- end }}
 {{- end }}
 
-Now you can point your browser to one of the service's login pages. Example: http://localhost:8081 for Operate.
+Now you can point your browser to one of the service's login pages.
 {{ if .Values.identity.firstUser.enabled }}
 {{- if .Values.identity.firstUser.existingSecret }}
 Default user: "{{ .Values.identity.firstUser.username }}", and for password, run:
@@ -145,12 +144,12 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 
 {{- if .Values.core.ingress.grpc.enabled }}
-- Zeebe Gateway gRPC: {{  include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
+- Camunda gRPC API: {{  include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
 {{- end }}
 
 {{- if .Values.core.ingress.http.enabled }}
 {{ $proto := ternary "https" "http" .Values.core.ingress.http.tls.enabled -}}
-- Zeebe Gateway REST: {{ $proto }}://{{ tpl .Values.core.ingress.http.host $ }}
+- Camunda REST API: {{ $proto }}://{{ tpl .Values.core.ingress.http.host $ }}
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}
