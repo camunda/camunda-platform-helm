@@ -55,10 +55,6 @@ data:
 
       broker:
         # zeebe.broker.experimental
-        experimental:
-          engine:
-            authorization:
-              enableAuthorization: true
 
         # zeebe.broker.gateway
         gateway:
@@ -174,7 +170,6 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
-
         identity:
           redirectRootUrl: "http://localhost:8082/tasklist"
 

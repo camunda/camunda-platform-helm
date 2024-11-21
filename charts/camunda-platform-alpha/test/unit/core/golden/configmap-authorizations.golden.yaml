@@ -122,6 +122,9 @@ data:
       rest:
         query:
           enabled: true
+      security:
+        authorizations:
+          enabled: true
       identity:
         clientId: "core"
         audience: "core-api"
@@ -142,6 +145,8 @@ data:
       operate:
         identity:
           redirectRootUrl: "http://localhost:8082/operate"
+          # Enables authorizations for Operate V1 endpoints
+          resourcePermissionsEnabled: true
       
         # ELS instance to store Operate data
         elasticsearch:
@@ -174,9 +179,10 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
-
         identity:
           redirectRootUrl: "http://localhost:8082/tasklist"
+          # Enables authorizations for Tasklist V1 endpoints
+          resourcePermissionsEnabled: true
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.
@@ -212,5 +218,3 @@ data:
           restAddress: "http://camunda-platform-test-core:8080"
 
   log4j2.xml: |
-    <xml>
-    </xml>
