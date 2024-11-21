@@ -397,6 +397,8 @@ console:
 
   ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
   configuration: ""
+  ## @param console.overrideConfiguration works like console.configuration but writes the content to a new file called application-override.yaml
+  overrideConfiguration: ""
 
   ## console.image configuration to configure the Console image specifics
   # https://hub.docker.com/r/camunda/console/tags
