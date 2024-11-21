@@ -77,6 +77,12 @@ global:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
 
+  ## Authorizations configuration.
+  ## @extra global.authorizations
+  authorizations:
+    ## @param global.authorizations.enabled if true, then enable authorizations checks in all applicable components.
+    enabled: false
+
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
 
