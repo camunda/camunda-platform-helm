@@ -390,8 +390,8 @@ jobs:
         uses: camunda/infra-global-github-actions/rerun-failed-run@main
         with:
           error-messages: |
-            lost communication with the server
-            The runner has received a shutdown signal
+            lost communication with the server.
+            The runner has received a shutdown signal.
             Process completed with exit code 1.
           run-id: ${{ github.run_id }}
           repository: ${{ github.repository }}
