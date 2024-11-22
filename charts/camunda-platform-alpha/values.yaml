@@ -255,6 +255,17 @@ global:
       ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
       publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
 
+      ## @extra global.identity.auth.admin configuration to configure Connectors authentication specifics on global level, which can be accessed by other sub-charts
+      admin:
+        ## @param global.identity.auth.admin.enabled if true, creates the admin client which is used in administration operations if needed.
+        enabled: false
+        ## @param global.identity.auth.admin.clientId defines the client id.
+        clientId: admin
+        ## @param global.identity.auth.admin.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        existingSecret:
+        ## @param global.identity.auth.admin.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: admin-secret
+
       #######################
       # Management Group
       #######################
@@ -426,6 +437,9 @@ identity:
     existingSecret: ""
     ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
     existingSecretKey: "identity-firstuser-password"
+
+  ## @param identity.users configuration to configure properties of the Identity users, which can be used to access web applications.
+  users: []
 
   ## @extra identity.image configuration to configure the identity image specifics
   image:
@@ -2596,7 +2610,7 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.16.0
+    tag: 8.16.1
   master:
     ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
     replicaCount: 3

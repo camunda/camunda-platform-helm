@@ -217,6 +217,9 @@ data:
             - Web Modeler Admin
           {{- end }}
         {{- end }}
+        {{- if .Values.identity.users }}
+          {{- include "common.tplvalues.render" (dict "value" .Values.identity.users "context" $) | nindent 8 }}
+        {{- end }}
       environment:
         clients:
           - name: Identity
@@ -226,6 +229,28 @@ data:
             root-url: {{ include "identity.externalUrl" . | quote }}
             redirect-uris:
               - "/auth/login-callback"
+          {{- if .Values.global.identity.auth.admin.enabled }}
+          - name: {{ .Values.global.identity.auth.admin.clientId | title | default "Admin" | quote }}
+            id: {{ .Values.global.identity.auth.admin.clientId | default "admin" | quote }}
+            type: CONFIDENTIAL
+            secret: ${VALUES_CAMUNDA_ADMIN_CLIENT_SECRET:}
+            root-url: "http://placeholder"
+            redirect-uris:
+              - "/placeholder"
+            permissions:
+              - resourceServerId: {{ include "identity.authAudience" . | quote }}
+                definition: read
+              - resourceServerId: {{ include "identity.authAudience" . | quote }}
+                definition: write
+              - resourceServerId: {{ include "console.authAudience" . | quote }}
+                definition: "write:*"
+              - resourceServerId: {{ include "webModeler.authClientApiAudience" . | quote }}
+                definition: "write:*"
+              - resourceServerId: {{ include "core.authAudience" . | quote }}
+                definition: "write:*"
+              - resourceServerId: {{ include "optimize.authAudience" . | quote }}
+                definition: "write:*"
+          {{- end }}
       # The presets key should be removed when 8.6.0 of the applications are released
       presets:
         core:
