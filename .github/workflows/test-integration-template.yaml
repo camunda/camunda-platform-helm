@@ -390,6 +390,7 @@ jobs:
           error-messages: |
             lost communication with the server
             The runner has received a shutdown signal
+            Process completed with exit code 1.
           run-id: ${{ github.run_id }}
           repository: ${{ github.repository }}
           vault-addr: ${{ secrets.VAULT_ADDR }}
