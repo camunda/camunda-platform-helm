@@ -345,6 +345,9 @@ jobs:
         timeout-minutes: 10
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
+      - name: failure
+        if: fromJSON(github.run_attempt) < 2
+        run: exit 1
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
