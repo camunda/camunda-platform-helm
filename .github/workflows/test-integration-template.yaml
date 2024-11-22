@@ -80,6 +80,11 @@ on:
         required: false
         default: auto-generated
         type: string
+      retry-enabled:
+        description: Flag to enable or disable retries for failed runs
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -378,7 +383,7 @@ jobs:
   rerun-failed-jobs:
     needs:
       - test
-    if: failure() && fromJSON(github.run_attempt) < 3
+    if: failure() && inputs.retry-enabled == true && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
     steps:
       - name: Retrigger job
