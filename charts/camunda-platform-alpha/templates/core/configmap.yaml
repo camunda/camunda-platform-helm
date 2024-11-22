@@ -68,12 +68,10 @@ data:
 
       broker:
         # zeebe.broker.experimental
-        {{- if .Values.global.authorizations.enabled }}
         experimental:
           engine:
             authorization:
-              enableAuthorization: true
-        {{- end }}
+              enableAuthorization: {{ .Values.global.authorizations.enabled }}
 
         # zeebe.broker.gateway
         gateway:
@@ -190,11 +188,9 @@ data:
         query:
           enabled: true
 
-      {{- if .Values.global.authorizations.enabled }}
       security:
         authorizations:
-          enabled: true
-      {{- end }}
+          enabled: {{ .Values.global.authorizations.enabled }}
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:
@@ -239,10 +235,7 @@ data:
         {{- if .Values.global.identity.auth.enabled }}
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/operate"
-          {{- if .Values.global.authorizations.enabled }}
-          # Enables authorizations for Operate V1 endpoints
-          resourcePermissionsEnabled: true
-          {{- end }}
+          resourcePermissionsEnabled: {{ .Values.global.authorizations.enabled }}
         {{- end }}
       
         # ELS instance to store Operate data
@@ -317,10 +310,7 @@ data:
         {{- if .Values.global.identity.auth.enabled }}
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/tasklist"
-          {{- if .Values.global.authorizations.enabled }}
-          # Enables authorizations for Tasklist V1 endpoints
-          resourcePermissionsEnabled: true
-          {{- end }}
+          resourcePermissionsEnabled: {{ .Values.global.authorizations.enabled }}
         {{- end }}
 
         # Set Tasklist username and password.
