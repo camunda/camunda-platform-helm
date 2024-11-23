@@ -38,7 +38,7 @@ dependencies:
   # Shared Dependencies.
   - name: elasticsearch
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 21.3.25
+    version: 21.3.26
     condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
