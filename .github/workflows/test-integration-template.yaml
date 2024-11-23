@@ -80,6 +80,11 @@ on:
         required: false
         default: auto-generated
         type: string
+      github-workflow-rerun-enabled:
+        description: Flag to enable or disable retries for failed runs
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -376,17 +381,18 @@ jobs:
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
+    name: Rerun failed jobs
     needs:
       - test
-    if: failure() && fromJSON(github.run_attempt) < 3
+    if: failure() && inputs.github-workflow-rerun-enabled == true && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
     steps:
       - name: Retrigger job
         uses: camunda/infra-global-github-actions/rerun-failed-run@main
         with:
           error-messages: |
-            lost communication with the server
-            The runner has received a shutdown signal
+            lost communication with the server.
+            The runner has received a shutdown signal.
             Process completed with exit code 1.
           run-id: ${{ github.run_id }}
           repository: ${{ github.repository }}
