@@ -380,7 +380,8 @@ jobs:
           fi
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
-  github-workflow-rerun-enabled:
+  rerun-failed-jobs:
+    name: Rerun failed jobs
     needs:
       - test
     if: failure() && inputs.github-workflow-rerun-enabled == true && fromJSON(github.run_attempt) < 3
