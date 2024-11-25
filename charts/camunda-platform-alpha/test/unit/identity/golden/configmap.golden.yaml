@@ -198,6 +198,7 @@ data:
             - Optimize
             - Web Modeler
             - Web Modeler Admin
+            - Zeebe
       environment:
         clients:
           - name: Identity
