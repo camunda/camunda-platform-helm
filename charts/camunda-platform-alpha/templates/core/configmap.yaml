@@ -42,7 +42,7 @@ data:
     {{- else }}
     spring:
       profiles:
-        active: auth
+        active: "operate,tasklist,broker,auth"
     {{- end }}
 
     management:
