@@ -71,7 +71,7 @@ data:
         experimental:
           engine:
             authorization:
-              enableAuthorization: true
+              enableAuthorization: {{ .Values.global.authorizations.enabled }}
 
         # zeebe.broker.gateway
         gateway:
@@ -188,6 +188,10 @@ data:
         query:
           enabled: true
 
+      security:
+        authorizations:
+          enabled: {{ .Values.global.authorizations.enabled }}
+
       {{- if .Values.global.identity.auth.enabled }}
       identity:
         clientId: {{ include "core.authClientId" . | quote }}
@@ -231,6 +235,7 @@ data:
         {{- if .Values.global.identity.auth.enabled }}
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/operate"
+          resourcePermissionsEnabled: {{ .Values.global.authorizations.enabled }}
         {{- end }}
       
         # ELS instance to store Operate data
@@ -302,8 +307,11 @@ data:
           enabled: true
         {{- end }}
 
+        {{- if .Values.global.identity.auth.enabled }}
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/tasklist"
+          resourcePermissionsEnabled: {{ .Values.global.authorizations.enabled }}
+        {{- end }}
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.

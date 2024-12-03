@@ -68,6 +68,22 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 	})
 }
 
+func TestGoldenConfigmapWithAuthorizationsEnabled(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "configmap-authorizations",
+		Templates:      []string{"templates/core/configmap.yaml"},
+		SetValues: map[string]string{"global.authorizations.enabled": "true"},
+	})
+}
+
 func (s *configmapTemplateTest) TestContainerShouldContainExporterClassPerDefault() {
 	// given
 	options := &helm.Options{

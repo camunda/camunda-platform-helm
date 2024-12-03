@@ -58,7 +58,7 @@ data:
         experimental:
           engine:
             authorization:
-              enableAuthorization: false
+              enableAuthorization: true
 
         # zeebe.broker.gateway
         gateway:
@@ -125,7 +125,7 @@ data:
 
       security:
         authorizations:
-          enabled: false
+          enabled: true
       identity:
         clientId: "core"
         audience: "core-api"
@@ -146,7 +146,7 @@ data:
       operate:
         identity:
           redirectRootUrl: "http://localhost:8082/operate"
-          resourcePermissionsEnabled: false
+          resourcePermissionsEnabled: true
       
         # ELS instance to store Operate data
         elasticsearch:
@@ -181,7 +181,7 @@ data:
       tasklist:
         identity:
           redirectRootUrl: "http://localhost:8082/tasklist"
-          resourcePermissionsEnabled: false
+          resourcePermissionsEnabled: true
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.
@@ -217,5 +217,3 @@ data:
           restAddress: "http://camunda-platform-test-core:8080"
 
   log4j2.xml: |
-    <xml>
-    </xml>
