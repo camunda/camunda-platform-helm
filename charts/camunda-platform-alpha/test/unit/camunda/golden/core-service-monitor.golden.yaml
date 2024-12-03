@@ -19,5 +19,5 @@ spec:
   endpoints:
     - honorLabels: true
       path: /actuator/prometheus
-      port: http
+      port: server
       interval: 10s
