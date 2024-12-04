@@ -33,7 +33,7 @@ data:
               oidcclient:
                 client-id: {{ include "core.authClientId" . | quote }}
                 client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-                # authorization-grant-type: authorization_code
+                authorization-grant-type: authorization_code
                 {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
                 redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
                 provider: oidcclient
@@ -56,8 +56,8 @@ data:
       forward-headers-strategy: framework
       address: 0.0.0.0
       port: {{ .Values.core.service.httpPort }}
-      {{- if .Values.core.contextPath }}
       servlet:
+      {{- if .Values.core.contextPath }}
         context-path: {{ .Values.core.contextPath | quote }}
       {{- end }}
 
