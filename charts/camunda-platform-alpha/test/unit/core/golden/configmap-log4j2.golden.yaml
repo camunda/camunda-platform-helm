@@ -34,7 +34,7 @@ data:
               oidcclient:
                 client-id: "core"
                 client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-                # authorization-grant-type: authorization_code
+                authorization-grant-type: authorization_code
                 redirect-uri: "http://localhost:8082/login/oauth2/code/core"
                 provider: oidcclient
                 scope: openid,profile
@@ -47,6 +47,7 @@ data:
       forward-headers-strategy: framework
       address: 0.0.0.0
       port: 8080
+      servlet:
 
     zeebe:
       host: 0.0.0.0

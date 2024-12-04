@@ -1193,7 +1193,7 @@ webModeler:
       ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
 
-    ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `zeebe.enabled=true`)
+    ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)
     clusters: []
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
