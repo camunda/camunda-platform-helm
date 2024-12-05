@@ -35,7 +35,7 @@ spec:
   {{- if and 
     (not .Values.webModeler.ingress.webapp.tls.secretName) 
     (not .Values.webModeler.ingress.websockets.tls.secretName) 
-    (contains "openshift-" .Values.webModeler.ingress.className) 
+    (contains "openshift-"  (default "" .Values.webModeler.ingress.className)) 
   }}
     # The tls block is not applied because both .Values.webModeler.ingress.webapp.tls.secretName and .Values.webModeler.ingress.websockets.tls.secretName are empty
     # and .Values.webModeler.ingress.className contains "openshift-".

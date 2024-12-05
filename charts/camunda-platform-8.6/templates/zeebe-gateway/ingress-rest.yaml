@@ -29,7 +29,7 @@ spec:
   {{- if .Values.zeebeGateway.ingress.rest.tls.enabled }}
   {{- if and 
     (not .Values.zeebeGateway.ingress.rest.tls.secretName) 
-    (contains "openshift-" .Values.zeebeGateway.ingress.className) 
+    (contains "openshift-"  (default "" .Values.zeebeGateway.ingress.rest.className))
   }}
     # The tls block is not applied because .Values.zeebeGateway.ingress.rest.tls.secretName is empty
     # and .Values.zeebeGateway.ingress.className contains "openshift-".

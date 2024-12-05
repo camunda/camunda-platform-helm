@@ -97,7 +97,7 @@ spec:
   {{- if .Values.global.ingress.tls.enabled }}
   {{- if and 
     (not .Values.global.ingress.tls.secretName) 
-    (contains "openshift-" .Values.global.ingress.className) 
+    (contains "openshift-"  (default "" .Values.global.ingress.className)) 
   }}
     # The tls block is not applied because .Values.global.ingress.tls.secretName is empty
     # and .Values.global.ingress.className contains "openshift-".

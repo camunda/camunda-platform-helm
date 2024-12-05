@@ -27,7 +27,7 @@ spec:
                 port:
                   number: 80
   {{- if .Values.console.ingress.tls.enabled }}
-  {{- if and (not .Values.console.ingress.tls.secretName) (contains "openshift-" .Values.console.ingress.className) }}
+  {{- if and (not .Values.console.ingress.tls.secretName) (contains "openshift-"  (default "" .Values.console.ingress.className)) }}
     # The tls block is not applied because .Values.console.ingress.tls.secretName is empty
     # and .Values.console.ingress.className contains "openshift-".
     # This is necessary to use the certificate managed by the OpenShift Ingress operator,
