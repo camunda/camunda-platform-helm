@@ -2107,7 +2107,6 @@ core:
     ## @param core.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
-
   ingress:
     grpc:
       ## @param core.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
@@ -2345,6 +2344,10 @@ core:
 
   ## @param core.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
+
+  index:
+    ## @param core.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
+    prefix:
 
   retention:
     ## @param core.retention.enabled if true, the ILM Policy is created and applied to the index templates.

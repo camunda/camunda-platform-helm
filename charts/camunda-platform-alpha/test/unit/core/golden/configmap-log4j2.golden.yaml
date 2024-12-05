@@ -151,6 +151,7 @@ data:
       
         # ELS instance to store Operate data
         elasticsearch:
+          # Operate index prefix.
           # Cluster name
           clusterName: elasticsearch
           # Host
@@ -168,7 +169,6 @@ data:
           # Transport port
           port: 9200
           # Index prefix, configured in Zeebe Elasticsearch exporter
-          prefix: zeebe-record
           # Elasticsearch full url
           url: "http://camunda-platform-test-elasticsearch:9200"
         # Zeebe instance
@@ -191,6 +191,7 @@ data:
         #password:
         # ELS instance to store Tasklist data
         elasticsearch:
+          # Tasklist index prefix.
           # Cluster name
           clusterName: elasticsearch
           # Host
@@ -208,7 +209,6 @@ data:
           # Transport port
           port: 9200
           # Index prefix, configured in Zeebe Elasticsearch exporter
-          prefix: zeebe-record
           # Elasticsearch full url
           url: "http://camunda-platform-test-elasticsearch:9200"
         # Zeebe instance

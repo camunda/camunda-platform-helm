@@ -23,6 +23,11 @@ data:
 
     {{- if .Values.global.elasticsearch.enabled }}
     es:
+      settings:
+        {{- if .Values.core.index.prefix }}
+        index:
+          prefix: {{ .Values.core.index.prefix | quote }}
+        {{- end }}
       connection:
         nodes:
           - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
@@ -35,6 +40,14 @@ data:
           enabled: "true"
         {{- end }}
       {{- end }}
+
+    {{- else if .Values.global.opensearch.enabled }}
+    opensearch:
+      settings:
+        {{- if .Values.core.index.prefix }}
+        index:
+          prefix: {{ .Values.core.index.prefix | quote }}
+        {{- end }}
     {{- end }}
 
     spring:
