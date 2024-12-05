@@ -120,6 +120,10 @@ data:
               createSchema: true
 
     camunda:
+      persistent:
+        sessions:
+          enabled: true
+
       rest:
         query:
           enabled: true
@@ -145,6 +149,7 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
+        persistentSessionsEnabled: true
         identity:
           redirectRootUrl: "http://localhost:8082/operate"
           resourcePermissionsEnabled: true
