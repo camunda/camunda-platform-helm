@@ -184,6 +184,10 @@ data:
         {{- end }}
 
     camunda:
+      persistent:
+        sessions:
+          enabled: true
+
       rest:
         query:
           enabled: true
@@ -225,6 +229,7 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
+        persistentSessionsEnabled: true
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
         {{- end }}
