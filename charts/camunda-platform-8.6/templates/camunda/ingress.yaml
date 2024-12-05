@@ -110,11 +110,18 @@ spec:
             pathType: {{ .Values.zeebeGateway.ingress.rest.pathType | default .Values.global.ingress.pathType }}
           {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
+  {{- if and (not .Values.global.ingress.tls.secretName) (contains "openshift-" .Values.global.ingress.className) }}
+    # The tls block is not applied because .Values.global.ingress.tls.secretName is empty
+    # and .Values.global.ingress.className contains "openshift-".
+    # This is necessary to use the certificate managed by the OpenShift Ingress operator,
+    # which will automatically convert this Ingress into a Route (https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress).
+  {{- else }}
   tls:
     - hosts:
         - {{ .Values.global.ingress.host }}
       {{- if .Values.global.ingress.tls.secretName }}
       secretName: {{ .Values.global.ingress.tls.secretName }}
       {{- end }}
+  {{- end }}
   {{- end }}
 {{- end }}
