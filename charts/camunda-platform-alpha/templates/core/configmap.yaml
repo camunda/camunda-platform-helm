@@ -166,6 +166,10 @@ data:
           CamundaExporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
+              {{- if .Values.core.index.prefix }}
+              index:
+                prefix: {{ .Values.core.index.prefix | quote }}
+              {{- end }}
               connect:
                 type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
                 url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
@@ -241,6 +245,10 @@ data:
         # ELS instance to store Operate data
         {{- if .Values.global.elasticsearch.enabled }}
         elasticsearch:
+          # Operate index prefix.
+          {{- if .Values.core.index.prefix }}
+          indexPrefix: {{ .Values.core.index.prefix | quote }}
+          {{- end }}
           # Cluster name
           clusterName: {{ .Values.global.elasticsearch.clusterName }}
           {{- if .Values.global.elasticsearch.external }}
@@ -263,7 +271,9 @@ data:
           # Transport port
           port: {{ .Values.global.elasticsearch.url.port }}
           # Index prefix, configured in Zeebe Elasticsearch exporter
-          prefix: {{ .Values.global.elasticsearch.prefix }}
+          {{- if .Values.core.index.prefix }}
+          prefix: {{ .Values.core.index.prefix | quote }}
+          {{- end }}
           {{- if .Values.global.elasticsearch.url.host }}
           # Elasticsearch full url
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
@@ -279,6 +289,9 @@ data:
           gatewayAddress: "{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}"
         {{- if .Values.global.opensearch.enabled }}
         opensearch:
+          {{- if .Values.core.index.prefix }}
+          indexPrefix: {{ .Values.core.index.prefix | quote }}
+          {{- end }}
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           {{- if .Values.global.opensearch.aws.enabled }}
           awsEnabled: true
@@ -321,6 +334,10 @@ data:
         {{- if .Values.global.elasticsearch.enabled }}
         # ELS instance to store Tasklist data
         elasticsearch:
+          # Tasklist index prefix.
+          {{- if .Values.core.index.prefix }}
+          indexPrefix: {{ .Values.core.index.prefix | quote }}
+          {{- end }}
           # Cluster name
           clusterName: {{ .Values.global.elasticsearch.clusterName }}
           # Host
@@ -343,7 +360,9 @@ data:
           # Transport port
           port: {{ .Values.global.elasticsearch.url.port }}
           # Index prefix, configured in Zeebe Elasticsearch exporter
-          prefix: {{ .Values.global.elasticsearch.prefix }}
+          {{- if .Values.core.index.prefix }}
+          prefix: {{ .Values.core.index.prefix | quote }}
+          {{- end }}
           {{- if .Values.global.elasticsearch.url.host }}
           # Elasticsearch full url
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
@@ -355,6 +374,9 @@ data:
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
         opensearch:
+          {{- if .Values.core.index.prefix }}
+          indexPrefix: {{ .Values.core.index.prefix | quote }}
+          {{- end }}
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           {{- if .Values.global.opensearch.aws.enabled }}
           awsEnabled: true
