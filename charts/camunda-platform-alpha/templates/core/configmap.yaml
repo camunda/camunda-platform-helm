@@ -67,12 +67,6 @@ data:
         level: {{ .Values.core.logLevel | quote }}
 
       broker:
-        # zeebe.broker.experimental
-        experimental:
-          engine:
-            authorization:
-              enableAuthorization: {{ .Values.global.authorizations.enabled }}
-
         # zeebe.broker.gateway
         gateway:
           enable: true
@@ -235,7 +229,6 @@ data:
         {{- if .Values.global.identity.auth.enabled }}
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/operate"
-          resourcePermissionsEnabled: {{ .Values.global.authorizations.enabled }}
         {{- end }}
       
         # ELS instance to store Operate data
@@ -310,7 +303,6 @@ data:
         {{- if .Values.global.identity.auth.enabled }}
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/tasklist"
-          resourcePermissionsEnabled: {{ .Values.global.authorizations.enabled }}
         {{- end }}
 
         # Set Tasklist username and password.
