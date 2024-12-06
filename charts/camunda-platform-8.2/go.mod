@@ -2,7 +2,7 @@ module camunda-platform
 
 go 1.21
 
-toolchain go1.23.3
+toolchain go1.23.4
 
 require (
 	github.com/gruntwork-io/terratest v0.47.2
