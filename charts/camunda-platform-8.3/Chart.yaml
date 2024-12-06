@@ -43,7 +43,7 @@ dependencies:
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 2.x.x
 maintainers:
-  - name: Zelldon
+  - name: ChrisKujawa
     email: christopher.zell@camunda.com
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
