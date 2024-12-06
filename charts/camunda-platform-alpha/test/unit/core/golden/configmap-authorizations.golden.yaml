@@ -55,12 +55,6 @@ data:
         level: "info"
 
       broker:
-        # zeebe.broker.experimental
-        experimental:
-          engine:
-            authorization:
-              enableAuthorization: true
-
         # zeebe.broker.gateway
         gateway:
           enable: true
@@ -147,7 +141,6 @@ data:
       operate:
         identity:
           redirectRootUrl: "http://localhost:8082/operate"
-          resourcePermissionsEnabled: true
       
         # ELS instance to store Operate data
         elasticsearch:
@@ -182,7 +175,6 @@ data:
       tasklist:
         identity:
           redirectRootUrl: "http://localhost:8082/tasklist"
-          resourcePermissionsEnabled: true
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.
