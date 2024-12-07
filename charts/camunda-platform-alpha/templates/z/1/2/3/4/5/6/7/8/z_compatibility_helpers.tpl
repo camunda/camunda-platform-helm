@@ -32,18 +32,6 @@ Approach:
 ********************************************************************************
 */}}
 
-
-{{/*
-Identity.
-*/}}
-{{- if .Values.identity.keycloak -}}
-    {{- $_ := set .Values "identityKeycloak" (deepCopy .Values.identity.keycloak | mergeOverwrite .Values.identityKeycloak) -}}
-{{- end -}}
-
-{{- if .Values.identity.postgresql -}}
-    {{- $_ := set .Values "identityPostgresql" (deepCopy .Values.identity.postgresql | mergeOverwrite .Values.identityPostgresql) -}}
-{{- end -}}
-
 {{/*
 OpenShift.
 The `elasticsearch.sysctlImage` container adjusts the virtual memory and file descriptors of the machine needed for Elasticsearch.
@@ -65,29 +53,4 @@ Without this label, the Helm upgrade will fail for OpenShift because it is alrea
     {{- if not (hasKey .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch") -}}
         {{- $_ := set .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch" "" -}}
     {{- end -}}
-{{- end -}}
-{{/*
-Elasticsearch.
-
-Old:
-- "global.elasticsearch.url" is a string (had priority over global.elasticsearch.{protocol, host, port})
-- "global.elasticsearch.protocol", "global.elasticsearch.host, "global.elasticsearch.port".
-
-New:
-- "global.elasticsearch.url.protocol", "global.elasticsearch.url.host, "global.url.elasticsearch.port".
-
-Notes:
-- Helm CLI will show a warning like "cannot overwrite table with non table for", but the old syntax will still work.
-*/}}
-{{- if or (not .Values.global.elasticsearch.url) (not ((.Values.global.elasticsearch).url | default "")) -}}
-    {{- $esProtocol := .Values.global.elasticsearch.protocol | default "http" -}}
-    {{- $esHost := .Values.global.elasticsearch.host | default (print .Release.Name "-elasticsearch") -}}
-    {{- $esPort := .Values.global.elasticsearch.port | default "9200" -}}
-    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" $esProtocol "host" $esHost "port" $esPort) -}}
-{{- else if eq (kindOf .Values.global.elasticsearch.url) "string" -}}
-    {{- $esURL := urlParse .Values.global.elasticsearch.url -}}
-    {{- $esProtocol := $esURL.scheme | default .Values.global.elasticsearch.protocol | default "http" -}}
-    {{- $esHost := ($esURL.host | splitList ":" | first) | default .Values.global.elasticsearch.host | default (print .Release.Name "-elasticsearch") -}}
-    {{- $esPort := ($esURL.host | splitList ":" | last) | default .Values.global.elasticsearch.port | default "9200" -}}
-    {{- $_ := set .Values.global.elasticsearch "url" (dict "protocol" $esProtocol "host" $esHost "port" $esPort) -}}
 {{- end -}}

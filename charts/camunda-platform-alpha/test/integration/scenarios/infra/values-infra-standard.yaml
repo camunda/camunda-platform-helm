@@ -104,7 +104,7 @@ webModeler:
       key: workload
       operator: Equal
       value: standard
-postgresql:
+webModelerPostgresql:
   primary:
     nodeSelector:
       workload: standard
