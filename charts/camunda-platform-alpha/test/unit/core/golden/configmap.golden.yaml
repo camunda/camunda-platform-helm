@@ -44,7 +44,7 @@ data:
         port: 9600
 
     server:
-      forward-headers-strategy: framework
+      forward-headers-strategy: none
       address: 0.0.0.0
       port: 8080
       servlet:
@@ -114,6 +114,10 @@ data:
               createSchema: true
 
     camunda:
+      persistent:
+        sessions:
+          enabled: true
+
       rest:
         query:
           enabled: true
@@ -139,6 +143,7 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
+        persistentSessionsEnabled: true
         identity:
           redirectRootUrl: "http://localhost:8082/operate"
       
