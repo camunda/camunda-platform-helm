@@ -1,0 +1,55 @@
+---
+# Source: camunda-platform/templates/connectors/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-connectors-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.7.0-alpha2"
+data:
+  application.yml: |
+    server:
+      port: 8080
+
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: metrics,health,prometheus
+      endpoint:
+        health:
+          show-details: always
+          show-components: always
+          group:
+            readiness:
+              include:
+              - processDefinitionImport
+              - zeebeClient
+      context-path: /actuator
+
+    camunda:
+      client:
+        zeebe:
+          rest-address: http://camunda-platform-test-core:8080
+          grpc-address: http://camunda-platform-test-core:26500
+          defaults:
+            worker-threads: 10
+            max-jobs-active: 32
+            stream-enabled: true
+        identity:
+          base-url: "http://camunda-platform-test-identity:80"
+          audience: "core-api"
+        auth:
+          issuer: http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token
+          client-id: "connectors"
+        mode: self-managed
+
+    logging:
+      level:
+        io.camunda.connector: ERROR

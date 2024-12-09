@@ -30,29 +30,29 @@ data:
           group:
             readiness:
               include:
+              - processDefinitionImport
               - zeebeClient
-              - operate
       context-path: /actuator
 
     camunda:
       client:
         zeebe:
+          {{-  $proto := (lower .Values.core.readinessProbe.scheme) -}}
+          {{- $baseURLInternal := printf "%s://%s" $proto (include "core.fullname" . | trimAll "\"") }}
+          rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.core.service.httpPort .Values.core.contextPath }}
+          grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.core.service.grpcPort }}
           defaults:
             worker-threads: 10
             max-jobs-active: 32
             stream-enabled: true
-          gateway-url: http://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}
         identity:
           base-url: {{ include "camundaPlatform.identityURL" . | quote }}
           audience: {{ include "core.authAudience" . | quote }}
-        operate:
-          base-url: http://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}{{ .Values.core.contextPath }}/v1
         auth:
-          issuer: {{ include "camundaPlatform.authIssuerUrl" . }}
+          issuer: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . }}
           client-id: {{ include "connectors.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
-          oidc-type: keycloak
-        mode: {{ include "connectors.operateClientProfile" . }}
+        mode: self-managed
 
     logging:
 {{- with .Values.connectors.logging }}

@@ -654,21 +654,18 @@ Release templates.
     url: {{ include "camundaPlatform.operateExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
-
   - name: Tasklist
     id: tasklist
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}
     url: {{ include "camundaPlatform.tasklistExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
-
   - name: Core Identity
     id: coreIdentity
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}
     url: {{ include "camundaPlatform.coreIdentityExternalURL" . }}
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
-
   - name: Zeebe Gateway
     id: zeebeGateway
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) }}

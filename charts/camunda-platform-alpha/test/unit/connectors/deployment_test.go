@@ -758,20 +758,6 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
 	}
 
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_ID", Value: "core"})
-	s.Require().Contains(
-		env,
-		corev1.EnvVar{
-			Name: "ZEEBE_CLIENT_SECRET",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-core-identity-secret"},
-					Key:                  "core-secret",
-				},
-			},
-		})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_AUTHORIZATION_SERVER_URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_TOKEN_AUDIENCE", Value: "core-api"})
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{
