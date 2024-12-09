@@ -264,9 +264,7 @@ data:
           # Transport port
           port: {{ .Values.global.elasticsearch.url.port }}
           # Index prefix, configured in Zeebe Elasticsearch exporter
-          {{- if .Values.core.index.prefix }}
-          prefix: {{ .Values.core.index.prefix | quote }}
-          {{- end }}
+          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
           {{- if .Values.global.elasticsearch.url.host }}
           # Elasticsearch full url
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
@@ -352,9 +350,7 @@ data:
           # Transport port
           port: {{ .Values.global.elasticsearch.url.port }}
           # Index prefix, configured in Zeebe Elasticsearch exporter
-          {{- if .Values.core.index.prefix }}
-          prefix: {{ .Values.core.index.prefix | quote }}
-          {{- end }}
+          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
           {{- if .Values.global.elasticsearch.url.host }}
           # Elasticsearch full url
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}

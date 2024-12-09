@@ -162,6 +162,7 @@ data:
           # Transport port
           port: 9200
           # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: "zeebe-record"
           # Elasticsearch full url
           url: "http://camunda-platform-test-elasticsearch:9200"
         # Zeebe instance
@@ -201,6 +202,7 @@ data:
           # Transport port
           port: 9200
           # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: "zeebe-record"
           # Elasticsearch full url
           url: "http://camunda-platform-test-elasticsearch:9200"
         # Zeebe instance
