@@ -29,11 +29,5 @@ jobs:
             "directory": "charts/camunda-platform-alpha",
             "versionSuffix": "snapshot-alpha",
             "override": true
-          },
-          {
-            "name": "Helm Chart versioned - Alpha",
-            "directory": "charts/camunda-platform-alpha",
-            "versionSuffix": "",
-            "override": false
           }
         ]
