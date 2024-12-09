@@ -69,19 +69,6 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-connectors-identity-secret
                   key: connectors-secret
-            - name: ZEEBE_CLIENT_ID
-              value: "core"
-            - name: ZEEBE_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-core-identity-secret
-                  key: core-secret
-            - name: ZEEBE_AUTHORIZATION_SERVER_URL
-              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
-            - name: ZEEBE_TOKEN_AUDIENCE
-              value: "core-api"
-            - name: ZEEBE_TOKEN_SCOPE
-              value: ""
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars

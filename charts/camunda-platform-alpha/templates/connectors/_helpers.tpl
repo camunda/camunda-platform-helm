@@ -91,11 +91,3 @@ app.kubernetes.io/component: connectors
 {{- define "connectors.authClientSecretKey" -}}
     {{ .Values.global.identity.auth.connectors.existingSecretKey }}
 {{- end -}}
-
-{{- define "connectors.operateClientProfile" -}}
-    {{- if or (eq .Values.connectors.inbound.mode "credentials") (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth")) -}}
-    oidc
-    {{- else -}}
-    simple
-    {{- end -}}
-{{- end -}}
