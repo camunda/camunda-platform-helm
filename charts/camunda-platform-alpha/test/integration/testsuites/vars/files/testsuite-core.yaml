@@ -453,4 +453,19 @@ testcases:
 >>>>>>> feb83bd5 (Update testsuite-core.yaml)
 =======
     delay: 3
+<<<<<<< HEAD
 >>>>>>> 58b6abe4 (Update testsuite-core.yaml)
+=======
+
+##############loop for testing ###############
+
+- name: TEST - Interacting with Camunda login page
+  steps:
+  - name: "{{ .value.component }}"
+    vars:
+      localhosturl: http://localhost
+    type: http
+    range:
+    - component: Check svc/camunda-keycloak
+      url: "{{ .localhosturl }}:18080"
+>>>>>>> 25cfbac7 (Update testsuite-core.yaml)
