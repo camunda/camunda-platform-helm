@@ -320,31 +320,15 @@ testcases:
 #     - result.body ShouldContainSubstring zeebe-gateway
 
   ########################################################Port forwarding Camunda components##################################
-- name: TEST - port forward for camunda
+- name: Port forwarding Camunda components
   steps:
-  - name: run command svc camunda-zeebe-gateway
-    type: exec
-    script: kubectl port-forward svc/camunda-zeebe-gateway 26500:26500
-    retry: 2
-    delay: 10
-  - name: Check camunda-zeebe-gateway
-    type: http
-    method: GET
-    url: "http://localhost:26500"
-    retry: 2
-    delay: 3
  ##################################################
   - name: Port forward to Operate service  
     type: exec
     script: kubectl port-forward svc/camunda-operate 8081:80
     retry: 2
     delay: 1
-  - name: Verify port forwarding works for Operate service.  
-    type: http
-    method: GET
-    url: "http://localhost:8081"
-    retry: 2
-    delay: 1
+
   ########################################################
 
   - name: run command svc/camunda-tasklist 
@@ -352,78 +336,49 @@ testcases:
     script: kubectl port-forward svc/camunda-tasklist 8082:80
     retry: 2
     delay: 3
-  - name: Check camunda-tasklist
-    type: http
-    method: GET
-    url: "http://localhost:8082"
-    retry: 2
-    delay: 3
+
   ##################################################
   - name: run command for svc/camunda-optimize 
     type: exec
     script: kubectl port-forward svc/camunda-optimize 8083:80
     retry: 2
     delay: 1
-  - name: Check svc/camunda-optimize
-    type: http
-    method: GET
-    url: "http://localhost:8083"
-    retry: 2
-    delay: 3
+
   ########################################################
   - name: run command for svc/camunda-connectors
     type: exec
     script: kubectl port-forward svc/camunda-connectors 8088:8080
     retry: 2
     delay: 1
-  - name: Check svc/camunda-connectors
-    type: http
-    method: GET
-    url: "http://localhost:8088"
-    retry: 2
-    delay: 3
+
        ######################################################  
   - name: run command for svc/camunda-web-modeler-webapp
     type: exec
     script: kubectl port-forward svc/camunda-web-modeler-webapp 8084:80
     retry: 2
     delay: 1
-  - name: Check svc/camunda-web-modeler-webapp
-    type: http
-    method: GET
-    url: "http://localhost:8084"
-    retry: 2
-    delay: 3
+
        ######################################################  
   - name: run command for svc/camunda-web-modeler-websockets
     type: exec
     script: kubectl port-forward svc/camunda-web-modeler-websockets 8085:80
     retry: 2
     delay: 1
-  - name: Check svc/camunda-web-modeler-websockets 
-    type: http
-    method: GET
-    url: "http://localhost:8085"
-    retry: 2
-    delay: 3
+
        ######################################################  
   - name: run command for svc/camunda-keycloak
     type: exec
     script: kubectl port-forward svc/camunda-keycloak 18080:80
     retry: 2
     delay: 1
-  - name: Check svc/camunda-keycloak
-    type: http
-    method: GET
-    url: "http://localhost:18080"
-    retry: 2
-    delay: 3
+
   ########################################################
   - name: run command for svc/camunda-console
     type: exec
     script: kubectl port-forward svc/camunda-console 8087:80
     retry: 2
     delay: 1
+<<<<<<< HEAD
   - name: Check svc/camunda-operate  
     type: http
     method: GET
@@ -456,16 +411,41 @@ testcases:
 <<<<<<< HEAD
 >>>>>>> 58b6abe4 (Update testsuite-core.yaml)
 =======
+=======
+>>>>>>> 0eacee3e (use range in testing area only)
 
 ##############loop for testing ###############
 
-- name: TEST - Interacting with Camunda login page
+- name: Verify port forwarding works
   steps:
-  - name: "{{ .value.component }}"
+  - name: "Verify port forwarding works for {{ .value.component }} service"
     vars:
       localhosturl: http://localhost
     type: http
     range:
-    - component: Check svc/camunda-keycloak
+    - component: zeebe-gateway 
+      url: "{{ .localhosturl }}:26500"
+    - component: Operate
+      url: "{{ .localhosturl }}:8081"
+    - component: tasklist 
+      url: "{{ .localhosturl }}:8082"
+    - component: optimize
+      url: "{{ .localhosturl }}:8083"
+    - component: connectors
+      url: "{{ .localhosturl }}:8088"
+    - component: web-modeler-webapp
+      url: "{{ .localhosturl }}:8084"
+    - component: web-modeler-websockets
+      url: "{{ .localhosturl }}:8085"
+    - component: operate
+      url: "{{ .localhosturl }}:8087"
+    - component: keycloak
       url: "{{ .localhosturl }}:18080"
+<<<<<<< HEAD
 >>>>>>> 25cfbac7 (Update testsuite-core.yaml)
+=======
+      method: GET
+    url: "{{ .value.url }}"
+    retry: 2
+    delay: 3
+>>>>>>> 0eacee3e (use range in testing area only)
