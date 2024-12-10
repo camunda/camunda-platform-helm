@@ -80,7 +80,7 @@ jobs:
           # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-snapshot-latest".
           CHART_VERSION_SUFFIX="${{ matrix.chart.versionSuffix }}"
           CHART_VERSION_SUFFIX_DEFAULT="$(yq '.version' Chart.yaml)"
-          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a $GITHUB_ENV
+          echo "CHART_VERSION=${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a $GITHUB_ENV
       #
       # Changelog.
       - name: Generate snapshot changelog
