@@ -1,7 +1,8 @@
 {
-  "charts/camunda-platform-8.2": "8.2.33",
-  "charts/camunda-platform-8.3": "8.3.21",
-  "charts/camunda-platform-8.4": "9.4.4",
-  "charts/camunda-platform-8.5": "10.4.5",
-  "charts/camunda-platform-8.6": "11.0.4"
+  "charts/camunda-platform-8.2": "8.2.34",
+  "charts/camunda-platform-8.3": "8.3.22",
+  "charts/camunda-platform-8.4": "9.4.5",
+  "charts/camunda-platform-8.5": "10.4.6",
+  "charts/camunda-platform-8.6": "11.1.0",
+  "charts/camunda-platform-alpha": "0.0.0-8.7.0-alpha2"
 }
