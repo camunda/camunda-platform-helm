@@ -1504,7 +1504,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `elasticsearch`                                  |              |                                   |
 | `elasticsearch.enabled`                          |              | `true`                            |
 | `elasticsearch.image.repository`                 |              | `bitnami/elasticsearch`           |
-| `elasticsearch.image.tag`                        |              | `8.16.1`                          |
+| `elasticsearch.image.tag`                        |              | `8.8.2`                           |
 | `elasticsearch.extraVolumes[0].name`             |              | `tmp`                             |
 | `elasticsearch.extraVolumes[0].emptyDir`         |              | `{}`                              |
 | `elasticsearch.extraVolumes[1].name`             |              | `logs`                            |

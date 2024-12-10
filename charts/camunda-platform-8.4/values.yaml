@@ -3153,7 +3153,7 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.16.1
+    tag: 8.9.2
   ## @param elasticsearch.extraVolumes[0].name
   ## @param elasticsearch.extraVolumes[0].emptyDir
   ## @param elasticsearch.extraVolumes[1].name
