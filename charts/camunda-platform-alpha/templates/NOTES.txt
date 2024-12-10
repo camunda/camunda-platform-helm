@@ -72,9 +72,8 @@ The Cluster itself is not exposed as a service which means that you can use `kub
 
 Now you can connect your workers and clients to `localhost:26500`
 
-{{- if or (.Values.core.enabled) (.Values.identity.enabled) }}
+{{ if or (.Values.core.enabled) (.Values.identity.enabled) }}
 ### Connecting to Web apps
-
 
 As part of the Helm charts, an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
 
