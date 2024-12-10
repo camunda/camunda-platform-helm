@@ -59,10 +59,16 @@ tasks:
       # In case the Zeebe version has not been released officially yet.
       echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
     - |
-      # Extract OpenShift values from released chart for upgrade test.
       if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
+        # Extract OpenShift values from released chart for upgrade test.
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }} \
           --version {{ .TEST_CHART_VERSION }}
+        # Preinstall in upgrade flow.
+        test -f {{ .TEST_VALUES_BASE_DIR }}/pre-install-upgrade/* || {
+          exit 0
+        }
+        export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install-upgrade/*.sh
       fi
     - |
       # Create the local chart package to install.

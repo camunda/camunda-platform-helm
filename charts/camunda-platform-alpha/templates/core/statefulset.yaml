@@ -237,23 +237,23 @@ spec:
     - metadata:
         name: data
         annotations:
-          {{- toYaml .Values.core.pvc.annotations | nindent 10 }}
+          {{- toYaml .Values.core.pvcAnnotations | nindent 10 }}
       spec:
-        accessModes: {{ .Values.core.pvc.accessModes }}
-        {{- if .Values.core.pvc.storageClassName }}
-        {{- if (eq "-" .Values.core.pvc.storageClassName) }}
+        accessModes: {{ .Values.core.pvcAccessModes }}
+        {{- if .Values.core.pvcStorageClassName }}
+        {{- if (eq "-" .Values.core.pvcStorageClassName) }}
         storageClassName: ""
         {{- else }}
-        storageClassName: {{ .Values.core.pvc.storageClassName }}
+        storageClassName: {{ .Values.core.pvcStorageClassName }}
         {{- end }}
         {{- end }}
-        {{- if .Values.core.pvc.selector }}
-        {{- with .Values.core.pvc.selector }}
+        {{- if .Values.core.pvcSelector }}
+        {{- with .Values.core.pvcSelector }}
         selector: {{ toYaml . | nindent 10 }}
         {{- end }}
         {{- end }}
         resources:
           requests:
-            storage: {{ .Values.core.pvc.size | quote }}
+            storage: {{ .Values.core.pvcSize | quote }}
   {{- end }}
 {{- end }}
