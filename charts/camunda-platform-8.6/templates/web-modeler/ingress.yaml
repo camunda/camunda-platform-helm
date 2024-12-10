@@ -32,6 +32,16 @@ spec:
                 port:
                   number: {{ .Values.webModeler.websockets.service.port }}
   {{- if or .Values.webModeler.ingress.webapp.tls.enabled .Values.webModeler.ingress.websockets.tls.enabled }}
+  {{- if and 
+    (not .Values.webModeler.ingress.webapp.tls.secretName) 
+    (not .Values.webModeler.ingress.websockets.tls.secretName) 
+    (contains "openshift-"  (default "" .Values.webModeler.ingress.className)) 
+  }}
+    # The tls block is not applied because both .Values.webModeler.ingress.webapp.tls.secretName and .Values.webModeler.ingress.websockets.tls.secretName are empty
+    # and .Values.webModeler.ingress.className contains "openshift-".
+    # This is necessary to use the certificate managed by the OpenShift Ingress operator,
+    # which will automatically convert this Ingress into a Route (https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress).
+  {{- else }}
   tls:
     {{- if .Values.webModeler.ingress.webapp.tls.enabled }}
     - hosts:
@@ -47,5 +57,6 @@ spec:
       secretName: {{ .Values.webModeler.ingress.websockets.tls.secretName }}
       {{- end }}
     {{- end }}
+  {{- end }}
   {{- end }}
 {{- end }}
