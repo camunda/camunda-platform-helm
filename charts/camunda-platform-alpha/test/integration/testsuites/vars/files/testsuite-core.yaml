@@ -322,13 +322,34 @@ testcases:
   ########################################################Port forwarding Camunda components##################################
 - name: Port forwarding Camunda components
   steps:
- ##################################################
-  - name: Port forward to Operate service  
+  - name: "Port forward to {{ .value.component }} service "
+    vars:
+      portforward: kubectl port-forward svc
     type: exec
-    script: kubectl port-forward svc/camunda-operate 8081:80
+    range:
+    - component: zeebe-gateway
+      script: "{{.portforward}}/camunda-zeebe-gateway 26500:26500" 
+    - component: Operate
+      script: "{{.portforward}}/camunda-operate 8081:80" 
+    - component: tasklist
+      script: "{{.portforward}}/camunda-tasklist 8082:80"
+    - component: optimize
+      script: "{{.portforward}}/camunda-optimize 8083:80"
+    - component: web-modeler-webapp
+      script: "{{.portforward}}/camunda-web-modeler-webapp 8084:80"
+    - component: connectors
+      script: "{{.portforward}}/camunda-connectors 8088:80"
+    - component: web-modeler-websockets
+      script: "{{.portforward}}/camunda-web-modeler-websockets 8085:80"
+    - component: console
+      script: "{{.portforward}}/camunda-console 8087:80"
+    - component: camunda-keycloak
+      script: "{{.portforward}}/camunda-keycloak 18080:80"
+    script: "{{ .value.script }}"
     retry: 2
     delay: 1
 
+<<<<<<< HEAD
   ########################################################
 
   - name: run command svc/camunda-tasklist 
@@ -415,6 +436,9 @@ testcases:
 >>>>>>> 0eacee3e (use range in testing area only)
 
 ##############loop for testing ###############
+=======
+##############Loop to verify port forwarding works ###############
+>>>>>>> 46f22e1d (Using loop for port forwarding and verification)
 
 - name: Verify port forwarding works
   steps:
@@ -424,26 +448,30 @@ testcases:
     type: http
     range:
     - component: zeebe-gateway 
-      url: "{{ .localhosturl }}:26500"
+      url: "{{.localhosturl}}:26500"
     - component: Operate
-      url: "{{ .localhosturl }}:8081"
+      url: "{{.localhosturl}}:8081"
     - component: tasklist 
-      url: "{{ .localhosturl }}:8082"
+      url: "{{.localhosturl}}:8082"
     - component: optimize
-      url: "{{ .localhosturl }}:8083"
+      url: "{{.localhosturl}}:8083"
     - component: connectors
-      url: "{{ .localhosturl }}:8088"
+      url: "{{.localhosturl}}:8088"
     - component: web-modeler-webapp
-      url: "{{ .localhosturl }}:8084"
+      url: "{{.localhosturl}}:8084"
     - component: web-modeler-websockets
-      url: "{{ .localhosturl }}:8085"
+      url: "{{.localhosturl}}:8085"
     - component: operate
-      url: "{{ .localhosturl }}:8087"
+      url: "{{.localhosturl}}:8087"
     - component: keycloak
+<<<<<<< HEAD
       url: "{{ .localhosturl }}:18080"
 <<<<<<< HEAD
 >>>>>>> 25cfbac7 (Update testsuite-core.yaml)
 =======
+=======
+      url: "{{.localhosturl}}:18080"
+>>>>>>> 46f22e1d (Using loop for port forwarding and verification)
       method: GET
     url: "{{ .value.url }}"
     retry: 2
