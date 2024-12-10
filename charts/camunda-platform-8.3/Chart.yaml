@@ -58,5 +58,5 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Update postgresql image tag to avoid bitnami broken release"
-  camunda.io/helmCLIVersion: 3.16.2
+      description: "Renovate disable elasticsearch minor upgrades and revert elasticsearch upgrade"
+  camunda.io/helmCLIVersion: 3.16.3
