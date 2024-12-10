@@ -319,8 +319,8 @@ testcases:
 #     - result.body ShouldContainSubstring zeebe
 #     - result.body ShouldContainSubstring zeebe-gateway
 
-  ########################################################portforward checks##################################
-- name: TEST - portforward for camunda
+  ########################################################Port forwarding Camunda components##################################
+- name: TEST - port forward for camunda
   steps:
   - name: run command svc camunda-zeebe-gateway
     type: exec
@@ -334,12 +334,12 @@ testcases:
     retry: 2
     delay: 3
  ##################################################
-  - name: run command for svc/camunda-operate  
+  - name: Port forward to Operate service  
     type: exec
-    script: kubectl port-forward svc/camunda-operate  8081:80
+    script: kubectl port-forward svc/camunda-operate 8081:80
     retry: 2
     delay: 1
-  - name: Check svc/camunda-operate  
+  - name: Verify port forwarding works for Operate service.  
     type: http
     method: GET
     url: "http://localhost:8081"
