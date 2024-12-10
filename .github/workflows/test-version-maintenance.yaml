@@ -7,6 +7,7 @@ on:
       - '.github/workflows/test-integration-template.yaml'
       - '.github/workflows/test-version-maintenance.yaml'
       - 'charts/camunda-platform-8*/**'
+      - '.tool-versions'
   workflow_dispatch: { }
 
 concurrency:
