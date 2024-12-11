@@ -51,6 +51,11 @@ data:
               url: http://localhost:8083
               readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
+            - name: Connectors
+              id: connectors
+              url: http://localhost:8086
+              readiness: http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness
+              metrics: http://camunda-platform-test-connectors.camunda-platform:8080/actuator/prometheus
             - name: Operate
               id: operate
               url: http://localhost:8088/operate
