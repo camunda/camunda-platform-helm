@@ -313,9 +313,7 @@ testcases:
 #     - result.body ShouldContainSubstring identity
 #     - result.body ShouldContainSubstring optimize
 #     - result.body ShouldContainSubstring web-modeler-restapi
-<<<<<<< HEAD
 #     - result.body ShouldContainSubstring core
-=======
 #     - result.body ShouldContainSubstring zeebe
 #     - result.body ShouldContainSubstring zeebe-gateway
 
@@ -349,96 +347,7 @@ testcases:
     retry: 2
     delay: 1
 
-<<<<<<< HEAD
-  ########################################################
-
-  - name: run command svc/camunda-tasklist 
-    type: exec
-    script: kubectl port-forward svc/camunda-tasklist 8082:80
-    retry: 2
-    delay: 3
-
-  ##################################################
-  - name: run command for svc/camunda-optimize 
-    type: exec
-    script: kubectl port-forward svc/camunda-optimize 8083:80
-    retry: 2
-    delay: 1
-
-  ########################################################
-  - name: run command for svc/camunda-connectors
-    type: exec
-    script: kubectl port-forward svc/camunda-connectors 8088:8080
-    retry: 2
-    delay: 1
-
-       ######################################################  
-  - name: run command for svc/camunda-web-modeler-webapp
-    type: exec
-    script: kubectl port-forward svc/camunda-web-modeler-webapp 8084:80
-    retry: 2
-    delay: 1
-
-       ######################################################  
-  - name: run command for svc/camunda-web-modeler-websockets
-    type: exec
-    script: kubectl port-forward svc/camunda-web-modeler-websockets 8085:80
-    retry: 2
-    delay: 1
-
-       ######################################################  
-  - name: run command for svc/camunda-keycloak
-    type: exec
-    script: kubectl port-forward svc/camunda-keycloak 18080:80
-    retry: 2
-    delay: 1
-
-  ########################################################
-  - name: run command for svc/camunda-console
-    type: exec
-    script: kubectl port-forward svc/camunda-console 8087:80
-    retry: 2
-    delay: 1
-<<<<<<< HEAD
-  - name: Check svc/camunda-operate  
-    type: http
-    method: GET
-    url: "http://localhost:8087"
-    retry: 2
-    delay: 3
-       ######################################################  
-  - name: run command for svc/camunda-keycloak
-    type: exec
-    script: kubectl port-forward svc/camunda-keycloak 18080:80
-    retry: 2
-    delay: 1
-  - name: Check svc/camunda-keycloak
-    type: http
-    method: GET
-    url: "http://localhost:18080"
-    retry: 2
-<<<<<<< HEAD
-    delay: 1
-    info: |
-      = Request Body: {{ .result.request.body }}
-      = Response Body: {{ .result.body }}
-    assertions:
-     - result.statuscode ShouldEqual 200
-
-  
->>>>>>> feb83bd5 (Update testsuite-core.yaml)
-=======
-    delay: 3
-<<<<<<< HEAD
->>>>>>> 58b6abe4 (Update testsuite-core.yaml)
-=======
-=======
->>>>>>> 0eacee3e (use range in testing area only)
-
-##############loop for testing ###############
-=======
 ##############Loop to verify port forwarding works ###############
->>>>>>> 46f22e1d (Using loop for port forwarding and verification)
 
 - name: Verify port forwarding works
   steps:
@@ -464,16 +373,9 @@ testcases:
     - component: operate
       url: "{{.localhosturl}}:8087"
     - component: keycloak
-<<<<<<< HEAD
       url: "{{ .localhosturl }}:18080"
-<<<<<<< HEAD
->>>>>>> 25cfbac7 (Update testsuite-core.yaml)
-=======
-=======
       url: "{{.localhosturl}}:18080"
->>>>>>> 46f22e1d (Using loop for port forwarding and verification)
       method: GET
     url: "{{ .value.url }}"
     retry: 2
     delay: 3
->>>>>>> 0eacee3e (use range in testing area only)
