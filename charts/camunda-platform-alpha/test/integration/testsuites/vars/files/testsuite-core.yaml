@@ -11,17 +11,14 @@ vars:
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
 
 testcases:
-<<<<<<< HEAD
 
 - name: Core test suite is disabled
-=======
 # https://docs.camunda.io/docs/self-managed/identity/user-guide/generating-m2m-tokens/
 - name: TEST - Generating machine-to-machine token
   description: |
     Test generating tokens from Keycloak for components that use client type "CONFIDENTIAL".
     This test will not work with type "PUBLIC" because "Public client not allowed to retrieve service account".
     https://datatracker.ietf.org/doc/html/rfc6749#section-2.1
->>>>>>> feb83bd5 (Update testsuite-core.yaml)
   steps:
   - type: exec
     script: echo 'Core test suite is disabled till full 8.7 refactor'
@@ -374,7 +371,6 @@ testcases:
       url: "{{.localhosturl}}:8087"
     - component: keycloak
       url: "{{ .localhosturl }}:18080"
-      url: "{{.localhosturl}}:18080"
       method: GET
     url: "{{ .value.url }}"
     retry: 2
