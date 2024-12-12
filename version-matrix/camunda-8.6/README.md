@@ -1,11 +1,42 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8.6 Helm Chart Version Matrix
 
+- [Helm chart 11.1.0](#helm-chart-1110)
 - [Helm chart 11.0.4](#helm-chart-1104)
 - [Helm chart 11.0.3](#helm-chart-1103)
 - [Helm chart 11.0.2](#helm-chart-1102)
 - [Helm chart 11.0.1](#helm-chart-1101)
 - [Helm chart 11.0.0](#helm-chart-1100)
+
+## Helm chart 11.1.0
+
+Supported versions:
+
+- Camunda applications: [8.6](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.6&expanded=true)
+- Helm values: [11.1.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/11.1.0#parameters)
+- Helm CLI: [3.16.3](https://github.com/helm/helm/releases/tag/v3.16.3)
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:8.6.5
+- docker.io/camunda/console:8.6.36
+- docker.io/camunda/identity:8.6.6
+- docker.io/camunda/keycloak:25.0.6
+- docker.io/camunda/operate:8.6.6
+- docker.io/camunda/optimize:8.6.3
+- docker.io/camunda/tasklist:8.6.6
+- docker.io/camunda/web-modeler-restapi:8.6.4
+- docker.io/camunda/web-modeler-webapp:8.6.4
+- docker.io/camunda/web-modeler-websockets:8.6.4
+- docker.io/camunda/zeebe:8.6.6
+
+Non-Camunda images:
+
+- docker.io/bitnami/elasticsearch:8.15.4
+- docker.io/bitnami/os-shell:12-debian-12-r33
+- docker.io/bitnami/postgresql:14.15.0-debian-12-r2
+- docker.io/bitnami/postgresql:15.10.0-debian-12-r2
+
 
 ## Helm chart 11.0.4
 
