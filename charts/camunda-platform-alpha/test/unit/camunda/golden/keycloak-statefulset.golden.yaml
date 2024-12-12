@@ -128,13 +128,13 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-keycloak
-                  key: admin-password
+                  name: camunda-credentials
+                  key: identity-keycloak-admin-password
             - name: KEYCLOAK_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-postgresql
-                  key: password
+                  name: camunda-credentials
+                  key: identity-keycloak-postgresql-user-password
             - name: KEYCLOAK_HTTP_RELATIVE_PATH
               value: "/auth/"
             - name: KC_SPI_ADMIN_REALM

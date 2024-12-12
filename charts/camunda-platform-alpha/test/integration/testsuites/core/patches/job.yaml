@@ -13,19 +13,19 @@ spec:
           valueFrom:
             secretKeyRef:
               name: integration-test-credentials
-              key: identity-admin-client-password
+              key: identity-admin-client-token
         - name: VENOM_VAR_CORE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: integration-test-credentials
-              key: identity-core-client-password
+              key: identity-core-client-token
         - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: integration-test-credentials
-              key: identity-connectors-client-password
+              key: identity-connectors-client-token
         - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: integration-test-credentials
-              key: identity-optimize-client-password
+              key: identity-optimize-client-token

@@ -24,18 +24,18 @@ dependencies:
     alias: identityKeycloak
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 23.0.0
-    condition: "identity.keycloak.enabled,identityKeycloak.enabled"
+    condition: "identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 15.x.x
-    condition: "identity.postgresql.enabled,identityPostgresql.enabled"
+    condition: "identityPostgresql.enabled"
   # WebModeler Dependencies.
   - name: web-modeler-postgresql
-    alias: postgresql
+    alias: webModelerPostgresql
     repository: "file://../web-modeler-postgresql-15"
     version: 15.x.x
-    condition: "postgresql.enabled"
+    condition: "webModelerPostgresql.enabled"
   # Shared Dependencies.
   - name: elasticsearch
     repository: oci://registry-1.docker.io/bitnamicharts

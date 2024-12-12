@@ -63,18 +63,18 @@ spec:
             - name: VALUES_KEYCLOAK_INIT_CORE_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-core-identity-secret
-                  key: core-secret
+                  name: camunda-credentials
+                  key: identity-core-client-token
             - name: VALUES_KEYCLOAK_INIT_CONSOLE_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-console-identity-secret
-                  key: console-secret
+                  name: camunda-credentials
+                  key: identity-console-client-token
             - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-optimize-identity-secret
-                  key: optimize-secret
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
             - name: KEYCLOAK_CLIENTS_0_NAME
               value: Connectors
             - name: KEYCLOAK_CLIENTS_0_ID
@@ -82,8 +82,8 @@ spec:
             - name: KEYCLOAK_CLIENTS_0_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-connectors-identity-secret
-                  key: connectors-secret
+                  name: camunda-credentials
+                  key: identity-connectors-client-token
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
               value: http://placeholder
             - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
@@ -99,8 +99,8 @@ spec:
             - name: KEYCLOAK_CLIENTS_1_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-core-identity-secret
-                  key: core-secret
+                  name: camunda-credentials
+                  key: identity-core-client-token
             - name: KEYCLOAK_CLIENTS_1_ROOT_URL
               value: "http://localhost:8082"
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
@@ -114,10 +114,13 @@ spec:
             - name: VALUES_KEYCLOAK_SETUP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-keycloak
-                  key: admin-password
+                  name: camunda-credentials
+                  key: identity-keycloak-admin-password
             - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
-              value: "demo"
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-firstuser-password
           resources:
             limits:
               cpu: 2000m

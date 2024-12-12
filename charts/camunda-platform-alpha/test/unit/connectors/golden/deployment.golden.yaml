@@ -67,8 +67,8 @@ spec:
             - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-connectors-identity-secret
-                  key: connectors-secret
+                  name: camunda-credentials
+                  key: identity-connectors-client-token
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
