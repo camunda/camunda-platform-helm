@@ -12,7 +12,7 @@ console:
   # Camunda Enterprise repository.
   # https://hub.docker.com/r/camunda/console/tags
   image:
-    tag: 8.6.10
+    tag: 8.6.36
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -23,7 +23,7 @@ connectors:
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
-    tag: 8.6.3
+    tag: 8.6.6
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
