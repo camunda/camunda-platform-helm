@@ -3,7 +3,7 @@ name: "Chart - Release - Candidate"
 on:
   push:
     branches:
-      - release-candidate*
+      - release-candidate
 
 jobs:
   release:
@@ -18,36 +18,30 @@ jobs:
             "name": "Helm Chart 8.2",
             "directory": "charts/camunda-platform-8.2",
             "versionSuffix": "rc-8.2",
-            "override": true
           },
           {
             "name": "Helm Chart 8.3",
             "directory": "charts/camunda-platform-8.3",
             "versionSuffix": "rc-8.3",
-            "override": true
           },
           {
             "name": "Helm Chart 8.4",
             "directory": "charts/camunda-platform-8.4",
             "versionSuffix": "rc-8.4",
-            "override": true
           },
           {
             "name": "Helm Chart 8.5",
             "directory": "charts/camunda-platform-8.5",
             "versionSuffix": "rc-8.5",
-            "override": true
           },
           {
             "name": "Helm Chart 8.6",
             "directory": "charts/camunda-platform-8.6",
             "versionSuffix": "rc-8.6",
-            "override": true
           },
           {
             "name": "Helm Chart Alpha",
             "directory": "charts/camunda-platform-alpha",
             "versionSuffix": "rc-alpha",
-            "override": true
           }
         ]
