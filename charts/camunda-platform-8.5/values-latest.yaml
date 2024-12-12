@@ -29,6 +29,7 @@ connectors:
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
+    repository: camunda/operate
     tag: 8.5.4
 
 optimize:
@@ -40,6 +41,7 @@ optimize:
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
+    repository: camunda/tasklist
     tag: 8.5.2
 
 webModeler:
@@ -52,11 +54,13 @@ webModeler:
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
+    repository: camunda/zeebe
     tag: 8.5.3
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
+    repository: camunda/zeebe
     tag: 8.5.3
 
 #
@@ -66,6 +70,7 @@ zeebeGateway:
 identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
+    repository: camunda/identity
     tag: 8.5.5
 
 identityKeycloak:

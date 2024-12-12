@@ -12,17 +12,13 @@ console:
   # Camunda Enterprise repository.
   # https://hub.docker.com/r/camunda/console/tags
   image:
+    repository: camunda/console
     tag: SNAPSHOT
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: SNAPSHOT
-
-operate:
-  # https://hub.docker.com/r/camunda/operate/tags
-  image:
     tag: SNAPSHOT
 
 optimize:
@@ -43,17 +39,12 @@ webModeler:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
     tag: SNAPSHOT
 
-zeebe:
-  # https://hub.docker.com/r/camunda/zeebe/tags
+core:
+  # https://hub.docker.com/r/camunda/camunda/tags
   image:
-    repository: camunda/zeebe
+    repository: camunda/camunda
     tag: SNAPSHOT
 
-zeebeGateway:
-  # https://hub.docker.com/r/camunda/zeebe/tags
-  image:
-    repository: camunda/zeebe
-    tag: SNAPSHOT
 
 #
 # Identity
