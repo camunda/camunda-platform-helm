@@ -80,7 +80,7 @@ func TestGoldenConfigmapWithAuthorizationsEnabled(t *testing.T) {
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-authorizations",
 		Templates:      []string{"templates/core/configmap.yaml"},
-		SetValues: map[string]string{"global.authorizations.enabled": "true"},
+		SetValues:      map[string]string{"global.authorizations.enabled": "true"},
 	})
 }
 

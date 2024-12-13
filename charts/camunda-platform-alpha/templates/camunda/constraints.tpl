@@ -63,7 +63,9 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 Fail with a message if Identity is disabled and identityKeycloak is enabled.
 */}}
 {{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
-  {{- $errorMessage := "[camunda][error] Identity is disabled but identityKeycloak is enabled. Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Identity is disabled but identityKeycloak is enabled."
+      "Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
@@ -72,7 +74,9 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 [opensearch] when existingSecret is provided for opensearch then password field should be empty
 */}}
 {{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-  {{- $errorMessage := "[camunda][error] global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set." -}}
+  {{- $errorMessage := printf "[camunda][error] %s"
+      " global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set."
+  -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
@@ -82,40 +86,58 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 
     {{- $existingSecretsNotConfigured := list }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.connectors.enabled) (not .Values.global.identity.auth.connectors.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret.name" }}
+    {{ if .Values.global.identity.auth.enabled }}
+      {{ if and (.Values.connectors.enabled)
+                (not .Values.global.identity.auth.connectors.existingSecret) }}
+        {{- $existingSecretsNotConfigured = append
+            $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret.name" }}
+      {{- end }}
+
+      {{ if and (ne (upper .Values.global.identity.auth.type) "KEYCLOAK")
+                (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
+        {{- $existingSecretsNotConfigured = append
+            $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret.name" }}
+      {{- end }}
+
+      {{ if and (.Values.console.enabled)
+            (not .Values.global.identity.auth.console.existingSecret) }}
+        {{- $existingSecretsNotConfigured = append
+            $existingSecretsNotConfigured "global.identity.auth.console.existingSecret.name" }}
+      {{- end }}
+
+      {{ if and (.Values.core.enabled)
+                (not .Values.global.identity.auth.core.existingSecret) }}
+        {{- $existingSecretsNotConfigured = append
+            $existingSecretsNotConfigured "global.identity.auth.core.existingSecret.name" }}
+      {{- end }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (ne (upper .Values.global.identity.auth.type) "KEYCLOAK") (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret.name" }}
+    {{ if and (.Values.identityKeycloak.enabled)
+              (not .Values.identityKeycloak.auth.existingSecret) }}
+      {{- $existingSecretsNotConfigured = append
+          $existingSecretsNotConfigured "identityKeycloak.auth.existingSecret"
+      }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.console.enabled) (not .Values.global.identity.auth.console.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.console.existingSecret.name" }}
+    {{ if and (.Values.identityKeycloak.postgresql.enabled)
+              (not .Values.identityKeycloak.postgresql.auth.existingSecret) }}
+      {{- $existingSecretsNotConfigured = append
+          $existingSecretsNotConfigured "identityKeycloak.postgresql.auth.existingSecret"
+      }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.core.enabled) (not .Values.global.identity.auth.core.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.core.existingSecret.name" }}
+    {{ if and (.Values.webModelerPostgresql.enabled)
+              (not .Values.webModelerPostgresql.auth.existingSecret) }}
+      {{- $existingSecretsNotConfigured = append
+          $existingSecretsNotConfigured "webModelerPostgresql.auth.existingSecret"
+      }}
     {{- end }}
 
-    {{ if and (.Values.identityKeycloak.enabled) (not .Values.identityKeycloak.auth.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityKeycloak.auth.existingSecret" }}
-    {{- end }}
-
-    {{ if and (.Values.identityKeycloak.postgresql.enabled) (not .Values.identityKeycloak.postgresql.auth.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityKeycloak.postgresql.auth.existingSecret" }}
-    {{- end }}
-
-    {{ if and (.Values.postgresql.enabled) (not .Values.postgresql.auth.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "postgresql.auth.existingSecret" }}
-    {{- end }}
-
-    {{ if and (.Values.identityPostgresql.enabled) (not .Values.identityPostgresql.auth.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret" }}
-    {{- end }}
-
-    {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.mail.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.restapi.mail.existingSecret.name" }}
+    {{ if and (.Values.identityPostgresql.enabled)
+              (not .Values.identityPostgresql.auth.existingSecret) }}
+      {{- $existingSecretsNotConfigured = append
+          $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret"
+      }}
     {{- end }}
 
     {{- if $existingSecretsNotConfigured }}
@@ -127,27 +149,6 @@ DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no
 Users must provide passwords as Kubernetes secrets. 
 In appVersion 8.6, this warning will appear if all necessary existingSecrets are not set.
 
-Example of a required secret:
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: identity-secret-for-components
-type: Opaque
-data:
-  # Identity apps auth.
-  connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
-  optimize-secret: <base64-encoded-secret>
-  core-secret: <base64-encoded-secret>
-  # Identity Keycloak.
-  admin-password: <base64-encoded-secret>.
-  # Identity Keycloak PostgreSQL.
-  postgres-password: <base64-encoded-secret> # used for postgresql admin password
-  password: <base64-encoded-secret> # used for postgresql user password
-  # Web Modeler.
-  smtp-password: <base64-encoded-secret> # used for web modeler mail
-
 The following values inside your values.yaml need to be set but were not:
       `
           )
@@ -155,7 +156,7 @@ The following values inside your values.yaml need to be set but were not:
         {{- range $existingSecretsNotConfigured }}
           {{- $errorMessage = (cat "  " $errorMessage "\n" .) }}
         {{- end }}
-        {{- $errorMessage = (cat $errorMessage "\n\n" "Please be aware that each of the above parameters expect a string name of a kubernetes Secret.\n") }}
+        {{- $errorMessage = (cat $errorMessage "\n\n" "Please be aware that each of the above parameters expect a string name of a Kubernetes Secret object.\n") }}
         {{- printf "\n%s" $errorMessage | trimSuffix "\n" }}
       {{- else if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "error" }}
         {{- $errorMessage := (printf "%s"
@@ -163,27 +164,6 @@ The following values inside your values.yaml need to be set but were not:
 [camunda][error]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
 Users must provide passwords as Kubernetes secrets. 
-
-Example of a required secret:
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: identity-secret-for-components
-type: Opaque
-data:
-  # Identity apps auth.
-  connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
-  optimize-secret: <base64-encoded-secret>
-  core-secret: <base64-encoded-secret>
-  # Identity Keycloak.
-  admin-password: <base64-encoded-secret>.
-  # Identity Keycloak PostgreSQL.
-  postgres-password: <base64-encoded-secret> # used for postgresql admin password
-  password: <base64-encoded-secret> # used for postgresql user password
-  # Web Modeler.
-  smtp-password: <base64-encoded-secret> # used for web modeler mail
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -200,12 +180,74 @@ The following values inside your values.yaml need to be set but were not:
 {{- end }}
 
 {{/*
-Camunda 8.7 cycle deprecated keys.
-
-Fail with a message when old values syntax is used.
-Chart Version: 12.0.0
+**************************************************************
+Deprecation helpers.
+**************************************************************
 */}}
 
+{{/*
+camundaPlatform.keyRenamed
+Fail with message when the old values file key is used and show the new key.
+Usage:
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (.Values.identity.keycloak)
+  "oldName" "identity.keycloak"
+  "newName" "identityKeycloak"
+) }}
+*/}}
+{{- define "camundaPlatform.keyRenamed" }}
+  {{- if .condition }}
+    {{- $errorMessage := printf
+        "[camunda][error] The Helm values file key changed from \"%s\" to \"%s\". %s %s"
+        .oldName .newName
+        "For more details, please check Camunda Helm chart documentation."
+        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end -}}
+
+
+{{/*
+camundaPlatform.keyRemoved
+Fail with message when the old values file key is used.
+Usage:
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (.Values.identity.keycloak)
+  "oldName" "identity.keycloak"
+) }}
+*/}}
+{{- define "camundaPlatform.keyRemoved" }}
+  {{- if .condition }}
+    {{- $errorMessage := printf
+        "[camunda][error] The Helm values file key \"%s\" has been removed. %s %s"
+        .oldName
+        "For more details, please check Camunda Helm chart documentation."
+        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end -}}
+
+
+{{/*
+*******************************************************************************
+Camunda 8.7 cycle deprecated keys.
+*******************************************************************************
+Fail with a message when old values syntax is used.
+Chart Version: 12.0.0
+*******************************************************************************
+*/}}
+
+{{/*
+*******************************************************************************
+Global
+*******************************************************************************
+*/}}
+
+{{/*
+- removed: global.multiregion.installationType
+*/}}
 {{- if hasKey .Values.global.multiregion "installationType" }}
   {{- $errorMessage := printf "[camunda][error] %s %s %s"
       "The option \"global.multiregion.installationType\" has been removed."
@@ -214,3 +256,158 @@ Chart Version: 12.0.0
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
+
+{{/*
+- changed: global.elasticsearch.url => from string to dict.
+- renamed: global.elasticsearch.protocol => global.elasticsearch.url.protocol
+- renamed: global.elasticsearch.host => global.elasticsearch.url.host
+- renamed: global.elasticsearch.port => global.elasticsearch.url.port
+*/}}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (eq (kindOf .Values.global.elasticsearch.url) "string")
+  "oldName" "global.elasticsearch.url: \"\" (string)"
+  "newName" "global.elasticsearch.url: {} (dict)"
+) }}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (.Values.global.elasticsearch.protocol)
+  "oldName" "global.elasticsearch.protocol"
+  "newName" "global.elasticsearch.url.protocol"
+) }}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (.Values.global.elasticsearch.host)
+  "oldName" "global.elasticsearch.host"
+  "newName" "global.elasticsearch.url.host"
+) }}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (.Values.global.elasticsearch.port)
+  "oldName" "global.elasticsearch.port"
+  "newName" "global.elasticsearch.url.port"
+) }}
+
+{{/*
+*******************************************************************************
+Identity.
+*******************************************************************************
+*/}}
+
+{{- if .Values.identity.enabled -}}
+{{/*
+- renamed: identity.keycloak => identityKeycloak
+*/}}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (.Values.identity.keycloak)
+  "oldName" "identity.keycloak"
+  "newName" "identityKeycloak"
+) }}
+
+{{/*
+- renamed: identity.postgresql => identityPostgresql
+*/}}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (.Values.identity.postgresql)
+  "oldName" "identity.postgresql"
+  "newName" "identityPostgresql"
+) }}
+{{- end }}
+
+{{/*
+*******************************************************************************
+Web Modeler.
+*******************************************************************************
+*/}}
+
+{{- if .Values.webModeler.enabled -}}
+  {{/*
+  - renamed: postgresql => webModelerPostgresql
+  */}}
+
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.postgresql)
+    "oldName" "postgresql"
+    "newName" "webModelerPostgresql"
+  ) }}
+{{- end }}
+
+{{/*
+*******************************************************************************
+Core replacment (Zeebe, Zeebe Gateway, Operate, Optimize, Tasklist).
+*******************************************************************************
+*/}}
+
+{{- if (.Values.zeebe).enabled -}}
+  {{ include "camundaPlatform.keyRemoved" (dict
+    "condition" (.Values.zeebe)
+    "oldName" "zeebe"
+  ) }}
+{{- end }}
+
+{{- if or (.Values.zeebeGateway).enabled (index .Values "zeebe-gateway").enabled -}}
+  {{ include "camundaPlatform.keyRemoved" (dict
+    "condition" (.Values.zeebeGateway)
+    "oldName" "zeebeGateway"
+  ) }}
+  {{ include "camundaPlatform.keyRemoved" (dict
+    "condition" (index .Values "zeebe-gateway")
+    "oldName" "zeebe-gateway"
+  ) }}
+{{- end }}
+
+{{- if (.Values.operate).enabled -}}
+  {{ include "camundaPlatform.keyRemoved" (dict
+    "condition" (.Values.operate)
+    "oldName" "operate"
+  ) }}
+{{- end }}
+
+{{/*
+{{- if (.Values.optimize).enabled -}}
+  {{ include "camundaPlatform.keyRemoved" (dict
+    "condition" (.Values.optimize)
+    "oldName" "optimize"
+  ) }}
+{{- end }}
+*/}}
+
+{{- if (.Values.tasklist).enabled -}}
+  {{ include "camundaPlatform.keyRemoved" (dict
+    "condition" (.Values.tasklist)
+    "oldName" "tasklist"
+  ) }}
+{{- end }}
+
+{{/*
+*******************************************************************************
+Separated Ingress.
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" ((.Values.identity.ingress).enabled)
+  "oldName" "identity.ingress"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" ((.Values.console.ingress).enabled)
+  "oldName" "console.ingress"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" ((.Values.webModeler.ingress).enabled)
+  "oldName" "webModeler.ingress"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" ((.Values.connectors.ingress).enabled)
+  "oldName" "connectors.ingress"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" ((.Values.core.ingress).enabled)
+  "oldName" "core.ingress"
+) }}

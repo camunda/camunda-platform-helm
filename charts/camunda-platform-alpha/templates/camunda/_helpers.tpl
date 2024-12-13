@@ -562,9 +562,6 @@ Zeebe templates.
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.core.contextPath -}}
-  {{- else if .Values.core.ingress.http.enabled -}}
-    {{ $proto := ternary "https" "http" .Values.core.ingress.http.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto .Values.core.ingress.http.host .Values.core.contextPath -}}
   {{- else -}}
     {{- printf "http://localhost:8088" -}}
   {{- end -}}

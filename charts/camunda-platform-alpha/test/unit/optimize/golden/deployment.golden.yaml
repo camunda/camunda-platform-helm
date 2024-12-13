@@ -107,8 +107,8 @@ spec:
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-platform-test-optimize-identity-secret
-                  key: optimize-secret
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
             - name: OPTIMIZE_LOG_LEVEL
               value: "info"
             - name: UPGRADE_LOG_LEVEL

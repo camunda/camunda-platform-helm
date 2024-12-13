@@ -256,7 +256,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
 			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"postgresql.enabled":                           "false",
+			"webModelerPostgresql.enabled":                 "false",
 			"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":     "modeler-user",
 			"webModeler.restapi.externalDatabase.password": "modeler-password",
@@ -286,7 +286,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 		SetValues: map[string]string{
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
-			"postgresql.enabled":                  "false",
+			"webModelerPostgresql.enabled":        "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -320,7 +320,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 		SetValues: map[string]string{
 			"webModeler.enabled":                   "true",
 			"webModeler.restapi.mail.fromAddress":  "example@example.com",
-			"postgresql.enabled":                   "false",
+			"webModelerPostgresql.enabled":         "false",
 			"global.zeebeClusterName":              "test-zeebe",
 			"global.identity.auth.core.tokenScope": "test-scope",
 			"global.identity.auth.core.audience":   "test-core-api",
@@ -380,7 +380,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 			"webModeler.restapi.clusters[1].url.operate":    "http://operate.test-2:8080",
 			"webModeler.restapi.clusters[1].url.tasklist":   "http://tasklist.test-2:8080",
 			"webModeler.restapi.clusters[1].oauth.url":      "http://test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token",
-			"postgresql.enabled":                            "false",
+			"webModelerPostgresql.enabled":                  "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -419,7 +419,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 		SetValues: map[string]string{
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
-			"postgresql.enabled":                  "false",
+			"webModelerPostgresql.enabled":        "false",
 			"core.enabled":                        "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

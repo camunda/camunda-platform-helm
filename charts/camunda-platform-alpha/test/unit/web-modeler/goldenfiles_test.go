@@ -50,9 +50,10 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"postgresql.enabled":                  "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "example@example.com",
+				"webModelerPostgresql.enabled":             "true",
+				"webModelerPostgresql.auth.existingSecret": "camunda-platform-test-postgresql-web-modeler",
 			},
 			IgnoredLines: []string{
 				`\s+pusher-app-key:\s+.*`,    // Auto-generated and need to be ignored.
