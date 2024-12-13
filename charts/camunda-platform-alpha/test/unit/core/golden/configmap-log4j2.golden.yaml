@@ -58,6 +58,13 @@ data:
         # zeebe.broker.gateway
         gateway:
           enable: true
+          # zeebe.broker.gateway.security
+          security:
+            authentication:
+              mode: identity
+              issuerBackendUrl: "http://localhost:18080/auth/realms/camunda-platform"
+              audience: "core-api"
+              type: keycloak
           network:
             host: 0.0.0.0
             port: 26500

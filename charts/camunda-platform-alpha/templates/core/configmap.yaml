@@ -38,7 +38,6 @@ data:
                 redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
                 provider: oidcclient
                 scope: openid,profile
-
     {{- else }}
     spring:
       profiles:
@@ -70,6 +69,18 @@ data:
         # zeebe.broker.gateway
         gateway:
           enable: true
+          # zeebe.broker.gateway.security
+          security:
+            authentication:
+            {{- if .Values.global.identity.auth.enabled }}
+              mode: identity
+              {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
+              issuerBackendUrl: {{ (include "camundaPlatform.authIssuerUrl" .) | default $issuerURIDefault | quote }}
+              audience: {{ include "core.authAudience" . | quote }}
+              type: {{ lower .Values.global.identity.auth.type | default "keycloak" }}
+            {{- else }}
+              mode: none
+            {{- end }}
           network:
             host: 0.0.0.0
             port: {{ .Values.core.service.grpcPort }}
