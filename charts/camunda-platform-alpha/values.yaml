@@ -357,8 +357,8 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Core is created to 8082.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8082"
-        ## @param global.identity.auth.core.tokenScope defines the token scope, which is used by Core.
-        tokenScope:
+        ## @param global.identity.auth.core.tokenScope [nullable] defines the token scope, which is used by Core.
+        tokenScope: null
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
       optimize:
@@ -2199,8 +2199,8 @@ core:
   podDisruptionBudget:
     ## @param core.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
-    ## @param core.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
-    minAvailable:
+    ## @param core.podDisruptionBudget.minAvailable [nullable] can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    minAvailable: null
     ## @param core.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
@@ -2322,8 +2322,8 @@ core:
   priorityClassName: ""
 
   index:
-    ## @param core.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
-    prefix:
+    ## @param core.index.prefix [nullable] if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
+    prefix: null
 
   retention:
     ## @param core.retention.enabled if true, the ILM Policy is created and applied to the index templates.
