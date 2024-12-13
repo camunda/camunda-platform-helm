@@ -55,12 +55,12 @@ global:
   ## License configuration.
   ## @extra global.license
   license:
-    ## @param global.license.key if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
-    key: ""
-    ## @param global.license.existingSecret you can provide an existing secret name for Camunda license secret.
-    existingSecret: ""
-    ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
-    existingSecretKey: ""
+    ## @param global.license.key [nullable] if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
+    key: null
+    ## @param global.license.existingSecret [nullable] you can provide an existing secret name for Camunda license secret.
+    existingSecret: null
+    ## @param global.license.existingSecretKey [nullable] you can provide the key within the existing secret object for Camunda license key.
+    existingSecretKey: null
 
   ## @extra global.compatibility Compatibility adaptations for Kubernetes platforms
   compatibility:
@@ -101,8 +101,8 @@ global:
   image:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
-    ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
-    tag: ""
+    ## @param global.image.tag [nullable] defines the tag / version which should be used in the most of the apps.
+    tag: null
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -142,22 +142,22 @@ global:
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret [nullable] provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
-  ## @param global.elasticsearch.auth.username the username for external elasticsearch
-  ## @param global.elasticsearch.auth.password the password for external elasticsearch
-  ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
+  ## @param global.elasticsearch.auth.username [nullable] the username for external elasticsearch
+  ## @param global.elasticsearch.auth.password [nullable] the password for external elasticsearch
+  ## @param global.elasticsearch.auth.existingSecret [nullable] you can provide an existing secret for the external elasticsearch password
   ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
     enabled: true
     external: false
     tls:
       enabled: false
-      existingSecret: ""
+      existingSecret: null
     auth:
-      username: ""
-      password: ""
-      existingSecret: ""
+      username: null
+      password: null
+      existingSecret: null
       existingSecretKey: "password"
       ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
     disableExporter: false
@@ -179,11 +179,11 @@ global:
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.existingSecret [nullable] provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
-  ## @param global.opensearch.auth.username the username for external opensearch
-  ## @param global.opensearch.auth.password the password for external opensearch
-  ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
+  ## @param global.opensearch.auth.username [nullable] the username for external opensearch
+  ## @param global.opensearch.auth.password [nullable] the password for external opensearch
+  ## @param global.opensearch.auth.existingSecret [nullable] you can provide an existing secret for the external opensearch password
   ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
   opensearch:
     enabled: false
@@ -191,19 +191,19 @@ global:
       enabled: false
     tls:
       enabled: false
-      existingSecret: ""
+      existingSecret: null
     auth:
-      username: ""
-      password: ""
-      existingSecret: ""
+      username: null
+      password: null
+      existingSecret: null
       existingSecretKey: "password"
     ## @extra global.opensearch.url Configuration to configure opensearch url
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
-    ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
+    ## @param global.opensearch.url.host [nullable] defines the external opensearch host, ideally the service name inside the namespace
     ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
     url:
       protocol: https
-      host: ""
+      host: null
       port: 443
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
