@@ -1,4 +1,52 @@
 #
+# Versions.
+
+version/alpha:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-alpha/**'
+
+version/8.9:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.9/**'
+
+version/8.8:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.8/**'
+
+version/8.7:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.7/**'
+
+version/8.6:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.6/**'
+
+version/8.5:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.5/**'
+
+version/8.4:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.4/**'
+
+version/8.3:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.3/**'
+
+version/8.2:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.2/**'
+
+#
 # Components.
 
 component/connectors:
@@ -52,6 +100,12 @@ component/zeebe:
         - 'charts/camunda-platform-*/charts/zeebe/**'
         - 'charts/camunda-platform-*/templates/zeebe-gateway/**'
         - 'charts/camunda-platform-*/charts/zeebe-gateway/**'
+
+component/core:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/core/**'
+
 #
 # Tools.
 
@@ -59,6 +113,7 @@ tool/github-actions:
   - changed-files:
     - any-glob-to-any-file:
         - '.github/actions/**'
+        - '.github/config/**'
         - '.github/workflows/**'
 
 tool/release-please:
@@ -81,3 +136,13 @@ tool/script:
     - any-glob-to-any-file:
         - 'Makefile'
         - 'scripts/**'
+
+#
+# Workflows.
+
+area/ci:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/actions/**'
+        - '.github/config/**'
+        - '.github/workflows/**'
