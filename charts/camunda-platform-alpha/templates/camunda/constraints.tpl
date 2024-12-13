@@ -408,6 +408,6 @@ Separated Ingress.
 ) }}
 
 {{ include "camundaPlatform.keyRemoved" (dict
-  "condition" ((.Values.core.ingress).enabled)
-  "oldName" "core.ingress"
+  "condition" (((.Values.core.ingress).rest).enabled)
+  "oldName" "core.ingress.rest"
 ) }}
