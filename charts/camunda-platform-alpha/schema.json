@@ -1161,9 +1161,10 @@
                             "default": ""
                         },
                         "port": {
-                            "type": "number",
+                            "type": "object",
                             "description": "Database port number",
-                            "default": 443
+                            "default": null,
+                            "nullable": true
                         },
                         "username": {
                             "type": "string",
