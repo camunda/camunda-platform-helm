@@ -24,19 +24,22 @@
                     "type": "object",
                     "properties": {
                         "key": {
-                            "type": "string",
+                            "type": "object",
                             "description": "if set, it will be exposed as \"CAMUNDA_LICENSE_KEY\" in the apps.",
-                            "default": ""
+                            "default": null,
+                            "nullable": true
                         },
                         "existingSecret": {
-                            "type": "string",
+                            "type": "object",
                             "description": "you can provide an existing secret name for Camunda license secret.",
-                            "default": ""
+                            "default": null,
+                            "nullable": true
                         },
                         "existingSecretKey": {
-                            "type": "string",
+                            "type": "object",
                             "description": "you can provide the key within the existing secret object for Camunda license key.",
-                            "default": ""
+                            "default": null,
+                            "nullable": true
                         }
                     }
                 },
@@ -104,9 +107,10 @@
                             "default": ""
                         },
                         "tag": {
-                            "type": "string",
+                            "type": "object",
                             "description": "defines the tag / version which should be used in the most of the apps.",
-                            "default": ""
+                            "default": null,
+                            "nullable": true
                         },
                         "pullPolicy": {
                             "type": "string",
@@ -183,9 +187,10 @@
                                     "default": false
                                 },
                                 "existingSecret": {
-                                    "type": "string",
+                                    "type": "object",
                                     "description": "provide an already existing tls secret for connecting to external elasticsearch",
-                                    "default": ""
+                                    "default": null,
+                                    "nullable": true
                                 }
                             }
                         },
@@ -193,19 +198,22 @@
                             "type": "object",
                             "properties": {
                                 "username": {
-                                    "type": "string",
+                                    "type": "object",
                                     "description": "the username for external elasticsearch",
-                                    "default": ""
+                                    "default": null,
+                                    "nullable": true
                                 },
                                 "password": {
-                                    "type": "string",
+                                    "type": "object",
                                     "description": "the password for external elasticsearch",
-                                    "default": ""
+                                    "default": null,
+                                    "nullable": true
                                 },
                                 "existingSecret": {
-                                    "type": "string",
+                                    "type": "object",
                                     "description": "you can provide an existing secret for the external elasticsearch password",
-                                    "default": ""
+                                    "default": null,
+                                    "nullable": true
                                 },
                                 "existingSecretKey": {
                                     "type": "string",
@@ -278,9 +286,10 @@
                                     "default": false
                                 },
                                 "existingSecret": {
-                                    "type": "string",
+                                    "type": "object",
                                     "description": "provide an already existing tls secret for connecting to external opensearch",
-                                    "default": ""
+                                    "default": null,
+                                    "nullable": true
                                 }
                             }
                         },
