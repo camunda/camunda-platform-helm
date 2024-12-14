@@ -1,4 +1,4 @@
-name: "Chart - Update Golden Files, README, and Schema"
+name: "Chart - Update Golden Files, Schema, and README"
 
 on:
   pull_request:
@@ -34,7 +34,6 @@ jobs:
           echo "should-run=${SHOULD_RUN}" | tee -a ${GITHUB_OUTPUT}
     outputs:
       should-run: ${{ steps.conditions.outputs.should-run }}
-
   chores:
     needs: [init]
     if: needs.init.outputs.should-run == 'true'
