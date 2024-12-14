@@ -156,7 +156,7 @@ helm.readme-update:
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
 			--readme "$${chart_dir}/README.md";\
-			--schema "./schema.json"
+			--schema "$${chart_dir}/schema.json"
 	done
 
 #########################################################
