@@ -640,7 +640,7 @@ identity:
   ## All of these values are only used when postgresql.enabled is set to false
   ## @param identity.externalDatabase.enabled
   ## @param identity.externalDatabase.host [string] Database host
-  ## @param identity.externalDatabase.port [string] Database port number
+  ## @param identity.externalDatabase.port [nullable] Database port number
   ## @param identity.externalDatabase.username [string] Non-root username
   ## @param identity.externalDatabase.password [string] Password for the non-root username
   ## @param identity.externalDatabase.database [string] The database name
@@ -650,7 +650,7 @@ identity:
   externalDatabase:
     enabled: false
     host:
-    port:
+    port: null
     username:
     database:
     password:
@@ -2199,8 +2199,8 @@ core:
   podDisruptionBudget:
     ## @param core.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
-    ## @param core.podDisruptionBudget.minAvailable [string] can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
-    minAvailable:
+    ## @param core.podDisruptionBudget.minAvailable [nullable] can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    minAvailable: null
     ## @param core.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
