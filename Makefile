@@ -163,6 +163,10 @@ helm.readme-update:
 helm.schema-update:
 	for chart_dir in $(chartPath); do\
 		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
+		test "camunda-platform-8.3" = "$$(basename $${chart_dir})" && continue;\
+		test "camunda-platform-8.4" = "$$(basename $${chart_dir})" && continue;\
+		test "camunda-platform-8.5" = "$$(basename $${chart_dir})" && continue;\
+		test "camunda-platform-8.6" = "$$(basename $${chart_dir})" && continue;\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
