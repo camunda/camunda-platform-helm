@@ -156,7 +156,17 @@ helm.readme-update:
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
 			--readme "$${chart_dir}/README.md";\
-			--schema "$${chart_dir}/schema.json"
+	done
+
+# helm.schema-update: generate schema from values file
+.PHONY: helm.schema-update
+helm.readme-update:
+	for chart_dir in $(chartPath); do\
+		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
+		echo "\n[$@] Chart dir: $${chart_dir}";\
+		readme-generator \
+			--values "$${chart_dir}/values.yaml" \
+			--schema "$${chart_dir}/schema.json" \
 	done
 
 #########################################################

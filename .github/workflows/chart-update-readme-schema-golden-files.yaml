@@ -86,10 +86,14 @@ jobs:
         run: |
           chartPath="${CHANGED_CHARTS}" \
             make go.update-golden-only
-      - name: Update README and schema
+      - name: Update README
         run: |
           chartPath="${CHANGED_CHARTS}" \
             make helm.readme-update
+      - name: Update Schema
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make helm.schema-update
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
