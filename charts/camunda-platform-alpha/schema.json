@@ -1160,9 +1160,10 @@
                             "default": "\"\""
                         },
                         "port": {
-                            "type": "string",
+                            "type": "object",
                             "description": "Database port number",
-                            "default": "\"\""
+                            "default": null,
+                            "nullable": true
                         },
                         "username": {
                             "type": "string",
@@ -4379,9 +4380,10 @@
                             "default": false
                         },
                         "minAvailable": {
-                            "type": "string",
+                            "type": "object",
                             "description": "can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).",
-                            "default": "\"\""
+                            "default": null,
+                            "nullable": true
                         },
                         "maxUnavailable": {
                             "type": "number",
