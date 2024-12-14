@@ -211,8 +211,8 @@ global:
   # Identity configuration to configure identity specifics on global level, which can be accessed by other components
   identity:
     service:
-      ## @param global.identity.service.url
-      url: ""
+      ## @param global.identity.service.url [string]
+      url:
     keycloak:
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
@@ -283,8 +283,8 @@ global:
         clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
-        existingSecret: ""
+        ## @param global.identity.auth.identity.existingSecret [string] can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+        existingSecret:
         ## @param global.identity.auth.identity.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
         ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
@@ -294,8 +294,8 @@ global:
         ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Identity to configure initial mapping rules,
         # defaults to "oid".
         initialClaimName: "oid"
-        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Identity to configure initial mapping rules.
-        initialClaimValue: ""
+        ## @param global.identity.auth.identity.initialClaimValue [string] defines the initial claim value, which is used by Identity to configure initial mapping rules.
+        initialClaimValue:
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
       console:
@@ -639,23 +639,23 @@ identity:
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
   ## @param identity.externalDatabase.enabled
-  ## @param identity.externalDatabase.host Database host
+  ## @param identity.externalDatabase.host [string] Database host
   ## @param identity.externalDatabase.port [string] Database port number
-  ## @param identity.externalDatabase.username Non-root username
-  ## @param identity.externalDatabase.password Password for the non-root username
-  ## @param identity.externalDatabase.database The database name
-  ## @param identity.externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
-  ## @param identity.externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
+  ## @param identity.externalDatabase.username [string] Non-root username
+  ## @param identity.externalDatabase.password [string] Password for the non-root username
+  ## @param identity.externalDatabase.database [string] The database name
+  ## @param identity.externalDatabase.existingSecret [string] Name of an existing secret resource containing the database credentials
+  ## @param identity.externalDatabase.existingSecretPasswordKey [string] Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
     enabled: false
-    host: ""
+    host:
     port:
-    username: ""
-    database: ""
-    password: ""
-    existingSecret: ""
-    existingSecretPasswordKey: ""
+    username:
+    database:
+    password:
+    existingSecret:
+    existingSecretPasswordKey:
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
@@ -707,12 +707,12 @@ identityPostgresql:
     ## @param identityPostgresql.auth.database The database name
     ##
     database: identity
-    ## @param identityPostgresql.auth.password Password for the non-root username
+    ## @param identityPostgresql.auth.password [string] Password for the non-root username
     ##
-    password: ""
-    ## @param identityPostgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
+    password:
+    ## @param identityPostgresql.auth.existingSecret [string] Name of an existing secret resource containing the database credentials
     ##
-    existingSecret: ""
+    existingSecret:
     secretKeys:
       ## @param identityPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
       adminPasswordKey: "postgres-password"
@@ -1181,8 +1181,8 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret can be used to provide the name of an existing secret resource containing the database password
-      existingSecret: ""
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string] can be used to provide the name of an existing secret resource containing the database password
+      existingSecret:
       ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the database password
       existingSecretPasswordKey: "database-password"
 
@@ -1198,8 +1198,8 @@ webModeler:
       smtpPassword: ""
       ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
-      ## @param webModeler.restapi.mail.existingSecret can be used to provide the name of an existing secret resource containing the SMTP password
-      existingSecret: ""
+      ## @param webModeler.restapi.mail.existingSecret [string] can be used to provide the name of an existing secret resource containing the SMTP password
+      existingSecret:
       ## @param webModeler.restapi.mail.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the SMTP password
       existingSecretPasswordKey: "smtp-password"
       ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
