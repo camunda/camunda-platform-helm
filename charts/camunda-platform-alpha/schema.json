@@ -345,7 +345,7 @@
                                 "url": {
                                     "type": "string",
                                     "description": "",
-                                    "default": ""
+                                    "default": "\"\""
                                 }
                             }
                         },
@@ -463,7 +463,7 @@
                                         "existingSecret": {
                                             "type": "string",
                                             "description": "can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.",
-                                            "default": ""
+                                            "default": "\"\""
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
@@ -483,7 +483,7 @@
                                         "initialClaimValue": {
                                             "type": "string",
                                             "description": "defines the initial claim value, which is used by Identity to configure initial mapping rules.",
-                                            "default": ""
+                                            "default": "\"\""
                                         }
                                     }
                                 },
@@ -1157,7 +1157,7 @@
                         "host": {
                             "type": "string",
                             "description": "Database host",
-                            "default": ""
+                            "default": "\"\""
                         },
                         "port": {
                             "type": "string",
@@ -1167,27 +1167,27 @@
                         "username": {
                             "type": "string",
                             "description": "Non-root username",
-                            "default": ""
+                            "default": "\"\""
                         },
                         "password": {
                             "type": "string",
                             "description": "Password for the non-root username",
-                            "default": ""
+                            "default": "\"\""
                         },
                         "database": {
                             "type": "string",
                             "description": "The database name",
-                            "default": ""
+                            "default": "\"\""
                         },
                         "existingSecret": {
                             "type": "string",
                             "description": "Name of an existing secret resource containing the database credentials",
-                            "default": ""
+                            "default": "\"\""
                         },
                         "existingSecretPasswordKey": {
                             "type": "string",
                             "description": "Name of an existing secret key containing the database credentials",
-                            "default": ""
+                            "default": "\"\""
                         }
                     }
                 },
@@ -1277,12 +1277,12 @@
                         "password": {
                             "type": "string",
                             "description": "Password for the non-root username",
-                            "default": ""
+                            "default": "\"\""
                         },
                         "existingSecret": {
                             "type": "string",
                             "description": "Name of an existing secret resource containing the database credentials",
-                            "default": ""
+                            "default": "\"\""
                         },
                         "secretKeys": {
                             "type": "object",
@@ -2222,7 +2222,7 @@
                                 "existingSecret": {
                                     "type": "string",
                                     "description": "can be used to provide the name of an existing secret resource containing the database password",
-                                    "default": ""
+                                    "default": "\"\""
                                 },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
@@ -2262,7 +2262,7 @@
                                 "existingSecret": {
                                     "type": "string",
                                     "description": "can be used to provide the name of an existing secret resource containing the SMTP password",
-                                    "default": ""
+                                    "default": "\"\""
                                 },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
