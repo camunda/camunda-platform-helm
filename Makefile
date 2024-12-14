@@ -160,7 +160,7 @@ helm.readme-update:
 
 # helm.schema-update: generate schema from values file
 .PHONY: helm.schema-update
-helm.readme-update:
+helm.schema-update:
 	for chart_dir in $(chartPath); do\
 		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
