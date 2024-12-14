@@ -24,22 +24,19 @@
                     "type": "object",
                     "properties": {
                         "key": {
-                            "type": "object",
+                            "type": "string",
                             "description": "if set, it will be exposed as \"CAMUNDA_LICENSE_KEY\" in the apps.",
-                            "default": null,
-                            "nullable": true
+                            "default": "\"\""
                         },
                         "existingSecret": {
-                            "type": "object",
+                            "type": "string",
                             "description": "you can provide an existing secret name for Camunda license secret.",
-                            "default": null,
-                            "nullable": true
+                            "default": "\"\""
                         },
                         "existingSecretKey": {
-                            "type": "object",
+                            "type": "string",
                             "description": "you can provide the key within the existing secret object for Camunda license key.",
-                            "default": null,
-                            "nullable": true
+                            "default": "\"\""
                         }
                     }
                 },
@@ -107,10 +104,9 @@
                             "default": ""
                         },
                         "tag": {
-                            "type": "object",
+                            "type": "string",
                             "description": "defines the tag / version which should be used in the most of the apps.",
-                            "default": null,
-                            "nullable": true
+                            "default": "\"\""
                         },
                         "pullPolicy": {
                             "type": "string",
@@ -187,10 +183,9 @@
                                     "default": false
                                 },
                                 "existingSecret": {
-                                    "type": "object",
+                                    "type": "string",
                                     "description": "provide an already existing tls secret for connecting to external elasticsearch",
-                                    "default": null,
-                                    "nullable": true
+                                    "default": "\"\""
                                 }
                             }
                         },
@@ -198,22 +193,19 @@
                             "type": "object",
                             "properties": {
                                 "username": {
-                                    "type": "object",
+                                    "type": "string",
                                     "description": "the username for external elasticsearch",
-                                    "default": null,
-                                    "nullable": true
+                                    "default": "\"\""
                                 },
                                 "password": {
-                                    "type": "object",
+                                    "type": "string",
                                     "description": "the password for external elasticsearch",
-                                    "default": null,
-                                    "nullable": true
+                                    "default": "\"\""
                                 },
                                 "existingSecret": {
-                                    "type": "object",
+                                    "type": "string",
                                     "description": "you can provide an existing secret for the external elasticsearch password",
-                                    "default": null,
-                                    "nullable": true
+                                    "default": "\"\""
                                 },
                                 "existingSecretKey": {
                                     "type": "string",
@@ -286,10 +278,9 @@
                                     "default": false
                                 },
                                 "existingSecret": {
-                                    "type": "object",
+                                    "type": "string",
                                     "description": "provide an already existing tls secret for connecting to external opensearch",
-                                    "default": null,
-                                    "nullable": true
+                                    "default": "\"\""
                                 }
                             }
                         },
@@ -299,17 +290,17 @@
                                 "username": {
                                     "type": "string",
                                     "description": "the username for external opensearch",
-                                    "default": ""
+                                    "default": "\"\""
                                 },
                                 "password": {
                                     "type": "string",
                                     "description": "the password for external opensearch",
-                                    "default": ""
+                                    "default": "\"\""
                                 },
                                 "existingSecret": {
                                     "type": "string",
                                     "description": "you can provide an existing secret for the external opensearch password",
-                                    "default": ""
+                                    "default": "\"\""
                                 },
                                 "existingSecretKey": {
                                     "type": "string",
@@ -329,7 +320,7 @@
                                 "host": {
                                     "type": "string",
                                     "description": "defines the external opensearch host, ideally the service name inside the namespace",
-                                    "default": ""
+                                    "default": "\"\""
                                 },
                                 "port": {
                                     "type": "number",
@@ -620,10 +611,9 @@
                                             "default": "http://localhost:8082"
                                         },
                                         "tokenScope": {
-                                            "type": "object",
+                                            "type": "string",
                                             "description": "defines the token scope, which is used by Core.",
-                                            "default": null,
-                                            "nullable": true
+                                            "default": "\"\""
                                         }
                                     }
                                 },
@@ -1170,10 +1160,9 @@
                             "default": ""
                         },
                         "port": {
-                            "type": "object",
+                            "type": "string",
                             "description": "Database port number",
-                            "default": null,
-                            "nullable": true
+                            "default": "\"\""
                         },
                         "username": {
                             "type": "string",
@@ -4390,10 +4379,9 @@
                             "default": false
                         },
                         "minAvailable": {
-                            "type": "object",
+                            "type": "string",
                             "description": "can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).",
-                            "default": null,
-                            "nullable": true
+                            "default": "\"\""
                         },
                         "maxUnavailable": {
                             "type": "number",
@@ -4632,10 +4620,9 @@
                     "type": "object",
                     "properties": {
                         "prefix": {
-                            "type": "object",
+                            "type": "string",
                             "description": "if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use \"global.elasticsearch.prefix\".",
-                            "default": null,
-                            "nullable": true
+                            "default": "\"\""
                         }
                     }
                 },
