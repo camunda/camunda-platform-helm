@@ -18,6 +18,7 @@ global:
     auth:
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
       admin:
+        enabled: true
         existingSecret:
           name: "integration-test-credentials"
       #######################
