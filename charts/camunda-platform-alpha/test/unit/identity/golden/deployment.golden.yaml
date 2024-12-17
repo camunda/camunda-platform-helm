@@ -60,7 +60,7 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
-            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID
+            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-credentials

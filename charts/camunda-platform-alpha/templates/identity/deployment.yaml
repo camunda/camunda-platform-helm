@@ -43,7 +43,7 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
-            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID
+            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "connectors.authClientSecretName" . }}
