@@ -170,7 +170,7 @@ helm.schema-update:
 		echo "\n[$@] Chart dir: $${chart_dir}";\
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
-			--schema "$${chart_dir}/schema.json";\
+			--schema "$${chart_dir}/values.schema.json";\
 	done
 
 #########################################################
