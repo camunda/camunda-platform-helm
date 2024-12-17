@@ -218,7 +218,7 @@ data:
           - name: Identity
             id: {{  printf "%s" (include "identity.authClientId" .) | default "camunda-identity" | quote }}
             type: CONFIDENTIAL
-            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:}
+            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
             root-url: {{ include "identity.externalUrl" . | quote }}
             redirect-uris:
               - "/auth/login-callback"
