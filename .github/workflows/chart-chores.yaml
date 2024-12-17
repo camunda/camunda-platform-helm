@@ -1,11 +1,11 @@
-name: "Chart - Update Golden Files, Schema, and README"
+name: "Chart - Chores"
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - ".github/workflows/chart-update-readme-schema-golden-files.yaml"
+      - ".github/workflows/chartchores.yaml"
       - "charts/**"
 
 permissions:
