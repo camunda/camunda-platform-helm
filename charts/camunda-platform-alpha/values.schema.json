@@ -1160,9 +1160,9 @@
                             "default": "\"\""
                         },
                         "port": {
-                            "type": "object",
+                            "type": "number",
                             "description": "Database port number",
-                            "default": null,
+                            "default": 5432,
                             "nullable": true
                         },
                         "username": {
@@ -1178,7 +1178,7 @@
                         "database": {
                             "type": "string",
                             "description": "The database name",
-                            "default": "\"\""
+                            "default": ""
                         },
                         "existingSecret": {
                             "type": "string",

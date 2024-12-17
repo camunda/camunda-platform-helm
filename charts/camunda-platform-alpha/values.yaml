@@ -643,14 +643,14 @@ identity:
   ## @param identity.externalDatabase.port [nullable] Database port number
   ## @param identity.externalDatabase.username [string] Non-root username
   ## @param identity.externalDatabase.password [string] Password for the non-root username
-  ## @param identity.externalDatabase.database [string] The database name
+  ## @param identity.externalDatabase.database The database name
   ## @param identity.externalDatabase.existingSecret [string] Name of an existing secret resource containing the database credentials
   ## @param identity.externalDatabase.existingSecretPasswordKey [string] Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
     enabled: false
     host: ""
-    port: null
+    port: 5432
     username: ""
     database: ""
     password: ""
