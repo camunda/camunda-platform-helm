@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/chartchores.yaml"
+      - ".github/workflows/chart-chores.yaml"
       - "charts/**"
 
 permissions:
