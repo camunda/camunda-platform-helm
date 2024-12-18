@@ -100,4 +100,4 @@ jobs:
         with:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
-          message: "chore: Update golden files"
+          message: "chore: chart chores"
