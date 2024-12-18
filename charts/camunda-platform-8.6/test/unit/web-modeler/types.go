@@ -7,8 +7,9 @@ type WebModelerRestAPIApplicationYAML struct {
 }
 
 type SpringYAML struct {
-	Mail       MailYAML       `yaml:"mail"`
-	Datasource DatasourceYAML `yaml:"datasource"`
+	Mail       MailYAML           `yaml:"mail"`
+	Datasource DatasourceYAML     `yaml:"datasource"`
+	Security   SpringSecurityYAML `yaml:"security"`
 }
 type DatasourceYAML struct {
 	Url      string `yaml:"url"`
@@ -17,6 +18,22 @@ type DatasourceYAML struct {
 
 type MailYAML struct {
 	Username string `yaml:"username"`
+}
+
+type SpringSecurityYAML struct {
+	OAuth2 OAuth2YAML `yaml:"oauth2"`
+}
+
+type OAuth2YAML struct {
+	ResourceServer ResourceServerYAML `yaml:"resourceserver"`
+}
+
+type ResourceServerYAML struct {
+	JWT SpringJwtYAML `yaml:"jwt"`
+}
+
+type SpringJwtYAML struct {
+	JwkSetURI string `yaml:"jwk-set-uri"`
 }
 
 type CamundaYAML struct {
@@ -29,14 +46,14 @@ type IdentityYAML struct {
 	Type    string `yaml:"type"`
 }
 type ModelerYAML struct {
-	Security SecurityYAML `yaml:"security"`
+	Security ModelerSecurityYAML `yaml:"security"`
 }
 
-type SecurityYAML struct {
-	JWT JwtYAML `yaml:"jwt"`
+type ModelerSecurityYAML struct {
+	JWT ModelerJwtYAML `yaml:"jwt"`
 }
 
-type JwtYAML struct {
+type ModelerJwtYAML struct {
 	Audience AudienceYAML `yaml:"audience"`
 	Issuer   IssuerYAML   `yaml:"issuer"`
 }
