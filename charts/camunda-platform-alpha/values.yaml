@@ -55,12 +55,12 @@ global:
   ## License configuration.
   ## @extra global.license
   license:
-    ## @param global.license.key if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
-    key:
-    ## @param global.license.existingSecret you can provide an existing secret name for Camunda license secret.
-    existingSecret:
-    ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
-    existingSecretKey:
+    ## @param global.license.key [string] if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
+    key: ""
+    ## @param global.license.existingSecret [string] you can provide an existing secret name for Camunda license secret.
+    existingSecret: ""
+    ## @param global.license.existingSecretKey [string] you can provide the key within the existing secret object for Camunda license key.
+    existingSecretKey: ""
 
   ## @extra global.compatibility Compatibility adaptations for Kubernetes platforms
   compatibility:
@@ -101,8 +101,8 @@ global:
   image:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
-    ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
-    tag:
+    ## @param global.image.tag [string] defines the tag / version which should be used in the most of the apps.
+    tag: ""
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -142,22 +142,22 @@ global:
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret [string] provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
-  ## @param global.elasticsearch.auth.username the username for external elasticsearch
-  ## @param global.elasticsearch.auth.password the password for external elasticsearch
-  ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
+  ## @param global.elasticsearch.auth.username [string] the username for external elasticsearch
+  ## @param global.elasticsearch.auth.password [string] the password for external elasticsearch
+  ## @param global.elasticsearch.auth.existingSecret [string] you can provide an existing secret for the external elasticsearch password
   ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
     enabled: true
     external: false
     tls:
       enabled: false
-      existingSecret:
+      existingSecret: ""
     auth:
-      username:
-      password:
-      existingSecret:
+      username: ""
+      password: ""
+      existingSecret: ""
       existingSecretKey: "password"
       ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
     disableExporter: false
@@ -179,11 +179,11 @@ global:
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.existingSecret [string] provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
-  ## @param global.opensearch.auth.username the username for external opensearch
-  ## @param global.opensearch.auth.password the password for external opensearch
-  ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
+  ## @param global.opensearch.auth.username [string] the username for external opensearch
+  ## @param global.opensearch.auth.password [string] the password for external opensearch
+  ## @param global.opensearch.auth.existingSecret [string] you can provide an existing secret for the external opensearch password
   ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
   opensearch:
     enabled: false
@@ -191,19 +191,19 @@ global:
       enabled: false
     tls:
       enabled: false
-      existingSecret:
+      existingSecret: ""
     auth:
-      username:
-      password:
-      existingSecret:
+      username: ""
+      password: ""
+      existingSecret: ""
       existingSecretKey: "password"
     ## @extra global.opensearch.url Configuration to configure opensearch url
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
-    ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
+    ## @param global.opensearch.url.host [string] defines the external opensearch host, ideally the service name inside the namespace
     ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
     url:
       protocol: https
-      host:
+      host: ""
       port: 443
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
@@ -211,8 +211,8 @@ global:
   # Identity configuration to configure identity specifics on global level, which can be accessed by other components
   identity:
     service:
-      ## @param global.identity.service.url
-      url:
+      ## @param global.identity.service.url [string]
+      url: ""
     keycloak:
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
@@ -283,8 +283,8 @@ global:
         clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
-        existingSecret:
+        ## @param global.identity.auth.identity.existingSecret [string] can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+        existingSecret: ""
         ## @param global.identity.auth.identity.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
         ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
@@ -294,8 +294,8 @@ global:
         ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Identity to configure initial mapping rules,
         # defaults to "oid".
         initialClaimName: "oid"
-        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Identity to configure initial mapping rules.
-        initialClaimValue:
+        ## @param global.identity.auth.identity.initialClaimValue [string] defines the initial claim value, which is used by Identity to configure initial mapping rules.
+        initialClaimValue: ""
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
       console:
@@ -357,8 +357,8 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Core is created to 8082.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8082"
-        ## @param global.identity.auth.core.tokenScope defines the token scope, which is used by Core.
-        tokenScope:
+        ## @param global.identity.auth.core.tokenScope [string] defines the token scope, which is used by Core.
+        tokenScope: ""
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
       optimize:
@@ -639,23 +639,23 @@ identity:
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
   ## @param identity.externalDatabase.enabled
-  ## @param identity.externalDatabase.host Database host
-  ## @param identity.externalDatabase.port Database port number
-  ## @param identity.externalDatabase.username Non-root username
-  ## @param identity.externalDatabase.password Password for the non-root username
+  ## @param identity.externalDatabase.host [string] Database host
+  ## @param identity.externalDatabase.port [nullable] Database port number
+  ## @param identity.externalDatabase.username [string] Non-root username
+  ## @param identity.externalDatabase.password [string] Password for the non-root username
   ## @param identity.externalDatabase.database The database name
-  ## @param identity.externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
-  ## @param identity.externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
+  ## @param identity.externalDatabase.existingSecret [string] Name of an existing secret resource containing the database credentials
+  ## @param identity.externalDatabase.existingSecretPasswordKey [string] Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
     enabled: false
-    host:
-    port:
-    username:
-    database:
-    password:
-    existingSecret:
-    existingSecretPasswordKey:
+    host: ""
+    port: 5432
+    username: ""
+    database: ""
+    password: ""
+    existingSecret: ""
+    existingSecretPasswordKey: ""
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
@@ -707,12 +707,12 @@ identityPostgresql:
     ## @param identityPostgresql.auth.database The database name
     ##
     database: identity
-    ## @param identityPostgresql.auth.password Password for the non-root username
+    ## @param identityPostgresql.auth.password [string] Password for the non-root username
     ##
-    password:
-    ## @param identityPostgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
+    password: ""
+    ## @param identityPostgresql.auth.existingSecret [string] Name of an existing secret resource containing the database credentials
     ##
-    existingSecret:
+    existingSecret: ""
     secretKeys:
       ## @param identityPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
       adminPasswordKey: "postgres-password"
@@ -1181,8 +1181,8 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret can be used to provide the name of an existing secret resource containing the database password
-      existingSecret:
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string] can be used to provide the name of an existing secret resource containing the database password
+      existingSecret: ""
       ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the database password
       existingSecretPasswordKey: "database-password"
 
@@ -1198,8 +1198,8 @@ webModeler:
       smtpPassword: ""
       ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
-      ## @param webModeler.restapi.mail.existingSecret can be used to provide the name of an existing secret resource containing the SMTP password
-      existingSecret:
+      ## @param webModeler.restapi.mail.existingSecret [string] can be used to provide the name of an existing secret resource containing the SMTP password
+      existingSecret: ""
       ## @param webModeler.restapi.mail.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the SMTP password
       existingSecretPasswordKey: "smtp-password"
       ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
@@ -2200,7 +2200,7 @@ core:
     ## @param core.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
     ## @param core.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
-    minAvailable:
+    minAvailable: 0
     ## @param core.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
@@ -2322,8 +2322,8 @@ core:
   priorityClassName: ""
 
   index:
-    ## @param core.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
-    prefix:
+    ## @param core.index.prefix [string] if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
+    prefix: ""
 
   retention:
     ## @param core.retention.enabled if true, the ILM Policy is created and applied to the index templates.
