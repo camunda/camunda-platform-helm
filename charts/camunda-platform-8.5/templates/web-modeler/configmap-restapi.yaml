@@ -26,7 +26,7 @@ data:
         pusher:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
           port: {{ .Values.webModeler.websockets.service.port }}
-    
+
         security:
           jwt:
             issuer:
@@ -61,6 +61,7 @@ data:
           resourceserver:
             jwt:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
 
   {{- end }}
   {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
