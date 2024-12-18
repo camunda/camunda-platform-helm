@@ -2199,8 +2199,8 @@ core:
   podDisruptionBudget:
     ## @param core.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
-    ## @param core.podDisruptionBudget.minAvailable [nullable] can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
-    minAvailable: null
+    ## @param core.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    minAvailable: 0
     ## @param core.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 

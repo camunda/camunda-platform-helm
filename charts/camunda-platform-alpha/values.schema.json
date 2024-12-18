@@ -4380,10 +4380,9 @@
                             "default": false
                         },
                         "minAvailable": {
-                            "type": "object",
+                            "type": "number",
                             "description": "can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).",
-                            "default": null,
-                            "nullable": true
+                            "default": 0
                         },
                         "maxUnavailable": {
                             "type": "number",
