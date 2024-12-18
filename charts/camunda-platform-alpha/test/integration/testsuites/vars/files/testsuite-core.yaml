@@ -313,60 +313,39 @@ testcases:
 #     - result.body ShouldContainSubstring core
 #     - result.body ShouldContainSubstring zeebe
 #     - result.body ShouldContainSubstring zeebe-gateway
-#############################################################################
-#- name: run command svc/camunda-zeebe-gateway
-#  steps:
-#  - type: exec
-#    script: "kubectl port-forward svc/camunda-zeebe-gateway 8080:8080 > /dev/null 2>&1 &  curl localhost:8080"
-#- name: Check camunda-operate
-#  steps:
-#  - type: http
-#    method: GET
-#    url: "http://localhost:8081"
-#    retry: 2
-#    delay: 1
   ########################################################Port forwarding Camunda components##################################
 - name: Port forwarding Camunda components
   steps:
   - name: "Port forward to {{ .value.component }} service "
     type: exec
     range:
-    - component: zeebe-gateway
+    - component: Zeebe Gateway
       serviceName: camunda-zeebe-gateway
       servicePort: 26500
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}}"
-    - component: operate
+    - component: Operate
       serviceName: camunda-operate
       servicePort: 8081
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "    
-    - component: tasklist
+    - component: Tasklist
       serviceName: camunda-tasklist
       servicePort: 8082
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "
-    - component: optimize
+    - component: Optimize
       serviceName: camunda-optimize
       servicePort: 8083
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "
-    - component: web-modeler-webapp
+    - component: Web-modeler-webapp
       serviceName: camunda-web-modeler-webapp
       servicePort: 8084
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "
-    - component: connectors
+    - component: Connectors
       serviceName: camunda-connectors
       servicePort: 8088
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "   
-    - component: console
+    - component: Web Modeler Websockets
       serviceName: camunda-web-modeler-websockets
-      servicePort: 8085
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "    
-    - component: console
+      servicePort: 8085 
+    - component: Console
       serviceName: camunda-console
       servicePort: 8087
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "
-    - component: keycloak
+    - component: Keycloak
       serviceName: camunda-keycloak
       servicePort: 18080
-      script: "kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "
-    script: "{{.value.script}} "
+    script: " kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "
     retry: 2
     delay: 2
