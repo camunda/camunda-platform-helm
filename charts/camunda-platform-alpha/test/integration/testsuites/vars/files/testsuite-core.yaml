@@ -370,6 +370,3 @@ testcases:
     script: "{{.value.script}} "
     retry: 2
     delay: 2
-
-##############Loop to verify port forwarding works ###############
-
