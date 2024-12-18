@@ -2159,11 +2159,11 @@ core:
   ## @param core.resources.limits.memory
   resources:
     requests:
-      cpu: 800m
-      memory: 1200Mi
+      cpu: 1000m
+      memory: 1500Mi
     limits:
-      cpu: 960m
-      memory: 1920Mi
+      cpu: 2000m
+      memory: 3000Mi
 
   ## @param core.persistenceType defines the type of persistence which is used by core. Possible values are: disk, local and memory.
   #   disk  - means a persistence volume claim is configured and used
