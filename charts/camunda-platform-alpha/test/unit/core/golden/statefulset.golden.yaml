@@ -108,11 +108,11 @@ spec:
             timeoutSeconds: 1
           resources:
             limits:
-              cpu: 960m
-              memory: 1920Mi
+              cpu: 2000m
+              memory: 3000Mi
             requests:
-              cpu: 800m
-              memory: 1200Mi
+              cpu: 1000m
+              memory: 1500Mi
           volumeMounts:
             - name: config
               mountPath: /usr/local/bin/startup.sh
