@@ -313,3 +313,39 @@ testcases:
 #     - result.body ShouldContainSubstring web-modeler-restapi
 #     - result.body ShouldContainSubstring zeebe
 #     - result.body ShouldContainSubstring zeebe-gateway
+  ########################################################Port forwarding Camunda components##################################
+- name: Port forwarding Camunda components
+  steps:
+  - name: "Port forward to {{ .value.component }} service "
+    type: exec
+    range:
+    - component: Zeebe Gateway
+      serviceName: camunda-zeebe-gateway
+      servicePort: 26500
+    - component: Operate
+      serviceName: camunda-operate
+      servicePort: 8081
+    - component: Tasklist
+      serviceName: camunda-tasklist
+      servicePort: 8082
+    - component: Optimize
+      serviceName: camunda-optimize
+      servicePort: 8083
+    - component: Web-modeler-webapp
+      serviceName: camunda-web-modeler-webapp
+      servicePort: 8084
+    - component: Connectors
+      serviceName: camunda-connectors
+      servicePort: 8088
+    - component: Web Modeler Websockets
+      serviceName: camunda-web-modeler-websockets
+      servicePort: 8085 
+    - component: Console
+      serviceName: camunda-console
+      servicePort: 8087
+    - component: Keycloak
+      serviceName: camunda-keycloak
+      servicePort: 18080
+    script: " kubectl port-forward svc/{{.value.serviceName}} {{.value.servicePort}}:{{.value.servicePort}} > /dev/null 2>&1 &  curl localhost:{{.value.servicePort}} "
+    retry: 2
+    delay: 2
