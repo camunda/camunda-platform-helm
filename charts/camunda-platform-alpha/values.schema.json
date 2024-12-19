@@ -4276,12 +4276,12 @@
                                 "cpu": {
                                     "type": "string",
                                     "description": "",
-                                    "default": "800m"
+                                    "default": "1000m"
                                 },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
-                                    "default": "1200Mi"
+                                    "default": "1500Mi"
                                 }
                             }
                         },
@@ -4291,12 +4291,12 @@
                                 "cpu": {
                                     "type": "string",
                                     "description": "",
-                                    "default": "960m"
+                                    "default": "2000m"
                                 },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
-                                    "default": "1920Mi"
+                                    "default": "3000Mi"
                                 }
                             }
                         }
