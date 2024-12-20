@@ -3780,7 +3780,7 @@
                         "enabled": {
                             "type": "boolean",
                             "description": "if true, the readiness probe is enabled in app container",
-                            "default": false
+                            "default": true
                         },
                         "scheme": {
                             "type": "string",
