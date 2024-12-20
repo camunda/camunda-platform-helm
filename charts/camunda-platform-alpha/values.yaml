@@ -211,7 +211,7 @@ global:
   # Identity configuration to configure identity specifics on global level, which can be accessed by other components
   identity:
     service:
-      ## @param global.identity.service.url [string]
+      ## @param global.identity.service.url
       url: ""
     keycloak:
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
