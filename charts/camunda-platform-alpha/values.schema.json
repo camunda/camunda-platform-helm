@@ -345,7 +345,7 @@
                                 "url": {
                                     "type": "string",
                                     "description": "",
-                                    "default": "\"\""
+                                    "default": ""
                                 }
                             }
                         },
