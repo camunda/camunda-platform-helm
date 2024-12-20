@@ -1,11 +1,11 @@
-name: "Chart - Update Golden Files and README"
+name: "Chart - Chores"
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - ".github/workflows/chart-update-readme-and-golden-files.yaml"
+      - ".github/workflows/chart-chores.yaml"
       - "charts/**"
 
 permissions:
@@ -34,11 +34,10 @@ jobs:
           echo "should-run=${SHOULD_RUN}" | tee -a ${GITHUB_OUTPUT}
     outputs:
       should-run: ${{ steps.conditions.outputs.should-run }}
-    
   chores:
     needs: [init]
     if: needs.init.outputs.should-run == 'true'
-    name: Update README And Golden Files
+    name: Chart chores
     runs-on: ubuntu-latest
     steps:
       #
@@ -91,10 +90,14 @@ jobs:
         run: |
           chartPath="${CHANGED_CHARTS}" \
             make helm.readme-update
+      - name: Update Schema
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make helm.schema-update
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
-          message: "chore: Update golden files"
+          message: "chore: chart chores"

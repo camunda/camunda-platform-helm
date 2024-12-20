@@ -158,6 +158,19 @@ helm.readme-update:
 			--readme "$${chart_dir}/README.md";\
 	done
 
+# helm.schema-update: generate schema from values file
+.PHONY: helm.schema-update
+helm.schema-update:
+	for chart_dir in $(chartPath); do \
+		if echo "$${chart_dir}" | grep -qE "camunda-platform-8\.(2|3|4|5|6)$$"; then \
+			continue; \
+		fi; \
+		echo "\n[$@] Chart dir: $${chart_dir}"; \
+		readme-generator \
+			--values "$${chart_dir}/values.yaml" \
+			--schema "$${chart_dir}/values.schema.json";\
+	done
+
 #########################################################
 ######### Release
 #########################################################
