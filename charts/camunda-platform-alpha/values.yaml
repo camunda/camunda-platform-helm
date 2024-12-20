@@ -1907,7 +1907,7 @@ connectors:
   readinessProbe:
     # TODO: Enalbe the readiness again once the Zeebe client in Connectors is updated (it should be done before 8.7 release).
     ## @param connectors.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: false
+    enabled: true
     ## @param connectors.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
     scheme: HTTP
     ## @param connectors.readinessProbe.probePath defines the readiness probe route used on the app
