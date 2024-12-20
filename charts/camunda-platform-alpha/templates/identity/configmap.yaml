@@ -229,7 +229,11 @@ data:
             root-url: {{ include "identity.externalUrl" . | quote }}
             redirect-uris:
               - "/auth/login-callback"
-          {{- if .Values.global.identity.auth.admin.enabled }}
+      # The presets key should be removed when 8.6.0 of the applications are released
+      presets:
+        {{- if .Values.global.identity.auth.admin.enabled }}
+        admin:
+          clients:
           - name: {{ .Values.global.identity.auth.admin.clientId | title | default "Admin" | quote }}
             id: {{ .Values.global.identity.auth.admin.clientId | default "admin" | quote }}
             type: CONFIDENTIAL
@@ -250,9 +254,7 @@ data:
                 definition: "write:*"
               - resourceServerId: {{ include "optimize.authAudience" . | quote }}
                 definition: "write:*"
-          {{- end }}
-      # The presets key should be removed when 8.6.0 of the applications are released
-      presets:
+        {{- end }}
         core:
           clients:
             - name: Core
