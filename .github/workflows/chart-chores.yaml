@@ -37,7 +37,7 @@ jobs:
   chores:
     needs: [init]
     if: needs.init.outputs.should-run == 'true'
-    name: Update README And Golden Files
+    name: Chart chores
     runs-on: ubuntu-latest
     steps:
       #
