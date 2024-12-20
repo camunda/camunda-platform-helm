@@ -45,7 +45,11 @@ spec:
           {{- if .Values.core.containerSecurityContext }}
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
+          {{- if .Values.core.command }}
+          command: {{ toYaml .Values.core.command | nindent 10 }}
+          {{- else }}
           command: ["bash", "/usr/local/bin/startup.sh"]
+          {{- end }}
           env:
             - name: CAMUNDA_LICENSE_KEY
               valueFrom:
@@ -88,9 +92,6 @@ spec:
           {{- if .Values.core.envFrom }}
           envFrom:
             {{- .Values.core.envFrom | toYaml | nindent 12 }}
-          {{- end }}
-          {{- if .Values.core.command }}
-          command: {{ toYaml .Values.core.command | nindent 10 }}
           {{- end }}
           ports:
             - containerPort: {{ .Values.core.service.httpPort }}
