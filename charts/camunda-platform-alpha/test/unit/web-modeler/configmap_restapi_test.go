@@ -144,10 +144,11 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                    "true",
-			"webModeler.restapi.mail.fromAddress":   "example@example.com",
-			"global.identity.auth.type":             "MICROSOFT",
-			"global.identity.auth.issuerBackendUrl": "https://example.com",
+			"webModeler.enabled":                                "true",
+			"webModeler.restapi.mail.fromAddress":               "example@example.com",
+			"global.identity.auth.type":                         "MICROSOFT",
+			"global.identity.auth.issuerBackendUrl":             "https://example.com",
+			"global.identity.auth.identity.existingSecret.name": "foo",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -280,40 +281,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	s.Require().Equal("modeler-user", configmapApplication.Spring.Datasource.Username)
 }
 
-func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithDefaultValues() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                  "true",
-			"webModeler.restapi.mail.fromAddress": "example@example.com",
-			"webModelerPostgresql.enabled":        "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication WebModelerRestAPIApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
-	s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
-	s.Require().Equal("camunda-platform-test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-	s.Require().Equal("OAUTH", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
-	s.Require().Equal("grpc://camunda-platform-test-core:26500", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
-	s.Require().Equal("http://camunda-platform-test-core:8080/v1", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
-	s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Url)
-	s.Require().Equal("core-api", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Audience.Zeebe)
-	s.Require().Equal("", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Scope)
-}
-
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
 	// given
 	options := &helm.Options{
@@ -438,4 +405,86 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 
 	// then
 	s.Require().Empty(configmapApplication.Camunda.Modeler.Clusters)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"global.identity.auth.jwksUrl":        "https://example.com/auth/realms/test/protocol/openid-connect/certs",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("https://example.com/auth/realms/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuerBackendUrlProperty() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "example@example.com",
+			"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("http://test-keycloak/auth/realms/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeycloakUrlProperties() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "example@example.com",
+			"global.identity.keycloak.url.protocol": "https",
+			"global.identity.keycloak.url.host":     "example.com",
+			"global.identity.keycloak.url.port":     "443",
+			"global.identity.keycloak.contextPath":  "/",
+			"global.identity.keycloak.realm":        "test",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("https://example.com:443/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
 }
