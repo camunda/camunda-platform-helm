@@ -1142,7 +1142,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.7.0-alpha2
+    tag: 8.7.0-alpha3
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1726,7 +1726,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.tag PostgreSQL image tag
   image:
     repository: bitnami/postgresql
-    tag: 14.15.0-debian-12-r3
+    tag: 14.15.0-debian-12-r5
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param webModelerPostgresql.auth.username defines the name of the database user to be created for WebModeler
