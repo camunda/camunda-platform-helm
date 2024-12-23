@@ -267,9 +267,8 @@ global:
         enabled: false
         ## @param global.identity.auth.admin.clientId defines the client id.
         clientId: admin
-        ## @param global.identity.auth.admin.existingSecret.name can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-          name: camunda-credentials
+        ## @param global.identity.auth.admin.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.admin.existingSecret.name
+        existingSecret: ""
         ## @param global.identity.auth.admin.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-admin-client-token
 
@@ -305,9 +304,8 @@ global:
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
         wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret.name can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-          name: camunda-credentials
+        ## @param global.identity.auth.console.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.console.existingSecret.name
+        existingSecret: ""
         ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-console-client-token
         ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
@@ -336,9 +334,8 @@ global:
       connectors:
         ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret.name can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-          name: camunda-credentials
+        ## @param global.identity.auth.connectors.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.connectors.existingSecret.name
+        existingSecret: ""
         ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-connectors-client-token
 
@@ -348,9 +345,8 @@ global:
         audience: core-api
         ## @param global.identity.auth.core.clientId defines the client id, which is used by Core in authentication flows.
         clientId: core
-        ## @param global.identity.auth.core.existingSecret.name can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-          name: camunda-credentials
+        ## @param global.identity.auth.core.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.core.existingSecret.name
+        existingSecret: ""
         ## @param global.identity.auth.core.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-core-client-token
         ## @param global.identity.auth.core.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
@@ -366,9 +362,8 @@ global:
         audience: optimize-api
         ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in authentication flows.
         clientId: optimize
-        ## @param global.identity.auth.optimize.existingSecret.name can be used to use an own existing secret. If not set a random secret is generated.
-        existingSecret:
-          name: camunda-credentials
+        ## @param global.identity.auth.optimize.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.optimize.existingSecret.name
+        existingSecret: ""
         ## @param global.identity.auth.optimize.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-optimize-client-token
         ## @param global.identity.auth.optimize.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Optimize.
