@@ -31,6 +31,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 	templateNames := []string{
+		"configmap-restapi",
 		"configmap-shared",
 		"deployment-restapi",
 		"deployment-webapp",
