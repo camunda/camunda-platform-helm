@@ -20,6 +20,8 @@ data:
 
       {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
       client-id: {{ include "identity.authClientId" . | quote }}
+      {{- end }}
+      {{- if and (.Values.global.identity.auth.identity.existingSecret) (eq (typeOf .Values.global.identity.auth.identity.existingSecret) "string") }}
       client-secret: {{ include "identity.authClientSecret" . | quote }}
       {{- end }}
 
