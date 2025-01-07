@@ -5,6 +5,7 @@ helm 3.16.4
 helm-ct 3.11.0
 kubectl 1.27.16 # The kubectl version depends on the K8s CI cluster version
 kustomize 5.5.0
+oc 4.17.11
 task 3.30.1 # Task is mainly used to run tests locally or in the CI pipeline.
 yamllint 1.35.1
 yq 4.44.6
