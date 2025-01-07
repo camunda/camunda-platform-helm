@@ -53,7 +53,7 @@ jobs:
       # Dependencies.
       - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5
         with:
-          python-version: 3.7
+          python-version: 3.8
       - name: Install dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Add helm repos
