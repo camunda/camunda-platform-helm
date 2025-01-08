@@ -207,14 +207,35 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the name of the secret that contains the database password, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretName" -}}
-{{- .Values.postgresql.enabled | ternary (include "webModeler.postgresql.fullname" .) (include "webModeler.restapi.fullname" .) -}}
+  {{- if .Values.postgresql.enabled }}
+    {{- .Values.postgresql.auth.existingSecret | default (include "webModeler.postgresql.fullname" .) }}
+  {{- else }}
+    {{- if or (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) .Values.webModeler.restapi.externalDatabase.password }}
+      {{- include "webModeler.restapi.fullname" . }}
+    {{- else if typeIs "map[string]interface {}" .Values.webModeler.restapi.externalDatabase.existingSecret }}
+      {{- .Values.webModeler.restapi.externalDatabase.existingSecret.name | default (include "webModeler.restapi.fullname" .) }}
+    {{- end }}
+  {{- end }}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the name of the database password key in the secret, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretKey" -}}
-{{- .Values.postgresql.enabled | ternary "password" "database-password" -}}
+  {{- if .Values.postgresql.enabled }}
+    {{- if .Values.postgresql.auth.existingSecret }}
+      {{- .Values.postgresql.auth.secretKeys.userPasswordKey }}
+    {{- else -}}
+      password
+    {{- end }}
+  {{- else }}
+    {{- $defaultSecretKey := "database-password" -}}
+    {{- if .Values.webModeler.restapi.externalDatabase.existingSecret }}
+      {{- .Values.webModeler.restapi.externalDatabase.existingSecretPasswordKey | default $defaultSecretKey }}
+    {{- else }}
+      {{- $defaultSecretKey }}
+    {{- end }}
+  {{- end }}
 {{- end -}}
 
 {{/*
