@@ -227,6 +227,8 @@ global:
         ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
         existingSecret: ""
+        ## @param global.identity.auth.zeebe.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: zeebe-secret
 
   # Multiregion options for Zeebe
   #
