@@ -7,9 +7,8 @@ spec:
     spec:
       containers:
       - name: venom
-        # All env vars here assume that the Helm deployment is called "integration".
         env:
-        # Used to access get token from Keycloak to access Camunda APIs.
+        # Console uses client type "Public" so it's not tested in the machine-to-machine tests.
         - name: VENOM_VAR_TEST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
