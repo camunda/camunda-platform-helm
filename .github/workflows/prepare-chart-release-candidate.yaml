@@ -1,0 +1,57 @@
+name: "Chart - Prepare - Release - Candidate"
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      releaseCandidateBranchName:
+        description: "Branch Name of The Release Candidate"
+        required: false
+        default: "release-candidate"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  clean:
+    name: Clean RC artifacts
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: /tmp
+    steps:
+      - name: Delete old artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get IDs of the artifacts that include "rc" (the sha256 digest).
+          artifacts_ids_to_delete="$(
+            gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+            '/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions?per_page=100' | \
+            jq '.[] | select(.metadata.container.tags[] | contains("rc")) | .id'
+          )"
+          # Early exit if no artifacts to delete.
+          test -z "${artifacts_ids_to_delete}" && {
+            echo "No RC artifacts to delete ...";
+            exit 0;
+          }
+          # Delete the RC artifacts.
+          echo -e "Deleting the old untagged artifacts IDs:\n${artifacts_ids_to_delete}"
+          # for container_id in ${artifacts_ids_to_delete}; do
+          #   gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          #     "/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions/${container_id}"
+          # done
+  # reset:
+  #   name: reset release-candidate branch
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Reset release-candidate branch to master
+  #       env:
+  #         RC_BRANCH: ${{ github.event.inputs.releaseCandidateBranchName }}
+  #       run: |
+  #         git checkout ${{ env.RC_BRANCH }}
+  #         git reset origin/main --hard
