@@ -18,30 +18,36 @@ jobs:
             "name": "Helm Chart 8.2",
             "directory": "charts/camunda-platform-8.2",
             "versionSuffix": "rc-8.2",
+            "override": false
           },
           {
             "name": "Helm Chart 8.3",
             "directory": "charts/camunda-platform-8.3",
             "versionSuffix": "rc-8.3",
+            "override": false
           },
           {
             "name": "Helm Chart 8.4",
             "directory": "charts/camunda-platform-8.4",
             "versionSuffix": "rc-8.4",
+            "override": false
           },
           {
             "name": "Helm Chart 8.5",
             "directory": "charts/camunda-platform-8.5",
             "versionSuffix": "rc-8.5",
+            "override": false
           },
           {
             "name": "Helm Chart 8.6",
             "directory": "charts/camunda-platform-8.6",
             "versionSuffix": "rc-8.6",
+            "override": false
           },
           {
             "name": "Helm Chart Alpha",
             "directory": "charts/camunda-platform-alpha",
             "versionSuffix": "rc-alpha",
+            "override": false
           }
         ]
