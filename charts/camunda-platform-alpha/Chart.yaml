@@ -1,7 +1,7 @@
 apiVersion: v2
 name: camunda-platform
 # renovate: datasource=github-tags depName=charts/camunda-platform-alpha packageName=camunda/camunda
-version: 8.7.0-alpha2
+version: 8.7.0-alpha3
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -39,7 +39,7 @@ dependencies:
   # Shared Dependencies.
   - name: elasticsearch
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 21.4.1
+    version: 21.4.2
     condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
