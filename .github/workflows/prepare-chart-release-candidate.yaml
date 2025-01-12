@@ -46,7 +46,6 @@ jobs:
           done
   reset:
     needs: [clean]
-    if: needs.clean.outputs.should-run == 'true'
     name: reset release-candidate branch
     runs-on: ubuntu-latest
     steps:
