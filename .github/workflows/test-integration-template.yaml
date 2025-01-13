@@ -115,7 +115,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # This is needed if the workflow is triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -165,7 +165,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -174,7 +174,7 @@ jobs:
       # and populate environment variables from Vault
       - name: Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
         if: inputs.vault-secret-mapping != ''
         with:
           url: ${{ secrets.VAULT_ADDR }}

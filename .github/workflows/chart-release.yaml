@@ -48,7 +48,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
       - name: Install env dependencies
@@ -64,7 +64,7 @@ jobs:
           done
           echo "Dev comments removed:"
           git --no-pager diff
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4
+      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -92,7 +92,7 @@ jobs:
           chartPath="$(ct list-changed | tr '\n' ' ')" \
             make helm.dependency-update
       - name: cosign-installer
-        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
       - name: Tidy up
         run: |
           # Clean up badges from readme to avoid showing them in Artifact Hub.
@@ -190,7 +190,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # The verification step happens in the release branch before merging into the "main" branch.
           fetch-depth: 0
