@@ -84,6 +84,7 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
+    - cat /tmp/extra-values-file.yaml
     - helm install integration {{ .TEST_CHART_NAME }}
         --version {{ .TEST_CHART_VERSION }}
         --namespace {{ .TEST_NAMESPACE }}
