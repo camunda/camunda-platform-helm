@@ -194,7 +194,7 @@ jobs:
         with:
           # The verification step happens in the release branch before merging into the "main" branch.
           fetch-depth: 0
-          ref: release-please--branches--main
+          ref: ${{ github.ref_name }}
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       # - name: Simple smoke test
