@@ -12,6 +12,7 @@ unit:
 
 # Used in the GitHub Actions integration test CI workflow.
 integration:
+  testsuitesBaseDir: ../../../test/integration/testsuites
   scenarios:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
