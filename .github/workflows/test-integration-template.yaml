@@ -349,7 +349,7 @@ jobs:
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          sed -i 's/^VENOM_VAR_SKIP_TEST_ELASTICSEARCH=false/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true/' test/integration/testsuites/vars/files/variables.env
+          sed -i 's/^VENOM_VAR_SKIP_TEST_ELASTICSEARCH=false/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true/' ${CHART_PATH}test/integration/testsuites/vars/files/variables.env
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
