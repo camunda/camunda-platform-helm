@@ -58,9 +58,7 @@ Camunda images:
 Non-Camunda images:
 
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.26
-- docker.io/bitnami/keycloak:19.0.3
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-- docker.io/bitnami/postgresql:15.10.0
 
 
 ## Helm chart 8.2.33
