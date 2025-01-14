@@ -305,17 +305,17 @@ jobs:
 
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
-      # - name: 🌟 Setup Camunda chart 🌟
-      #   env:
-      #     TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
-      #     TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-      #     TEST_HELM_EXTRA_ARGS: >-
-      #       ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
-      #       --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-      #       --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
-      #       --values /tmp/extra-values-file.yaml
-      #   run: |
-      #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
+      - name: 🌟 Setup Camunda chart 🌟
+        env:
+          TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values /tmp/extra-values-file.yaml
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
       - name: Post setup
         timeout-minutes: 5
         run: |
@@ -351,9 +351,7 @@ jobs:
         run: |
           # sed -i 's/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=false/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true/' ${CI_TASKS_BASE_DIR}/chart-full-setup/Taskfile.yaml
           # TDOD: uncomment above and remove below line when merging
-          cat charts/camunda-platform-8.6/test/integration/testsuites/vars/files/variables.env
           echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true" >> charts/camunda-platform-8.6/test/integration/testsuites/vars/files/variables.env
-          cat charts/camunda-platform-8.6/test/integration/testsuites/vars/files/variables.env
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
