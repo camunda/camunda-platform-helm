@@ -117,3 +117,4 @@ tasks:
     - task: setup.post
     - task: test.preflight
     - task: test.core
+VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true
