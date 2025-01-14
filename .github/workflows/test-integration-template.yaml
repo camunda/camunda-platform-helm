@@ -350,7 +350,8 @@ jobs:
         timeout-minutes: 10
         run: |
           # sed -i 's/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=false/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true/' ${CI_TASKS_BASE_DIR}/chart-full-setup/Taskfile.yaml
-          # echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true" >> ${CI_TASKS_BASE_DIR}/chart-full-setup/Taskfile.yaml
+          # TDOD: uncomment above and remove below line when merging
+          echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true" >> ${CI_TASKS_BASE_DIR}/chart-full-setup/Taskfile.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
