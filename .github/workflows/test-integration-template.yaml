@@ -351,7 +351,7 @@ jobs:
         run: |
           # sed -i 's/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=false/VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true/' ${CI_TASKS_BASE_DIR}/chart-full-setup/Taskfile.yaml
           # TDOD: uncomment above and remove below line when merging
-          echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true" >> charts/camunda-platform-8.6/test/integration/testsuites/vars/files/variables.env
+          # echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=true" >> charts/camunda-platform-8.6/test/integration/testsuites/vars/files/variables.env
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled

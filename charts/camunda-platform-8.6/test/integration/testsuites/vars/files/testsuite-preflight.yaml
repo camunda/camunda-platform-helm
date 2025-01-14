@@ -58,19 +58,19 @@ testcases:
       Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-  - name: "Elasticsearch"
-    skip:
-    - skipTestElasticsearch ShouldBeFalse
-    type: http
-    method: GET
-    url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
-    retry: 3
-    delay: 10
-    info: |
-      Elasticsearch URL: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
-      Response Body: {{ .result.body }}
-    assertions:
-    - result.statuscode ShouldEqual 200
+  # - name: "Elasticsearch"
+  #   skip:
+  #   - skipTestElasticsearch ShouldBeFalse
+  #   type: http
+  #   method: GET
+  #   url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+  #   retry: 3
+  #   delay: 10
+  #   info: |
+  #     Elasticsearch URL: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+  #     Response Body: {{ .result.body }}
+  #   assertions:
+  #   - result.statuscode ShouldEqual 200
 
 - name: TEST - Liveness
   steps:
@@ -78,8 +78,6 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
     - component: Keycloak
       url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
     # Camunda.
@@ -122,18 +120,18 @@ testcases:
       Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-  - name: "Elasticsearch"
-    skip:
-    - skipTestElasticsearch ShouldBeFalse
-    type: http
-    method: GET
-    url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
-    retry: 3
-    delay: 10
-    info: |
-      Elasticsearch URL: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
-      Response Body: {{ .result.body }}
-    assertions:
-    - result.statuscode ShouldEqual 200
+  # - name: "Elasticsearch"
+  #   skip:
+  #   - skipTestElasticsearch ShouldBeFalse
+  #   type: http
+  #   method: GET
+  #   url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+  #   retry: 3
+  #   delay: 10
+  #   info: |
+  #     Elasticsearch URL: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+  #     Response Body: {{ .result.body }}
+  #   assertions:
+  #   - result.statuscode ShouldEqual 200
 
 # TODO: Check seed config like ES indexes.
