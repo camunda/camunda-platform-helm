@@ -14,7 +14,6 @@ unit:
 integration:
   scenarios:
     # Using the common test dir.
-    testsuitesBaseDir: ../../../test/integration/testsuites
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../../charts
