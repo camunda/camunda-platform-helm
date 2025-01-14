@@ -30,7 +30,7 @@ tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.3
   image:
     repository: camunda/tasklist
-    tag: 8.3.20
+    tag: 8.3.21
 
 webModeler:
   # Camunda Enterprise repository.
