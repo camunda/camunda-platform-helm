@@ -136,7 +136,7 @@ testcases:
   steps:
   - name: Check WebModeler internal API
     skip:
-    - skiptestwebmodeler ShouldBeFalse
+    - skipTestWebModeler ShouldBeFalse
     type: http
     method: GET
     url: "{{ .coreVars.baseURLs.webModelerRestapi }}/api/beta/info"
@@ -152,7 +152,7 @@ testcases:
   - name: Check WebModeler login page
     skip:
     - skiptestingress ShouldBeFalse
-    - skiptestwebmodeler ShouldBeFalse
+    - skipTestWebModeler ShouldBeFalse
     type: http
     method: GET
     url: "{{ .coreVars.baseURLs.webModeler }}"

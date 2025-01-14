@@ -39,7 +39,7 @@ testcases:
     - result.statuscode ShouldEqual 200
   - name: "WebModeler - {{ .value.component }}"
     skip:
-    - skiptestwebmodeler ShouldBeFalse
+    - skipTestWebModeler ShouldBeFalse
     type: http
     range:
     - component: RESTAPI
@@ -86,7 +86,7 @@ testcases:
     - result.statuscode ShouldEqual 200
   - name: "WebModeler - {{ .value.component }}"
     skip:
-    - skiptestwebmodeler ShouldBeFalse
+    - skipTestWebModeler ShouldBeFalse
     type: http
     range:
     - component: RESTAPI
