@@ -1,4 +1,4 @@
-# NOTE: WebModeler has its own step because Venom doesn't support skip in loops yet.
+# NOTE: WebModeler and Elasticsearch has its own step because Venom doesn't support skip in loops yet.
 # https://github.com/ovh/venom/issues/651
 name: Run preflight checks for Camunda
 
@@ -6,6 +6,7 @@ name: Run preflight checks for Camunda
 vars:
   releaseName: integration
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
+  skipTestElasticsearch: '{{ .SKIP_TEST_ELASTICSEARCH }}'
 
 testcases:
 
@@ -15,8 +16,6 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
     - component: Keycloak
       url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
     # Camunda.
@@ -56,6 +55,19 @@ testcases:
     delay: 10
     info: |
       {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+  - name: "Elasticsearch"
+    skip:
+    - skipTestElasticsearch ShouldBeFalse
+    type: http
+    method: GET
+    url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+    retry: 3
+    delay: 10
+    info: |
+      Elasticsearch URL: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
       Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
@@ -107,6 +119,19 @@ testcases:
     delay: 10
     info: |
       {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+  - name: "Elasticsearch"
+    skip:
+    - skipTestElasticsearch ShouldBeFalse
+    type: http
+    method: GET
+    url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+    retry: 3
+    delay: 10
+    info: |
+      Elasticsearch URL: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
       Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
