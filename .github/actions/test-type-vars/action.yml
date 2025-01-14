@@ -33,12 +33,12 @@ runs:
         # Integration Tests.
         integration_vars="$(yq '.integration' --indent=0 --output-format json ${matrix_file})"
 
+        # Scenarios config.
+
         # testsuites dir.
-        testsuites_base_dir="$(echo ${integration_vars} | jq -r '.testsuitesBaseDir')"
+        testsuites_base_dir="$(echo ${integration_vars} | jq -r '.scenarios.testsuitesBaseDir')"
         integration_testsuites_dir="${CHART_PATH}/test/${testsuites_base_dir}"
         echo "CI_TESTSUITES_BASE_DIR=${integration_testsuites_dir}" | tee -a $GITHUB_ENV
-
-        # Scenarios config.
 
         # Tasks dir.
         tasks_base_dir="$(echo ${integration_vars} | jq -r '.scenarios.tasksBaseDir')"
