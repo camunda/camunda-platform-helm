@@ -43,19 +43,20 @@ get_versions_filtered () {
 get_chart_images () {
     chart_version="${1}"
     test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-alpha"
-    if [[ "$chart_version" == "8.2"* ]] then
-    helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
-      --set global.identity.keycloak.url.port=443 --set global.identity.keycloak.url.host=jesse.com --set global.identity.keycloak.url.protocol=http \
-      --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
-    tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
-    sort | uniq
-
-    else
-    helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
-      --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
-    tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
-    sort | uniq
+    QUERY_LRU="$( sqlite3 --ascii version-matrix.sqlite "SELECT output FROM lru_get_chart_images where chart_version='$chart_version';" | awk '{gsub(/\x1e/, ""); print}')"
+    if [[ "$QUERY_LRU" != "" ]]; then
+      echo "$QUERY_LRU"
+      unset QUERY_LRU
+      return
     fi
+    output="$(
+      helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
+        --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
+      tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
+      sort | uniq;
+    )"
+    echo "$output"
+    sqlite3 version-matrix.sqlite "INSERT INTO lru_get_chart_images (chart_version, output) VALUES ('$chart_version', '$output');"
 }
 
 # Get Helm CLI version based on the asdf .tool-versions file.
