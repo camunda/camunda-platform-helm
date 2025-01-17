@@ -125,9 +125,10 @@
     {
       "matchFileNames": [".tool-versions"],
       "matchPackageNames": [
+        "hairyhenderson/gomplate",
         "gomplate",
       ],
-      "extractVersion": "^v(?<version>.*)$",
+      "extractVersion": "^(?<version>v.*)$",
     },
 
     //
