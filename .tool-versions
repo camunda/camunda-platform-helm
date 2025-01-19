@@ -1,5 +1,5 @@
 git-cliff 2.5.0
-golang 1.23.4
+golang 1.23.5
 gomplate v4.3.0
 helm 3.16.4
 helm-ct 3.11.0
