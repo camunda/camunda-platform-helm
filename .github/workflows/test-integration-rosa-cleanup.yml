@@ -3,8 +3,7 @@ name: "Test - Integration - ROSA Daily cleanup"
 on:
   pull_request:
     paths:
-    - '.github/workflows/daily-cleanup-rosa.yml'
-    - '.github/templates/issue_delete_clusters_failed.md'
+    - '.github/workflows/test-integration-rosa-cleanup.yml'
   workflow_dispatch:
     inputs:
       max_age_hours_cluster:
