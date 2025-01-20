@@ -1,5 +1,8 @@
 # Changelog
 
+## [10.4.8](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.5-v10.4.7...camunda-platform-8.5-10.4.8) (2025-01-20)
+
+
 ## [10.4.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.5-v10.4.6...camunda-platform-8.5-10.4.7) (2025-01-14)
 
 
