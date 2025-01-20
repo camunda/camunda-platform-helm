@@ -156,7 +156,7 @@ testcases:
 #   # TODO: Check why WM 8.3.0 cannot be accessed internally.
 #   # - name: Check WebModeler internal API
 #   #   skip:
-#   #   - skiptestwebmodeler ShouldBeFalse
+#   #   - skipTestWebModeler ShouldBeFalse
 #   #   type: http
 #   #   method: GET
 #   #   url: "{{ .coreVars.baseURLs.webModelerRestapi }}/api/v1/info"
@@ -172,7 +172,7 @@ testcases:
 #   - name: Check WebModeler login page
 #     skip:
 #     - skiptestingress ShouldBeFalse
-#     - skiptestwebmodeler ShouldBeFalse
+#     - skipTestWebModeler ShouldBeFalse
 #     type: http
 #     method: GET
 #     url: "{{ .coreVars.baseURLs.webModeler }}"
