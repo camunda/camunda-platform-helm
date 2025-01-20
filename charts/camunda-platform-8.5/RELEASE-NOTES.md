@@ -5,28 +5,28 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 Supported versions:
 
 - Camunda applications: [8.5](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.5&expanded=true)
-- Helm values: [10.4.6](https://artifacthub.io/packages/helm/camunda/camunda-platform/10.4.6#parameters)
-- Helm CLI: [3.16.3](https://github.com/helm/helm/releases/tag/v3.16.3)
+- Helm values: [10.4.8](https://artifacthub.io/packages/helm/camunda/camunda-platform/10.4.8#parameters)
+- Helm CLI: [3.17.0](https://github.com/helm/helm/releases/tag/v3.17.0)
 
 Camunda images:
 
-- docker.io/camunda/connectors-bundle:8.5.11
-- docker.io/camunda/identity:8.5.10
-- docker.io/camunda/operate:8.5.9
-- docker.io/camunda/optimize:8.5.9
-- docker.io/camunda/tasklist:8.5.10
-- docker.io/camunda/zeebe:8.5.10
+- docker.io/camunda/connectors-bundle:8.5.12
+- docker.io/camunda/identity:8.5.11
+- docker.io/camunda/operate:8.5.10
+- docker.io/camunda/optimize:8.5.10
+- docker.io/camunda/tasklist:8.5.11
+- docker.io/camunda/zeebe:8.5.12
 - registry.camunda.cloud/console/console-sm:8.5.113
-- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.5.12
-- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.5.12
-- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.5.12
+- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.5.14
+- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.5.14
+- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.5.14
 
 Non-Camunda images:
 
 - docker.io/bitnami/elasticsearch:8.12.2
 - docker.io/bitnami/keycloak:23.0.7
 - docker.io/bitnami/os-shell:12-debian-12-r18
-- docker.io/bitnami/postgresql:14.15.0-debian-12-r2
+- docker.io/bitnami/postgresql:14.15.0-debian-12-r8
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
 ### Verification
@@ -34,8 +34,8 @@ Non-Camunda images:
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-10.4.6.tgz \
-  --bundle camunda-platform-10.4.6.cosign.bundle \
+cosign verify-blob camunda-platform-10.4.8.tgz \
+  --bundle camunda-platform-10.4.8.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2560/merge"
+  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2786/merge"
 ```
