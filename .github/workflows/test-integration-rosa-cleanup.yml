@@ -48,7 +48,7 @@ jobs:
 
       - name: Delete clusters
         id: delete_clusters
-        uses: camunda/camunda-tf-rosa/.github/actions/rosa-cleanup-clusters@main # 7dbf68db2224132a79592f57aa0e49a846d56b07
+        uses: camunda/camunda-tf-rosa/.github/actions/rosa-cleanup-clusters@fix/cleanup-clusters-action # TODO: switch to main when merged
         timeout-minutes: 125
         env:
           RHCS_TOKEN: "${{ secrets.DISTRO_CI_REDHAT_CONSOLE_TOKEN }}"
