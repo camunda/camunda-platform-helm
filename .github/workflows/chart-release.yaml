@@ -28,7 +28,7 @@ jobs:
     name: Camunda Alpha
     uses: ./.github/workflows/chart-release-template.yaml
     with:
-      branch: ${{ github.ref_name }}
+      branch: ${{ github.event.pull_request.head.ref }}
       workflow-ref: chart-release-template.yaml
       chart-matrix: |
         [
@@ -194,7 +194,7 @@ jobs:
         with:
           # The verification step happens in the release branch before merging into the "main" branch.
           fetch-depth: 0
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       # - name: Simple smoke test
