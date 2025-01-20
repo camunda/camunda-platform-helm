@@ -30,4 +30,4 @@ jobs:
           # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
           config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
           manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
-          target-branch: "release-candidate"
+          # target-branch: "release-candidate"
