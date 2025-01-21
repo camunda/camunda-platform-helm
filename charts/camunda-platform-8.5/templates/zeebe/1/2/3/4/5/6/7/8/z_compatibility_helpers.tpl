@@ -1,5 +1,4 @@
 {{/*
-TODO: Remove the whole file just before 8.6 release.
 NOTE: We need to load this file first thing before all other resources to support backward compatibility.
 
       Helm prioritizes files that are deeply nested in subdirectories when it's determining the render order.
