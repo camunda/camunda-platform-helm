@@ -1,0 +1,28 @@
+preflightVars:
+  baseURLs:
+    elasticsearch: http://integration-elasticsearch:9200
+    console: http://integration-console:9100
+    keycloak: http://integration-keycloak
+    identity: http://integration-identity:82
+    optimize: http://integration-optimize
+    connectors: http://integration-connectors:8080
+    webModelerRestapi: http://integration-web-modeler-restapi:8091
+    webModelerWebapp: http://integration-web-modeler-webapp:8071
+    core: http://integration-core:9600
+    coreGRPC: http://integration-core:26500
+    coreREST: http://integration-core:8080/v1
+
+coreVars:
+  authURL: "http://integration-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+  baseURLs:
+    console: http://integration-console
+    keycloak: http://integration-keycloak
+    identity: http://integration-identity
+    optimize: http://integration-optimize
+    connectors: http://integration-connectors:8080/inbound
+    webModelerRestapi: http://integration-web-modeler-restapi
+    core: http://integration-core:9600
+    coreGRPC: http://integration-core:26500
+    coreREST: http://integration-core:8080/v1
+  zbctl:
+    extraArgs: "--insecure"

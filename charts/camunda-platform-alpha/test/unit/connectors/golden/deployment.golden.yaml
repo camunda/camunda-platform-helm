@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.7.0-alpha3.1"
+    app.kubernetes.io/version: "8.6.6"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: "8.7.0-alpha3.1"
+        app.kubernetes.io/version: "8.6.6"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,8 +44,8 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.7.0-alpha3.1
-          imagePullPolicy: Always
+          image: camunda/connectors-bundle:8.6.6
+          imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -64,11 +64,22 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
-            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-connectors-client-token
+                  name: camunda-platform-test-connectors-identity-secret
+                  key: connectors-secret
+            - name: ZEEBE_CLIENT_ID
+              value: "zeebe"
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-zeebe-identity-secret
+                  key: zeebe-secret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: "zeebe-api"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars

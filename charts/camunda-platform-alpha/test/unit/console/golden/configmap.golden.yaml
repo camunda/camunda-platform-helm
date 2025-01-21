@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.7.0-alpha3"
+    app.kubernetes.io/version: "8.6.46"
 data:
   application.yaml: |-
     # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
@@ -29,9 +29,6 @@ data:
           releases:
           - name: camunda-platform-test
             namespace: camunda-platform
-            tags:
-            - dev
-            custom-properties: []
             components:
             - name: Console
               id: console
@@ -46,35 +43,29 @@ data:
               url: http://localhost:8080
               readiness: http://camunda-platform-test-identity.camunda-platform:82/actuator/health
               metrics: http://camunda-platform-test-identity.camunda-platform:82/actuator/prometheus
+            - name: Operate
+              id: operate
+              url: http://localhost:8081
+              readiness: http://camunda-platform-test-operate.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-operate.camunda-platform:9600/actuator/prometheus
             - name: Optimize
               id: optimize
               url: http://localhost:8083
               readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
               metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
-            - name: Connectors
-              id: connectors
-              url: http://localhost:8086
-              readiness: http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness
-              metrics: http://camunda-platform-test-connectors.camunda-platform:8080/actuator/prometheus
-            - name: Operate
-              id: operate
-              url: http://localhost:8088/operate
-              readiness: http://camunda-platform-test-core.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-core.camunda-platform:9600/actuator/prometheus
             - name: Tasklist
               id: tasklist
-              url: http://localhost:8088/tasklist
-              readiness: http://camunda-platform-test-core.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-core.camunda-platform:9600/actuator/prometheus
-            - name: Core Identity
-              id: coreIdentity
-              url: http://localhost:8088/identity
-              readiness: http://camunda-platform-test-core.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-core.camunda-platform:9600/actuator/prometheus
+              url: http://localhost:8082
+              readiness: http://camunda-platform-test-tasklist.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-tasklist.camunda-platform:9600/actuator/prometheus
             - name: Zeebe Gateway
               id: zeebeGateway
               urls:
                 grpc: http://localhost:26500
                 http: http://localhost:8088
-              readiness: http://camunda-platform-test-core.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-core.camunda-platform:9600/actuator/prometheus
+              readiness: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/prometheus
+            - name: Zeebe
+              id: zeebe
+              readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus

@@ -159,9 +159,13 @@ helm.readme-update:
 
 # helm.schema-update: generate schema from values file
 .PHONY: helm.schema-update
+# TODO: Once 8.7 is released, remove "alpha" name from the excluded versions.
 helm.schema-update:
 	for chart_dir in $(chartPath); do \
-		if echo "$${chart_dir}" | grep -qE "camunda-platform-8\.(2|3|4|5|6)$$"; then \
+		excluded_versions="camunda-platform-(8\.(2|3|4|5|6)|alpha)$$"; \
+		if echo "$${chart_dir}" | grep -qE "$${excluded_versions}"; then \
+			echo "\n[$@] Chart dir: $${chart_dir}";\
+			echo "[$@] This chart version doesn't have schema";\
 			continue; \
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \

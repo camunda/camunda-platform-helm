@@ -17,50 +17,40 @@ data:
       servlet:
         context-path: {{ .Values.connectors.contextPath | quote }}
     {{- end }}
-
-    management:
-      endpoints:
-        web:
-          exposure:
-            include: metrics,health,prometheus
-      endpoint:
-        health:
-          show-details: always
-          show-components: always
-          group:
-            readiness:
-              include:
-              - processDefinitionImport
-              - zeebeClient
-      context-path: /actuator
-
     camunda:
-      client:
-        zeebe:
-          {{-  $proto := (lower .Values.core.readinessProbe.scheme) -}}
-          {{- $baseURLInternal := printf "%s://%s" $proto (include "core.fullname" . | trimAll "\"") }}
-          rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.core.service.httpPort .Values.core.contextPath }}
-          grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.core.service.grpcPort }}
-          defaults:
-            worker-threads: 10
-            max-jobs-active: 32
-            stream-enabled: true
-        identity:
-          base-url: {{ include "camundaPlatform.identityURL" . | quote }}
-          audience: {{ include "core.authAudience" . | quote }}
-        auth:
-          issuer: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . }}
-          client-id: {{ include "connectors.authClientId" . | quote }}
-          client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
-        mode: self-managed
+      {{- if eq .Values.connectors.inbound.mode "disabled" }}
+      connector:
+        polling:
+          enabled: false
+        webhook:
+          enabled: false
+      {{- end }}
+      {{- if or (eq .Values.connectors.inbound.mode "credentials") (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") ) }}
+      operate:
+        client:
+          url: {{ include "camundaPlatform.operateURL" . | quote }}
+          {{- if eq .Values.connectors.inbound.mode "credentials" }}
+          username: connectors
+          {{- end }}
+      {{- end }}
+      {{- if .Values.global.identity.auth.enabled }}
+      {{- if eq .Values.connectors.inbound.mode "oauth" }}
+      identity:
+        audience: {{ include "operate.authAudience" . | quote }}
+        client-id: {{ include "connectors.authClientId" . | quote }}
+      {{- end }}
+      {{- end }}
 
-    logging:
-{{- with .Values.connectors.logging }}
-{{ . | toYaml | indent 6 }}
-{{- end }}
+    zeebe:
+      client:
+        broker:
+          gateway-address: {{ include "connectors.zeebeEndpoint" . | quote }}
+        security:
+          plaintext: true
+  {{- end }}
+
   {{- range $key, $val := .Values.connectors.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
   {{- end }}
-{{- end }}
 {{- end }}

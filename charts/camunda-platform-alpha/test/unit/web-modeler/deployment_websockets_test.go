@@ -57,6 +57,7 @@ func (s *websocketsDeploymentTemplateTest) TestContainerSetPusherAppPathIfGlobal
 		SetValues: map[string]string{
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.ingress.enabled":          "false",
 			"webModeler.contextPath":              "/modeler",
 			"global.ingress.enabled":              "true",
 			"global.ingress.host":                 "c8.example.com",

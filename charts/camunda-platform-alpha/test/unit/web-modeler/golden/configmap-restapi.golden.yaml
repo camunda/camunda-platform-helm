@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: web-modeler
-    app.kubernetes.io/version: "8.7.0-alpha3"
+    app.kubernetes.io/version: "8.6.6"
   annotations:
     {}
 data:
@@ -41,25 +41,6 @@ data:
 
         server:
           url: "http://localhost:8084"
-        clusters:
-          - id: "default-cluster"
-            name: "camunda-platform-test-zeebe"
-            version: "8.7.0-alpha3"
-            authentication: "OAUTH"
-            url:
-              zeebe:
-                grpc: "grpc://camunda-platform-test-core:26500"
-                rest: "http://camunda-platform-test-core:8080/v1"
-              operate: "http://camunda-platform-test-core:8080/v1"
-              tasklist: "http://camunda-platform-test-core:8080/tasklist"
-            oauth:
-              url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
-              audience:
-                zeebe: "core-api"
-                operate: "core-api"
-                tasklist: "core-api"
-              scope: ""
-
     spring:
       datasource:
         url: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"
@@ -79,7 +60,3 @@ data:
             jwt:
               issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
               jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
-    logging:
-      level:
-        io.camunda.modeler: DEBUG
-        io.grpc: TRACE

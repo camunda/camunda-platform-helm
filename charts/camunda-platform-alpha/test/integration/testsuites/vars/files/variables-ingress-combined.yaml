@@ -10,9 +10,7 @@ preflightVars:
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
-    core: http://integration-core:9600/core
-    coreGRPC: http://integration-core:26500
-    coreREST: http://integration-core:8080/core/v1
+    zeebeGateway: http://integration-zeebe-gateway:9600/zeebe
 
 coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
@@ -21,13 +19,14 @@ coreVars:
     console: "https://{{ .TEST_INGRESS_HOST }}"
     keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth/"
     identity: "https://{{ .TEST_INGRESS_HOST }}/identity"
+    operate: "https://{{ .TEST_INGRESS_HOST }}/operate"
     optimize: "https://{{ .TEST_INGRESS_HOST }}/optimize"
+    tasklist: "https://{{ .TEST_INGRESS_HOST }}/tasklist"
     connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
-    core: "https://{{ .TEST_INGRESS_HOST }}/core"
-    coreGRPC: "grpc-{{ .TEST_INGRESS_HOST }}:443"
-    coreREST: "https://{{ .TEST_INGRESS_HOST }}/core/v1"
+    zeebeGatewayGRPC: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
+    zeebeGatewayREST: "https://{{ .TEST_INGRESS_HOST }}/zeebe"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""

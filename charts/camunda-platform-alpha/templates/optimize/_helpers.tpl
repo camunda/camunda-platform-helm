@@ -65,15 +65,3 @@ app.kubernetes.io/component: optimize
 {{- define "optimize.authAudience" -}}
   {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
-
-{{- define "optimize.authClientSecretName" -}}
-    {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) -}}
-        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) -}}
-    {{- else -}}
-        {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") -}}
-    {{- end -}}
-{{- end -}}
-
-{{- define "optimize.authClientSecretKey" -}}
-    {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-{{- end -}}

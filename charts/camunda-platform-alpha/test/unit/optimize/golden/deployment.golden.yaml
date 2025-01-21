@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: optimize
-    app.kubernetes.io/version: "8.7.0-alpha3"
+    app.kubernetes.io/version: "8.6.4"
   annotations:
     {}
 spec:
@@ -35,14 +35,14 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: optimize
-        app.kubernetes.io/version: "8.7.0-alpha3"
+        app.kubernetes.io/version: "8.6.4"
       annotations:
     spec:
       imagePullSecrets:
         []
       initContainers:
         - name: migration
-          image: camunda/optimize:8.7.0-alpha3
+          image: camunda/optimize:8.6.4
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -82,8 +82,8 @@ spec:
               name: environment-config
       containers:
         - name: optimize
-          image: camunda/optimize:8.7.0-alpha3
-          imagePullPolicy: Always
+          image: camunda/optimize:8.6.4
+          imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -107,14 +107,8 @@ spec:
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-optimize-client-token
-            - name: OPTIMIZE_LOG_LEVEL
-              value: "info"
-            - name: UPGRADE_LOG_LEVEL
-              value: "info"
-            - name: ES_LOG_LEVEL
-              value: "warn"
+                  name: camunda-platform-test-optimize-identity-secret
+                  key: optimize-secret
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars

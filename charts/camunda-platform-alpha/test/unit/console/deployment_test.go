@@ -449,7 +449,7 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"console.enabled": "true",
-			"console.containerSecurityContext.privileged": "true",
+			"console.containerSecurityContext.privileged":          "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
