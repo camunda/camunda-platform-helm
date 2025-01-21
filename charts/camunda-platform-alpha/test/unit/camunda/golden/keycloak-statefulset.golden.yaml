@@ -60,7 +60,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-write-dirs
-          image: docker.io/camunda/keycloak:25.0.4
+          image: docker.io/camunda/keycloak:25.0.6
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -102,7 +102,7 @@ spec:
              mountPath: /emptydir
       containers:
         - name: keycloak
-          image: docker.io/camunda/keycloak:25.0.4
+          image: docker.io/camunda/keycloak:25.0.6
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -128,13 +128,13 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-keycloak-admin-password
+                  name: camunda-platform-test-keycloak
+                  key: admin-password
             - name: KEYCLOAK_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-keycloak-postgresql-user-password
+                  name: camunda-platform-test-postgresql
+                  key: password
             - name: KEYCLOAK_HTTP_RELATIVE_PATH
               value: "/auth/"
             - name: KC_SPI_ADMIN_REALM

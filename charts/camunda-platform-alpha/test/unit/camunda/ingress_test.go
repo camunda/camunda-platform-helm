@@ -48,7 +48,7 @@ func TestIngressTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/camunda/ingress-http.yaml"},
+		templates: []string{"templates/camunda/ingress.yaml"},
 	})
 }
 
@@ -157,11 +157,13 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 		SetValues: map[string]string{
 			"global.ingress.enabled":              "true",
 			"identity.contextPath":                "/identity",
+			"operate.contextPath":                 "/operate",
 			"optimize.contextPath":                "/optimize",
+			"tasklist.contextPath":                "/tasklist",
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
 			"webModeler.contextPath":              "/modeler",
-			"core.contextPath":                    "/core",
+			"zeebeGateway.contextPath":            "/zeebe",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -174,10 +176,12 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 	s.Require().Contains(output, "kind: Ingress")
 	s.Require().Contains(output, "path: /auth")
 	s.Require().Contains(output, "path: /identity")
+	s.Require().Contains(output, "path: /operate")
 	s.Require().Contains(output, "path: /optimize")
+	s.Require().Contains(output, "path: /tasklist")
 	s.Require().Contains(output, "path: /modeler")
 	s.Require().Contains(output, "path: /modeler-ws")
-	s.Require().Contains(output, "path: /core")
+	s.Require().Contains(output, "path: /zeebe")
 }
 
 func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
@@ -186,11 +190,12 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 		SetValues: map[string]string{
 			"global.ingress.enabled":              "true",
 			"identity.contextPath":                "",
+			"operate.contextPath":                 "",
 			"optimize.contextPath":                "",
+			"tasklist.contextPath":                "",
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
 			"webModeler.contextPath":              "",
-			"core.contextPath":                    "",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -201,10 +206,12 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 
 	// then
 	s.Require().NotContains(output, "name: camunda-platform-test-identity")
+	s.Require().NotContains(output, "name: camunda-platform-test-operate")
 	s.Require().NotContains(output, "name: camunda-platform-test-optimize")
+	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-	s.Require().NotContains(output, "name: camunda-platform-test-core")
+	s.Require().NotContains(output, "name: camunda-platform-test-zeebe-gateway")
 }
 
 func (s *ingressTemplateTest) TestIngressComponentDisabled() {
@@ -212,9 +219,12 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"global.ingress.enabled": "true",
+			"operate.identity":       "false",
+			"operate.enabled":        "false",
 			"optimize.enabled":       "false",
+			"tasklist.enabled":       "false",
 			"webModeler.enabled":     "false",
-			"core.enabled":           "false",
+			"zeebe.enabled":          "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -225,8 +235,10 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 
 	// then
 	s.Require().NotContains(output, "name: camunda-platform-test-identity")
+	s.Require().NotContains(output, "name: camunda-platform-test-operate")
 	s.Require().NotContains(output, "name: camunda-platform-test-optimize")
+	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-	s.Require().NotContains(output, "name: camunda-platform-test-core")
+	s.Require().NotContains(output, "name: camunda-platform-test-zeebe-gateway")
 }

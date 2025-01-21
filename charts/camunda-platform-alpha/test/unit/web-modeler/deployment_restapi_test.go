@@ -57,7 +57,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSec
 		SetValues: map[string]string{
 			"webModeler.enabled":                           "true",
 			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"webModelerPostgresql.enabled":                 "false",
+			"postgresql.enabled":                           "false",
 			"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":     "modeler-user",
 			"webModeler.restapi.externalDatabase.password": "modeler-password",
@@ -90,7 +90,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSec
 		SetValues: map[string]string{
 			"webModeler.enabled":                                      "true",
 			"webModeler.restapi.mail.fromAddress":                     "example@example.com",
-			"webModelerPostgresql.enabled":                            "false",
+			"postgresql.enabled":                                      "false",
 			"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":                "modeler-user",
 			"webModeler.restapi.externalDatabase.existingSecret.name": "my-secret",
@@ -123,7 +123,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordSec
 		SetValues: map[string]string{
 			"webModeler.enabled":                                            "true",
 			"webModeler.restapi.mail.fromAddress":                           "example@example.com",
-			"webModelerPostgresql.enabled":                                  "false",
+			"postgresql.enabled":                                            "false",
 			"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":                      "modeler-user",
 			"webModeler.restapi.externalDatabase.existingSecret.name":       "my-secret",
@@ -156,7 +156,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerExternalDatabasePasswordExp
 		SetValues: map[string]string{
 			"webModeler.enabled":                                 "true",
 			"webModeler.restapi.mail.fromAddress":                "example@example.com",
-			"webModelerPostgresql.enabled":                       "false",
+			"postgresql.enabled":                                 "false",
 			"webModeler.restapi.externalDatabase.url":            "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 			"webModeler.restapi.externalDatabase.user":           "modeler-user",
 			"webModeler.restapi.externalDatabase.existingSecret": "password1234",
@@ -188,10 +188,10 @@ func (s *restapiDeploymentTemplateTest) TestContainerInternalDatabasePasswordSec
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                       "true",
-			"webModeler.restapi.mail.fromAddress":      "example@example.com",
-			"webModelerPostgresql.enabled":             "true",
-			"webModelerPostgresql.auth.existingSecret": "my-secret",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"postgresql.enabled":                  "true",
+			"postgresql.auth.existingSecret":      "my-secret",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -219,11 +219,11 @@ func (s *restapiDeploymentTemplateTest) TestContainerInternalDatabasePasswordSec
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                                   "true",
-			"webModeler.restapi.mail.fromAddress":                  "example@example.com",
-			"webModelerPostgresql.enabled":                         "true",
-			"webModelerPostgresql.auth.existingSecret":             "my-secret",
-			"webModelerPostgresql.auth.secretKeys.userPasswordKey": "my-database-password-key",
+			"webModeler.enabled":                         "true",
+			"webModeler.restapi.mail.fromAddress":        "example@example.com",
+			"postgresql.enabled":                         "true",
+			"postgresql.auth.existingSecret":             "my-secret",
+			"postgresql.auth.secretKeys.userPasswordKey": "my-database-password-key",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

@@ -1,11 +1,13 @@
 # Used in the GitHub Actions unit test CI workflow.
 unit:
   matrix:
-    - name: Management
+    - name: Core
       packages: identity camunda console
-    - name: Orchestration
-      packages: core connectors optimize
-    - name: Design
+    - name: Apps
+      packages: connectors operate optimize tasklist
+    - name: Zeebe
+      packages: zeebe zeebe-gateway
+    - name: WebModeler
       packages: web-modeler
 
 # Used in the GitHub Actions integration test CI workflow.

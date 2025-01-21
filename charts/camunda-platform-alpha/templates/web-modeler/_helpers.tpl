@@ -186,22 +186,22 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
+  {{- .Values.postgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUser" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary .Values.webModelerPostgresql.auth.username .Values.webModeler.restapi.externalDatabase.user -}}
+  {{- .Values.postgresql.enabled | ternary .Values.postgresql.auth.username .Values.webModeler.restapi.externalDatabase.user -}}
 {{- end -}}
 
 {{/*
 [web-modeler] Get the name of the secret that contains the database password, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretName" -}}
-  {{- if .Values.webModelerPostgresql.enabled }}
-    {{- .Values.webModelerPostgresql.auth.existingSecret | default (include "webModeler.postgresql.fullname" .) }}
+  {{- if .Values.postgresql.enabled }}
+    {{- .Values.postgresql.auth.existingSecret | default (include "webModeler.postgresql.fullname" .) }}
   {{- else }}
     {{- if or (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) .Values.webModeler.restapi.externalDatabase.password }}
       {{- include "webModeler.restapi.fullname" . }}
@@ -215,9 +215,9 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the name of the database password key in the secret, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretKey" -}}
-  {{- if .Values.webModelerPostgresql.enabled }}
-    {{- if .Values.webModelerPostgresql.auth.existingSecret }}
-      {{- .Values.webModelerPostgresql.auth.secretKeys.userPasswordKey }}
+  {{- if .Values.postgresql.enabled }}
+    {{- if .Values.postgresql.auth.existingSecret }}
+      {{- .Values.postgresql.auth.secretKeys.userPasswordKey }}
     {{- else -}}
       password
     {{- end }}
@@ -235,7 +235,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the name of the secret resource that contains the SMTP password.
 */}}
 {{- define "webModeler.restapi.smtpSecretName" -}}
-  {{- if or (and (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) (ne .Values.webModeler.restapi.mail.existingSecret "")) .Values.webModeler.restapi.mail.smtpPassword }}
+  {{- if or (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.smtpPassword }} 
       {{- (include "webModeler.restapi.fullname" .) }}
   {{- else if and (typeIs "map[string]interface {}" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.existingSecret.name }}
       {{- .Values.webModeler.restapi.mail.existingSecret.name }}
@@ -273,7 +273,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the full name of the Kubernetes objects from the postgresql dependency chart
 */}}
 {{- define "webModeler.postgresql.fullname" -}}
-  {{- include "common.names.dependency.fullname" (dict "chartName" "webModelerPostgresql" "chartValues" .Values.webModelerPostgresql "context" $) -}}
+  {{- include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" $) -}}
 {{- end -}}
 
 {{/*
@@ -305,6 +305,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.publicWebsocketHost" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.host }}
+  {{- else }}
+    {{- .Values.webModeler.ingress.enabled | ternary .Values.webModeler.ingress.websockets.host .Values.webModeler.websockets.publicHost }}
   {{- end }}
 {{- end -}}
 
@@ -315,7 +317,11 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
   {{- else }}
-    {{- .Values.webModeler.websockets.publicPort }}
+    {{- if .Values.webModeler.ingress.enabled }}
+      {{- .Values.webModeler.ingress.websockets.tls.enabled | ternary "443" "80" }}
+    {{- else }}
+      {{- .Values.webModeler.websockets.publicPort }}
+    {{- end }}
   {{- end }}
 {{- end -}}
 
@@ -325,6 +331,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.websocketTlsEnabled" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.tls.enabled }}
+  {{- else }}
+    {{- and .Values.webModeler.ingress.enabled .Values.webModeler.ingress.websockets.tls.enabled }}
   {{- end }}
 {{- end -}}
 

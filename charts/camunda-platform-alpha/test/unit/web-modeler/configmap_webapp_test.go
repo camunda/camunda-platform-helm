@@ -1,10 +1,6 @@
 package web_modeler
 
 import (
-	"path/filepath"
-	"strings"
-	"testing"
-
 	"github.com/BurntSushi/toml"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -12,6 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	"path/filepath"
+	"strings"
+	"testing"
 )
 
 type configmapWebAppTemplateTest struct {
@@ -90,6 +89,7 @@ func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectClientPusherC
 		SetValues: map[string]string{
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.ingress.enabled":          "false",
 			"webModeler.contextPath":              "/modeler",
 			"global.ingress.enabled":              "true",
 			"global.ingress.host":                 "c8.example.com",
@@ -121,6 +121,7 @@ func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectClientPusherC
 		SetValues: map[string]string{
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"webModeler.ingress.enabled":          "false",
 			"webModeler.contextPath":              "/modeler",
 			"global.ingress.enabled":              "true",
 			"global.ingress.host":                 "c8.example.com",
@@ -146,7 +147,64 @@ func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectClientPusherC
 	s.Require().Equal("/modeler-ws", configmapApplication.Client.Pusher.Path)
 	s.Require().Equal("true", configmapApplication.Client.Pusher.ForceTLS)
 }
+func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithIngressTlsEnabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
+			"webModeler.ingress.enabled":                "true",
+			"webModeler.ingress.websockets.host":        "modeler-ws.example.com",
+			"webModeler.ingress.websockets.tls.enabled": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
 
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerWebAppTOML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := toml.Unmarshal([]byte(configmap.Data["application.toml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("modeler-ws.example.com", configmapApplication.Client.Pusher.Host)
+	s.Require().Equal("443", configmapApplication.Client.Pusher.Port)
+	s.Require().Equal("true", configmapApplication.Client.Pusher.ForceTLS)
+}
+func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithIngressTlsDisabled() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
+			"webModeler.ingress.enabled":                "true",
+			"webModeler.ingress.websockets.host":        "modeler-ws.example.com",
+			"webModeler.ingress.websockets.tls.enabled": "false",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerWebAppTOML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := toml.Unmarshal([]byte(configmap.Data["application.toml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("modeler-ws.example.com", configmapApplication.Client.Pusher.Host)
+	s.Require().Equal("80", configmapApplication.Client.Pusher.Port)
+	s.Require().Equal("false", configmapApplication.Client.Pusher.ForceTLS)
+}
 func (s *configmapWebAppTemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
 	// given
 	options := &helm.Options{

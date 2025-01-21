@@ -70,15 +70,3 @@ Get the image pull secrets.
 {{- define "console.authAudience" -}}
   {{- .Values.global.identity.auth.console.audience | default "console-api" -}}
 {{- end -}}
-
-{{- define "console.authClientSecretName" -}}
-    {{- if and .Values.global.identity.auth.console.existingSecret (not (typeIs "string" .Values.global.identity.auth.console.existingSecret)) -}}
-        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.console.existingSecret "context" $) -}}
-    {{- else -}}
-        {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "console") -}}
-    {{- end -}}
-{{- end -}}
-
-{{- define "console.authClientSecretKey" -}}
-    {{ .Values.global.identity.auth.console.existingSecretKey }}
-{{- end -}}
