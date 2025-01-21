@@ -85,6 +85,7 @@ data:
           resourceserver:
             jwt:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
     logging:
 {{- with .Values.webModeler.restapi.logging }}
 {{ . | toYaml | indent 6 }}

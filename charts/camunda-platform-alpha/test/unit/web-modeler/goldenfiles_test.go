@@ -31,6 +31,7 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 	templateNames := []string{
+		"configmap-restapi",
 		"configmap-shared",
 		"deployment-restapi",
 		"deployment-webapp",
@@ -50,10 +51,12 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"webModeler.enabled":                       "true",
-				"webModeler.restapi.mail.fromAddress":      "example@example.com",
-				"webModelerPostgresql.enabled":             "true",
-				"webModelerPostgresql.auth.existingSecret": "camunda-platform-test-postgresql-web-modeler",
+				"webModeler.enabled":                                  "true",
+				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
+				"webModelerPostgresql.enabled":                        "true",
+				"webModelerPostgresql.auth.existingSecret":            "camunda-platform-test-postgresql-web-modeler",
+				"global.identity.auth.connectors.existingSecret.name": "foo",
+				"global.identity.auth.core.existingSecret.name":       "foo",
 			},
 			IgnoredLines: []string{
 				`\s+pusher-app-key:\s+.*`,    // Auto-generated and need to be ignored.
