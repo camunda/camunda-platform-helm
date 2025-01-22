@@ -1,0 +1,52 @@
+{
+  "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart 8.6",
+  "skip-github-release": true,
+  "separate-pull-requests": false,
+  "bump-minor-pre-major": false,
+  "prerelease": false,
+  "draft": false,
+  "bootstrap-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
+  "last-release-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
+  "label": "autorelease: pending-8.6",
+  "packages": {
+    "charts/camunda-platform-8.6": {
+      "release-type": "helm",
+      "extra-label": "version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform-8.6",
+      "include-v-in-tag": false
+    }
+  },
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "Features",
+      "hidden": false
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes",
+      "hidden": false
+    },
+    {
+      "type": "chore",
+      "section": "Miscellaneous",
+      "hidden": true
+    },
+    {
+      "type": "docs",
+      "section": "Documentation",
+      "hidden": false
+    },
+    {
+      "type": "deps",
+      "section": "Dependencies",
+      "hidden": true
+    },
+    {
+      "type": "refactor",
+      "section": "Refactors",
+      "hidden": false
+    }
+  ],
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}

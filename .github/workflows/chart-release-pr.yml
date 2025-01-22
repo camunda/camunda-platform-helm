@@ -3,15 +3,15 @@ name: "Chart - Release - PR"
 on:
   push:
     branches:
-      - main
+      - distro-378-aa-refactor-release-workflow
 
 permissions:
   contents: write
   pull-requests: write
 
 env:
-  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
-  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
+  RELEASE_PLEASE_CONFIG_FILE: charts/camunda-platform-8.6/.release/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: charts/camunda-platform-8.6/.release/.release-please-manifest.json
 
 jobs:
   release-please:
@@ -24,6 +24,10 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          ref: distro-378-aa-refactor-release-workflow
       - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
@@ -31,3 +35,4 @@ jobs:
           config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
           manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
           # target-branch: "release-candidate"
+          target-branch: ${{ github.ref_name }}
