@@ -10,7 +10,7 @@
   "packages": {
     "charts/camunda-platform-8.6": {
       "release-type": "helm",
-      "extra-label": "autorelease: pending-8.6,version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "extra-label": "version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false
     }

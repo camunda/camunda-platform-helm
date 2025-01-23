@@ -22,8 +22,10 @@ permissions:
   pull-requests: write
 
 env:
-  RELEASE_PLEASE_CONFIG_FILE: charts/camunda-platform-${{ inputs.camunda-version || 'alpha' }}/.release/release-please-config.json
-  RELEASE_PLEASE_MANIFEST_FILE: charts/camunda-platform-${{ inputs.camunda-version || 'alpha' }}/.release/.release-please-manifest.json
+  # RELEASE_PLEASE_CONFIG_FILE: charts/camunda-platform-${{ inputs.camunda-version || 'alpha' }}/.release/release-please-config.json
+  # RELEASE_PLEASE_MANIFEST_FILE: charts/camunda-platform-${{ inputs.camunda-version || 'alpha' }}/.release/.release-please-manifest.json
+  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
 
 jobs:
   # A workaround as release-please cannot find the correct tag name!
