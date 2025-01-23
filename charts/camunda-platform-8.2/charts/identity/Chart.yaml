@@ -1,7 +1,7 @@
 apiVersion: v2
 description: Identity Helm Chart for Kubernetes
 name: identity
-version: 8.2.34
+version: 8.3.0
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
 dependencies:
