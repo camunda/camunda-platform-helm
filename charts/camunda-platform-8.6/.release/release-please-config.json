@@ -5,14 +5,12 @@
   "bump-minor-pre-major": false,
   "prerelease": false,
   "draft": false,
-  "bootstrap-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
-  "last-release-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
-  "label": "autorelease: pending-8.6",
   "packages": {
     "charts/camunda-platform-8.6": {
       "release-type": "helm",
+      "label": "autorelease: pending-8.6",
       "extra-label": "version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform-8.6",
+      "component": "camunda-platform",
       "include-v-in-tag": false
     }
   },

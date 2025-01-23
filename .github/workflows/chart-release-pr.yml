@@ -27,12 +27,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
-          ref: distro-378-aa-refactor-release-workflow
-      - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
-        with:
-          token: '${{ steps.generate-github-token.outputs.token }}'
-          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
-          config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
-          manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
-          # target-branch: "release-candidate"
-          target-branch: ${{ github.ref_name }}
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+          fetch-tags: true
+      - name: Install dependencies
+        run: |
+          npm i release-please@16.12.0 -g
+      # - name: Set bootstrap sha
+      #   run: |
+      #     last_release_commit="bddfa98ced4aead3212b2a22e872fd0406da4590"
+      #     jq --arg last_release_commit "${last_release_commit}" \
+      #       '(."last-release-sha", ."bootstrap-sha") = $last_release_commit' | tee "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
+      #     git config --global user.email "you@example.com"
+      #     git config --global user.name "Your Name"
+      #     git add :/
+      #     git commit -m "wip"
+      - name: List tags
+        run: |
+          git tag
+      - name: Run Release-Please
+        run: |
+          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/cli.md
+          release-please release-pr \
+            --token="${{ steps.generate-github-token.outputs.token }}" \
+            --repo-url="${{ github.repository }}" \
+            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
+            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
+            --target-branch="distro-378-aa-refactor-release-workflow" \
+            --latest-tag-name="camunda-platform-11.1.1"
+
+      # \
+      # --latest-tag-version="11.1.0"
