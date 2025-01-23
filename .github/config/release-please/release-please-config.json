@@ -1,32 +1,33 @@
 {
-  "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart",
   "skip-github-release": true,
-  "separate-pull-requests": false,
+  "separate-pull-requests": true,
   "bump-minor-pre-major": false,
-  "prerelease": false,
   "draft": false,
-  "bootstrap-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
-  "last-release-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
   "packages": {
     "charts/camunda-platform-alpha": {
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda Alpha",
       "release-type": "helm",
-      "extra-label": "version/alpha,version/8.7,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "versioning": "prerelease",
+      "extra-label": "version/8.7,version/alpha,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-alpha",
       "include-v-in-tag": false
     },
     "charts/camunda-platform-8.6": {
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.6",
       "release-type": "helm",
       "extra-label": "version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-8.6",
       "include-v-in-tag": false
     },
     "charts/camunda-platform-8.5": {
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.5",
       "release-type": "helm",
       "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-8.5",
       "include-v-in-tag": false
     },
     "charts/camunda-platform-8.4": {
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.4",
       "release-type": "helm",
       "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-8.4",
@@ -40,6 +41,7 @@
       ]
     },
     "charts/camunda-platform-8.3": {
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.3",
       "release-type": "helm",
       "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-8.3",
@@ -48,44 +50,6 @@
         {
           "type": "yaml",
           "path": "charts/identity/Chart.yaml",
-          "jsonpath": "$.version"
-        }
-      ]
-    },
-    "charts/camunda-platform-8.2": {
-      "release-type": "helm",
-      "extra-label": "version/8.2,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform-8.2",
-      "include-v-in-tag": false,
-      "extra-files": [
-        {
-          "type": "yaml",
-          "path": "charts/identity/Chart.yaml",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "yaml",
-          "path": "charts/operate/Chart.yaml",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "yaml",
-          "path": "charts/optimize/Chart.yaml",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "yaml",
-          "path": "charts/tasklist/Chart.yaml",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "yaml",
-          "path": "charts/zeebe/Chart.yaml",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "yaml",
-          "path": "charts/zeebe-gateway/Chart.yaml",
           "jsonpath": "$.version"
         }
       ]
