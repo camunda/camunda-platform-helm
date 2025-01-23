@@ -1,7 +1,7 @@
 {
   "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart",
   "skip-github-release": true,
-  "separate-pull-requests": false,
+  "separate-pull-requests": true,
   "bump-minor-pre-major": false,
   "prerelease": false,
   "draft": false,
