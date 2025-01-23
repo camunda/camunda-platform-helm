@@ -4,18 +4,33 @@ on:
   push:
     branches:
       - distro-378-aa-refactor-release-workflow
+  workflow_dispatch:
+    inputs:
+      camunda-version:
+        description: Camunda version in form of x.y or alpha.
+        required: true
+        type: choice
+        options:
+          - 8.3
+          - 8.4
+          - 8.5
+          - 8.6
+          - alpha
 
 permissions:
   contents: write
   pull-requests: write
 
 env:
-  RELEASE_PLEASE_CONFIG_FILE: charts/camunda-platform-8.6/.release/release-please-config.json
-  RELEASE_PLEASE_MANIFEST_FILE: charts/camunda-platform-8.6/.release/.release-please-manifest.json
+  RELEASE_PLEASE_CONFIG_FILE: charts/camunda-platform-${{ inputs.camunda-version }}/.release/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: charts/camunda-platform-${{ inputs.camunda-version }}/.release/.release-please-manifest.json
 
 jobs:
-  release-please:
-    name: Run Release Please
+  # A workaround as release-please cannot find the correct tag name!
+  # - https://github.com/googleapis/release-please/issues/2202
+  # - https://github.com/googleapis/release-please/issues/2267
+  update-config:
+    name: Update Release Please config
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub token
@@ -29,32 +44,51 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.ref_name }}
-          fetch-tags: true
-      - name: Install dependencies
+          token: ${{ steps.generate-github-token.outputs.token }}
+      - name: Configure Git
         run: |
-          npm i release-please@16.12.0 -g
-      # - name: Set bootstrap sha
-      #   run: |
-      #     last_release_commit="bddfa98ced4aead3212b2a22e872fd0406da4590"
-      #     jq --arg last_release_commit "${last_release_commit}" \
-      #       '(."last-release-sha", ."bootstrap-sha") = $last_release_commit' | tee "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
-      #     git config --global user.email "you@example.com"
-      #     git config --global user.name "Your Name"
-      #     git add :/
-      #     git commit -m "wip"
-      - name: List tags
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Get latest release commit
+        id: release-please-commit
         run: |
-          git tag
-      - name: Run Release-Please
+          rp_git_hash="$(git log -n1 --pretty=format:'%H' --grep='chore(release): Camunda Platform Helm Chart')"
+          rp_config_hash="$(jq -r '."bootstrap-sha"' ${RELEASE_PLEASE_CONFIG_FILE})"
+          test "${rp_git_hash}" == "${rp_config_hash}" \
+            && echo "stale=false" | tee -a $GITHUB_OUTPUT \
+            || echo "stale=true" | tee -a $GITHUB_OUTPUT
+          echo "hash=${rp_git_hash}" | tee -a $GITHUB_OUTPUT
+      - name: Update release-please config
+        if: steps.release-please-commit.outputs.stale == 'true'
         run: |
-          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/cli.md
-          release-please release-pr \
-            --token="${{ steps.generate-github-token.outputs.token }}" \
-            --repo-url="${{ github.repository }}" \
-            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
-            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
-            --target-branch="distro-378-aa-refactor-release-workflow" \
-            --latest-tag-name="camunda-platform-11.1.1"
+          cat "${RELEASE_PLEASE_CONFIG_FILE}"  |
+            jq --arg last_release_commit "${{ steps.release-please-commit.outputs.hash }}" \
+              '(."last-release-sha", ."bootstrap-sha") = $last_release_commit' | tee "${RELEASE_PLEASE_CONFIG_FILE}"
+      - name: Git pull
+        if: steps.release-please-commit.outputs.stale == 'true'
+        run: git pull --rebase --autostash .
+      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        if: steps.release-please-commit.outputs.stale == 'true'
+        with:
+          author_name: "distro-ci[bot]"
+          author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
+          message: "chore(release): update release-please config [skip ci]"
 
-      # \
-      # --latest-tag-version="11.1.0"
+  release-please:
+    needs: ["update-config"]
+    name: Run Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
+        with:
+          token: '${{ steps.generate-github-token.outputs.token }}'
+          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
+          config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
+          manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
+          target-branch: "${{ github.ref_name }}"
