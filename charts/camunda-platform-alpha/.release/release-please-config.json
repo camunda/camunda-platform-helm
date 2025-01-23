@@ -1,16 +1,16 @@
 {
-  "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart 8.6",
+  "group-pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart Alpha",
   "skip-github-release": true,
   "separate-pull-requests": false,
   "bump-minor-pre-major": false,
-  "prerelease": false,
+  "prerelease": true,
   "draft": false,
   "bootstrap-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
   "last-release-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
   "packages": {
-    "charts/camunda-platform-8.6": {
+    "charts/camunda-platform-alpha": {
       "release-type": "helm",
-      "extra-label": "autorelease: pending-8.6,version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "extra-label": "autorelease: pending-alpha,version/alpha,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform",
       "include-v-in-tag": false
     }

@@ -22,8 +22,8 @@ permissions:
   pull-requests: write
 
 env:
-  RELEASE_PLEASE_CONFIG_FILE: charts/camunda-platform-${{ inputs.camunda-version }}/.release/release-please-config.json
-  RELEASE_PLEASE_MANIFEST_FILE: charts/camunda-platform-${{ inputs.camunda-version }}/.release/.release-please-manifest.json
+  RELEASE_PLEASE_CONFIG_FILE: charts/camunda-platform-${{ inputs.camunda-version || 'alpha' }}/.release/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: charts/camunda-platform-${{ inputs.camunda-version || 'alpha' }}/.release/.release-please-manifest.json
 
 jobs:
   # A workaround as release-please cannot find the correct tag name!
@@ -85,10 +85,23 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-      - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
-        with:
-          token: '${{ steps.generate-github-token.outputs.token }}'
-          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
-          config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
-          manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
-          target-branch: "${{ github.ref_name }}"
+      # - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
+      #   with:
+      #     token: '${{ steps.generate-github-token.outputs.token }}'
+      #     # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
+      #     config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
+      #     manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
+      #     target-branch: "${{ github.ref_name }}"
+      #     label: "autorelease: pending-${{ inputs.camunda-version || 'alpha' }}"
+      - name: Install Release-Please
+        run: |
+          npm i release-please@16.12.0 -g
+      - name: Run Release-Please
+        run: |
+          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/cli.md
+          release-please release-pr \
+            --token="${{ steps.generate-github-token.outputs.token }}" \
+            --repo-url="${{ github.repository }}" \
+            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
+            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
+            --target-branch="${{ github.ref_name }}"

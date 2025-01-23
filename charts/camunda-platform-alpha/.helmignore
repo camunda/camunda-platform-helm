@@ -33,3 +33,6 @@ values/
 # Go.
 go.mod
 go.sum
+
+# Release workflow.
+.release
