@@ -3,7 +3,7 @@ name: "Chart - Release - Chores"
 on:
   pull_request:
     branches:
-      - main
+      - release-candidate
     paths:
       - .github/workflows/chart-release-chores.yml
       - .github/config/release-please/release-please-config.json
@@ -19,7 +19,7 @@ env:
 
 jobs:
   chores:
-    if: github.head_ref == 'release-please--branches--main'
+    if: ${{ contains(github.head_ref, 'release-please--branches--') }}
     name: Generate release files
     runs-on: ubuntu-latest
     steps:
