@@ -54,7 +54,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.16.3"
+  camunda.io/helmCLIVersion: "3.17.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -65,8 +65,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Adding TLS support to console"
-    - kind: added
-      description: "Add core unified prefix for Elasticsearch/OpenSearch"
+      description: "Configure web-modeler restapi JWK Set URI"
     - kind: fixed
-      description: "Add default webModler url when ingress is disabled"
+      description: "Added support for optimize env vars for migration initcontainer"
+    - kind: fixed
+      description: "Apply password key from subchart"
