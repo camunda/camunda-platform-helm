@@ -22,6 +22,7 @@ jobs:
             style
             build
             ci
+            cd
             chore
             chore(deps)
             chore(release)
