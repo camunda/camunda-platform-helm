@@ -402,9 +402,9 @@ global:
       ## @param global.documentStore.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials
       existingSecret: ""
       ## @param global.documentStore.aws.accessKeyIdKey Key within the existing secret for AWS_ACCESS_KEY_ID
-      accessKeyIdKey: "awsAccessKeyId"
+      accessKeyIdKey: ""
       ## @param global.documentStore.aws.secretAccessKeyKey Key within the existing secret for AWS_SECRET_ACCESS_KEY
-      secretAccessKeyKey: "awsSecretAccessKey"
+      secretAccessKeyKey: ""
 
     ## @param global.documentStore.gcp.enabled Enable GCP document store configuration
     gcp:
@@ -416,7 +416,7 @@ global:
       ## @param global.documentStore.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials
       existingSecret: ""
       ## @param global.documentStore.gcp.credentialsKey Key in the existing secret that contains the GCP service-account JSON
-      credentialsKey: "service-account.json"
+      credentialsKey: ""
 
     ## @param global.documentStore.inmemory.enabled Enable in-memory document store configuration
     inmemory:
