@@ -9,6 +9,7 @@ on:
       camunda-version:
         type: choice
         description: Camunda version in form of x.y, alpha, or alpha-8.8.
+        default: ""
         options:
           - "8.3"
           - "8.4"
