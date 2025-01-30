@@ -11,6 +11,7 @@ on:
         description: Camunda version in form of x.y, alpha, or alpha-8.8.
         default: ""
         options:
+          - "skip"
           - "8.3"
           - "8.4"
           - "8.5"
@@ -43,7 +44,7 @@ jobs:
 
   release:
     name: Release
-    if: inputs.camunda-version
+    if: inputs.camunda-version != 'skip'
     uses: ./.github/workflows/chart-release-template.yaml
     with:
       branch: release-candidate
