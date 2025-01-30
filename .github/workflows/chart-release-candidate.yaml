@@ -1,53 +1,58 @@
 name: "Chart - Release - Candidate"
 
 on:
-  push:
-    branches:
-      - release-candidate
+  workflow_dispatch:
+    inputs:
+      update-branch:
+        type: boolean
+        default: false
+      camunda-version:
+        type: choice
+        description: Camunda version in form of x.y, alpha, or alpha-8.8.
+        options:
+          - "8.3"
+          - "8.4"
+          - "8.5"
+          - "8.6"
+          - "alpha"
+          - "alpha-8.8"
 
 jobs:
+  reset:
+    name: Reset Branch
+    if: inputs.update-branch
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          ref: main
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Update RC branch from main
+        run: |
+          git checkout -b release-candidate
+          git push --force --set-upstream origin release-candidate
+
   release:
-    name: Release Candidate
+    name: Release
+    if: inputs.camunda-version
     uses: ./.github/workflows/chart-release-template.yaml
     with:
-      branch: ${{ github.ref_name }}
+      branch: release-candidate
       workflow-ref: chart-release-template.yaml
       chart-matrix: |
         [
           {
-            "name": "Helm Chart 8.2",
-            "directory": "charts/camunda-platform-8.2",
-            "versionSuffix": "rc-8.2",
-            "override": false
-          },
-          {
-            "name": "Helm Chart 8.3",
-            "directory": "charts/camunda-platform-8.3",
-            "versionSuffix": "rc-8.3",
-            "override": false
-          },
-          {
-            "name": "Helm Chart 8.4",
-            "directory": "charts/camunda-platform-8.4",
-            "versionSuffix": "rc-8.4",
-            "override": false
-          },
-          {
-            "name": "Helm Chart 8.5",
-            "directory": "charts/camunda-platform-8.5",
-            "versionSuffix": "rc-8.5",
-            "override": false
-          },
-          {
-            "name": "Helm Chart 8.6",
-            "directory": "charts/camunda-platform-8.6",
-            "versionSuffix": "rc-8.6",
-            "override": false
-          },
-          {
-            "name": "Helm Chart Alpha",
-            "directory": "charts/camunda-platform-alpha",
-            "versionSuffix": "rc-alpha",
-            "override": false
+            "name": "Helm Chart ${{ inputs.camunda-version }}",
+            "directory": "charts/camunda-platform-${{ inputs.camunda-version }}",
+            "versionSuffix": "rc-${{ inputs.camunda-version }}",
+            "override": true
           }
         ]

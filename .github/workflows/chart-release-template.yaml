@@ -143,7 +143,7 @@ jobs:
         run: |
           cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
             --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
-            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/${{ inputs.workflow-ref }}@refs/heads/${{ inputs.branch }}" \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-release-template.yaml@${{ github.ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Login to GitHub Container Registry
         if: env.PUBLISH_ARTIFACT == 'true'
