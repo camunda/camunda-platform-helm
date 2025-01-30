@@ -1,0 +1,49 @@
+---
+name: shared-infra-resources-poc
+
+on:
+    push:
+        branches:
+            - shared-infra-resources-poc
+
+permissions:
+    contents: read
+    id-token: write
+
+env:
+    NAMESPACE_PREFIX: distro-
+    CLUSTER_NAME: camunda-ci-eks
+    LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true
+
+jobs:
+    teleport-setup:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Teleport
+              uses: teleport-actions/setup@v1
+              with:
+                  version: 16.4.11
+
+            - name: Authenticate with Teleport
+              uses: teleport-actions/auth-k8s@v2
+              with:
+                  proxy: camunda.teleport.sh:443
+                  token: PLACEHOLDER #e.g. infra-ci-prod-github-action-infraex
+                  kubernetes-cluster: camunda-ci-eks
+
+            - name: Create namespace
+              id: create-namespace
+              run: |
+                  RANDOM_ID=$(openssl rand -hex 3)
+                  NAMESPACE="${{ env.NAMESPACE_PREFIX }}${RANDOM_ID}"
+                  kubectl create namespace $NAMESPACE
+                  kubectl label namespace $NAMESPACE ${{ env.LABELS }} --overwrite=true
+                  echo "::set-output name=namespace::$NAMESPACE"
+
+            - name: Delete namespace
+              run: |
+                  kubectl delete namespace ${{ steps.create-namespaces.outputs.namespace }}
