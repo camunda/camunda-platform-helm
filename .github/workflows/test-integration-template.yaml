@@ -116,6 +116,10 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  AWS_PROFILE: distribution
+  NAMESPACE_PREFIX: distribution-
+  CLUSTER_NAME: camunda-ci-eks
+  LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
 
 jobs:
   init:
