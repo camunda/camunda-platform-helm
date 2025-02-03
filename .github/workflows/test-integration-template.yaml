@@ -119,7 +119,7 @@ env:
   AWS_PROFILE: distribution
   NAMESPACE_PREFIX: distribution-
   CLUSTER_NAME: camunda-ci-eks
-  LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
 
 jobs:
   init:
