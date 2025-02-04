@@ -43,13 +43,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.3
   image:
     repository: camunda/zeebe
-    tag: 8.3.19
+    tag: 8.3.20
 
 zeebe-gateway:
   # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.3
   image:
     repository: camunda/zeebe
-    tag: 8.3.19
+    tag: 8.3.20
 
 #
 # Identity
@@ -59,7 +59,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags?page=&page_size=&ordering=&name=8.3
   image:
     repository: camunda/identity
-    tag: 8.3.18
+    tag: 8.3.19
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
