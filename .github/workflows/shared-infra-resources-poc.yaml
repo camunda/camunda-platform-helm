@@ -11,8 +11,9 @@ permissions:
     id-token: write
 
 env:
-    NAMESPACE_PREFIX: distro-
+    NAMESPACE_PREFIX: distribution-
     CLUSTER_NAME: camunda-ci-eks
+    TOKEN: infra-ci-prod-github-action-distribution
     LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true
 
 jobs:
@@ -26,24 +27,28 @@ jobs:
             - name: Set up Teleport
               uses: teleport-actions/setup@v1
               with:
-                  version: 16.4.11
+                  version: 17.2.2
 
             - name: Authenticate with Teleport
               uses: teleport-actions/auth-k8s@v2
               with:
                   proxy: camunda.teleport.sh:443
-                  token: PLACEHOLDER #e.g. infra-ci-prod-github-action-infraex
-                  kubernetes-cluster: camunda-ci-eks
+                  token: ${{ env.TOKEN }}
+                  kubernetes-cluster: ${{ env.CLUSTER_NAME }}
 
             - name: Create namespace
               id: create-namespace
               run: |
-                  RANDOM_ID=$(openssl rand -hex 3)
-                  NAMESPACE="${{ env.NAMESPACE_PREFIX }}${RANDOM_ID}"
-                  kubectl create namespace $NAMESPACE
-                  kubectl label namespace $NAMESPACE ${{ env.LABELS }} --overwrite=true
-                  echo "::set-output name=namespace::$NAMESPACE"
+                RANDOM_ID=$(openssl rand -hex 3)
+                NAMESPACE="${{ env.NAMESPACE_PREFIX }}${RANDOM_ID}"
+                kubectl create namespace $NAMESPACE
+                kubectl get namespaces
+                kubectl label namespace $NAMESPACE ${{ env.LABELS }} --overwrite=true
+             
+            
+                echo "::set-output name=namespace::$NAMESPACE"
 
             - name: Delete namespace
+              if: always()
               run: |
-                  kubectl delete namespace ${{ steps.create-namespaces.outputs.namespace }}
+                  kubectl delete namespace ${{ steps.create-namespace.outputs.namespace }} || true
