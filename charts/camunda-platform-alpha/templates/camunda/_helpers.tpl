@@ -364,10 +364,10 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
   {{- if (index .context.Values .component "enabled") -}}
     {{- if (index .context.Values .component "ingress" "enabled") }}
       {{- $proto := ternary "https" "http" (index .context.Values .component "ingress" "tls" "enabled") -}}
-      {{- printf "%s://%s" $proto (index .context.Values .component "ingress" "host") -}} 
+      {{- printf "%s://%s" $proto (index .context.Values .component "ingress" "host") -}}
     {{- else if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values .component "contextPath") -}} 
+      {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values .component "contextPath") -}}
     {{- else -}}
       {{- $portMapping := (dict
       "operate" "8081"
@@ -380,7 +380,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
       "connectors" "8086"
       "zeebeGateway" "26500"
       ) -}}
-      {{- printf "http://localhost:%s" (get $portMapping .component) -}} 
+      {{- printf "http://localhost:%s" (get $portMapping .component) -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
@@ -411,6 +411,17 @@ Optimize templates.
 Tasklist templates.
 ********************************************************************************
 */}}
+
+{{/*
+[camunda-platform] Tasklist internal URL.
+*/}}
+{{ define "camundaPlatform.tasklistURL" }}
+  {{- if .Values.tasklist.enabled -}}
+    {{- print "http://" -}}{{- include "tasklist.fullname" . -}}:{{- .Values.tasklist.service.port -}}
+    {{- .Values.tasklist.contextPath -}}
+  {{- end -}}
+{{- end -}}
+
 {{/*
 [camunda-platform] Tasklist external URL.
 */}}
@@ -433,13 +444,13 @@ Web Modeler templates.
     {{- $ingress := .context.Values.webModeler.ingress }}
     {{- if index $ingress "enabled" }}
       {{- $proto := ternary "https" "http" (index $ingress .component "tls" "enabled") -}}
-      {{- printf "%s://%s" $proto (index $ingress .component "host") -}} 
+      {{- printf "%s://%s" $proto (index $ingress .component "host") -}}
     {{- else if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- if eq .component "websockets" }}
-        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (include "webModeler.websocketContextPath" .context) -}} 
+        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
-        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values.webModeler "contextPath") -}} 
+        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values.webModeler "contextPath") -}}
       {{- end -}}
     {{- else -}}
       {{- if eq .component "websockets" -}}
@@ -524,7 +535,7 @@ Zeebe templates.
     {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.zeebeGateway.contextPath -}}
   {{- else if .Values.zeebeGateway.ingress.rest.enabled -}}
     {{ $proto := ternary "https" "http" .Values.zeebeGateway.ingress.rest.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto .Values.zeebeGateway.ingress.rest.host .Values.zeebeGateway.contextPath -}} 
+    {{- printf "%s://%s%s" $proto .Values.zeebeGateway.ingress.rest.host .Values.zeebeGateway.contextPath -}}
   {{- else -}}
     {{- printf "http://localhost:8088" -}}
   {{- end -}}
@@ -545,7 +556,7 @@ Zeebe templates.
   {{- if .Values.zeebe.enabled -}}
     {{-
       printf "http://%s:%v%s"
-        (include "zeebe.fullname.gateway" .)
+        (include "zeebe.names.gateway" .)
         .Values.zeebeGateway.service.restPort
         (.Values.zeebeGateway.contextPath | default "")
     -}}
