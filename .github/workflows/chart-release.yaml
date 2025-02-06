@@ -35,6 +35,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Install env dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Remove Dev Comments
@@ -73,7 +74,7 @@ jobs:
           make helm.repos-add
       - name: Update Helm dependency
         run: |
-          chartPath="$(ct list-changed | tr '\n' ' ')" \
+          chartPath="$(echo "charts/camunda-platform-8.4" | tr '\n' ' ')" \
             make helm.dependency-update
       - name: cosign-installer
         uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
@@ -132,7 +133,7 @@ jobs:
       - name: Set Helm chart vars
         run: |
           CHART_PACKAGES=""
-          for chart_dir in $(ct list-changed | tr '\n' ' '); do
+          for chart_dir in $(echo "charts/camunda-platform-8.4" | tr '\n' ' '); do
             chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
             CHART_PACKAGES="${CHART_PACKAGES} camunda-platform-${chart_version}.tgz"
           done
