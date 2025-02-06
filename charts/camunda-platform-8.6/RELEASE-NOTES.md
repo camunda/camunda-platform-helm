@@ -1,6 +1,6 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-11.2.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-11.2.0) (2025-02-05)
+## [camunda-platform-11.2.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-11.2.0) (2025-02-06)
 
 ### Features
 
@@ -49,5 +49,5 @@ To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.d
 cosign verify-blob camunda-platform-11.2.0.tgz \
   --bundle camunda-platform-11.2.0.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2825/merge"
+  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2826/merge"
 ```
