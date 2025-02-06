@@ -12,8 +12,12 @@ If release name contains chart name it will be used as a full name.
   {{ fail "Not supported inbound mode" }}
 {{- end -}}
 
-{{ define "connectors.zeebeEndpoint" }}
+{{ define "connectors.zeebeGrpcEndpoint" }}
   {{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- .Values.zeebeGateway.service.grpcPort -}}
+{{- end -}}
+
+{{ define "connectors.zeebeRestEndpoint" }}
+  {{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- .Values.zeebeGateway.service.restPort -}}
 {{- end -}}
 
 {{- define "connectors.fullname" -}}
