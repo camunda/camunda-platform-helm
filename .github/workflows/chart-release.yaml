@@ -98,7 +98,7 @@ jobs:
       - name: Pre-Release - Previous versions
         run: |
           rm -rf ${LATEST_CHART_VERSION_DIR}
-          rm -rf charts/camunda-platform-alpha
+          rm -rf charts/camunda-platform-alpha*
       - name: Run Chart Releaser - Previous versions
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
         with:
@@ -115,7 +115,7 @@ jobs:
       - name: Pre-Release - Latest version
         run: |
           rm -rf $(ls -d1 charts/camunda-platform-8* | head -n -1)
-          rm -rf charts/camunda-platform-alpha
+          rm -rf charts/camunda-platform-alpha*
       - name: Run Chart Releaser - Latest version
         uses: helm/chart-releaser-action@a917fd15b20e8b64b94d9158ad54cd6345335584 # v1.6.0
         with:
