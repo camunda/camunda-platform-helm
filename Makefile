@@ -174,6 +174,14 @@ helm.schema-update:
 			--schema "$${chart_dir}/values.schema.json";\
 	done
 
+# helm.get-images: list all images in the chart.
+.PHONY: helm.get-images
+helm.get-images:
+	export CHART_SOURCE="$(chartSource)"; \
+	export CHART_VERSION="$(chartVersion)"; \
+	export CHART_VALUES_DIR="$(chartPath)/"; \
+	bash -x scripts/list-chart-images.sh;
+
 #########################################################
 ######### Release
 #########################################################
@@ -224,6 +232,14 @@ release.generate-version-matrix-released:
 release.generate-version-matrix-unreleased:
 	@bash scripts/generate-version-matrix.sh --init
 	@bash scripts/generate-version-matrix.sh --unreleased
+
+.PHONY: release.generate-version-matrix-camunda-images
+release.generate-version-matrix-camunda-images:
+	@bash scripts/generate-version-matrix.sh --chart-images-camunda $(chart_dir) $(chart_version)
+
+.PHONY: release.generate-version-matrix-non-camunda-images
+release.generate-version-matrix-non-camunda-images:
+	@bash scripts/generate-version-matrix.sh --chart-images-non-camunda $(chart_dir) $(chart_version)
 
 .PHONY: release.set-prs-version-label
 release.set-prs-version-label:
