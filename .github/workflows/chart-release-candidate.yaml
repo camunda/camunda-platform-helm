@@ -55,7 +55,7 @@ jobs:
     if: inputs.camunda-version != 'skip'
     uses: ./.github/workflows/chart-release-template.yaml
     with:
-      branch: aa-enhance-rc-workflow
+      branch: release-candidate
       workflow-ref: chart-release-template.yaml
       chart-matrix: |
         [

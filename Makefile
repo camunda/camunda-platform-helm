@@ -233,14 +233,6 @@ release.generate-version-matrix-unreleased:
 	@bash scripts/generate-version-matrix.sh --init
 	@bash scripts/generate-version-matrix.sh --unreleased
 
-.PHONY: release.generate-version-matrix-camunda-images
-release.generate-version-matrix-camunda-images:
-	@bash scripts/generate-version-matrix.sh --chart-images-camunda $(chart_dir) $(chart_version)
-
-.PHONY: release.generate-version-matrix-non-camunda-images
-release.generate-version-matrix-non-camunda-images:
-	@bash scripts/generate-version-matrix.sh --chart-images-non-camunda $(chart_dir) $(chart_version)
-
 .PHONY: release.set-prs-version-label
 release.set-prs-version-label:
 	@bash scripts/set-prs-version-label.sh

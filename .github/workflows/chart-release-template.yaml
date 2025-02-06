@@ -167,12 +167,13 @@ jobs:
             - Repository: oci://ghcr.io/${{ env.REPOSITORY_NAME }}
             - Name: ${{ env.CHART_NAME }}
             - Version: ${{ env.CHART_VERSION }}
-            - Install:
-              \`\`\`
-              helm install my-camunda-devel \\
-                oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
-                --version ${{ env.CHART_VERSION }}
-              \`\`\`
+
+          Install:
+          \`\`\`
+          helm install my-camunda-devel \\
+            oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
+            --version ${{ env.CHART_VERSION }}
+          \`\`\`
 
           ## Chart Images:
 
