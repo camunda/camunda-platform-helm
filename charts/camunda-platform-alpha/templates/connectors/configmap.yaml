@@ -51,13 +51,6 @@ data:
         profile: "simple"
         {{- end }}
     {{- end }}
-
-    zeebe:
-      client:
-        broker:
-          gateway-address: {{ include "connectors.zeebeEndpoint" . | quote }}
-        security:
-          plaintext: true
   {{- end }}
 
 {{- range $key, $val := .Values.connectors.extraConfiguration }}
