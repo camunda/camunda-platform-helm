@@ -5,7 +5,7 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 Supported versions:
 
 - Camunda applications: [8.3](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.3&expanded=true)
-- Helm values: [8.3.24](https://artifacthub.io/packages/helm/camunda/camunda-platform/8.3.24#parameters)
+- Helm values: [8.3.25](https://artifacthub.io/packages/helm/camunda/camunda-platform/8.3.25#parameters)
 - Helm CLI: [3.17.0](https://github.com/helm/helm/releases/tag/v3.17.0)
 
 Camunda images:
@@ -33,8 +33,8 @@ Non-Camunda images:
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-8.3.24.tgz \
-  --bundle camunda-platform-8.3.24.cosign.bundle \
+cosign verify-blob camunda-platform-8.3.25.tgz \
+  --bundle camunda-platform-8.3.25.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2863/merge"
+  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/2865/merge"
 ```
