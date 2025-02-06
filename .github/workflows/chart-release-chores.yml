@@ -69,13 +69,7 @@ jobs:
           GH_TOKEN: '${{ steps.generate-github-token.outputs.token }}'
         run: |
           git fetch origin main:main
-
-          # Update PR title with changed versions.
-          versions="$(git log -p main..HEAD -- ${RELEASE_PLEASE_MANIFEST} |
-                awk -F ": " '/^+ /{gsub(/[",]/,""); printf "%s%s",sep,$2; sep=", "} END{print ""}')"
           pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
-          gh pr edit "${pr_nubmer}" --title "chore(release): Camunda Platform Helm Chart ${versions}"
-
           # Set PR project.
           gh pr edit "${pr_nubmer}" --add-project "Distribution Team"
       # We use git-chglog to generate the release notes and release-please
