@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.4.6
+version: 9.4.7
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -58,7 +58,5 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "Renovate disable elasticsearch minor upgrades and revert elasticsearch upgrade"
-  camunda.io/helmCLIVersion: 3.16.3
+  artifacthub.io/changes: ""
+  camunda.io/helmCLIVersion: 3.17.0
