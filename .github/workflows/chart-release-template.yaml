@@ -163,19 +163,21 @@ jobs:
       - name: Add release info to workflow summary
         run: |
           cat << EOF >> $GITHUB_STEP_SUMMARY
-          ## Chart info:
-            - Repository: oci://ghcr.io/${{ env.REPOSITORY_NAME }}
-            - Name: ${{ env.CHART_NAME }}
-            - Version: ${{ env.CHART_VERSION }}
+          ## Chart info
+
+            - Repository: \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\`
+            - Name: \`${{ env.CHART_NAME }}\`
+            - Version: \`${{ env.CHART_VERSION }}\`
 
           Install:
+
           \`\`\`
           helm install my-camunda-devel \\
             oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
             --version ${{ env.CHART_VERSION }}
           \`\`\`
 
-          ## Chart Images:
+          ## Chart Images
 
           $(make -s -C ../.. helm.get-images \
               chartPath="${{ matrix.chart.directory }}" \
