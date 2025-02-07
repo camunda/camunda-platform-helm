@@ -1205,6 +1205,18 @@ webModeler:
 
     ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)
     clusters: []
+    #  - id: "default-cluster"
+    #    name: "Default cluster"
+    #    version: "8.8.0"
+    #    authentication: "OAUTH"
+    #    url:
+    #      zeebe:
+    #        grpc: "grpc://camunda-platform-core:26500"
+    #        rest: "http://camunda-platform-core:8080/v1"
+    #      operate: "http://camunda-platform-core:8080/v1"
+    #      tasklist: "http://camunda-platform-core:8080/tasklist"
+    #    oauth:
+    #      url: "http://camunda-platform-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
