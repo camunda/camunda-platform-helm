@@ -2111,7 +2111,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.7.0-alpha3-rc1"
+                            "default": "8.7.0-alpha4-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -3367,7 +3367,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.15.0-debian-12-r10"
+                            "default": "14.15.0-debian-12-r12"
                         }
                     }
                 },
