@@ -89,15 +89,7 @@ type ZeebeUrlYAML struct {
 }
 
 type OAuthYAML struct {
-	Url      string            `yaml:"url"`
-	Scope    string            `yaml:"scope"`
-	Audience OAuthAudienceYAML `yaml:"audience"`
-}
-
-type OAuthAudienceYAML struct {
-	Zeebe    string `yaml:"zeebe"`
-	Operate  string `yaml:"operate"`
-	Tasklist string `yaml:"tasklist"`
+	Url string `yaml:"url"`
 }
 
 // Web App ---

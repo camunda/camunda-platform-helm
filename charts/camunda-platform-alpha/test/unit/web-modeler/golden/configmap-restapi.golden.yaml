@@ -54,11 +54,6 @@ data:
               tasklist: "http://camunda-platform-test-tasklist:80"
             oauth:
               url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
-              audience:
-                zeebe: "zeebe-api"
-                operate: "operate-api"
-                tasklist: "tasklist-api"
-              scope: ""
 
     spring:
       datasource:

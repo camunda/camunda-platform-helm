@@ -327,10 +327,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	s.Require().Equal("http://camunda-platform-test-operate:8080/operate", configmapApplication.Camunda.Modeler.Clusters[0].Url.Operate)
 	s.Require().Equal("http://camunda-platform-test-tasklist:8080/tasklist", configmapApplication.Camunda.Modeler.Clusters[0].Url.Tasklist)
 	s.Require().Equal("https://example.com/auth/realms/test/protocol/openid-connect/token", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Url)
-	s.Require().Equal("test-zeebe-api", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Audience.Zeebe)
-	s.Require().Equal("test-operate-api", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Audience.Operate)
-	s.Require().Equal("test-tasklist-api", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Audience.Tasklist)
-	s.Require().Equal("test-scope", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Scope)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
