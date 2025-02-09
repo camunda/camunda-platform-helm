@@ -41,6 +41,20 @@ data:
 
         server:
           url: "http://localhost:8084"
+        clusters:
+          - id: "default-cluster"
+            name: "camunda-platform-test-zeebe"
+            version: "8.6.7"
+            authentication: "OAUTH"
+            url:
+              zeebe:
+                grpc: "grpc://camunda-platform-test-zeebe-gateway:26500"
+                rest: "http://camunda-platform-test-zeebe-gateway:8080"
+              operate: "http://camunda-platform-test-operate:80"
+              tasklist: "http://camunda-platform-test-tasklist:80"
+            oauth:
+              url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+
     spring:
       datasource:
         url: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"

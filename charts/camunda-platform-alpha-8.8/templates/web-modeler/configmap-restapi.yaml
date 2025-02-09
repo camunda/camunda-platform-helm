@@ -56,11 +56,6 @@ data:
               tasklist: {{ include "camundaPlatform.tasklistURL" . | quote }}
             oauth:
               url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
-              audience:
-                zeebe: {{ include "core.authAudience" . | quote }}
-                operate: {{ include "core.authAudience" . | quote }}
-                tasklist: {{ include "core.authAudience" . | quote }}
-              scope: {{ include "core.authTokenScope" . | quote }}
           {{- end }}
         {{- end }}
 
