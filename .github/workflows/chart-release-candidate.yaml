@@ -3,15 +3,10 @@ name: "Chart - Release - Candidate"
 on:
   workflow_dispatch:
     inputs:
-      update-branch:
-        type: boolean
-        default: false
       camunda-version:
         type: choice
         description: Camunda version in form of x.y, alpha, or alpha-8.8.
-        default: ""
         options:
-          - "skip"
           - "8.3"
           - "8.4"
           - "8.5"
@@ -21,8 +16,7 @@ on:
 
 jobs:
   reset:
-    name: Reset Branch
-    if: inputs.update-branch
+    name: Update Branch
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -47,15 +41,15 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Update RC branch from main
         run: |
-          git checkout -b release-candidate
-          git push --force --set-upstream origin release-candidate
+          git checkout -b release-candidate-${{ inputs.camunda-version }}
+          git push --force --set-upstream origin release-candidate-${{ inputs.camunda-version }}
 
   release:
+    needs: reset
     name: Release
-    if: inputs.camunda-version != 'skip'
     uses: ./.github/workflows/chart-release-template.yaml
     with:
-      branch: release-candidate
+      branch: release-candidate-${{ inputs.camunda-version }}
       workflow-ref: chart-release-template.yaml
       chart-matrix: |
         [

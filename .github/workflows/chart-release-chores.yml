@@ -3,7 +3,7 @@ name: "Chart - Release - Chores"
 on:
   pull_request:
     branches:
-      - release-candidate
+      - release-candidate*
     paths:
       - .github/workflows/chart-release-chores.yml
       - .github/config/release-please/release-please-config.json

@@ -174,6 +174,14 @@ helm.schema-update:
 			--schema "$${chart_dir}/values.schema.json";\
 	done
 
+# helm.get-images: list all images in the chart.
+.PHONY: helm.get-images
+helm.get-images:
+	export CHART_SOURCE="$(chartSource)"; \
+	export CHART_VERSION="$(chartVersion)"; \
+	export CHART_VALUES_DIR="$(chartPath)/"; \
+	bash -x scripts/list-chart-images.sh;
+
 #########################################################
 ######### Release
 #########################################################

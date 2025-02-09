@@ -3,7 +3,7 @@ name: "Chart - Release - PR"
 on:
   push:
     branches:
-      - release-candidate
+      - release-candidate*
 
 permissions:
   contents: write

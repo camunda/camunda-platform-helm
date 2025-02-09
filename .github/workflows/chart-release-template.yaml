@@ -160,3 +160,27 @@ jobs:
         run: |
           oras push ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }}.cosign.bundle \
             ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain
+      - name: Add release info to workflow summary
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## Chart info
+
+            - Repository: \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\`
+            - Name: \`${{ env.CHART_NAME }}\`
+            - Version: \`${{ env.CHART_VERSION }}\`
+
+          Install:
+
+          \`\`\`
+          helm install my-camunda-devel \\
+            oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
+            --version ${{ env.CHART_VERSION }}
+          \`\`\`
+
+          ## Chart Images
+
+          $(make -s -C ../.. helm.get-images \
+              chartPath="${{ matrix.chart.directory }}" \
+              chartSource="oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}" \
+              chartVersion="${{ env.CHART_VERSION }}")
+          EOF
