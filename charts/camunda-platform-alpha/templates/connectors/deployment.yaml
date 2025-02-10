@@ -45,7 +45,7 @@ spec:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
           {{- if eq .Values.connectors.inbound.mode "credentials" }}
-            - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
+            - name: OPERATE_CLIENT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "connectors.authCredentialsSecretName" . }}
@@ -53,6 +53,21 @@ spec:
           {{- end }}
           {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.connectors.inbound.mode "oauth" }}
+            - name: OPERATE_CLIENT_CLIENT_ID
+              value: {{ tpl .Values.global.identity.auth.connectors.clientId $ | quote }}
+            - name: OPERATE_CLIENT_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+              {{- end }}
+            {{- end }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
               valueFrom:
@@ -66,9 +81,9 @@ spec:
                   key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
               {{- end }}
             {{- end }}
-            - name: ZEEBE_CLIENT_ID
+            - name: CAMUNDA_CLIENT_AUTH_CLIENT_ID
               value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
-            - name: ZEEBE_CLIENT_SECRET
+            - name: CAMUNDA_CLIENT_AUTH_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -80,15 +95,14 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
                   key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
-            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+            - name: CAMUNDA_CLIENT_AUTH_ISSUER
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
-            - name: ZEEBE_TOKEN_AUDIENCE
+            - name: CAMUNDA_CLIENT_ZEEBE_AUDIENCE
               value: {{ include "zeebe.authAudience" . | quote }}
             {{- if .Values.global.identity.auth.zeebe.tokenScope }}
-            - name: ZEEBE_TOKEN_SCOPE
+            - name: CAMUNDA_CLIENT_ZEEBE_SCOPE
               value: {{ include "zeebe.authTokenScope" . | quote }}
             {{- end }}
-          {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
