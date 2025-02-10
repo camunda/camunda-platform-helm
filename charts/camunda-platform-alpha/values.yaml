@@ -2839,8 +2839,6 @@ webModeler:
     #        rest: "http://camunda-platform-zeebe-gateway:8080"
     #      operate: "http://camunda-platform-operate:80"
     #      tasklist: "http://camunda-platform-tasklist:80"
-    #    oauth:
-    #      url: "http://camunda-platform-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}

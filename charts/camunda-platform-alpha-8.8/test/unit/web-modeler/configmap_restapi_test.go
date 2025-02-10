@@ -327,7 +327,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	s.Require().Equal("OAUTH", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 	s.Require().Equal("grpc://camunda-platform-test-core:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
 	s.Require().Equal("http://camunda-platform-test-core:8090/core/v1", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
-	s.Require().Equal("https://example.com/auth/realms/test/protocol/openid-connect/token", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Url)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {

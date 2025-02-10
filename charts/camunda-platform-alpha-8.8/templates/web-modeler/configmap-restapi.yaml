@@ -54,8 +54,6 @@ data:
                 rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}/v1"
               operate: {{ include "camundaPlatform.operateURL" . | quote }}
               tasklist: {{ include "camundaPlatform.tasklistURL" . | quote }}
-            oauth:
-              url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
           {{- end }}
         {{- end }}
 
