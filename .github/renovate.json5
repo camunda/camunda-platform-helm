@@ -85,6 +85,7 @@
       ],
       "matchUpdateTypes": ["major", "minor", "patch"],
     },
+    {
       "groupName": "camunda-platform-alpha-8.8",
       "addLabels": ["version/8.8", "deps/charts"],
       "matchFileNames": [
