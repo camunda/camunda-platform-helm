@@ -42,8 +42,9 @@ get_versions_filtered () {
 # Get all images used in a certain Helm chart.
 get_chart_images () {
     chart_version="${1}"
+    MAJORMINOR="$(echo "$CHART_DIR" | sed 's/charts\/camunda-platform-//g')"
     test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-alpha"
-    QUERY_LRU="$( sqlite3 --ascii version-matrix.sqlite "SELECT output FROM lru_get_chart_images where chart_version='$chart_version';" | awk '{gsub(/\x1e/, ""); print}')"
+    QUERY_LRU="$(cat version-matrix/camunda-$MAJORMINOR/version-matrix.json | jq -r ".[] | select(.chart_version==\"$chart_version\").output" | awk '{gsub(/\x1e/, ""); print}')"
     if [[ "$QUERY_LRU" != "" ]]; then
       echo "$QUERY_LRU"
       unset QUERY_LRU
@@ -55,8 +56,9 @@ get_chart_images () {
       tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
       sort | uniq;
     )"
+    output_json="$(cat version-matrix/camunda-$MAJORMINOR/version-matrix.json | jq -r ". + [{ \"chart_version\": \"$chart_version\", output: \"$output\"}]")"
+    echo "$output_json" > version-matrix/camunda-$MAJORMINOR/version-matrix.json
     echo "$output"
-    sqlite3 version-matrix.sqlite "INSERT INTO lru_get_chart_images (chart_version, output) VALUES ('$chart_version', '$output');"
 }
 
 # Get Helm CLI version based on the asdf .tool-versions file.
