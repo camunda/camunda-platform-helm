@@ -292,15 +292,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
 	// given
 	values := map[string]string{
-		"webModelerPostgresql.enabled":         "false",
-		"global.zeebeClusterName":              "test-zeebe",
-		"global.identity.auth.core.tokenScope": "test-scope",
-		"global.identity.auth.core.audience":   "test-core-api",
-		"global.identity.auth.tokenUrl":        "https://example.com/auth/realms/test/protocol/openid-connect/token",
-		"core.image.tag":                       "8.x.x-alpha1",
-		"core.contextPath":                     "/core",
-		"core.service.grpcPort":                "26600",
-		"core.service.httpPort":                "8090",
+		"webModelerPostgresql.enabled": "false",
+		"global.zeebeClusterName":      "test-zeebe",
+		"core.image.tag":               "8.x.x-alpha1",
+		"core.contextPath":             "/core",
+		"core.service.grpcPort":        "26600",
+		"core.service.httpPort":        "8090",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -348,7 +345,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 		"webModeler.restapi.clusters[1].url.zeebe.rest": "http://core.test-2:8080",
 		"webModeler.restapi.clusters[1].url.operate":    "http://operate.test-2:8080",
 		"webModeler.restapi.clusters[1].url.tasklist":   "http://tasklist.test-2:8080",
-		"webModeler.restapi.clusters[1].oauth.url":      "http://test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token",
 		"webModelerPostgresql.enabled":                  "false",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -382,7 +378,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("OAUTH", configmapApplication.Camunda.Modeler.Clusters[1].Authentication)
 	s.Require().Equal("grpc://core.test-2:26500", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Grpc)
 	s.Require().Equal("http://core.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Rest)
-	s.Require().Equal("http://test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Modeler.Clusters[1].Oauth.Url)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
