@@ -3,6 +3,7 @@
     "config:base", "helpers:pinGitHubActionDigests",
     ":semanticCommitTypeAll(deps)",
   ],
+  "semanticCommitScope": "helm",
   "labels": ["dependencies"],
   "dependencyDashboard": true,
   "separateMinorPatch": true,
