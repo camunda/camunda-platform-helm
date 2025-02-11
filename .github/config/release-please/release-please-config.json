@@ -3,8 +3,8 @@
   "separate-pull-requests": true,
   "bump-minor-pre-major": false,
   "draft": false,
-  "bootstrap-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
-  "last-release-sha": "bddfa98ced4aead3212b2a22e872fd0406da4590",
+  "bootstrap-sha": "d856902cfb2080dc32bd7f37fc9e4576a4a78744",
+  "last-release-sha": "d856902cfb2080dc32bd7f37fc9e4576a4a78744",
   "packages": {
     "charts/camunda-platform-alpha": {
       "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda Alpha",
