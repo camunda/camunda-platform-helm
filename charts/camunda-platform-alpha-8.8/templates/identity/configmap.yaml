@@ -217,6 +217,7 @@ data:
             - Optimize
             - Web Modeler
             - Web Modeler Admin
+            - Zeebe
           {{- end }}
         {{- end }}
         {{- if .Values.identity.users }}
