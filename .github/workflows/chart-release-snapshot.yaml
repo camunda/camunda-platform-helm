@@ -29,5 +29,11 @@ jobs:
             "directory": "charts/camunda-platform-alpha",
             "versionSuffix": "snapshot-alpha",
             "override": true
+          },
+          {
+            "name": "Helm Chart rolling - Alpha 8.8",
+            "directory": "charts/camunda-platform-alpha-8.8",
+            "versionSuffix": "snapshot-alpha-8.8",
+            "override": true
           }
         ]
