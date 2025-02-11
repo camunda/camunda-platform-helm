@@ -1,6 +1,7 @@
 {
   "extends": [
-    "config:base", "helpers:pinGitHubActionDigests"
+    "config:base", "helpers:pinGitHubActionDigests",
+    ":semanticCommitTypeAll(deps)",
   ],
   "labels": ["dependencies"],
   "dependencyDashboard": true,
