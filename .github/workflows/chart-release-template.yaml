@@ -71,7 +71,7 @@ jobs:
       CHART_NAME: "camunda-platform"
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
           ref: ${{ inputs.branch }}
@@ -132,7 +132,7 @@ jobs:
       # Security signature.
       - name: Install Cosign CLI
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
+        uses: sigstore/cosign-installer@c56c2d3e59e4281cc41dea2217323ba5694b171e # v3.8.0
       - name: Sign Helm chart with Cosign
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
@@ -154,7 +154,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install ORAS CLI
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: oras-project/setup-oras@ca28077386065e263c03428f4ae0c09024817c93 # v1
+        uses: oras-project/setup-oras@5c0b487ce3fe0ce3ab0d034e63669e426e294e4d # v1
       - name: Upload Helm chart Cosign bundle
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
