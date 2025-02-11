@@ -125,6 +125,7 @@ jobs:
           aws-region: ${{ env.TEST_AWS_REGION }}
           replicas: 10
           openshift-version: "${{ matrix.distro.version }}"
+          rosa-cli-version: "1.2.49"
 
       # this token is used to clone the github repository containing the base modules
       - name: Generate GitHub token
@@ -291,6 +292,7 @@ jobs:
           s3-backend-bucket: "${{ env.TF_S3_BUCKET }}-${{ env.TEST_AWS_REGION }}"
           cluster-name: ${{ matrix.distro.clusterName }}
           aws-region: ${{ env.TEST_AWS_REGION }}
+          rosa-cli-version: "1.2.49"
 
   report:
     name: "Report failures"
