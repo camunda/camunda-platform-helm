@@ -216,6 +216,8 @@ spec:
               value: "Web Modeler Admin"
             - name: KEYCLOAK_USERS_0_ROLES_6
               value: "Console"
+            - name: KEYCLOAK_USERS_0_ROLES_7
+              value: "Zeebe"
             {{- end }}
             {{- end }}
             {{- else }}
