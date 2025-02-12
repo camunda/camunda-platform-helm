@@ -70,3 +70,4 @@ annotations:
       description: "Add core unified prefix for Elasticsearch/OpenSearch"
     - kind: fixed
       description: "Add default webModler url when ingress is disabled"
+
