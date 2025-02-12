@@ -62,3 +62,4 @@ annotations:
   artifacthub.io/changes: |
     - kind: added
       description: "Configure web-modeler restapi JWK Set URI"
+
