@@ -11,6 +11,35 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 ### Release Info
 
 
+Supported versions:
+
+- Camunda applications: [8.7](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.7&expanded=true)
+- Helm values: [12.0.0-alpha4](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.0.0-alpha4#parameters)
+- Helm CLI: [3.17.0](https://github.com/helm/helm/releases/tag/v3.17.0)
+
+Camunda images:
+
+- camunda/connectors-bundle:8.7.0-alpha4
+- camunda/console:8.7.0-alpha3
+- camunda/identity:8.7.0-alpha4
+- docker.io/camunda/keycloak:25.0.6
+- camunda/operate:8.7.0-alpha4
+- camunda/optimize:8.7.0-alpha4
+- camunda/tasklist:8.7.0-alpha4
+- camunda/web-modeler-restapi:8.7.0-alpha4
+- camunda/web-modeler-webapp:8.7.0-alpha4
+- camunda/web-modeler-websockets:8.7.0-alpha4
+- camunda/zeebe:8.7.0-alpha4
+
+docker.io/camunda/keycloak:25.0.6
+
+
+Non-Camunda images:
+
+- docker.io/bitnami/elasticsearch:8.15.4
+- docker.io/bitnami/os-shell:12-debian-12-r34
+- docker.io/bitnami/postgresql:14.15.0-debian-12-r10
+- docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
 ### Verification
 
