@@ -60,5 +60,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Configure web-modeler restapi JWK Set URI"
+    - kind: fixed
+      description: "Add new line"
