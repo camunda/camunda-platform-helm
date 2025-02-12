@@ -66,7 +66,7 @@ jobs:
           echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
       - name: Update PR info
         env:
-          GH_TOKEN: '${{ steps.generate-github-token.outputs.token }}'
+          GH_TOKEN: "${{ steps.generate-github-token.outputs.token }}"
         run: |
           git fetch origin main:main
           pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
@@ -86,14 +86,14 @@ jobs:
         run: |
           chartPath="${CHANGED_CHARTS}" \
             make helm.readme-update
-      - name: Generate release notes
-        run: |
-          chartPath="${CHANGED_CHARTS}" \
-            make release.generate-notes
-      - name: Generate release note footer
-        run: |
-          chartPath="${CHANGED_CHARTS}" \
-            make release.generate-notes-footer
+      # - name: Generate release notes
+      #   run: |
+      #     chartPath="${CHANGED_CHARTS}" \
+      #       make release.generate-notes
+      # - name: Generate release note footer
+      #   run: |
+      #     chartPath="${CHANGED_CHARTS}" \
+      #       make release.generate-notes-footer
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
