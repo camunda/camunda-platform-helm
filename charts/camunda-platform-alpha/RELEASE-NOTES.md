@@ -31,9 +31,6 @@ Camunda images:
 - docker.io/camunda/web-modeler-websockets:8.7.0-alpha4
 - docker.io/camunda/zeebe:8.7.0-alpha4
 
-docker.io/camunda/keycloak:25.0.6
-
-
 Non-Camunda images:
 
 - docker.io/bitnami/elasticsearch:8.15.4
