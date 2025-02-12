@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.0.0-alpha3
+version: 12.0.0-alpha4
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -70,4 +70,3 @@ annotations:
       description: "Add core unified prefix for Elasticsearch/OpenSearch"
     - kind: fixed
       description: "Add default webModler url when ingress is disabled"
-
