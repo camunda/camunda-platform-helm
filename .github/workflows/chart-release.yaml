@@ -23,6 +23,21 @@ permissions:
   packages: write
 
 jobs:
+  release-alpha:
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    name: Camunda Alpha
+    uses: ./.github/workflows/chart-release-template.yaml
+    with:
+      branch: ${{ github.event.pull_request.head.ref }}
+      workflow-ref: chart-release-template.yaml
+      chart-matrix: |
+        [
+          {
+            "name": "Helm Chart Alpha",
+            "directory": "charts/camunda-platform-alpha",
+            "override": false
+          }
+        ]
   release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     name: Camunda Stable
@@ -98,7 +113,6 @@ jobs:
       - name: Pre-Release - Previous versions
         run: |
           rm -rf ${LATEST_CHART_VERSION_DIR}
-          rm -rf charts/camunda-platform-alpha*
       - name: Run Chart Releaser - Previous versions
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
         with:
@@ -115,7 +129,6 @@ jobs:
       - name: Pre-Release - Latest version
         run: |
           rm -rf $(ls -d1 charts/camunda-platform-8* | head -n -1)
-          rm -rf charts/camunda-platform-alpha*
       - name: Run Chart Releaser - Latest version
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
         with:
