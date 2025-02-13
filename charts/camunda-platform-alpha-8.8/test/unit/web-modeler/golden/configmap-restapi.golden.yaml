@@ -52,8 +52,6 @@ data:
                 rest: "http://camunda-platform-test-core:8080/v1"
               operate: "http://camunda-platform-test-core:8080/v1"
               tasklist: "http://camunda-platform-test-core:8080/tasklist"
-            oauth:
-              url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
 
     spring:
       datasource:

@@ -1215,8 +1215,6 @@ webModeler:
     #        rest: "http://camunda-platform-core:8080/v1"
     #      operate: "http://camunda-platform-core:8080/v1"
     #      tasklist: "http://camunda-platform-core:8080/tasklist"
-    #    oauth:
-    #      url: "http://camunda-platform-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
