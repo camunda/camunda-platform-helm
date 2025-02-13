@@ -385,52 +385,52 @@ global:
   documentStore:
     ## @param global.documentStore.defaultStoreId The default store ID to use if multiple stores are enabled. Valid values: inmemory, aws, gcp, localstorage
     defaultStoreId: "inmemory"
+    type:
+      ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration
+      aws:
+        enabled: false
+        ## @param global.documentStore.type.aws.region AWS region for the S3 bucket
+        region: ""
+        ## @param global.documentStore.type.aws.bucket Name of the S3 bucket
+        bucket: ""
+        ## @param global.documentStore.type.aws.bucketPath (Optional) Path/prefix within the S3 bucket
+        bucketPath: ""
+        ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket
+        bucketTtl: ""
+        ## @param global.documentStore.type.aws.class Fully qualified class name (or relevant identifier) for AWS document store
+        class: ""
+        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials
+        existingSecret: ""
+        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the existing secret for AWS_ACCESS_KEY_ID
+        accessKeyIdKey: ""
+        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the existing secret for AWS_SECRET_ACCESS_KEY
+        secretAccessKeyKey: ""
 
-    ## @param global.documentStore.aws.enabled Enable AWS document store configuration
-    aws:
-      enabled: false
-      ## @param global.documentStore.aws.region AWS region for the S3 bucket
-      region: ""
-      ## @param global.documentStore.aws.bucket Name of the S3 bucket
-      bucket: ""
-      ## @param global.documentStore.aws.bucketPath (Optional) Path/prefix within the S3 bucket
-      bucketPath: ""
-      ## @param global.documentStore.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket
-      bucketTtl: ""
-      ## @param global.documentStore.aws.class Fully qualified class name (or relevant identifier) for AWS document store
-      class: ""
-      ## @param global.documentStore.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials
-      existingSecret: ""
-      ## @param global.documentStore.aws.accessKeyIdKey Key within the existing secret for AWS_ACCESS_KEY_ID
-      accessKeyIdKey: ""
-      ## @param global.documentStore.aws.secretAccessKeyKey Key within the existing secret for AWS_SECRET_ACCESS_KEY
-      secretAccessKeyKey: ""
+      ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration
+      gcp:
+        enabled: false
+        ## @param global.documentStore.type.gcp.bucket Name of the GCS bucket
+        bucket: ""
+        ## @param global.documentStore.type.gcp.class Fully qualified class name (or relevant identifier) for GCP document store
+        class: ""
+        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials
+        existingSecret: ""
+        ## @param global.documentStore.type.gcp.credentialsKey Key in the existing secret that contains the GCP service-account JSON
+        credentialsKey: ""
 
-    ## @param global.documentStore.gcp.enabled Enable GCP document store configuration
-    gcp:
-      enabled: false
-      ## @param global.documentStore.gcp.bucket Name of the GCS bucket
-      bucket: ""
-      ## @param global.documentStore.gcp.class Fully qualified class name (or relevant identifier) for GCP document store
-      class: ""
-      ## @param global.documentStore.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials
-      existingSecret: ""
-      ## @param global.documentStore.gcp.credentialsKey Key in the existing secret that contains the GCP service-account JSON
-      credentialsKey: ""
+      ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration
+      inmemory:
+        enabled: true
+        ## @param global.documentStore.type.inmemory.class Fully qualified class name (or relevant identifier) for the in-memory document store
+        class: ""
 
-    ## @param global.documentStore.inmemory.enabled Enable in-memory document store configuration
-    inmemory:
-      enabled: true
-      ## @param global.documentStore.inmemory.class Fully qualified class name (or relevant identifier) for the in-memory document store
-      class: ""
-
-    ## @param global.documentStore.localstorage.enabled Enable local-storage document store configuration
-    localstorage:
-      enabled: false
-      ## @param global.documentStore.localstorage.class Fully qualified class name (or relevant identifier) for local file-based document store
-      class: ""
-      ## @param global.documentStore.localstorage.path Path on the container’s filesystem for storing documents locally
-      path: ""
+      ## @param global.documentStore.type.localstorage.enabled Enable local-storage document store configuration
+      localstorage:
+        enabled: false
+        ## @param global.documentStore.type.localstorage.class Fully qualified class name (or relevant identifier) for local file-based document store
+        class: ""
+        ## @param global.documentStore.type.localstorage.path Path on the container’s filesystem for storing documents locally
+        path: ""
 
 
 
