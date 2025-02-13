@@ -384,7 +384,7 @@ global:
 
   documentStore:
     ## @param global.documentStore.defaultStoreId The default store ID to use if multiple stores are enabled. Valid values: inmemory, aws, gcp, localstorage
-    defaultStoreId: "inmemory"
+    activeStoreId: "inmemory"
     type:
       ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration
       aws:
