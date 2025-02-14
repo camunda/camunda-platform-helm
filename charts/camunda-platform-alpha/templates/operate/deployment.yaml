@@ -219,10 +219,10 @@ spec:
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
             - name: DOCUMENT_DEFAULT_STORE_ID
               value: {{ .Values.global.documentStore.activeStoreId | quote }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 }}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 -}}
           {{- with .Values.operate.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
