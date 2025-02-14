@@ -70,3 +70,5 @@ annotations:
       description: "Added support for optimize env vars for migration initcontainer"
     - kind: fixed
       description: "Apply password key from subchart"
+
+      
