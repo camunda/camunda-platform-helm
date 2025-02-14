@@ -84,18 +84,6 @@ spec:
               value: "info"
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
-            - name: DOCUMENT_DEFAULT_STORE_ID
-              value: "inmemory"
-            
-            
-            
-            
-            
-            
-            - name: "DOCUMENT_STORE_INMEMORY_CLASS"
-              value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-            
-            
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL

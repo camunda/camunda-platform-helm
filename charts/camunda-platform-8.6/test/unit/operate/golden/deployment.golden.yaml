@@ -126,18 +126,6 @@ spec:
             # the initial contact point to join the SWIM (atomix) cluster
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: camunda-platform-test-zeebe:26502
-            - name: DOCUMENT_DEFAULT_STORE_ID
-              value: "inmemory"
-            
-            
-            
-            
-            
-            
-            - name: "DOCUMENT_STORE_INMEMORY_CLASS"
-              value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-            
-            
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
