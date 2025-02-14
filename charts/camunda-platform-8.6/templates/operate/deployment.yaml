@@ -217,12 +217,6 @@ spec:
             # the initial contact point to join the SWIM (atomix) cluster
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
-            - name: DOCUMENT_DEFAULT_STORE_ID
-              value: {{ .Values.global.documentStore.activeStoreId | quote }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 }}
-            {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 }}
           {{- with .Values.operate.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -302,11 +296,6 @@ spec:
               mountPath: /usr/local/operate/certificates/externaldb.jks
               subPath: externaldb.jks
             {{- end }}
-            {{- if .Values.global.documentStore.type.gcp.enabled }}
-            - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
-              readOnly: true
-            {{- end }}
             {{- if .Values.operate.extraVolumeMounts }}
             {{- .Values.operate.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -333,14 +322,6 @@ spec:
           secret:
             secretName: {{ .Values.global.opensearch.tls.existingSecret }}
             optional: false
-        {{- end }}
-        {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
         {{- end }}
         {{- if .Values.operate.extraVolumes }}
         {{- .Values.operate.extraVolumes | toYaml | nindent 8 }}
