@@ -90,7 +90,6 @@ spec:
             {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 }}
             {{ include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 }}
             {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
-            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD
               valueFrom:
                 secretKeyRef:
