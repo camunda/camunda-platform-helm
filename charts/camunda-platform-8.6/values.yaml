@@ -379,61 +379,6 @@ global:
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
-  ## Document Store Configuration
-  ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
-
-  documentStore:
-    ## @param global.documentStore.activeStoreId The default store ID to use. Valid values: inmemory, aws, gcp, localstorage
-    activeStoreId: "inmemory"
-    type:
-      ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration
-      aws:
-        enabled: false
-        ## @param global.documentStore.type.aws.region AWS region for the S3 bucket
-        region: ""
-        ## @param global.documentStore.type.aws.bucket Name of the S3 bucket
-        bucket: ""
-        ## @param global.documentStore.type.aws.bucketPath (Optional) Path/prefix within the S3 bucket
-        bucketPath: ""
-        ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket
-        bucketTtl: ""
-        ## @param global.documentStore.type.aws.class Fully qualified class name (or relevant identifier) for AWS document store
-        class: ""
-        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials
-        existingSecret: ""
-        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the existing secret for AWS_ACCESS_KEY_ID
-        accessKeyIdKey: ""
-        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the existing secret for AWS_SECRET_ACCESS_KEY
-        secretAccessKeyKey: ""
-
-      ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration
-      gcp:
-        enabled: false
-        ## @param global.documentStore.type.gcp.bucket Name of the GCS bucket
-        bucket: ""
-        ## @param global.documentStore.type.gcp.class Fully qualified class name (or relevant identifier) for GCP document store
-        class: ""
-        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials
-        existingSecret: ""
-        ## @param global.documentStore.type.gcp.credentialsKey Key in the existing secret that contains the GCP service-account JSON
-        credentialsKey: ""
-
-      ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration
-      inmemory:
-        enabled: true
-        ## @param global.documentStore.type.inmemory.class Fully qualified class name (or relevant identifier) for the in-memory document store
-        class: ""
-
-      ## @param global.documentStore.type.localstorage.enabled Enable local-storage document store configuration
-      localstorage:
-        enabled: false
-        ## @param global.documentStore.type.localstorage.class Fully qualified class name (or relevant identifier) for local file-based document store
-        class: ""
-        ## @param global.documentStore.type.localstorage.path Path on the container’s filesystem for storing documents locally
-        path: ""
-
-
-
 #################################################
  #####
 #     #  ####  #    #  ####   ####  #      ######
