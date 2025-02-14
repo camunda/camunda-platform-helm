@@ -69,12 +69,11 @@ type AudienceYAML struct {
 }
 
 type ClusterYAML struct {
-	Id             string    `yaml:"id"`
-	Name           string    `yaml:"name"`
-	Version        string    `yaml:"version"`
-	Authentication string    `yaml:"authentication"`
-	Url            UrlYAML   `yaml:"url"`
-	Oauth          OAuthYAML `yaml:"oauth"`
+	Id             string  `yaml:"id"`
+	Name           string  `yaml:"name"`
+	Version        string  `yaml:"version"`
+	Authentication string  `yaml:"authentication"`
+	Url            UrlYAML `yaml:"url"`
 }
 
 type UrlYAML struct {
@@ -86,10 +85,6 @@ type UrlYAML struct {
 type ZeebeUrlYAML struct {
 	Grpc string `yaml:"grpc"`
 	Rest string `yaml:"rest"`
-}
-
-type OAuthYAML struct {
-	Url string `yaml:"url"`
 }
 
 // Web App ---

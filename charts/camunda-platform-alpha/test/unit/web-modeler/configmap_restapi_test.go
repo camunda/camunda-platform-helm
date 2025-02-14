@@ -284,23 +284,18 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                     "true",
-			"webModeler.restapi.mail.fromAddress":    "example@example.com",
-			"postgresql.enabled":                     "false",
-			"global.zeebeClusterName":                "test-zeebe",
-			"global.identity.auth.zeebe.tokenScope":  "test-scope",
-			"global.identity.auth.zeebe.audience":    "test-zeebe-api",
-			"global.identity.auth.operate.audience":  "test-operate-api",
-			"global.identity.auth.tasklist.audience": "test-tasklist-api",
-			"global.identity.auth.tokenUrl":          "https://example.com/auth/realms/test/protocol/openid-connect/token",
-			"zeebe.image.tag":                        "8.7.0-alpha1",
-			"zeebeGateway.contextPath":               "/zeebe",
-			"zeebeGateway.service.grpcPort":          "26600",
-			"zeebeGateway.service.restPort":          "8090",
-			"operate.contextPath":                    "/operate",
-			"operate.service.port":                   "8080",
-			"tasklist.contextPath":                   "/tasklist",
-			"tasklist.service.port":                  "8080",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+			"postgresql.enabled":                  "false",
+			"global.zeebeClusterName":             "test-zeebe",
+			"zeebe.image.tag":                     "8.7.0-alpha1",
+			"zeebeGateway.contextPath":            "/zeebe",
+			"zeebeGateway.service.grpcPort":       "26600",
+			"zeebeGateway.service.restPort":       "8090",
+			"operate.contextPath":                 "/operate",
+			"operate.service.port":                "8080",
+			"tasklist.contextPath":                "/tasklist",
+			"tasklist.service.port":               "8080",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -326,7 +321,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	s.Require().Equal("http://test-zeebe-gateway:8090/zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
 	s.Require().Equal("http://camunda-platform-test-operate:8080/operate", configmapApplication.Camunda.Modeler.Clusters[0].Url.Operate)
 	s.Require().Equal("http://camunda-platform-test-tasklist:8080/tasklist", configmapApplication.Camunda.Modeler.Clusters[0].Url.Tasklist)
-	s.Require().Equal("https://example.com/auth/realms/test/protocol/openid-connect/token", configmapApplication.Camunda.Modeler.Clusters[0].Oauth.Url)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
@@ -351,7 +345,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 			"webModeler.restapi.clusters[1].url.zeebe.rest": "http://zeebe-gateway.test-2:8080",
 			"webModeler.restapi.clusters[1].url.operate":    "http://operate.test-2:8080",
 			"webModeler.restapi.clusters[1].url.tasklist":   "http://tasklist.test-2:8080",
-			"webModeler.restapi.clusters[1].oauth.url":      "http://test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token",
 			"postgresql.enabled":                            "false",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -386,7 +379,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("http://zeebe-gateway.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Rest)
 	s.Require().Equal("http://operate.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Operate)
 	s.Require().Equal("http://tasklist.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Tasklist)
-	s.Require().Equal("http://test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Modeler.Clusters[1].Oauth.Url)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
