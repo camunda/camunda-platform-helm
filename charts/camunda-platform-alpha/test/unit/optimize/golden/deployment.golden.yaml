@@ -114,12 +114,8 @@ spec:
             
             
             
-            
-            
-            
             - name: "DOCUMENT_STORE_INMEMORY_CLASS"
               value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-            
             
           envFrom:
             - configMapRef:

@@ -89,12 +89,8 @@ spec:
             
             
             
-            
-            
-            
             - name: "DOCUMENT_STORE_INMEMORY_CLASS"
               value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-            
             
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
