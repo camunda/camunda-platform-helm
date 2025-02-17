@@ -88,3 +88,4 @@ annotations:
       description: "Add missing components when identity disabled."
     - kind: fixed
       description: "Add default webModler url when ingress is disabled"
+
