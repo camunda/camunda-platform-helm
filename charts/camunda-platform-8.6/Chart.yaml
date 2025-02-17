@@ -65,4 +65,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
+      description: "Added support for optimize env vars for migration initcontainer"
+    - kind: fixed
+      description: "Apply password key from subchart"
+    - kind: fixed
       description: "Add new line to 8.6"
