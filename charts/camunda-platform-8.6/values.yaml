@@ -2602,7 +2602,7 @@ identityKeycloak:
       tag: 15.10.0-debian-12-r2
     auth:
       ## @param identityKeycloak.postgresql.auth.existingSecret defines the existing secret resource containing the database credentials
-      existingSecret:
+      existingSecret: ""
       secretKeys:
         ## @param identityKeycloak.postgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
         adminPasswordKey: "postgres-password"
