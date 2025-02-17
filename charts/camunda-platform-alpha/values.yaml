@@ -905,13 +905,29 @@ zeebe:
   ## @param zeebe.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
-  retention:
-    ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
-    enabled: false
-    ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-    minimumAge: 30d
-    ## @param zeebe.retention.policyName defines the name of the created and applied ILM policy.
-    policyName: zeebe-record-retention-policy
+  archiver:
+    ## @param zeebe.archiver.enabled if false, there is no archiver which will continually create historical indices.
+    enabled: true
+    ## @param zeebe.archiver.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
+    elsRolloverDateFormat: date
+    ## @param zeebe.archiver.rolloverInterval defines the time range of the historical indices to be created.
+    rolloverInterval: 1d
+    ## @param zeebe.archiver.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
+    rolloverBatchSize: 100
+    ## @param zeebe.archiver.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
+    ## the last hour will not be collected into historical indices.
+    waitPeriodBeforeArchiving: 1h
+    ## @param zeebe.archiver.delayBetweenRuns the millisecond interval between archiver runs
+    delayBetweenRuns: 2000
+    ## @param zeebe.archiver.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
+    maxDelayBetweenRuns: 60000
+    retention:
+      ## @param zeebe.archiver.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+      enabled: false
+      ## @param zeebe.archiver.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+      minimumAge: 30d
+      ## @param zeebe.archiver.retention.policyName defines the name of the created and applied ILM policy.
+      policyName: zeebe-record-retention-policy
 
   ## @param zeebe.configuration if specified, contents will be used as the application.yaml
   configuration: ""

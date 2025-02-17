@@ -25,11 +25,11 @@ data:
               url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
               index:
                 prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-              {{- if .Values.zeebe.retention.enabled }}
+              {{- if .Values.zeebe.archiver.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
-                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+                minimumAge: {{ .Values.zeebe.archiver.retention.minimumAge | quote }}
+                policyName: {{ .Values.zeebe.archiver.retention.policyName | quote }}
               {{- end }}
         {{- else if .Values.global.opensearch.enabled }}
           opensearch:
@@ -44,11 +44,11 @@ data:
               aws:
                 enabled: true
               {{- end}}
-              {{- if .Values.zeebe.retention.enabled }}
+              {{- if .Values.zeebe.archiver.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
-                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+                minimumAge: {{ .Values.zeebe.archiver.retention.minimumAge | quote }}
+                policyName: {{ .Values.zeebe.archiver.retention.policyName | quote }}
               {{- end }}
         {{- else -}}
           {{ " {}" }}
