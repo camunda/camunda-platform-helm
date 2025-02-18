@@ -77,11 +77,30 @@ global:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
 
-  ## Authorizations configuration.
-  ## @extra global.authorizations
-  authorizations:
-    ## @param global.authorizations.enabled if true, then enable authorizations checks in all applicable components.
-    enabled: false
+  security:
+    ## Authentication configuration
+    ## @extra global.security.authentication
+    authentication:
+      ## @param global.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
+      method: basic
+      basic:
+        ## @param global.authentication.allowUnAuthenticatedApiAccess if true, then allow unauthenticated API access.
+        allowUnAuthenticatedApiAccess: false
+    ## Authorizations configuration.
+    ## @extra global.security.authorizations
+    authorizations:
+      ## @param global.authorizations.enabled if true, then enable authorizations checks in all applicable components.
+      enabled: false
+    ## Initialization configuration
+    ## @extra global.security.initialization
+    initialization:
+      ## Initial admin users configurations
+      ## @extra global.security.initialization.users
+      users:
+        - username: demo
+          password: demo
+          name: Demo User
+          email: demo@demo.com
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
