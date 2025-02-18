@@ -68,6 +68,12 @@ spec:
             {{- with .Values.webModeler.webapp.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+            - name: DOCUMENT_DEFAULT_STORE_ID
+              value: {{ .Values.global.documentStore.activeStoreId | quote }}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 -}}
           {{- if .Values.webModeler.webapp.envFrom }}
           envFrom:
             {{- .Values.webModeler.webapp.envFrom | toYaml | nindent 12 }}
@@ -131,6 +137,11 @@ spec:
               mountPath: /home/webapp/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
+          {{- if .Values.global.documentStore.type.gcp.enabled }}
+           - name: gcp-credentials-volume
+             mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+             readOnly: true
+           {{- end }}
           {{- if .Values.webModeler.webapp.extraVolumeMounts }}
           {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -141,6 +152,14 @@ spec:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-webapp-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
         {{- if .Values.webModeler.webapp.extraVolumes }}
         {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
