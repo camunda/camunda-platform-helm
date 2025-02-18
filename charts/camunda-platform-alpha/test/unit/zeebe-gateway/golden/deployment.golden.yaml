@@ -77,6 +77,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            - name: DOCUMENT_DEFAULT_STORE_ID
+              value: "inmemory"
+            
+            
+            
+            - name: "DOCUMENT_STORE_INMEMORY_CLASS"
+              value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+            
           envFrom:
           volumeMounts:
             - mountPath: /tmp

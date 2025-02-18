@@ -83,6 +83,14 @@ spec:
                 configMapKeyRef:
                   name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-key
+            - name: DOCUMENT_DEFAULT_STORE_ID
+              value: "inmemory"
+            
+            
+            
+            - name: "DOCUMENT_STORE_INMEMORY_CLASS"
+              value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+            
           args:
             - application.toml
           resources:

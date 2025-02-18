@@ -151,6 +151,14 @@ spec:
               value: "Console"
             - name: KEYCLOAK_USERS_0_ROLES_7
               value: "Zeebe"
+            - name: DOCUMENT_DEFAULT_STORE_ID
+              value: "inmemory"
+            
+            
+            
+            - name: "DOCUMENT_STORE_INMEMORY_CLASS"
+              value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+            
           resources:
             limits:
               cpu: 2000m
