@@ -86,6 +86,12 @@ spec:
             {{- with .Values.zeebeGateway.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
+            - name: DOCUMENT_DEFAULT_STORE_ID
+              value: {{ .Values.global.documentStore.activeStoreId | quote }}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 -}}
+            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 -}}
           envFrom:
             {{- if .Values.zeebeGateway.envFrom -}}
               {{ .Values.zeebeGateway.envFrom | toYaml | nindent 12 }}
@@ -109,6 +115,11 @@ spec:
             - name: config
               mountPath: /usr/local/zeebe/config/{{ $key }}
               subPath: {{ $key }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
             {{- end }}
             {{- if .Values.zeebeGateway.extraVolumeMounts}}
             {{ .Values.zeebeGateway.extraVolumeMounts | toYaml | nindent 12 }}
@@ -166,6 +177,14 @@ spec:
           configMap:
             name: {{ include "zeebe.fullname.gateway" . }}-configuration
             defaultMode: {{ .Values.zeebeGateway.configMap.defaultMode }}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
         {{- if .Values.zeebeGateway.extraVolumes}}
         {{- .Values.zeebeGateway.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
