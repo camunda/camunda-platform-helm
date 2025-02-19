@@ -77,19 +77,23 @@ global:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
 
+  ## Security configuration
+  ## @extra global.security
   security:
     ## Authentication configuration
     ## @extra global.security.authentication
     authentication:
-      ## @param global.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
+      ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
       method: basic
+      ## Basic auth configuration
+      ## @extra global.security.authentication.basic
       basic:
-        ## @param global.authentication.allowUnAuthenticatedApiAccess if true, then allow unauthenticated API access.
+        ## @param global.security.authentication.allowUnAuthenticatedApiAccess if true, then allow unauthenticated API access.
         allowUnAuthenticatedApiAccess: false
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
-      ## @param global.authorizations.enabled if true, then enable authorizations checks in all applicable components.
+      ## @param global.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
       enabled: true
     ## Initialization configuration
     ## @extra global.security.initialization
@@ -97,9 +101,13 @@ global:
       ## Initial admin users configurations
       ## @extra global.security.initialization.users
       users:
+        ## @param global.security.initialization.users.username, the username of an initial user.
         - username: demo
+          ## @param global.security.initialization.users.password, the password of an initial user.
           password: demo
+          ## @param global.security.initialization.users.name, the name of an initial user.
           name: Demo User
+          ## @param global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
