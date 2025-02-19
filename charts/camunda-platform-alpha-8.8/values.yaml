@@ -90,7 +90,7 @@ global:
     ## @extra global.security.authorizations
     authorizations:
       ## @param global.authorizations.enabled if true, then enable authorizations checks in all applicable components.
-      enabled: false
+      enabled: true
     ## Initialization configuration
     ## @extra global.security.initialization
     initialization:
