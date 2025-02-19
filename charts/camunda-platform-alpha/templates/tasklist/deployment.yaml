@@ -153,15 +153,15 @@ spec:
             # the initial contact point to join the SWIM (atomix) cluster
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
-            {{- with .Values.tasklist.env }}
-              {{- tpl (toYaml .) $ | nindent 12 }}
-            {{- end }}
             - name: DOCUMENT_DEFAULT_STORE_ID
-              value: {{ .Values.global.documentStore.activeStoreId | quote }}
+              value: {{ .Values.global.documentStore.activeStoreId | quote -}}
             {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 -}}
             {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 -}}
             {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 -}}
             {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 -}}
+            {{- with .Values.tasklist.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
           envFrom:
           {{- if .Values.global.identity.auth.enabled }}
             - configMapRef:
