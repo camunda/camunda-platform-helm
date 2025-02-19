@@ -88,7 +88,7 @@ global:
       ## Basic auth configuration
       ## @extra global.security.authentication.basic
       basic:
-        ## @param global.security.authentication.allowUnAuthenticatedApiAccess if true, then allow unauthenticated API access.
+        ## @param global.security.authentication.basic.allowUnAuthenticatedApiAccess if true, then allow unauthenticated API access.
         allowUnAuthenticatedApiAccess: false
     ## Authorizations configuration.
     ## @extra global.security.authorizations
@@ -100,14 +100,18 @@ global:
     initialization:
       ## Initial admin users configurations
       ## @extra global.security.initialization.users
+      ## @param global.security.initialization.users[0].username
+      ## @param global.security.initialization.users[0].password
+      ## @param global.security.initialization.users[0].name
+      ## @param global.security.initialization.users[0].email
       users:
-        ## @param global.security.initialization.users.username, the username of an initial user.
+        ## @extra global.security.initialization.users.username, the username of an initial user.
         - username: demo
-          ## @param global.security.initialization.users.password, the password of an initial user.
+          ## @extra global.security.initialization.users.password, the password of an initial user.
           password: demo
-          ## @param global.security.initialization.users.name, the name of an initial user.
+          ## @extra global.security.initialization.users.name, the name of an initial user.
           name: Demo User
-          ## @param global.security.initialization.users.email, the email of an initial user.
+          ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
