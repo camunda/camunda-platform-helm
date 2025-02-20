@@ -100,7 +100,7 @@ spec:
             {{- end }}
           envFrom:
             - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentStore-env-vars
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
             {{- if .Values.zeebeGateway.envFrom -}}
               {{ .Values.zeebeGateway.envFrom | toYaml | nindent 12 }}
             {{- end }}

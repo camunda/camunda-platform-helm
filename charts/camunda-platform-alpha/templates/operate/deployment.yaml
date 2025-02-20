@@ -238,7 +238,7 @@ spec:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
             - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentStore-env-vars
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.operate.envFrom -}}
           {{ .Values.operate.envFrom | toYaml | nindent 12 }}
           {{- end }}

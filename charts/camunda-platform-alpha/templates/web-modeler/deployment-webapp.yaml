@@ -83,7 +83,7 @@ spec:
 
           envFrom:
             - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentStore-env-vars
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.webModeler.webapp.envFrom }}
             {{- .Values.webModeler.webapp.envFrom | toYaml | nindent 12 }}
           {{- end }}
