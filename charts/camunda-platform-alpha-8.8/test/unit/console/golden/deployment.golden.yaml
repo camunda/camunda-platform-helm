@@ -81,6 +81,9 @@ spec:
               value: console
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
               value: ""
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
           ports:
             - name: http
               containerPort: 8080
