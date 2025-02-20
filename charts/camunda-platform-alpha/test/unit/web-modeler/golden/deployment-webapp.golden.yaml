@@ -83,7 +83,6 @@ spec:
                 configMapKeyRef:
                   name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-key
-
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
