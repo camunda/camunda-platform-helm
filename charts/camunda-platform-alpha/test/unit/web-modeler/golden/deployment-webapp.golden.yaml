@@ -86,7 +86,7 @@ spec:
 
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-documentStore-env-vars
+                name: camunda-platform-test-documentstore-env-vars
           args:
             - application.toml
           resources:

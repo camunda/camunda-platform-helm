@@ -104,7 +104,7 @@ spec:
               value: 3GB
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-documentStore-env-vars
+                name: camunda-platform-test-documentstore-env-vars
           ports:
             - containerPort: 9600
               name: http

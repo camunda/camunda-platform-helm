@@ -67,7 +67,7 @@ spec:
                   key: CAMUNDA_LICENSE_KEY
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-documentStore-env-vars
+                name: camunda-platform-test-documentstore-env-vars
           ports:
             - name: http
               containerPort: 8080
