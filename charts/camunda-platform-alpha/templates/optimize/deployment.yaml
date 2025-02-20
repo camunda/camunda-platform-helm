@@ -211,18 +211,6 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
-            {{- if .Values.global.documentStore.type.aws.enabled }}
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
-            {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -231,8 +219,6 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
-            - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.optimize.envFrom -}}
            {{ .Values.optimize.envFrom | toYaml | nindent 12 }}
           {{- end }}
@@ -307,11 +293,6 @@ spec:
               mountPath: /optimize/certificates/externaldb.jks
               subPath: externaldb.jks
             {{- end }}
-            {{- if .Values.global.documentStore.type.gcp.enabled }}
-            - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
-              readOnly: true
-            {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -338,14 +319,6 @@ spec:
           secret:
             secretName: {{ .Values.global.opensearch.tls.existingSecret }}
             optional: false
-        {{- end }}
-        {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
