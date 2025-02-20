@@ -112,8 +112,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
-            - configMapRef:
-                name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m
