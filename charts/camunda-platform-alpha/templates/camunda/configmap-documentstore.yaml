@@ -7,19 +7,22 @@ metadata:
 data:
   DOCUMENT_DEFAULT_STORE_ID: {{ .Values.global.documentStore.activeStoreId | quote }}
 
-  {{- $awsPrefix := upper (default "AWS" .Values.global.documentStore.type.aws.storeId) }}
+  {{- $active := lower .Values.global.documentStore.activeStoreId }}
+  {{- if eq $active "aws" }}
+    {{- $awsPrefix := upper (default "AWS" .Values.global.documentStore.type.aws.storeId) }}
   DOCUMENT_STORE_{{ $awsPrefix }}_CLASS: {{ .Values.global.documentStore.type.aws.class | quote }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET: {{ .Values.global.documentStore.type.aws.bucket | quote }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_PATH: {{ .Values.global.documentStore.type.aws.bucketPath | quote }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | quote }}
-
-  {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
+  {{- else if eq $active "gcp" }}
+    {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_CLASS: {{ .Values.global.documentStore.type.gcp.class | quote }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_BUCKET: {{ .Values.global.documentStore.type.gcp.bucket | quote }}
-
-  {{- $inmemPrefix := upper (default "INMEMORY" .Values.global.documentStore.type.inmemory.storeId) }}
+  {{- else if eq $active "inmemory" }}
+    {{- $inmemPrefix := upper (default "INMEMORY" .Values.global.documentStore.type.inmemory.storeId) }}
   DOCUMENT_STORE_{{ $inmemPrefix }}_CLASS: {{ .Values.global.documentStore.type.inmemory.class | quote }}
-
-  {{- $localPrefix := upper (default "LOCAL" .Values.global.documentStore.type.localstorage.storeId) }}
+  {{- else if eq $active "localstorage" }}
+    {{- $localPrefix := upper (default "LOCAL" .Values.global.documentStore.type.localstorage.storeId) }}
   DOCUMENT_STORE_{{ $localPrefix }}_CLASS: {{ .Values.global.documentStore.type.localstorage.class | quote }}
   DOCUMENT_STORE_{{ $localPrefix }}_PATH: {{ .Values.global.documentStore.type.localstorage.path | quote }}
+  {{- end }}
