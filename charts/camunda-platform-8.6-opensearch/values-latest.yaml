@@ -1,0 +1,89 @@
+#
+# Camunda Helm chart.
+#
+
+global:
+  # https://github.com/camunda/camunda-platform/releases
+  # https://hub.docker.com/u/camunda
+  image:
+    tag:
+
+console:
+  # Camunda Enterprise repository.
+  # https://hub.docker.com/r/camunda/console/tags
+  image:
+    repository: camunda/console
+    tag: 8.6.59
+
+connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags
+  image:
+    repository: camunda/connectors-bundle
+    tag: 8.6.8
+
+operate:
+  # https://hub.docker.com/r/camunda/operate/tags
+  image:
+    repository: camunda/operate
+    tag: 8.6.9
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
+  image:
+    repository: camunda/optimize
+    tag: 8.6.5
+
+tasklist:
+  # https://hub.docker.com/r/camunda/tasklist/tags
+  image:
+    repository: camunda/tasklist
+    tag: 8.6.9
+
+webModeler:
+  # https://hub.docker.com/r/camunda/web-modeler-restapi
+  image:
+    # renovate: datasource=docker depName=camunda/web-modeler-restapi
+    tag: 8.6.7
+
+zeebe:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    repository: camunda/zeebe
+    tag: 8.6.9
+
+zeebeGateway:
+  # https://hub.docker.com/r/camunda/zeebe/tags
+  image:
+    repository: camunda/zeebe
+    tag: 8.6.9
+
+#
+# Identity
+#
+
+identity:
+  # https://hub.docker.com/r/camunda/identity/tags
+  image:
+    repository: camunda/identity
+    tag: 8.6.8
+
+identityKeycloak:
+  # https://hub.docker.com/r/bitnami/keycloak/tags
+  image:
+    repository: bitnami/keycloak
+    tag: 25.0.6
+  postgresql:
+    # https://hub.docker.com/r/bitnami/postgresql/tags
+    image:
+      repository: bitnami/postgresql
+      tag: 15.10.0-debian-12-r2
+
+#
+# Opensearch
+#
+
+opensearch:
+  # https://hub.docker.com/r/bitnami/opensearch/tags
+  image:
+    repository: bitnami/opensearch
+    tag: 2.11.1
