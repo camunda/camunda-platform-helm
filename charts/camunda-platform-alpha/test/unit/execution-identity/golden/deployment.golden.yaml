@@ -65,6 +65,9 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentStore-env-vars
           ports:
             - name: http
               containerPort: 8080

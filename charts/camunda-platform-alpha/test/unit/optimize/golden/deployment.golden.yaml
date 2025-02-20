@@ -109,17 +109,11 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-optimize-identity-secret
                   key: optimize-secret
-            - name: DOCUMENT_DEFAULT_STORE_ID
-              value: "inmemory"
-            
-            
-            
-            - name: "DOCUMENT_STORE_INMEMORY_CLASS"
-              value: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-            
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
+            - configMapRef:
+                name: camunda-platform-test-documentStore-env-vars
           resources:
             limits:
               cpu: 2000m
