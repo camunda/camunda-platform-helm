@@ -18,7 +18,7 @@ data:
     {{ .Values.core.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
-    {{ if .Values.global.identity.auth.enabled }}
+    {{- if eq .Values.global.security.authentication.method "oidc" }}
     spring:
       profiles:
         active: "identity,operate,tasklist,broker,auth-oidc"
@@ -38,7 +38,10 @@ data:
                 redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
                 provider: oidcclient
                 scope: openid,profile
-
+    {{- else if eq .Values.global.security.authentication.method "basic" }}
+    spring:
+      profiles:
+        active: "identity,operate,tasklist,broker,consolidated-auth"
     {{- else }}
     spring:
       profiles:
@@ -191,8 +194,26 @@ data:
           enabled: true
 
       security:
+        authentication:
+          method: {{ .Values.global.security.authentication.method | quote }}
+          {{- if eq .Values.global.security.authentication.method "basic" }}
+          basic:
+            allowUnauthenticatedApiAccess: {{ .Values.global.security.authentication.basic.allowUnAuthenticatedApiAccess }}
+          {{- end}}
         authorizations:
-          enabled: {{ .Values.global.authorizations.enabled }}
+          enabled: {{ .Values.global.security.authorizations.enabled }}
+        initialization:
+          {{- if eq .Values.global.security.authentication.method "basic" }}
+          users:
+            {{- range $user := .Values.global.security.initialization.users }}
+            - username: {{ $user.username | quote }}
+              password: {{ $user.password | quote }}
+              name: {{ $user.name | quote }}
+              email: {{ $user.email | quote }}
+            {{- end }}
+          {{- end }}
+        multiTenancy:
+            enabled: {{ .Values.global.multitenancy.enabled }}
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:

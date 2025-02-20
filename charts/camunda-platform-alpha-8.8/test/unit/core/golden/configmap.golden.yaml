@@ -20,24 +20,9 @@ data:
 
     exec /usr/local/camunda/bin/camunda
   application.yaml: |
-    
     spring:
       profiles:
-        active: "identity,operate,tasklist,broker,auth-oidc"
-      security:
-        oauth2:
-          client:
-            provider:
-              oidcclient:
-                issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
-            registration:
-              oidcclient:
-                client-id: "core"
-                client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-                authorization-grant-type: authorization_code
-                redirect-uri: "http://localhost:8082/login/oauth2/code/core"
-                provider: oidcclient
-                scope: openid,profile
+        active: "identity,operate,tasklist,broker,consolidated-auth"
 
     management:
       server:
@@ -123,8 +108,20 @@ data:
           enabled: true
 
       security:
+        authentication:
+          method: "basic"
+          basic:
+            allowUnauthenticatedApiAccess: false
         authorizations:
-          enabled: false
+          enabled: true
+        initialization:
+          users:
+            - username: "demo"
+              password: "demo"
+              name: "Demo User"
+              email: "demo@demo.com"
+        multiTenancy:
+            enabled: false
       identity:
         clientId: "core"
         audience: "core-api"
