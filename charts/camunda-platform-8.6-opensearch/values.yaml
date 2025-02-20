@@ -190,7 +190,7 @@ global:
     ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
     url:
       protocol: https
-      host:
+      host: "{{ .Release.Name }}-opensearch"
       port: 443
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
