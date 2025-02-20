@@ -86,4 +86,4 @@ opensearch:
   # https://hub.docker.com/r/bitnami/opensearch/tags
   image:
     repository: bitnami/opensearch
-    tag: 1.5.4
+    tag: 2.11.1
