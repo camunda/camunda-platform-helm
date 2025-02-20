@@ -70,11 +70,29 @@ spec:
               value: {{ .Values.global.identity.auth.console.clientId | default "console" }}
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
               value: {{ .Values.console.contextPath | quote }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
-          {{- if .Values.console.envFrom }}
           envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.console.envFrom }}
             {{- .Values.console.envFrom | toYaml | nindent 12 }}
           {{- end }}
           ports:
@@ -133,6 +151,11 @@ spec:
               mountPath: /usr/local/console/certificates
               readOnly: true
           {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
           {{- if .Values.console.extraVolumeMounts }}
             {{- .Values.console.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -148,6 +171,14 @@ spec:
           secret:
             secretName: {{ .Values.console.tls.existingSecret }}
       {{- end }}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
       {{- if .Values.console.extraVolumes }}
         {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
       {{- end }}

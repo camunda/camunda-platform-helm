@@ -102,6 +102,9 @@ spec:
               value: 2GB
             - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
               value: 3GB
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
           ports:
             - containerPort: 9600
               name: http
