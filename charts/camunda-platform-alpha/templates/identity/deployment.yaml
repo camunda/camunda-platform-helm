@@ -245,17 +245,25 @@ spec:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
             {{- end }}
-            - name: DOCUMENT_DEFAULT_STORE_ID
-              value: {{ .Values.global.documentStore.activeStoreId | quote -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 -}}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          {{- if .Values.identity.envFrom }}
           envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentStore-env-vars
+          {{- if .Values.identity.envFrom }}
             {{- .Values.identity.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.identity.command}}

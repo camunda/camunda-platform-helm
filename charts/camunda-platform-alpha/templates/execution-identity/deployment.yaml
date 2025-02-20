@@ -54,12 +54,25 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
           {{- if .Values.executionIdentity.env}}
             {{ .Values.executionIdentity.env | toYaml | nindent 12 }}
           {{- end }}
-          {{- if .Values.executionIdentity.envFrom }}
           envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentStore-env-vars
+          {{- if .Values.executionIdentity.envFrom }}
             {{- .Values.executionIdentity.envFrom | toYaml | nindent 12 }}
           {{- end }}
           ports:
@@ -113,6 +126,11 @@ spec:
           volumeMounts:
             - name: execution-identity-configuration
               mountPath: /usr/local/camunda/config
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
           {{- if .Values.executionIdentity.extraVolumeMounts }}
             {{- .Values.executionIdentity.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -123,6 +141,14 @@ spec:
         - name: execution-identity-configuration
           configMap:
             name: {{ include "executionIdentity.fullname" . }}-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
       {{- if .Values.executionIdentity.extraVolumes }}
         {{- .Values.executionIdentity.extraVolumes | toYaml | nindent 8 }}
       {{- end }}

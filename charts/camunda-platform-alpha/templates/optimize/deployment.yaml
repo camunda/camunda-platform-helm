@@ -211,12 +211,18 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
-            - name: DOCUMENT_DEFAULT_STORE_ID
-              value: {{ .Values.global.documentStore.activeStoreId | quote -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "aws" "Values" .Values) | nindent 12 -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "gcp" "Values" .Values) | nindent 12 -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "inmemory" "Values" .Values) | nindent 12 -}}
-            {{- include "camundaPlatform.documentStoreEnv" (dict "Type" "localstorage" "Values" .Values) | nindent 12 -}}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -225,6 +231,8 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentStore-env-vars
           {{- if .Values.optimize.envFrom -}}
            {{ .Values.optimize.envFrom | toYaml | nindent 12 }}
           {{- end }}
