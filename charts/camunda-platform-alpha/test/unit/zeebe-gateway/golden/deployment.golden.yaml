@@ -79,7 +79,7 @@ spec:
                   fieldPath: status.podIP
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-documentStore-env-vars
+                name: camunda-platform-test-documentstore-env-vars
           volumeMounts:
             - mountPath: /tmp
               name: tmp
