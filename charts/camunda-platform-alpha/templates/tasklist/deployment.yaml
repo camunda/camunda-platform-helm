@@ -174,7 +174,7 @@ spec:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
             - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentStore-env-vars
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.tasklist.envFrom -}}
             {{ .Values.tasklist.envFrom | toYaml | nindent 12 }}
           {{- end }}
