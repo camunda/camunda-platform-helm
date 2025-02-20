@@ -248,9 +248,11 @@ testcases:
           --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGRPC }}" \
           {{ .coreVars.zbctl.extraArgs }} \
           deploy /mnt/fixtures/{{ .value.file }}
-    # info: |
-    #   = systemerr: {{ .result.systemerr }}
-    #   = err: {{ .result.err }}
+    info: |
+      = Deploying BPMN file: {{ .value.file }}
+      = Command output: {{ .result.systemout }}
+      = Command error: {{ .result.systemerr }}
+      = Time taken: {{ .result.timeseconds }} seconds
     assertions:
     - result.code ShouldEqual 0
 
@@ -264,7 +266,7 @@ testcases:
     - name: Inbound Connector
       id: test-inbound-process
     method: POST
-    url: "{{ .coreVars.baseURLs.operate }}operate/v1/process-definitions/search"
+    url: "{{ .coreVars.baseURLs.operate }}/v1/process-definitions/search"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -274,6 +276,10 @@ testcases:
     info: |
       = Request Body: {{ .result.request.body }}
       = Response Body: {{ .result.body }}
+      = Deploying BPMN file: {{ .value.file }}
+      = Command output: {{ .result.systemout }}
+      = Command error: {{ .result.systemerr }}
+      = Time taken: {{ .result.timeseconds }} seconds
     assertions:
     - result.statuscode ShouldEqual 200
     - result.bodyjson.items.items{{ .index }}.bpmnProcessId ShouldEqual {{ .value.id }}
