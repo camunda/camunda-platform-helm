@@ -137,7 +137,7 @@ testcases:
       body: ''
     - component: Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
-      url: "{{ .coreVars.baseURLs.operate }}/v1/process-definitions/search"
+      url: "{{ .coreVars.baseURLs.operate }}operate/v1/process-definitions/search"
       method: POST
       body: '{}'
     - component: Tasklist
@@ -264,7 +264,7 @@ testcases:
     - name: Inbound Connector
       id: test-inbound-process
     method: POST
-    url: "{{ .coreVars.baseURLs.operate }}/v1/process-definitions/search"
+    url: "{{ .coreVars.baseURLs.operate }}operate/v1/process-definitions/search"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
