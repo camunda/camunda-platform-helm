@@ -81,6 +81,9 @@ spec:
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
               cpu: 1000m

@@ -151,6 +151,9 @@ spec:
               value: "Console"
             - name: KEYCLOAK_USERS_0_ROLES_7
               value: "Zeebe"
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m

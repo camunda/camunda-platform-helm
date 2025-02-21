@@ -379,6 +379,67 @@ global:
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
+  ## Document Store Configuration
+  ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
+  documentStore:
+    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, gcp, localstorage.
+    activeStoreId: "inmemory"
+    type:
+      aws:
+        ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars like DOCUMENT_STORE_AWS_CLASS.
+        storeId: "AWS"
+        ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. example us-east-1
+        region: ""
+        ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
+        bucket: "your-aws-bucket"
+        ## @param global.documentStore.type.aws.bucketPath (Optional) Path/prefix within the S3 bucket.
+        bucketPath: "/path/to/bucket"
+        ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket.
+        bucketTtl: ""
+        ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
+        existingSecret: "aws-credentials"
+        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
+        accessKeyIdKey: "awsAccessKeyId"
+        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
+        secretAccessKeyKey: "awsSecretAccessKey"
+      gcp:
+        ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.gcp.storeId Custom prefix for GCP. Default will generate env vars like DOCUMENT_STORE_GCP_CLASS.
+        storeId: "GCP"
+        ## @param global.documentStore.type.gcp.bucket Name of the GCP bucket.
+        bucket: "your-gcp-bucket"
+        ## @param global.documentStore.type.gcp.class Fully qualified class name for the GCP document store provider.
+        class: "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
+        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials.
+        existingSecret: "gcp-credentials"
+        ## @param global.documentStore.type.gcp.credentialsKey Key in the GCP credentials secret that contains the service-account JSON.
+        credentialsKey: "service-account.json"
+        ## @param global.documentStore.type.gcp.mountPath Mount path for the GCP credentials secret.
+        mountPath: "/var/secrets/gcp"
+        ## @param global.documentStore.type.gcp.fileName The file name for the GCP credentials JSON.
+        fileName: "service-account.json"
+      inmemory:
+        ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
+        enabled: true
+        ## @param global.documentStore.type.inmemory.storeId Custom prefix for in-memory. Default will generate env vars like DOCUMENT_STORE_INMEMORY_CLASS.
+        storeId: "INMEMORY"
+        ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
+        class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+      localstorage:
+        ## @param global.documentStore.type.localstorage.enabled Enable local-storage document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.localstorage.storeId Custom prefix for local storage. Default will generate env vars like DOCUMENT_STORE_LOCAL_CLASS.
+        storeId: "LOCAL"
+        ## @param global.documentStore.type.localstorage.class Fully qualified class name for the local storage document store provider.
+        class: "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider"
+        ## @param global.documentStore.type.localstorage.path File system path for storing documents locally.
+        path: "/tmp/camunda-docs"
+
 #################################################
  #####
 #     #  ####  #    #  ####   ####  #      ######
