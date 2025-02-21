@@ -3132,7 +3132,7 @@ postgresql:
   ## @param postgresql.image.tag PostgreSQL image tag
   image:
     repository: bitnami/postgresql
-    tag: 14.16.0-debian-12-r4
+    tag: 14.17.0-debian-12-r1
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param postgresql.auth.username defines the name of the database user to be created for WebModeler
