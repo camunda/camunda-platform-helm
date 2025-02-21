@@ -25,4 +25,10 @@ data:
           releases:
             {{- include "camundaPlatform.releaseInfo" . | nindent 10 }}
     {{- end }}
+  {{- if .Values.console.overrideConfiguration }}
+  application-override.yaml: |-
+    {{- if .Values.console.overrideConfiguration }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.console.overrideConfiguration "context" $ ) | nindent 4 }}
+    {{- end }}       
+  {{- end }}
 {{- end }}
