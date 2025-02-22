@@ -144,16 +144,16 @@ spec:
             - name: config
               mountPath: /home/webapp/application.toml
               subPath: application.toml
-          {{- range $key, $val := .Values.webModeler.extraConfiguration }}
+            {{- range $key, $val := .Values.webModeler.extraConfiguration }}
             - name: config
               mountPath: /home/webapp/config/{{ $key }}
               subPath: {{ $key }}
-          {{- end }}
-          {{- if .Values.global.documentStore.type.gcp.enabled }}
-           - name: gcp-credentials-volume
-             mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
-             readOnly: true
-           {{- end }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
           {{- if .Values.webModeler.webapp.extraVolumeMounts }}
           {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
