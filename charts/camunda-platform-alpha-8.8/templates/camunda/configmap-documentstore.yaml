@@ -13,7 +13,7 @@ data:
   DOCUMENT_STORE_{{ $awsPrefix }}_CLASS: {{ .Values.global.documentStore.type.aws.class | quote }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET: {{ .Values.global.documentStore.type.aws.bucket | quote }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_PATH: {{ .Values.global.documentStore.type.aws.bucketPath | quote }}
-  DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | quote }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | int }}
   {{- else if eq $active "gcp" }}
     {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_CLASS: {{ .Values.global.documentStore.type.gcp.class | quote }}

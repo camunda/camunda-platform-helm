@@ -397,7 +397,7 @@ global:
         ## @param global.documentStore.type.aws.bucketPath (Optional) Path/prefix within the S3 bucket.
         bucketPath: "/path/to/bucket"
         ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket.
-        bucketTtl: ""
+        bucketTtl: 3600
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
         ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
