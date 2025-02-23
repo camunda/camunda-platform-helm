@@ -5,7 +5,7 @@ name: Test core functionality of Camunda Platform
 # Vars without defaults are passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
 vars:
   releaseName: integration
-  venomClientID: '{{ .TEST_CLIENT_ID | default "venom" }}'
+  venomClientID: '{{ .TEST_CLIENT_ID | default "test" }}'
   venomClientSecret: '{{ .TEST_CLIENT_SECRET }}'
   skipTestIngress: '{{ .SKIP_TEST_INGRESS }}'
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
