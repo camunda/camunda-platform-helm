@@ -701,9 +701,9 @@
                                             "default": "/path/to/bucket"
                                         },
                                         "bucketTtl": {
-                                            "type": "string",
+                                            "type": "number",
                                             "description": "(Optional) Time-to-live for documents in the S3 bucket.",
-                                            "default": ""
+                                            "default": 3600
                                         },
                                         "class": {
                                             "type": "string",
