@@ -695,16 +695,6 @@
                                             "description": "Name of the AWS S3 bucket.",
                                             "default": "your-aws-bucket"
                                         },
-                                        "bucketPath": {
-                                            "type": "string",
-                                            "description": "(Optional) Path/prefix within the S3 bucket.",
-                                            "default": "/path/to/bucket"
-                                        },
-                                        "bucketTtl": {
-                                            "type": "string",
-                                            "description": "(Optional) Time-to-live for documents in the S3 bucket.",
-                                            "default": ""
-                                        },
                                         "class": {
                                             "type": "string",
                                             "description": "Fully qualified class name for the AWS document store provider.",
