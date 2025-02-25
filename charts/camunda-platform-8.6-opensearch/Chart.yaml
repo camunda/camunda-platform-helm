@@ -36,9 +36,13 @@ dependencies:
     version: 15.x.x
     condition: "postgresql.enabled"
   # Shared Dependencies.
+  - name: elasticsearch
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 21.4.5
+    condition: "elasticsearch.enabled"
   - name: opensearch
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 1.5.4
+    version: 1.6.1
     condition: "opensearch.enabled"
   # Helpers.
   - name: common
