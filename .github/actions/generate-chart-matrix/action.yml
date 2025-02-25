@@ -11,6 +11,13 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: ℹ️ Print workflow inputs ℹ️
+      shell: bash
+      env:
+        GITHUB_CONTEXT: ${{ toJson(inputs) }}
+      run: |
+        echo "Action Inputs:"
+        echo "${GITHUB_CONTEXT}"
     - name: Get changed dirs
       id: changed-files
       uses: tj-actions/changed-files@dcc7a0cba800f454d79fff4b993e8c3555bcc0a8 # v45
@@ -20,15 +27,15 @@ runs:
       shell: bash
       id: set-chart-versions
       env:
-        ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
       run: |
         echo "Setting matrix based on changed files"
         echo "Changed files:"
-        printf "%s\n" ${ALL_CHANGED_FILES}
+        printf "%s\n" ${ALL_MODIFIED_FILES}
         touch matrix_versions.txt
 
         ls -d ${{ inputs.charts-path }} | while read chart_dir; do
-          if [[ $(echo ${ALL_CHANGED_FILES} | grep "${chart_dir}") ]]; then
+          if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
             camunda_version="$(echo ${chart_dir} | cut -d '-' -f 3)";
             echo "Camunda version: ${camunda_version}"
             echo "${camunda_version}" >> matrix_versions.txt;
