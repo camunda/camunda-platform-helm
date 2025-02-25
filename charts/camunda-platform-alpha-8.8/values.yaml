@@ -85,11 +85,8 @@ global:
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
       method: basic
-      ## Basic auth configuration
-      ## @extra global.security.authentication.basic
-      basic:
-        ## @param global.security.authentication.basic.allowUnAuthenticatedApiAccess if true, then allow unauthenticated API access.
-        allowUnAuthenticatedApiAccess: false
+      ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
+      unprotectedApi: false
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:

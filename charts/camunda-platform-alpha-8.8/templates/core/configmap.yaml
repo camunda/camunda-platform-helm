@@ -196,10 +196,7 @@ data:
       security:
         authentication:
           method: {{ .Values.global.security.authentication.method | quote }}
-          {{- if eq .Values.global.security.authentication.method "basic" }}
-          basic:
-            allowUnauthenticatedApiAccess: {{ .Values.global.security.authentication.basic.allowUnAuthenticatedApiAccess }}
-          {{- end}}
+          unprotectedApi: {{ .Values.global.security.authentication.unprotectedApi }}
         authorizations:
           enabled: {{ .Values.global.security.authorizations.enabled }}
         initialization:

@@ -110,8 +110,7 @@ data:
       security:
         authentication:
           method: "basic"
-          basic:
-            allowUnauthenticatedApiAccess: false
+          unprotectedApi: false
         authorizations:
           enabled: true
         initialization:
