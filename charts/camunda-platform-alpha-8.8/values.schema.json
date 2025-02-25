@@ -677,12 +677,12 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for AWS. Default will generate env vars like DOCUMENT_STORE_AWS_CLASS.",
+                                            "description": "Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
                                             "default": "AWS"
                                         },
                                         "region": {
                                             "type": "string",
-                                            "description": "AWS region for the S3 bucket. example us-east-1",
+                                            "description": "AWS region for the S3 bucket. (example: us-east-1)",
                                             "default": ""
                                         },
                                         "bucket": {
@@ -722,7 +722,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for GCP. Default will generate env vars like DOCUMENT_STORE_GCP_CLASS.",
+                                            "description": "Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
                                             "default": "GCP"
                                         },
                                         "bucket": {
@@ -767,7 +767,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for in-memory. Default will generate env vars like DOCUMENT_STORE_INMEMORY_CLASS.",
+                                            "description": "Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
                                             "default": "INMEMORY"
                                         },
                                         "class": {
@@ -787,8 +787,8 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for local storage. Default will generate env vars like DOCUMENT_STORE_LOCAL_CLASS.",
-                                            "default": "LOCAL"
+                                            "description": "Custom prefix for local storage. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_LOCALSTORAGE_CLASS.",
+                                            "default": "LOCALSTORAGE"
                                         },
                                         "class": {
                                             "type": "string",

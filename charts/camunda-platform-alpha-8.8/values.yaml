@@ -420,15 +420,15 @@ global:
       aws:
         ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration.
         enabled: false
-        ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars like DOCUMENT_STORE_AWS_CLASS.
+        ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
         storeId: "AWS"
-        ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. example us-east-1
+        ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. (example: us-east-1)
         region: ""
         ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
         bucket: "your-aws-bucket"
        ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
         # bucketPath: ""
-        ## @param global.documentStore.type.aws.bucketTtl [int, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in sec.).
+        ## @param global.documentStore.type.aws.bucketTtl [int, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
         # bucketTtl: 0
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
@@ -441,7 +441,7 @@ global:
       gcp:
         ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
         enabled: false
-        ## @param global.documentStore.type.gcp.storeId Custom prefix for GCP. Default will generate env vars like DOCUMENT_STORE_GCP_CLASS.
+        ## @param global.documentStore.type.gcp.storeId Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.
         storeId: "GCP"
         ## @param global.documentStore.type.gcp.bucket Name of the GCP bucket.
         bucket: "your-gcp-bucket"
@@ -458,15 +458,15 @@ global:
       inmemory:
         ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
         enabled: true
-        ## @param global.documentStore.type.inmemory.storeId Custom prefix for in-memory. Default will generate env vars like DOCUMENT_STORE_INMEMORY_CLASS.
+        ## @param global.documentStore.type.inmemory.storeId Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
       localstorage:
         ## @param global.documentStore.type.localstorage.enabled Enable local-storage document store configuration.
         enabled: false
-        ## @param global.documentStore.type.localstorage.storeId Custom prefix for local storage. Default will generate env vars like DOCUMENT_STORE_LOCAL_CLASS.
-        storeId: "LOCAL"
+        ## @param global.documentStore.type.localstorage.storeId Custom prefix for local storage. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_LOCALSTORAGE_CLASS.
+        storeId: "LOCALSTORAGE"
         ## @param global.documentStore.type.localstorage.class Fully qualified class name for the local storage document store provider.
         class: "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider"
         ## @param global.documentStore.type.localstorage.path File system path for storing documents locally.
