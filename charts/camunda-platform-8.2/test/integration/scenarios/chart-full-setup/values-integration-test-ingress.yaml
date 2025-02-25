@@ -47,7 +47,7 @@ identity:
     postgresql:
       auth:
         existingSecret: "integration-test-credentials"
-    service:
+  service:
       ports:
         http: 80
         https: 443
