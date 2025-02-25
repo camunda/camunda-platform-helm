@@ -16,7 +16,7 @@ data:
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_PATH: {{ .Values.global.documentStore.type.aws.bucketPath | quote }}
   {{- end }}
   {{- if .Values.global.documentStore.type.aws.bucketTtl }}
-  DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | int }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | quote }}
   {{- end }}
   {{- else if eq $active "gcp" }}
     {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
@@ -26,7 +26,7 @@ data:
     {{- $inmemPrefix := upper (default "INMEMORY" .Values.global.documentStore.type.inmemory.storeId) }}
   DOCUMENT_STORE_{{ $inmemPrefix }}_CLASS: {{ .Values.global.documentStore.type.inmemory.class | quote }}
   {{- else if eq $active "localstorage" }}
-    {{- $localPrefix := upper (default "LOCAL" .Values.global.documentStore.type.localstorage.storeId) }}
+    {{- $localPrefix := upper (default "LOCALSTORAGE" .Values.global.documentStore.type.localstorage.storeId) }}
   DOCUMENT_STORE_{{ $localPrefix }}_CLASS: {{ .Values.global.documentStore.type.localstorage.class | quote }}
   DOCUMENT_STORE_{{ $localPrefix }}_PATH: {{ .Values.global.documentStore.type.localstorage.path | quote }}
   {{- end }}
