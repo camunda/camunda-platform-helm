@@ -47,10 +47,10 @@ identity:
     postgresql:
       auth:
         existingSecret: "integration-test-credentials"
-  service:
-    ports:
-      http: 80
-      https: 443
+    service:
+      ports:
+        http: 80
+        https: 443
 
 operate:
   contextPath: "/operate"
