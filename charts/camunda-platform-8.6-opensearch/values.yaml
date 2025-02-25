@@ -136,7 +136,7 @@ global:
   ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
   ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
-    enabled: true
+    enabled: false
     external: false
     tls:
       enabled: false
@@ -173,7 +173,7 @@ global:
   ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
   ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
   opensearch:
-    enabled: false
+    enabled: true
     aws:
       enabled: false
     tls:
@@ -3677,7 +3677,7 @@ connectors:
 ## @extra elasticsearch
 elasticsearch:
   ## @param elasticsearch.enabled
-  enabled: true
+  enabled: false
   ## @extra elasticsearch.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
@@ -3737,6 +3737,71 @@ elasticsearch:
     replicaCount: 0
   ingest:
     ## @param elasticsearch.ingest.enabled
+    enabled: false
+
+## @extra opensearch
+opensearch:
+  ## @param opensearch.enabled
+  enabled: true
+  ## @extra opensearch.global.compatibility Compatibility adaptations for Kubernetes platforms
+  global:
+    ## Compatibility adaptations for Kubernetes platforms
+    ##
+    compatibility:
+      ## Compatibility adaptations for Openshift
+      ##
+      openshift:
+        ## @param opensearch.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ##
+        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
+  # https://hub.docker.com/r/bitnami/opensearch/tags
+  image:
+    ## @param opensearch.image.repository
+    repository: bitnami/opensearch
+    ## @param opensearch.image.tag
+    tag: 2.18.0
+  master:
+    ## @param opensearch.master.replicaCount defines number of master-elegible replicas to deploy
+    replicaCount: 3
+    ## @param opensearch.master.podAntiAffinityPreset defines Pod anti-affinity preset. Ignored if master.affinity is set
+    podAntiAffinityPreset: hard
+    containerSecurityContext:
+    ## @param opensearch.master.containerSecurityContext.readOnlyRootFilesystem
+      readOnlyRootFilesystem: true
+    ## @param opensearch.master.masterOnly
+    masterOnly: false
+    ## @param opensearch.master.heapSize
+    heapSize: 1024m
+    persistence:
+      ## @param opensearch.master.persistence.size
+      size: 64Gi
+    resources:
+      requests:
+        ## @param opensearch.master.resources.requests.cpu cpu request
+        cpu: 1
+        ## @param opensearch.master.resources.requests.memory request
+        memory: 2Gi
+      limits:
+        ## @param opensearch.master.resources.limits.cpu cpu limit
+        cpu: 2
+        ## @param opensearch.master.resources.limits.memory memory limit
+        memory: 2Gi
+    extraEnvVars:
+    ## @param opensearch.master.extraEnvVars[0].name env
+    - name: opensearch_ENABLE_REST_TLS
+    ## @param opensearch.master.extraEnvVars[0].value env value
+      value: "false"
+  sysctlImage:
+  ## @param opensearch.sysctlImage.enabled
+    enabled: true
+  data:
+    ## @param opensearch.data.replicaCount
+    replicaCount: 0
+  coordinating:
+    ## @param opensearch.coordinating.replicaCount
+    replicaCount: 0
+  ingest:
+    ## @param opensearch.ingest.enabled
     enabled: false
 
 
