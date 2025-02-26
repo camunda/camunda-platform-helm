@@ -25,8 +25,3 @@ data:
   {{- else if eq $active "inmemory" }}
     {{- $inmemPrefix := upper (default "INMEMORY" .Values.global.documentStore.type.inmemory.storeId) }}
   DOCUMENT_STORE_{{ $inmemPrefix }}_CLASS: {{ .Values.global.documentStore.type.inmemory.class | quote }}
-  {{- else if eq $active "localstorage" }}
-    {{- $localPrefix := upper (default "LOCALSTORAGE" .Values.global.documentStore.type.localstorage.storeId) }}
-  DOCUMENT_STORE_{{ $localPrefix }}_CLASS: {{ .Values.global.documentStore.type.localstorage.class | quote }}
-  DOCUMENT_STORE_{{ $localPrefix }}_PATH: {{ .Values.global.documentStore.type.localstorage.path | quote }}
-  {{- end }}

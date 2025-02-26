@@ -382,7 +382,7 @@ global:
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, gcp, localstorage.
+    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, and gcp
     # The value must match one of the values of the storeId for the document store types shown below.
     activeStoreId: "inmemory"
     type:
@@ -431,15 +431,6 @@ global:
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-      localstorage:
-        ## @param global.documentStore.type.localstorage.enabled Enable local-storage document store configuration.
-        enabled: false
-        ## @param global.documentStore.type.localstorage.storeId Custom prefix for local storage. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_LOCALSTORAGE_CLASS.
-        storeId: "LOCALSTORAGE"
-        ## @param global.documentStore.type.localstorage.class Fully qualified class name for the local storage document store provider.
-        class: "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider"
-        ## @param global.documentStore.type.localstorage.path File system path for storing documents locally.
-        path: "/tmp/camunda-docs"
 
 #################################################
  #####
