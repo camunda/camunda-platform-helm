@@ -21,6 +21,5 @@ Epic:
 
 <!-- Add details about the expected outcome if any. -->
 
-```[tasklist]
 ### Sub-tasks
-```
+- [ ] sub-task
