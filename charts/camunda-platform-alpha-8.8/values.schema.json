@@ -65,13 +65,63 @@
                         }
                     }
                 },
-                "authorizations": {
+                "security": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, then enable authorizations checks in all applicable components.",
-                            "default": false
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc",
+                                    "default": "basic"
+                                },
+                                "unprotectedApi": {
+                                    "type": "boolean",
+                                    "description": "if true, then allow unauthenticated API access.",
+                                    "default": false
+                                }
+                            }
+                        },
+                        "authorizations": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable authorizations checks in all applicable components.",
+                                    "default": true
+                                }
+                            }
+                        },
+                        "initialization": {
+                            "type": "object",
+                            "properties": {
+                                "users": {
+                                    "type": "array",
+                                    "description": "",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "username": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "password": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "description": ""
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -599,6 +649,156 @@
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Optimize.",
                                             "default": "http://localhost:8083"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "documentStore": {
+                    "type": "object",
+                    "properties": {
+                        "activeStoreId": {
+                            "type": "string",
+                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, localstorage.",
+                            "default": "inmemory"
+                        },
+                        "type": {
+                            "type": "object",
+                            "properties": {
+                                "aws": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "Enable AWS document store configuration.",
+                                            "default": false
+                                        },
+                                        "storeId": {
+                                            "type": "string",
+                                            "description": "Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
+                                            "default": "AWS"
+                                        },
+                                        "region": {
+                                            "type": "string",
+                                            "description": "AWS region for the S3 bucket. (example: us-east-1)",
+                                            "default": ""
+                                        },
+                                        "bucket": {
+                                            "type": "string",
+                                            "description": "Name of the AWS S3 bucket.",
+                                            "default": "your-aws-bucket"
+                                        },
+                                        "class": {
+                                            "type": "string",
+                                            "description": "Fully qualified class name for the AWS document store provider.",
+                                            "default": "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "Reference to an existing Kubernetes secret containing AWS credentials.",
+                                            "default": "aws-credentials"
+                                        },
+                                        "accessKeyIdKey": {
+                                            "type": "string",
+                                            "description": "Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.",
+                                            "default": "awsAccessKeyId"
+                                        },
+                                        "secretAccessKeyKey": {
+                                            "type": "string",
+                                            "description": "Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.",
+                                            "default": "awsSecretAccessKey"
+                                        }
+                                    }
+                                },
+                                "gcp": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "Enable GCP document store configuration.",
+                                            "default": false
+                                        },
+                                        "storeId": {
+                                            "type": "string",
+                                            "description": "Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
+                                            "default": "GCP"
+                                        },
+                                        "bucket": {
+                                            "type": "string",
+                                            "description": "Name of the GCP bucket.",
+                                            "default": "your-gcp-bucket"
+                                        },
+                                        "class": {
+                                            "type": "string",
+                                            "description": "Fully qualified class name for the GCP document store provider.",
+                                            "default": "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "Reference to an existing Kubernetes secret containing GCP credentials.",
+                                            "default": "gcp-credentials"
+                                        },
+                                        "credentialsKey": {
+                                            "type": "string",
+                                            "description": "Key in the GCP credentials secret that contains the service-account JSON.",
+                                            "default": "service-account.json"
+                                        },
+                                        "mountPath": {
+                                            "type": "string",
+                                            "description": "Mount path for the GCP credentials secret.",
+                                            "default": "/var/secrets/gcp"
+                                        },
+                                        "fileName": {
+                                            "type": "string",
+                                            "description": "The file name for the GCP credentials JSON.",
+                                            "default": "service-account.json"
+                                        }
+                                    }
+                                },
+                                "inmemory": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "Enable in-memory document store configuration.",
+                                            "default": true
+                                        },
+                                        "storeId": {
+                                            "type": "string",
+                                            "description": "Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
+                                            "default": "INMEMORY"
+                                        },
+                                        "class": {
+                                            "type": "string",
+                                            "description": "Fully qualified class name for the in-memory document store provider.",
+                                            "default": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+                                        }
+                                    }
+                                },
+                                "localstorage": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "Enable local-storage document store configuration.",
+                                            "default": false
+                                        },
+                                        "storeId": {
+                                            "type": "string",
+                                            "description": "Custom prefix for local storage. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_LOCALSTORAGE_CLASS.",
+                                            "default": "LOCALSTORAGE"
+                                        },
+                                        "class": {
+                                            "type": "string",
+                                            "description": "Fully qualified class name for the local storage document store provider.",
+                                            "default": "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider"
+                                        },
+                                        "path": {
+                                            "type": "string",
+                                            "description": "File system path for storing documents locally.",
+                                            "default": "/tmp/camunda-docs"
                                         }
                                     }
                                 }
@@ -3367,7 +3567,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.16.0-debian-12-r2"
+                            "default": "14.17.0-debian-12-r1"
                         }
                     }
                 },

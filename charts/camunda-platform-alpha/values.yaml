@@ -379,6 +379,68 @@ global:
     ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
     installationType: normal
 
+  ## Document Store Configuration
+  ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
+  documentStore:
+    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, gcp, localstorage.
+    # The value must match one of the values of the storeId for the document store types shown below.
+    activeStoreId: "inmemory"
+    type:
+      aws:
+        ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
+        storeId: "AWS"
+        ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. (example: us-east-1)
+        region: ""
+        ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
+        bucket: "your-aws-bucket"
+        ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
+        # bucketPath: ""
+        ## @param global.documentStore.type.aws.bucketTtl [int, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
+        # bucketTtl: 0
+        ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
+        existingSecret: "aws-credentials"
+        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
+        accessKeyIdKey: "awsAccessKeyId"
+        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
+        secretAccessKeyKey: "awsSecretAccessKey"
+      gcp:
+        ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.gcp.storeId Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.
+        storeId: "GCP"
+        ## @param global.documentStore.type.gcp.bucket Name of the GCP bucket.
+        bucket: "your-gcp-bucket"
+        ## @param global.documentStore.type.gcp.class Fully qualified class name for the GCP document store provider.
+        class: "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
+        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials.
+        existingSecret: "gcp-credentials"
+        ## @param global.documentStore.type.gcp.credentialsKey Key in the GCP credentials secret that contains the service-account JSON.
+        credentialsKey: "service-account.json"
+        ## @param global.documentStore.type.gcp.mountPath Mount path for the GCP credentials secret.
+        mountPath: "/var/secrets/gcp"
+        ## @param global.documentStore.type.gcp.fileName The file name for the GCP credentials JSON.
+        fileName: "service-account.json"
+      inmemory:
+        ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
+        enabled: true
+        ## @param global.documentStore.type.inmemory.storeId Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.
+        storeId: "INMEMORY"
+        ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
+        class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+      localstorage:
+        ## @param global.documentStore.type.localstorage.enabled Enable local-storage document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.localstorage.storeId Custom prefix for local storage. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_LOCALSTORAGE_CLASS.
+        storeId: "LOCALSTORAGE"
+        ## @param global.documentStore.type.localstorage.class Fully qualified class name for the local storage document store provider.
+        class: "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider"
+        ## @param global.documentStore.type.localstorage.path File system path for storing documents locally.
+        path: "/tmp/camunda-docs"
+
 #################################################
  #####
 #     #  ####  #    #  ####   ####  #      ######
@@ -397,6 +459,8 @@ console:
 
   ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
   configuration: ""
+  ##@param console.overrideConfiguration When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`
+  overrideConfiguration: ""
 
   ## console.image configuration to configure the Console image specifics
   # https://hub.docker.com/r/camunda/console/tags
@@ -406,7 +470,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.7.0-alpha3
+    tag: 8.7.0-alpha4
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -905,29 +969,13 @@ zeebe:
   ## @param zeebe.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
-  archiver:
-    ## @param zeebe.archiver.enabled if false, there is no archiver which will continually create historical indices.
-    enabled: true
-    ## @param zeebe.archiver.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
-    elsRolloverDateFormat: date
-    ## @param zeebe.archiver.rolloverInterval defines the time range of the historical indices to be created.
-    rolloverInterval: 1d
-    ## @param zeebe.archiver.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
-    rolloverBatchSize: 100
-    ## @param zeebe.archiver.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
-    ## the last hour will not be collected into historical indices.
-    waitPeriodBeforeArchiving: 1h
-    ## @param zeebe.archiver.delayBetweenRuns the millisecond interval between archiver runs
-    delayBetweenRuns: 2000
-    ## @param zeebe.archiver.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
-    maxDelayBetweenRuns: 60000
-    retention:
-      ## @param zeebe.archiver.retention.enabled if true, the ILM Policy is created and applied to the index templates.
-      enabled: false
-      ## @param zeebe.archiver.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-      minimumAge: 30d
-      ## @param zeebe.archiver.retention.policyName defines the name of the created and applied ILM policy.
-      policyName: zeebe-record-retention-policy
+  retention:
+    ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    enabled: false
+    ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    minimumAge: 30d
+    ## @param zeebe.retention.policyName defines the name of the created and applied ILM policy.
+    policyName: zeebe-record-retention-policy
 
   ## @param zeebe.configuration if specified, contents will be used as the application.yaml
   configuration: ""
@@ -3404,7 +3452,7 @@ postgresql:
   ## @param postgresql.image.tag PostgreSQL image tag
   image:
     repository: bitnami/postgresql
-    tag: 14.15.0-debian-12-r10
+    tag: 14.17.0-debian-12-r1
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param postgresql.auth.username defines the name of the database user to be created for WebModeler
@@ -3723,7 +3771,7 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.15.4
+    tag: 8.17.2
   master:
     ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
     replicaCount: 3

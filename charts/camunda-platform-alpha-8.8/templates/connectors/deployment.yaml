@@ -53,6 +53,22 @@ spec:
                   key: {{ include "connectors.authClientSecretKey" . }}
             {{- end }}
           {{- end }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
@@ -61,6 +77,8 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.connectors.envFrom -}}
             {{ .Values.connectors.envFrom | toYaml | nindent 12 }}
           {{- end }}
@@ -113,6 +131,11 @@ spec:
               mountPath: /config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
           {{- if .Values.connectors.extraVolumeMounts }}
             {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -125,6 +148,14 @@ spec:
         - name: config
           configMap:
             name: {{ include "connectors.fullname" . }}-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
       {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}

@@ -77,11 +77,39 @@ global:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
 
-  ## Authorizations configuration.
-  ## @extra global.authorizations
-  authorizations:
-    ## @param global.authorizations.enabled if true, then enable authorizations checks in all applicable components.
-    enabled: false
+  ## Security configuration
+  ## @extra global.security
+  security:
+    ## Authentication configuration
+    ## @extra global.security.authentication
+    authentication:
+      ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
+      method: basic
+      ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
+      unprotectedApi: false
+    ## Authorizations configuration.
+    ## @extra global.security.authorizations
+    authorizations:
+      ## @param global.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
+      enabled: true
+    ## Initialization configuration
+    ## @extra global.security.initialization
+    initialization:
+      ## Initial admin users configurations
+      ## @extra global.security.initialization.users
+      ## @param global.security.initialization.users[0].username
+      ## @param global.security.initialization.users[0].password
+      ## @param global.security.initialization.users[0].name
+      ## @param global.security.initialization.users[0].email
+      users:
+        ## @extra global.security.initialization.users.username, the username of an initial user.
+        - username: demo
+          ## @extra global.security.initialization.users.password, the password of an initial user.
+          password: demo
+          ## @extra global.security.initialization.users.name, the name of an initial user.
+          name: Demo User
+          ## @extra global.security.initialization.users.email, the email of an initial user.
+          email: demo@demo.com
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
@@ -382,6 +410,67 @@ global:
     regions: 1
     ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
     regionId: 0
+
+  ## Document Store Configuration
+  ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
+  documentStore:
+    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, gcp, localstorage.
+    activeStoreId: "inmemory"
+    type:
+      aws:
+        ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
+        storeId: "AWS"
+        ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. (example: us-east-1)
+        region: ""
+        ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
+        bucket: "your-aws-bucket"
+       ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
+        # bucketPath: ""
+        ## @param global.documentStore.type.aws.bucketTtl [int, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
+        # bucketTtl: 0
+        ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
+        existingSecret: "aws-credentials"
+        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
+        accessKeyIdKey: "awsAccessKeyId"
+        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
+        secretAccessKeyKey: "awsSecretAccessKey"
+      gcp:
+        ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.gcp.storeId Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.
+        storeId: "GCP"
+        ## @param global.documentStore.type.gcp.bucket Name of the GCP bucket.
+        bucket: "your-gcp-bucket"
+        ## @param global.documentStore.type.gcp.class Fully qualified class name for the GCP document store provider.
+        class: "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
+        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials.
+        existingSecret: "gcp-credentials"
+        ## @param global.documentStore.type.gcp.credentialsKey Key in the GCP credentials secret that contains the service-account JSON.
+        credentialsKey: "service-account.json"
+        ## @param global.documentStore.type.gcp.mountPath Mount path for the GCP credentials secret.
+        mountPath: "/var/secrets/gcp"
+        ## @param global.documentStore.type.gcp.fileName The file name for the GCP credentials JSON.
+        fileName: "service-account.json"
+      inmemory:
+        ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
+        enabled: true
+        ## @param global.documentStore.type.inmemory.storeId Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.
+        storeId: "INMEMORY"
+        ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
+        class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+      localstorage:
+        ## @param global.documentStore.type.localstorage.enabled Enable local-storage document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.localstorage.storeId Custom prefix for local storage. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_LOCALSTORAGE_CLASS.
+        storeId: "LOCALSTORAGE"
+        ## @param global.documentStore.type.localstorage.class Fully qualified class name for the local storage document store provider.
+        class: "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider"
+        ## @param global.documentStore.type.localstorage.path File system path for storing documents locally.
+        path: "/tmp/camunda-docs"
 
 
 #------------------------------------------------------------------------------------------------------------------------------------------#
@@ -1731,7 +1820,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.tag PostgreSQL image tag
   image:
     repository: bitnami/postgresql
-    tag: 14.16.0-debian-12-r2
+    tag: 14.17.0-debian-12-r1
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param webModelerPostgresql.auth.username defines the name of the database user to be created for WebModeler

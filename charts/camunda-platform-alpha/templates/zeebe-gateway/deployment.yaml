@@ -83,10 +83,28 @@ spec:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             {{- end}}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
             {{- with .Values.zeebeGateway.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
           envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
             {{- if .Values.zeebeGateway.envFrom -}}
               {{ .Values.zeebeGateway.envFrom | toYaml | nindent 12 }}
             {{- end }}
@@ -109,6 +127,11 @@ spec:
             - name: config
               mountPath: /usr/local/zeebe/config/{{ $key }}
               subPath: {{ $key }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
             {{- end }}
             {{- if .Values.zeebeGateway.extraVolumeMounts}}
             {{ .Values.zeebeGateway.extraVolumeMounts | toYaml | nindent 12 }}
@@ -166,6 +189,14 @@ spec:
           configMap:
             name: {{ include "zeebe.fullname.gateway" . }}-configuration
             defaultMode: {{ .Values.zeebeGateway.configMap.defaultMode }}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
         {{- if .Values.zeebeGateway.extraVolumes}}
         {{- .Values.zeebeGateway.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

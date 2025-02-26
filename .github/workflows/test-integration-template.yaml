@@ -282,9 +282,9 @@ jobs:
           # The Zeebe team advised to use SNAPSHOT instead.
           if [[ ${{ matrix.scenario.flow }} == 'upgrade' ]] &&
           [[ "${{ inputs.camunda-helm-dir }}" == 'camunda-platform-alpha' ]]; then
-            TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set zeebe.image.tag=SNAPSHOT"  
+            TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set zeebe.image.tag=8.7.0-SNAPSHOT"
             echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
-            TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set zeebe.image.tag=SNAPSHOT"
+            TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set zeebe.image.tag=8.7.0-SNAPSHOT"
             echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
           fi
       - name: Start GitHub deployment

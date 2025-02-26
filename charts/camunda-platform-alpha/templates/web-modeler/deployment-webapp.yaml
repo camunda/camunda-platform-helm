@@ -68,8 +68,26 @@ spec:
             {{- with .Values.webModeler.webapp.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-          {{- if .Values.webModeler.webapp.envFrom }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
           envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.webModeler.webapp.envFrom }}
             {{- .Values.webModeler.webapp.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.webapp.command }}
@@ -126,11 +144,16 @@ spec:
             - name: config
               mountPath: /home/webapp/application.toml
               subPath: application.toml
-          {{- range $key, $val := .Values.webModeler.extraConfiguration }}
+            {{- range $key, $val := .Values.webModeler.extraConfiguration }}
             - name: config
               mountPath: /home/webapp/config/{{ $key }}
               subPath: {{ $key }}
-          {{- end }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
           {{- if .Values.webModeler.webapp.extraVolumeMounts }}
           {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -141,6 +164,14 @@ spec:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-webapp-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
         {{- if .Values.webModeler.webapp.extraVolumes }}
         {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
