@@ -192,6 +192,7 @@ global:
       protocol: https
       host: "{{ .Release.Name }}-opensearch"
       port: 443
+    clusterName: "opensearch"
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
@@ -3741,6 +3742,9 @@ elasticsearch:
 
 ## @extra opensearch
 opensearch:
+  security:
+    adminPassword: OpenSearch_Admin1234!
+
   ## @param opensearch.enabled
   enabled: true
   ## @extra opensearch.global.compatibility Compatibility adaptations for Kubernetes platforms
