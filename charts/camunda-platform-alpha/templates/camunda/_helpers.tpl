@@ -408,6 +408,19 @@ Optimize templates.
 
 {{/*
 ********************************************************************************
+Connectors templates.
+********************************************************************************
+*/}}
+{{/*
+[camunda-platform] Connectors external URL.
+*/}}
+{{- define "camundaPlatform.connectorsExternalURL" }}
+  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "connectors" "context" .)) -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
 Tasklist templates.
 ********************************************************************************
 */}}
@@ -618,6 +631,17 @@ Release templates.
     url: {{ include "camundaPlatform.optimizeExternalURL" . }}
     readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
+  {{- end }}
+
+  {{- if .Values.connectors.enabled }}
+  {{-  $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.fullname" .) .Release.Namespace }}
+  - name: Connectors
+    id: connectors
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+    url: {{ include "camundaPlatform.connectorsExternalURL" . }}
+    readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.connectors.service.serverPort .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath }}
+    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort .Values.connectors.metrics.prometheus }}
   {{- end }}
 
   {{- if .Values.tasklist.enabled }}
