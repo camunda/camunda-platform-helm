@@ -35,19 +35,17 @@ data:
 
     camunda:
       client:
-        zeebe:
-          rest-address: http://camunda-platform-test-core:8080
-          grpc-address: http://camunda-platform-test-core:26500
+        rest-address: http://camunda-platform-test-core:8080
+        grpc-address: http://camunda-platform-test-core:26500
+        worker:
           defaults:
             worker-threads: 10
             max-jobs-active: 32
-            stream-enabled: true
-        identity:
-          base-url: "http://camunda-platform-test-identity:80"
-          audience: "core-api"
+            stream-enabled: true          
         auth:
-          issuer: http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token
+          token-endpoint: http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token
           client-id: "connectors"
+          audience: "core-api"
         mode: self-managed
 
     logging:
