@@ -4776,23 +4776,63 @@
                         }
                     }
                 },
-                "retention": {
+                "archiver": {
                     "type": "object",
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, the ILM Policy is created and applied to the index templates.",
-                            "default": false
+                            "description": "if false, there is no archiver which will continually create historical indices.",
+                            "default": true
                         },
-                        "minimumAge": {
+                        "elsRolloverDateFormat": {
                             "type": "string",
-                            "description": "defines how old the data must be, before the data is deleted as a duration.",
-                            "default": "30d"
+                            "description": "defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.",
+                            "default": "date"
                         },
-                        "policyName": {
+                        "rolloverInterval": {
                             "type": "string",
-                            "description": "defines the name of the created and applied ILM policy.",
-                            "default": "core-record-retention-policy"
+                            "description": "defines the time range of the historical indices to be created.",
+                            "default": "1d"
+                        },
+                        "rolloverBatchSize": {
+                            "type": "number",
+                            "description": "defines the maximum number of process instances per batch during archiving.",
+                            "default": 100
+                        },
+                        "waitPeriodBeforeArchiving": {
+                            "type": "string",
+                            "description": "defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in",
+                            "default": "1h"
+                        },
+                        "delayBetweenRuns": {
+                            "type": "number",
+                            "description": "the millisecond interval between archiver runs",
+                            "default": 2000
+                        },
+                        "maxDelayBetweenRuns": {
+                            "type": "number",
+                            "description": "the maximum millisecond interval between archiver runs due to failure backoffs",
+                            "default": 60000
+                        },
+                        "retention": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the ILM Policy is created and applied to the index templates.",
+                                    "default": false
+                                },
+                                "minimumAge": {
+                                    "type": "string",
+                                    "description": "defines how old the data must be, before the data is deleted as a duration.",
+                                    "default": "30d"
+                                },
+                                "policyName": {
+                                    "type": "string",
+                                    "description": "defines the name of the created and applied ILM policy.",
+                                    "default": "core-record-retention-policy"
+                                }
+                            }
                         }
                     }
                 },
