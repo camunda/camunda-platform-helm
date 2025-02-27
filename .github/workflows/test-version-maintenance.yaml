@@ -31,12 +31,12 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-    - name: Generate chart versions
-      id: generate-chart-versions
-      uses: ./.github/actions/generate-chart-matrix
-      with:
-        charts-path: "charts/camunda-platform-8*"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Generate chart versions
+        id: generate-chart-versions
+        uses: ./.github/actions/generate-chart-matrix
+        with:
+          charts-path: "charts/camunda-platform-8*"
 
   validation:
     if: ${{ needs.init.outputs.matrix != '[]' }}
