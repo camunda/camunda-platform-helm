@@ -42,7 +42,6 @@ data:
         grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.core.service.grpcPort }}
         worker:
           defaults:
-            worker-threads: 10
             max-jobs-active: 32
             stream-enabled: true          
         mode: {{ .Values.global.security.authentication.method }}

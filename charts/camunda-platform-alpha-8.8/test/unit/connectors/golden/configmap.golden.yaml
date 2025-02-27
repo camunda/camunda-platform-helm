@@ -39,7 +39,6 @@ data:
         grpc-address: http://camunda-platform-test-core:26500
         worker:
           defaults:
-            worker-threads: 10
             max-jobs-active: 32
             stream-enabled: true          
         mode: basic
