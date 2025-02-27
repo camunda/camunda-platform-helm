@@ -4,6 +4,10 @@ inputs:
   charts-path:
     description: Charts path to match.
     default: "charts/camunda-platform*"
+  base_sha:
+    description: The commit SHA of the base branch (e.g., main).
+  sha:
+    description: The latest commit SHA in the PR branch.
 outputs:
   matrix:
     description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
@@ -16,6 +20,8 @@ runs:
       uses: tj-actions/changed-files@dcc7a0cba800f454d79fff4b993e8c3555bcc0a8 # v45
       with:
         dir_names: "true"
+        base_sha: ${{ inputs.base_sha }}
+        sha: ${{ inputs.sha }}
     - name: Generate matrix
       shell: bash
       id: set-chart-versions
