@@ -661,7 +661,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, localstorage.",
+                            "description": "The default document store to use. Valid values: inmemory, aws, and gcp.",
                             "default": "inmemory"
                         },
                         "type": {
@@ -774,31 +774,6 @@
                                             "type": "string",
                                             "description": "Fully qualified class name for the in-memory document store provider.",
                                             "default": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-                                        }
-                                    }
-                                },
-                                "localstorage": {
-                                    "type": "object",
-                                    "properties": {
-                                        "enabled": {
-                                            "type": "boolean",
-                                            "description": "Enable local-storage document store configuration.",
-                                            "default": false
-                                        },
-                                        "storeId": {
-                                            "type": "string",
-                                            "description": "Custom prefix for local storage. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_LOCALSTORAGE_CLASS.",
-                                            "default": "LOCALSTORAGE"
-                                        },
-                                        "class": {
-                                            "type": "string",
-                                            "description": "Fully qualified class name for the local storage document store provider.",
-                                            "default": "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider"
-                                        },
-                                        "path": {
-                                            "type": "string",
-                                            "description": "File system path for storing documents locally.",
-                                            "default": "/tmp/camunda-docs"
                                         }
                                     }
                                 }
