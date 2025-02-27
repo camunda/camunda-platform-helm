@@ -45,12 +45,19 @@ data:
             worker-threads: 10
             max-jobs-active: 32
             stream-enabled: true          
+        mode: {{ .Values.global.security.authentication.method }}
+        {{- if eq .Values.global.security.authentication.method "basic" }}
+        auth:
+          {{- $user := first .Values.global.security.initialization.users }}
+          username: {{ $user.username | quote }}
+          password: {{ $user.password | quote }}
+        {{- else }}
         auth:
           token-url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . }}
           client-id: {{ include "connectors.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
           audience: {{ include "core.authAudience" . | quote }}
-        mode: self-managed
+        {{- end }}
 
     logging:
 {{- with .Values.connectors.logging }}

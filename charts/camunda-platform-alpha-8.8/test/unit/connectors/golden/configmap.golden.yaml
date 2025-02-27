@@ -42,11 +42,10 @@ data:
             worker-threads: 10
             max-jobs-active: 32
             stream-enabled: true          
+        mode: basic
         auth:
-          token-endpoint: http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token
-          client-id: "connectors"
-          audience: "core-api"
-        mode: self-managed
+          username: "demo"
+          password: "demo"
 
     logging:
       level:
