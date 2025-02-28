@@ -47,10 +47,6 @@ identity:
     postgresql:
       auth:
         existingSecret: "integration-test-credentials"
-    service:
-      ports:
-        http: 80
-        https: 443
 
 operate:
   contextPath: "/operate"
@@ -98,3 +94,10 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
+
+keycloak:
+  service:
+    ports:
+      http: 80
+      https: 443
+
