@@ -1,6 +1,6 @@
 preflightVars:
   baseURLs:
-    elasticsearch: http://integration-elasticsearch:9200
+    opensearch: http://integration-opensearch:9200
     console: http://integration-console:9100
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82

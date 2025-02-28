@@ -86,8 +86,8 @@ spec:
               value: "false"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-              value: "http://camunda-platform-test-elasticsearch:9200"
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
+              value: "http://camunda-platform-test-opensearch:9200"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
               value: "zeebe-record"
             - name: JAVA_TOOL_OPTIONS

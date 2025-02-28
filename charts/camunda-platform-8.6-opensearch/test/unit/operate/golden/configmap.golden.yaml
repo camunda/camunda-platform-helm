@@ -31,11 +31,11 @@ data:
 
     # Camunda Database configuration
     camunda.database:
-      type: elasticsearch
+      type: opensearch
       # Cluster name
-      clusterName: elasticsearch
+      clusterName: opensearch
       # Elasticsearch full url
-      url: "http://camunda-platform-test-elasticsearch:9200"
+      url: "http://camunda-platform-test-opensearch:9200"
 
     # Operate configuration file
     camunda.operate:
@@ -43,27 +43,27 @@ data:
         redirectRootUrl: "http://localhost:8081"
     
       # ELS instance to store Operate data
-      elasticsearch:
+      opensearch:
         # Cluster name
-        clusterName: elasticsearch
+        clusterName: opensearch
         # Host
-        host: camunda-platform-test-elasticsearch
+        host: camunda-platform-test-opensearch
         # Transport port
         port: 9200
         # Elasticsearch full url
-        url: "http://camunda-platform-test-elasticsearch:9200"
+        url: "http://camunda-platform-test-opensearch:9200"
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name
-        clusterName: elasticsearch
+        clusterName: opensearch
         # Host
-        host: camunda-platform-test-elasticsearch
+        host: camunda-platform-test-opensearch
         # Transport port
         port: 9200
         # Index prefix, configured in Zeebe Elasticsearch exporter
         prefix: zeebe-record
         # Elasticsearch full url
-        url: "http://camunda-platform-test-elasticsearch:9200"
+        url: "http://camunda-platform-test-opensearch:9200"
       # Zeebe instance
       zeebe:
         # Gateway address

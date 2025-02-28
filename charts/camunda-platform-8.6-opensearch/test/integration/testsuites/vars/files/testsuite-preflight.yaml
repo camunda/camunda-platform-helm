@@ -15,8 +15,8 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+    - component: Opensearch
+      url: "{{ .preflightVars.baseURLs.opensearch }}/_cluster/health?&timeout=1s"
     - component: Keycloak
       url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
     # Camunda.
@@ -66,8 +66,8 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+    - component: Opensearch
+      url: "{{ .preflightVars.baseURLs.opensearch }}/_cluster/health?wait_for_status=green&timeout=1s"
     - component: Keycloak
       url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
     # Camunda.

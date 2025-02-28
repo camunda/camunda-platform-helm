@@ -21,11 +21,11 @@ data:
 
     # Camunda Database configuration
     camunda.database:
-      type: elasticsearch
+      type: opensearch
       # Cluster name
-      clusterName: elasticsearch
+      clusterName: opensearch
       # Elasticsearch full url
-      url: "http://camunda-platform-test-elasticsearch:9200"
+      url: "http://camunda-platform-test-opensearch:9200"
 
     server:
       address: "0.0.0.0"
