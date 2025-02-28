@@ -94,3 +94,10 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
+
+keycloak:
+  service:
+    ports:
+      http: 80
+      https: 443
+
