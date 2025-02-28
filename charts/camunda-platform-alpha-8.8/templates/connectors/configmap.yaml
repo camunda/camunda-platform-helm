@@ -36,23 +36,27 @@ data:
 
     camunda:
       client:
-        zeebe:
-          {{-  $proto := (lower .Values.core.readinessProbe.scheme) -}}
-          {{- $baseURLInternal := printf "%s://%s" $proto (include "core.fullname" . | trimAll "\"") }}
-          rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.core.service.httpPort .Values.core.contextPath }}
-          grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.core.service.grpcPort }}
+        {{-  $proto := (lower .Values.core.readinessProbe.scheme) -}}
+        {{- $baseURLInternal := printf "%s://%s" $proto (include "core.fullname" . | trimAll "\"") }}
+        rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.core.service.httpPort .Values.core.contextPath }}
+        grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.core.service.grpcPort }}
+        worker:
           defaults:
-            worker-threads: 10
             max-jobs-active: 32
-            stream-enabled: true
-        identity:
-          base-url: {{ include "camundaPlatform.identityURL" . | quote }}
-          audience: {{ include "core.authAudience" . | quote }}
+            stream-enabled: true          
+        mode: {{ .Values.global.security.authentication.method }}
+        {{- if eq .Values.global.security.authentication.method "basic" }}
         auth:
-          issuer: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . }}
+          {{- $user := first .Values.global.security.initialization.users }}
+          username: {{ $user.username | quote }}
+          password: {{ $user.password | quote }}
+        {{- else }}
+        auth:
+          token-url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . }}
           client-id: {{ include "connectors.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
-        mode: self-managed
+          audience: {{ include "core.authAudience" . | quote }}
+        {{- end }}
 
     logging:
 {{- with .Values.connectors.logging }}
