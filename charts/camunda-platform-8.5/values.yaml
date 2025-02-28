@@ -980,10 +980,10 @@ zeebeGateway:
   resources:
     requests:
       cpu: 400m
-      memory: 450Mi
+      memory: 550Mi
     limits:
       cpu: 400m
-      memory: 450Mi
+      memory: 550Mi
 
   ## @param zeebeGateway.priorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
