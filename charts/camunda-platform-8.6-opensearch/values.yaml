@@ -676,6 +676,8 @@ zeebe:
       value: "2GB"
     - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
       value: "3GB"
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
+      value: io.camunda.zeebe.exporter.opensearch.OpensearchExporter
   ## @param zeebe.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
   ## @extra zeebe.configMap configuration which will be applied to the mounted config map.
