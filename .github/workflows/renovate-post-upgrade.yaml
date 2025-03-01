@@ -44,7 +44,7 @@ jobs:
         run: npm install -g @bitnami/readme-generator-for-helm
       - name: Install dependencies
         uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-      - uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4
+      - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~/.cache/go-build
