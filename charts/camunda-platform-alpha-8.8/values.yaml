@@ -836,7 +836,15 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 25.0.6
+    tag: 26.1.2
+
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:

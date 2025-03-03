@@ -2648,13 +2648,21 @@ identityKeycloak:
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
   nameOverride: "keycloak"
 
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
   ## @extra identityKeycloak.image configuration.
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 25.0.6
+    tag: 26.1.2
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
