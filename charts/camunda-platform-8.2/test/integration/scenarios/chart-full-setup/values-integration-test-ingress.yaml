@@ -94,4 +94,3 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
-
