@@ -81,4 +81,3 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: ""
   camunda.io/helmCLIVersion: 3.16.3
-  jesse: "angry"
