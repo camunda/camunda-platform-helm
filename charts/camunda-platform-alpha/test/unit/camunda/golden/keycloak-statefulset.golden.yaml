@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 25.0.6
+    app.kubernetes.io/version: 26.1.2
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -31,8 +31,9 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 25.0.6
+        app.kubernetes.io/version: 26.1.2
         app.kubernetes.io/component: keycloak
+        app.kubernetes.io/app-version: 26.1.2
     spec:
       serviceAccountName: camunda-platform-test-keycloak
       
@@ -60,7 +61,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-write-dirs
-          image: docker.io/camunda/keycloak:25.0.6
+          image: docker.io/camunda/keycloak:26.1.2
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -74,6 +75,7 @@ spec:
               # directories writable, so we need to copy it to an empty dir volume
               cp -r --preserve=mode /opt/bitnami/keycloak/lib/quarkus /emptydir/app-quarkus-dir
               cp -r --preserve=mode /opt/bitnami/keycloak/data /emptydir/app-data-dir
+              cp -r --preserve=mode /opt/bitnami/keycloak/providers /emptydir/app-providers-dir
               info "Copy operation completed"
           securityContext:
             allowPrivilegeEscalation: false
@@ -90,19 +92,17 @@ spec:
               type: RuntimeDefault
           resources:
             limits:
-              cpu: 750m
-              ephemeral-storage: 2Gi
-              memory: 768Mi
+              cpu: 2000m
+              memory: 2Gi
             requests:
-              cpu: 500m
-              ephemeral-storage: 50Mi
-              memory: 512Mi
+              cpu: 1000m
+              memory: 1Gi
           volumeMounts:
            - name: empty-dir
              mountPath: /emptydir
       containers:
         - name: keycloak
-          image: docker.io/camunda/keycloak:25.0.6
+          image: docker.io/camunda/keycloak:26.1.2
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -125,7 +125,7 @@ spec:
                   fieldPath: metadata.namespace
             - name: BITNAMI_DEBUG
               value: "false"
-            - name: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-keycloak
@@ -146,13 +146,11 @@ spec:
                 name: camunda-platform-test-keycloak-env-vars
           resources:
             limits:
-              cpu: 750m
-              ephemeral-storage: 2Gi
-              memory: 768Mi
+              cpu: 2000m
+              memory: 2Gi
             requests:
-              cpu: 500m
-              ephemeral-storage: 50Mi
-              memory: 512Mi
+              cpu: 1000m
+              memory: 1Gi
           ports:
             - name: http
               containerPort: 8080
@@ -192,6 +190,9 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/keycloak/data
               subPath: app-data-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/keycloak/providers
+              subPath: app-providers-dir
             - mountPath: /opt/bitnami/keycloak/data/tmp
               name: data-tmp
       volumes:
