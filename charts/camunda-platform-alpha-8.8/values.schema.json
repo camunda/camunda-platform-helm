@@ -789,7 +789,7 @@
                 "enabled": {
                     "type": "boolean",
                     "description": "if true, the identity deployment and its related resources are deployed via a helm release",
-                    "default": false
+                    "default": true
                 },
                 "fullnameOverride": {
                     "type": "string",
@@ -1434,7 +1434,7 @@
                 "enabled": {
                     "type": "boolean",
                     "description": "Enable Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
-                    "default": false
+                    "default": true
                 },
                 "global": {
                     "type": "object",
@@ -1451,16 +1451,6 @@
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
                                     }
-                                }
-                            }
-                        },
-                        "security": {
-                            "type": "object",
-                            "properties": {
-                                "allowInsecureImages": {
-                                    "type": "boolean",
-                                    "description": "Allows the use of the Camunda build Keycloak image (including the Identity login theme)",
-                                    "default": true
                                 }
                             }
                         }
@@ -1482,42 +1472,7 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "26.1.2"
-                        }
-                    }
-                },
-                "resources": {
-                    "type": "object",
-                    "properties": {
-                        "requests": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1Gi"
-                                }
-                            }
-                        },
-                        "limits": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2Gi"
-                                }
-                            }
+                            "default": "25.0.6"
                         }
                     }
                 },
@@ -2331,7 +2286,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha2"
+                            "default": "8.8.0-alpha1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -3587,7 +3542,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.17.0-debian-12-r3"
+                            "default": "14.17.0-debian-12-r1"
                         }
                     }
                 },
@@ -3732,7 +3687,7 @@
                         "mode": {
                             "type": "string",
                             "description": "acceptable values: disabled, credentials, or oauth",
-                            "default": "disabled"
+                            "default": "oauth"
                         },
                         "auth": {
                             "type": "object",
@@ -3767,7 +3722,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2-rc1"
+                            "default": "8.8.0-alpha1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4201,7 +4156,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2-rc1"
+                            "default": "8.8.0-alpha1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4884,7 +4839,7 @@
                 "enabled": {
                     "type": "boolean",
                     "description": "if true, the Optimize deployment and its related resources are deployed via a helm release",
-                    "default": false
+                    "default": true
                 },
                 "image": {
                     "type": "object",
