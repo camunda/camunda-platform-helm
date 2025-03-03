@@ -42,6 +42,10 @@ identity:
   firstUser:
     existingSecret: "integration-test-credentials"
   keycloak:
+    service:
+      ports:
+        http: 80
+        https: 443
     auth:
       existingSecret: "integration-test-credentials"
     postgresql:
@@ -94,10 +98,4 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
-
-keycloak:
-  service:
-    ports:
-      http: 80
-      https: 443
 
