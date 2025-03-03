@@ -54,6 +54,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
+  artifacthub.io/prerelease: "true"
   camunda.io/helmCLIVersion: "3.17.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
