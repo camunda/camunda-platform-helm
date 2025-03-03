@@ -43,7 +43,7 @@ dependencies:
   - name: opensearch
     repository: oci://registry-1.docker.io/bitnamicharts
     # version: 1.6.1
-    version: 0.10.0
+    version: 0.13.0
     condition: "opensearch.enabled"
   # Helpers.
   - name: common
