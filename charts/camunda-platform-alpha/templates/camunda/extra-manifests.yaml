@@ -1,0 +1,7 @@
+{{- if .Values.global.extraManifests }}
+{{- range $index, $manifest := .Values.global.extraManifests }}
+  # extraManifests item {{ $index }}
+{{ $manifest | nindent 0 }}
+---
+{{- end }}
+{{- end }}

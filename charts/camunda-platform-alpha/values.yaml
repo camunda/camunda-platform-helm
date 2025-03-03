@@ -432,6 +432,26 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
+  extraManifests:
+    - |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: example-ingress
+      spec:
+        ingressClassName: nginx
+        rules:
+          - host: hello-world.example
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: web
+                      port:
+                        number: 8080 
+
 #################################################
  #####
 #     #  ####  #    #  ####   ####  #      ######
