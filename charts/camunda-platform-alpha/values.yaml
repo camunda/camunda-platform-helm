@@ -433,7 +433,7 @@ global:
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
 ## Extra Manifests Configuration
-## @extra global.extraManifests These parameters allow you to inject arbitrary YAML documents into the Helm release.
+## @param global.extraManifests These parameters allow you to inject arbitrary YAML documents into the Helm chart.
 ## Each item in the list must be a valid Kubernetes resource definition (apiVersion, kind, etc.).
 ## Example:
 ## global:
