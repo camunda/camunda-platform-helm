@@ -67,7 +67,11 @@ identity:
   keycloak:
     image:
       pullSecrets:
-      - name: index-docker-io
+      - name: index-docker-iokeycloak:
+    service:
+      ports:
+        http: 80
+        https: 443
 
 global:
   image:
