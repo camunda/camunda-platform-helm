@@ -12,19 +12,22 @@ data:
   {{- else }}
   application.yaml: |
     camunda:
+      {{- if .Values.global.identity.auth.enabled }}
       identity:
-    {{- if .Values.identity.enabled }}
+        {{- if .Values.identity.enabled }}
         base-url: {{ include "webModeler.identityBaseUrl" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-    {{- end }}
+        {{- end }}
         type: {{ include "camundaPlatform.authType" . | quote }}
+      {{- end }}
 
       modeler:
         pusher:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
           port: {{ .Values.webModeler.websockets.service.port }}
 
+        {{- if .Values.global.identity.auth.enabled }}
         security:
           jwt:
             issuer:
@@ -32,6 +35,8 @@ data:
             audience:
               internal-api: {{ include "webModeler.authClientApiAudience" . | quote }}
               public-api: {{ include "webModeler.authPublicApiAudience" . | quote }}
+        {{- end }}
+
         mail:
           from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" .Values.webModeler.restapi.mail.fromAddress | quote }}
           from-name: {{ .Values.webModeler.restapi.mail.fromName | quote }}
@@ -76,9 +81,14 @@ data:
       security:
         oauth2:
           resourceserver:
+            {{- if .Values.global.identity.auth.enabled }}
             jwt:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
               jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+            {{- else }}
+            jwt: null
+            {{- end }}
+
     logging:
 {{- with .Values.webModeler.restapi.logging }}
 {{ . | toYaml | indent 6 }}

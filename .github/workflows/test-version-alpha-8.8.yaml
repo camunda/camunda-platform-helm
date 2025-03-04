@@ -40,24 +40,27 @@ jobs:
   #     camunda-helm-dir: "camunda-platform-alpha-8.8"
   #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  # integration:
-  #   name: Integration Test - Camunda Alpha 8.8
-  #   #needs: [validation, unit]
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #     deployments: write
-  #   secrets: inherit
-  #   uses: ./.github/workflows/test-integration-template.yaml
-  #   with:
-  #     identifier: "${{ github.event.pull_request.number }}-intg-alpha-8-8"
-  #     deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
-  #     platforms: "gke,rosa"
-  #     flows: "install,upgrade"
-  #     camunda-helm-repo: "oci://ghcr.io/camunda/helm/camunda-platform"
-  #     camunda-helm-dir: "camunda-platform-alpha-8.8"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-  #     # We need to set the var here as the Alpha is stored on the OCI Helm registry and uses different versioning.
-  #     camunda-helm-upgrade-version: "0.0.0-snapshot-alpha-8.8"
-  #     camunda-helm-post-render: false
-  #     caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+  integration:
+    name: Integration Test - Camunda Alpha 8.8
+    #needs: [validation, unit]
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-alpha-8-8"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      platforms: "gke,rosa"
+      flows: "install,upgrade"
+      camunda-helm-repo: "oci://ghcr.io/camunda/helm/camunda-platform"
+      camunda-helm-dir: "camunda-platform-alpha-8.8"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      # We need to set the var here as the Alpha is stored on the OCI Helm registry and uses different versioning.
+      camunda-helm-upgrade-version: "0.0.0-snapshot-alpha-8.8"
+      camunda-helm-post-render: false
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      # TODO: Enable test again for final 8.8.0 release.
+      # This will just deploy the chart without any extra tests.
+      test-enabled: false
