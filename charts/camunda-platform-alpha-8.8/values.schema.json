@@ -1478,6 +1478,16 @@
                                     }
                                 }
                             }
+                        },
+                        "security": {
+                            "type": "object",
+                            "properties": {
+                                "allowInsecureImages": {
+                                    "type": "boolean",
+                                    "description": "Allows the use of the Camunda build Keycloak image (including the Identity login theme)",
+                                    "default": true
+                                }
+                            }
                         }
                     }
                 },
@@ -1497,7 +1507,42 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "25.0.6"
+                            "default": "26.1.2"
+                        }
+                    }
+                },
+                "resources": {
+                    "type": "object",
+                    "properties": {
+                        "requests": {
+                            "type": "object",
+                            "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
+                                "memory": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1Gi"
+                                }
+                            }
+                        },
+                        "limits": {
+                            "type": "object",
+                            "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
+                                "memory": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2Gi"
+                                }
+                            }
                         }
                     }
                 },
