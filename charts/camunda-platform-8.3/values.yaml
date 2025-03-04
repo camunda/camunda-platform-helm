@@ -3071,11 +3071,7 @@ elasticsearch:
   ## @param elasticsearch.extraVolumeMounts[0].name
   ## @param elasticsearch.extraVolumeMounts[1].mountPath
   ## @param elasticsearch.extraVolumeMounts[1].name
-  ## @param elasticsearch.extraVolumeMounts[2].mountPath
-  ## @param elasticsearch.extraVolumeMounts[2].name
   extraVolumeMounts:
-  - mountPath: /tmp
-    name: tmp
   - mountPath: /usr/share/elasticsearch/logs
     name: logs
   - mountPath: /usr/share/elasticsearch/config
