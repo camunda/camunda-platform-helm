@@ -121,7 +121,9 @@ For more details, please check Camunda Helm chart documentation.
 [identity] Keycloak default URL.
 */}}
 {{- define "identity.keycloak.hostDefault" -}}
-    {{- template "common.names.fullname" .Subcharts.identityKeycloak -}}
+    {{- if .Values.identityKeycloak.enabled -}}
+        {{- template "common.names.fullname" .Subcharts.identityKeycloak -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*
@@ -131,7 +133,9 @@ For more details, please check Camunda Helm chart documentation.
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.protocol -}}
         {{- .Values.global.identity.keycloak.url.protocol -}}
     {{- else -}}
-        {{- ternary "https" "http" (.Values.identityKeycloak.tls.enabled) -}}
+        {{- if .Values.identityKeycloak.enabled -}}
+            {{- template "common.names.fullname" .Subcharts.identityKeycloak -}}
+        {{- end -}}
     {{- end -}}
 {{- end -}}
 
@@ -166,8 +170,10 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.port -}}
         {{- .Values.global.identity.keycloak.url.port -}}
     {{- else -}}
-        {{- $keycloakProtocol := (include "identity.keycloak.protocol" .) -}}
-        {{- get .Values.identityKeycloak.service.ports $keycloakProtocol -}}
+        {{- if .Values.identityKeycloak.enabled -}}
+            {{- $keycloakProtocol := (include "identity.keycloak.protocol" .) -}}
+            {{- get .Values.identityKeycloak.service.ports $keycloakProtocol -}}
+        {{- end -}}
     {{- end -}}
 {{- end -}}
 

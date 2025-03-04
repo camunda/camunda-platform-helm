@@ -64,14 +64,7 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
-            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-connectors-client-token
           envFrom:
-            - configMapRef:
-                name: camunda-platform-test-identity-env-vars
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
           resources:

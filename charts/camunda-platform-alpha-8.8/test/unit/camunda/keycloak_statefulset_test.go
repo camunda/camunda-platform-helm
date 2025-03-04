@@ -46,5 +46,9 @@ func TestGoldenKeycloakDefaults(t *testing.T) {
 		},
 		// ExtraHelmArgs is used instead of Templates here because Keycloak is a dependency chart.
 		ExtraHelmArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
+		SetValues: map[string]string{
+			"identity.enabled":         "true",
+			"identityKeycloak.enabled": "true",
+		},
 	})
 }
