@@ -827,6 +827,7 @@ identityKeycloak:
         ##
         adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
     security:
+      ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Identity login theme)
       allowInsecureImages: true
   
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
