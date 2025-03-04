@@ -2636,8 +2636,24 @@ identityKeycloak:
         ## @param identityKeycloak.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
         adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
+    security:
+        ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Identity login theme)
+      allowInsecureImages: true
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
   nameOverride: "keycloak"
+
+  ## @extra identityKeycloak.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param identityKeycloak.resources.requests.cpu
+  ## @param identityKeycloak.resources.requests.memory
+  ## @param identityKeycloak.resources.limits.cpu
+  ## @param identityKeycloak.resources.limits.memory
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
 
   ## @extra identityKeycloak.image configuration.
   # https://hub.docker.com/r/bitnami/keycloak/tags
@@ -2645,7 +2661,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 25.0.6
+    tag: 26.1.2
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
