@@ -840,6 +840,11 @@ identityKeycloak:
     ## @param identityKeycloak.image.tag image tag
     tag: 26.1.2
 
+  ## @extra identityKeycloak.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param identityKeycloak.resources.requests.cpu
+  ## @param identityKeycloak.resources.requests.memory
+  ## @param identityKeycloak.resources.limits.cpu
+  ## @param identityKeycloak.resources.limits.memory
   resources:
     requests:
       cpu: 1000m
