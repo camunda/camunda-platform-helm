@@ -186,6 +186,16 @@
       // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchFileNames": [
+        "charts/camunda-platform-8.3/chart.yaml"
+      ],
+      "matchPackageNames": ["/.*elasticsearch.*/"],
+      "allowedVersions": "~19.21.2"
+    },
+    {
+      // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
+      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      "matchDatasources": ["docker"],
+      "matchFileNames": [
         "charts/camunda-platform-8.4/values.yaml",
         "charts/camunda-platform-8.4/values-latest.yaml"
       ],
