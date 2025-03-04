@@ -71,7 +71,7 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     repository: bitnami/keycloak
-    tag: 26.1.2
+    tag: 26.1.3
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
@@ -86,4 +86,4 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.17.2
+    tag: 8.17.3
