@@ -29,12 +29,12 @@ data:
         clientId: "operate"
         audience: "operate-api"
         baseUrl: "http://camunda-platform-test-identity:80"
-    
+
     # Operate configuration file
     camunda.operate:
       identity:
         redirectRootUrl: "http://localhost:8081"
-    
+
       # ELS instance to store Operate data
       elasticsearch:
         # Cluster name

@@ -75,7 +75,7 @@ data:
       identity:
         redirectRootUrl: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | trimSuffix .Values.operate.contextPath | quote }}
       {{- end }}
-    
+
       # ELS instance to store Operate data
       {{- if .Values.global.elasticsearch.enabled }}
       elasticsearch:
