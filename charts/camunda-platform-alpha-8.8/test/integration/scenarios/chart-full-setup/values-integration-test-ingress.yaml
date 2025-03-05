@@ -71,7 +71,6 @@ connectors:
   contextPath: "/connectors"
 
 webModeler:
-  enabled: true
   contextPath: "/modeler"
   image:
     pullSecrets:
@@ -84,7 +83,6 @@ webModeler:
 
 # WebModeler Database.
 webModelerPostgresql:
-  enabled: true
   auth:
     existingSecret: "integration-test-credentials"
     secretKeys:
@@ -107,7 +105,6 @@ core:
         external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
-  enabled: true
   contextPath: "/"
   image:
     pullSecrets:
