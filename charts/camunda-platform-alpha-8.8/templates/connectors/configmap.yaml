@@ -43,7 +43,7 @@ data:
         worker:
           defaults:
             max-jobs-active: 32
-            stream-enabled: true          
+            stream-enabled: true
         mode: {{ .Values.global.security.authentication.method }}
         {{- if eq .Values.global.security.authentication.method "basic" }}
         auth:

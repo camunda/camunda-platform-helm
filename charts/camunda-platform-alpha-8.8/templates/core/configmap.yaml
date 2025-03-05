@@ -265,7 +265,7 @@ data:
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ }}/operate"
         {{- end }}
-      
+
         # ELS instance to store Operate data
         {{- if .Values.global.elasticsearch.enabled }}
         elasticsearch:

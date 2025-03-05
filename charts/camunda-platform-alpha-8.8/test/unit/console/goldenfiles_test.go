@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestGoldenDefaultsTemplate(t *testing.T) {
+func TestGoldenDefaultsTemplateConsole(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")

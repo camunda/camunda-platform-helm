@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.8.0-alpha1"
+    app.kubernetes.io/version: "8.8.0-alpha2-rc1"
 data:
   application.yml: |
     server:
@@ -40,7 +40,7 @@ data:
         worker:
           defaults:
             max-jobs-active: 32
-            stream-enabled: true          
+            stream-enabled: true
         mode: basic
         auth:
           username: "demo"

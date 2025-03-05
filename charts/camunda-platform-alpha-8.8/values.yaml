@@ -271,7 +271,7 @@ global:
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
       ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
-      enabled: true
+      enabled: false
 
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
@@ -497,7 +497,7 @@ identity:
   #       If you don't need WebModeler, make sure to disable both the Identity authentication and the applications by setting:
   #         global.identity.auth.enabled=false
   #         webModeler.enabled=false
-  enabled: true
+  enabled: false
 
   ## @param identity.fullnameOverride can be used to override the full name of the Identity resources
   fullnameOverride: ""
@@ -805,7 +805,7 @@ identityPostgresql:
 ## @extra identityKeycloak configuration, for the Keycloak dependency chart which is used by Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
 identityKeycloak:
   ## @param identityKeycloak.enabled Enable Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
-  enabled: true
+  enabled: false
   ## @extra identityKeycloak.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
@@ -1906,7 +1906,7 @@ connectors:
   ## @extra connectors.inbound Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     ## @param connectors.inbound.mode acceptable values: disabled, credentials, or oauth
-    mode: oauth
+    mode: disabled
     ## @extra connectors.inbound.auth configuration of the credentials authentication.
     auth:
       ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains password (if inbound mode is credentials)
@@ -1922,7 +1922,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha1
+    tag: 8.8.0-alpha2-rc1
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2129,7 +2129,7 @@ core:
      ## @param core.image.repository defines which image repository to use
     repository: camunda/camunda
      ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha1
+    tag: 8.8.0-alpha2-rc1
      ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2472,7 +2472,7 @@ core:
 # Optimize configuration for the Optimize sub chart.
 optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
-  enabled: true
+  enabled: false
 
   ## @extra optimize.image configuration to configure the Optimize image specifics
   # https://hub.docker.com/r/camunda/optimize/tags

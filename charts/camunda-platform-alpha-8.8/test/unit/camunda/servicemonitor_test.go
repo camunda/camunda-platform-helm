@@ -37,7 +37,10 @@ func TestGoldenServiceMonitorOptimizeDefaults(t *testing.T) {
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "optimize-service-monitor",
 		Templates:      []string{"templates/service-monitor/optimize-service-monitor.yaml"},
-		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+		SetValues: map[string]string{
+			"optimize.enabled":                 "true",
+			"prometheusServiceMonitor.enabled": "true",
+		},
 	})
 }
 
@@ -88,7 +91,10 @@ func TestGoldenServiceMonitorIdentityDefaults(t *testing.T) {
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "identity-service-monitor",
 		Templates:      []string{"templates/service-monitor/identity-service-monitor.yaml"},
-		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+		SetValues: map[string]string{
+			"global.identity.auth.enabled":     "true",
+			"prometheusServiceMonitor.enabled": "true",
+		},
 	})
 }
 

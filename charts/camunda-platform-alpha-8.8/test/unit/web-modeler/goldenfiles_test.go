@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestGoldenDefaultsTemplate(t *testing.T) {
+func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
@@ -57,6 +57,10 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 				"webModelerPostgresql.auth.existingSecret":            "camunda-platform-test-postgresql-web-modeler",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
 				"global.identity.auth.core.existingSecret.name":       "foo",
+
+				"global.identity.auth.enabled": "true",
+				"identity.enabled":             "true",
+				"identityKeycloak.enabled":     "true",
 			},
 			IgnoredLines: []string{
 				`\s+pusher-app-key:\s+.*`,    // Auto-generated and need to be ignored.

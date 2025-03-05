@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: core
-    app.kubernetes.io/version: "8.8.0-alpha1"
+    app.kubernetes.io/version: "8.8.0-alpha2-rc1"
 apiVersion: v1
 data:
   startup.sh: |
@@ -121,9 +121,6 @@ data:
               email: "demo@demo.com"
         multiTenancy:
             enabled: false
-      identity:
-        clientId: "core"
-        audience: "core-api"
 
       #
       # Camunda Database Configuration.
@@ -140,9 +137,7 @@ data:
       #
       operate:
         persistentSessionsEnabled: true
-        identity:
-          redirectRootUrl: "http://localhost:8082/operate"
-      
+
         # ELS instance to store Operate data
         elasticsearch:
           # Operate index prefix.
@@ -175,8 +170,6 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
-        identity:
-          redirectRootUrl: "http://localhost:8082/tasklist"
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.

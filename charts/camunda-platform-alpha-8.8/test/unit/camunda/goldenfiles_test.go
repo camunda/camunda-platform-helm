@@ -48,7 +48,7 @@ func TestGoldenDefaultsTemplateSecrets(t *testing.T) {
 			IgnoredLines: []string{
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
 				`\s+.*-password:\s+.*`,  // passwords are auto-generated and need to be ignored.
-				`\s+.*-token:\s+.*`,  // passwords are auto-generated and need to be ignored.
+				`\s+.*-token:\s+.*`,     // passwords are auto-generated and need to be ignored.
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},
 		})

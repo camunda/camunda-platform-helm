@@ -435,7 +435,7 @@
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true, enables the identity authentication otherwise basic-auth will be used on all services.",
-                                    "default": true
+                                    "default": false
                                 },
                                 "issuer": {
                                     "type": "string",
@@ -789,7 +789,7 @@
                 "enabled": {
                     "type": "boolean",
                     "description": "if true, the identity deployment and its related resources are deployed via a helm release",
-                    "default": true
+                    "default": false
                 },
                 "fullnameOverride": {
                     "type": "string",
@@ -1434,7 +1434,7 @@
                 "enabled": {
                     "type": "boolean",
                     "description": "Enable Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
-                    "default": true
+                    "default": false
                 },
                 "global": {
                     "type": "object",
@@ -2331,7 +2331,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha1"
+                            "default": "8.8.0-alpha2"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -3587,7 +3587,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.17.0-debian-12-r1"
+                            "default": "14.17.0-debian-12-r3"
                         }
                     }
                 },
@@ -3732,7 +3732,7 @@
                         "mode": {
                             "type": "string",
                             "description": "acceptable values: disabled, credentials, or oauth",
-                            "default": "oauth"
+                            "default": "disabled"
                         },
                         "auth": {
                             "type": "object",
@@ -3767,7 +3767,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha1"
+                            "default": "8.8.0-alpha2-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4201,7 +4201,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha1"
+                            "default": "8.8.0-alpha2-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4884,7 +4884,7 @@
                 "enabled": {
                     "type": "boolean",
                     "description": "if true, the Optimize deployment and its related resources are deployed via a helm release",
-                    "default": true
+                    "default": false
                 },
                 "image": {
                     "type": "object",

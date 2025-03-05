@@ -58,6 +58,7 @@ func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingE
 		SetValues: map[string]string{
 			"global.ingress.tls.enabled": "true",
 			"identity.contextPath":       "/identity",
+			"identity.enabled":           "/true",
 			"identityKeycloak.enabled":   "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
