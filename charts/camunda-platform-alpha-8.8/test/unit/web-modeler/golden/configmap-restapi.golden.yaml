@@ -27,7 +27,6 @@ data:
         pusher:
           host: "camunda-platform-test-web-modeler-websockets"
           port: 80
-
         security:
           jwt:
             issuer:
@@ -35,6 +34,7 @@ data:
             audience:
               internal-api: "web-modeler-api"
               public-api: "web-modeler-public-api"
+
         mail:
           from-address: "example@example.com"
           from-name: "Camunda 8"
@@ -72,6 +72,7 @@ data:
             jwt:
               issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
               jwk-set-uri: "camunda-platform-test-keycloak://camunda-platform-test-keycloak:/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
     logging:
       level:
         io.camunda.modeler: DEBUG

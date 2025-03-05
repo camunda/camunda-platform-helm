@@ -137,7 +137,7 @@ data:
       #
       operate:
         persistentSessionsEnabled: true
-      
+
         # ELS instance to store Operate data
         elasticsearch:
           # Operate index prefix.

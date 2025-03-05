@@ -40,7 +40,7 @@ data:
         worker:
           defaults:
             max-jobs-active: 32
-            stream-enabled: true          
+            stream-enabled: true
         mode: basic
         auth:
           username: "demo"
