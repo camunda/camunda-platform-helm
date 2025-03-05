@@ -19,7 +19,7 @@ data:
       server:
         base-path: {{ .Values.tasklist.contextPath | quote }}
     {{- end }}
-  
+
     {{- if .Values.global.identity.auth.enabled }}
     spring:
       profiles:

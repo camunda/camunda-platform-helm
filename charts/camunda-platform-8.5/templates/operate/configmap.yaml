@@ -37,7 +37,7 @@ data:
       profiles:
         active: "auth"
     {{- end }}
-    
+
     # Operate configuration file
     camunda.operate:
       {{- if .Values.global.opensearch.enabled }}
@@ -51,7 +51,7 @@ data:
       identity:
         redirectRootUrl: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | trimSuffix .Values.operate.contextPath | quote }}
       {{- end }}
-    
+
       # ELS instance to store Operate data
       {{- if .Values.global.elasticsearch.enabled }}
       elasticsearch:
