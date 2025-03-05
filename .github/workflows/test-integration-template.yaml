@@ -191,8 +191,16 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-      - name: Install env dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            kubectl
+            oc
+            task
+            yq
       # TODO: Later, find a way to abstract the auth for different platforms.
       - name: Authenticate to GKE
         if: matrix.distro.platform == 'gke' && inputs.auth-data == ''

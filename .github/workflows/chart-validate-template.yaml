@@ -54,8 +54,15 @@ jobs:
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
           python-version: 3.8
-      - name: Install dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            helm-ct
+            yamllint
+            yq
       - name: Add helm repos
         run: |
           make helm.repos-add

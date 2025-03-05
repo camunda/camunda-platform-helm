@@ -50,8 +50,13 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
-      - name: Install env dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            helm-ct
+            yq
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
@@ -192,8 +197,13 @@ jobs:
           # The verification step happens in the release branch before merging into the "main" branch.
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
-      - name: Install env dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            gomplate
+            helm
+            yq
       # - name: Simple smoke test
       #   uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
       #   with:
