@@ -98,5 +98,9 @@
   {
     "chart_version": "9.4.7",
     "output": "- docker.io/bitnami/elasticsearch:8.9.2\n- docker.io/bitnami/keycloak:22.0.5\n- docker.io/bitnami/os-shell:12-debian-12-r16\n- docker.io/bitnami/postgresql:14.5.0-debian-11-r35\n- docker.io/bitnami/postgresql:15.10.0-debian-12-r2\n- docker.io/camunda/connectors-bundle:8.4.16\n- docker.io/camunda/identity:8.4.18\n- docker.io/camunda/operate:8.4.17\n- docker.io/camunda/optimize:8.4.14\n- docker.io/camunda/tasklist:8.4.17\n- docker.io/camunda/zeebe:8.4.16\n- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.14\n- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.14\n- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.14"
+  },
+  {
+    "chart_version": "9.4.8",
+    "output": "- docker.io/bitnami/elasticsearch:8.9.2\n- docker.io/bitnami/keycloak:22.0.5\n- docker.io/bitnami/os-shell:12-debian-12-r16\n- docker.io/bitnami/postgresql:14.5.0-debian-11-r35\n- docker.io/bitnami/postgresql:15.10.0-debian-12-r2\n- docker.io/camunda/connectors-bundle:8.4.17\n- docker.io/camunda/identity:8.4.19\n- docker.io/camunda/operate:8.4.17\n- docker.io/camunda/optimize:8.4.14\n- docker.io/camunda/tasklist:8.4.17\n- docker.io/camunda/zeebe:8.4.17\n- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.15\n- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.15\n- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.15"
   }
 ]
