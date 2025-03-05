@@ -61,6 +61,4 @@ jobs:
       camunda-helm-upgrade-version: "0.0.0-snapshot-alpha-8.8"
       camunda-helm-post-render: false
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      # TODO: Enable test again for final 8.8.0 release.
-      # This will just deploy the chart without any extra tests.
-      test-enabled: false
+      test-enabled: true
