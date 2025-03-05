@@ -41,8 +41,14 @@ jobs:
       #
       # Dependencies.
       #
-      - name: Install dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            helm-ct
+            yq
       - name: Install readme-generator-for-helm
         run: |
           npm install -g @bitnami/readme-generator-for-helm

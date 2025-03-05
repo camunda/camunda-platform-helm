@@ -75,6 +75,12 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.branch }}
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            yq
       - name: Set vars
         run: |
           # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-snapshot-latest".
@@ -89,8 +95,6 @@ jobs:
           yq -i '.description |= strenv(SNAPSHOT_DESCRIPTION)' Chart.yaml
       #
       # Package.
-      - name: Install Helm CLI
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Print Helm CLI version
         run: helm version
       - name: ⭐ Check if the chart artifact should be published ⭐
