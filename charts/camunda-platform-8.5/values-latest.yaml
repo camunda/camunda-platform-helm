@@ -42,7 +42,7 @@ tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.5.12
+    tag: 8.5.13
 
 webModeler:
   # Camunda Enterprise repository.
