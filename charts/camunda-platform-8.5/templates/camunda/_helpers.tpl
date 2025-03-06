@@ -448,7 +448,9 @@ Identity templates.
 [camunda-platform] Identity internal URL.
 */}}
 {{ define "camundaPlatform.identityURL" }}
-  {{- if .Values.identity.enabled -}}
+  {{- if .Values.global.identity.service.url -}}
+    {{- .Values.global.identity.service.url -}}
+  {{- else -}}
     {{-
       printf "http://%s:%v%s"
         (include "identity.fullname" .)
