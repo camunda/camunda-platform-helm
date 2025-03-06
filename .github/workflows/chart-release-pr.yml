@@ -3,7 +3,7 @@ name: "Chart - Release - PR"
 on:
   push:
     branches:
-      - release-candidate*
+      - fix-duplicate-prs
 
 permissions:
   contents: write
@@ -24,15 +24,32 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
       - name: Get chart folder from branch name
         run: |
-          chart_folder=$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')
-          echo "CHART_PATH=charts/camunda-platform-${chart_folder}" >> $GITHUB_ENV
-      - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
-        with:
-          path: "${{ env.CHART_PATH }}"
-          token: '${{ steps.generate-github-token.outputs.token }}'
-          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
-          config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
-          manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
-          target-branch: "${{ github.ref_name }}"
+          jq '.packages |= {"charts/camunda-platform-alpha": ."charts/camunda-platform-alpha"}' \
+            ${{ env.RELEASE_PLEASE_CONFIG_FILE }}
+          jq '. |= {"charts/camunda-platform-alpha": ."charts/camunda-platform-alpha"}' \
+            ${{ env.RELEASE_PLEASE_MANIFEST_FILE }}
+      - name: Install release-please
+        run: |
+          npm i release-please -g
+      - name: Run release-please
+        run: |
+          release-please release-pr \
+            --token="${{ steps.generate-github-token.outputs.token }}" \
+            --repo-url=camunda/camunda-platform-helm \
+            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
+            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
+            --target-branch="${{ github.ref_name }}"
+      # - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
+      #   with:
+      #     path: "${{ env.ROOT_PROJECT_PATH }}"
+      #     token: '${{ steps.generate-github-token.outputs.token }}'
+      #     # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
+      #     config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
+      #     manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
+      #     target-branch: "${{ github.ref_name }}"
