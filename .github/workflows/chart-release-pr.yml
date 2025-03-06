@@ -24,8 +24,13 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Get chart folder from branch name
+        run: |
+          chart_folder=$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')
+          echo "CHART_PATH=charts/camunda-platform-${chart_folder}" >> $GITHUB_ENV
       - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
         with:
+          path: "${{ env.CHART_PATH }}"
           token: '${{ steps.generate-github-token.outputs.token }}'
           # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
           config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
