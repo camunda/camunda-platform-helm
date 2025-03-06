@@ -3,7 +3,7 @@ name: "Chart - Release - PR"
 on:
   push:
     branches:
-      - release-candidate*
+      - fix-duplicate-prs
 
 permissions:
   contents: write
@@ -27,10 +27,10 @@ jobs:
       - name: Get chart folder from branch name
         run: |
           chart_folder=$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')
-          echo "CHART_PATH=charts/camunda-platform-${chart_folder}" >> $GITHUB_ENV
+          echo "ROOT_PROJECT_PATH=charts/camunda-platform-${chart_folder}" >> $GITHUB_ENV
       - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
         with:
-          path: "${{ env.CHART_PATH }}"
+          path: "${{ env.ROOT_PROJECT_PATH }}"
           token: '${{ steps.generate-github-token.outputs.token }}'
           # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
           config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
