@@ -182,14 +182,12 @@
       "allowedVersions": "~8.8.0"
     },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
-      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["helm"],
       "matchFileNames": [
-        "charts/camunda-platform-8.3/chart.yaml"
+        "charts/camunda-platform-8.3/Chart.yaml"
       ],
       "matchPackageNames": ["/.*elasticsearch.*/"],
-      "allowedVersions": "~19.21.2"
+      "allowedVersions": "19.13.15"
     },
     {
       // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
@@ -201,6 +199,14 @@
       ],
       "matchPackageNames": ["/.*elasticsearch.*/"],
       "allowedVersions": "~8.9.0"
+    },
+    {
+      "matchDatasources": ["helm"],
+      "matchFileNames": [
+        "charts/camunda-platform-8.4/Chart.yaml"
+      ],
+      "matchPackageNames": ["/.*elasticsearch.*/"],
+      "allowedVersions": "19.19.4"
     },
     {
       // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
