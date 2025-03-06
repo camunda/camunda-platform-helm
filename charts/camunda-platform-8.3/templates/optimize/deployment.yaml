@@ -115,7 +115,7 @@ spec:
             - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
               value: "optimize-api"
             - name: CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
             - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
               value: "optimize-api"
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
