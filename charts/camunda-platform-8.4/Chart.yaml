@@ -34,7 +34,7 @@ dependencies:
   # Dependency charts.
   - name: elasticsearch
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 19.21.2
+    version: 19.19.4
     condition: "elasticsearch.enabled"
   - name: postgresql
     repository: oci://registry-1.docker.io/bitnamicharts
