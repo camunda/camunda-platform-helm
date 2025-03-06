@@ -94,7 +94,7 @@ spec:
           - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
             value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
           - name: RESTAPI_IDENTITY_BASE_URL
-            value: {{ include "camundaPlatform.identityURL" . | quote }}
+            value: {{ include "webModeler.identityBaseUrl" . | quote }}
         {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
         {{- end }}
