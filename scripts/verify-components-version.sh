@@ -10,7 +10,10 @@ helm repo update
 
 chart_main_dir=$(ls -d1 charts/camunda-platform-8* | tail -n1)
 chart_main_version="$(yq '.version' ${chart_main_dir}/Chart.yaml)"
-components_versions="$(helm template camunda/camunda-platform | grep -Po '(?<=helm.sh/chart: ).+' | sort | uniq)"
+components_versions=$(helm template camunda/camunda-platform | \
+  awk -F'helm.sh/chart: ' '/helm.sh\/chart:/ {print $2}' | \
+  sort | uniq)
+
 components_count=2
 
 print_components_versions() {
