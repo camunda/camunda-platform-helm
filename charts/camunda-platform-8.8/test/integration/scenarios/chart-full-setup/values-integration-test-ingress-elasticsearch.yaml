@@ -1,2 +1,7 @@
 elasticsearch:
   maxUnavailable: 0
+
+prometheusServiceMonitor:
+  enabled: false
+  labels:
+    release: kube-prometheus-stack
