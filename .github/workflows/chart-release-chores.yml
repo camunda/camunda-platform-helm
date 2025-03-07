@@ -45,6 +45,7 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            git-cliff
             golang
             helm
             helm-ct
