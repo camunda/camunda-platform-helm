@@ -128,7 +128,7 @@ env:
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   AWS_PROFILE: distribution
   NAMESPACE_PREFIX: distribution-
-  CLUSTER_NAME: camunda-ci-eks
+  CLUSTER_NAME: camunda-ci-eks-dev
   LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true
   TOKEN: infra-ci-dev-github-action-distribution
 
