@@ -114,6 +114,6 @@ elasticsearch:
   maxUnavailable: 0
 
 prometheusServiceMonitor:
-  enabled: true
+  enabled: false
   labels:
     release: kube-prometheus-stack
