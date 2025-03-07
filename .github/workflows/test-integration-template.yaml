@@ -97,6 +97,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}
@@ -119,7 +120,8 @@ env:
   AWS_PROFILE: distribution
   NAMESPACE_PREFIX: distribution-
   CLUSTER_NAME: camunda-ci-eks
-  LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
+  LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true
+  TOKEN: infra-ci-dev-github-action-distribution
 
 jobs:
   init:
@@ -220,7 +222,7 @@ jobs:
       - name: Set up Teleport
         uses: teleport-actions/setup@v1
         with:
-            version: 16.4.11
+            version: 17.2.2
 
       # TODO: Later, find a way to abstract the auth for different platforms.
       - name: Authenticate with Teleport
@@ -228,8 +230,8 @@ jobs:
         uses: teleport-actions/auth-k8s@v2
         with:
           proxy: camunda.teleport.sh:443
-          token: infra-ci-prod-github-action-distribution
-          kubernetes-cluster: camunda-ci-eks
+          token: ${{ env.TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER_NAME }}
 
       - name: Authenticate to OpenShift
         if: matrix.distro.platform == 'rosa' && inputs.auth-data == ''
