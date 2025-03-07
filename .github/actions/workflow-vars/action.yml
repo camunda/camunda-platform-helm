@@ -20,6 +20,10 @@ inputs:
     description: The Helm chart released version to upgrade from.
     required: false
     default: ""
+  prefix:
+    description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
+    required: false
+    default: "distribution"
 
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
@@ -54,11 +58,11 @@ runs:
 
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
-      TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
-      
-      # if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
-      #   TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
-      # fi
+      TEST_NAMESPACE="$NAMESPACE_PREFIX-$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+
+      if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
+      fi
 
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
@@ -86,6 +90,8 @@ runs:
       fi
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+    env:
+      NAMESPACE_PREFIX: ${{ inputs.prefix }}
 
   - name: Set workflow vars - Chart version
     shell: bash
