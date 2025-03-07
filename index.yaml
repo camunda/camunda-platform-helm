@@ -69,12 +69,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -139,12 +147,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -206,12 +222,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -277,12 +301,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -348,12 +380,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -419,12 +459,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -486,12 +534,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -551,12 +607,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -626,12 +690,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -691,12 +763,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -756,12 +836,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -823,12 +911,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -886,12 +982,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -947,12 +1051,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -1008,12 +1120,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -1069,12 +1189,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -1132,12 +1260,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1193,12 +1329,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1262,12 +1406,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1323,12 +1475,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1384,12 +1544,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1467,12 +1635,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1530,12 +1706,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1593,12 +1777,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1674,12 +1866,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1737,12 +1937,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1811,12 +2019,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1874,12 +2090,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -1961,12 +2185,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2032,12 +2264,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2094,12 +2334,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2170,12 +2418,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2230,12 +2486,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2287,12 +2551,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -2346,12 +2618,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -2405,12 +2685,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -2464,12 +2752,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2521,12 +2817,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2584,12 +2888,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2647,12 +2959,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2714,12 +3034,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2775,12 +3103,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2836,12 +3172,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2895,12 +3239,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -2954,12 +3306,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3012,12 +3372,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3068,12 +3436,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3124,12 +3500,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3182,12 +3566,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3242,12 +3634,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3302,12 +3702,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3370,12 +3778,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3426,12 +3842,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3486,12 +3910,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3544,12 +3976,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3602,12 +4042,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3662,12 +4110,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3734,12 +4190,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -3819,12 +4283,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -3908,12 +4380,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: ahmed.abouzaid@camunda.com
       name: aabouzaid
@@ -3969,12 +4449,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -4028,12 +4516,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -4087,12 +4583,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -4146,12 +4650,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4203,12 +4715,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4262,12 +4782,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4323,12 +4851,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4384,12 +4920,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4445,12 +4989,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4506,12 +5058,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4565,12 +5125,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4622,12 +5190,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4678,12 +5254,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4734,12 +5318,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4790,12 +5382,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4846,12 +5446,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4902,12 +5510,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -4958,12 +5574,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5014,12 +5638,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5070,12 +5702,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5134,12 +5774,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5198,12 +5846,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5264,12 +5920,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5340,12 +6004,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5436,12 +6108,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5513,12 +6193,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: ChrisKujawa
@@ -5596,12 +6284,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5679,12 +6375,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5760,12 +6464,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5843,12 +6555,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -5924,12 +6644,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6001,12 +6729,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6077,12 +6813,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6153,12 +6897,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6229,12 +6981,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6305,12 +7065,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6381,12 +7149,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6457,12 +7233,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6535,12 +7319,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6611,12 +7403,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6687,12 +7487,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6763,12 +7571,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6839,12 +7655,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6915,12 +7739,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -6991,12 +7823,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7071,12 +7911,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7153,12 +8001,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7229,12 +8085,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7309,12 +8173,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7387,12 +8259,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7465,12 +8345,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7551,12 +8439,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7631,12 +8527,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7711,12 +8615,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7789,12 +8701,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7867,12 +8787,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -7955,12 +8883,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8043,12 +8979,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8119,12 +9063,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8195,12 +9147,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8271,12 +9231,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8347,12 +9315,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8423,12 +9399,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8501,12 +9485,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8577,12 +9569,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8653,12 +9653,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8729,12 +9737,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8805,12 +9821,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8881,12 +9905,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -8957,12 +9989,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9033,12 +10073,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9109,12 +10157,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9187,12 +10243,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9275,12 +10339,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9367,12 +10439,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9451,12 +10531,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9529,12 +10617,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9605,12 +10701,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9683,12 +10787,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9764,12 +10876,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -9843,12 +10963,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -10078,12 +11206,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -10147,12 +11283,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
@@ -10223,12 +11367,20 @@ entries:
     home: https://docs.camunda.io/docs/self-managed/overview/
     icon: https://helm.camunda.io/imgs/camunda.svg
     keywords:
+    - automation
+    - business-rules
     - bpm
     - bpmn
     - camunda-platform
+    - decision-engine
     - dmn
+    - modeling
+    - orchestration
+    - process-automation
     - process-engine
+    - process-orchestration
     - workflow
+    - workflow-engine
     maintainers:
     - email: christopher.zell@camunda.com
       name: Zelldon
