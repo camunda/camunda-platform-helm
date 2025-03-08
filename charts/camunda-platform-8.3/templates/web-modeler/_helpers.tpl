@@ -246,22 +246,6 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{/*
-[web-modeler] Create the base URL of the Identity API (using backchannel communication)
-*/}}
-{{- define "webModeler.identityBaseUrl" -}}
-  {{- if .Values.global.identity.service.url -}}
-    {{- .Values.global.identity.service.url -}}
-  {{- else -}}
-    {{-
-      printf "http://%s:%v%s"
-        (include "identity.fullname" .Subcharts.identity)
-        .Values.identity.service.port
-        (default "" .Values.identity.contextPath)
-    -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*
 [web-modeler] Create the context path for the WebSocket app (= configured context path for the webapp + suffix "-ws").
 */}}
 {{- define "webModeler.websocketContextPath" -}}
