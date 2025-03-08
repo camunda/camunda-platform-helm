@@ -432,38 +432,7 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
-## Extra Manifests Configuration
-## @param global.extraManifests This parameter allows you to inject arbitrary YAML documents into the Helm chart.
-## Each item in the list must be a valid Kubernetes resource definition (apiVersion, kind, etc.).
-## Example:
-## global:
-##   extraManifests:
-##     - |
-##       apiVersion: networking.k8s.io/v1
-##       kind: Ingress
-##       metadata:
-##         name: custom-ingress
-##       spec:
-##         ingressClassName: nginx
-##         rules:
-##           - host: example.com
-##             http:
-##               paths:
-##                 - path: /
-##                   pathType: Prefix
-##                   backend:
-##                     service:
-##                       name: my-service
-##                       port:
-##                         number: 80
-##     - |
-##       apiVersion: v1
-##       kind: ConfigMap
-##       metadata:
-##         name: extra-config
-##       data:
-##         key: value
-##
+  ## @param global.extraManifests Array of extra objects to deploy with the release.
   extraManifests:: []
 
 #################################################
