@@ -23,21 +23,6 @@ permissions:
   packages: write
 
 jobs:
-  release-alpha:
-    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
-    name: Camunda Alpha
-    uses: ./.github/workflows/chart-release-template.yaml
-    with:
-      branch: ${{ github.event.pull_request.head.ref }}
-      workflow-ref: chart-release-template.yaml
-      chart-matrix: |
-        [
-          {
-            "name": "Helm Chart Alpha",
-            "directory": "charts/camunda-platform-alpha",
-            "override": false
-          }
-        ]
   release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     name: Camunda Stable
@@ -184,6 +169,7 @@ jobs:
 
   post-release:
     if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    name: Post Release Chores
     needs: release
     runs-on: ubuntu-latest
     permissions:
@@ -201,8 +187,10 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            git-cliff
             gomplate
             helm
+            helm-ct
             yq
       # - name: Simple smoke test
       #   uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
