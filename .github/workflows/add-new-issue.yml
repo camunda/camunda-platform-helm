@@ -25,7 +25,7 @@ jobs:
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       
       - name: Add to Distribution Team project
-        uses: actions/add-to-project@v0.5.0
+        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: '${{ steps.generate-github-token.outputs.token }}'
