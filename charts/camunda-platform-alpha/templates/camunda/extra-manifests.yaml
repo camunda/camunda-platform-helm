@@ -1,7 +1,4 @@
-{{- if .Values.global.extraManifests }}
-{{- range $index, $manifest := .Values.global.extraManifests }}
-# extraManifests item {{ $index }}
-{{ $manifest | nindent 0 }}
+{{- range .Values.global.extraManifests }}
 ---
-{{- end }}
+{{ include "common.tplvalues.render" (dict "value" . "context" $) }}
 {{- end }}
