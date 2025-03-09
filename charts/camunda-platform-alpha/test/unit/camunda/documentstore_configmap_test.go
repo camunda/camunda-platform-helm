@@ -65,7 +65,8 @@ func (s *documentStoreConfigMapTest) renderTemplate(options *helm.Options) corev
 
 func (s *documentStoreConfigMapTest) verifyConfigMap(testCase string, configmap corev1.ConfigMap, expectedValues map[string]string) {
     for key, expectedValue := range expectedValues {
-        s.Require().Equal(expectedValue, strings.TrimSpace(configmap.Data[key]), "%s: Expected %s to be %s", testCase, key, expectedValue)
+        actualValue := strings.TrimSpace(configmap.Data[key])
+        s.Require().Equal(expectedValue, actualValue, "Test case '%s': Expected key '%s' to have value '%s', but got '%s'", testCase, key, expectedValue, actualValue)
     }
 }
 
