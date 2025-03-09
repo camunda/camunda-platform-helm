@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -50,76 +49,70 @@ func TestDocumentStoreConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *documentStoreConfigMapTest) TestActiveDocumentStoreAWS() {
-	// given: set activeStoreId to aws and enable AWS configuration
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.documentStore.activeStoreId":       "aws",
-			"global.documentStore.type.aws.enabled":    "true",
-			"global.documentStore.type.aws.storeId":    "AWS",
-			"global.documentStore.type.aws.class":      "io.camunda.document.store.aws.AwsDocumentStoreProvider",
-			"global.documentStore.type.aws.bucket":     "my-aws-bucket",
-			"global.documentStore.type.aws.bucketPath": "/my/aws/path",
-			"global.documentStore.type.aws.bucketTtl":  "3600",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then: verify that active store is AWS and the correct AWS keys are present
-	s.Require().Equal("aws", strings.ToLower(configmap.Data["DOCUMENT_DEFAULT_STORE_ID"]))
-	s.Require().Equal("io.camunda.document.store.aws.AwsDocumentStoreProvider", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_AWS_CLASS"]))
-	s.Require().Equal("my-aws-bucket", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_AWS_BUCKET"]))
-	s.Require().Equal("/my/aws/path", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_AWS_BUCKET_PATH"]))
-	s.Require().Equal("3600", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_AWS_BUCKET_TTL"]))
+func (s *documentStoreConfigMapTest) renderTemplate(options *helm.Options) corev1.ConfigMap {
+    output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+    var configmap corev1.ConfigMap
+    helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+    return configmap
 }
 
-func (s *documentStoreConfigMapTest) TestActiveDocumentStoreInMemory() {
-	// given: set activeStoreId to inmemory and enable InMemory configuration
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.documentStore.activeStoreId":         "inmemory",
-			"global.documentStore.type.inmemory.enabled": "true",
-			"global.documentStore.type.inmemory.storeId": "INMEMORY",
-			"global.documentStore.type.inmemory.class":   "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then: verify that active store is InMemory and the correct key is present
-	s.Require().Equal("inmemory", strings.ToLower(configmap.Data["DOCUMENT_DEFAULT_STORE_ID"]))
-	s.Require().Equal("io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_INMEMORY_CLASS"]))
+func (s *documentStoreConfigMapTest) verifyConfigMap(testCase string, configmap corev1.ConfigMap, expectedValues map[string]string) {
+    for key, expectedValue := range expectedValues {
+        s.Require().Equal(expectedValue, strings.TrimSpace(configmap.Data[key]), "%s: Expected %s to be %s", testCase, key, expectedValue)
+    }
 }
 
-func (s *documentStoreConfigMapTest) TestActiveDocumentStoreGCP() {
-	// given: set activeStoreId to gcp and enable GCP configuration
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.documentStore.activeStoreId":    "gcp",
-			"global.documentStore.type.gcp.enabled": "true",
-			"global.documentStore.type.gcp.storeId": "GCP",
-			"global.documentStore.type.gcp.class":   "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
-			"global.documentStore.type.gcp.bucket":  "my-gcp-bucket",
+
+func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
+	testCases := []struct {
+		testCase          string
+		values        map[string]string
+		expected      map[string]string
+	}{
+		{
+			testCase: "AWS Store",
+			values: map[string]string{
+				"global.documentStore.activeStoreId":       "aws",
+				"global.documentStore.type.aws.enabled":    "true",
+				"global.documentStore.type.aws.storeId":    "AWS",
+				"global.documentStore.type.aws.class":      "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"global.documentStore.type.aws.bucket":     "aws-bucket",
+				"global.documentStore.type.aws.bucketPath": "/aws/path",
+			},
+			expected: map[string]string{
+				"DOCUMENT_DEFAULT_STORE_ID":    "aws",
+				"DOCUMENT_STORE_AWS_CLASS":     "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"DOCUMENT_STORE_AWS_BUCKET":    "aws-bucket",
+				"DOCUMENT_STORE_AWS_BUCKET_PATH": "/aws/path",
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		{
+			testCase: "GCP Store",
+			values: map[string]string{
+				"global.documentStore.activeStoreId":    "gcp",
+				"global.documentStore.type.gcp.enabled": "true",
+				"global.documentStore.type.gcp.storeId": "GCP",
+				"global.documentStore.type.gcp.class":   "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
+				"global.documentStore.type.gcp.bucket":  "gcp-bucket",
+			},
+			expected: map[string]string{
+				"DOCUMENT_DEFAULT_STORE_ID": "gcp",
+				"DOCUMENT_STORE_GCP_CLASS":  "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
+				"DOCUMENT_STORE_GCP_BUCKET": "gcp-bucket",
+			},
+		},
+		{
+			testCase: "Local Storage",
+			values: map[string]string{
+				"global.documentStore.activeStoreId":         "inmemory",
+				"global.documentStore.type.inmemory.enabled": "true",
+				"global.documentStore.type.inmemory.storeId": "INMEMORY",
+				"global.documentStore.type.inmemory.class":   "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
+			},
+			expected: map[string]string{
+				"DOCUMENT_DEFAULT_STORE_ID": "inmemory",
+				"DOCUMENT_STORE_LOCAL_CLASS": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
+			},
+		},
 	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then: verify that active store is GCP and the correct GCP keys are present
-	s.Require().Equal("gcp", strings.ToLower(configmap.Data["DOCUMENT_DEFAULT_STORE_ID"]))
-	s.Require().Equal("io.camunda.document.store.gcp.GcpDocumentStoreProvider", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_GCP_CLASS"]))
-	s.Require().Equal("my-gcp-bucket", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_GCP_BUCKET"]))
 }
