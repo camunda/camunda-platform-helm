@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -33,6 +34,12 @@ type documentStoreConfigMapTest struct {
 	release   string
 	namespace string
 	templates []string
+}
+
+type testCases struct {
+	testCase string
+    values   map[string]string
+    expected map[string]string
 }
 
 func TestDocumentStoreConfigMapTemplate(t *testing.T) {
@@ -62,13 +69,26 @@ func (s *documentStoreConfigMapTest) verifyConfigMap(testCase string, configmap 
     }
 }
 
+func (s *documentStoreConfigMapTest) runTestCases(testCases []testCases) {
+    for _, tc := range testCases {
+        s.Run(tc.testCase, func() {
+            // given
+            options := &helm.Options{
+                SetValues:      tc.values,
+                KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+            }
+
+            // when
+            configmap := s.renderTemplate(options)
+
+            // then
+            s.verifyConfigMap(tc.testCase, configmap, tc.expected)
+        })
+    }
+}
 
 func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
-	testCases := []struct {
-		testCase          string
-		values        map[string]string
-		expected      map[string]string
-	}{
+	testCases := []testCases{
 		{
 			testCase: "AWS Store",
 			values: map[string]string{
@@ -115,4 +135,6 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 			},
 		},
 	}
+
+	s.runTestCases(testCases)
 }
