@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 // extractParamPaths reads values.yaml and extracts unique @param and @skip paths.
@@ -73,8 +74,14 @@ func extractSetValues(folder string) (map[string]bool, error) {
 			if inSetValues || inValuesMap {
 				matches := mapKeyRegex.FindAllStringSubmatch(line, -1)
 				for _, match := range matches {
-					if _, exists := setValues[match[1]]; !exists {
-						setValues[match[1]] = true // Ensure uniqueness
+					key := match[1]
+					if strings.HasSuffix(key, ".foo") {
+						key = strings.TrimSuffix(key, ".foo")
+						} else if strings.HasSuffix(key, ".foz") {
+							key = strings.TrimSuffix(key, ".foz")
+						}
+						if _, exists := setValues[key]; !exists {
+						setValues[key] = true // Ensure uniqueness
 					}
 				}
 			}
@@ -128,7 +135,7 @@ func calculateCoverage(setValuesCount, paramCount int) float64 {
 
 func main() {
 	valuesFile := "values.yaml" // Change if needed
-	unitFolder := "test/unit"        // Folder containing .go test filesz
+	unitFolder := "test/unit"        // Folder containing .go test files
 
 	// Extract unique @param and @skip paths from values.yaml
 	paramPaths, err := extractParamPaths(valuesFile)
