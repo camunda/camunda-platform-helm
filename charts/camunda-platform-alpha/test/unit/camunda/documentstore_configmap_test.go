@@ -36,8 +36,8 @@ type documentStoreConfigMapTest struct {
 	templates []string
 }
 
-type testCases struct {
-	testCase string
+type testCase struct {
+	name string
     values   map[string]string
     expected map[string]string
 }
@@ -69,9 +69,9 @@ func (s *documentStoreConfigMapTest) verifyConfigMap(testCase string, configmap 
     }
 }
 
-func (s *documentStoreConfigMapTest) runTestCases(testCases []testCases) {
+func (s *documentStoreConfigMapTest) runTestCases(testCases []testCase) {
     for _, tc := range testCases {
-        s.Run(tc.testCase, func() {
+        s.Run(tc.name, func() {
             // given
             options := &helm.Options{
                 SetValues:      tc.values,
@@ -82,15 +82,15 @@ func (s *documentStoreConfigMapTest) runTestCases(testCases []testCases) {
             configmap := s.renderTemplate(options)
 
             // then
-            s.verifyConfigMap(tc.testCase, configmap, tc.expected)
+            s.verifyConfigMap(tc.name, configmap, tc.expected)
         })
     }
 }
 
 func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
-	testCases := []testCases{
+	testCases := []testCase{
 		{
-			testCase: "AWS Store",
+			name: "Document Handling: AWS",
 			values: map[string]string{
 				"global.documentStore.activeStoreId":       "aws",
 				"global.documentStore.type.aws.enabled":    "true",
@@ -107,7 +107,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			testCase: "GCP Store",
+			name: "Document Handling: GCP",
 			values: map[string]string{
 				"global.documentStore.activeStoreId":    "gcp",
 				"global.documentStore.type.gcp.enabled": "true",
@@ -122,7 +122,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			testCase: "Local Storage",
+			name: "Document Handling: Local Storage",
 			values: map[string]string{
 				"global.documentStore.activeStoreId":         "inmemory",
 				"global.documentStore.type.inmemory.enabled": "true",
