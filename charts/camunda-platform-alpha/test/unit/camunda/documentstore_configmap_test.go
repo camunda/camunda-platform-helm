@@ -37,7 +37,7 @@ type documentStoreConfigMapTest struct {
 }
 
 type testCase struct {
-	name string
+    name string
     values   map[string]string
     expected map[string]string
 }
