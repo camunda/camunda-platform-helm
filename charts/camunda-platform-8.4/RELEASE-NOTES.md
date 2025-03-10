@@ -1,6 +1,6 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-9.4.8](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-9.4.8) (2025-03-10)
+## [camunda-platform-9.4.9](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-9.4.9) (2025-03-10)
 
 ### Fixes
 
@@ -14,7 +14,7 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 Supported versions:
 
 - Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
-- Helm values: [9.4.8](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.8#parameters)
+- Helm values: [9.4.9](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.9#parameters)
 - Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
 
 Camunda images:
@@ -42,8 +42,8 @@ Non-Camunda images:
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-9.4.8.tgz \
-  --bundle camunda-platform-9.4.8.cosign.bundle \
+cosign verify-blob camunda-platform-9.4.9.tgz \
+  --bundle camunda-platform-9.4.9.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/3148/merge"
+  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/3149/merge"
 ```
