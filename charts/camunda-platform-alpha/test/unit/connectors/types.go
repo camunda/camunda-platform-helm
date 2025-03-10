@@ -3,13 +3,7 @@ package connectors
 type ConnectorsConfigYAML struct {
 	Server  ServerYAML  `yaml:"server"`
 	Camunda CamundaYAML `yaml:"camunda"`
-	Zeebe   ZeebeYAML   `yaml:"zeebe"`
-}
-
-type IdentityYAML struct {
-	Url      string `yaml:"url"`
-	Audience string `yaml:"audience"`
-	ClientId string `yaml:"client-id"`
+	Operate OperateYAML `yaml:"operate"`
 }
 
 type ServerYAML struct {
@@ -21,14 +15,21 @@ type ServletYAML struct {
 }
 
 type CamundaYAML struct {
-	Connector ConnectorYAML `yaml:"connector"`
-	Operate   OperateYAML   `yaml:"operate"`
-	Identity  IdentityYAML  `yaml:"identity"`
-}
-
-type ConnectorYAML struct {
-	Polling PollingYAML `yaml:"polling"`
-	WebHook WebHookYAML `yaml:"webhook"`
+	Connector struct {
+		Polling PollingYAML `yaml:"polling"`
+		WebHook WebHookYAML `yaml:"webhook"`
+	} `yaml:"connector"`
+	Identity struct {
+		Url      string `yaml:"url"`
+		Audience string `yaml:"audience"`
+		ClientId string `yaml:"client-id"`
+	} `yaml:"identity"`
+	Client struct {
+		Zeebe struct {
+			RESTAddress string `yaml:"rest-address"`
+			GRPCAddress string `yaml:"grpc-address"`
+		} `yaml:"zeebe"`
+	} `yaml:"client"`
 }
 
 type PollingYAML struct {
@@ -40,18 +41,12 @@ type WebHookYAML struct {
 }
 
 type OperateYAML struct {
-	Client ClientYAML `yaml:"client"`
-}
-
-type ClientYAML struct {
-	KeycloakTokenURL string `yaml:"keycloakTokenUrl"`
-	ClientId         string `yaml:"clientId"`
-	Url              string `yaml:"url"`
-	Username         string `yaml:"username"`
-}
-
-type ZeebeYAML struct {
-	Client ZeebeClientYAML `yaml:"client"`
+	Client struct {
+		KeycloakTokenURL string `yaml:"keycloakTokenUrl"`
+		ClientId         string `yaml:"clientId"`
+		BaseURL          string `yaml:"base-url"`
+		Username         string `yaml:"username"`
+	} `yaml:"client"`
 }
 
 type ZeebeClientYAML struct {
