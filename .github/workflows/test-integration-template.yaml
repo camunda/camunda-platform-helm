@@ -127,9 +127,9 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   AWS_PROFILE: distribution
-  CLUSTER_NAME: camunda-ci-eks-dev
+  CLUSTER_NAME: camunda-ci-eks
   LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true
-  TOKEN: infra-ci-dev-github-action-distribution
+  TOKEN: infra-ci-prod-github-action-distribution
 
 jobs:
   init:
