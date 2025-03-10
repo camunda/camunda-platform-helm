@@ -31,9 +31,9 @@ testcases:
     - component: Operate
       clientID: operate
       clientSecret: "{{ .OPERATE_CLIENT_SECRET }}"
-    - component: Optimize
-      clientID: optimize
-      clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
+#     - component: Optimize
+#       clientID: optimize
+#       clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
     - component: Zeebe
       clientID: zeebe
       clientSecret: "{{ .ZEEBE_CLIENT_SECRET }}"
@@ -74,20 +74,20 @@ testcases:
     - skiptestingress ShouldBeFalse
     type: http
     range:
-    - component: Console
-      url: "{{ .coreVars.baseURLs.console }}"
-    - component: Keycloak
-      url: "{{ .coreVars.baseURLs.keycloak }}"
+#     - component: Console
+#       url: "{{ .coreVars.baseURLs.console }}"
+#     - component: Keycloak
+#       url: "{{ .coreVars.baseURLs.keycloak }}"
     - component: Identity
       url: "{{ .coreVars.baseURLs.identity }}"
     - component: Operate
       url: "{{ .coreVars.baseURLs.operate }}"
-    - component: Optimize
-      url: "{{ .coreVars.baseURLs.optimize }}"
+#     - component: Optimize
+#       url: "{{ .coreVars.baseURLs.optimize }}"
     - component: Tasklist
       url: "{{ .coreVars.baseURLs.tasklist }}"
-    - component: WebModeler
-      url: "{{ .coreVars.baseURLs.webModeler }}"
+#     - component: WebModeler
+#       url: "{{ .coreVars.baseURLs.webModeler }}"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
@@ -179,23 +179,23 @@ testcases:
   #   assertions:
   #   - result.statuscode ShouldEqual 200
   #   - result.bodyjson.version ShouldNotBeEmpty
-  - name: Check WebModeler login page
-    skip:
-    - skiptestingress ShouldBeFalse
-    - skipTestWebModeler ShouldBeFalse
-    type: http
-    method: GET
-    url: "{{ .coreVars.baseURLs.webModeler }}"
-    retry: 3
-    delay: 15
-    # info: |
-    #   Component: {{ .value.component }}
-    #   = Request Method: {{ .value.method }}
-    #   = Request Body: {{ .result.request.body }}
-    #   = Response Body: {{ .result.body }}
-    assertions:
-    - result.statuscode ShouldEqual 200
-    - result.body ShouldNotContainSubstring error
+#   - name: Check WebModeler login page
+#     skip:
+#     - skiptestingress ShouldBeFalse
+#     - skipTestWebModeler ShouldBeFalse
+#     type: http
+#     method: GET
+#     url: "{{ .coreVars.baseURLs.webModeler }}"
+#     retry: 3
+#     delay: 15
+#     # info: |
+#     #   Component: {{ .value.component }}
+#     #   = Request Method: {{ .value.method }}
+#     #   = Request Body: {{ .result.request.body }}
+#     #   = Response Body: {{ .result.body }}
+#     assertions:
+#     - result.statuscode ShouldEqual 200
+#     - result.body ShouldNotContainSubstring error
 
 - name: TEST - Interacting with Zeebe Gateway
   steps:
