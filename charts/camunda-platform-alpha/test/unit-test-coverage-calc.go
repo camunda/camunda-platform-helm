@@ -77,10 +77,17 @@ func extractSetValues(folder string) (map[string]bool, error) {
 					key := match[1]
 					if strings.HasSuffix(key, ".foo") {
 						key = strings.TrimSuffix(key, ".foo")
-						} else if strings.HasSuffix(key, ".foz") {
-							key = strings.TrimSuffix(key, ".foz")
-						}
-						if _, exists := setValues[key]; !exists {
+					} else if strings.HasSuffix(key, ".foz") {
+						key = strings.TrimSuffix(key, ".foz")
+					} else if strings.HasSuffix(key, ".cputype") {
+							key = strings.TrimSuffix(key, ".cputype")
+					} else if strings.HasSuffix(key, ".disktype") {
+						key = strings.TrimSuffix(key, ".disktype")
+					} else if strings.HasSuffix(key, ".runAsUser") {
+						key = strings.TrimSuffix(key, ".runAsUser")
+					}
+
+					if _, exists := setValues[key]; !exists {
 						setValues[key] = true // Ensure uniqueness
 					}
 				}
