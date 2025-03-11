@@ -75,6 +75,9 @@ identityKeycloak:
     - name: index-docker-io
 
 global:
+  multitenancy:
+    ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
+    enabled: true
   image:
     pullSecrets:
     - name: index-docker-io
