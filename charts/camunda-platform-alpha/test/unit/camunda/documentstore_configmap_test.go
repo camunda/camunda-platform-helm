@@ -123,7 +123,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			name: "Document Handling: Local Storage",
+			name: "Document Handling: In Memory",
 			values: map[string]string{
 				"global.documentStore.activeStoreId":         "inmemory",
 				"global.documentStore.type.inmemory.enabled": "true",
@@ -132,7 +132,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 			},
 			expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID": "inmemory",
-				"DOCUMENT_STORE_LOCAL_CLASS": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
+				"DOCUMENT_STORE_INMEMORY_CLASS": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 			},
 		},
 	}
