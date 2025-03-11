@@ -47,6 +47,7 @@ jobs:
           tools: |
             git-cliff
             golang
+            gomplate
             helm
             helm-ct
             yq
