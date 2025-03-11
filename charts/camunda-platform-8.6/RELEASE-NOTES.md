@@ -1,6 +1,6 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-11.2.2](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-11.2.2) (2025-03-11)
+## [camunda-platform-11.2.3](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-11.2.3) (2025-03-11)
 
 ### Fixes
 
@@ -22,7 +22,7 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 Supported versions:
 
 - Camunda applications: [8.6](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.6&expanded=true)
-- Helm values: [11.2.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/11.2.2#parameters)
+- Helm values: [11.2.3](https://artifacthub.io/packages/helm/camunda/camunda-platform/11.2.3#parameters)
 - Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
 
 Camunda images:
@@ -51,8 +51,8 @@ Non-Camunda images:
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-11.2.2.tgz \
-  --bundle camunda-platform-11.2.2.cosign.bundle \
+cosign verify-blob camunda-platform-11.2.3.tgz \
+  --bundle camunda-platform-11.2.3.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/3130/merge"
+  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/3157/merge"
 ```
