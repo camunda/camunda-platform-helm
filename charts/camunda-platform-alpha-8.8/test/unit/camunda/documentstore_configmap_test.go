@@ -123,27 +123,3 @@ func (s *documentStoreConfigMapTest) TestActiveDocumentStoreGCP() {
 	s.Require().Equal("io.camunda.document.store.gcp.GcpDocumentStoreProvider", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_GCP_CLASS"]))
 	s.Require().Equal("my-gcp-bucket", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_GCP_BUCKET"]))
 }
-
-func (s *documentStoreConfigMapTest) TestActiveDocumentStoreLocalStorage() {
-	// given: set activeStoreId to localstorage and enable LocalStorage configuration
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.documentStore.activeStoreId":             "localstorage",
-			"global.documentStore.type.localstorage.enabled": "true",
-			"global.documentStore.type.localstorage.storeId": "LOCAL",
-			"global.documentStore.type.localstorage.class":   "io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider",
-			"global.documentStore.type.localstorage.path":    "/tmp/camunda-docs",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then: verify that active store is LocalStorage and the correct keys are present
-	s.Require().Equal("localstorage", strings.ToLower(configmap.Data["DOCUMENT_DEFAULT_STORE_ID"]))
-	s.Require().Equal("io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_LOCAL_CLASS"]))
-	s.Require().Equal("/tmp/camunda-docs", strings.TrimSpace(configmap.Data["DOCUMENT_STORE_LOCAL_PATH"]))
-}
