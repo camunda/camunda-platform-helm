@@ -13,10 +13,6 @@ permissions:
   contents: write
   pull-requests: write
 
-env:
-  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
-  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
-
 jobs:
   release-please:
     name: Run Release Please
@@ -42,7 +38,7 @@ jobs:
           release-please release-pr \
             --token="${{ steps.generate-github-token.outputs.token }}" \
             --repo-url="${{ github.repository }}" \
-            --target-branch="${{ github.ref_name }}" \
-            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
-            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
-            --path="${{ env.CHART_PATH }}"
+            --target-branch="main" \
+            --config-file="${{ env.CHART_PATH }}/.release-please-config.json" \
+            --manifest-file="${{ env.CHART_PATH }}/.release-please-manifest.json" \
+            --debug
