@@ -364,6 +364,8 @@ global:
         audience: zeebe-api
         ## @param global.identity.auth.zeebe.tokenScope defines the token scope, which is used by Zeebe.
         tokenScope:
+  ## @param global.extraManifests Array of extra objects to deploy with the release.
+  extraManifests:: []
 
   # Multiregion options for Zeebe
   #
