@@ -868,7 +868,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2"
+                            "default": "8.8.0-alpha1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4902,7 +4902,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2"
+                            "default": "8.8.0-alpha1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -5422,7 +5422,7 @@
                         "tag": {
                             "type": "string",
                             "description": "",
-                            "default": "8.17.3"
+                            "default": "8.17.2"
                         }
                     }
                 },
