@@ -173,7 +173,6 @@ data:
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
                 username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
               {{- end }}
-              {{- if .Values.core.history.retention.enabled }}
               history:
                 elsRolloverDateFormat: {{ .Values.core.history.elsRolloverDateFormat | quote }}
                 rolloverInterval: {{ .Values.core.history.rolloverInterval | quote }}
@@ -181,6 +180,7 @@ data:
                 waitPeriodBeforeArchiving: {{ .Values.core.history.waitPeriodBeforeArchiving | quote }}
                 delayBetweenRuns: {{ .Values.core.history.delayBetweenRuns }}
                 maxDelayBetweenRuns: {{ .Values.core.history.maxDelayBetweenRuns }}
+              {{- if .Values.core.history.retention.enabled }}
                 retention:
                   enabled: true
                   minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
