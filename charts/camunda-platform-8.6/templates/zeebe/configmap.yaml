@@ -51,7 +51,31 @@ data:
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
         {{- else -}}
+          {{- if not .Values.zeebe.additionalExporterConfig -}}
           {{ " {}" }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.zeebe.additionalExporterConfig }}
+          {{- range $key, $exporter := .Values.zeebe.additionalExporterConfig }}
+          {{ $key }}:
+            {{- if $exporter.className }}
+            className: {{ $exporter.className | quote }}
+            {{- end }}
+            {{- if $exporter.jarPath }}
+            jarPath: {{ $exporter.jarPath | quote }}
+            {{- end }}
+            {{- if $exporter.args }}
+            args:
+              {{- range $argKey, $argVal := $exporter.args }}
+              {{ $argKey }}: 
+                {{- if (typeIs "string" $argVal) -}}
+                  {{ printf " \"%v\"" $argVal }}
+                {{- else -}}
+                  {{ printf " %v" $argVal }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
         {{- end }}
         gateway:
           enable: true
