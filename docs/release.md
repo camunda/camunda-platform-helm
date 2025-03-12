@@ -54,7 +54,7 @@ the release notes.
 
 ```mermaid
 graph TD
-    Step1[Step1<br/>Semi-Automated<br/>---<br/>The release manager ensures that all dependences are updated via Renovatebot]
+    Step1[Step1<br/>Semi-Automated<br/>---<br/>The release manager ensures that all <a href="https://github.com/camunda/camunda-platform-helm/pulls?q=is%3Aopen+is%3Apr+label%3Adependencies">dependences</a> are updated via Renovatebot]
     Step2[Step2<br/>Semi-Automated<br/>---<br/>The release manager triggers <a href="https://github.com/camunda/camunda-platform-helm/actions/workflows/chart-release-candidate.yaml">GitHub Action</a> to create the release candidate]
     Step3[Step3<br/>External<br/>---<br/>The QA team reviews the release candidate artifact and gives the green light to release]
     Step4[Step4<br/>Automated<br/>---<br/>GitHub Action with Release-Please creates the release PR]
