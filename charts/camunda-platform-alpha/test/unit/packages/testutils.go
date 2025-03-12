@@ -26,7 +26,7 @@ type TestCase struct {
     Values   map[string]string
     Expected map[string]string
 }
-func TestDocumentStoreConfigMapTemplate(t *testing.T, templates []string) {
+func TestCreateTestSuite(t *testing.T, templates []string) {
     t.Parallel()
 
     chartPath, err := filepath.Abs("../../../")

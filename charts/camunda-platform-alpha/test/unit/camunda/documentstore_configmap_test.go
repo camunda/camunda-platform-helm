@@ -25,7 +25,7 @@ type DocumentStoreConfigMapTest struct {
 }
 
 func TestDocumentStoreConfigMapTemplate(t *testing.T) {
-    testutils.TestDocumentStoreConfigMapTemplate(t, []string{"templates/camunda/configmap-documentstore.yaml"})
+    testutils.TestCreateTestSuite(t, []string{"templates/camunda/configmap-documentstore.yaml"})
 }
 
 func (s *DocumentStoreConfigMapTest) TestDifferentValuesInputs() {
