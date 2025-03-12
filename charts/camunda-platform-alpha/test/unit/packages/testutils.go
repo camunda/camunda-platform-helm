@@ -13,7 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type DocumentStoreConfigMapTest struct {
+type ConfigMapTest struct {
     suite.Suite
     ChartPath string
     Release   string
@@ -32,7 +32,7 @@ func TestCreateTestSuite(t *testing.T, templates []string) {
     chartPath, err := filepath.Abs("../../../")
     require.NoError(t, err)
 
-    suite.Run(t, &DocumentStoreConfigMapTest{
+    suite.Run(t, &ConfigMapTest{
         ChartPath: chartPath,
         Release:   "camunda-platform-test",
         Namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -40,21 +40,21 @@ func TestCreateTestSuite(t *testing.T, templates []string) {
     })
 }
 
-func (s *DocumentStoreConfigMapTest) RenderTemplate(options *helm.Options) corev1.ConfigMap {
+func (s *ConfigMapTest) RenderTemplate(options *helm.Options) corev1.ConfigMap {
     output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates)
     var configmap corev1.ConfigMap
     helm.UnmarshalK8SYaml(s.T(), output, &configmap)
     return configmap
 }
 
-func (s *DocumentStoreConfigMapTest) VerifyConfigMap(testCase string, configmap corev1.ConfigMap, expectedValues map[string]string) {
+func (s *ConfigMapTest) VerifyConfigMap(testCase string, configmap corev1.ConfigMap, expectedValues map[string]string) {
     for key, expectedValue := range expectedValues {
         actualValue := strings.TrimSpace(configmap.Data[key])
         s.Require().Equal(expectedValue, actualValue, "Test case '%s': Expected key '%s' to have value '%s', but got '%s'", testCase, key, expectedValue, actualValue)
     }
 }
 
-func (s *DocumentStoreConfigMapTest) RunTestCases(testCases []TestCase) {
+func (s *ConfigMapTest) RunTestCases(testCases []TestCase) {
     for _, tc := range testCases {
         s.Run(tc.Name, func() {
             // given

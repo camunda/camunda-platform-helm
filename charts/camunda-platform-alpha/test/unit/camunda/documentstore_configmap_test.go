@@ -20,15 +20,15 @@ import (
 	"testing"
 )
 
-type DocumentStoreConfigMapTest struct {
-	testutils.DocumentStoreConfigMapTest
+type ConfigMapTest struct {
+	testutils.ConfigMapTest
 }
 
 func TestDocumentStoreConfigMapTemplate(t *testing.T) {
     testutils.TestCreateTestSuite(t, []string{"templates/camunda/configmap-documentstore.yaml"})
 }
 
-func (s *DocumentStoreConfigMapTest) TestDifferentValuesInputs() {
+func (s *ConfigMapTest) TestDifferentValuesInputs() {
 	testCases := []testutils.TestCase{
 		{
 			Name: "Document Handling: AWS",
