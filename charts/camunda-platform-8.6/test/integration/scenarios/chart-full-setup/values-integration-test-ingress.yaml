@@ -59,6 +59,9 @@ identity:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"
 
+identityPostgresql:
+  enabled: true
+
 identityKeycloak:
   postgresql:
     auth:

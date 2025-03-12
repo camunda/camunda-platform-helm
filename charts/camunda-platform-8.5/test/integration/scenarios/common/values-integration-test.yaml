@@ -73,6 +73,8 @@ identityKeycloak:
   image:
     pullSecrets:
     - name: index-docker-io
+identityPostgresql:
+  enabled: true
 
 global:
   multitenancy:
