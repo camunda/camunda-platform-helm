@@ -16,83 +16,23 @@
 package camunda
 
 import (
-	"path/filepath"
-	"strings"
+	testutils "camunda-platform/test/unit/packages"
 	"testing"
-
-	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/random"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
 )
 
-type documentStoreConfigMapTest struct {
-	suite.Suite
-	chartPath string
-	release   string
-	namespace string
-	templates []string
-}
-
-type testCase struct {
-    name string
-    values   map[string]string
-    expected map[string]string
+type DocumentStoreConfigMapTest struct {
+	testutils.DocumentStoreConfigMapTest
 }
 
 func TestDocumentStoreConfigMapTemplate(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &documentStoreConfigMapTest{
-		chartPath: chartPath,
-		release:   "camunda-platform-test",
-		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/camunda/configmap-documentstore.yaml"},
-	})
+    testutils.TestDocumentStoreConfigMapTemplate(t, []string{"templates/camunda/configmap-documentstore.yaml"})
 }
 
-func (s *documentStoreConfigMapTest) renderTemplate(options *helm.Options) corev1.ConfigMap {
-    output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-    var configmap corev1.ConfigMap
-    helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-    return configmap
-}
-
-func (s *documentStoreConfigMapTest) verifyConfigMap(testCase string, configmap corev1.ConfigMap, expectedValues map[string]string) {
-    for key, expectedValue := range expectedValues {
-        actualValue := strings.TrimSpace(configmap.Data[key])
-        s.Require().Equal(expectedValue, actualValue, "Test case '%s': Expected key '%s' to have value '%s', but got '%s'", testCase, key, expectedValue, actualValue)
-    }
-}
-
-func (s *documentStoreConfigMapTest) runTestCases(testCases []testCase) {
-    for _, tc := range testCases {
-        s.Run(tc.name, func() {
-            // given
-            options := &helm.Options{
-                SetValues:      tc.values,
-                KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-            }
-
-            // when
-            configmap := s.renderTemplate(options)
-
-            // then
-            s.verifyConfigMap(tc.name, configmap, tc.expected)
-        })
-    }
-}
-
-func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
-	testCases := []testCase{
+func (s *DocumentStoreConfigMapTest) TestDifferentValuesInputs() {
+	testCases := []testutils.TestCase{
 		{
-			name: "Document Handling: AWS",
-			values: map[string]string{
+			Name: "Document Handling: AWS",
+			Values: map[string]string{
 				"global.documentStore.activeStoreId":       "aws",
 				"global.documentStore.type.aws.enabled":    "true",
 				"global.documentStore.type.aws.storeId":    "AWS",
@@ -100,7 +40,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.aws.bucket":     "aws-bucket",
 				"global.documentStore.type.aws.bucketPath": "/aws/path",
 			},
-			expected: map[string]string{
+			Expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID":    "aws",
 				"DOCUMENT_STORE_AWS_CLASS":     "io.camunda.document.store.aws.AwsDocumentStoreProvider",
 				"DOCUMENT_STORE_AWS_BUCKET":    "aws-bucket",
@@ -108,34 +48,34 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			name: "Document Handling: GCP",
-			values: map[string]string{
+			Name: "Document Handling: GCP",
+			Values: map[string]string{
 				"global.documentStore.activeStoreId":    "gcp",
 				"global.documentStore.type.gcp.enabled": "true",
 				"global.documentStore.type.gcp.storeId": "GCP",
 				"global.documentStore.type.gcp.class":   "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
 				"global.documentStore.type.gcp.bucket":  "gcp-bucket",
 			},
-			expected: map[string]string{
+			Expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID": "gcp",
 				"DOCUMENT_STORE_GCP_CLASS":  "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
 				"DOCUMENT_STORE_GCP_BUCKET": "gcp-bucket",
 			},
 		},
 		{
-			name: "Document Handling: In Memory",
-			values: map[string]string{
+			Name: "Document Handling: In Memory",
+			Values: map[string]string{
 				"global.documentStore.activeStoreId":         "inmemory",
 				"global.documentStore.type.inmemory.enabled": "true",
 				"global.documentStore.type.inmemory.storeId": "INMEMORY",
 				"global.documentStore.type.inmemory.class":   "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 			},
-			expected: map[string]string{
+			Expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID": "inmemory",
 				"DOCUMENT_STORE_INMEMORY_CLASS": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 			},
 		},
 	}
 
-	s.runTestCases(testCases)
+	s.RunTestCases(testCases)
 }
