@@ -133,11 +133,11 @@ data:
               url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
               index:
                 prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-              {{- if .Values.core.archiver.retention.enabled }}
+              {{- if .Values.core.history.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.core.archiver.retention.minimumAge | quote }}
-                policyName: {{ .Values.core.archiver.retention.policyName | quote }}
+                minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
+                policyName: {{ .Values.core.history.retention.policyName | quote }}
               {{- end }}
         {{- else if .Values.global.opensearch.enabled }}
           opensearch:
@@ -152,11 +152,11 @@ data:
               aws:
                 enabled: true
               {{- end}}
-              {{- if .Values.core.archiver.retention.enabled }}
+              {{- if .Values.core.history.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.core.archiver.retention.minimumAge | quote }}
-                policyName: {{ .Values.core.archiver.retention.policyName | quote }}
+                minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
+                policyName: {{ .Values.core.history.retention.policyName | quote }}
               {{- end }}
           {{- end }}
         {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
@@ -173,19 +173,18 @@ data:
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
                 username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
               {{- end }}
-              {{- if .Values.core.archiver.retention.enabled }}
-              archiver:
-                enabled: true
-                elsRolloverDateFormat: {{ .Values.core.archiver.elsRolloverDateFormat | quote }}
-                rolloverInterval: {{ .Values.core.archiver.rolloverInterval | quote }}
-                rolloverBatchSize: {{ .Values.core.archiver.rolloverBatchSize }}
-                waitPeriodBeforeArchiving: {{ .Values.core.archiver.waitPeriodBeforeArchiving | quote }}
-                delayBetweenRuns: {{ .Values.core.archiver.delayBetweenRuns }}
-                maxDelayBetweenRuns: {{ .Values.core.archiver.maxDelayBetweenRuns }}
+              {{- if .Values.core.history.retention.enabled }}
+              history:
+                elsRolloverDateFormat: {{ .Values.core.history.elsRolloverDateFormat | quote }}
+                rolloverInterval: {{ .Values.core.history.rolloverInterval | quote }}
+                rolloverBatchSize: {{ .Values.core.history.rolloverBatchSize }}
+                waitPeriodBeforeArchiving: {{ .Values.core.history.waitPeriodBeforeArchiving | quote }}
+                delayBetweenRuns: {{ .Values.core.history.delayBetweenRuns }}
+                maxDelayBetweenRuns: {{ .Values.core.history.maxDelayBetweenRuns }}
                 retention:
                   enabled: true
-                  minimumAge: {{ .Values.core.archiver.retention.minimumAge | quote }}
-                  policyName: {{ .Values.core.archiver.retention.policyName | quote }}
+                  minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
+                  policyName: {{ .Values.core.history.retention.policyName | quote }}
               {{- end }}
               createSchema: true
         {{- else -}}
@@ -327,10 +326,10 @@ data:
           username: {{ .Values.global.opensearch.auth.username | quote }}
           {{- end }}
         {{- end }}
-        {{- if .Values.core.archiver.retention.enabled }}
+        {{- if .Values.core.history.retention.enabled }}
         archiver:
           ilmEnabled: true
-          ilmMinAgeForDeleteArchivedIndices: {{ .Values.core.archiver.retention.minimumAge }}
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.core.history.retention.minimumAge }}
         {{- end }}
 
       #
@@ -414,10 +413,10 @@ data:
           # Gateway address
           gatewayAddress: {{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}
           restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
-        {{- if .Values.core.archiver.retention.enabled }}
+        {{- if .Values.core.history.retention.enabled }}
         archiver:
           ilmEnabled: true
-          ilmMinAgeForDeleteArchivedIndices: {{ .Values.core.archiver.retention.minimumAge }}
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.core.history.retention.minimumAge }}
         {{- end }}
 
     {{- end }}
