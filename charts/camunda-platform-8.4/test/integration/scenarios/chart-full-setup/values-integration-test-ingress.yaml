@@ -66,6 +66,8 @@ identity:
   postgresql:
     auth:
       existingSecret: "integration-test-credentials"
+  postgresql:
+    enabled: true
 
 operate:
   contextPath: "/operate"
