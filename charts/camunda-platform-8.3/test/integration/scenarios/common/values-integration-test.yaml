@@ -70,8 +70,6 @@ identity:
       - name: index-docker-io
 
 global:
-  multitenancy:
-    enabled: true
   image:
     pullSecrets:
     - name: index-docker-io
