@@ -10,8 +10,8 @@ on:
         default: false
         type: boolean
   pull_request:
-    branches:
-      - main
+    types:
+      - labeled
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -24,8 +24,8 @@ permissions:
 
 jobs:
   init:
-    name: Generate components matrix
-    # if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    name: Generate release matrix
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.release.outputs.matrix }}
@@ -41,6 +41,7 @@ jobs:
         with:
           tools: |
             yq
+      # Don't release chart if the GH release already exists.
       - name: ⭐ Create release matrix
         id: release
         env:
@@ -48,21 +49,21 @@ jobs:
         run: |
           set -x
           echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.[]' | while read dir_id; do
-            touch matrix.txt
+            touch matrix_versions.txt
             chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
             chart_version="$(yq '.version' ${chart_file})"
             camunda_version="$(yq '.appVersion' ${chart_file} | sed 's/.x//')"
-            # Don't release chart if the GH release already exists.
             if gh release view camunda-platform-${chart_version} > /dev/null; then
-              echo -e "---\n⚠️ The Release Skipped for camunda-platform-${dir_id} ⚠️" >> $GITHUB_STEP_SUMMARY
+              echo "⚠️ The Release Skipped for camunda-platform-${dir_id} ⚠️" >> $GITHUB_STEP_SUMMARY
               cat << EOF >> $GITHUB_STEP_SUMMARY
                 - The release for chart version ${chart_version} already exists.
-                - To rerelease delete the GH release first.
+                - To rerelease, delete the GH release first.
                 - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
+              ---
           EOF
             else
               echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
-              cat << EOF >> matrix.txt
+              cat << EOF >> matrix_versions.txt
                 {
                   "dirID": "${dir_id}",
                   "version": "${chart_version}",
@@ -71,11 +72,11 @@ jobs:
           EOF
             fi
           done
-          matrix="$(jq --slurp --compact-output '.' matrix.txt)"
-          echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
+          matrix_versions="$(jq --slurp --compact-output '.' matrix_versions.txt)"
+          echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
 
   release:
-    name: Release - Camunda ${{ matrix.chart.dirID }} (${{ matrix.chart.appVersion }})
+    name: Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
     if: ${{ needs.init.outputs.matrix != '[]' }}
     needs: init
     runs-on: ubuntu-latest
@@ -146,7 +147,6 @@ jobs:
         run: |
           # Clean up badges from readme to avoid showing them in Artifact Hub.
           sed -ri '/Badge .+/d' "${{ env.CHART_DIR }}/README.md"
-          mkdir release-packages
 
       # Release.
       - name: Run Chart Releaser
