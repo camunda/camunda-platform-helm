@@ -2,8 +2,12 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/random"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -16,7 +20,17 @@ type documentStoreConfigMapTest struct {
 }
 
 func TestDocumentStoreConfigMapTemplate(t *testing.T) {
-    testutils.TestCreateTestSuite(t, []string{"templates/camunda/configmap-documentstore.yaml"})
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &documentStoreConfigMapTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{"templates/camunda/configmap-documentstore.yaml"},
+	})
 }
 
 func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
