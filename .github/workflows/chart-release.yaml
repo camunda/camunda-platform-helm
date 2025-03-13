@@ -10,8 +10,8 @@ on:
         default: false
         type: boolean
   pull_request:
-    types:
-      - labeled
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -25,7 +25,7 @@ permissions:
 jobs:
   init:
     name: Generate components matrix
-    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    # if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
@@ -44,11 +44,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # It's not expected to run more than one release in the same PR,
+      # but just for safety to avoid race condition of updating the Helm repo index.yaml file.
+      max-parallel: 1
       matrix:
         version: ${{ fromJson(needs.init.outputs.matrix) }}
     permissions:
       contents: write
       id-token: write
+    env:
+      CHART_DIR: "charts/camunda-platform-${{ matrix.version }}"
     steps:
       # Init.
       - name: Checkout
@@ -85,13 +90,20 @@ jobs:
         run: |
           chartPath="$(ct list-changed | tr '\n' ' ')" \
             make helm.dependency-update
+      - name: Set Helm chart vars
+        run: |
+          CHART_VERSION="$(yq '.version' ${{ env.CHART_DIR }}/Chart.yaml)"
+          CAMUNDA_VERSION="$(yq '.appVersion' ${{ env.CHART_DIR }}/Chart.yaml | sed 's/.x//')"
+          echo "CHART_VERSION=${CHART_VERSION}" | tee -a $GITHUB_ENV
+          echo "CHART_PACKAGE_NAME=camunda-platform-${CHART_VERSION}" | tee -a $GITHUB_ENV
+          echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a $GITHUB_ENV
 
       # Preparation.
       - name: Remove Dev Comments
         run: |
           TARGET_FILES=(
-            "charts/camunda-platform-*/values*.yaml"
-            "charts/camunda-platform-*/Chart.yaml"
+            "${{ env.CHART_DIR }}/values*.yaml"
+            "${{ env.CHART_DIR }}/Chart.yaml"
           )
           for FILE in "${TARGET_FILES[@]}"; do
             sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
@@ -101,32 +113,31 @@ jobs:
       - name: Tidy up
         run: |
           # Clean up badges from readme to avoid showing them in Artifact Hub.
-          sed -ri '/Badge .+/d' charts/camunda-pla`tform-8*/README.md
+          sed -ri '/Badge .+/d' "${{ env.CHART_DIR }}/README.md"
           mkdir release-packages
 
       # Release.
-      - name: Run Chart Releaser - Latest version
+      - name: Run Chart Releaser
+        id: release
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
         with:
           config: .github/config/chart-releaser.yaml
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
-  
-      # Sign and upload the signature.
-      - name: Set Helm chart vars
+
+      - name: Test
         run: |
-          CHART_VERSION="$(yq '.version' charts/camunda-platform-${{ env.CAMUNDA_VERSION }}/Chart.yaml)"
-          echo "CHART_PACKAGE_NAME=camunda-platform-${CHART_VERSION}" | tee -a $GITHUB_ENV
-        env:
-          CAMUNDA_VERSION: ${{ matrix.version }}
+          echo "changed_charts: ${{ steps.release.outputs.changed_charts }}"
+
+      # Sign and upload the signature.
       - name: Sign Helm chart with Cosign
         run: |
-          cosign sign-blob -y release-packages/${{ env.CHART_PACKAGE_NAME }}.tgz \
+          cosign sign-blob -y .cr-release-packages/${{ env.CHART_PACKAGE_NAME }}.tgz \
             --bundle "${{ env.CHART_PACKAGE_NAME }}.cosign.bundle"
       - name: Verify signed Helm chart with Cosign
         run: |
-          cosign verify-blob release-packages/${{ env.CHART_PACKAGE_NAME }}.tgz \
+          cosign verify-blob .cr-release-packages/${{ env.CHART_PACKAGE_NAME }}.tgz \
             --bundle "${{ env.CHART_PACKAGE_NAME }}.cosign.bundle" \
             --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
@@ -137,9 +148,16 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      - name: Add release info to workflow summary
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          Release URLs:
+          - [GitHub](https://github.com/aabouzaid/camunda-platform-helm/releases/tag/${{ env.CHART_PACKAGE_NAME }})
+          - [Artifact Hub](https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_VERSION }})
+          Note: Artifact Hub link needs some time till it's AH scraps the Helm repo index.
+          EOF
 
   post-release:
-    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     name: Post Release Chores
     needs: release
     runs-on: ubuntu-latest

@@ -36,7 +36,7 @@ runs:
 
         ls -d ${{ inputs.charts-path }} | while read chart_dir; do
           if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
-            camunda_version="$(echo ${chart_dir} | cut -d '-' -f 3)";
+            camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')";
             echo "Camunda version: ${camunda_version}"
             echo "${camunda_version}" >> matrix_versions.txt;
           fi
