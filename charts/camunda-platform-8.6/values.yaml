@@ -373,7 +373,7 @@ global:
   #       name: example-cm
   #     data:
   #       test: test
-  extraManifests:: []
+  extraManifests: []
 
   # Multiregion options for Zeebe
   #

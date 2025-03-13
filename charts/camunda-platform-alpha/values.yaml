@@ -441,7 +441,7 @@ global:
   #       name: example-cm
   #     data:
   #       test: test
-  extraManifests:: []
+  extraManifests: []
 
 #################################################
  #####
