@@ -230,6 +230,14 @@ global:
         ## @param global.identity.auth.zeebe.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: zeebe-secret
   ## @param global.extraManifests Array of extra objects to deploy with the release.
+  #Example:
+  # extraManifests:
+  #   - apiVersion: v1
+  #     kind: ConfigMap
+  #     metadata:
+  #       name: example-cm
+  #     data:
+  #       test: test
   extraManifests:: []
 
   # Multiregion options for Zeebe
