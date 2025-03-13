@@ -7,11 +7,11 @@
   "last-release-sha": "80d3b124a5927576905145056267ea8ee5a893b0",
   "packages": {
     ".": {
-      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda Alpha",
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda Alpha 8.8",
       "release-type": "helm",
       "versioning": "prerelease",
-      "extra-label": "version/alpha,version/8.7,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform-alpha",
+      "extra-label": "version/alpha,version/8.8,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform-alpha-8.8",
       "include-v-in-tag": false
     }
   },
