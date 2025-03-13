@@ -42,5 +42,5 @@ runs:
           fi
         done
 
-        matrix="$(cat matrix_versions.txt | jq -s -c -R 'split("\n") | .[:-1]')"
+        matrix="$(cat matrix_versions.txt | jq --slurp --compact-output --raw-input 'split("\n") | .[:-1]')"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
