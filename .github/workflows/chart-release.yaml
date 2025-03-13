@@ -10,8 +10,8 @@ on:
         default: false
         type: boolean
   pull_request:
-    types:
-      - labeled
+    branches:
+      - distro-360-release-alphas-to-public-helm-repo
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -25,7 +25,7 @@ permissions:
 jobs:
   init:
     name: Generate components matrix
-    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    # if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
@@ -49,6 +49,8 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      CAMUNDA_VERSION: ${{ matrix.version }}
     steps:
       # Init.
       - name: Checkout
@@ -101,7 +103,7 @@ jobs:
       - name: Tidy up
         run: |
           # Clean up badges from readme to avoid showing them in Artifact Hub.
-          sed -ri '/Badge .+/d' charts/camunda-pla`tform-8*/README.md
+          sed -ri '/Badge .+/d' charts/camunda-platform-${{ env.CAMUNDA_VERSION }}/README.md
           mkdir release-packages
 
       # Release.
@@ -118,8 +120,6 @@ jobs:
         run: |
           CHART_VERSION="$(yq '.version' charts/camunda-platform-${{ env.CAMUNDA_VERSION }}/Chart.yaml)"
           echo "CHART_PACKAGE_NAME=camunda-platform-${CHART_VERSION}" | tee -a $GITHUB_ENV
-        env:
-          CAMUNDA_VERSION: ${{ matrix.version }}
       - name: Sign Helm chart with Cosign
         run: |
           cosign sign-blob -y release-packages/${{ env.CHART_PACKAGE_NAME }}.tgz \
