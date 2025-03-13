@@ -41,37 +41,47 @@ jobs:
         with:
           tools: |
             yq
-      # Don't release chart if the GH release already exists.
+
       - name: ⭐ Create release matrix
         id: release
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
           set -x
-          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.[]' | while read dir_id; do
-            touch matrix_versions.txt
-            chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
-            chart_version="$(yq '.version' ${chart_file})"
-            camunda_version="$(yq '.appVersion' ${chart_file} | sed 's/.x//')"
-            if gh release view camunda-platform-${chart_version} > /dev/null; then
-              echo "⚠️ The Release Skipped for camunda-platform-${dir_id} ⚠️" >> $GITHUB_STEP_SUMMARY
-              cat << EOF >> $GITHUB_STEP_SUMMARY
-                - The release for chart version ${chart_version} already exists.
-                - To rerelease, delete the GH release first.
-                - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
-              ---
-          EOF
-            else
-              echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
-              cat << EOF >> matrix_versions.txt
-                {
-                  "dirID": "${dir_id}",
-                  "version": "${chart_version}",
-                  "appVersion": "${camunda_version}"
-                }
-          EOF
+          
+           echo "Generating release matrix..."
+           MATRIX_FILE="matrix_versions.txt" 
+           > "$MATRIX_FILE"  # Clear or create the file
+
+           echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.[]' | while read -r dir_id; do
+              chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
+
+              # Extract version info
+              chart_version="$(yq '.version' "$chart_file")"
+              camunda_version="$(yq '.appVersion' "$chart_file" | sed 's/.x//')"
+
+              # Check if the release already exists
+              if gh release view "camunda-platform-${chart_version}" > /dev/null 2>&1; then
+                 echo "⚠️ Release skipped for camunda-platform-${dir_id} ⚠️" >> "$GITHUB_STEP_SUMMARY"
+                 cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+                    - The release for chart version ${chart_version} already exists.
+                    - To rerelease, delete the GH release first.
+                    - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
+                  ---
+                  EOF
+              else
+                 echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
+                 cat << EOF >> matrix_versions.txt
+                   {
+                     "dirID": "${dir_id}",
+                     "version": "${chart_version}",
+                     "appVersion": "${camunda_version}"
+                   }
+                   EOF
             fi
           done
+          
+          # Generate JSON matrix and output it
           matrix_versions="$(jq --slurp --compact-output '.' matrix_versions.txt)"
           echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
 
