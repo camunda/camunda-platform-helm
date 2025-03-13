@@ -502,6 +502,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `global.identity.auth.zeebe.existingSecretKey`      | defines the key within the existing secret object.                                                                                                                                                                                                    | `zeebe-secret`                                        |
 | `global.identity.auth.zeebe.audience`               | defines the audience, which is used by Zeebe.                                                                                                                                                                                                         | `zeebe-api`                                           |
 | `global.identity.auth.zeebe.tokenScope`             | defines the token scope, which is used by Zeebe.                                                                                                                                                                                                      | `nil`                                                 |
+| `global.extraManifests`                             | Array of extra objects to deploy with the release.                                                                                                                                                                                                    | `[]`                                                  |
 
 ### Console Parameters
 
