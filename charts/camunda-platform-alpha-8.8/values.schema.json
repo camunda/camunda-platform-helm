@@ -4796,14 +4796,9 @@
                         }
                     }
                 },
-                "archiver": {
+                "history": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if false, there is no archiver which will continually create historical indices.",
-                            "default": true
-                        },
                         "elsRolloverDateFormat": {
                             "type": "string",
                             "description": "defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.",
