@@ -489,6 +489,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `global.identity.auth.zeebe`                        | configuration to configure Zeebe authentication specifics on global level, which can be accessed by other sub-charts                                                                                                                                  |                                                       |
 | `global.identity.auth.zeebe.existingSecret`         | can be used to use an own existing secret. If not set a random secret is generated.                                                                                                                                                                   | `""`                                                  |
 | `global.identity.auth.zeebe.existingSecretKey`      | defines the key within the existing secret object.                                                                                                                                                                                                    | `zeebe-secret`                                        |
+| `global.extraManifests`                             | Array of extra objects to deploy with the release.                                                                                                                                                                                                    | `[]`                                                  |
 
 ### Zeebe Parameters
 
