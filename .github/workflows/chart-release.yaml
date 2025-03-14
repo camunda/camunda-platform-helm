@@ -25,7 +25,7 @@ permissions:
 jobs:
   init:
     name: Generate release matrix
-    # if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.release.outputs.matrix }}
@@ -162,19 +162,18 @@ jobs:
           sed -ri '/Badge .+/d' "${{ env.CHART_DIR }}/README.md"
 
       # Release.
-      # - name: Run Chart Releaser
-      #   id: release
-      #   uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
-      #   with:
-      #     config: .github/config/chart-releaser.yaml
-      #   env:
-      #     CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-      #     CR_SKIP_EXISTING: 'true'
-
+      # We moved away from "helm/chart-releaser-action" GHA because it has many limitations.
+      # Using the chart-releaser CLI provides more flexibility and control over the release process.
       - name: Run Chart Releaser - Packaging
         run: |
           helm-cr package ${{ env.CHART_DIR }} --config ${{ env.CHART_RELEASER_CONFIG }}
+      # Only keep the chart in the release process to avoid releasing untargeted charts.
+      - name: Clean up packages
+        run: |
           ls -lsa .cr-release-packages/*
+          find .cr-release-packages/* \
+            -not -name "camunda-platform-${{ env.CHART_VERSION }}.tgz" \
+            -delete
       - name: Run Chart Releaser - Tagging/Uploading
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
