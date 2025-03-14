@@ -32,17 +32,17 @@ func RenderTemplate(t *testing.T, chartPath, release string, namespace string, t
 
 // VerifyConfigMap checks whether the generated ConfigMap contains the expected key-value pairs
 func VerifyConfigMap(t *testing.T, testCase string, configmap corev1.ConfigMap, expectedValues map[string]string) {
-	for key, expectedValue := range expectedValues {
+	for keyPath, expectedValue := range expectedValues {
 		var actualValue string
-		if strings.HasPrefix(key, "configmapApplication.") {
+		if strings.HasPrefix(keyPath, "configmapApplication.") {
             var configmapApplication map[string]interface{}
             err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
             require.NoError(t, err)
-            actualValue = getConfigMapFieldValue(configmapApplication, strings.Split(key, ".")[1:])
+            actualValue = getConfigMapFieldValue(configmapApplication, strings.Split(keyPath, ".")[1:])
         } else {
-            actualValue = strings.TrimSpace(configmap.Data[key])
+            actualValue = strings.TrimSpace(configmap.Data[keyPath])
         }
-		require.Equal(t, expectedValue, actualValue, "Test case '%s': Expected key '%s' to have value '%s', but got '%s'", testCase, key, expectedValue, actualValue)
+		require.Equal(t, expectedValue, actualValue, "Test case '%s': Expected key '%s' to have value '%s', but got '%s'", testCase, keyPath, expectedValue, actualValue)
 	}
 }
 
