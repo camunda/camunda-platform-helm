@@ -2,8 +2,12 @@ name: "Chart - Release - Chores"
 
 on:
   pull_request:
-    types:
-      - labeled
+    branches:
+      - main
+    paths:
+      - .github/workflows/chart-release-chores.yml
+      - '**/.release-please-config.json'
+      - '**/.release-please-manifest.json'
 
 permissions:
   contents: write
@@ -11,7 +15,7 @@ permissions:
 
 jobs:
   chores:
-    if: ${{ (contains(github.event.*.labels.*.name, 'release-chores') && github.event.pull_request.merged == false) }}
+    if: ${{ contains(github.head_ref, 'release-please--branches--') }}
     name: Generate release files
     runs-on: ubuntu-latest
     steps:
@@ -72,12 +76,6 @@ jobs:
           pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
           # Set PR project.
           gh pr edit "${pr_nubmer}" --add-project "Distribution Team"
-      # We use git-chglog to generate the release notes and release-please
-      # doesn't have an option to disable the generation of CHANGELOG.md files.
-      # https://github.com/googleapis/release-please/issues/2007
-      - name: Clean up changelog files
-        run: |
-          rm -f charts/camunda-platform-*/CHANGELOG.md
       - name: Update golden files
         run: |
           chartPath="${CHANGED_CHARTS}" \

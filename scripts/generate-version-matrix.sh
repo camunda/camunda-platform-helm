@@ -44,12 +44,17 @@ get_chart_images () {
     chart_version="${1}"
     major_minor="$(echo "$CHART_DIR" | sed 's/charts\/camunda-platform-//g')"
     version_matrix_file="version-matrix/camunda-$major_minor/version-matrix.json"
+    # TODO: Remove this workaround once 8.7 is released as we will have only 1 alpha again.
+    if [[ "${CHART_DIR}" == "charts/camunda-platform-8.8" ]]; then
+      CHART_DIR="charts/camunda-platform-alpha-8.8"
+    fi
     test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-alpha"
     test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
 
     # Check if the chart data already in version-matrix.json and add it if needed.
     if ! $(jq "any(.chart_version == \"${chart_version}\")" ${version_matrix_file}); then
       # Generateing the chart version data.
+      helm repo update > /dev/null
       chart_images="$(
         helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
           --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |

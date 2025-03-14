@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.0.0-alpha1
+version: 13.0.0-alpha2
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -63,7 +63,7 @@ maintainers:
     email: jesse.simpson@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.16.3"
+  camunda.io/helmCLIVersion: "3.17.1"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,27 +73,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Adding application override to console"
-    - kind: added
-      description: "Add support for authorizations configuration"
-    - kind: added
-      description: "Adding TLS support to console"
-    - kind: added
-      description: "Add core unified prefix for Elasticsearch/OpenSearch"
     - kind: changed
-      description: "**⚠ BREAKING CHANGE** Replace zeebe and web-apps with camunda orchestration core"
-    - kind: changed
-      description: "**⚠ BREAKING CHANGE** Remove separated ingress functionality"
-    - kind: changed
-      description: "Remove support for global.multiregion.installationType"
-    - kind: changed
-      description: "Unify authorization configuration"
+      description: "Renamed archiver to history for camunda exporter settings"
     - kind: fixed
-      description: "Adding http/https options to readinessProbes for console"
-    - kind: fixed
-      description: "Assign Zeebe role to demo user"
-    - kind: fixed
-      description: "Add missing components when identity disabled."
-    - kind: fixed
-      description: "Add default webModler url when ingress is disabled"
+      description: "Changing helper function for identityURL"
