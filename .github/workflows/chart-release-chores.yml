@@ -2,12 +2,8 @@ name: "Chart - Release - Chores"
 
 on:
   pull_request:
-    branches:
-      - release-candidate*
-    paths:
-      - .github/workflows/chart-release-chores.yml
-      - '**/.release-please-config.json'
-      - '**/.release-please-manifest.json'
+    types:
+      - labeled
 
 permissions:
   contents: write
@@ -15,7 +11,7 @@ permissions:
 
 jobs:
   chores:
-    if: ${{ contains(github.head_ref, 'release-please--branches--') }}
+    if: ${{ (contains(github.event.*.labels.*.name, 'release-chores') && github.event.pull_request.merged == false) }}
     name: Generate release files
     runs-on: ubuntu-latest
     steps:
