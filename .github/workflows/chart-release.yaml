@@ -227,13 +227,23 @@ jobs:
           EOF
 
   post-release:
-    name: Post Release Chores
-    needs: release
+    name: Post-Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    needs: [init, release]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # It's not expected to run more than one release in the same PR,
+      # but just for safety to avoid race condition.
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.init.outputs.matrix) }}
     permissions:
       contents: write
       pull-requests: write
       issues: write
+    env:
+      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -270,13 +280,24 @@ jobs:
       - name: Label PRs with app and chart version
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          # For Makefile.
+          chartPath: "${{ env.CHART_DIR }}"
         run: |
           make release.set-prs-version-label
       - name: Generate version matrix
+        env:
+          # For Makefile.
+          chartPath: "${{ env.CHART_DIR }}"
         run: |
           make helm.repos-add
           make release.generate-version-matrix-index
           make release.generate-version-matrix-released
+      # We use git-chglog to generate the release notes and release-please
+      # doesn't have an option to disable the generation of CHANGELOG.md files.
+      # https://github.com/googleapis/release-please/issues/2007
+      - name: Clean up release-please changelog files
+        run: |
+          rm -f "${{ env.CHART_DIR }}/CHANGELOG.md"
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "renovate[bot]"
