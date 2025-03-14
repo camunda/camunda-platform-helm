@@ -24,7 +24,6 @@ keywords:
   - process-engine
   - process-orchestration
   - workflow
-  - workflow-engine
 dependencies:
   # Camunda charts.
   - name: identity

@@ -10,8 +10,8 @@ on:
         default: false
         type: boolean
   pull_request:
-    branches:
-      - main
+    types:
+      - labeled
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -56,15 +56,15 @@ jobs:
             chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
 
             # Extract version info.
-            chart_version="$(yq '.version' "$chart_file")"
-            camunda_version="$(yq '.appVersion' "$chart_file" | sed 's/.x//')"
-            chart_prerelease="$(yq '.annotations."artifacthub.io/prerelease" // "false"' "$chart_file")"
+            chart_version="$(yq '.version' "${chart_file}")"
+            camunda_version="$(yq '.appVersion' "${chart_file}" | sed 's/.x//')"
+            chart_prerelease="$(yq '.annotations."artifacthub.io/prerelease" // "false"' "${chart_file}")"
 
             # Check if the release already exists.
             if gh release view "camunda-platform-${chart_version}" > /dev/null 2>&1; then
-              echo "⚠️ Release skipped for camunda-platform-${dir_id} ⚠️" >> "${GITHUB_STEP_SUMMARY}"
+              echo "⚠️ Release Skipped ⚠️" >> "${GITHUB_STEP_SUMMARY}"
               cat << EOF >> "${GITHUB_STEP_SUMMARY}"
-                - The release for chart version ${chart_version} already exists.
+                - The release for chart dir \`camunda-platform-${dir_id}\` with version \`${chart_version}\` already exists.
                 - To rerelease, delete the GH release first.
                 - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
               ---
@@ -102,6 +102,7 @@ jobs:
       contents: write
       id-token: write
     env:
+      CHART_RELEASER_CONFIG: ".github/config/chart-releaser.yaml"
       CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
       CHART_VERSION: "${{ matrix.chart.version }}"
       CHART_PACKAGE_NAME: "camunda-platform-${{ matrix.chart.version }}"
@@ -116,6 +117,7 @@ jobs:
         with:
           tools: |
             helm
+            helm-cr
             helm-ct
             yq
       - name: Install Cosign
@@ -160,15 +162,36 @@ jobs:
           sed -ri '/Badge .+/d' "${{ env.CHART_DIR }}/README.md"
 
       # Release.
-      - name: Run Chart Releaser
-        id: release
-        uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
-        with:
-          config: .github/config/chart-releaser.yaml
+      # - name: Run Chart Releaser
+      #   id: release
+      #   uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
+      #   with:
+      #     config: .github/config/chart-releaser.yaml
+      #   env:
+      #     CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      #     CR_SKIP_EXISTING: 'true'
+
+      - name: Run Chart Releaser - Packaging
+        run: |
+          helm-cr package ${{ env.CHART_DIR }} --config ${{ env.CHART_RELEASER_CONFIG }}
+          ls -lsa .cr-release-packages/*
+      - name: Run Chart Releaser - Tagging/Uploading
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-          CR_SKIP_EXISTING: 'true'
-      - name: Set GH release type
+        run: |
+          helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})"
+      - name: Run Chart Releaser - Indexing
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})"
+      - name: Set GitHub release type
         if: ${{ matrix.chart.prerelease }}
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
@@ -197,10 +220,10 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
       - name: Add release info to workflow summary
         run: |
+          echo "ℹ️ Release Published ℹ️" >> $GITHUB_STEP_SUMMARY
           cat << EOF >> $GITHUB_STEP_SUMMARY
-          Release URLs:
-          - [GitHub](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ env.CHART_PACKAGE_NAME }})
-          - [Artifact Hub](https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_VERSION }})
+          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ env.CHART_PACKAGE_NAME }}
+          - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_VERSION }}
           Note: Artifact Hub link needs some time till it's AH scraps the Helm repo index.
           EOF
 
@@ -235,6 +258,16 @@ jobs:
       #     timeout_minutes: 5
       #     retry_wait_seconds: 10
       #     command: make release.verify-components-version
+      - name: Set GitHub latest release
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          latest_stable_chart_file="$(ls -d1 charts/camunda-platform-8.* | tail -n 1)/Chart.yaml"
+          latest_stable_chart_version="$(yq '.version' "${latest_stable_chart_file}")"
+          latest_stable_chart_package_name="camunda-platform-${latest_stable_chart_version}"
+          gh release edit "${latest_stable_chart_package_name}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --latest
       - name: Label PRs with app and chart version
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
