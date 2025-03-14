@@ -6,16 +6,12 @@ on:
       - release-candidate*
     paths:
       - .github/workflows/chart-release-chores.yml
-      - .github/config/release-please/release-please-config.json
-      - .github/config/release-please/.release-please-manifest.json
+      - '**/.release-please-config.json'
+      - '**/.release-please-manifest.json'
 
 permissions:
   contents: write
   pull-requests: write
-
-env:
-  RELEASE_PLEASE_CONFIG: ".github/config/release-please/release-please-config.json"
-  RELEASE_PLEASE_MANIFEST: ".github/config/release-please/.release-please-manifest.json"
 
 jobs:
   chores:

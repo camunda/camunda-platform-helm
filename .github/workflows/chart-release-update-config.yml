@@ -5,7 +5,7 @@ name: "Chart - Release - Update Config"
 on:
   push:
     branches:
-      - main
+      - disabled
     paths:
       - .github/config/release-please/.release-please-manifest.json
   workflow_dispatch: { }

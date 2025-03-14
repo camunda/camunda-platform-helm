@@ -26,7 +26,7 @@ init_updates () {
 
 # Get all Helm chart released versions grouped by chart 'appVersion' (Camunda release like 8.5).
 get_versions_formatted () {
-    helm search repo "${CHART_SOURCE}" --versions --output json |
+    helm search repo "${CHART_SOURCE}" --devel --versions --output json |
       jq 'group_by(.app_version) | map({
         "app": .[0].app_version | .[:-2], "charts": map(.version)
         }) | reverse'
@@ -42,23 +42,28 @@ get_versions_filtered () {
 # Get all images used in a certain Helm chart.
 get_chart_images () {
     chart_version="${1}"
-    MAJORMINOR="$(echo "$CHART_DIR" | sed 's/charts\/camunda-platform-//g')"
+    major_minor="$(echo "$CHART_DIR" | sed 's/charts\/camunda-platform-//g')"
+    version_matrix_file="version-matrix/camunda-$major_minor/version-matrix.json"
     test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-alpha"
-    QUERY_LRU="$(cat version-matrix/camunda-$MAJORMINOR/version-matrix.json | jq -r ".[] | select(.chart_version==\"$chart_version\").output" | awk '{gsub(/\x1e/, ""); print}')"
-    if [[ "$QUERY_LRU" != "" ]]; then
-      echo "$QUERY_LRU"
-      unset QUERY_LRU
-      return
+    test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
+
+    # Check if the chart data already in version-matrix.json and add it if needed.
+    if ! $(jq "any(.chart_version == \"${chart_version}\")" ${version_matrix_file}); then
+      # Generateing the chart version data.
+      chart_images="$(
+        helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
+          --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
+        tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
+        sort | uniq;
+      )"
+      chart_images_json="$(echo -e "$chart_images" | jq -R | jq -sc)"
+      output_json="$(cat ${version_matrix_file} | jq -r ". + [{ \"chart_version\": \"${chart_version}\", \"chart_images\": ${chart_images_json}}]")"
+      echo "$output_json" > "${version_matrix_file}"
     fi
-    output="$(
-      helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
-        --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
-      tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "- %s\n", $2}' |
-      sort | uniq;
-    )"
-    output_json="$(cat version-matrix/camunda-$MAJORMINOR/version-matrix.json | jq -r ". + [{ \"chart_version\": \"$chart_version\", output: \"$output\"}]")"
-    echo "$output_json" > version-matrix/camunda-$MAJORMINOR/version-matrix.json
-    echo "$output"
+
+    # Print chart images from version-matrix.json file.
+    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_images[]" | awk '{gsub(/\x1e/, ""); print}')"
+    printf -- "- %s\n" $(echo -e "$version_matrix_images")
 }
 
 # Get Helm CLI version based on the asdf .tool-versions file.
