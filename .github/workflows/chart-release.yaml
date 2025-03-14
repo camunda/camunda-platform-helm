@@ -47,42 +47,44 @@ jobs:
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          set -x
-          
-           echo "Generating release matrix..."
-           MATRIX_FILE="matrix_versions.txt" 
-           > "$MATRIX_FILE"  # Clear or create the file
+          echo "Generating release matrix..."
+          matrix_file="matrix_versions.txt"
 
-           echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.[]' | while read -r dir_id; do
-              chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
+          # Create a tmp file and ensure it's empty.
+          echo "" > "${matrix_file}"
 
-              # Extract version info
-              chart_version="$(yq '.version' "$chart_file")"
-              camunda_version="$(yq '.appVersion' "$chart_file" | sed 's/.x//')"
+          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.[]' | while read -r dir_id; do
+            chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
 
-              # Check if the release already exists
-              if gh release view "camunda-platform-${chart_version}" > /dev/null 2>&1; then
-                 echo "⚠️ Release skipped for camunda-platform-${dir_id} ⚠️" >> "$GITHUB_STEP_SUMMARY"
-                 cat <<EOF >> "$GITHUB_STEP_SUMMARY"
-                    - The release for chart version ${chart_version} already exists.
-                    - To rerelease, delete the GH release first.
-                    - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
-                  ---
-                  EOF
-              else
-                 echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
-                 cat << EOF >> matrix_versions.txt
-                   {
-                     "dirID": "${dir_id}",
-                     "version": "${chart_version}",
-                     "appVersion": "${camunda_version}"
-                   }
-                   EOF
+            # Extract version info.
+            chart_version="$(yq '.version' "$chart_file")"
+            camunda_version="$(yq '.appVersion' "$chart_file" | sed 's/.x//')"
+            chart_prerelease="$(yq '.annotations."artifacthub.io/prerelease" // "false"' "$chart_file")"
+
+            # Check if the release already exists.
+            if gh release view "camunda-platform-${chart_version}" > /dev/null 2>&1; then
+              echo "⚠️ Release skipped for camunda-platform-${dir_id} ⚠️" >> "${GITHUB_STEP_SUMMARY}"
+              cat <<EOF >> "${GITHUB_STEP_SUMMARY}"
+                - The release for chart version ${chart_version} already exists.
+                - To rerelease, delete the GH release first.
+                - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
+              ---
+              EOF
+            else
+              echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
+              cat << EOF >> "${matrix_file}"
+                {
+                  "dirID": "${dir_id}",
+                  "version": "${chart_version}",
+                  "appVersion": "${camunda_version}",
+                  "prerelease": ${chart_prerelease}
+                }
+              EOF
             fi
           done
-          
-          # Generate JSON matrix and output it
-          matrix_versions="$(jq --slurp --compact-output '.' matrix_versions.txt)"
+
+          # Generate JSON matrix and set it as a GH output.
+          matrix_versions="$(jq --slurp --compact-output '.' ${matrix_file})"
           echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
 
   release:
@@ -144,12 +146,12 @@ jobs:
       # Preparation.
       - name: Remove Dev Comments
         run: |
-          TARGET_FILES=(
+          target_files=(
             "${{ env.CHART_DIR }}/values*.yaml"
             "${{ env.CHART_DIR }}/Chart.yaml"
           )
-          for FILE in "${TARGET_FILES[@]}"; do
-            sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' $FILE
+          for target_file in "${target_files[@]}"; do
+            sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' "${target_file}"
           done
           echo "Dev comments removed:"
           git --no-pager diff
@@ -167,6 +169,14 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           CR_SKIP_EXISTING: 'true'
+      - name: Set GH release type
+        if: ${{ matrix.chart.prerelease == 'true' }}
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          gh release edit "${{ env.CHART_PACKAGE_NAME }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --prerelease
 
       - name: Test
         run: |
@@ -184,12 +194,12 @@ jobs:
             --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Upload Helm chart signature bundle
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
           gh release upload "${{ env.CHART_PACKAGE_NAME }}" \
             "${{ env.CHART_PACKAGE_NAME }}.cosign.bundle" \
             --repo "${GITHUB_REPOSITORY}"
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
       - name: Add release info to workflow summary
         run: |
           cat << EOF >> $GITHUB_STEP_SUMMARY
