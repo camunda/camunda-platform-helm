@@ -47,28 +47,23 @@ get_chart_images () {
     test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-alpha"
     test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
 
-    # Check if the chart data already in version-matrix.json and print it.
-    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_images[]" | awk '{gsub(/\x1e/, ""); print}')"
-    if [[ "$version_matrix_images" != "" ]]; then
-      printf -- "- %s\n" $(echo -e "$version_matrix_images")
-      unset version_matrix_images
-      return
+    # Check if the chart data already in version-matrix.json and add it if needed.
+    if ! $(jq "any(.chart_version == \"${chart_version}\")" ${version_matrix_file}); then
+      # Generateing the chart version data.
+      chart_images="$(
+        helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
+          --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
+        tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
+        sort | uniq;
+      )"
+      chart_images_json="$(echo -e "$chart_images" | jq -R | jq -sc)"
+      output_json="$(cat ${version_matrix_file} | jq -r ". + [{ \"chart_version\": \"${chart_version}\", \"chart_images\": ${chart_images_json}}]")"
+      echo "$output_json" > "${version_matrix_file}"
     fi
 
-    # If the chart data is not in version-matrix.json, then query it from Helm repo, and add it to version-matrix.json file,
-    # then print the data.
-    chart_images="$(
-      helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
-        --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress.yaml" 2> /dev/null |
-      tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
-      sort | uniq;
-    )"
-
-    chart_images_json="$(echo -e "$chart_images" | jq -R | jq -sc)"
-    output_json="$(cat ${version_matrix_file} | jq -r ". + [{ \"chart_version\": \"${chart_version}\", \"chart_images\": ${chart_images_json}}]")"
-
-    echo "$output_json" > "${version_matrix_file}"
-    printf -- "- %s\n" $(echo -e "$chart_images")
+    # Print chart images from version-matrix.json file.
+    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_images[]" | awk '{gsub(/\x1e/, ""); print}')"
+    printf -- "- %s\n" $(echo -e "$version_matrix_images")
 }
 
 # Get Helm CLI version based on the asdf .tool-versions file.
