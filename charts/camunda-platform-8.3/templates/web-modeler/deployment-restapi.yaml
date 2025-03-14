@@ -92,7 +92,7 @@ spec:
             - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
               value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             - name: RESTAPI_IDENTITY_BASE_URL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
           {{- with .Values.webModeler.restapi.env }}

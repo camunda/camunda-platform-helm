@@ -96,7 +96,7 @@ spec:
                   key: pusher-app-key
             {{- if .Values.identity.enabled }}
             - name: IDENTITY_BASE_URL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
             {{- end }}
             {{- with .Values.webModeler.webapp.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
