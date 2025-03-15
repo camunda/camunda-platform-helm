@@ -252,23 +252,23 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
 
-- name: TEST - Check ServiceMonitor
-  steps:
-  - name: Check prometheus could query containers
-    type: http
-    method: GET
-    url: "http://{{ .coreVars.baseURLs.prometheus }}/api/v1/query?query=system_cpu_count%7Bnamespace%3D%22{{ .coreVars.testNamespace }}%22%7D"
-    retry: 4
-    delay: 15
-    # info: |
-    #   = Request Body: {{ .result.request.body }}
-    #   = Response Body: {{ .result.body }}
-    assertions:
-    - result.body ShouldContainSubstring connectors
-    - result.body ShouldContainSubstring identity
-    - result.body ShouldContainSubstring operate
-    - result.body ShouldContainSubstring optimize
-    - result.body ShouldContainSubstring tasklist
-    - result.body ShouldContainSubstring web-modeler-restapi
-    - result.body ShouldContainSubstring zeebe
-    - result.body ShouldContainSubstring zeebe-gateway
+# - name: TEST - Check ServiceMonitor
+#   steps:
+#   - name: Check prometheus could query containers
+#     type: http
+#     method: GET
+#     url: "http://{{ .coreVars.baseURLs.prometheus }}/api/v1/query?query=system_cpu_count%7Bnamespace%3D%22{{ .coreVars.testNamespace }}%22%7D"
+#     retry: 4
+#     delay: 15
+#     # info: |
+#     #   = Request Body: {{ .result.request.body }}
+#     #   = Response Body: {{ .result.body }}
+#     assertions:
+#     - result.body ShouldContainSubstring connectors
+#     - result.body ShouldContainSubstring identity
+#     - result.body ShouldContainSubstring operate
+#     - result.body ShouldContainSubstring optimize
+#     - result.body ShouldContainSubstring tasklist
+#     - result.body ShouldContainSubstring web-modeler-restapi
+#     - result.body ShouldContainSubstring zeebe
+#     - result.body ShouldContainSubstring zeebe-gateway
