@@ -1,6 +1,18 @@
 identity:
   # Keycloak client seed which is used to query Camunda APIs.
   env:
+  - name: IDENTITY_TENANTS_0_NAME
+    value: Default
+  - name: IDENTITY_TENANTS_0_TENANTID
+    value: <default>
+  - name: IDENTITY_TENANTS_0_MEMBERS_0_TYPE
+    value: USER
+  - name: IDENTITY_TENANTS_0_MEMBERS_0_USERNAME
+    value: demo
+  - name: IDENTITY_TENANTS_0_MEMBERS_1_TYPE
+    value: APPLICATION
+  - name: IDENTITY_TENANTS_0_MEMBERS_1_APPLICATIONID
+    value: operate
   - name: KEYCLOAK_CLIENTS_2_ID
     value: test
   - name: KEYCLOAK_CLIENTS_2_NAME
