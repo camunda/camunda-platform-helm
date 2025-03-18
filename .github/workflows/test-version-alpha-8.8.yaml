@@ -29,7 +29,7 @@ jobs:
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}-vald-alpha-8-8"
-      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-dir: "camunda-platform-alpha-8.8"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   # unit:
