@@ -17,17 +17,19 @@ testcases:
     # Dependencies.
     - component: Elasticsearch
       url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
-#     - component: Keycloak
-#       url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
+    # TODO: Enable test again for final 8.8.0 release.
+    # - component: Keycloak
+    #  url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
     # Camunda.
-#     - component: Identity
-#       url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
-#     - component: Optimize
-#       url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
+    # TODO: Enable test again for final 8.8.0 release.
+    #- component: Identity
+    #  url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
+    #- component: Optimize
+    #  url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
     - component: Core
       url: "{{ .preflightVars.baseURLs.core }}/actuator/health/readiness"
-    # - component: Connectors
-    #   url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
+    - component: Connectors
+      url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
@@ -37,24 +39,25 @@ testcases:
       Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-#   - name: "WebModeler - {{ .value.component }}"
-#     skip:
-#     - skipTestWebModeler ShouldBeFalse
-#     type: http
-#     range:
-#     - component: RESTAPI
-#       url: "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/readiness"
-#     - component: WebApp
-#       url: "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/readiness"
-#     method: GET
-#     url: "{{ .value.url }}"
-#     retry: 3
-#     delay: 10
-#     info: |
-#       {{ .value.component }} URL: {{ .value.url }}
-#       Response Body: {{ .result.body }}
-#     assertions:
-#     - result.statuscode ShouldEqual 200
+  # TODO: Enable test again for final 8.8.0 release.
+  #- name: "WebModeler - {{ .value.component }}"
+  #  skip:
+  #  - skipTestWebModeler ShouldBeFalse
+  #  type: http
+  #  range:
+  #  - component: RESTAPI
+  #    url: "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/readiness"
+  #  - component: WebApp
+  #    url: "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/readiness"
+  #  method: GET
+  #  url: "{{ .value.url }}"
+  #  retry: 3
+  #  delay: 10
+  #  info: |
+  #    {{ .value.component }} URL: {{ .value.url }}
+  #    Response Body: {{ .result.body }}
+  #  assertions:
+  #  - result.statuscode ShouldEqual 200
 
 - name: TEST - Liveness
   steps:
@@ -64,17 +67,19 @@ testcases:
     # Dependencies.
     - component: Elasticsearch
       url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
-#     - component: Keycloak
-#       url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
+    # TODO: Enable test again for final 8.8.0 release.
+    #- component: Keycloak
+    #  url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
     # Camunda.
-#     - component: Identity
-#       url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
-#     - component: Optimize
-#       url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
+    # TODO: Enable test again for final 8.8.0 release.
+    # - component: Identity
+    #  url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
+    # - component: Optimize
+    #  url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
     - component: Core
       url: "{{ .preflightVars.baseURLs.core }}/actuator/health/liveness"
-    # - component: Connectors
-    #   url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/liveness"
+    - component: Connectors
+      url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/liveness"
     method: GET
     url: "{{ .value.url }}"
     retry: 3
@@ -84,23 +89,24 @@ testcases:
       Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-#   - name: "WebModeler - {{ .value.component }}"
-#     skip:
-#     - skipTestWebModeler ShouldBeFalse
-#     type: http
-#     range:
-#     - component: RESTAPI
-#       url:  "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/liveness"
-#     - component: WebApp
-#       url:  "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/liveness"
-#     method: GET
-#     url: "{{ .value.url }}"
-#     retry: 3
-#     delay: 10
-#     info: |
-#       {{ .value.component }} URL: {{ .value.url }}
-#       Response Body: {{ .result.body }}
-#     assertions:
-#     - result.statuscode ShouldEqual 200
+  # TODO: Enable test again for final 8.8.0 release.
+  #- name: "WebModeler - {{ .value.component }}"
+  #  skip:
+  #  - skipTestWebModeler ShouldBeFalse
+  #  type: http
+  #  range:
+  #  - component: RESTAPI
+  #    url:  "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/liveness"
+  #  - component: WebApp
+  #    url:  "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/liveness"
+  #  method: GET
+  #  url: "{{ .value.url }}"
+  #  retry: 3
+  #  delay: 10
+  #  info: |
+  #    {{ .value.component }} URL: {{ .value.url }}
+  #    Response Body: {{ .result.body }}
+  #  assertions:
+  #  - result.statuscode ShouldEqual 200
 
 # TODO: Check seed config like ES indexes.
