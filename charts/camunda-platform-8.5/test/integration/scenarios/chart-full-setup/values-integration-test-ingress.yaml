@@ -78,8 +78,8 @@ webModeler:
   contextPath: "/modeler"
   image:
     pullSecrets:
-      - name: index-docker-io
-      - name: registry-camunda-cloud
+    - name: index-docker-io
+    - name: registry-camunda-cloud
   restapi:
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
@@ -115,8 +115,8 @@ console:
   contextPath: "/"
   image:
     pullSecrets:
-      - name: index-docker-io
-      - name: registry-camunda-cloud
+    - name: index-docker-io
+    - name: registry-camunda-cloud
 
 elasticsearch:
   maxUnavailable: 0
