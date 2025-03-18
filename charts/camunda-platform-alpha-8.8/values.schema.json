@@ -4796,14 +4796,9 @@
                         }
                     }
                 },
-                "archiver": {
+                "history": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if false, there is no archiver which will continually create historical indices.",
-                            "default": true
-                        },
                         "elsRolloverDateFormat": {
                             "type": "string",
                             "description": "defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.",
@@ -4902,7 +4897,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha1"
+                            "default": "8.8.0-alpha2"
                         },
                         "pullSecrets": {
                             "type": "array",

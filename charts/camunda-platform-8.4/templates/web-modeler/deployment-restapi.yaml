@@ -38,7 +38,7 @@ spec:
               value: "-Xmx1536m"
             {{- if .Values.identity.enabled }}
             - name: CAMUNDA_IDENTITY_BASEURL
-              value: {{ include "webModeler.identityBaseUrl" . | quote }}
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
             {{- end }}
             - name: CAMUNDA_IDENTITY_TYPE
               value: {{ include "camundaPlatform.authType" . | quote }}

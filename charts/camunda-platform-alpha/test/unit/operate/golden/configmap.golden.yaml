@@ -41,7 +41,7 @@ data:
     camunda.operate:
       identity:
         redirectRootUrl: "http://localhost:8081"
-    
+
       # ELS instance to store Operate data
       elasticsearch:
         # Cluster name

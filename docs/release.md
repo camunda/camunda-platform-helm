@@ -41,35 +41,38 @@ helm template my-camunda-devel \
   --version 0.0.0-8.6.0-alpha2
 ```
 
-## Process
+## Release Process
 
 We are trying to automate as much as possible of the release process yet without sacrificing
 transparency so we are using PR release flow with minimal manual interactions.
-
-When it's time to release, just do the following steps.
-
-Locally, run:
-
-```shell
-make release.chores
-```
-
-This action will:
-
-- Locally pull the latest updates to the `main` branch.
-- Locally create a new branch called `release` from `main` branch.
-- Bump the chart version and make a commit.
-- Generate release notes and make a commit.
-- Push the updated `release` branch to the repo.
-- Generate a link to open a PR with prefilled title and template.
-
-Next, all you need to open the PR using the generated link and follow the checklist there.
 
 > [!NOTE]
 >
 > The release notes depend on git commit log, only the commits that follow
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format) will be added to
 the release notes.
+
+```mermaid
+graph TD
+    Step1[Step1<br/>Semi-Automated<br/>---<br/>The release manager ensures that all <a href="https://github.com/camunda/camunda-platform-helm/pulls?q=is%3Aopen+is%3Apr+label%3Adependencies">dependences</a> are updated via Renovatebot]
+    Step2[Step2<br/>Semi-Automated<br/>---<br/>The release manager triggers <a href="https://github.com/camunda/camunda-platform-helm/actions/workflows/chart-release-candidate.yaml">GitHub Action</a> to create the release candidate]
+    Step3[Step3<br/>External<br/>---<br/>The QA team reviews the release candidate artifact and gives the green light to release]
+    Step4[Step4<br/>Automated<br/>---<br/>GitHub Action with Release-Please creates the release PR]
+    Step5[Step5<br/>Automated<br/>---<br/>GitHub Action runs release chores, like release notes, and pushes the commit to the release PR]
+    Step6[Step6<br/>Manual<br/>---<br/>The release manager reviews the release PR]
+    Step7[Step7<br/>Manual<br/>---<br/>The release manager adds 'release' label to the release PR]
+    Step8[Step8<br/>Automated<br/>---<br/>GitHub Action releases the Helm chart]
+    Step9[Step9<br/>Manual<br/>---<br/>The release manager merges the release PR to main branch]
+
+    Step1 ==> Step2
+    Step2 == The GHA creates 'release-candidate-VERSION' branch and OCI artifact ==> Step3
+    Step3 ==> Step4
+    Step4 ==> Step5
+    Step5 ==> Step6
+    Step6 ==> Step7
+    Step7 ==> Step8
+    Step8 ==> Step9
+```
 
 ## Artifact Hub
 

@@ -3,12 +3,14 @@ set -euox pipefail
 
 
 main () {
+    chart_dir="${1}"
     test "$(git branch --show-current)" != "main" && git fetch origin main:main
-    release_please_config=".github/config/release-please/release-please-config.json"
-    latest_release_commit="$(git show main:${release_please_config} | jq -r '."bootstrap-sha"')"
+
+    # Get the latest version from main, not from the releas PR as it could be updated in the PR.
+    latest_chart_version="$(git show main:${chart_dir}/Chart.yaml | yq '.version')"
+    latest_chart_tag_hash="$(git show-ref --hash camunda-platform-${latest_chart_version})"
     cliff_config_file=".github/config/cliff.toml"
 
-    chart_dir="${1}"
     chart_file="${chart_dir}/Chart.yaml"
     chart_name="$(yq '.name' ${chart_file})"
     chart_version="$(yq '.version' ${chart_file})"
@@ -26,7 +28,7 @@ main () {
 
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
-    git-cliff ${latest_release_commit}..            \
+    git-cliff ${latest_chart_tag_hash}..            \
         --config "${cliff_config_file}"             \
         --output "${chart_dir}/RELEASE-NOTES.md"    \
         --include-path "${chart_dir}/**"            \

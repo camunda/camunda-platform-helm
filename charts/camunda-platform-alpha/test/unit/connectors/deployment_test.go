@@ -731,7 +731,7 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeCredentials() {
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{
-			Name:      "CAMUNDA_OPERATE_CLIENT_PASSWORD",
+			Name:      "OPERATE_CLIENT_PASSWORD",
 			ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-connectors-auth-credentials"}, Key: "connectors-secret"}}})
 }
 
@@ -756,14 +756,14 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 
 	for _, envvar := range env {
 		s.Require().NotEqual("SPRING_MAIN_WEB-APPLICATION-TYPE", envvar.Name)
-		s.Require().NotEqual("CAMUNDA_OPERATE_CLIENT_PASSWORD", envvar.Name)
+		s.Require().NotEqual("OPERATE_CLIENT_PASSWORD", envvar.Name)
 	}
 
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_CLIENT_ID", Value: "zeebe"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CLIENT_AUTH_CLIENT_ID", Value: "zeebe"})
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{
-			Name: "ZEEBE_CLIENT_SECRET",
+			Name: "CAMUNDA_CLIENT_AUTH_CLIENT_SECRET",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-zeebe-identity-secret"},
@@ -771,8 +771,8 @@ func (s *deploymentTemplateTest) TestContainerSetInboundModeOauthIdentity() {
 				},
 			},
 		})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_AUTHORIZATION_SERVER_URL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
-	s.Require().Contains(env, corev1.EnvVar{Name: "ZEEBE_TOKEN_AUDIENCE", Value: "zeebe-api"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CLIENT_AUTH_ISSUER", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CLIENT_ZEEBE_AUDIENCE", Value: "zeebe-api"})
 	s.Require().Contains(
 		env,
 		corev1.EnvVar{

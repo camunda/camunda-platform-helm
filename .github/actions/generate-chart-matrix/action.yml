@@ -36,11 +36,11 @@ runs:
 
         ls -d ${{ inputs.charts-path }} | while read chart_dir; do
           if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
-            camunda_version="$(echo ${chart_dir} | cut -d '-' -f 3)";
+            camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')";
             echo "Camunda version: ${camunda_version}"
             echo "${camunda_version}" >> matrix_versions.txt;
           fi
         done
 
-        matrix="$(cat matrix_versions.txt | jq -s -c -R 'split("\n") | .[:-1]')"
+        matrix="$(cat matrix_versions.txt | jq --slurp --compact-output --raw-input 'split("\n") | .[:-1]')"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT

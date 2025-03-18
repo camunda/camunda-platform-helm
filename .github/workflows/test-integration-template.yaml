@@ -174,7 +174,7 @@ jobs:
       # and populate environment variables from Vault
       - name: Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         if: inputs.vault-secret-mapping != ''
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -191,8 +191,16 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-      - name: Install env dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            kubectl
+            oc
+            task
+            yq
       # TODO: Later, find a way to abstract the auth for different platforms.
       - name: Authenticate to GKE
         if: matrix.distro.platform == 'gke' && inputs.auth-data == ''

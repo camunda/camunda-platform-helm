@@ -3,19 +3,15 @@ name: "Chart - Release - Chores"
 on:
   pull_request:
     branches:
-      - release-candidate*
+      - main
     paths:
       - .github/workflows/chart-release-chores.yml
-      - .github/config/release-please/release-please-config.json
-      - .github/config/release-please/.release-please-manifest.json
+      - '**/.release-please-config.json'
+      - '**/.release-please-manifest.json'
 
 permissions:
   contents: write
   pull-requests: write
-
-env:
-  RELEASE_PLEASE_CONFIG: ".github/config/release-please/release-please-config.json"
-  RELEASE_PLEASE_MANIFEST: ".github/config/release-please/.release-please-manifest.json"
 
 jobs:
   chores:
@@ -41,8 +37,16 @@ jobs:
       #
       # Dependencies.
       #
-      - name: Install dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            git-cliff
+            golang
+            gomplate
+            helm
+            helm-ct
+            yq
       - name: Install readme-generator-for-helm
         run: |
           npm install -g @bitnami/readme-generator-for-helm
@@ -72,12 +76,6 @@ jobs:
           pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
           # Set PR project.
           gh pr edit "${pr_nubmer}" --add-project "Distribution Team"
-      # We use git-chglog to generate the release notes and release-please
-      # doesn't have an option to disable the generation of CHANGELOG.md files.
-      # https://github.com/googleapis/release-please/issues/2007
-      - name: Clean up changelog files
-        run: |
-          rm -f charts/camunda-platform-*/CHANGELOG.md
       - name: Update golden files
         run: |
           chartPath="${CHANGED_CHARTS}" \

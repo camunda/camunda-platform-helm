@@ -1,0 +1,38 @@
+name: Install Tools
+description: Install tools via asdf vm.
+inputs:
+  tools:
+    default: ""
+    description: |
+      Line separated tool names to be installed,
+      as asdf action doesn't have to install certain tools from .tool-versions file.
+      Note: The tool name should match what's in the .tool-versions file.
+
+runs:
+  using: composite
+  steps:
+    - name: Filter .tool-versions
+      shell: bash
+      run: |
+        cp -a .tool-versions .tool-versions-orig
+        echo "${{ inputs.tools }}" | sed '/^$/d' > .tool-versions-input
+        echo "⭐ Input tool names content:"
+        cat .tool-versions-input
+        grep -w -f .tool-versions-input .tool-versions-orig > .tool-versions
+        echo "⭐ Filtered .tool-versions content:"
+        cat .tool-versions
+    - name: Install asdf and tools
+      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      with:
+        # TODO: Upgrade to 0.16 when it's supported in the GHA.
+        # https://github.com/asdf-vm/actions/pull/590
+        asdf_branch: v0.15.0
+    - name: List installed versions
+      shell: bash
+      run: |
+        asdf current
+    - name: Checkout .tool-versions changes
+      shell: bash
+      run: |
+        git clean -f .tool-versions*
+        git checkout .tool-versions

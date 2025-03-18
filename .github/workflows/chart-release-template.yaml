@@ -31,23 +31,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get IDs of the untagged artifacts (the sha256 digest).
-          artifacts_ids_to_delete="$(
-            gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
-              '/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions?per_page=100' |
-            jq '.[] | select(.metadata.container.tags | length == 0)' | jq '.id'
-          )"
-          # Early exit if no artifacts to delete.
-          test -z "${artifacts_ids_to_delete}" && {
-            echo "No old untagged artifacts to delete ...";
-            exit 0;
-          }
-          # Delete the untagged artifacts.
-          echo -e "Deleting the old untagged artifacts IDs:\n${artifacts_ids_to_delete}"
-          for container_id in ${artifacts_ids_to_delete}; do
-            gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions/${container_id}"
-          done
+          echo "Wait for fix in: https://github.com/cli/cli/issues/10592"
+          # # Get IDs of the untagged artifacts (the sha256 digest).
+          # artifacts_ids_to_delete="$(
+          #   gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+          #     '/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions?per_page=100' |
+          #   jq '.[] | select(.metadata.container.tags | length == 0)' | jq '.id'
+          # )"
+          # # Early exit if no artifacts to delete.
+          # test -z "${artifacts_ids_to_delete}" && {
+          #   echo "No old untagged artifacts to delete ...";
+          #   exit 0;
+          # }
+          # # Delete the untagged artifacts.
+          # echo -e "Deleting the old untagged artifacts IDs:\n${artifacts_ids_to_delete}"
+          # for container_id in ${artifacts_ids_to_delete}; do
+          #   gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          #     "/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions/${container_id}"
+          # done
 
   release:
     needs: clean
@@ -75,6 +76,12 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.branch }}
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            yq
       - name: Set vars
         run: |
           # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-snapshot-latest".
@@ -89,8 +96,6 @@ jobs:
           yq -i '.description |= strenv(SNAPSHOT_DESCRIPTION)' Chart.yaml
       #
       # Package.
-      - name: Install Helm CLI
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       - name: Print Helm CLI version
         run: helm version
       - name: ⭐ Check if the chart artifact should be published ⭐

@@ -1,12 +1,13 @@
 git-cliff 2.5.0
-golang 1.24.0
-gomplate v4.3.0
-helm 3.17.1
+golang 1.24.1
+gomplate v4.3.1
+helm 3.17.2
+helm-cr 1.7.0
 helm-ct 3.11.0
 kubectl 1.27.16 # The kubectl version depends on the K8s CI cluster version
 kustomize 5.6.0
 oc 4.17.11
 task 3.30.1 # Task is mainly used to run tests locally or in the CI pipeline.
-yamllint 1.35.1
+yamllint 1.36.1
 yq 4.45.1
 zbctl 8.5.6

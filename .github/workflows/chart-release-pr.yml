@@ -3,15 +3,15 @@ name: "Chart - Release - PR"
 on:
   push:
     branches:
-      - release-candidate*
+      # Must be in the format of release-candidate-VERSION,
+      # e.g. release-candidate-8.8 or release-candidate-alpha,
+      # it must match the name used in the charts dir.
+      # We rely on that format in this workflow.
+      - release-candidate-*
 
 permissions:
   contents: write
   pull-requests: write
-
-env:
-  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
-  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
 
 jobs:
   release-please:
@@ -24,10 +24,21 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-      - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4
-        with:
-          token: '${{ steps.generate-github-token.outputs.token }}'
-          # Config docs: https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md
-          config-file: "${{ env.RELEASE_PLEASE_CONFIG_FILE }}"
-          manifest-file: "${{ env.RELEASE_PLEASE_MANIFEST_FILE }}"
-          target-branch: "${{ github.ref_name }}"
+      # NOTE: This is a bit fragile as it depends on the branch name,
+      # but it's the best option so far to allow release-please creates a PR for a single version.
+      - name: Get chart folder from branch name
+        run: |
+          chart_version=$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')
+          echo "CHART_PATH=charts/camunda-platform-${chart_version}" >> $GITHUB_ENV
+      - name: Install release-please
+        run: |
+          npm i release-please -g
+      - name: Run release-please
+        run: |
+          release-please release-pr \
+            --token="${{ steps.generate-github-token.outputs.token }}" \
+            --repo-url="${{ github.repository }}" \
+            --target-branch="main" \
+            --config-file="${{ env.CHART_PATH }}/.release-please-config.json" \
+            --manifest-file="${{ env.CHART_PATH }}/.release-please-manifest.json" \
+            --debug

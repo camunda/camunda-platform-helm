@@ -1,4 +1,6 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
+🔙 [Back to index](../)
+
 # Camunda 8.2 Helm Chart Version Matrix
 
 - [Helm chart 8.2.34](#helm-chart-8234)
@@ -41,7 +43,7 @@ Supported versions:
 
 - Camunda applications: [8.2](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.2&expanded=true)
 - Helm values: [8.2.34](https://artifacthub.io/packages/helm/camunda/camunda-platform/8.2.34#parameters)
-- Helm CLI: [3.16.3](https://github.com/helm/helm/releases/tag/v3.16.3)
+- Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
 
 Camunda images:
 
@@ -57,8 +59,10 @@ Camunda images:
 
 Non-Camunda images:
 
-- docker.elastic.co/elasticsearch/elasticsearch:7.17.26
+- docker.elastic.co/elasticsearch/elasticsearch:7.17.27
+- docker.io/bitnami/keycloak:19.0.3
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
+- docker.io/bitnami/postgresql:15.10.0
 
 
 ## Helm chart 8.2.33

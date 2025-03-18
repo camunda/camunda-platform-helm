@@ -96,6 +96,13 @@ data:
               connect:
                 type: elasticsearch
                 url: "http://camunda-platform-test-elasticsearch:9200"
+              history:
+                elsRolloverDateFormat: "date"
+                rolloverInterval: "1d"
+                rolloverBatchSize: 100
+                waitPeriodBeforeArchiving: "1h"
+                delayBetweenRuns: 2000
+                maxDelayBetweenRuns: 60000
               createSchema: true
 
     camunda:

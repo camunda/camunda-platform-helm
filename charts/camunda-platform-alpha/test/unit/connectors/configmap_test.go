@@ -1,6 +1,10 @@
 package connectors
 
 import (
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -8,9 +12,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 type configMapTemplateTest struct {
@@ -34,6 +35,7 @@ func TestConfigMapTemplate(t *testing.T) {
 		templates: []string{"templates/connectors/configmap.yaml"},
 	})
 }
+
 func (s *configMapTemplateTest) TestContainerSetContextPath() {
 	// given
 	options := &helm.Options{
@@ -58,6 +60,7 @@ func (s *configMapTemplateTest) TestContainerSetContextPath() {
 	// then
 	s.Require().Equal("/connectors", configmapApplication.Server.Servlet.ContextPath)
 }
+
 func (s *configMapTemplateTest) TestContainerConfigMapSetInboundModeCredentials() {
 	// given
 	options := &helm.Options{
@@ -83,13 +86,12 @@ func (s *configMapTemplateTest) TestContainerConfigMapSetInboundModeCredentials(
 	// then
 	s.Require().Empty(configmapApplication.Camunda.Connector.Polling.Enabled)
 	s.Require().Empty(configmapApplication.Camunda.Connector.WebHook.Enabled)
-	s.Require().Empty(configmapApplication.Camunda.Operate.Client.KeycloakTokenURL)
-	s.Require().Empty(configmapApplication.Camunda.Operate.Client.ClientId)
+	s.Require().Empty(configmapApplication.Operate.Client.KeycloakTokenURL)
+	s.Require().Empty(configmapApplication.Operate.Client.ClientId)
 
-	s.Require().Equal("camunda-platform-test-zeebe-gateway:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
-	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
-	s.Require().Equal("http://camunda-platform-test-operate:80", configmapApplication.Camunda.Operate.Client.Url)
-	s.Require().Equal("connectors", configmapApplication.Camunda.Operate.Client.Username)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:26500", configmapApplication.Camunda.Client.Zeebe.GRPCAddress)
+	s.Require().Equal("http://camunda-platform-test-operate:80", configmapApplication.Operate.Client.BaseURL)
+	s.Require().Equal("connectors", configmapApplication.Operate.Client.Username)
 }
 
 func (s *configMapTemplateTest) TestContainerConfigMapSetInboundModeDisabled() {
@@ -114,13 +116,12 @@ func (s *configMapTemplateTest) TestContainerConfigMapSetInboundModeDisabled() {
 	}
 
 	// then
-	s.Require().Empty(configmapApplication.Camunda.Operate.Client.KeycloakTokenURL)
-	s.Require().Empty(configmapApplication.Camunda.Operate.Client.Url)
-	s.Require().Empty(configmapApplication.Camunda.Operate.Client.Username)
-	s.Require().Empty(configmapApplication.Camunda.Operate.Client.ClientId)
+	s.Require().Empty(configmapApplication.Operate.Client.KeycloakTokenURL)
+	s.Require().Empty(configmapApplication.Operate.Client.BaseURL)
+	s.Require().Empty(configmapApplication.Operate.Client.Username)
+	s.Require().Empty(configmapApplication.Operate.Client.ClientId)
 
-	s.Require().Equal("camunda-platform-test-zeebe-gateway:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
-	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:26500", configmapApplication.Camunda.Client.Zeebe.GRPCAddress)
 	s.Require().Equal("false", configmapApplication.Camunda.Connector.Polling.Enabled)
 	s.Require().Equal("false", configmapApplication.Camunda.Connector.WebHook.Enabled)
 }
@@ -150,11 +151,10 @@ func (s *configMapTemplateTest) TestContainerConfigMapSetInboundModeOauthIdentit
 	// then
 	s.Require().Empty(configmapApplication.Camunda.Connector.Polling.Enabled)
 	s.Require().Empty(configmapApplication.Camunda.Connector.WebHook.Enabled)
-	s.Require().Empty(configmapApplication.Camunda.Operate.Client.Username)
+	s.Require().Empty(configmapApplication.Operate.Client.Username)
 
-	s.Require().Equal("camunda-platform-test-zeebe-gateway:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
-	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
-	s.Require().Equal("http://camunda-platform-test-operate:80", configmapApplication.Camunda.Operate.Client.Url)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:26500", configmapApplication.Camunda.Client.Zeebe.GRPCAddress)
+	s.Require().Equal("http://camunda-platform-test-operate:80", configmapApplication.Operate.Client.BaseURL)
 	s.Require().Equal("operate-api", configmapApplication.Camunda.Identity.Audience)
 	s.Require().Equal("connectors", configmapApplication.Camunda.Identity.ClientId)
 }

@@ -32,13 +32,13 @@ jobs:
       camunda-helm-dir: "camunda-platform-alpha"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  # unit:
-  #   name: Unit Test - Camunda Alpha
-  #   uses: ./.github/workflows/test-unit-template.yml
-  #   with:
-  #     identifier: "${{ github.event.pull_request.number }}-unit-alpha"
-  #     camunda-helm-dir: "camunda-platform-alpha"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  unit:
+    name: Unit Test - Camunda Alpha
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-alpha"
+      camunda-helm-dir: "camunda-platform-alpha"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
     name: Integration Test - Camunda Alpha

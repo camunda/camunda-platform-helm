@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: operate
-    app.kubernetes.io/version: "8.6.10"
+    app.kubernetes.io/version: "8.6.12"
 data:
   application.yaml: |
     spring:
@@ -41,7 +41,7 @@ data:
     camunda.operate:
       identity:
         redirectRootUrl: "http://localhost:8081"
-    
+
       # ELS instance to store Operate data
       elasticsearch:
         # Cluster name

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.3.24
+version: 8.3.25
 appVersion: 8.3.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -11,12 +11,20 @@ home: https://docs.camunda.io/docs/self-managed/overview/
 sources:
   - https://github.com/camunda/camunda-platform-helm
 keywords:
+  - automation
+  - business-rules
   - bpm
   - bpmn
   - camunda-platform
+  - decision-engine
   - dmn
+  - modeling
+  - orchestration
+  - process-automation
   - process-engine
+  - process-orchestration
   - workflow
+  - workflow-engine
 dependencies:
   # Camunda charts.
   - name: identity
@@ -32,7 +40,7 @@ dependencies:
   # Dependency charts.
   - name: elasticsearch
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 19.21.2
+    version: 19.13.15
     condition: elasticsearch.enabled
   - name: postgresql
     repository: oci://registry-1.docker.io/bitnamicharts

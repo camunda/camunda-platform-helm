@@ -103,7 +103,7 @@ data:
   startup.sh: |
     #!/usr/bin/env bash
     set -eux -o pipefail
-    
+
 {{- if eq .Values.global.multiregion.installationType "failOver" }}
     export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 2 * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}
 {{- else }}

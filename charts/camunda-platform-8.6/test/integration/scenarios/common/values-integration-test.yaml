@@ -2,9 +2,9 @@ identity:
   # Keycloak client seed which is used to query Camunda APIs.
   env:
   - name: KEYCLOAK_CLIENTS_2_ID
-    value: venom
+    value: test
   - name: KEYCLOAK_CLIENTS_2_NAME
-    value: Venom
+    value: Test
   - name: KEYCLOAK_CLIENTS_2_SECRET
     valueFrom:
       secretKeyRef:

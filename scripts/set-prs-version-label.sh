@@ -4,6 +4,11 @@
 #!/bin/bash
 set -euo pipefail
 
+#
+# Vars.
+REPO_OWNER='camunda'
+REPO_NAME='camunda-platform-helm'
+
 # Init.
 # Check dependencies.
 dep_names="ct gh git git-cliff grep jq yq"
@@ -18,15 +23,14 @@ done
 test "$(git branch --show-current)" != "main" &&
     git fetch origin main:main --no-tags
 
-# Vars.
-release_please_config=".github/config/release-please/release-please-config.json"
-latest_release_commit="$(git show main:${release_please_config} | jq -r '."bootstrap-sha"')"
-cliff_config_file=".github/config/cliff.toml"
-
 # Get PRs from commits in a certain chart dir.
 get_prs_per_chart_dir () {
     chart_dir="${1}"
-    git-cliff ${latest_release_commit}.. \
+    # Get the latest version from main, not from the releas PR as it could be updated in the PR.
+    latest_chart_version="$(git show main:${chart_dir}/Chart.yaml | yq '.version')"
+    latest_chart_tag_hash="$(git show-ref --hash camunda-platform-${latest_chart_version})"
+    cliff_config_file=".github/config/cliff.toml"
+    git-cliff ${latest_chart_tag_hash}.. \
         --context \
         --config "${cliff_config_file}" \
         --include-path "${chart_dir}/**" |
@@ -38,7 +42,7 @@ get_prs_per_chart_dir () {
 # https://github.com/cli/cli/discussions/7097#discussioncomment-5229031
 get_issues_per_pr () {
     pr_nubmer="${1}"
-    gh api graphql -F owner='camunda' -F repo='camunda-platform-helm' -F pr="${pr_nubmer}" -f query='
+    gh api graphql -F owner="${REPO_OWNER}" -F repo="${REPO_NAME}" -F pr="${pr_nubmer}" -f query='
         query ($owner: String!, $repo: String!, $pr: Int!) {
             repository(owner: $owner, name: $repo) {
                 pullRequest(number: $pr) {

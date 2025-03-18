@@ -432,6 +432,18 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
+  ## @param global.extraManifests Array of extra objects to deploy with the release.
+  #Example:
+  # extraManifests:
+  #   - |
+  #     apiVersion: v1
+  #     kind: ConfigMap
+  #     metadata:
+  #       name: example-cm
+  #     data:
+  #       test: test
+  extraManifests: []
+
 #################################################
  #####
 #     #  ####  #    #  ####   ####  #      ######
@@ -1045,10 +1057,10 @@ zeebeGateway:
   resources:
     requests:
       cpu: 400m
-      memory: 550Mi
+      memory: 800Mi
     limits:
       cpu: 400m
-      memory: 550Mi
+      memory: 800Mi
 
   ## @param zeebeGateway.priorityClassName can be used to define the gateway pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
@@ -1818,7 +1830,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.0-alpha4
+    tag: 8.7.0-alpha5
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 

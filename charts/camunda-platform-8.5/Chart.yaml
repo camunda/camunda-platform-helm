@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.5.1
+version: 10.5.2
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -11,12 +11,20 @@ home: https://docs.camunda.io/docs/self-managed/overview/
 sources:
   - https://github.com/camunda/camunda-platform-helm
 keywords:
+  - automation
+  - business-rules
   - bpm
   - bpmn
   - camunda-platform
+  - decision-engine
   - dmn
+  - modeling
+  - orchestration
+  - process-automation
   - process-engine
+  - process-orchestration
   - workflow
+  - workflow-engine
 dependencies:
   # Identity Dependencies.
   - name: keycloak
