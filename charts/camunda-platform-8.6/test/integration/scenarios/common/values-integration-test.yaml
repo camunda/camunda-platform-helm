@@ -17,6 +17,10 @@ identity:
     value: APPLICATION
   - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
     value: venom
+  - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
+    value: APPLICATION
+  - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
+    value: connectors
   - name: KEYCLOAK_CLIENTS_2_ID
     value: test
   - name: KEYCLOAK_CLIENTS_2_NAME
