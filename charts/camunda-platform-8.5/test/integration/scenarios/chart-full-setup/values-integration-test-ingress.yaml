@@ -52,9 +52,6 @@ identity:
   firstUser:
     existingSecret: "integration-test-credentials"
 
-identityPostgresql:
-  enabled: true
-
 identityKeycloak:
   postgresql:
     auth:
@@ -63,6 +60,7 @@ identityKeycloak:
     existingSecret: "integration-test-credentials"
 
 identityPostgresql:
+  enabled: true
   auth:
     existingSecret: "integration-test-credentials"
 
