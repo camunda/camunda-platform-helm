@@ -21,6 +21,10 @@ identity:
     value: APPLICATION
   - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
     value: connectors
+  - name: IDENTITY_TENANTS_0_MEMBERS_4_TYPE
+    value: APPLICATION
+  - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
+    value: zeebe
   - name: KEYCLOAK_CLIENTS_2_ID
     value: test
   - name: KEYCLOAK_CLIENTS_2_NAME
