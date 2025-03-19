@@ -64,7 +64,7 @@ identity:
     - name: IDENTITY_TENANTS_0_MEMBERS_2_TYPE
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
-      value: venom
+      value: test
     - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
