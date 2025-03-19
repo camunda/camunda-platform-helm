@@ -57,9 +57,15 @@ identity:
   keycloak:
     auth:
       existingSecret: "integration-test-credentials"
+    commonLabels:
+      janitor/ttl: 1h
+      camunda.cloud/ephemeral: "true"
     postgresql:
       auth:
         existingSecret: "integration-test-credentials"
+      commonLabels:
+        janitor/ttl: 1h
+        camunda.cloud/ephemeral: "true"
 
 operate:
   contextPath: "/operate"
@@ -90,6 +96,9 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 #   auth:
 #     existingSecret: "integration-test-credentials"
 #     # Should be set to have a different name of Identity Keycloak PostgreSQL.
@@ -115,6 +124,9 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 prometheusServiceMonitor:
   enabled: false

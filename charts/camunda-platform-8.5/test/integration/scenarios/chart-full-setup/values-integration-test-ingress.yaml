@@ -57,12 +57,21 @@ identityKeycloak:
   postgresql:
     auth:
       existingSecret: "integration-test-credentials"
+    commonLabels:
+      janitor/ttl: 1h
+      camunda.cloud/ephemeral: "true"
   auth:
     existingSecret: "integration-test-credentials"
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 identityPostgresql:
   auth:
     existingSecret: "integration-test-credentials"
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 operate:
   contextPath: "/operate"
@@ -97,6 +106,9 @@ postgresql:
     secretKeys:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 zeebeGateway:
   contextPath: "/zeebe"
@@ -123,6 +135,9 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 prometheusServiceMonitor:
   enabled: false
