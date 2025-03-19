@@ -5,6 +5,7 @@ vars:
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" | default ">0.0.0" | quote }}'
+  TEST_VALUES_FILE: '{{ env "TEST_VALUES_FILE" | default "values-integration-test-ingress.yaml" }}'
 
 dotenv:
 - ../vars/common.env
@@ -22,7 +23,7 @@ includes:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
       TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
       TEST_HELM_EXTRA_ARGS: |-
-        {{ .TEST_HELM_EXTRA_ARGS }} --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress.yaml
+        {{ .TEST_HELM_EXTRA_ARGS }} --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/{{ .TEST_VALUES_FILE }}
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -88,7 +89,7 @@ tasks:
         --version {{ .TEST_CHART_VERSION }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress.yaml
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/{{ .TEST_VALUES_FILE }}
         --timeout 20m0s
         --wait
         {{ .TEST_HELM_EXTRA_ARGS }}
