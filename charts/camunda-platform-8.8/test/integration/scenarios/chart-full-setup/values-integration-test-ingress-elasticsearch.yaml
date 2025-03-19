@@ -59,7 +59,13 @@ identity:
 
 identityKeycloak:
   enabled: true
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
   postgresql:
+    commonLabels:
+      janitor/ttl: 1h
+      camunda.cloud/ephemeral: "true"
     auth:
       existingSecret: "integration-test-credentials"
       secretKeys:
@@ -99,6 +105,9 @@ webModelerPostgresql:
     secretKeys:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 core:
   contextPath: "/core"
@@ -153,6 +162,9 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 prometheusServiceMonitor:
   enabled: false
