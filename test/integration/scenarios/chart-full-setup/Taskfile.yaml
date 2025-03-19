@@ -22,7 +22,9 @@ includes:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
       TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
       TEST_HELM_EXTRA_ARGS: |-
-        {{ .TEST_HELM_EXTRA_ARGS }} --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress.yaml
+        {{ .TEST_HELM_EXTRA_ARGS }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-base.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -88,7 +90,8 @@ tasks:
         --version {{ .TEST_CHART_VERSION }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress.yaml
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-base.yaml
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
         --timeout 20m0s
         --wait
         {{ .TEST_HELM_EXTRA_ARGS }}

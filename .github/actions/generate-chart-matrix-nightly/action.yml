@@ -1,0 +1,65 @@
+name: Generate chart and Enabled Scenarios Matrix
+description: Find all scenarios for all charts and list charts with enabled scenarios.
+inputs:
+  charts-path:
+    description: Charts path to match.
+    default: "charts/camunda-platform*"
+outputs:
+  matrix:
+    description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-chart-versions.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: ℹ️ Print workflow inputs ℹ️
+      shell: bash
+      env:
+        GITHUB_CONTEXT: ${{ toJson(inputs) }}
+      run: |
+        echo "Action Inputs:"
+        echo "${GITHUB_CONTEXT}"
+    - name: Generate matrix
+      shell: bash
+      env:
+        MIN_SUPPORTED_VERSION: ${{ inputs.min-supported-version }}
+      id: set-chart-versions
+      run: |
+        touch matrix_versions.txt
+        echo "matrix:" >>matrix_versions.txt
+        # since we do not have standard support for versions 8.3 and below, it is not included when listing out the files.
+        ls -d ${{ inputs.charts-path }} | sort -V | awk -F'-' -v min="$MIN_SUPPORTED_VERSION" '$3 >= min' | while read chart_dir; do
+          camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
+
+          # skip chart version with "alpha" in the chrt version
+          if echo "$camunda_version" | grep -q "alpha"; then
+            continue
+          fi
+
+          cat >>matrix_versions.txt <<-EOL
+          - version: ${camunda_version}
+            case: nightly
+        EOL
+
+          #reads the array from the yaml file
+          readarray nightlyScenarios < <(yq e -o=j -I=0 '.integration.scenarios.nightly.[]' ${chart_dir}/test/ci-test-config.yaml)
+
+          echo -n "scenarios: \"" | sed 's/^/    /' >>matrix_versions.txt
+
+          for nightlyScenario in "${nightlyScenarios[@]}"; do
+            enabled=$(echo "$nightlyScenario" | yq e '.enabled' -)
+            # skip if scenario is not enabled
+            if [ "$enabled" = "false" ]; then
+              continue
+            fi
+            name=$(echo "$nightlyScenario" | yq e '.name' -)
+            # indent name so it complies with yaml formatting
+            echo -n "$name," >>matrix_versions.txt
+          done
+          # replace the "," and the end of the file with '"\n'
+          sed -i -e '$s/,$/"\n/' matrix_versions.txt
+
+        done
+        cat matrix_versions.txt
+
+        matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' | jq -c 'walk(if type == "number" then tostring else . end)')"
+        echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT

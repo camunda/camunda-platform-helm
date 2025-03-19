@@ -43,17 +43,17 @@ runs:
         # Scenarios config.
 
         # Tasks dir.
-        tasks_base_dir="$(echo ${integration_vars} | jq -r '.scenarios.tasksBaseDir')"
+        tasks_base_dir="$(echo ${integration_vars} | jq -r '.vars.tasksBaseDir')"
         integration_scenarios_tasks_dir="${CHART_PATH}/test/${tasks_base_dir}"
         echo "CI_TASKS_BASE_DIR=${integration_scenarios_tasks_dir}" | tee -a $GITHUB_ENV
 
         # Values dir.
-        values_base_dir="$(echo ${integration_vars} | jq -r '.scenarios.valuesBaseDir')"
+        values_base_dir="$(echo ${integration_vars} | jq -r '.vars.valuesBaseDir')"
         integration_scenarios_values_dir="../../../../${CHART_PATH}/test/${values_base_dir}"
         echo "TEST_VALUES_BASE_DIR=${integration_scenarios_values_dir}" | tee -a $GITHUB_ENV
         # The var is needed in some non-shell steps.
         echo "test-values-base-dir=${integration_scenarios_values_dir}" | tee -a $GITHUB_OUTPUT
 
         # Charts dir.
-        charts_base_dir="$(echo ${integration_vars} | jq -r '.scenarios.chartsBaseDir')"
+        charts_base_dir="$(echo ${integration_vars} | jq -r '.vars.chartsBaseDir')"
         echo "TEST_CHART_DIR=${charts_base_dir}/${{ inputs.chart-dir }}" | tee -a $GITHUB_ENV

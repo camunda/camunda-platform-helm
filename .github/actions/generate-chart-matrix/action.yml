@@ -33,14 +33,37 @@ runs:
         echo "Changed files:"
         printf "%s\n" ${ALL_MODIFIED_FILES}
         touch matrix_versions.txt
+        echo "matrix:" >>matrix_versions.txt
 
         ls -d ${{ inputs.charts-path }} | while read chart_dir; do
           if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
-            camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')";
-            echo "Camunda version: ${camunda_version}"
-            echo "${camunda_version}" >> matrix_versions.txt;
+            camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
+            cat >>matrix_versions.txt <<-EOL
+          - version: ${camunda_version}
+            case: pr
+        EOL
+
+            #reads the array from the yaml file
+            readarray prScenarios < <(yq e -o=j -I=0 '.integration.scenarios.pr.[]' ${chart_dir}/test/ci-test-config.yaml)
+
+            echo -n "scenarios: \"" | sed 's/^/    /' >>matrix_versions.txt
+
+            for prScenario in "${prScenarios[@]}"; do
+              enabled=$(echo "$prScenario" | yq e '.enabled' -)
+              # skip if scenario is not enabled
+              if [ "$enabled" = "false" ]; then
+                continue
+              fi
+              name=$(echo "$prScenario" | yq e '.name' -)
+              # indent name so it complies with yaml formatting
+              echo -n "$name," >>matrix_versions.txt
+            done
+            # replace the "," and the end of the file with '"\n'
+            sed -i -e '$s/,$/"\n/' matrix_versions.txt
+
           fi
         done
+        cat matrix_versions.txt
 
-        matrix="$(cat matrix_versions.txt | jq --slurp --compact-output --raw-input 'split("\n") | .[:-1]')"
+        matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' | jq -c 'walk(if type == "number" then tostring else . end)')"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
