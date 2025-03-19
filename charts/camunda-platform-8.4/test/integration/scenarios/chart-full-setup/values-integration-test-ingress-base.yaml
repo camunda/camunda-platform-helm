@@ -55,7 +55,13 @@ identity:
 
   # Identity Keycloak.
   keycloak:
+    commonLabels:
+      janitor/ttl: 1h
+      camunda.cloud/ephemeral: "true"
     postgresql:
+      commonLabels:
+        janitor/ttl: 1h
+        camunda.cloud/ephemeral: "true"
       auth:
         existingSecret: "integration-test-credentials"
     auth:
@@ -67,6 +73,9 @@ identity:
   postgresql:
     auth:
       existingSecret: "integration-test-credentials"
+    commonLabels:
+      janitor/ttl: 1h
+      camunda.cloud/ephemeral: "true"
 
 operate:
   contextPath: "/operate"
@@ -95,6 +104,9 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
   # TODO: Uncomment after Camunda chart 9.4.0 release.
   # auth:
   #   existingSecret: "integration-test-credentials"
@@ -126,6 +138,9 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
 
 prometheusServiceMonitor:
   enabled: false
