@@ -80,9 +80,9 @@ identity:
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
     - name: KEYCLOAK_CLIENTS_2_ID
-      value: venom
+      value: test
     - name: KEYCLOAK_CLIENTS_2_NAME
-      value: Venom
+      value: Test
     - name: KEYCLOAK_CLIENTS_2_SECRET
       valueFrom:
         secretKeyRef:
