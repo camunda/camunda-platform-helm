@@ -58,10 +58,10 @@ runs:
 
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
-      TEST_NAMESPACE="$NAMESPACE_PREFIX-$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+      TEST_NAMESPACE="$NAMESPACE_PREFIX-$(echo ${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
 
       if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
+        TEST_NAMESPACE="${TEST_NAMESPACE}-${{ github.run_id }}-${GITHUB_WORKFLOW_JOB_ID}"
       fi
 
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
