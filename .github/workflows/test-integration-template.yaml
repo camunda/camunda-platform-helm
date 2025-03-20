@@ -206,6 +206,17 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
+          exportEnv: true
       # Used to create/delete GitHub environment.
       # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
       - name: Generate GitHub token
@@ -292,6 +303,8 @@ jobs:
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          echo $INTEGRATION_TEST_CREDENTIALS > integration-test-credentials.yaml
+          kubectl create secret -f integration-test-credentials.yaml -n $TEST_NAMESPACE
       - name: Set Deployment Secrets
         run: |
           kubectl apply -n $TEST_NAMESPACE \
