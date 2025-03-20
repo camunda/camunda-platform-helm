@@ -1,0 +1,194 @@
+
+identity:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+identityKeycloak:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+  postgresql:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
+
+identityPostgresql:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+console:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+webModelerPostgresql:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+core:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+optimize:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+connectors:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+web-modeler:
+  restapi:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
+  webapp:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
+  websockets:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
+
+
+elasticsearch:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
