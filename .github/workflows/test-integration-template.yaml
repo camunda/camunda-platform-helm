@@ -293,7 +293,7 @@ jobs:
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
           kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          echo $INTEGRATION_TEST_CREDENTIALS > integration-test-credentials.yaml
+          echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
           kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
       - name: Set Deployment Secrets
         run: |
