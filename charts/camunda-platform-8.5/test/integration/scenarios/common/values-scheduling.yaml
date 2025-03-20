@@ -29,19 +29,20 @@ identityKeycloak:
                 values:
                   - t-core-8-unstable
   postgresql:
-    tolerations:
-      - key: t-core-8-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-8-unstable
+    primary:
+      tolerations:
+        - key: t-core-8-unstable
+          operator: Exists
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nodegroup
+                    operator: In
+                    values:
+                      - t-core-8-unstable
 
 identityPostgresql:
   tolerations:
@@ -74,19 +75,20 @@ console:
                   - t-core-8-unstable
 
 postgresql:
-  tolerations:
-    - key: t-core-8-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-8-unstable
+  primary:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
 
 operate:
   tolerations:
@@ -178,7 +180,7 @@ connectors:
                 values:
                   - t-core-8-unstable
 
-web-modeler:
+webModeler:
   restapi:
     tolerations:
       - key: t-core-8-unstable
@@ -224,16 +226,17 @@ web-modeler:
 
 
 elasticsearch:
-  tolerations:
-    - key: t-core-8-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-8-unstable
+  master:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
