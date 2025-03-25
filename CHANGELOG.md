@@ -1,5 +1,28 @@
 # Changelog
 
+## [11.3.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-11.3.0...camunda-platform-11.3.1) (2025-03-25)
+
+
+### Dependencies
+
+* update bitnami/postgresql docker tag to v14.17.0-debian-12-r8 ([#3188](https://github.com/camunda/camunda-platform-helm/issues/3188)) ([07d4474](https://github.com/camunda/camunda-platform-helm/commit/07d44744a8e77c4bfce5ed36da402edc5c4f25e1))
+* update bitnami/postgresql docker tag to v14.17.0-debian-12-r8 ([#3206](https://github.com/camunda/camunda-platform-helm/issues/3206)) ([c3e1a25](https://github.com/camunda/camunda-platform-helm/commit/c3e1a256cb85eccbc9b4875556da17fa8be8829e))
+* update bitnami/postgresql docker tag to v14.17.0-debian-12-r8 ([#3208](https://github.com/camunda/camunda-platform-helm/issues/3208)) ([ee6de06](https://github.com/camunda/camunda-platform-helm/commit/ee6de06243f5d6f6c8064cf79bc0aa0892f0d166))
+* update bitnami/postgresql docker tag to v14.17.0-debian-12-r9 ([#3218](https://github.com/camunda/camunda-platform-helm/issues/3218)) ([c3899ff](https://github.com/camunda/camunda-platform-helm/commit/c3899fffceceb29be1ac440a5d008c8a0c5593ef))
+* update bitnami/postgresql docker tag to v14.17.0-debian-12-r9 ([#3219](https://github.com/camunda/camunda-platform-helm/issues/3219)) ([964b5b8](https://github.com/camunda/camunda-platform-helm/commit/964b5b8bc70e01774227aec021b9c48292d83388))
+* update bitnami/postgresql docker tag to v14.17.0-debian-12-r9 ([#3221](https://github.com/camunda/camunda-platform-helm/issues/3221)) ([0ef1b82](https://github.com/camunda/camunda-platform-helm/commit/0ef1b82247c4ad0fb7307ec977f7a8ec74a1805d))
+* update camunda-platform-8.6 (patch) ([#3207](https://github.com/camunda/camunda-platform-helm/issues/3207)) ([4e103ac](https://github.com/camunda/camunda-platform-helm/commit/4e103acc08e3088947de0da17854c6a4fec2a201))
+* update camunda/console docker tag to v8.6.80 ([#3212](https://github.com/camunda/camunda-platform-helm/issues/3212)) ([15558fb](https://github.com/camunda/camunda-platform-helm/commit/15558fb018bb4a18b3f45e3e60b3b3421c5b3693))
+* update dependency yamllint to v1.36.2 ([#3213](https://github.com/camunda/camunda-platform-helm/issues/3213)) ([92f4bcc](https://github.com/camunda/camunda-platform-helm/commit/92f4bccf85222e239b6391a2d5c511b7c03487e9))
+* update dependency yamllint to v1.37.0 ([#3217](https://github.com/camunda/camunda-platform-helm/issues/3217)) ([31e7515](https://github.com/camunda/camunda-platform-helm/commit/31e75152679604f93257ea0dcc840b1b4cdb8554))
+* update docker.io/bitnami/postgresql docker tag to v14.17.0-debian-12-r8 ([#3209](https://github.com/camunda/camunda-platform-helm/issues/3209)) ([855dab7](https://github.com/camunda/camunda-platform-helm/commit/855dab782a10c7c0db28bfab00e192cd9904a4c0))
+* update docker.io/bitnami/postgresql docker tag to v14.17.0-debian-12-r9 ([#3222](https://github.com/camunda/camunda-platform-helm/issues/3222)) ([3b4a3ad](https://github.com/camunda/camunda-platform-helm/commit/3b4a3adf7a089ea073fa6cba6496284b606b8876))
+* update github-actions (patch) ([#3214](https://github.com/camunda/camunda-platform-helm/issues/3214)) ([2090fcb](https://github.com/camunda/camunda-platform-helm/commit/2090fcb066a86dd670dea4192dc5021c2d29f576))
+* update module github.com/burntsushi/toml to v1.5.0 ([#3195](https://github.com/camunda/camunda-platform-helm/issues/3195)) ([b9fe3d6](https://github.com/camunda/camunda-platform-helm/commit/b9fe3d6f82703d56b946ecabf74ed76923d7070d))
+* update module github.com/burntsushi/toml to v1.5.0 ([#3198](https://github.com/camunda/camunda-platform-helm/issues/3198)) ([dda4671](https://github.com/camunda/camunda-platform-helm/commit/dda46718fcc3cfe40fce3fac3b676261671c22e4))
+* update module gopkg.in/yaml.v2 to v3 ([#3215](https://github.com/camunda/camunda-platform-helm/issues/3215)) ([eb31c79](https://github.com/camunda/camunda-platform-helm/commit/eb31c79fe9e518a523fadad0bdba3c4b35ec1111))
+* update tj-actions/changed-files action to v46 ([#3191](https://github.com/camunda/camunda-platform-helm/issues/3191)) ([591b3cd](https://github.com/camunda/camunda-platform-helm/commit/591b3cd39bdbaf31ba51c6130e97f0e4813badfe))
+
 ## [11.3.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-11.2.2...camunda-platform-11.3.0) (2025-03-19)
 
 
