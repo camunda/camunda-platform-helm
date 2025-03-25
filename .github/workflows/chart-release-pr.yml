@@ -1,6 +1,12 @@
 name: "Chart - Release - PR"
 
 on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: Camunda chart dir id like x.y, alpha, or alpha-8.8.
+        required: true
+        type: string
   push:
     branches:
       # Must be in the format of release-candidate-VERSION,
@@ -12,6 +18,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+
+env:
+  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
 
 jobs:
   release-please:
@@ -28,7 +38,9 @@ jobs:
       # but it's the best option so far to allow release-please creates a PR for a single version.
       - name: Get chart folder from branch name
         run: |
-          chart_version=$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')
+          chart_dir_id_input="${{ inputs.id }}"
+          chart_dir_id_fallback="$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')"
+          chart_dir_id_="${chart_dir_id_input:-$chart_dir_id_fallback}"
           echo "CHART_PATH=charts/camunda-platform-${chart_version}" >> $GITHUB_ENV
       - name: Install release-please
         run: |
@@ -39,6 +51,7 @@ jobs:
             --token="${{ steps.generate-github-token.outputs.token }}" \
             --repo-url="${{ github.repository }}" \
             --target-branch="main" \
-            --config-file="${{ env.CHART_PATH }}/.release-please-config.json" \
-            --manifest-file="${{ env.CHART_PATH }}/.release-please-manifest.json" \
+            --path="${{ env.CHART_PATH }}" \
+            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
+            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
             --debug

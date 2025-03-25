@@ -106,6 +106,7 @@ jobs:
       CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
       CHART_VERSION: "${{ matrix.chart.version }}"
       CHART_PACKAGE_NAME: "camunda-platform-${{ matrix.chart.version }}"
+      CHART_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
     steps:
       # Init.
       - name: Checkout
@@ -181,7 +182,8 @@ jobs:
           helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG }} \
             --push \
             --owner "${{ github.repository_owner }}" \
-            --git-repo "$(basename ${{ github.repository }})"
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ env.CHART_TAG_NAME }}"
       - name: Run Chart Releaser - Indexing
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
@@ -189,13 +191,14 @@ jobs:
           helm-cr index --config ${{ env.CHART_RELEASER_CONFIG }} \
             --push \
             --owner "${{ github.repository_owner }}" \
-            --git-repo "$(basename ${{ github.repository }})"
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ env.CHART_TAG_NAME }}"
       - name: Set GitHub release type
         if: ${{ matrix.chart.prerelease }}
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          gh release edit "${{ env.CHART_PACKAGE_NAME }}" \
+          gh release edit "${{ env.CHART_TAG_NAME }}" \
             --repo "${GITHUB_REPOSITORY}" \
             --prerelease
 
@@ -214,14 +217,14 @@ jobs:
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          gh release upload "${{ env.CHART_PACKAGE_NAME }}" \
+          gh release upload "${{ env.CHART_TAG_NAME }}" \
             "${{ env.CHART_PACKAGE_NAME }}.cosign.bundle" \
             --repo "${GITHUB_REPOSITORY}"
       - name: Add release info to workflow summary
         run: |
           echo "ℹ️ Release Published ℹ️" >> $GITHUB_STEP_SUMMARY
           cat << EOF >> $GITHUB_STEP_SUMMARY
-          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ env.CHART_PACKAGE_NAME }}
+          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ env.CHART_TAG_NAME }}
           - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_VERSION }}
           Note: Artifact Hub link needs some time till it's AH scraps the Helm repo index.
           EOF
@@ -267,16 +270,6 @@ jobs:
       #     timeout_minutes: 5
       #     retry_wait_seconds: 10
       #     command: make release.verify-components-version
-      - name: Set GitHub latest release
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        run: |
-          latest_stable_chart_file="$(ls -d1 charts/camunda-platform-8.* | tail -n 1)/Chart.yaml"
-          latest_stable_chart_version="$(yq '.version' "${latest_stable_chart_file}")"
-          latest_stable_chart_package_name="camunda-platform-${latest_stable_chart_version}"
-          gh release edit "${latest_stable_chart_package_name}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --latest
       - name: Label PRs with app and chart version
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
