@@ -8,6 +8,7 @@ on:
       # it must match the name used in the charts dir.
       # We rely on that format in this workflow.
       - release-candidate-*
+      - aa-fix-rc-flow
 
 permissions:
   contents: write
@@ -28,7 +29,7 @@ jobs:
       # but it's the best option so far to allow release-please creates a PR for a single version.
       - name: Get chart folder from branch name
         run: |
-          chart_version=$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')
+          chart_version="8.6"
           echo "CHART_PATH=charts/camunda-platform-${chart_version}" >> $GITHUB_ENV
       - name: Install release-please
         run: |
@@ -38,7 +39,8 @@ jobs:
           release-please release-pr \
             --token="${{ steps.generate-github-token.outputs.token }}" \
             --repo-url="${{ github.repository }}" \
-            --target-branch="main" \
+            --path="${{ env.CHART_PATH }}" \
+            --target-branch="release-candidate-8.6" \
             --config-file="${{ env.CHART_PATH }}/.release-please-config.json" \
             --manifest-file="${{ env.CHART_PATH }}/.release-please-manifest.json" \
             --debug
