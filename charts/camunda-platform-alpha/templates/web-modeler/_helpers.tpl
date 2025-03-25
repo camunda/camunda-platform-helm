@@ -235,7 +235,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the name of the secret resource that contains the SMTP password.
 */}}
 {{- define "webModeler.restapi.smtpSecretName" -}}
-  {{- if or (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.smtpPassword }} 
+  {{- if or (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.smtpPassword }}
       {{- (include "webModeler.restapi.fullname" .) }}
   {{- else if and (typeIs "map[string]interface {}" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.existingSecret.name }}
       {{- .Values.webModeler.restapi.mail.existingSecret.name }}
@@ -267,6 +267,17 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
     {{- end }}
   {{- end }}
   {{- $authEnabled -}}
+{{- end -}}
+
+{{/*
+[web-modeler] Get the authentication type for the configured cluster
+*/}}
+{{- define "webModeler.restapi.clusterAuthentication" -}}
+  {{- if .Values.global.identity.auth.enabled -}}
+    {{- eq (include "camundaPlatform.authType" .) "MICROSOFT" | ternary "CLIENT_CREDENTIALS" "OAUTH" -}}
+  {{- else -}}
+    NONE
+  {{- end -}}
 {{- end -}}
 
 {{/*

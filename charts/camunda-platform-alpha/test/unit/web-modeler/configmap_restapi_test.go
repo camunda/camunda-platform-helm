@@ -323,6 +323,53 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	s.Require().Equal("http://camunda-platform-test-tasklist:8080/tasklist", configmapApplication.Camunda.Modeler.Clusters[0].Url.Tasklist)
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationForAuthTypeMicrosoft() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"webModeler.enabled":                     "true",
+			"webModeler.restapi.mail.fromAddress":    "example@example.com",
+			"postgresql.enabled":                     "false",
+			"identityKeycloak.enabled":               "false",
+			"global.identity.auth.type":              "MICROSOFT",
+			"global.identity.auth.issuerBackendUrl":  "https://example.com",
+			"global.identity.auth.tokenUrl":          "https://example.com/token",
+			"global.identity.auth.operate.audience":  "test-audience-operate",
+			"global.identity.auth.tasklist.audience": "test-audience-tasklist",
+			"global.identity.auth.zeebe.audience":    "test-audience-zeebe",
+			"global.identity.auth.zeebe.tokenScope":  "test-scope",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
+	s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
+	s.Require().Equal("camunda-platform-test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
+	s.Require().Equal("8.7.0-alpha5", configmapApplication.Camunda.Modeler.Clusters[0].Version)
+	s.Require().Equal("CLIENT_CREDENTIALS", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
+	s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26500", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8080", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
+	s.Require().Equal("http://camunda-platform-test-operate:80", configmapApplication.Camunda.Modeler.Clusters[0].Url.Operate)
+	s.Require().Equal("http://camunda-platform-test-tasklist:80", configmapApplication.Camunda.Modeler.Clusters[0].Url.Tasklist)
+	s.Require().Equal("https://example.com/token", configmapApplication.Camunda.Modeler.Clusters[0].OAuth.Url)
+	s.Require().Equal("test-scope", configmapApplication.Camunda.Modeler.Clusters[0].OAuth.Scope)
+	s.Require().Equal("test-audience-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].OAuth.Audience.Zeebe)
+	s.Require().Equal("test-audience-operate", configmapApplication.Camunda.Modeler.Clusters[0].OAuth.Audience.Operate)
+	s.Require().Equal("test-audience-tasklist", configmapApplication.Camunda.Modeler.Clusters[0].OAuth.Audience.Tasklist)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
 	// given
 	options := &helm.Options{

@@ -47,13 +47,22 @@ data:
           - id: "default-cluster"
             name: {{ tpl .Values.global.zeebeClusterName . | quote }}
             version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
-            authentication: {{ .Values.global.identity.auth.enabled | ternary "OAUTH" "NONE" | quote }}
+            authentication: {{ include "webModeler.restapi.clusterAuthentication" . | quote }}
             url:
               zeebe:
                 grpc: "grpc://{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.zeebeGateway.service.grpcPort }}"
                 rest: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
               operate: {{ include "camundaPlatform.operateURL" . | quote }}
               tasklist: {{ include "camundaPlatform.tasklistURL" . | quote }}
+            {{- if eq (include "camundaPlatform.authType" .) "MICROSOFT" }}
+            oauth:
+              url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
+              scope: {{ include "zeebe.authTokenScope" . | quote }}
+              audience:
+                zeebe: {{ include "zeebe.authAudience" . | quote }}
+                operate: {{ include "operate.authAudience" . | quote }}
+                tasklist: {{ include "tasklist.authAudience" . | quote }}
+            {{- end }}
           {{- end }}
         {{- end }}
 
