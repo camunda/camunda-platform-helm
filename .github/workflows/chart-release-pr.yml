@@ -41,11 +41,11 @@ jobs:
           chart_dir_id_input="${{ inputs.id }}"
           chart_dir_id_fallback="$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')"
           chart_dir_id="${chart_dir_id_input:-$chart_dir_id_fallback}"
-          echo "CHART_PATH=charts/camunda-platform-${chart_dir_id}" >> $GITHUB_ENV
+          echo "CHART_PATH=charts/camunda-platform-${chart_dir_id}" | tee -a $GITHUB_ENV
       - name: Install release-please
         run: |
           npm i release-please -g
-      - name: Run release-please
+      - name: ⭐ Run release-please ⭐
         run: |
           release-please release-pr \
             --token="${{ steps.generate-github-token.outputs.token }}" \
@@ -54,4 +54,12 @@ jobs:
             --path="${{ env.CHART_PATH }}" \
             --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
             --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
-            --debug
+            --debug | tee release-please.log
+      - name: Get release PR number
+        run: |
+          release_pr_number="$(grep "Successfully opened pull request:" release-please.log | grep -Po "\d+" || true)"
+          echo="release_pr_number=${release_pr_number}" | tee -a $GITHUB_ENV
+      - name: Add release PR number to workflow summary
+        if: env.release_pr_number
+        run: |
+          echo "⭐ Release PR URL: https://github.com/${{ github.repository }}/pull/${{ env.release_pr_number }}" >> $GITHUB_STEP_SUMMARY
