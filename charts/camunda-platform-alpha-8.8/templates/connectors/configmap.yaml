@@ -57,7 +57,9 @@ data:
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
           audience: {{ include "core.authAudience" . | quote }}
         {{- end }}
-
+      connector:
+        headless:
+          service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
     logging:
 {{- with .Values.connectors.logging }}
 {{ . | toYaml | indent 6 }}

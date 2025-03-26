@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "connectors.serviceName" . }}
+  name: {{ include "connectors.serviceHeadlessName" . }}
   labels:
     {{- include "connectors.labels" . | nindent 4 }}
   annotations:
@@ -13,6 +13,7 @@ metadata:
       {{- toYaml .Values.connectors.service.annotations | nindent 4 }}
     {{- end }}
 spec:
+  clusterIP: None
   type: {{ .Values.connectors.service.type }}
   ports:
     - name: {{ .Values.connectors.service.serverName }}
