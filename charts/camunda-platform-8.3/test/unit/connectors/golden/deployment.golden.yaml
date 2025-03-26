@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.3.22
+          image: camunda/connectors-bundle:8.3.23
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
