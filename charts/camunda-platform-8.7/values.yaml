@@ -2922,7 +2922,7 @@ webModeler:
     #  - id: "default-cluster"
     #    name: "Default cluster"
     #    version: "8.7.0"
-    #    authentication: "OAUTH"
+    #    authentication: "BEARER_TOKEN"
     #    url:
     #      zeebe:
     #        grpc: "grpc://camunda-platform-zeebe-gateway:26500"
