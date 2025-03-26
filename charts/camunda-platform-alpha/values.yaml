@@ -2922,6 +2922,14 @@ webModeler:
     #        rest: "http://camunda-platform-zeebe-gateway:8080"
     #      operate: "http://camunda-platform-operate:80"
     #      tasklist: "http://camunda-platform-tasklist:80"
+    #    # only required for authentication type CLIENT_CREDENTIALS
+    #    oauth:
+    #      url: https://auth.example.com/token    # required (URL of the token endpoint)
+    #      scope: "custom-scope"                  # optional (default is empty)
+    #      audience:
+    #        zeebe: "custom-zeebe-audience"       # optional (default is "zeebe-api")
+    #        operate: "custom-operate-audience"   # optional (default is "operate-api")
+    #        tasklist: "custom-tasklist-audience" # optional (default is "tasklist-api")
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
