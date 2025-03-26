@@ -40,8 +40,8 @@ jobs:
         run: |
           chart_dir_id_input="${{ inputs.id }}"
           chart_dir_id_fallback="$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')"
-          chart_dir_id_="${chart_dir_id_input:-$chart_dir_id_fallback}"
-          echo "CHART_PATH=charts/camunda-platform-${chart_version}" >> $GITHUB_ENV
+          chart_dir_id="${chart_dir_id_input:-$chart_dir_id_fallback}"
+          echo "CHART_PATH=charts/camunda-platform-${chart_dir_id}" >> $GITHUB_ENV
       - name: Install release-please
         run: |
           npm i release-please -g
