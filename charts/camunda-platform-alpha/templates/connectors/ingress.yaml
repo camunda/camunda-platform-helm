@@ -24,7 +24,7 @@ spec:
             pathType: {{ .Values.connectors.ingress.pathType }}
             backend:
               service:
-                name: {{ include "connectors.fullname" . }}
+                name: {{ include "connectors.serviceName" . }}
                 port:
                   number: 8080
   {{- if .Values.connectors.ingress.tls.enabled }}

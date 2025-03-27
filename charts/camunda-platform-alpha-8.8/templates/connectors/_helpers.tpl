@@ -91,3 +91,14 @@ app.kubernetes.io/component: connectors
 {{- define "connectors.authClientSecretKey" -}}
     {{ .Values.global.identity.auth.connectors.existingSecretKey }}
 {{- end -}}
+
+{{/*
+[connectors] Service name.
+*/}}
+{{- define "connectors.serviceName" -}}
+  {{ include "connectors.fullname" . }}
+{{- end }}
+
+{{- define "connectors.serviceHeadlessName" -}}
+  {{ include "connectors.fullname" . }}-headless
+{{- end }}

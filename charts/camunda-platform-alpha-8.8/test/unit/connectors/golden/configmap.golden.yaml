@@ -45,7 +45,9 @@ data:
         auth:
           username: "demo"
           password: "demo"
-
+      connector:
+        headless:
+          service-url: "camunda-platform-test-connectors-headless"
     logging:
       level:
         io.camunda.connector: ERROR

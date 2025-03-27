@@ -637,7 +637,7 @@ Release templates.
 
   {{- if .Values.connectors.enabled }}
   {{-  $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.fullname" .) .Release.Namespace }}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
     id: connectors
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}

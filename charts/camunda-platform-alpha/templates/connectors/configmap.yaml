@@ -29,6 +29,8 @@ data:
           enabled: false
         webhook:
           enabled: false
+        headless:
+          service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
       {{- end }}
       {{- if .Values.global.identity.auth.enabled }}
       {{- if eq .Values.connectors.inbound.mode "oauth" }}
