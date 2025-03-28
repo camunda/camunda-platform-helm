@@ -321,7 +321,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
 	s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
 	s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
-	s.Require().Equal("OAUTH", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
+	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 	s.Require().Equal("grpc://camunda-platform-test-core:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
 	s.Require().Equal("http://camunda-platform-test-core:8090/core/v1", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
 }
@@ -340,7 +340,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 		"webModeler.restapi.clusters[1].id":             "test-cluster-2",
 		"webModeler.restapi.clusters[1].name":           "test cluster 2",
 		"webModeler.restapi.clusters[1].version":        "8.x.x-alpha1",
-		"webModeler.restapi.clusters[1].authentication": "OAUTH",
+		"webModeler.restapi.clusters[1].authentication": "BEARER_TOKEN",
 		"webModeler.restapi.clusters[1].url.zeebe.grpc": "grpc://core.test-2:26500",
 		"webModeler.restapi.clusters[1].url.zeebe.rest": "http://core.test-2:8080",
 		"webModeler.restapi.clusters[1].url.operate":    "http://operate.test-2:8080",
@@ -375,7 +375,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("test-cluster-2", configmapApplication.Camunda.Modeler.Clusters[1].Id)
 	s.Require().Equal("test cluster 2", configmapApplication.Camunda.Modeler.Clusters[1].Name)
 	s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[1].Version)
-	s.Require().Equal("OAUTH", configmapApplication.Camunda.Modeler.Clusters[1].Authentication)
+	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Modeler.Clusters[1].Authentication)
 	s.Require().Equal("grpc://core.test-2:26500", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Grpc)
 	s.Require().Equal("http://core.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Rest)
 }

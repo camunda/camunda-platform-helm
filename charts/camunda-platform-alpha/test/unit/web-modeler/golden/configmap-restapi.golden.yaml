@@ -45,7 +45,7 @@ data:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
             version: "8.7.0-alpha5"
-            authentication: "OAUTH"
+            authentication: "BEARER_TOKEN"
             url:
               zeebe:
                 grpc: "grpc://camunda-platform-test-zeebe-gateway:26500"
