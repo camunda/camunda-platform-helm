@@ -3597,7 +3597,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.17.0-debian-12-r8"
+                            "default": "14.17.0-debian-12-r9"
                         }
                     }
                 },
@@ -3777,7 +3777,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2-rc1"
+                            "default": "8.8.0-alpha3-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -5430,6 +5430,11 @@
                             "default": "8.17.4"
                         }
                     }
+                },
+                "extraConfig": {
+                    "type": "string",
+                    "description": "Append extra configuration to the elasticsearch node configuration",
+                    "default": "# Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285\nlogger.org.elasticsearch.deprecation: \"OFF\"\n"
                 },
                 "master": {
                     "type": "object",

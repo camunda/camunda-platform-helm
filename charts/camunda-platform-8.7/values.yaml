@@ -2680,7 +2680,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.2
+    tag: 26.1.4
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
@@ -2851,7 +2851,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.7.0-alpha5
+    tag: 8.7.0-rc3
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -3806,6 +3806,10 @@ elasticsearch:
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.17.4
+  ## @param elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
+  extraConfig: |
+    # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
+    logger.org.elasticsearch.deprecation: "OFF"
   master:
     ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
     replicaCount: 3
