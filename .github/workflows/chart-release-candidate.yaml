@@ -5,15 +5,14 @@ on:
     inputs:
       camunda-version:
         type: choice
-        description: Camunda version in form of x.y, alpha, or alpha-8.8.
+        description: Camunda version in form of x.y
         options:
           - "8.3"
           - "8.4"
           - "8.5"
           - "8.6"
           - "8.7"
-          - "alpha"
-          - "alpha-8.8"
+          - "8.8"
 
 jobs:
   reset:

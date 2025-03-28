@@ -6,8 +6,8 @@ on:
       - main
     paths:
       - .github/workflows/chart-release-snapshot.yaml
-      - charts/camunda-platform-alpha/**
-      - charts/camunda-platform-8.6/**
+      - charts/camunda-platform-8.7/**
+      - charts/camunda-platform-8.8/**
 
 jobs:
   release:
@@ -20,20 +20,14 @@ jobs:
         [
           {
             "name": "Helm Chart rolling - Latest",
-            "directory": "charts/camunda-platform-8.6",
+            "directory": "charts/camunda-platform-8.7",
             "versionSuffix": "snapshot-latest",
             "override": true
           },
           {
             "name": "Helm Chart rolling - Alpha",
-            "directory": "charts/camunda-platform-alpha",
+            "directory": "charts/camunda-platform-8.8",
             "versionSuffix": "snapshot-alpha",
-            "override": true
-          },
-          {
-            "name": "Helm Chart rolling - Alpha 8.8",
-            "directory": "charts/camunda-platform-alpha-8.8",
-            "versionSuffix": "snapshot-alpha-8.8",
             "override": true
           }
         ]

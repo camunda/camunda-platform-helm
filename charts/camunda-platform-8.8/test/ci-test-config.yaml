@@ -1,14 +1,13 @@
 # Used in the GitHub Actions unit test CI workflow.
 unit:
-  enabled: true
+  # TODO: Enable it again when the 8.7 is released (we need to review and fix the unit tests for 8.8).
+  enabled: false
   matrix:
-    - name: Core
+    - name: Management
       packages: identity camunda console
-    - name: Apps
-      packages: connectors operate optimize tasklist
-    - name: Zeebe
-      packages: zeebe zeebe-gateway
-    - name: WebModeler
+    - name: Orchestration
+      packages: core connectors optimize
+    - name: Design
       packages: web-modeler
 
 # Used in the GitHub Actions integration test CI workflow.

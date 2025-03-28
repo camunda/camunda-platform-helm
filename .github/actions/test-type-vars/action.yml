@@ -4,6 +4,9 @@ inputs:
   chart-dir:
     description: A reference for the Camunda Helm chart directory.
 outputs:
+  unitTestEnabled:
+    description: Should the unit test be executed or not.
+    value: ${{ steps.vars.outputs.unit-enabled }}
   unitTestMatrix:
     description: JSON matrix of changed charts which will be used as input for GHA workflow matrix.
     value: ${{ steps.vars.outputs.unit-matrix }}
@@ -24,6 +27,10 @@ runs:
 
         #
         # Unit Tests.
+
+        # Unit test enabled or not. Assume it's enabled by default.
+        unit_enabled="$(yq '.unit.enabled' --indent=0 --output-format json ${matrix_file})"
+        echo "unit-enabled=${unit_enabled}" | tee -a $GITHUB_OUTPUT
 
         # Unit test matrix.
         unit_matrix="$(yq '.unit.matrix' --indent=0 --output-format json ${matrix_file})"
