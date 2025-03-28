@@ -12,6 +12,10 @@ data:
     {{- else }}
 
     spring:
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
       profiles:
         active: identity, auth-basic
 

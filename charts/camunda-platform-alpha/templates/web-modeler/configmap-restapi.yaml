@@ -89,6 +89,11 @@ data:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
               jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
 
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+
   {{- end }}
   {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
   {{ $key }}: |
