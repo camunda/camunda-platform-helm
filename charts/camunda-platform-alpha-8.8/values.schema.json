@@ -55,6 +55,16 @@
                         }
                     }
                 },
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "requestBodySize": {
+                            "type": "string",
+                            "description": "defines applications request body size which used for upload files.",
+                            "default": "10MB"
+                        }
+                    }
+                },
                 "multitenancy": {
                     "type": "object",
                     "properties": {
@@ -5417,7 +5427,7 @@
                         "tag": {
                             "type": "string",
                             "description": "",
-                            "default": "8.17.3"
+                            "default": "8.17.4"
                         }
                     }
                 },
