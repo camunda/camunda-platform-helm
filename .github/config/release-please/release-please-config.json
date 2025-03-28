@@ -10,7 +10,9 @@
       "versioning": "prerelease",
       "extra-label": "version/alpha,version/8.8,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-8.8",
-      "include-v-in-tag": false
+      "include-v-in-tag": false,
+      "bootstrap-sha": "e04bb3579fe3183c94d91bd0a93a0525d0788b97",
+      "last-release-sha": "e04bb3579fe3183c94d91bd0a93a0525d0788b97"
     },
     "charts/camunda-platform-alpha": {
       "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda Alpha",
