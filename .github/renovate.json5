@@ -78,6 +78,15 @@
       "matchUpdateTypes": ["patch", "pin", "digest"],
     },
     {
+      "groupName": "camunda-platform-8.7",
+      "addLabels": ["version/8.7", "deps/charts"],
+      "matchFileNames": [
+        "charts/camunda-platform-8.7/Chart.yaml",
+        "charts/camunda-platform-8.7/values*.yaml",
+      ],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+    },
+    {
       "groupName": "camunda-platform-alpha",
       "addLabels": ["version/8.7", "deps/charts"],
       "matchFileNames": [
@@ -171,8 +180,8 @@
       "matchUpdateTypes": ["patch"]
     },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
-      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      // Limit Elasticsearch version to latest supported version in Camunda 8.3 chart.
+      // https://docs.camunda.io/docs/8.3/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchFileNames": [
         "charts/camunda-platform-8.3/values.yaml",
@@ -190,8 +199,8 @@
       "allowedVersions": "19.13.15"
     },
     {
-      // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
-      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      // Limit Elasticsearch version to latest supported version in Camunda 8.4 chart.
+      // https://docs.camunda.io/docs/8.4/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchFileNames": [
         "charts/camunda-platform-8.4/values.yaml",
@@ -210,7 +219,7 @@
     },
     {
       // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
-      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      // https://docs.camunda.io/docs/8.5/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchFileNames": [
         "charts/camunda-platform-8.5/values.yaml",
@@ -221,7 +230,7 @@
     },
     {
       // Limit Elasticsearch version to latest supported version in Camunda 8.6 chart.
-      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      // https://docs.camunda.io/docs/8.6/reference/supported-environments/#camunda-8-self-managed
       "matchDatasources": ["docker"],
       "matchFileNames": [
         "charts/camunda-platform-8.6/values.yaml",
@@ -229,6 +238,17 @@
       ],
       "matchPackageNames": ["/.*elasticsearch.*/"],
       "allowedVersions": "~8.15.0"
+    },
+    {
+      // Limit Elasticsearch version to latest supported version in Camunda 8.7 chart.
+      // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
+      "matchDatasources": ["docker"],
+      "matchFileNames": [
+        "charts/camunda-platform-8.7/values.yaml",
+        "charts/camunda-platform-8.7/values-latest.yaml"
+      ],
+      "matchPackageNames": ["/.*elasticsearch.*/"],
+      "allowedVersions": "~8.17.0"
     },
     {
       // Limit alpha chart version to alpha tags only.
