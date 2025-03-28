@@ -89,6 +89,11 @@ data:
             jwt: null
             {{- end }}
 
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+
     logging:
 {{- with .Values.webModeler.restapi.logging }}
 {{ . | toYaml | indent 6 }}

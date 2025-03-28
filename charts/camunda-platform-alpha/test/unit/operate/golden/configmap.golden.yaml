@@ -14,7 +14,12 @@ metadata:
     app.kubernetes.io/version: "8.7.0-alpha5"
 data:
   application.yaml: |
+
     spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
       profiles:
         active: "identity-auth"
       security:
@@ -23,7 +28,6 @@ data:
             jwt:
               issuer-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
               jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
-
     camunda:
       identity:
         clientId: "operate"

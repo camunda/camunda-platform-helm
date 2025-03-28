@@ -294,6 +294,10 @@ data:
       {{- end }}
 
     spring:
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
       {{- if .Values.global.identity.auth.enabled }}
       profiles:
         active: {{ eq .Values.global.identity.auth.type "KEYCLOAK" | ternary "keycloak" "oidc" }}

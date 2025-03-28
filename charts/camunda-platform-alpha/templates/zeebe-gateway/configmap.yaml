@@ -15,11 +15,15 @@ data:
     {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
 {{- else }}
   application.yaml: |
-    {{- if .Values.global.identity.auth.enabled }}
     spring:
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+      {{- if .Values.global.identity.auth.enabled }}
       profiles:
         active: "identity-auth"
-    {{- end }}
+      {{- end }}
 
     {{- if .Values.zeebeGateway.contextPath }}
     management:

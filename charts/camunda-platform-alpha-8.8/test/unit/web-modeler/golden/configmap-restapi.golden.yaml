@@ -73,6 +73,11 @@ data:
               issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
               jwk-set-uri: "camunda-platform-test-keycloak://camunda-platform-test-keycloak:/auth/realms/camunda-platform/protocol/openid-connect/certs"
 
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+
     logging:
       level:
         io.camunda.modeler: DEBUG

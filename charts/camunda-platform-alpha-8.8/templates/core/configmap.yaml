@@ -18,8 +18,12 @@ data:
     {{ .Values.core.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
-    {{- if eq .Values.global.security.authentication.method "oidc" }}
     spring:
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+      {{- if eq .Values.global.security.authentication.method "oidc" }}
       profiles:
         active: "identity,operate,tasklist,broker,auth-oidc"
       security:
@@ -39,11 +43,9 @@ data:
                 provider: oidcclient
                 scope: openid,profile
     {{- else if eq .Values.global.security.authentication.method "basic" }}
-    spring:
       profiles:
         active: "identity,operate,tasklist,broker,consolidated-auth"
     {{- else }}
-    spring:
       profiles:
         active: "operate,tasklist,broker,auth"
     {{- end }}
