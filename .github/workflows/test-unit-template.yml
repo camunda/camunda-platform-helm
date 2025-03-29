@@ -25,9 +25,10 @@ permissions:
 
 jobs:
   init:
-    name: Generate components matrix
+    name: Unit - Generate test matrix
     runs-on: ubuntu-latest
     outputs:
+      unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}
       unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -38,10 +39,14 @@ jobs:
       uses: ./.github/actions/test-type-vars
       with:
         chart-dir: "${{ inputs.camunda-helm-dir }}"
+    - name: ℹ️ Print outputs ℹ️
+      run: |
+        echo "unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}"
+        echo "unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}"
 
   unit:
-    name: ${{ matrix.test.name }} - Unit Test
-    if: ${{ needs.init.outputs.unitTestMatrix != '' }}
+    name: Unit - ${{ matrix.test.name }}
+    if: ${{ needs.init.outputs.unitTestEnabled == 'true' && needs.init.outputs.unitTestMatrix != '' }}
     needs: init
     runs-on: ubuntu-latest
     strategy:

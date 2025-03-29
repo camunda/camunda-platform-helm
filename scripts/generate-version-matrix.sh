@@ -44,11 +44,7 @@ get_chart_images () {
     chart_version="${1}"
     major_minor="$(echo "$CHART_DIR" | sed 's/charts\/camunda-platform-//g')"
     version_matrix_file="version-matrix/camunda-$major_minor/version-matrix.json"
-    # TODO: Remove this workaround once 8.7 is released as we will have only 1 alpha again.
-    if [[ "${CHART_DIR}" == "charts/camunda-platform-8.8" ]]; then
-      CHART_DIR="charts/camunda-platform-alpha-8.8"
-    fi
-    test -d "${CHART_DIR}" || CHART_DIR="charts/camunda-platform-alpha"
+    test -d "${CHART_DIR}" || CHART_DIR="$(ls -d1 charts/camunda-platform-8* | tail -n1)"
     test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
 
     # Check if the chart data already in version-matrix.json and add it if needed.

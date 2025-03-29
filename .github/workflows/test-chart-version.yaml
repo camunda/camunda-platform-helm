@@ -1,0 +1,50 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Chart Version"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/chart-validate-template.yaml'
+      - '.github/workflows/test-unit-template.yml'
+      - '.github/workflows/test-integration-template.yaml'
+      - '.github/workflows/test-chart-version-template.yaml'
+      - '.github/workflows/test-chart-version.yaml'
+      - '.tool-versions'
+      - 'charts/camunda-platform-8*/**'
+  workflow_dispatch: { }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+jobs:
+  init:
+    name: Generate chart matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Generate chart versions
+        id: generate-chart-versions
+        uses: ./.github/actions/generate-chart-matrix
+        with:
+          charts-path: "charts/camunda-platform-8*"
+
+  test:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Camunda ${{ matrix.version }}
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/test-chart-version-template.yaml
+    secrets: inherit
+    with:
+      chart-version: "${{ matrix.version }}"

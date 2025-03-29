@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       id:
-        description: Camunda chart dir id like x.y, alpha, or alpha-8.8.
+        description: Camunda chart dir id like x.y
         required: true
         type: string
   push:

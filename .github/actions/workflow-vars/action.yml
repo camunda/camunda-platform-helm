@@ -89,14 +89,18 @@ runs:
       # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
       # then upgraded from the PR branch to ensure upgradability.
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-        # The Alpha chart is stored on the OCI Helm registry and uses different versioning.
-        if [[ $(echo "${{ inputs.chart-upgrade-version }}" | grep 'alpha') ]]; then
+        if [[ -n "${{ inputs.chart-upgrade-version }}" ]]; then
           TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
-        else
-          # Other released charts.
+        fi
+        if [[ -z "${{ inputs.chart-upgrade-version }}" ]]; then
           test "$(git branch --show-current)" != "main" &&
-            git fetch origin main:main --no-tags
-          TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
+          git fetch origin main:main --no-tags
+          if [[ -n "$(git ls-tree main -- charts/${{ inputs.chart-dir }}/Chart.yaml)" ]]; then
+            TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
+          else
+            # Fallback (needed only when we add a new chart directory).
+            TEST_CHART_VERSION="$(cat charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
+          fi
         fi
         echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
       fi
