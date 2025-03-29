@@ -1,0 +1,55 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Chart Version - Template"
+
+on:
+  workflow_call:
+    inputs:
+      chart-version:
+        description: Chart version to test
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ inputs.chart-version }}
+  cancel-in-progress: true
+
+env:
+  KUBECONFIG: .github/config/kubeconfig
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    name: Camunda ${{ inputs.chart-version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.chart-version }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  unit:
+    name: Camunda ${{ inputs.chart-version }} - Unit Test
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-${{ inputs.chart-version }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  integration:
+    name: Camunda ${{ inputs.chart-version }} - Integration Test
+    needs: [validation, unit]
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.chart-version }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      platforms: "gke"
+      flows: "install,upgrade"
+      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"

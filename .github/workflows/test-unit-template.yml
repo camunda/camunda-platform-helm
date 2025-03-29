@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   init:
-    name: Generate components matrix
+    name: Unit - Generate test matrix
     runs-on: ubuntu-latest
     outputs:
       unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}
@@ -45,7 +45,7 @@ jobs:
         echo "unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}"
 
   unit:
-    name: ${{ matrix.test.name }} - Unit Test
+    name: Unit - ${{ matrix.test.name }}
     if: ${{ needs.init.outputs.unitTestEnabled == 'true' && needs.init.outputs.unitTestMatrix != '' }}
     needs: init
     runs-on: ubuntu-latest
