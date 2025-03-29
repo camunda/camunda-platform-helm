@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 8.3.25
+version: 8.3.26
 appVersion: 8.3.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -64,5 +64,9 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
-  camunda.io/helmCLIVersion: 3.17.0
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Add global.extraManifests support for injecting arbitrary YAML"
+    - kind: fixed
+      description: "Changing helper function for identityURL"
+  camunda.io/helmCLIVersion: 3.17.2
