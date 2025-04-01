@@ -50,29 +50,29 @@ func TestDeploymentTemplate(t *testing.T) {
 func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:          "TestContainerShouldNotRenderOptimizeIfDisabled",
-			HelmExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values:        map[string]string{"optimize.enabled": "false"},
+			Name:                 "TestContainerShouldNotRenderOptimizeIfDisabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values:               map[string]string{"optimize.enabled": "false"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "charts/optimize")
 			},
 		}, {
-			Name:          "TestContainerShouldNotRenderOperateIfDisabled",
-			HelmExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values:        map[string]string{"operate.enabled": "false"},
+			Name:                 "TestContainerShouldNotRenderOperateIfDisabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values:               map[string]string{"operate.enabled": "false"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "charts/operate")
 			},
 		}, {
-			Name:          "TestContainerShouldNotRenderTasklistIfDisabled",
-			HelmExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values:        map[string]string{"tasklist.enabled": "false"},
+			Name:                 "TestContainerShouldNotRenderTasklistIfDisabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values:               map[string]string{"tasklist.enabled": "false"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "charts/tasklist")
 			},
 		}, {
-			Name:          "TestContainerShouldNotRenderIdentityIfDisabled",
-			HelmExtraArgs: map[string][]string{"install": {"--debug"}},
+			Name:                 "TestContainerShouldNotRenderIdentityIfDisabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"optimize.enabled":             "true",
 				"identity.enabled":             "false",
@@ -82,8 +82,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				require.NotContains(t, output, "charts/identity")
 			},
 		}, {
-			Name:          "ContainerShouldNotRenderWebModelerIfDisabled",
-			HelmExtraArgs: map[string][]string{"install": {"--debug"}},
+			Name:                 "ContainerShouldNotRenderWebModelerIfDisabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"webModeler.enabled": "false",
 			},
