@@ -21,6 +21,7 @@
       '(^|/).*?values.*?\\.yaml$',
     ],
   },
+  // GitHub Actions configuration
   'github-actions': {
     enabled: true,
     fileMatch: [
@@ -34,6 +35,10 @@
     },
   },
   packageRules: [
+    //
+    // Main groups.
+    // This section should be updated with the Camunda supported versions.
+    // Start of minor cycle chores.
     {
       groupName: 'camunda-platform-8.2',
       addLabels: [
@@ -147,6 +152,10 @@
         'patch',
       ],
     },
+    // End of minor cycle chores.
+
+    //
+    // Other groups.
     {
       groupName: 'bitnami-web-modeler-postgresql',
       addLabels: [
@@ -160,6 +169,8 @@
         'patch',
       ],
     },
+    //
+    // Tools.
     {
       groupName: 'tool-versions',
       addLabels: [
@@ -184,6 +195,7 @@
         'every weekend',
       ],
     },
+    // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
       allowedVersions: '<1.28.0',
       matchDepNames: [
@@ -196,6 +208,7 @@
         '/k8s.io/.*/',
       ],
     },
+    // Some asdf plugins use the "v" prefix, so we extract the version without it.
     {
       matchFileNames: [
         '.tool-versions',
@@ -206,7 +219,10 @@
       ],
       extractVersion: '^(?<version>v.*)$',
     },
+    //
+    // Camunda charts.
     {
+      // Disable major version update for all Helm components.
       enabled: false,
       matchManagers: [
         'helmv3',
@@ -218,6 +234,7 @@
       ],
     },
     {
+      // Disable app minor version update in the previous Camunda Helm charts.
       enabled: false,
       matchPackageNames: [
         '/.*camunda/[.-]*/',
@@ -232,6 +249,7 @@
       ],
     },
     {
+      // Enable app patch version update in the previous Camunda Helm charts.
       matchDatasources: [
         'helmv3',
         'helm-values',
@@ -246,6 +264,8 @@
         'patch',
       ],
     },
+    // Limit Elasticsearch version to latest supported version in Camunda 8.3 chart.
+    // https://docs.camunda.io/docs/8.3/reference/supported-environments/#camunda-8-self-managed
     {
       matchDatasources: [
         'docker',
@@ -271,6 +291,8 @@
       ],
       allowedVersions: '19.13.15',
     },
+    // Limit Elasticsearch version to latest supported version in Camunda 8.4 chart.
+    // https://docs.camunda.io/docs/8.4/reference/supported-environments/#camunda-8-self-managed
     {
       matchDatasources: [
         'docker',
@@ -296,6 +318,8 @@
       ],
       allowedVersions: '19.19.4',
     },
+    // Limit Elasticsearch version to latest supported version in Camunda 8.5 chart.
+    // https://docs.camunda.io/docs/8.5/reference/supported-environments/#camunda-8-self-managed
     {
       matchDatasources: [
         'docker',
@@ -309,6 +333,8 @@
       ],
       allowedVersions: '~8.12.0',
     },
+    // Limit Elasticsearch version to latest supported version in Camunda 8.6 chart.
+    // https://docs.camunda.io/docs/8.6/reference/supported-environments/#camunda-8-self-managed
     {
       matchDatasources: [
         'docker',
@@ -322,6 +348,8 @@
       ],
       allowedVersions: '~8.15.0',
     },
+    // Limit Elasticsearch version to latest supported version in Camunda 8.7 chart.
+    // https://docs.camunda.io/docs/reference/supported-environments/#camunda-8-self-managed
     {
       matchDatasources: [
         'docker',
@@ -335,6 +363,7 @@
       ],
       allowedVersions: '~8.17.0',
     },
+    // Limit alpha chart version to alpha tags only.
     {
       enabled: true,
       matchDatasources: [
@@ -348,6 +377,8 @@
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-6]))$',
     },
+    //
+    // General.
     {
       enabled: true,
       matchPackageNames: [
@@ -362,10 +393,13 @@
         'charts/camunda-platform-alpha/Chart.yaml',
         'charts/camunda-platform-alpha/values*.yaml',
       ],
+      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
+      // which is not the case.
       versionCompatibility: '^(?<version>\\d+.\\d+.\\d+-alpha[1-6])(?<compatibility>.*)$',
       versioning: 'semver',
     },
     {
+      // Limit alpha chart version to alpha tags only.
       enabled: true,
       matchDatasources: [
         'github-tags',
@@ -392,6 +426,8 @@
         'charts/camunda-platform-8.8/Chart.yaml',
         'charts/camunda-platform-8.8/values*.yaml',
       ],
+      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
+      // which is not the case.
       versionCompatibility: '^(?<version>\\d+.\\d+.\\d+-alpha[1-6])(?<compatibility>.*)$',
       versioning: 'semver',
     },
@@ -407,12 +443,15 @@
         'automation/renovatebot',
         'kind/chore',
       ],
+      // The platformAutomerge value should be false to avoid having the renovatebot PRs merged
+      // without all checks passed.
       platformAutomerge: false,
       automerge: true,
     },
   ],
   customManagers: [
     {
+      // This is mainly used to Camunda alpha chart.
       customType: 'regex',
       fileMatch: [
         '\\.yaml$',
@@ -424,6 +463,10 @@
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
     },
     {
+      // This is mainly used to update enterprise image tags like Console and Web-Modeler.
+      // Console and Web-Modeler Self-Managed versions are different from SaaS versions,
+      // hence, we use image tags from Camunda private registry as a source of truth for those components.
+      // Another use case is Elasticsearch public Docker registry.
       customType: 'regex',
       fileMatch: [
         '\\.yaml$',
