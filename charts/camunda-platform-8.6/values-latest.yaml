@@ -43,7 +43,7 @@ webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.8
+    tag: 8.6.9
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
@@ -65,7 +65,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.6.9
+    tag: 8.6.10
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
