@@ -47,7 +47,7 @@ func TestConstraintTemplate(t *testing.T) {
 	})
 }
 
-func (c *ConstraintTemplateTest) TestDifferentValuesInputsE() {
+func (c *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "ExistingSecretConstraintDisplays",
