@@ -47,7 +47,7 @@ func TestConstraintTemplate(t *testing.T) {
 	})
 }
 
-func (c *ConstraintTemplateTest) TestDifferentValuesInputs() {
+func (c *ConstraintTemplateTest) TestDifferentValuesInputsE() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "ExistingSecretConstraintDisplays",
@@ -66,7 +66,7 @@ func (c *ConstraintTemplateTest) TestDifferentValuesInputs() {
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
 				"global.identity.auth.zeebe.existingSecret.name":       "zeebe-secret",
 			},
-			Verifier: func(t *testing.T, err error) {
+			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, err.Error(), "global.identity.auth.zeebe.existingSecret")
 			},
 		},
@@ -77,7 +77,7 @@ func (c *ConstraintTemplateTest) TestDifferentValuesInputs() {
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
 				"operate.enabled": "false",
 			},
-			Verifier: func(t *testing.T, err error) {
+			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, err.Error(), "global.identity.auth.operate.existingSecret")
 			},
 		},
@@ -87,7 +87,7 @@ func (c *ConstraintTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
 			},
-			Verifier: func(t *testing.T, err error) {
+			Verifier: func(t *testing.T, output string, err error) {
 				require.Nil(t, err)
 			},
 		},

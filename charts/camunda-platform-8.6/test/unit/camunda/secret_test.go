@@ -89,7 +89,7 @@ func (s *secretTest) TestContainerGenerateSecret() {
 	}
 }
 
-func (s *deploymentTemplateTest) TestContainerCamundaLicenseWithExistingSecret() {
+func (s *DeploymentTemplateTest) TestContainerCamundaLicenseWithExistingSecret() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{

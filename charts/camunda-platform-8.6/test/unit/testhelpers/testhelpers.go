@@ -1,39 +1,67 @@
+// Package testhelpers provides utilities for testing Helm charts.
+// To enable verbose logging, set the VERBOSE_TEST_LOGGING environment variable to "true".
+// Example: VERBOSE_TEST_LOGGING=true go test ./...
 package testhelpers
 
 import (
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type TestCase struct {
-	Name     string
-	Values   map[string]string
-	Expected map[string]string             // Assert that require.ErrorContains contains this "ERROR" value
-	Verifier func(t *testing.T, err error) // General assertion function
+	Name          string
+	HelmExtraArgs map[string][]string // Helm options for the test case
+	Values        map[string]string
+	Expected      map[string]string                            // Assert that require.ErrorContains contains this "ERROR" value
+	Verifier      func(t *testing.T, output string, err error) // General assertion function
 }
 
-func RenderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string) error {
+// quietLogger returns a logger that only logs errors
+func quietLogger() *logger.Logger {
+	// Check if verbose logging is enabled via environment variable
+	if os.Getenv("VERBOSE_TEST_LOGGING") == "true" {
+		return logger.Default
+	}
+	// Create a logger that discards all output
+	return logger.Discard
+}
+
+func setupHelmOptions(namespace string, values map[string]string, extraArgs ...map[string][]string) *helm.Options {
+	// ExtraArgs is a variadic arguments only to skip nil being everywhere... maybe we can remove it later
+	var extras map[string][]string
+	if len(extraArgs) > 0 {
+		extras = extraArgs[0]
+	}
 	options := &helm.Options{
 		SetValues:      values,
 		KubectlOptions: k8s.NewKubectlOptions("", "", namespace),
+		Logger:         quietLogger(), // Use quiet logger to reduce verbosity
+		ExtraArgs:      extras,
 	}
+	return options
+}
 
-	_, err := helm.RenderTemplateE(t, options, chartPath, release, templates)
-	return err
+func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, extraArgs map[string][]string) (string, error) {
+	options := setupHelmOptions(namespace, values, extraArgs)
+
+	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates)
+	return output, err
 }
 
 func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			err := RenderTemplateE(t, chartPath, release, namespace, templates, tc.Values)
+			output, err := renderTemplateE(t, chartPath, release, namespace, templates, tc.Values, tc.HelmExtraArgs)
 			if tc.Verifier != nil {
-				tc.Verifier(t, err)
+				tc.Verifier(t, output, err)
 			} else {
 				require.ErrorContains(t, err, tc.Expected["ERROR"])
 			}
@@ -41,12 +69,9 @@ func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates
 	}
 }
 
-// RenderTemplate renders the specified Helm templates into a Kubernetes ConfigMap
-func RenderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string) corev1.ConfigMap {
-	options := &helm.Options{
-		SetValues:      values,
-		KubectlOptions: k8s.NewKubectlOptions("", "", namespace),
-	}
+// renderTemplate renders the specified Helm templates into a Kubernetes ConfigMap
+func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string) corev1.ConfigMap {
+	options := setupHelmOptions(namespace, values)
 
 	output := helm.RenderTemplate(t, options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
@@ -58,7 +83,7 @@ func RenderTemplate(t *testing.T, chartPath, release string, namespace string, t
 func RunTestCases(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			configmap := RenderTemplate(t, chartPath, release, namespace, templates, tc.Values)
+			configmap := renderTemplate(t, chartPath, release, namespace, templates, tc.Values)
 			verifyConfigMap(t, tc.Name, configmap, tc.Expected)
 		})
 	}
