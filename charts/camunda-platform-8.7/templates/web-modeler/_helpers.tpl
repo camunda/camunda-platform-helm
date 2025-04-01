@@ -274,7 +274,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 */}}
 {{- define "webModeler.restapi.clusterAuthentication" -}}
   {{- if .Values.global.identity.auth.enabled -}}
-    {{- eq (include "camundaPlatform.authType" .) "MICROSOFT" | ternary "CLIENT_CREDENTIALS" "OAUTH" -}}
+    {{- eq (include "camundaPlatform.authType" .) "MICROSOFT" | ternary "CLIENT_CREDENTIALS" "BEARER_TOKEN" -}}
   {{- else -}}
     NONE
   {{- end -}}
