@@ -59,7 +59,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags?page=&page_size=&ordering=&name=8.3
   image:
     repository: camunda/identity
-    tag: 8.3.20
+    tag: 8.3.21
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
