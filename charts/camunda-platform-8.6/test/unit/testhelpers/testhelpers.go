@@ -16,12 +16,34 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// TestCase represents a single test scenario for Helm chart testing.
+// It encapsulates all the necessary configuration and validation logic for a test.
 type TestCase struct {
-	Name          string
-	HelmExtraArgs map[string][]string // Helm options for the test case
-	Values        map[string]string
-	Expected      map[string]string                            // Assert that require.ErrorContains contains this "ERROR" value
-	Verifier      func(t *testing.T, output string, err error) // General assertion function
+	// Name is the descriptive name of the test case, used for identification in test output
+	Name string
+
+	// HelmOptionsExtraArgs contains additional arguments to pass to the Helm command
+	// The key spaecifies the Helm command (e.g., "install", "upgrade"), and the value is a slice of arguments
+	// This allows customizing the Helm command behavior for specific test cases
+	HelmOptionsExtraArgs map[string][]string
+
+	// RenderTemplateExtraArgs contains additional arguments for template rendering
+	// These are passed to the template rendering process
+	RenderTemplateExtraArgs []string
+
+	// Values represents the Helm chart values to set for this test case
+	// These are equivalent to values passed with --set flag in Helm CLI
+	Values map[string]string
+
+	// Expected contains key-value pairs that should be present in the rendered output
+	// For error tests, it should contain an "ERROR" key with the expected error message
+	// For ConfigMap tests, keys can be direct data keys or dot-notation paths into application.yaml
+	Expected map[string]string
+
+	// Verifier is a custom function for complex validation scenarios
+	// When provided, it overrides the default validation logic
+	// It receives the rendered output and any error that occurred during rendering
+	Verifier func(t *testing.T, output string, err error)
 }
 
 // quietLogger returns a logger that only logs errors
@@ -34,32 +56,27 @@ func quietLogger() *logger.Logger {
 	return logger.Discard
 }
 
-func setupHelmOptions(namespace string, values map[string]string, extraArgs ...map[string][]string) *helm.Options {
-	// ExtraArgs is a variadic arguments only to skip nil being everywhere... maybe we can remove it later
-	var extras map[string][]string
-	if len(extraArgs) > 0 {
-		extras = extraArgs[0]
-	}
+func setupHelmOptions(namespace string, values map[string]string, helmOptionsExtraArgs map[string][]string) *helm.Options {
 	options := &helm.Options{
 		SetValues:      values,
 		KubectlOptions: k8s.NewKubectlOptions("", "", namespace),
 		Logger:         quietLogger(), // Use quiet logger to reduce verbosity
-		ExtraArgs:      extras,
+		ExtraArgs:      helmOptionsExtraArgs,
 	}
 	return options
 }
 
-func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, extraArgs map[string][]string) (string, error) {
+func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, extraArgs map[string][]string, renderTemplateExtraArgs []string) (string, error) {
 	options := setupHelmOptions(namespace, values, extraArgs)
 
-	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates)
+	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...)
 	return output, err
 }
 
 func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			output, err := renderTemplateE(t, chartPath, release, namespace, templates, tc.Values, tc.HelmExtraArgs)
+			output, err := renderTemplateE(t, chartPath, release, namespace, templates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
 			if tc.Verifier != nil {
 				tc.Verifier(t, output, err)
 			} else {
@@ -71,7 +88,7 @@ func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates
 
 // renderTemplate renders the specified Helm templates into a Kubernetes ConfigMap
 func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string) corev1.ConfigMap {
-	options := setupHelmOptions(namespace, values)
+	options := setupHelmOptions(namespace, values, nil)
 
 	output := helm.RenderTemplate(t, options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
