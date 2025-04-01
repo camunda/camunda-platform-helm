@@ -15,7 +15,7 @@ on:
         type: string
       camunda-helm-dir:
         required: false
-        default: camunda-platform-alpha
+        default: camunda-platform-8.8
         type: string
       camunda-helm-git-ref:
         required: false
