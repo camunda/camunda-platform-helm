@@ -15,25 +15,24 @@
 package camunda
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type secretTest struct {
+type SecretTest struct {
 	suite.Suite
-	chartPath  string
-	release    string
-	namespace  string
-	templates  []string
-	secretName []string
+	chartPath string
+	release   string
+	namespace string
+	templates []string
 }
 
 func TestSecretTemplate(t *testing.T) {
@@ -42,70 +41,74 @@ func TestSecretTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &secretTest{
-		chartPath:  chartPath,
-		release:    "camunda-platform-test",
-		namespace:  "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates:  []string{},
-		secretName: []string{},
+	suite.Run(t, &SecretTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{},
 	})
 }
 
-func (s *secretTest) TestContainerGenerateSecret() {
-	// given
-	options := &helm.Options{
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+func (s *SecretTest) TestDifferentValuesInputs() {
+	// Define components that need secret tests
+	components := []string{
+		"Connectors",
+		"Console",
+		"Operate",
+		"Optimize",
+		"TaskList",
+		"Zeebe",
 	}
 
-	s.templates = []string{
-		"templates/camunda/secret-connectors.yaml",
-		"templates/camunda/secret-console.yaml",
-		"templates/camunda/secret-operate.yaml",
-		"templates/camunda/secret-optimize.yaml",
-		"templates/camunda/secret-tasklist.yaml",
-		"templates/camunda/secret-zeebe.yaml",
+	require.Equal(s.T(), len(components), 6, "Expected 6 components to be tested")
+
+	// Create test cases for each component
+	testCases := make([]testhelpers.TestCase, 0, len(components)+1)
+	for _, component := range components {
+		testCases = append(testCases, s.createSecretTestCase(component))
 	}
 
-	s.secretName = []string{
-		"connectors-secret",
-		"console-secret",
-		"operate-secret",
-		"optimize-secret",
-		"tasklist-secret",
-		"zeebe-secret",
-	}
-
-	s.Require().GreaterOrEqual(6, len(s.templates))
-	for idx, template := range s.templates {
-		// when
-		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
-		var secret coreV1.Secret
-		helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-		// then
-		s.Require().NotNil(secret.Data)
-		s.Require().NotNil(secret.Data[s.secretName[idx]])
-		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
-	}
-}
-
-func (s *DeploymentTemplateTest) TestContainerCamundaLicenseWithExistingSecret() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
+	// Add the license test case
+	testCases = append(testCases, testhelpers.TestCase{
+		Name:                 "TestContainerCamundaLicenseWithExistingSecret",
+		HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+		Values: map[string]string{
 			"global.license.existingSecret":    "ownExistingSecretForLicense",
 			"global.license.existingSecretKey": "camunda-license",
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+		Verifier: func(t *testing.T, output string, err error) {
+			// TODO: Extend this test to ensure that the key is available for all components.
+			require.Contains(t, output, "name: CAMUNDA_LICENSE_KEY")
+			require.Contains(t, output, "name: ownExistingSecretForLicense")
+			require.Contains(t, output, "key: camunda-license")
+		},
+	})
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// verifySecretData checks if the secret contains the expected data key with non-empty content
+func (s *SecretTest) verifySecretData(t *testing.T, output string, secretName string) {
+	var secret coreV1.Secret
+	helm.UnmarshalK8SYaml(t, output, &secret)
+
+	require.NotNil(t, secret.Data)
+	require.NotNil(t, secret.Data[secretName])
+	require.NotEmpty(t, secret.Data[secretName])
+}
+
+// createSecretTestCase creates a test case for a specific component's secret
+func (s *SecretTest) createSecretTestCase(componentName string) testhelpers.TestCase {
+	secretKey := strings.ToLower(componentName) + "-secret"
+	templatePath := "templates/camunda/secret-" + strings.ToLower(componentName) + ".yaml"
+
+	return testhelpers.TestCase{
+		Name: "TestContainerGenerateSecret" + componentName,
+		CaseTemplates: &testhelpers.CaseTemplate{
+			Templates: []string{templatePath},
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			s.verifySecretData(t, output, secretKey)
+		},
 	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	// TODO: TODO: Extend this test to ensure that the key is available for all components.
-	s.Require().Contains(output, "name: CAMUNDA_LICENSE_KEY")
-	s.Require().Contains(output, "name: ownExistingSecretForLicense")
-	s.Require().Contains(output, "key: camunda-license")
 }

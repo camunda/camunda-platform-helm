@@ -16,6 +16,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+type CaseTemplate struct {
+	Templates []string
+}
+
 // TestCase represents a single test scenario for Helm chart testing.
 // It encapsulates all the necessary configuration and validation logic for a test.
 type TestCase struct {
@@ -30,6 +34,10 @@ type TestCase struct {
 	// RenderTemplateExtraArgs contains additional arguments for template rendering
 	// These are passed to the template rendering process
 	RenderTemplateExtraArgs []string
+
+	// When provided, this function is called to get the templates to render. This overrides the
+	// templates set in the test suite
+	CaseTemplates *CaseTemplate
 
 	// Values represents the Helm chart values to set for this test case
 	// These are equivalent to values passed with --set flag in Helm CLI
@@ -76,7 +84,13 @@ func renderTemplateE(t *testing.T, chartPath, release string, namespace string, 
 func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			output, err := renderTemplateE(t, chartPath, release, namespace, templates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
+			var caseTemplates []string
+			if tc.CaseTemplates != nil {
+				caseTemplates = tc.CaseTemplates.Templates
+			} else {
+				caseTemplates = templates
+			}
+			output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
 			if tc.Verifier != nil {
 				tc.Verifier(t, output, err)
 			} else {
