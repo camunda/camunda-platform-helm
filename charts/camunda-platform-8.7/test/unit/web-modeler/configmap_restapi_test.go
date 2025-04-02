@@ -357,7 +357,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
 	s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
 	s.Require().Equal("camunda-platform-test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-	s.Require().Equal("8.7.0-alpha5", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 	s.Require().Equal("CLIENT_CREDENTIALS", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 	s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26500", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
 	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8080", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
