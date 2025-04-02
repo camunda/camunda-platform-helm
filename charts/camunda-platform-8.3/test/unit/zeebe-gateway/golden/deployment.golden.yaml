@@ -45,7 +45,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: camunda/zeebe:8.3.21
+          image: camunda/zeebe:8.3.22
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9600
