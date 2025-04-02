@@ -1,0 +1,5 @@
+matrix:
+  scenario:
+    - name: multitenancy
+      file-name: values-integration-test-multitenancy.yaml
+
