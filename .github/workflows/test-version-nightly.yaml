@@ -41,7 +41,24 @@ jobs:
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
+      - name: Generate directory matrix
+        shell: bash
+        id: set-chart-versions
+        run: |
+          echo "Setting matrix based on files"
+          echo "files:"
+          printf "%s\n" ${ALL_MODIFIED_FILES}
+          touch matrix_versions.txt
 
+          ls -d "charts/camunda-platform*" | while read chart_dir; do
+              camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')";
+              echo "Camunda version: ${camunda_version}"
+              echo "${camunda_version}" >> matrix_versions.txt;
+          done
+
+          matrix="$(cat matrix_versions.txt | jq --slurp --compact-output --raw-input 'split("\n") | .[:-1]')"
+          echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
+  # need to grab the directory names before this step and run integration tests on each directory
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
