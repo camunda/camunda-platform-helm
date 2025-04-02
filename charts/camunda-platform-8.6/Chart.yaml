@@ -72,7 +72,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add global.extraManifests support for injecting arbitrary YAML"
     - kind: fixed
-      description: "Changing helper function for identityURL"
+      description: "Task 448 refactor unit test in 8.6/test/unit/camunda directory"
+    - kind: fixed
+      description: "Task 448 refactor unit test in 8.6/test/unit/connectors"
