@@ -42,7 +42,7 @@ tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.5.13
+    tag: 8.5.14
 
 webModeler:
   # Camunda Enterprise repository.
@@ -55,13 +55,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.16
+    tag: 8.5.17
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.16
+    tag: 8.5.17
 
 #
 # Identity
