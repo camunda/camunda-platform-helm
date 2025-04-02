@@ -15,6 +15,7 @@
 package console
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -28,7 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type deploymentTemplateTest struct {
+type DeploymentTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -42,7 +43,7 @@ func TestDeploymentTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &deploymentTemplateTest{
+	suite.Run(t, &DeploymentTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -50,109 +51,91 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
-func (s *deploymentTemplateTest) TestContainerSetPodLabels() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"console.enabled":       "true",
-			"console.podLabels.foo": "bar",
+func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerSetPodLabels",
+
+			Values: map[string]string{
+				"console.enabled":       "true",
+				"console.podLabels.foo": "bar",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
+			},
+		}, {
+			Name: "TestContainerSetPodAnnotations",
+
+			Values: map[string]string{
+				"console.enabled":            "true",
+				"console.podAnnotations.foo": "bar",
+				"console.podAnnotations.foz": "baz",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				s.Require().Equal("bar", deployment.Spec.Template.Annotations["foo"])
+				s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
+			},
+		}, {
+			Name: "TestContainerSetGlobalAnnotations",
+
+			Values: map[string]string{
+				"console.enabled":        "true",
+				"global.annotations.foo": "bar",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
+			},
+		}, {
+			Name: "TestContainerSetImageNameSubChart",
+
+			Values: map[string]string{
+				"console.enabled":          "true",
+				"global.image.registry":    "global.custom.registry.io",
+				"global.image.tag":         "8.x.x",
+				"console.image.registry":   "subchart.custom.registry.io",
+				"console.image.repository": "camunda/console-test",
+				"console.image.tag":        "snapshot",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				container := deployment.Spec.Template.Spec.Containers[0]
+				s.Require().Equal(container.Image, "subchart.custom.registry.io/camunda/console-test:snapshot")
+			},
+		}, {
+			Name: "TestContainerSetImagePullSecretsGlobal",
+
+			Values: map[string]string{
+				"console.enabled":                  "true",
+				"global.image.pullSecrets[0].name": "SecretName",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				s.Require().Equal("SecretName", deployment.Spec.Template.Spec.ImagePullSecrets[0].Name)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetPodAnnotations() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"console.enabled":            "true",
-			"console.podAnnotations.foo": "bar",
-			"console.podAnnotations.foz": "baz",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	s.Require().Equal("bar", deployment.Spec.Template.Annotations["foo"])
-	s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
-}
-
-func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"console.enabled":        "true",
-			"global.annotations.foo": "bar",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
-}
-
-func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"console.enabled":          "true",
-			"global.image.registry":    "global.custom.registry.io",
-			"global.image.tag":         "8.x.x",
-			"console.image.registry":   "subchart.custom.registry.io",
-			"console.image.repository": "camunda/console-test",
-			"console.image.tag":        "snapshot",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	container := deployment.Spec.Template.Spec.Containers[0]
-	s.Require().Equal(container.Image, "subchart.custom.registry.io/camunda/console-test:snapshot")
-}
-
-func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsGlobal() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"console.enabled":                  "true",
-			"global.image.pullSecrets[0].name": "SecretName",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var deployment appsv1.Deployment
-	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-	// then
-	s.Require().Equal("SecretName", deployment.Spec.Template.Spec.ImagePullSecrets[0].Name)
-}
-
-func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsSubChart() {
+func (s *DeploymentTemplateTest) TestContainerSetImagePullSecretsSubChart() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -172,7 +155,7 @@ func (s *deploymentTemplateTest) TestContainerSetImagePullSecretsSubChart() {
 	s.Require().Equal("SecretNameSubChart", deployment.Spec.Template.Spec.ImagePullSecrets[0].Name)
 }
 
-func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
+func (s *DeploymentTemplateTest) TestContainerOverwriteImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -194,7 +177,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTag() {
 	s.Require().Equal("camunda/console:a.b.c", containers[0].Image)
 }
 
-func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
+func (s *DeploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -217,7 +200,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteGlobalImageTag() {
 	s.Require().Equal("camunda/console:a.b.c", containers[0].Image)
 }
 
-func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSetting() {
+func (s *DeploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSetting() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -241,7 +224,7 @@ func (s *deploymentTemplateTest) TestContainerOverwriteImageTagWithChartDirectSe
 	s.Require().Equal(expectedContainerImage, containers[0].Image)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
+func (s *DeploymentTemplateTest) TestContainerSetContainerCommand() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -264,8 +247,8 @@ func (s *deploymentTemplateTest) TestContainerSetContainerCommand() {
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
 
-func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
-	//finding out the length of volumes array before addition of new volume
+func (s *DeploymentTemplateTest) TestContainerSetExtraVolumes() {
+	// finding out the length of volumes array before addition of new volume
 	beforeOptions := &helm.Options{
 		SetValues: map[string]string{
 			"console.enabled": "true",
@@ -306,8 +289,8 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumes() {
 	s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
-	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+func (s *DeploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
+	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	beforeOptions := &helm.Options{
 		SetValues: map[string]string{
 			"console.enabled": "true",
@@ -348,8 +331,8 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumeMounts() {
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
-	//finding out the length of volumes, volumemounts array before addition of new volume
+func (s *DeploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
+	// finding out the length of volumes, volumemounts array before addition of new volume
 	beforeOptions := &helm.Options{
 		SetValues: map[string]string{
 			"console.enabled": "true",
@@ -403,7 +386,7 @@ func (s *deploymentTemplateTest) TestContainerSetExtraVolumesAndMounts() {
 	s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
+func (s *DeploymentTemplateTest) TestContainerSetServiceAccountName() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -424,7 +407,7 @@ func (s *deploymentTemplateTest) TestContainerSetServiceAccountName() {
 	s.Require().Equal("accName", serviceAccName)
 }
 
-func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
+func (s *DeploymentTemplateTest) TestPodSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -444,12 +427,12 @@ func (s *deploymentTemplateTest) TestPodSetSecurityContext() {
 	s.Require().EqualValues(1000, *securityContext.RunAsUser)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
+func (s *DeploymentTemplateTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"console.enabled": "true",
-			"console.containerSecurityContext.privileged":          "true",
+			"console.containerSecurityContext.privileged": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -465,7 +448,7 @@ func (s *deploymentTemplateTest) TestContainerSetSecurityContext() {
 }
 
 // https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
-func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
+func (s *DeploymentTemplateTest) TestContainerSetNodeSelector() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -487,10 +470,10 @@ func (s *deploymentTemplateTest) TestContainerSetNodeSelector() {
 }
 
 // https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
-func (s *deploymentTemplateTest) TestContainerSetAffinity() {
+func (s *DeploymentTemplateTest) TestContainerSetAffinity() {
 	// given
 
-	//affinity:
+	// affinity:
 	//	nodeAffinity:
 	//	 requiredDuringSchedulingIgnoredDuringExecution:
 	//	   nodeSelectorTerms:
@@ -552,7 +535,7 @@ func (s *deploymentTemplateTest) TestContainerSetAffinity() {
 }
 
 // https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
-func (s *deploymentTemplateTest) TestContainerSetTolerations() {
+func (s *DeploymentTemplateTest) TestContainerSetTolerations() {
 	// given
 
 	//tolerations:
@@ -588,7 +571,7 @@ func (s *deploymentTemplateTest) TestContainerSetTolerations() {
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
 
-func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
+func (s *DeploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPolicy() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -613,7 +596,7 @@ func (s *deploymentTemplateTest) TestContainerShouldOverwriteGlobalImagePullPoli
 
 // readinessProbe is enabled by default so it's tested by golden files.
 
-func (s *deploymentTemplateTest) TestContainerStartupProbe() {
+func (s *DeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -646,7 +629,7 @@ func (s *deploymentTemplateTest) TestContainerStartupProbe() {
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }
 
-func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
+func (s *DeploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -679,7 +662,7 @@ func (s *deploymentTemplateTest) TestContainerLivenessProbe() {
 	s.Require().EqualValues(1, probe.TimeoutSeconds)
 }
 
-func (s *deploymentTemplateTest) TestContainerSetSidecar() {
+func (s *DeploymentTemplateTest) TestContainerSetSidecar() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -711,7 +694,7 @@ func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 	s.Require().Contains(podContainers, expectedContainer)
 }
 
-func (s *deploymentTemplateTest) TestInitContainers() {
+func (s *DeploymentTemplateTest) TestInitContainers() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -742,7 +725,8 @@ func (s *deploymentTemplateTest) TestInitContainers() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
-func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
+
+func (s *DeploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
