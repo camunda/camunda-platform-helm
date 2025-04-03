@@ -25,13 +25,13 @@ operate:
   # https://hub.docker.com/r/camunda/operate/tags?page=&page_size=&ordering=&name=8.4
   image:
     repository: camunda/operate
-    tag: 8.4.18
+    tag: 8.4.19
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags?page=&page_size=&ordering=&name=8.4
   image:
     repository: camunda/optimize
-    tag: 8.4.15
+    tag: 8.4.16
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.4
