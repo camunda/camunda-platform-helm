@@ -397,7 +397,7 @@
       ],
       // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
       // which is not the case.
-      versionCompatibility: '^(?<version>\\d+.\\d+.\\d+-alpha[1-6])(?<compatibility>.*)$',
+      versionCompatibility: '^(?<version>\\d+.\\d+.\\d+(-alpha[1-6])?)(?<compatibility>.*)$',
       // setting versioning to semver is important because by default docker versioning will
       // assume that anything after the dash is a compatibility rather than a prerelease
       // indicator. Some docker images have versions like 8.5.0-alpine but in camunda
