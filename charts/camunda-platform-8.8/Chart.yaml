@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.0.0-alpha2
+version: 13.0.0-alpha3
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -63,7 +63,7 @@ maintainers:
     email: jesse.simpson@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.17.1"
+  camunda.io/helmCLIVersion: "3.17.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,7 +73,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Renamed archiver to history for camunda exporter settings"
     - kind: fixed
-      description: "Changing helper function for identityURL"
+      description: "Bump core and connectors to 8.8.0-alpha3"
