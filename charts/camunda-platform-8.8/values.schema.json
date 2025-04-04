@@ -1316,7 +1316,7 @@
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "Name of an existing secret resource containing the database credentials",
+                            "description": "Name of an existing Kubernetes Secret containing the external database credentials for Identity.",
                             "default": ""
                         },
                         "existingSecretPasswordKey": {
@@ -2401,7 +2401,7 @@
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "can be used to provide the name of an existing secret resource containing the database password",
+                                    "description": "Can be used to set a custom database password for Web Modeler. Provide it directly as a string, or reference an existing Kubernetes Secret by setting webModeler.restapi.externalDatabase.existingSecret.name. The Secret must contain the database password.",
                                     "default": ""
                                 },
                                 "existingSecretPasswordKey": {
@@ -2441,7 +2441,7 @@
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "can be used to provide the name of an existing secret resource containing the SMTP password",
+                                    "description": "Can be used to set the SMTP password for Web Modeler. Provide it directly as a string, or reference an existing Kubernetes Secret by setting webModeler.restapi.mail.existingSecret.name. The Secret must contain the SMTP password.",
                                     "default": ""
                                 },
                                 "existingSecretPasswordKey": {
@@ -3777,7 +3777,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha3-rc1"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4211,7 +4211,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2-rc1"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4907,7 +4907,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
