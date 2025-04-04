@@ -3597,7 +3597,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.17.0-debian-12-r9"
+                            "default": "14.17.0-debian-12-r10"
                         }
                     }
                 },
