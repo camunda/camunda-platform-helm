@@ -76,3 +76,7 @@ annotations:
       description: "Task 448 refactor unit test in 8.6/test/unit/camunda directory"
     - kind: fixed
       description: "Task 448 refactor unit test in 8.6/test/unit/connectors"
+    - kind: fixed
+      description: "Refactored unit tests for identity and operate in 8.6"
+    - kind: fixed
+      description: "Refactor unit tests in 8.6/test/unit/console to new style"
