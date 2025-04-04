@@ -15,6 +15,7 @@
 package camunda
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -27,7 +28,7 @@ import (
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type secretTest struct {
+type SecretTest struct {
 	suite.Suite
 	chartPath  string
 	release    string
@@ -42,7 +43,7 @@ func TestSecretTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &secretTest{
+	suite.Run(t, &SecretTest{
 		chartPath:  chartPath,
 		release:    "camunda-platform-test",
 		namespace:  "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -51,7 +52,53 @@ func TestSecretTemplate(t *testing.T) {
 	})
 }
 
-func (s *secretTest) TestContainerGenerateSecret() {
+func (s *SecretTest) TestDifferentValuesInputs() {
+	// Define components that need secret tests
+	components := []string{
+		"Connectors",
+		"Console",
+		"Operate",
+		"Optimize",
+		"TaskList",
+		"Zeebe",
+	}
+
+	require.Equal(s.T(), len(components), 6, "Expected 6 components to be tested")
+
+	// Create test cases for each component
+	testCases := make([]testhelpers.TestCase, 0, len(components)+1)
+	for _, component := range components {
+		testCases = append(testCases, s.createSecretTestCase(component))
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *SecretTest) createSecretTestCase(componentName string) testhelpers.TestCase {
+	secretKey := strings.ToLower(componentName) + "-secret"
+	templatePath := "templates/camunda/secret-" + strings.ToLower(componentName) + ".yaml"
+
+	return testhelpers.TestCase{
+		Name: "TestContainerGenerateSecret" + componentName,
+		CaseTemplates: &testhelpers.CaseTemplate{
+			Templates: []string{templatePath},
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			s.verifySecretData(t, output, secretKey)
+		},
+	}
+}
+
+func (s *SecretTest) verifySecretData(t *testing.T, output string, secretName string) {
+	var secret coreV1.Secret
+	helm.UnmarshalK8SYaml(t, output, &secret)
+
+	require.NotNil(t, secret.Data)
+	require.NotNil(t, secret.Data[secretName])
+	require.NotEmpty(t, secret.Data[secretName])
+}
+
+func (s *SecretTest) TestContainerGenerateSecret() {
 	// given
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
