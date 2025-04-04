@@ -1,5 +1,5 @@
 # Basic test for maintenance Camunda 8 Helm charts.
-name: "Test - Maintenance"
+name: "Test - nightly integration testsing"
 
 on:
   pull_request:
