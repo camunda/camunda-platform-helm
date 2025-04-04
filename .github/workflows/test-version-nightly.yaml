@@ -36,8 +36,7 @@ jobs:
         run: |
           cat ${CI_NIGHTLY_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
           # Read matrix YAML file.
-          matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
-          matrix="${CI_NIGHTLY_MATRIX_INPUT:-${matrix_defult}}"
+          matrix="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
