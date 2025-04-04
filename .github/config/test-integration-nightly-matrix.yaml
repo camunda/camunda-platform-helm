@@ -2,4 +2,5 @@ matrix:
   scenario:
     - name: multitenancy
       file-name: values-integration-test-multitenancy.yaml
-
+      # supppported versions will be different for each scnario. For example oidc is supported from 8.5 onwards.
+      supported-versions: [8.3, 8.4, 8.5, 8.6, 8.7, 8.8]
