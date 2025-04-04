@@ -39,7 +39,7 @@ jobs:
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
           echo github output
-          echo ${GITHUB_OUTPUT}
+          cat ${GITHUB_OUTPUT}
   echo:
     needs: init
     strategy:
