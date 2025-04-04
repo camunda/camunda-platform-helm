@@ -30,7 +30,7 @@ jobs:
       - name: Generate workflow matrix
         id: generate-nightly-workflow-matrix
         env:
-          CI_NIGHTLY_MATRIX_FILE: ".github/config/test-integration-nightly-matrix.yaml"
+          CI_NIGHTLY_MATRIX_FILE: ".github/config/integration-testing-scenarios/multitenancy.yaml"
           # Use GH env to safly load JSON matrix input.
           CI_NIGHTLY_MATRIX_INPUT: "${{ inputs.matrix-data }}"
         run: |
