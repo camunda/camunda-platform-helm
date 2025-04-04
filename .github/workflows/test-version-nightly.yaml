@@ -38,18 +38,6 @@ jobs:
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
-  echo:
-    needs: init
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: echo
-        id: echo
-        env:
-          MATRIX: ${{ matrix.version }}
-        run: echo
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
