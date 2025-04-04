@@ -46,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.init.outputs.matrix) }}
+        version: ${{ fromJson(needs.init.outputs.matrix.versions) }}
     runs-on: ubuntu-latest
     steps:
       - name: echo
