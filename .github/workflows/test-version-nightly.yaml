@@ -38,8 +38,6 @@ jobs:
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
-          echo github output
-          cat ${GITHUB_OUTPUT}
   echo:
     needs: init
     strategy:
