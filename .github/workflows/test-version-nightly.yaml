@@ -31,8 +31,6 @@ jobs:
         id: generate-nightly-workflow-matrix
         env:
           CI_NIGHTLY_MATRIX_FILE: ".github/config/integration-testing-scenarios/multitenancy.yaml"
-          # Use GH env to safly load JSON matrix input.
-          CI_NIGHTLY_MATRIX_INPUT: "${{ inputs.matrix-data }}"
         run: |
           cat ${CI_NIGHTLY_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
           # Read matrix YAML file.
@@ -40,6 +38,8 @@ jobs:
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
+          echo github output
+          echo ${GITHUB_OUTPUT}
   echo:
     needs: init
     strategy:
