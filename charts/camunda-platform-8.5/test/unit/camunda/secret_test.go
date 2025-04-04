@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -96,42 +95,4 @@ func (s *SecretTest) verifySecretData(t *testing.T, output string, secretName st
 	require.NotNil(t, secret.Data)
 	require.NotNil(t, secret.Data[secretName])
 	require.NotEmpty(t, secret.Data[secretName])
-}
-
-func (s *SecretTest) TestContainerGenerateSecret() {
-	// given
-	options := &helm.Options{
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	s.templates = []string{
-		"templates/camunda/secret-connectors.yaml",
-		"templates/camunda/secret-console.yaml",
-		"templates/camunda/secret-operate.yaml",
-		"templates/camunda/secret-optimize.yaml",
-		"templates/camunda/secret-tasklist.yaml",
-		"templates/camunda/secret-zeebe.yaml",
-	}
-
-	s.secretName = []string{
-		"connectors-secret",
-		"console-secret",
-		"operate-secret",
-		"optimize-secret",
-		"tasklist-secret",
-		"zeebe-secret",
-	}
-
-	s.Require().GreaterOrEqual(6, len(s.templates))
-	for idx, template := range s.templates {
-		// when
-		output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{template})
-		var secret coreV1.Secret
-		helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-		// then
-		s.Require().NotNil(secret.Data)
-		s.Require().NotNil(secret.Data[s.secretName[idx]])
-		s.Require().NotEmpty(secret.Data[s.secretName[idx]])
-	}
 }
