@@ -38,16 +38,14 @@ jobs:
           # Read matrix YAML file.
           matrix="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
           # Print and set matrix JSON object as an output.
-          echo "print matrix"
           echo "${matrix}" | jq
-          echo "print matrix to github output"
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
   echo:
     needs: init
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.init.outputs.matrix.versions) }}
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
     runs-on: ubuntu-latest
     steps:
       - name: echo
