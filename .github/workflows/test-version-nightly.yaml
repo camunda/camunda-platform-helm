@@ -41,39 +41,6 @@ jobs:
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
-      - name: Generate directory matrix
-        shell: bash
-        id: set-chart-versions
-        run: |
-          echo "Setting matrix based on files"
-          touch matrix_versions.txt
-
-          # Dynamically list directories and extract versions
-          ls -d charts/camunda-platform* | while read chart_dir; do
-              camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')";
-              echo "Camunda version: ${camunda_version}"
-              echo "${camunda_version}" >> matrix_versions.txt;
-          done
-
-          # Convert dynamic versions to JSON array
-          matrix_versions="$(cat matrix_versions.txt | jq --slurp --compact-output --raw-input 'split("\n") | .[:-1]')"
-
-          # Define static scenarios as JSON array
-          scenarios='[
-            {
-              "name": "multitenancy",
-              "file-name": "values-integration-test-multitenancy.yaml"
-            }
-          ]'
-
-          # Combine dynamic versions with static scenarios into a single JSON object
-          combined_matrix=$(jq -n \
-            --argjson versions "$matrix_versions" \
-            --argjson scenarios "$scenarios" \
-            '{versions: $versions, scenarios: $scenarios}')
-
-          echo "matrix=${combined_matrix}" | tee -a $GITHUB_OUTPUT
-  # need to grab the directory names before this step and run integration tests on each directory
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
