@@ -43,6 +43,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.5](./camunda-8.5)
 
+### [Helm chart 10.6.0](./camunda-8.5/#helm-chart-1060)
 ### [Helm chart 10.5.2](./camunda-8.5/#helm-chart-1052)
 ### [Helm chart 10.5.1](./camunda-8.5/#helm-chart-1051)
 ### [Helm chart 10.5.0](./camunda-8.5/#helm-chart-1050)
