@@ -15,19 +15,19 @@
 package connectors
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type serviceTest struct {
+type ServiceTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -41,7 +41,7 @@ func TestServiceTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &serviceTest{
+	suite.Run(t, &ServiceTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -49,40 +49,39 @@ func TestServiceTemplate(t *testing.T) {
 	})
 }
 
-func (s *serviceTest) TestContainerSetGlobalAnnotations() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"connectors.enabled":     "true",
-			"global.annotations.foo": "bar",
+func (s *ServiceTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerSetGlobalAnnotations",
+
+			Values: map[string]string{
+				"connectors.enabled":     "true",
+				"global.annotations.foo": "bar",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().Equal("bar", service.Annotations["foo"])
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		{
+			Name: "TestContainerServiceAnnotations",
+
+			Values: map[string]string{
+				"connectors.enabled":                 "true",
+				"connectors.service.annotations.foo": "bar",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().Equal("bar", service.Annotations["foo"])
+			},
+		},
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var service coreV1.Service
-	helm.UnmarshalK8SYaml(s.T(), output, &service)
-
-	// then
-	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
-}
-
-func (s *serviceTest) TestContainerServiceAnnotations() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"connectors.enabled":                 "true",
-			"connectors.service.annotations.foo": "bar",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var service coreV1.Service
-	helm.UnmarshalK8SYaml(s.T(), output, &service)
-
-	// then
-	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
