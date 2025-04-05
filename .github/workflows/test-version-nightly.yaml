@@ -1,0 +1,61 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - nightly integration testsing"
+
+on:
+  pull_request:
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
+  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+  KUBECONFIG: .github/config/kubeconfig
+
+permissions:
+  contents: read
+
+jobs:
+  init:
+    name: Nightly - Generate matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Generate workflow matrix
+        id: generate-nightly-workflow-matrix
+        env:
+          CI_NIGHTLY_MATRIX_FILE: ".github/config/integration-testing-scenarios/multitenancy.yaml"
+        run: |
+          cat ${CI_NIGHTLY_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
+          # Read matrix YAML file.
+          matrix="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
+          # Print and set matrix JSON object as an output.
+          echo "${matrix}" | jq
+          echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
+  integration:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Integration Test - Camunda ${{ matrix.version }}
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      platforms: "gke"
+      flows: "install,upgrade"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
