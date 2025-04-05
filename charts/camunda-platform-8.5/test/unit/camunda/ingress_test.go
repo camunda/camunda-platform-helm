@@ -15,12 +15,12 @@
 package camunda
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -29,7 +29,7 @@ import (
 	netv1 "k8s.io/api/networking/v1"
 )
 
-type ingressTemplateTest struct {
+type IngressTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -44,7 +44,7 @@ func TestIngressTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &ingressTemplateTest{
+	suite.Run(t, &IngressTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -52,82 +52,28 @@ func TestIngressTemplate(t *testing.T) {
 	})
 }
 
-func (s *ingressTemplateTest) TestIngressEnabledAndKeycloakChartProxyForwardingEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.ingress.tls.enabled": "true",
-			"identity.contextPath":       "/identity",
-			"identityKeycloak.enabled":   "true",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// NOTE: helm.Options.ExtraArgs doesn't support passing args to Helm "template" command.
-	// TODO: Remove "template" from all helm.Options.ExtraArgs since it doesn't have any effect.
-	s.extraArgs = []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, s.extraArgs...)
-
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
-			Value: "true",
-		})
-}
-
-func (s *ingressTemplateTest) TestIngressEnabledWithKeycloakCustomContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
+func (s *IngressTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{{
+		Name:                 "TestIngressEnabledWithKeycloakCustomContextPath",
+		HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+		Values: map[string]string{
 			"global.ingress.enabled":               "true",
 			"global.identity.keycloak.contextPath": "/custom",
 			"identityKeycloak.enabled":             "true",
 			"identityKeycloak.httpRelativePath":    "/custom",
 			"identity.contextPath":                 "/identity",
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	ingressOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-
-	var ingress netv1.Ingress
-	helm.UnmarshalK8SYaml(s.T(), ingressOutput, &ingress)
-
-	// then
-	path := ingress.Spec.Rules[0].HTTP.Paths[0]
-	s.Require().Equal("/custom/", path.Path)
-	s.Require().Equal("camunda-platform-test-keycloak", path.Backend.Service.Name)
-
-	// when
-	extraArgs := []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"}
-	stsOutput := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, nil, extraArgs...)
-
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), stsOutput, &statefulSet)
-
-	// then
-	env := statefulSet.Spec.Template.Spec.Containers[0].Env
-	s.Require().Contains(env,
-		corev1.EnvVar{
-			Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
-			Value: "/custom",
-		})
-}
-
-func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
+		Verifier: func(t *testing.T, output string, err error) {
+			var ingress netv1.Ingress
+			helm.UnmarshalK8SYaml(s.T(), output, &ingress)
+			path := ingress.Spec.Rules[0].HTTP.Paths[0]
+			require.Equal(t, "/custom/", path.Path)
+			require.Equal(t, "camunda-platform-test-keycloak", path.Backend.Service.Name)
+		},
+	}, {
+		Name:                 "TestIngressWithKeycloakChartIsDisabled",
+		HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+		Values: map[string]string{
 			"global.ingress.enabled": "true",
 			"identity.contextPath":   "/identity",
 			// Disable Identity Keycloak chart.
@@ -137,24 +83,66 @@ func (s *ingressTemplateTest) TestIngressWithKeycloakChartIsDisabled() {
 			"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
 			"global.identity.keycloak.url.port":     "8443",
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
+		Verifier: func(t *testing.T, output string, err error) {
+			// TODO: Instead of using plain text search, unmarshal the output in an ingress struct and assert the values.
+			require.NotContains(t, output, "keycloak")
+			require.NotContains(t, output, "path: /auth")
+			require.NotContains(t, output, "number: 8443")
+		},
+	}, {
+		Name:                 "TestIngressEnabledAndKeycloakChartProxyForwardingEnabled",
+		HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+		CaseTemplates: &testhelpers.CaseTemplate{
+			Templates: nil,
+		},
+		RenderTemplateExtraArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
+		Values: map[string]string{
+			"global.ingress.tls.enabled": "true",
+			"identity.contextPath":       "/identity",
+			"identityKeycloak.enabled":   "true",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var statefulSet appsv1.StatefulSet
+			helm.UnmarshalK8SYaml(t, output, &statefulSet)
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+			// then
+			env := statefulSet.Spec.Template.Spec.Containers[0].Env
+			require.Contains(t, env,
+				corev1.EnvVar{
+					Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
+					Value: "true",
+				})
+		},
+	}, {
+		Name:                    "TestIngressEnabledWithKeycloakCustomContextPathWithTemplateArgs",
+		HelmOptionsExtraArgs:    map[string][]string{"install": {"--debug"}},
+		RenderTemplateExtraArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
+		CaseTemplates: &testhelpers.CaseTemplate{
+			Templates: nil,
+		},
+		Values: map[string]string{
+			"global.ingress.enabled":               "true",
+			"global.identity.keycloak.contextPath": "/custom",
+			"identityKeycloak.enabled":             "true",
+			"identityKeycloak.httpRelativePath":    "/custom",
+			"identity.contextPath":                 "/identity",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var statefulSet appsv1.StatefulSet
+			helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
-	// then
-	// TODO: Instead of using plain text search, unmarshal the output in an ingress struct and assert the values.
-	s.Require().NotContains(output, "keycloak")
-	s.Require().NotContains(output, "path: /auth")
-	s.Require().NotContains(output, "number: 8443")
-}
-
-func (s *ingressTemplateTest) TestIngressWithContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
+			// then
+			env := statefulSet.Spec.Template.Spec.Containers[0].Env
+			require.Contains(t, env,
+				corev1.EnvVar{
+					Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
+					Value: "/custom",
+				})
+		},
+	}, {
+		Name:                 "TestIngressWithContextPath",
+		HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+		Values: map[string]string{
 			"global.ingress.enabled":              "true",
 			"identity.contextPath":                "/identity",
 			"operate.contextPath":                 "/operate",
@@ -165,29 +153,21 @@ func (s *ingressTemplateTest) TestIngressWithContextPath() {
 			"webModeler.contextPath":              "/modeler",
 			"zeebeGateway.contextPath":            "/zeebe",
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().Contains(output, "kind: Ingress")
-	s.Require().Contains(output, "path: /auth")
-	s.Require().Contains(output, "path: /identity")
-	s.Require().Contains(output, "path: /operate")
-	s.Require().Contains(output, "path: /optimize")
-	s.Require().Contains(output, "path: /tasklist")
-	s.Require().Contains(output, "path: /modeler")
-	s.Require().Contains(output, "path: /modeler-ws")
-	s.Require().Contains(output, "path: /zeebe")
-}
-
-func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
+		Verifier: func(t *testing.T, output string, err error) {
+			require.Contains(t, output, "kind: Ingress")
+			require.Contains(t, output, "path: /auth")
+			require.Contains(t, output, "path: /identity")
+			require.Contains(t, output, "path: /operate")
+			require.Contains(t, output, "path: /optimize")
+			require.Contains(t, output, "path: /tasklist")
+			require.Contains(t, output, "path: /modeler")
+			require.Contains(t, output, "path: /modeler-ws")
+			require.Contains(t, output, "path: /zeebe")
+		},
+	}, {
+		Name:                 "TestIngressComponentWithNoContextPath",
+		HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+		Values: map[string]string{
 			"global.ingress.enabled":              "true",
 			"identity.contextPath":                "",
 			"operate.contextPath":                 "",
@@ -197,27 +177,19 @@ func (s *ingressTemplateTest) TestIngressComponentWithNoContextPath() {
 			"webModeler.restapi.mail.fromAddress": "example@example.com",
 			"webModeler.contextPath":              "",
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().NotContains(output, "name: camunda-platform-test-identity")
-	s.Require().NotContains(output, "name: camunda-platform-test-operate")
-	s.Require().NotContains(output, "name: camunda-platform-test-optimize")
-	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
-	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
-	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-	s.Require().NotContains(output, "name: camunda-platform-test-zeebe-gateway")
-}
-
-func (s *ingressTemplateTest) TestIngressComponentDisabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
+		Verifier: func(t *testing.T, output string, err error) {
+			require.NotContains(t, output, "name: camunda-platform-test-identity")
+			require.NotContains(t, output, "name: camunda-platform-test-operate")
+			require.NotContains(t, output, "name: camunda-platform-test-optimize")
+			require.NotContains(t, output, "name: camunda-platform-test-tasklist")
+			require.NotContains(t, output, "name: camunda-platform-test-web-modeler-webapp")
+			require.NotContains(t, output, "name: camunda-platform-test-web-modeler-websockets")
+			require.NotContains(t, output, "name: camunda-platform-test-zeebe-gateway")
+		},
+	}, {
+		Name:                 "TestIngressComponentDisabled",
+		HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+		Values: map[string]string{
 			"global.ingress.enabled": "true",
 			"operate.identity":       "false",
 			"operate.enabled":        "false",
@@ -226,19 +198,15 @@ func (s *ingressTemplateTest) TestIngressComponentDisabled() {
 			"webModeler.enabled":     "false",
 			"zeebe.enabled":          "false",
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().NotContains(output, "name: camunda-platform-test-identity")
-	s.Require().NotContains(output, "name: camunda-platform-test-operate")
-	s.Require().NotContains(output, "name: camunda-platform-test-optimize")
-	s.Require().NotContains(output, "name: camunda-platform-test-tasklist")
-	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
-	s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-	s.Require().NotContains(output, "name: camunda-platform-test-zeebe-gateway")
+		Verifier: func(t *testing.T, output string, err error) {
+			require.NotContains(t, output, "name: camunda-platform-test-identity")
+			require.NotContains(t, output, "name: camunda-platform-test-operate")
+			require.NotContains(t, output, "name: camunda-platform-test-optimize")
+			require.NotContains(t, output, "name: camunda-platform-test-tasklist")
+			require.NotContains(t, output, "name: camunda-platform-test-web-modeler-webapp")
+			require.NotContains(t, output, "name: camunda-platform-test-web-modeler-websockets")
+			require.NotContains(t, output, "name: camunda-platform-test-zeebe-gateway")
+		},
+	}}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
