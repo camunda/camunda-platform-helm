@@ -65,6 +65,7 @@ data:
     {{- end }}
     zeebe:
       gateway:
+        enable: true
         {{- if .Values.global.identity.auth.enabled }}
         security:
           authentication:
