@@ -3597,7 +3597,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.17.0-debian-12-r9"
+                            "default": "14.17.0-debian-12-r10"
                         }
                     }
                 },
@@ -3777,7 +3777,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha3-rc1"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4211,7 +4211,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2-rc1"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4907,7 +4907,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
