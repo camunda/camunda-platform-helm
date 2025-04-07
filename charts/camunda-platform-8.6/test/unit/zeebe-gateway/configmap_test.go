@@ -16,12 +16,12 @@ package gateway
 
 import (
 	"camunda-platform/test/unit/camunda"
+	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type configmapTemplateTest struct {
+type ConfigmapTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -44,7 +44,7 @@ func TestConfigmapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configmapTemplateTest{
+	suite.Run(t, &ConfigmapTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -68,47 +68,43 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 	})
 }
 
-func (s *configmapTemplateTest) TestZeebeMultiTenancyEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled":  "true",
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestZeebeMultiTenancyEnabled",
+			Values: map[string]string{
+				"global.multitenancy.enabled": "true",
+				"identityPostgresql.enabled":  "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication camunda.ZeebeApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+				// then
+				s.Require().Equal(true, configmapApplication.Zeebe.Gateway.MultiTenancy.Enabled)
+				s.Require().Equal(true, configmapApplication.Zeebe.Broker.Gateway.MultiTenancy.Enabled)
+			},
+		}, {
+			Name: "TestZeebeIdentityAuthenticationEnabled",
+			Values: map[string]string{
+				"global.identity.auth.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication camunda.ZeebeApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+				// then
+				s.Require().Equal("identity", configmapApplication.Zeebe.Gateway.Security.Authentication.Mode)
+				s.Require().Equal("identity-auth", configmapApplication.Spring.Profiles.Active)
+				s.Require().Equal("zeebe-api", configmapApplication.Camunda.Identity.Audience)
+				s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendUrl)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication camunda.ZeebeApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
-
-	// then
-	s.Require().Equal(true, configmapApplication.Zeebe.Gateway.MultiTenancy.Enabled)
-	s.Require().Equal(true, configmapApplication.Zeebe.Broker.Gateway.MultiTenancy.Enabled)
-}
-
-func (s *configmapTemplateTest) TestZeebeIdentityAuthenticationEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.enabled": "true",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication camunda.ZeebeApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
-
-	// then
-	s.Require().Equal("identity", configmapApplication.Zeebe.Gateway.Security.Authentication.Mode)
-	s.Require().Equal("identity-auth", configmapApplication.Spring.Profiles.Active)
-	s.Require().Equal("zeebe-api", configmapApplication.Camunda.Identity.Audience)
-	s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendUrl)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
