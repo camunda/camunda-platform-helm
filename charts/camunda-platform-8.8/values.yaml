@@ -302,7 +302,7 @@ global:
         enabled: false
         ## @param global.identity.auth.admin.clientId defines the client id.
         clientId: admin
-        ## @param global.identity.auth.admin.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.admin.existingSecret.name
+        ## @param global.identity.auth.admin.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.admin.existingSecret.name.
         existingSecret: ""
         ## @param global.identity.auth.admin.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-admin-client-token
@@ -339,7 +339,7 @@ global:
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
         wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.console.existingSecret.name
+        ## @param global.identity.auth.console.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
         existingSecret: ""
         ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-console-client-token
@@ -369,7 +369,7 @@ global:
       connectors:
         ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.connectors.existingSecret.name
+        ## @param global.identity.auth.connectors.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
         existingSecret: ""
         ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-connectors-client-token
@@ -380,7 +380,7 @@ global:
         audience: core-api
         ## @param global.identity.auth.core.clientId defines the client id, which is used by Core in authentication flows.
         clientId: core
-        ## @param global.identity.auth.core.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.core.existingSecret.name
+        ## @param global.identity.auth.core.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.core.existingSecret.name.
         existingSecret: ""
         ## @param global.identity.auth.core.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-core-client-token
@@ -397,7 +397,7 @@ global:
         audience: optimize-api
         ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in authentication flows.
         clientId: optimize
-        ## @param global.identity.auth.optimize.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.optimize.existingSecret.name
+        ## @param global.identity.auth.optimize.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.optimize.existingSecret.name.
         existingSecret: ""
         ## @param global.identity.auth.optimize.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-optimize-client-token
@@ -726,7 +726,7 @@ identity:
   ## @param identity.externalDatabase.username Non-root username
   ## @param identity.externalDatabase.password Password for the non-root username
   ## @param identity.externalDatabase.database The database name
-  ## @param identity.externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
+  ## @param identity.externalDatabase.existingSecret Name of an existing Kubernetes Secret containing the external database credentials for Identity.
   ## @param identity.externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
@@ -1279,7 +1279,7 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret can be used to provide the name of an existing secret resource containing the database password
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] A string literal secret can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.externalDatabase.existingSecret.name.
       existingSecret: ""
       ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the database password
       existingSecretPasswordKey: "database-password"
@@ -1296,7 +1296,7 @@ webModeler:
       smtpPassword: ""
       ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
-      ## @param webModeler.restapi.mail.existingSecret can be used to provide the name of an existing secret resource containing the SMTP password
+      ## @param webModeler.restapi.mail.existingSecret [string,object] A string literal SMTP password can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.mail.existingSecret.name.
       existingSecret: ""
       ## @param webModeler.restapi.mail.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the SMTP password
       existingSecretPasswordKey: "smtp-password"
