@@ -252,7 +252,7 @@ global:
       connectors:
         ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret Can be used to set a custom Connectors password. Provide it directly as a string, or reference an existing Kubernetes Secret by setting global.identity.auth.connectors.existingSecret.name. If not set, a random secret is generated.
+        ## @param global.identity.auth.connectors.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.connectors.existingSecret.name
         existingSecret:
         ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: connectors-secret
@@ -263,7 +263,7 @@ global:
         clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret Can be used to set a custom Identity password. Provide it directly as a string, or reference an existing Kubernetes Secret by setting global.identity.auth.identity.existingSecret.name. This should ONLY be used when configuring an external OIDC provider. If not set, a random secret is generated.
+        ## @param global.identity.auth.identity.existingSecret [string,object] can be used to use an own existing secret. This should ONLY be used for an external OIDC provider. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.identity.existingSecret.name
         existingSecret:
         ## @param global.identity.auth.identity.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-secret
@@ -283,7 +283,7 @@ global:
         clientId: operate
         ## @param global.identity.auth.operate.audience defines the audience, which is used by Operate.
         audience: operate-api
-        ## @param global.identity.auth.operate.existingSecret Can be used to set a custom Operate password. Provide it directly as a string, or reference an existing Kubernetes Secret by setting global.identity.auth.operate.existingSecret.name. If not set, a random secret is generated.
+        ## @param global.identity.auth.operate.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.operate.existingSecret.name
         existingSecret:
         ## @param global.identity.auth.operate.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: operate-secret
@@ -298,7 +298,7 @@ global:
         clientId: tasklist
         ## @param global.identity.auth.tasklist.audience defines the audience, which is used by Tasklist.
         audience: tasklist-api
-        ## @param global.identity.auth.tasklist.existingSecret Can be used to set a custom Tasklist password. Provide it directly as a string, or reference an existing Kubernetes Secret by setting global.identity.auth.tasklist.existingSecret.name. If not set, a random secret is generated.
+        ## @param global.identity.auth.tasklist.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.tasklist.existingSecret.name
         existingSecret:
         ## @param global.identity.auth.tasklist.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: tasklist-secret
@@ -313,7 +313,7 @@ global:
         clientId: optimize
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
         audience: optimize-api
-        ## @param global.identity.auth.optimize.existingSecret Can be used to set a custom Optimize password. Provide it directly as a string, or reference an existing Kubernetes Secret by setting global.identity.auth.optimize.existingSecret.name. If not set, a random secret is generated.
+        ## @param global.identity.auth.optimize.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.optimize.existingSecret.name
         existingSecret:
         ## @param global.identity.auth.optimize.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: optimize-secret
@@ -343,7 +343,7 @@ global:
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
         wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret Can be used to set a custom Console password. Provide it directly as a string, or reference an existing Kubernetes Secret by setting global.identity.auth.console.existingSecret.name. If not set, a random secret is generated.
+        ## @param global.identity.auth.console.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.console.existingSecret.name
         existingSecret:
         ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: console-secret
@@ -356,7 +356,7 @@ global:
       zeebe:
         ## @param global.identity.auth.zeebe.clientId defines the client id, which is used by Zeebe in authentication flows.
         clientId: zeebe
-        ## @param global.identity.auth.zeebe.existingSecret Can be used to set a custom password for Zeebe authentication. Provide it directly as a string, or reference an existing Kubernetes Secret by setting global.identity.auth.zeebe.existingSecret.name. If not set, a random secret is generated.
+        ## @param global.identity.auth.zeebe.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.zeebe.existingSecret.name
         existingSecret:
         ## @param global.identity.auth.zeebe.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: zeebe-secret
@@ -2811,7 +2811,7 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret Can be used to set a custom database password for Web Modeler. Provide it directly as a string, or reference an existing Kubernetes Secret by setting webModeler.restapi.externalDatabase.existingSecret.name. The Secret must contain the database password.
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] can be used to use an own existing secret. Can also reference a k8s secret instead of a string literal by specifying webModeler.restapi.externalDatabase.existingSecret.name
       existingSecret:
       ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the database password
       existingSecretPasswordKey: "database-password"
