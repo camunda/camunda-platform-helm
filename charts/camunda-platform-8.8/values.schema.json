@@ -2399,11 +2399,6 @@
                                     "description": "can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set",
                                     "default": ""
                                 },
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "Can be used to set a custom database password for Web Modeler. Provide it directly as a string, or reference an existing Kubernetes Secret by setting webModeler.restapi.externalDatabase.existingSecret.name. The Secret must contain the database password.",
-                                    "default": ""
-                                },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
                                     "description": "can be used to provide the name of an existing secret key containing the database password",
@@ -2438,11 +2433,6 @@
                                     "type": "boolean",
                                     "description": "if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
                                     "default": true
-                                },
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "Can be used to set the SMTP password for Web Modeler. Provide it directly as a string, or reference an existing Kubernetes Secret by setting webModeler.restapi.mail.existingSecret.name. The Secret must contain the SMTP password.",
-                                    "default": ""
                                 },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
