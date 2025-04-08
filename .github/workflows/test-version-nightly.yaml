@@ -33,7 +33,7 @@ jobs:
     needs: init
     runs-on: ubuntu-latest
     outputs:
-      values-content: ${{ steps.cat-file.outputs.value_content }}
+      values-content: ${{ steps.cat-file.outputs.values_content }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -69,6 +69,7 @@ jobs:
           echo ${{ matrix.scenario-file }}
           echo "below are the values:"
           echo $VALUES_CONTENT
+          echo ${{ needs.read-values.outputs.values_content }}
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
