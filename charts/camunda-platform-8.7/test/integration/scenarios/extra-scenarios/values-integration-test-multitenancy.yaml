@@ -93,10 +93,6 @@ identity:
       value: console-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
       value: "write:*"
-  contextPath: "/identity"
-  firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
 
 identityPostgresql:
   enabled: true
