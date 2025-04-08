@@ -50,13 +50,15 @@ jobs:
       id-token: write
       deployments: write
     secrets: inherit
-    uses: ./.github/workflows/test-integration-template.yaml
-    with:
-      identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
-      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
-      platforms: "gke"
-      flows: "install,upgrade"
-      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      extra-values: $(cat ${{ matrix.scenario-file }})
+    steps:
+      - name: test
+        uses: ./.github/workflows/test-integration-template.yaml
+        with:
+          identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
+          deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+          platforms: "gke"
+          flows: "install,upgrade"
+          camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+          camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+          caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+          extra-values: <string output of matrix.scenario-file>
