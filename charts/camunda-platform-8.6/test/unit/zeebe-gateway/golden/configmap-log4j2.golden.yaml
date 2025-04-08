@@ -40,6 +40,7 @@ data:
         baseUrl: "http://camunda-platform-test-identity:80"
     zeebe:
       gateway:
+        enable: true
         security:
           authentication:
             mode: identity
