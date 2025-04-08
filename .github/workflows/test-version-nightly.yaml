@@ -38,6 +38,23 @@ jobs:
         run: |
           echo ${{ matrix.version }}
           echo ${{ matrix.scenario-file }}
+  read-values:
+    needs: init
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          repository: camunda/camunda-platform-helm
+      - name: cat-file
+        env:
+          CHART_VERSION: ${{ matrix.version }}
+          SNENARIO_FILE: ${{ matrix.scenario-file }}
+        run: |
+          VALUES_CONTENT= $(chart/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SNENARIO_FILE})
+          echo "values_content=$VALUES_CONTENT" >> $GITHUB_OUTPUT
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
@@ -50,15 +67,13 @@ jobs:
       id-token: write
       deployments: write
     secrets: inherit
-    steps:
-      - name: test
-        uses: ./.github/workflows/test-integration-template.yaml
-        with:
-          identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
-          deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
-          platforms: "gke"
-          flows: "install,upgrade"
-          camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-          camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-          caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-          extra-values: <string output of matrix.scenario-file>
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      platforms: "gke"
+      flows: "install,upgrade"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      extra-values: $(cat ${{ matrix.scenario-file }})
