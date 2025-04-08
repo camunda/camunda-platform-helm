@@ -57,16 +57,6 @@ jobs:
             echo
             echo ANY_DELIMITER_YOU_WANT
           } >> "$GITHUB_OUTPUT"
-      - name: Test output
-        id: test
-        run: |
-          {
-            echo 'output_name<<ANY_DELIMITER_YOU_WANT'
-            echo ${{ steps.cat-file.outputs.values_content }}
-            echo
-            echo ANY_DELIMITER_YOU_WANT
-          } >> "$VALUES_CONTENT" 
-          echo $VALUES_CONTENT
   check:
     needs: [init, read-values]
     runs-on: ubuntu-latest
