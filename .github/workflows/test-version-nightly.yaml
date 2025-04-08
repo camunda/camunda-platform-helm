@@ -61,7 +61,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
     env:
-      VALUES_CONTENT: ${{ needs.read-values.outputs.values_content }}
+      VALUES_CONTENT: ${{ needs.read-values.outputs.values-content }}
     steps:
       - name: test
         run: |
