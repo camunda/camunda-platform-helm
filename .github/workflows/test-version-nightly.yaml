@@ -52,6 +52,7 @@ jobs:
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
           VALUES_CONTENT=$(cat "charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE}")
+          echo $VALUES_CONTENT
           {
             echo 'test<<EOF'
             echo "${VALUES_CONTENT}"
@@ -70,6 +71,7 @@ jobs:
         run: |
           echo ${{ matrix.version }}
           echo ${{ matrix.scenario-file }}
+          echo "below are the values:"
           echo $VALUES_CONTENT
   # integration:
   #   if: ${{ needs.init.outputs.matrix != '[]' }}
