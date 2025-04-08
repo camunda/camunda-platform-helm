@@ -52,7 +52,7 @@ jobs:
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
           {
-            echo 'output_name<<ANY_DELIMITER_YOU_WANT'
+            echo 'values_content<<ANY_DELIMITER_YOU_WANT'
             cat "charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE}"
             echo
             echo ANY_DELIMITER_YOU_WANT
