@@ -3,6 +3,10 @@ global:
     enabled: true
 
 identity:
+  postgresql:
+    enabled: true
+    auth:
+      existingSecret: "integration-test-credentials"
   env:
     - name: IDENTITY_TENANTS_0_NAME
       value: Default
@@ -88,5 +92,3 @@ identity:
       value: web-modeler-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_DEFINITION
       value: "write:*"
-  postgresql:
-    enabled: true
