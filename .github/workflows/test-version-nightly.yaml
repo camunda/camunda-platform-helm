@@ -54,22 +54,6 @@ jobs:
           echo "values_content<<EOF" >> $GITHUB_OUTPUT
           cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE} >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-  check:
-    needs: [init, read-values]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-    env:
-      VALUES_CONTENT: ${{ needs.read-values.outputs.values-content }}
-    steps:
-      - name: test
-        run: |
-          echo ${{ matrix.version }}
-          echo ${{ matrix.scenario-file }}
-          echo "below are the values:"
-          echo $VALUES_CONTENT
-          echo ${{ needs.read-values.outputs.values-content }}
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
