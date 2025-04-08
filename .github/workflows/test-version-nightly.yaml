@@ -70,6 +70,7 @@ jobs:
         run: |
           echo ${{ matrix.version }}
           echo ${{ matrix.scenario-file }}
+          echo ${{ needs.read-values.outputs.values_content }}
           echo "below are the values:"
           echo $VALUES_CONTENT
   integration:
