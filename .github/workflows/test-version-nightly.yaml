@@ -69,10 +69,11 @@ jobs:
     uses: ./.github/workflows/test-integration-template.yaml
     with:
       identifier: "${{ matrix.scenario-file }}-intg-${{ matrix.version }}"
-      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      deployment-ttl: 1d
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      #not sure what to pu as the git-ref since this will be a cron job and not a PR
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
       extra-values: |
