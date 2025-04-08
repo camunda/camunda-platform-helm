@@ -107,7 +107,6 @@ data:
                 waitPeriodBeforeArchiving: "1h"
                 delayBetweenRuns: 2000
                 maxDelayBetweenRuns: 60000
-              createSchema: true
 
     camunda:
       persistent:
@@ -140,7 +139,7 @@ data:
         type: elasticsearch
         # Cluster name
         clusterName: elasticsearch
-        # Elasticsearch full url
+        # Database full url
         url: "http://camunda-platform-test-elasticsearch:9200"
 
       #

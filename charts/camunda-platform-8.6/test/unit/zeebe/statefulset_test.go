@@ -61,6 +61,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				var statefulSet appsv1.StatefulSet
 				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
+
 				// then
 				s.Require().Equal("bar", statefulSet.Spec.Template.Labels["foo"])
 			},

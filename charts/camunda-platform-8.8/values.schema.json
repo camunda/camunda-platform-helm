@@ -1316,7 +1316,7 @@
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "Name of an existing secret resource containing the database credentials",
+                            "description": "Name of an existing Kubernetes Secret containing the external database credentials for Identity.",
                             "default": ""
                         },
                         "existingSecretPasswordKey": {
@@ -2399,11 +2399,6 @@
                                     "description": "can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set",
                                     "default": ""
                                 },
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "can be used to provide the name of an existing secret resource containing the database password",
-                                    "default": ""
-                                },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
                                     "description": "can be used to provide the name of an existing secret key containing the database password",
@@ -2438,11 +2433,6 @@
                                     "type": "boolean",
                                     "description": "if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
                                     "default": true
-                                },
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "can be used to provide the name of an existing secret resource containing the SMTP password",
-                                    "default": ""
                                 },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
@@ -3597,7 +3587,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.17.0-debian-12-r9"
+                            "default": "14.17.0-debian-12-r10"
                         }
                     }
                 },
@@ -3777,7 +3767,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha3-rc1"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4211,7 +4201,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2-rc1"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4907,7 +4897,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha2"
+                            "default": "8.8.0-alpha3"
                         },
                         "pullSecrets": {
                             "type": "array",

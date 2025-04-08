@@ -165,13 +165,12 @@ data:
           CamundaExporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
-              {{- if .Values.core.index.prefix }}
-              index:
-                prefix: {{ .Values.core.index.prefix | quote }}
-              {{- end }}
               connect:
                 type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
                 url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
+                {{- if .Values.core.index.prefix }}
+                indexPrefix: {{ .Values.core.index.prefix | quote }}
+                {{- end }}
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
                 username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
               {{- end }}
@@ -185,10 +184,7 @@ data:
               {{- if .Values.core.history.retention.enabled }}
                 retention:
                   enabled: true
-                  minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
-                  policyName: {{ .Values.core.history.retention.policyName | quote }}
               {{- end }}
-              createSchema: true
         {{- else -}}
           {{ " {}" }}
         {{- end }}
@@ -230,23 +226,26 @@ data:
       #
       # Camunda Database Configuration.
       #
-      {{- if .Values.global.elasticsearch.enabled }}
+      {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
       database:
-        type: elasticsearch
+        type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
+        {{- if .Values.global.elasticsearch.enabled }}
         # Cluster name
         clusterName: {{ .Values.global.elasticsearch.clusterName }}
-        {{- if .Values.global.elasticsearch.external }}
-        username: {{ .Values.global.elasticsearch.auth.username | quote }}
         {{- end }}
-        # Elasticsearch full url
-        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-      {{- end }}
-      {{- if .Values.global.opensearch.enabled }}
-      database:
-        type: opensearch
-        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-        {{- if .Values.global.opensearch.auth.username }}
-        username: {{ .Values.global.opensearch.auth.username | quote }}
+        {{- if or .Values.global.elasticsearch.external .Values.global.opensearch.auth.username }}
+        username: {{ if .Values.global.elasticsearch.enabled }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
+        {{- end }}
+        # Database full url
+        url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
+        {{- if .Values.core.index.prefix }}
+        indexPrefix: {{ .Values.core.index.prefix | quote }}
+        {{- end }}
+        {{- if .Values.core.history.retention.enabled }}
+        retention:
+          enabled: true
+          minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
+          policyName: {{ .Values.core.history.retention.policyName | quote }}
         {{- end }}
       {{- end }}
 
