@@ -51,8 +51,12 @@ jobs:
           CHART_VERSION: ${{ matrix.version }}
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
-          VALUES_CONTENT=$(cat "charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE}")
-          echo "values_content=$(cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE})" >> $GITHUB_OUTPUT
+          {
+            echo 'output_name<<ANY_DELIMITER_YOU_WANT'
+            cat "charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE}"
+            echo
+            echo ANY_DELIMITER_YOU_WANT
+          } >> "$GITHUB_OUTPUT"
   check:
     needs: [init, read-values]
     runs-on: ubuntu-latest
