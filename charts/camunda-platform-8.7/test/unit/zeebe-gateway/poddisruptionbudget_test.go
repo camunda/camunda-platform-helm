@@ -15,13 +15,13 @@
 package gateway
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -44,7 +44,7 @@ func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
 	})
 }
 
-type podDisruptionBudgetTest struct {
+type PodDisruptionBudgetTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -58,7 +58,7 @@ func TestPodDisruptionBudgetTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &podDisruptionBudgetTest{
+	suite.Run(t, &PodDisruptionBudgetTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -66,22 +66,24 @@ func TestPodDisruptionBudgetTemplate(t *testing.T) {
 	})
 }
 
-func (s *podDisruptionBudgetTest) TestContainerMinAvailableMutualExclusiveWithMaxUnavailable() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"zeebeGateway.podDisruptionBudget.enabled":      "true",
-			"zeebeGateway.podDisruptionBudget.minAvailable": "1",
+func (s *PodDisruptionBudgetTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerMinAvailableMutualExclusiveWithMaxUnavailable",
+			Values: map[string]string{
+				"zeebeGateway.podDisruptionBudget.enabled":      "true",
+				"zeebeGateway.podDisruptionBudget.minAvailable": "1",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var podDisruptionBudget v1.PodDisruptionBudget
+				helm.UnmarshalK8SYaml(s.T(), output, &podDisruptionBudget)
+
+				// then
+				s.Require().EqualValues(1, podDisruptionBudget.Spec.MinAvailable.IntVal)
+				s.Require().Nil(podDisruptionBudget.Spec.MaxUnavailable)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var podDisruptionBudget v1.PodDisruptionBudget
-	helm.UnmarshalK8SYaml(s.T(), output, &podDisruptionBudget)
-
-	// then
-	s.Require().EqualValues(1, podDisruptionBudget.Spec.MinAvailable.IntVal)
-	s.Require().Nil(podDisruptionBudget.Spec.MaxUnavailable)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
