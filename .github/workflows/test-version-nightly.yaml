@@ -62,8 +62,12 @@ jobs:
           CHART_VERSION: ${{ matrix.version }}
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
-          VALUES_CONTENT=$(cat "charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE}" | base64)
-          echo "values_content=${VALUES_CONTENT}" >> "$GITHUB_OUTPUT"
+          VALUES_CONTENT=$(cat "charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE}")
+          {
+            echo 'test<<EOF'
+            echo "${VALUES_CONTENT}"
+            echo EOF
+          } >> $GITHUB_OUTPUT
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
