@@ -5,17 +5,6 @@ on:
   pull_request:
   workflow_dispatch: {}
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
-env:
-  CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE: ${{ !secrets.ACTIONS_STEP_DEBUG }}
-  GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-  GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
-  KUBECONFIG: .github/config/kubeconfig
-
 permissions:
   contents: read
 
@@ -38,6 +27,13 @@ jobs:
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
+  check:
+    needs: init
+    runs-on: ubuntu-latest
+    steps:
+      - name: test
+        run: |
+          echo ${{ fromJson(needs.init.outputs.matrix) }}
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
