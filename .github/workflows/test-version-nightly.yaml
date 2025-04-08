@@ -43,6 +43,8 @@ jobs:
   read-values:
     needs: init
     runs-on: ubuntu-latest
+    outputs:
+      values-content: ${{ steps.cat-file.outputs.value_content }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
