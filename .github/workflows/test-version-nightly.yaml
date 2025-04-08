@@ -57,6 +57,8 @@ jobs:
             echo
             echo ANY_DELIMITER_YOU_WANT
           } >> "$GITHUB_OUTPUT"
+      - name: Test output
+        run: echo ${{ steps.cat-file.outputs.values_content }}
   check:
     needs: [init, read-values]
     runs-on: ubuntu-latest
