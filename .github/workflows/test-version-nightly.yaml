@@ -91,4 +91,4 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      extra-values: "${{ needs.read-values.outputs.values_content }}"
+      extra-values: "${{ needs.read-values.outputs.values-content }}"
