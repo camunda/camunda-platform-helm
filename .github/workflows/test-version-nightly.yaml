@@ -59,4 +59,4 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      extra-values: "${{ matrix.scenario-file }}"
+      extra-values: $(cat ${{ matrix.scenario-file }})
