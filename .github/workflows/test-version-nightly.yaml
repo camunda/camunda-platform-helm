@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: test
         run: |
-          echo ${{ fromJson(needs.init.outputs.matrix) }}
+          echo ${{ needs.init.outputs.matrix }}
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
