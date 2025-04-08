@@ -52,7 +52,7 @@ jobs:
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
           echo "values_content<<EOF" >> $GITHUB_OUTPUT
-          cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE} >> $GITHUB_OUTPUT
+          cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE} >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
