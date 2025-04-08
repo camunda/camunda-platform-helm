@@ -68,11 +68,12 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
+      identifier: "${{ matrix.scenario-file }}-intg-${{ matrix.version }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      extra-values: "${{ needs.read-values.outputs.values-content }}"
+      extra-values: |
+        "${{ needs.read-values.outputs.values-content }}"
