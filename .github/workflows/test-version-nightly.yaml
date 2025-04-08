@@ -71,7 +71,7 @@ jobs:
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
-    needs: init
+    needs: [init, read-values]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -89,4 +89,4 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      extra-values: $(cat ${{ matrix.scenario-file }})
+      extra-values: "${{ needs.read-values.outputs.values-content }}"
