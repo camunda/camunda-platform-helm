@@ -69,7 +69,7 @@ jobs:
           echo ${{ matrix.scenario-file }}
           echo "below are the values:"
           echo $VALUES_CONTENT
-          echo ${{ needs.read-values.outputs.values_content }}
+          echo ${{ needs.read-values.outputs.values-content }}
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
