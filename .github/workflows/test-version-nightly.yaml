@@ -42,18 +42,18 @@ jobs:
       id-token: write
       deployments: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
         with:
           repository: camunda/camunda-platform-helm
-      - name: cat-file
+      - name: Read Values File
         id: cat-file
         env:
           CHART_VERSION: ${{ matrix.version }}
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
-          echo 'values_content<<EOF' >> $GITHUB_OUTPUT
+          echo "values_content<<EOF" >> $GITHUB_OUTPUT
           cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/chart-full-setup/${SCENARIO_FILE} >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
   check:
     needs: [init, read-values]
     runs-on: ubuntu-latest
