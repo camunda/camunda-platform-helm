@@ -67,6 +67,24 @@ func (s *serviceTest) TestContainerSetGlobalAnnotations() {
 	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 }
 
+func (s *serviceTest) TestContainerServiceAnnotations() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.service.annotations.foo": "bar",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var service coreV1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+	// then
+	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+}
+
 func (s *serviceTest) TestExtraPorts() {
 	// given
 	options := &helm.Options{
@@ -93,5 +111,4 @@ func (s *serviceTest) TestExtraPorts() {
 	s.Require().Equal(expectedPort, ports[3].Port)
 	s.Require().Equal(expectedName, ports[3].Name)
 	s.Require().Equal(expectedTargetPort, ports[3].TargetPort.IntVal)
-
 }
