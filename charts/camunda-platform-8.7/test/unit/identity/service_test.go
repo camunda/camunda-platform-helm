@@ -15,19 +15,19 @@
 package identity
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type serviceTest struct {
+type ServiceTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -41,7 +41,7 @@ func TestServiceTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &serviceTest{
+	suite.Run(t, &ServiceTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -49,60 +49,53 @@ func TestServiceTemplate(t *testing.T) {
 	})
 }
 
-func (s *serviceTest) TestContainerSetGlobalAnnotations() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.annotations.foo": "bar",
+func (s *ServiceTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerSetGlobalAnnotations",
+			Values: map[string]string{
+				"global.annotations.foo": "bar",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+			},
+		}, {
+			Name: "TestContainerServiceAnnotations",
+			Values: map[string]string{
+				"identity.service.annotations.foo": "bar",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+			},
+		}, {
+			Name: "TestKeycloakExternalService",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/identity/keycloak-service.yaml"},
+			},
+			Values: map[string]string{
+				"global.identity.keycloak.internal":     "true",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
+				"global.identity.keycloak.url.port":     "8443",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
+				s.Require().Equal("keycloak.prod.svc.cluster.local", service.Spec.ExternalName)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var service coreV1.Service
-	helm.UnmarshalK8SYaml(s.T(), output, &service)
-
-	// then
-	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
-}
-
-func (s *serviceTest) TestContainerServiceAnnotations() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.service.annotations.foo": "bar",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var service coreV1.Service
-	helm.UnmarshalK8SYaml(s.T(), output, &service)
-
-	// then
-	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
-}
-
-func (s *serviceTest) TestKeycloakExternalService() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.keycloak.internal":     "true",
-			"global.identity.keycloak.url.protocol": "https",
-			"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
-			"global.identity.keycloak.url.port":     "8443",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"templates/identity/keycloak-service.yaml"})
-	var service coreV1.Service
-	helm.UnmarshalK8SYaml(s.T(), output, &service)
-
-	// then
-	s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
-	s.Require().Equal("keycloak.prod.svc.cluster.local", service.Spec.ExternalName)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
