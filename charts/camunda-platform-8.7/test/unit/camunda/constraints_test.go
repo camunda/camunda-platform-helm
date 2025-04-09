@@ -15,18 +15,17 @@
 package camunda
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type constraintTemplateTest struct {
+type ConstraintTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -40,7 +39,7 @@ func TestConstraintTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &constraintTemplateTest{
+	suite.Run(t, &ConstraintTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -48,85 +47,62 @@ func TestConstraintTemplate(t *testing.T) {
 	})
 }
 
-func (s *constraintTemplateTest) TestExistingSecretConstraintDisplays() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
-			"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExistingSecretConstraintDisplays",
+			Values: map[string]string{
+				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
+			},
+		}, {
+			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
+			Values: map[string]string{
+				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+				"global.identity.auth.zeebe.existingSecret.name":       "zeebe-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				s.Require().NotContains(err.Error(), "global.identity.auth.zeebe.existingSecret")
+			},
+		}, {
+			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentThatsDisabled",
+			Values: map[string]string{
+				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+				"operate.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				s.Require().NotContains(err.Error(), "global.identity.auth.operate.existingSecret")
+			},
+		}, {
+			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
+			Values: map[string]string{
+				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				s.Require().Nil(err)
+			},
+		}, {
+			Name: "TestContextPathAndRestPathForZeebeGatewayConstraintBothValuesShouldBeTheSame",
+			Values: map[string]string{
+				"zeebeGateway.ingress.rest.enabled": "true",
+				"zeebeGateway.ingress.rest.path":    "/zeebe",
+				"zeebeGateway.contextPath":          "/zeebeRest",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "[camunda][error]")
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
-}
-func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
-			"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
-			"global.identity.auth.zeebe.existingSecret.name":       "zeebe-secret",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().NotContains(err.Error(), "global.identity.auth.zeebe.existingSecret")
-}
-func (s *constraintTemplateTest) TestExistingSecretConstraintDoesNotDisplayErrorForComponentThatsDisabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
-			"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
-			"operate.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().NotContains(err.Error(), "global.identity.auth.operate.existingSecret")
-}
-func (s *constraintTemplateTest) TestExistingSecretConstraintInWarningModeDoesNotPreventInstall() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
-			"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-
-	// then
-	s.Require().Nil(err)
-}
-
-func (s *ConstraintsTemplateTest) TestContextPathAndRestPathForZeebeGatewayConstraintBothValuesShouldBeTheSame() {
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"zeebeGateway.ingress.rest.enabled": "true",
-			"zeebeGateway.ingress.rest.path":    "/zeebe",
-			"zeebeGateway.contextPath":          "/zeebeRest",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, s.templates)
-
-	s.Require().ErrorContains(err, "[camunda][error]")
-
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

@@ -15,19 +15,19 @@
 package camunda
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 )
 
-type configMapTemplateTest struct {
+type ConfigMapTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -41,7 +41,7 @@ func TestConfigMapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configMapTemplateTest{
+	suite.Run(t, &ConfigMapTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -49,42 +49,38 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configMapTemplateTest) TestConfigMapIdentityIssuerURL() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.issuerBackendUrl": "http://keycloak:80/auth/realms/camunda-platform",
+func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConfigMapIdentityIssuerURL",
+			Values: map[string]string{
+				"global.identity.auth.issuerBackendUrl": "http://keycloak:80/auth/realms/camunda-platform",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				// then
+				s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmap.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
+			},
+		}, {
+			Name: "TestConfigMapIdentityIssuerURLWithKeycloakURLSyntax",
+			Values: map[string]string{
+				"global.identity.keycloak.url.protocol": "http",
+				"global.identity.keycloak.url.host":     "keycloak",
+				"global.identity.keycloak.url.port":     "80",
+				"global.identity.keycloak.contextPath":  "/auth/realms/",
+				"global.identity.keycloak.realm":        "camunda-platform",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				// then
+				s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmap.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then
-	s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmap.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
-}
-
-func (s *configMapTemplateTest) TestConfigMapIdentityIssuerURLWithKeycloakURLSyntax() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.keycloak.url.protocol": "http",
-			"global.identity.keycloak.url.host":     "keycloak",
-			"global.identity.keycloak.url.port":     "80",
-			"global.identity.keycloak.contextPath":  "/auth/realms/",
-			"global.identity.keycloak.realm":        "camunda-platform",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then
-	s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmap.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
