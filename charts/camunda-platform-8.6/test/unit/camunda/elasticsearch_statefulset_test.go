@@ -37,10 +37,11 @@ func TestGoldenElasticsearchDefaults(t *testing.T) {
 		IgnoredLines: []string{
 			`\s+.*-secret:\s+.*`,    // ignore auto-generated secrets
 			`\s+checksum/.+?:\s+.*`, // ignore configmap checksums
+			`\s+version:/.+?:\s+.*`, // ignore version due to wrong chart.yaml reference
+
 		},
 		ExtraHelmArgs: []string{
 			"--show-only", "charts/elasticsearch/templates/master/statefulset.yaml",
 		},
 	})
 }
-
