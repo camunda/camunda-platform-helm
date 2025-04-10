@@ -250,7 +250,6 @@ func (s *statefulSetTest) TestInitContainers() {
 	initContainer := statefulSet.Spec.Template.Spec.InitContainers[0]
 	s.Require().Equal("nginx", initContainer.Name)
 	s.Require().Equal("nginx:latest", initContainer.Image)
-
 }
 
 func (s *statefulSetTest) TestContainerOverwriteImageTag() {
@@ -382,7 +381,7 @@ func (s *statefulSetTest) TestContainerSetContainerCommand() {
 }
 
 func (s *statefulSetTest) TestContainerSetLog4j2() {
-	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
 	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
 	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
@@ -409,7 +408,7 @@ func (s *statefulSetTest) TestContainerSetLog4j2() {
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumes() {
-	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
 	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
 	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
@@ -442,7 +441,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumes() {
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
-	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
 	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
 	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
@@ -471,7 +470,7 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeMounts() {
 }
 
 func (s *statefulSetTest) TestContainerSetExtraVolumesAndMounts() {
-	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
 	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
 	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
@@ -535,7 +534,7 @@ func (s *statefulSetTest) TestContainerSetSecurityContext() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"zeebe.containerSecurityContext.privileged":          "true",
+			"zeebe.containerSecurityContext.privileged": "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -593,7 +592,7 @@ func (s *statefulSetTest) TestContainerSetNodeSelector() {
 func (s *statefulSetTest) TestContainerSetAffinity() {
 	// given
 
-	//affinity:
+	// affinity:
 	//	nodeAffinity:
 	//	 requiredDuringSchedulingIgnoredDuringExecution:
 	//	   nodeSelectorTerms:
@@ -690,7 +689,7 @@ func (s *statefulSetTest) TestContainerSetTolerations() {
 }
 
 func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
-	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
 	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
 	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
@@ -728,7 +727,7 @@ func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 }
 
 func (s *statefulSetTest) TestContainerSetPersistenceTypeLocal() {
-	//finding out the length of containers and volumeMounts array before addition of new volumeMount
+	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
 	before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
 	helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
@@ -911,6 +910,7 @@ func (s *statefulSetTest) TestContainerSetSidecar() {
 
 	s.Require().Contains(podContainers, expectedContainer)
 }
+
 func (s *statefulSetTest) TestSetDnsPolicyAndDnsConfig() {
 	// given
 	options := &helm.Options{
