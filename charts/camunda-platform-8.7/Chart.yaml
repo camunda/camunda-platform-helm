@@ -72,9 +72,27 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Disable elasticsearch deprecation warnings"
     - kind: fixed
-      description: "Manual version bumps renovate couldnt do"
+      description: "Update existingSecret params for 8.6 8.7 and 8.8"
     - kind: fixed
-      description: "Adjust the versions for release-please"
+      description: "Add gateway enabled"
+    - kind: fixed
+      description: "Port of new style to camunda unit tests in 8.7"
+    - kind: fixed
+      description: "Refactored console unit tests in 8.7"
+    - kind: fixed
+      description: "Refactor of identity unit tests in 8.7"
+    - kind: fixed
+      description: "Refactored optimize unit tests to new style"
+    - kind: fixed
+      description: "Add elasticsearch golden files"
+    - kind: fixed
+      description: "Refactored web-modeler unit tests to new style"
+    - kind: fixed
+      description: "Refactored tasklist unit tests to new style"
+    - kind: fixed
+      description: "Refactored zeebe unit tests to new style in 8.7"
+    - kind: fixed
+      description: "Refactored zeebe gateway unit tests to new style"
+    - kind: fixed
+      description: "Refactor of connector unit tests to new style in 8.7"
