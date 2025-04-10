@@ -15,19 +15,19 @@
 package tasklist
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 )
 
-type configMapTemplateTest struct {
+type ConfigMapTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -41,7 +41,7 @@ func TestConfigMapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configMapTemplateTest{
+	suite.Run(t, &ConfigMapTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -49,25 +49,27 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configMapTemplateTest) TestConfigMapElasticsearchURL() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.elasticsearch.url": "elasticsearch-test",
+func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConfigMapElasticsearchURL",
+			Values: map[string]string{
+				"global.elasticsearch.url": "elasticsearch-test",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication map[string]any
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yml"], &configmapApplication)
+
+				// TODO: Move Tasklist config to its own struct when we have more tests.
+				elasticsearchURL := configmapApplication["camunda.tasklist"].(map[string]any)["elasticsearch"].(map[string]any)["url"]
+
+				// then
+				s.Require().Equal("elasticsearch-test", elasticsearchURL)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication map[string]interface{}
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yml"], &configmapApplication)
-
-	// TODO: Move Tasklist config to its own struct when we have more tests.
-	elasticsearchURL := configmapApplication["camunda.tasklist"].(map[string]interface{})["elasticsearch"].(map[string]interface{})["url"]
-
-	// then
-	s.Require().Equal("elasticsearch-test", elasticsearchURL)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
