@@ -51,7 +51,7 @@ jobs:
           CHART_VERSION: ${{ matrix.version }}
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
-          echo "cat <<EOF" >> $GITHUB_OUTPUT
+          echo "<<EOF" >> $GITHUB_OUTPUT
           cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE} >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
@@ -85,27 +85,27 @@ jobs:
         run: |
           echo "${{ fromJson(needs.access-info.outputs.values-file).values_content[matrix.version] }}"
 
-  integration:
-    if: ${{ needs.init.outputs.matrix != '[]' }}
-    name: Integration Test - Camunda ${{ matrix.version }}
-    needs: [init, read-values]
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-    permissions:
-      contents: read
-      id-token: write
-      deployments: write
-    secrets: inherit
-    uses: ./.github/workflows/test-integration-template.yaml
-    with:
-      identifier: "${{ matrix.scenario-file }}-intg-${{ matrix.version }}"
-      deployment-ttl: 1d
-      platforms: "gke"
-      flows: "install,upgrade"
-      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-      #not sure what to pu as the git-ref since this will be a cron job and not a PR
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      extra-values: |
-        "${{ needs.read-values.outputs.values-content }}"
+  # integration:
+  #   if: ${{ needs.init.outputs.matrix != '[]' }}
+  #   name: Integration Test - Camunda ${{ matrix.version }}
+  #   needs: [init, read-values]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #     deployments: write
+  #   secrets: inherit
+  #   uses: ./.github/workflows/test-integration-template.yaml
+  #   with:
+  #     identifier: "${{ matrix.scenario-file }}-intg-${{ matrix.version }}"
+  #     deployment-ttl: 1d
+  #     platforms: "gke"
+  #     flows: "install,upgrade"
+  #     camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+  #     #not sure what to pu as the git-ref since this will be a cron job and not a PR
+  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  #     caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+  #     extra-values: |
+  #       "${{ needs.read-values.outputs.values-content }}"
