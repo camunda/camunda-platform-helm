@@ -15,12 +15,12 @@
 package web_modeler
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -49,22 +49,24 @@ func TestConfigmapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configmapTest) TestContainerGenerateRandomPusherAppKey() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                  "true",
-			"webModeler.restapi.mail.fromAddress": "example@example.com",
+func (s *configmapTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerGenerateRandomPusherAppKey",
+			Values: map[string]string{
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configMap coreV1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configMap)
+
+				// then
+				s.Require().NotNil(configMap.Data)
+				s.Require().Regexp("^[a-zA-Z0-9]{20}$", configMap.Data["pusher-app-key"])
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configMap coreV1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configMap)
-
-	// then
-	s.Require().NotNil(configMap.Data)
-	s.Require().Regexp("^[a-zA-Z0-9]{20}$", configMap.Data["pusher-app-key"])
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

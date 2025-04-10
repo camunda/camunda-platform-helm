@@ -15,19 +15,19 @@
 package web_modeler
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type secretTest struct {
+type SecretTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -41,7 +41,7 @@ func TestSecretRestapiTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &secretTest{
+	suite.Run(t, &SecretTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -49,45 +49,41 @@ func TestSecretRestapiTemplate(t *testing.T) {
 	})
 }
 
-func (s *secretTest) TestContainerCreateExternalDatabasePasswordSecret() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                           "true",
-			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"postgresql.enabled":                           "false",
-			"webModeler.restapi.externalDatabase.password": "secret123",
+func (s *SecretTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerCreateExternalDatabasePasswordSecret",
+			Values: map[string]string{
+				"webModeler.enabled":                           "true",
+				"webModeler.restapi.mail.fromAddress":          "example@example.com",
+				"postgresql.enabled":                           "false",
+				"webModeler.restapi.externalDatabase.password": "secret123",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				// then
+				s.Require().NotNil(secret.Data)
+				s.Require().Equal("secret123", string(secret.Data["database-password"]))
+			},
+		}, {
+			Name: "TestContainerCreateSmtpPasswordSecret",
+			Values: map[string]string{
+				"webModeler.enabled":                   "true",
+				"webModeler.restapi.mail.fromAddress":  "example@example.com",
+				"webModeler.restapi.mail.smtpPassword": "secret123",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				// then
+				s.Require().NotNil(secret.Data)
+				s.Require().Equal("secret123", string(secret.Data["smtp-password"]))
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-	// then
-	s.Require().NotNil(secret.Data)
-	s.Require().Equal("secret123", string(secret.Data["database-password"]))
-}
-
-func (s *secretTest) TestContainerCreateSmtpPasswordSecret() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"webModeler.enabled":                   "true",
-			"webModeler.restapi.mail.fromAddress":  "example@example.com",
-			"webModeler.restapi.mail.smtpPassword": "secret123",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-	// then
-	s.Require().NotNil(secret.Data)
-	s.Require().Equal("secret123", string(secret.Data["smtp-password"]))
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
