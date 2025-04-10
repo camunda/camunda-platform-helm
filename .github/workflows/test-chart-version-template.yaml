@@ -20,6 +20,16 @@ permissions:
   contents: read
 
 jobs:
+  debugging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print the concurrency group
+        run: echo "${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ inputs.chart-version }}"
+      - name: Print GitHub Event Object
+        run: cat << OBJECT
+          ${{ toJson(github) }}
+          OBJECT
+
   validation:
     name: Camunda ${{ inputs.chart-version }} - Validation
     uses: ./.github/workflows/chart-validate-template.yaml
