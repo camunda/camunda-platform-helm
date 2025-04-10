@@ -15,20 +15,21 @@
 package operate
 
 import (
-	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
-	"gopkg.in/yaml.v3"
-	corev1 "k8s.io/api/core/v1"
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type configMapTemplateTest struct {
+type ConfigMapTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -42,7 +43,7 @@ func TestConfigMapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configMapTemplateTest{
+	suite.Run(t, &ConfigMapTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -50,100 +51,84 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configMapTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"operate.contextPath": "/operate",
+func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerShouldAddContextPath",
+			Values: map[string]string{
+				"operate.contextPath": "/operate",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OperateConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("/operate", configmapApplication.Server.Servlet.ContextPath)
+			},
+		}, {
+			Name: "TestContainerShouldDisableOperateIntegration",
+			Values: map[string]string{
+				"global.identity.auth.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OperateConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("auth", configmapApplication.Spring.Profiles.Active)
+			},
+		}, {
+			Name: "TestOperateMultiTenancyEnabled",
+			Values: map[string]string{
+				"global.multitenancy.enabled": "true",
+				"identityPostgresql.enabled":  "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OperateConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("true", configmapApplication.CamundaOperate.MultiTenancy.Enabled)
+			},
+		}, {
+			Name:                 "TestRedirectRootUrlTrimsComplexSuffixes",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"operate.contextPath": "/camunda/operate",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OperateConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("http://localhost:8081", configmapApplication.CamundaOperate.Identity.RedirectRootUrl)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication OperateConfigYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("/operate", configmapApplication.Server.Servlet.ContextPath)
-}
-
-func (s *configMapTemplateTest) TestContainerShouldDisableOperateIntegration() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.identity.auth.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication OperateConfigYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("auth", configmapApplication.Spring.Profiles.Active)
-}
-func (s *configMapTemplateTest) TestOperateMultiTenancyEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.multitenancy.enabled": "true",
-			"identityPostgresql.enabled":  "true",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication OperateConfigYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("true", configmapApplication.CamundaOperate.MultiTenancy.Enabled)
-}
-func (s *configMapTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"operate.contextPath": "/camunda/operate",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication OperateConfigYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("http://localhost:8081", configmapApplication.CamundaOperate.Identity.RedirectRootUrl)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
