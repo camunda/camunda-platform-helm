@@ -8,9 +8,13 @@ on:
         description: Chart version to test
         required: true
         type: string
+      pr_number:
+        description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
+        required: true
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ inputs.chart-version }}
+  group: ${{ github.workflow }}-${{ inputs.pr_number }}-${{ inputs.chart-version }}
   cancel-in-progress: true
 
 env:
