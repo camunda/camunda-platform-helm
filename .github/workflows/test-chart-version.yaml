@@ -4,14 +4,14 @@ name: "Test - Chart Version"
 on:
   pull_request:
     paths:
-      - '.github/workflows/chart-validate-template.yaml'
-      - '.github/workflows/test-unit-template.yml'
-      - '.github/workflows/test-integration-template.yaml'
-      - '.github/workflows/test-chart-version-template.yaml'
-      - '.github/workflows/test-chart-version.yaml'
-      - '.tool-versions'
-      - 'charts/camunda-platform-8*/**'
-  workflow_dispatch: { }
+      - ".github/workflows/chart-validate-template.yaml"
+      - ".github/workflows/test-unit-template.yml"
+      - ".github/workflows/test-integration-template.yaml"
+      - ".github/workflows/test-chart-version-template.yaml"
+      - ".github/workflows/test-chart-version.yaml"
+      - ".tool-versions"
+      - "charts/camunda-platform-8*/**"
+  workflow_dispatch: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -48,3 +48,4 @@ jobs:
     secrets: inherit
     with:
       chart-version: "${{ matrix.version }}"
+      pr_number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
