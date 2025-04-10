@@ -28,7 +28,8 @@ get_prs_per_chart_dir () {
     chart_dir="${1}"
     # Get the latest version from main, not from the releas PR as it could be updated in the PR.
     latest_chart_version="$(git show main:${chart_dir}/Chart.yaml | yq '.version')"
-    latest_chart_tag_hash="$(git show-ref --hash camunda-platform-${latest_chart_version})"
+    latest_chart_name="${chart_dir##*/}"
+    latest_chart_tag_hash="$(git show-ref --hash ${latest_chart_name}-${latest_chart_version})"
     cliff_config_file=".github/config/cliff.toml"
     git-cliff ${latest_chart_tag_hash}.. \
         --context \
