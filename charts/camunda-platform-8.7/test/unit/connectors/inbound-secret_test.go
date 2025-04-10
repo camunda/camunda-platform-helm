@@ -15,19 +15,19 @@
 package connectors
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type secretTest struct {
+type SecretTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -41,7 +41,7 @@ func TestSecretRestapiTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &secretTest{
+	suite.Run(t, &SecretTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -49,22 +49,24 @@ func TestSecretRestapiTemplate(t *testing.T) {
 	})
 }
 
-func (s *secretTest) TestContainerCreateConnectorsSecret() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"connectors.enabled":      "true",
-			"connectors.inbound.mode": "credentials",
+func (s *SecretTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestContainerCreateConnectorsSecret",
+			Values: map[string]string{
+				"connectors.enabled":      "true",
+				"connectors.inbound.mode": "credentials",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				// then
+				s.Require().NotNil(secret.Data)
+				s.Require().Regexp("^[a-zA-Z0-9]{10}$", string(secret.Data["connectors-secret"]))
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-	// then
-	s.Require().NotNil(secret.Data)
-	s.Require().Regexp("^[a-zA-Z0-9]{10}$", string(secret.Data["connectors-secret"]))
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
