@@ -15,19 +15,19 @@
 package identity
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
 )
 
-type secretTest struct {
+type SecretTest struct {
 	suite.Suite
 	chartPath  string
 	release    string
@@ -42,7 +42,7 @@ func TestSecretTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &secretTest{
+	suite.Run(t, &SecretTest{
 		chartPath:  chartPath,
 		release:    "camunda-platform-test",
 		namespace:  "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -51,27 +51,28 @@ func TestSecretTemplate(t *testing.T) {
 	})
 }
 
-func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"identity.postgresql.enabled":        "false",
-			"identity.externalDatabase.enabled":  "true",
-			"identity.externalDatabase.password": "super-secure-ext",
+func (s *SecretTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestSecretExternalDatabaseEnabledWithDefinedPassword",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"charts/identity/templates/postgresql-secret.yaml"},
+			},
+			Values: map[string]string{
+				"identity.postgresql.enabled":        "false",
+				"identity.externalDatabase.enabled":  "true",
+				"identity.externalDatabase.password": "super-secure-ext",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				// then
+				s.NotEmpty(secret.Data)
+				s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	s.templates = []string{
-		"charts/identity/templates/postgresql-secret.yaml",
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-	// then
-	s.NotEmpty(secret.Data)
-	s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
