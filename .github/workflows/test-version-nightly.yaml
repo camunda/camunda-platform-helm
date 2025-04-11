@@ -55,18 +55,17 @@ jobs:
           file_path="charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE}"
           values_content=$(cat "$file_path")
 
-          # Use GitHub's special delimiter syntax for multi-line outputs
-          delimiter="EOF$(date +%s)"
-          echo "values_content_output<<$delimiter" >> "$GITHUB_OUTPUT"
-          echo "$values_content" >> "$GITHUB_OUTPUT"
-          echo "$delimiter" >> "$GITHUB_OUTPUT"
-      - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
+          # Convert to JSON string for proper YAML handling
+          json_content=$(jq -Rs . <<< "$values_content")
+          echo "values_content_output=$json_content" >> "$GITHUB_OUTPUT"
+
+      - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375
         id: out
         with:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.version }}
           outputs: |-
-            values_content_output: ${{ steps.cat-file.outputs.values_content_output }}
+            values_content_output: ${{ fromJSON(steps.cat-file.outputs.values_content_output) }}
 
   access-info:
     name: Read values files from matrix
