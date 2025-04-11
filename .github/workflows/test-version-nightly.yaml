@@ -55,7 +55,6 @@ jobs:
           file_path="charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE}"
           values_content=$(cat "$file_path")
 
-          # Convert to JSON string for proper YAML handling
           json_content=$(jq -Rs . <<< "$values_content")
           echo "values_content_output=$json_content" >> "$GITHUB_OUTPUT"
 
