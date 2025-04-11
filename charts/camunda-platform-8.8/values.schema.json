@@ -445,7 +445,7 @@
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true, enables the identity authentication otherwise basic-auth will be used on all services.",
-                                    "default": false
+                                    "default": true
                                 },
                                 "issuer": {
                                     "type": "string",
