@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 26.1.4
+    app.kubernetes.io/version: 26.1.5
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -31,9 +31,9 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 26.1.4
+        app.kubernetes.io/version: 26.1.5
         app.kubernetes.io/component: keycloak
-        app.kubernetes.io/app-version: 26.1.4
+        app.kubernetes.io/app-version: 26.1.5
     spec:
       serviceAccountName: camunda-platform-test-keycloak
       
@@ -125,16 +125,10 @@ spec:
                   fieldPath: metadata.namespace
             - name: BITNAMI_DEBUG
               value: "false"
-            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-keycloak
-                  key: admin-password
-            - name: KEYCLOAK_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-postgresql
-                  key: password
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD_FILE
+              value: /opt/bitnami/keycloak/secrets/admin-password
+            - name: KEYCLOAK_DATABASE_PASSWORD_FILE
+              value: /opt/bitnami/keycloak/secrets/password
             - name: KEYCLOAK_HTTP_RELATIVE_PATH
               value: "/auth/"
             - name: KC_SPI_ADMIN_REALM
@@ -193,10 +187,19 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/keycloak/providers
               subPath: app-providers-dir
+            - name: keycloak-secrets
+              mountPath: /opt/bitnami/keycloak/secrets
             - mountPath: /opt/bitnami/keycloak/data/tmp
               name: data-tmp
       volumes:
         - name: empty-dir
           emptyDir: {}
+        - name: keycloak-secrets
+          projected:
+            sources:
+              - secret:
+                  name:  camunda-platform-test-keycloak
+              - secret:
+                  name:  camunda-platform-test-postgresql
         - emptyDir: {}
           name: data-tmp
