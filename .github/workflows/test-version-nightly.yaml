@@ -65,6 +65,9 @@ jobs:
                 multitenancy:
                   enabled: true
 
+              identityPostgresql:
+                enabled: true
+              test: "value"
               identity:
                 env:
                   - name: IDENTITY_TENANTS_0_NAME
@@ -157,9 +160,6 @@ jobs:
                   - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
                     value: "write:*"
 
-              identityPostgresql:
-                enabled: true
-
   access-info:
     name: Read values files from matrix
     runs-on: ubuntu-latest
@@ -181,7 +181,7 @@ jobs:
     steps:
       - name: testing
         run: |
-          echo "${{ fromJson(needs.access-info.outputs.values-file).values_content_output.global.multitenancy.enabled }}"
+          echo "${{ fromJson(needs.access-info.outputs.values-file).values_content_output.test }}"
 
   # integration:
   #   if: ${{ needs.init.outputs.matrix != '[]' }}
