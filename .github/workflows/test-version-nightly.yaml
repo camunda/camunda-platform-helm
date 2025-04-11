@@ -60,8 +60,9 @@ jobs:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.version }}
           outputs: |-
-            image: test
-            tags: testing
+            image:
+              testing: "quite"
+            tags: "testing"
 
   access-info:
     name: Read values files from matrix
