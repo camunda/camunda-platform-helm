@@ -51,7 +51,8 @@ jobs:
           CHART_VERSION: ${{ matrix.version }}
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
-          cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE} | tee $GITHUB_OUTPUT
+          values_content=$(cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE})
+          echo "values_content_output=${values_content}" >> "$GITHUB_OUTPUT"
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
         id: out
         with:
