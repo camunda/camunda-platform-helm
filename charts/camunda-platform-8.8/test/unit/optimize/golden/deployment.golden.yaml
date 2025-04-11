@@ -77,6 +77,9 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
       containers:
         - name: optimize
           image: camunda/optimize:8.8.0-alpha3
@@ -101,6 +104,11 @@ spec:
               value: "9200"
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
             - name: OPTIMIZE_LOG_LEVEL
               value: "info"
             - name: UPGRADE_LOG_LEVEL
@@ -108,6 +116,8 @@ spec:
             - name: ES_LOG_LEVEL
               value: "warn"
           envFrom:
+            - configMapRef:
+                name: camunda-platform-test-identity-env-vars
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
           resources:
@@ -141,6 +151,9 @@ spec:
               name: camunda
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
+              name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
               name: environment-config
       volumes:
         - name: tmp
