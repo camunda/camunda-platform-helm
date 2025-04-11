@@ -25,13 +25,13 @@
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 ##########################################
- #####
+#####
 #     # #       ####  #####    ##   #
 #       #      #    # #    #  #  #  #
 #  #### #      #    # #####  #    # #
 #     # #      #    # #    # ###### #
 #     # #      #    # #    # #    # #
- #####  ######  ####  #####  #    # ######
+#####  ######  ####  #####  #    # ######
 ##########################################
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
@@ -49,8 +49,8 @@ global:
     name: "camunda-credentials"
     ## @param global.secrets.annotations [object] defines the secret object annotations that utilize Helm hooks to keep that object out of the Helm deployment.
     annotations:
-      helm.sh/hook: 'pre-install'
-      helm.sh/resource-policy: 'keep'
+      helm.sh/hook: "pre-install"
+      helm.sh/resource-policy: "keep"
 
   ## License configuration.
   ## @extra global.license
@@ -127,7 +127,7 @@ global:
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
   labels:
-  ## @param global.labels.app Name of the application
+    ## @param global.labels.app Name of the application
     app: camunda-platform
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
@@ -149,14 +149,14 @@ global:
     className: nginx
     ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
-      ingress.kubernetes.io/rewrite-target: '/'
-      nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
-      nginx.ingress.kubernetes.io/affinity: 'cookie'
-      nginx.ingress.kubernetes.io/affinity-mode: 'persistent'
-      nginx.ingress.kubernetes.io/session-cookie-name: 'route'
-      nginx.ingress.kubernetes.io/session-cookie-path: '/'
+      ingress.kubernetes.io/rewrite-target: "/"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffering: "on"
+      nginx.ingress.kubernetes.io/affinity: "cookie"
+      nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+      nginx.ingress.kubernetes.io/session-cookie-name: "route"
+      nginx.ingress.kubernetes.io/session-cookie-path: "/"
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -253,7 +253,8 @@ global:
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       internal: false
       ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart.
-      url: {}
+      url:
+        {}
         # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
         # url:
         #   protocol: "https"
@@ -265,7 +266,8 @@ global:
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
       realm: "/realms/camunda-platform"
       ## @param global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
-      auth: {}
+      auth:
+        {}
         # identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
         # adminUser: ""
         # identity.keycloak.auth.existingSecret can be used to configure existing Secret object which has admin password
@@ -278,7 +280,7 @@ global:
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
       ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
-      enabled: false
+      enabled: true
 
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
@@ -433,7 +435,7 @@ global:
         region: ""
         ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
         bucket: "your-aws-bucket"
-       ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
+        ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
         # bucketPath: ""
         ## @param global.documentStore.type.aws.bucketTtl [int, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
         # bucketTtl: 0
@@ -470,29 +472,27 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
-
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #############################################################################################################
- #     #                                                                   #####
- ##   ##   ##   #    #   ##    ####  ###### #    # ###### #    # #####    #     # #####   ####  #    # #####
- # # # #  #  #  ##   #  #  #  #    # #      ##  ## #      ##   #   #      #       #    # #    # #    # #    #
- #  #  # #    # # #  # #    # #      #####  # ## # #####  # #  #   #      #  #### #    # #    # #    # #    #
- #     # ###### #  # # ###### #  ### #      #    # #      #  # #   #      #     # #####  #    # #    # #####
- #     # #    # #   ## #    # #    # #      #    # #      #   ##   #      #     # #   #  #    # #    # #
- #     # #    # #    # #    #  ####  ###### #    # ###### #    #   #       #####  #    #  ####   ####  #
+#     #                                                                   #####
+##   ##   ##   #    #   ##    ####  ###### #    # ###### #    # #####    #     # #####   ####  #    # #####
+# # # #  #  #  ##   #  #  #  #    # #      ##  ## #      ##   #   #      #       #    # #    # #    # #    #
+#  #  # #    # # #  # #    # #      #####  # ## # #####  # #  #   #      #  #### #    # #    # #    # #    #
+#     # ###### #  # # ###### #  ### #      #    # #      #  # #   #      #     # #####  #    # #    # #####
+#     # #    # #   ## #    # #    # #      #    # #      #   ##   #      #     # #   #  #    # #    # #
+#     # #    # #    # #    #  ####  ###### #    # ###### #    #   #       #####  #    #  ####   ####  #
 #############################################################################################################
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
-
 
 ############################################
 ###
- #  #####  ###### #    # ##### # ##### #   #
- #  #    # #      ##   #   #   #   #    # #
- #  #    # #####  # #  #   #   #   #     #
- #  #    # #      #  # #   #   #   #     #
- #  #    # #      #   ##   #   #   #     #
+#  #####  ###### #    # ##### # ##### #   #
+#  #    # #      ##   #   #   #   #    # #
+#  #    # #####  # #  #   #   #   #     #
+#  #    # #      #  # #   #   #   #     #
+#  #    # #      #   ##   #   #   #     #
 ### #####  ###### #    #   #   #   #     #
 ############################################
 ## @section Identity Parameters
@@ -771,7 +771,7 @@ identityPostgresql:
       openshift:
         ## @param identityPostgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
-        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
+        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
   # https://hub.docker.com/r/bitnami/postgresql/tags
   ## @param identityPostgresql.image.repository PostgreSQL repo
   ## @param identityPostgresql.image.tag PostgreSQL image tag
@@ -823,7 +823,7 @@ identityKeycloak:
       openshift:
         ## @param identityKeycloak.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
-        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
+        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
     security:
       ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Identity login theme)
       allowInsecureImages: true
@@ -902,7 +902,7 @@ identityKeycloak:
 
   ## @extra identityKeycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
   tls:
-  ## @param identityKeycloak.tls.enabled enabling tls
+    ## @param identityKeycloak.tls.enabled enabling tls
     enabled: false
 
   # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
@@ -913,13 +913,13 @@ identityKeycloak:
   ## @skip identityKeycloak.extraVolumes[1].name
   ## @skip identityKeycloak.extraVolumes[1].emptyDir
   extraVolumes:
-  - name: data-tmp
-    emptyDir: {}
+    - name: data-tmp
+      emptyDir: {}
   ## @param identityKeycloak.extraVolumeMounts[0].name
   ## @param identityKeycloak.extraVolumeMounts[0].mountPath
   extraVolumeMounts:
-  - name: data-tmp
-    mountPath: /opt/bitnami/keycloak/data/tmp
+    - name: data-tmp
+      mountPath: /opt/bitnami/keycloak/data/tmp
 
   ## @param identityKeycloak.containerSecurityContext.privileged
   ## @param identityKeycloak.containerSecurityContext.readOnlyRootFilesystem
@@ -953,10 +953,10 @@ identityKeycloak:
   ## @param identityKeycloak.extraEnvVars[0].name
   ## @param identityKeycloak.extraEnvVars[0].value
   extraEnvVars:
-  # KEYCLOAK_PROXY_ADDRESS_FORWARDING can be used with Ingress that has SSL Termination. It will be "true" if the TLS
-  # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
-  - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
-    value: "{{ .Values.global.ingress.tls.enabled }}"
+    # KEYCLOAK_PROXY_ADDRESS_FORWARDING can be used with Ingress that has SSL Termination. It will be "true" if the TLS
+    # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
+    - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+      value: "{{ .Values.global.ingress.tls.enabled }}"
 
   # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
   # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
@@ -969,9 +969,9 @@ identityKeycloak:
     extraTls: []
     ## @param identityKeycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
     annotations:
-    ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-      nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
-      nginx.ingress.kubernetes.io/proxy-buffering: 'on'
+      ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffering: "on"
     ## @param identityKeycloak.ingress.pathType defines Ingress path type.
     pathType: Prefix
 
@@ -994,15 +994,14 @@ identityKeycloak:
     ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
     passwordSecretKey: identity-keycloak-admin-password
 
-
 #################################################
- #####
+#####
 #     #  ####  #    #  ####   ####  #      ######
 #       #    # ##   # #      #    # #      #
 #       #    # # #  #  ####  #    # #      #####
 #       #    # #  # #      # #    # #      #
 #     # #    # #   ## #    # #    # #      #
- #####   ####  #    #  ####   ####  ###### ######
+#####   ####  #    #  ####   ####  ###### ######
 #################################################
 
 ## @section Console Parameters
@@ -1183,7 +1182,7 @@ console:
     fsGroup: 1001
     ## @extra console.podSecurityContext.seccompProfile
     seccompProfile:
-    ## @param console.podSecurityContext.seccompProfile.type
+      ## @param console.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   # ContainerSecurityContext defines the security options the Console broker container should be run with
@@ -1200,7 +1199,7 @@ console:
     runAsUser: 1001
     ## @extra console.containerSecurityContext.seccompProfile
     seccompProfile:
-    ## @param console.containerSecurityContext.seccompProfile.type
+      ## @param console.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
@@ -1221,7 +1220,7 @@ console:
 #  #  # #####  #####  #  #  # #    # #    # #####  #      #####  #    #
 #  #  # #      #    # #     # #    # #    # #      #      #      #####
 #  #  # #      #    # #     # #    # #    # #      #      #      #   #
- ## ##  ###### #####  #     #  ####  #####  ###### ###### ###### #    #
+## ##  ###### #####  #     #  ####  #####  ###### ###### ###### #    #
 #######################################################################
 ## @section WebModeler Parameters
 # WebModeler configuration of the WebModeler deployment
@@ -1351,7 +1350,7 @@ webModeler:
       fsGroup: 1001
       ## @extra webModeler.restapi.podSecurityContext.seccompProfile
       seccompProfile:
-      ## @param webModeler.restapi.podSecurityContext.seccompProfile.type
+        ## @param webModeler.restapi.podSecurityContext.seccompProfile.type
         type: RuntimeDefault
     ## @extra webModeler.restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
     ## @param webModeler.restapi.containerSecurityContext.privileged
@@ -1367,7 +1366,7 @@ webModeler:
       runAsUser: 1001
       ## @extra webModeler.restapi.containerSecurityContext.seccompProfile
       seccompProfile:
-      ## @param webModeler.restapi.containerSecurityContext.seccompProfile.type
+        ## @param webModeler.restapi.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
 
     ## @extra webModeler.restapi.startupProbe configuration of the restapi startup probe
@@ -1470,7 +1469,7 @@ webModeler:
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-    dnsConfig: { }
+    dnsConfig: {}
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -1825,7 +1824,7 @@ webModelerPostgresql:
       openshift:
         ## @param webModelerPostgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
-        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
+        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
   ## @param webModelerPostgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use the name "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
@@ -1879,30 +1878,28 @@ webModelerPostgresql:
       runAsNonRoot: true
       fsGroup: 1001
 
-
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 ############################################################################################################################
- #######                                                                                  #####
- #     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #    #     # #####   ####  #    # #####
- #     # #    # #    # #    # #      #        #   #    #  #  #    #   # #    # ##   #    #       #    # #    # #    # #    #
- #     # #    # #      ###### #####   ####    #   #    # #    #   #   # #    # # #  #    #  #### #    # #    # #    # #    #
- #     # #####  #      #    # #           #   #   #####  ######   #   # #    # #  # #    #     # #####  #    # #    # #####
- #     # #   #  #    # #    # #      #    #   #   #   #  #    #   #   # #    # #   ##    #     # #   #  #    # #    # #
- ####### #    #  ####  #    # ######  ####    #   #    # #    #   #   #  ####  #    #     #####  #    #  ####   ####  #
+#######                                                                                  #####
+#     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #    #     # #####   ####  #    # #####
+#     # #    # #    # #    # #      #        #   #    #  #  #    #   # #    # ##   #    #       #    # #    # #    # #    #
+#     # #    # #      ###### #####   ####    #   #    # #    #   #   # #    # # #  #    #  #### #    # #    # #    # #    #
+#     # #####  #      #    # #           #   #   #####  ######   #   # #    # #  # #    #     # #####  #    # #    # #####
+#     # #   #  #    # #    # #      #    #   #   #   #  #    #   #   # #    # #   ##    #     # #   #  #    # #    # #
+####### #    #  ####  #    # ######  ####    #   #    # #    #   #   #  ####  #    #     #####  #    #  ####   ####  #
 ############################################################################################################################
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
-
 
 #####################################################################
- #####
+#####
 #     #  ####  #    # #    # ######  ####  #####  ####  #####   ####
 #       #    # ##   # ##   # #      #    #   #   #    # #    # #
 #       #    # # #  # # #  # #####  #        #   #    # #    #  ####
 #       #    # #  # # #  # # #      #        #   #    # #####       #
 #     # #    # #   ## #   ## #      #    #   #   #    # #   #  #    #
- #####   ####  #    # #    # ######  ####    #    ####  #    #  ####
+#####   ####  #    # #    # ######  ####    #    ####  #    #  ####
 #####################################################################
 ## @section Connectors Parameters
 ## @extra connectors configuration for the Connectors.
@@ -2111,13 +2108,13 @@ connectors:
   dnsConfig: {}
 
 ############################
- #####
+#####
 #     #  ####  #####  ######
 #       #    # #    # #
 #       #    # #    # #####
 #       #    # #####  #
 #     # #    # #   #  #
- #####   ####  #    # ######
+#####   ####  #    # ######
 ############################
 
 ## @section Orchestration Core Parameters
@@ -2131,13 +2128,16 @@ core:
 
   ## @extra core.image configuration to configure the image specifics
   image:
-     ## @param core.image.registry can be used to set container image registry.
-    registry: ""
-     ## @param core.image.repository defines which image repository to use
-    repository: camunda/camunda
-     ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha3
-     ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @param core.image.registry can be used to set container image registry.
+    registry:
+      ""
+      ## @param core.image.repository defines which image repository to use
+    repository:
+      camunda/camunda
+      ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag:
+      8.8.0-alpha3
+      ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
   ## @param core.sidecars can be used to attach extra containers to the deployment
@@ -2150,7 +2150,8 @@ core:
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param core.env can be used to set extra environment variables in each broker container
-  env: []
+  env:
+    []
     # - name: LOGGING_LEVEL_IO_CAMUNDA
     #   value: DEBUG
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
@@ -2161,7 +2162,7 @@ core:
   envFrom: []
   ## @extra core.configMap configuration which will be applied to the mounted config map.
   configMap:
-     ## @param core.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    ## @param core.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
   ## @param core.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
@@ -2169,7 +2170,7 @@ core:
   ## @param core.logLevel defines the log level which is used
   logLevel: info
   ## @param core.log4j2 can be used to overwrite the log4j2 configuration
-  log4j2: ''
+  log4j2: ""
   ## @param core.javaOpts can be used to set java options
   javaOpts: >-
     -XX:+HeapDumpOnOutOfMemoryError
@@ -2196,7 +2197,8 @@ core:
     ## @param core.service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
     ## @param core.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
-    extraPorts: []
+    extraPorts:
+      []
       # - name: hazelcast
       #   protocol: TCP
       #   port: 5701
@@ -2233,10 +2235,10 @@ core:
       ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
       annotations:
-        ingress.kubernetes.io/rewrite-target: '/'
-        nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-        nginx.ingress.kubernetes.io/backend-protocol: 'GRPC'
-        nginx.ingress.kubernetes.io/proxy-buffer-size: '128k'
+        ingress.kubernetes.io/rewrite-target: "/"
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       ## @param core.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
       ## @param core.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -2284,7 +2286,7 @@ core:
   pvcAccessModes: ["ReadWriteOnce"]
   ## @param core.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
-  pvcStorageClassName: ''
+  pvcStorageClassName: ""
   ## @param core.pvcAnnotations can be used to specify custom annotations for persistent volume claims, enhancing storage configuration flexibility.
   pvcAnnotations: {}
   ## @param core.pvcSelector can be used to specify a label selector for persistent volume claims for further filtering of the set of persistent volumes to select.
@@ -2337,7 +2339,7 @@ core:
     runAsUser: 1001
     ## @extra core.containerSecurityContext.seccompProfile
     seccompProfile:
-    ## @param core.containerSecurityContext.seccompProfile.type
+      ## @param core.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
   ## @extra core.startupProbe configuration
@@ -2465,13 +2467,13 @@ core:
   dnsConfig: {}
 
 #############################################
- #####
+#####
 #     # #####  ##### # #    # # ###### ######
 #     # #    #   #   # ##  ## #     #  #
 #     # #    #   #   # # ## # #    #   #####
 #     # #####    #   # #    # #   #    #
 #     # #        #   # #    # #  #     #
- #####  #        #   # #    # # ###### ######
+#####  #        #   # #    # # ###### ######
 #############################################
 ## @section Optimize Parameters
 # Optimize configuration for the Optimize sub chart.
@@ -2720,7 +2722,7 @@ elasticsearch:
       openshift:
         ## @param elasticsearch.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
-        adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
+        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository
@@ -2737,7 +2739,7 @@ elasticsearch:
     ## @param elasticsearch.master.podAntiAffinityPreset defines Pod anti-affinity preset. Ignored if master.affinity is set
     podAntiAffinityPreset: hard
     containerSecurityContext:
-    ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem
+      ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem
       readOnlyRootFilesystem: true
     ## @param elasticsearch.master.masterOnly
     masterOnly: false
@@ -2758,12 +2760,12 @@ elasticsearch:
         ## @param elasticsearch.master.resources.limits.memory memory limit
         memory: 2Gi
     extraEnvVars:
-    ## @param elasticsearch.master.extraEnvVars[0].name env
-    - name: ELASTICSEARCH_ENABLE_REST_TLS
-    ## @param elasticsearch.master.extraEnvVars[0].value env value
-      value: "false"
+      ## @param elasticsearch.master.extraEnvVars[0].name env
+      - name: ELASTICSEARCH_ENABLE_REST_TLS
+        ## @param elasticsearch.master.extraEnvVars[0].value env value
+        value: "false"
   sysctlImage:
-  ## @param elasticsearch.sysctlImage.enabled
+    ## @param elasticsearch.sysctlImage.enabled
     enabled: true
   data:
     ## @param elasticsearch.data.replicaCount
@@ -2793,7 +2795,7 @@ prometheusServiceMonitor:
   enabled: false
   ## @extra promotheuServiceMonitor.labels can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors
   labels:
-  ## @param prometheusServiceMonitor.labels.release
+    ## @param prometheusServiceMonitor.labels.release
     release: metrics
   ## @param prometheusServiceMonitor.scrapeInterval can be set to configure the interval at which metrics should be scraped
   # Should be *less* than 60s if the provided grafana dashboard is used, which can be found here https://github.com/camunda/camunda/tree/main/monitor/grafana,
