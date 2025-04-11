@@ -15,19 +15,19 @@
 package identity
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 )
 
-type configMapTemplateTest struct {
+type ConfigMapTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -41,7 +41,7 @@ func TestConfigMapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configMapTemplateTest{
+	suite.Run(t, &ConfigMapTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -49,55 +49,51 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configMapTemplateTest) TestConfigMapBuiltinDatabaseEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.multitenancy.enabled": "true",
-			"identity.postgresql.enabled": "true",
+func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConfigMapBuiltinDatabaseEnabled",
+			Values: map[string]string{
+				"global.multitenancy.enabled": "true",
+				"identity.postgresql.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				// then
+				s.NotEmpty(configmap.Data)
+				s.Require().Equal("true", configmap.Data["MULTITENANCY_ENABLED"])
+				s.Require().Equal("camunda-platform-test-identity-postgresql", configmap.Data["IDENTITY_DATABASE_HOST"])
+				s.Require().Equal("5432", configmap.Data["IDENTITY_DATABASE_PORT"])
+				s.Require().Equal("identity", configmap.Data["IDENTITY_DATABASE_NAME"])
+				s.Require().Equal("identity", configmap.Data["IDENTITY_DATABASE_USERNAME"])
+			},
+		}, {
+			Name: "TestConfigMapExternalDatabaseEnabled",
+			Values: map[string]string{
+				"global.multitenancy.enabled":        "true",
+				"identity.postgresql.enabled":        "false",
+				"identity.externalDatabase.enabled":  "true",
+				"identity.externalDatabase.host":     "my-database-host",
+				"identity.externalDatabase.port":     "2345",
+				"identity.externalDatabase.database": "my-database-name",
+				"identity.externalDatabase.username": "my-database-username",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				// then
+				s.NotEmpty(configmap.Data)
+				s.Require().Equal("true", configmap.Data["MULTITENANCY_ENABLED"])
+				s.Require().Equal("my-database-host", configmap.Data["IDENTITY_DATABASE_HOST"])
+				s.Require().Equal("2345", configmap.Data["IDENTITY_DATABASE_PORT"])
+				s.Require().Equal("my-database-name", configmap.Data["IDENTITY_DATABASE_NAME"])
+				s.Require().Equal("my-database-username", configmap.Data["IDENTITY_DATABASE_USERNAME"])
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then
-	s.NotEmpty(configmap.Data)
-	s.Require().Equal("true", configmap.Data["MULTITENANCY_ENABLED"])
-	s.Require().Equal("camunda-platform-test-identity-postgresql", configmap.Data["IDENTITY_DATABASE_HOST"])
-	s.Require().Equal("5432", configmap.Data["IDENTITY_DATABASE_PORT"])
-	s.Require().Equal("identity", configmap.Data["IDENTITY_DATABASE_NAME"])
-	s.Require().Equal("identity", configmap.Data["IDENTITY_DATABASE_USERNAME"])
-}
-
-func (s *configMapTemplateTest) TestConfigMapExternalDatabaseEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.multitenancy.enabled":        "true",
-			"identity.postgresql.enabled":        "false",
-			"identity.externalDatabase.enabled":  "true",
-			"identity.externalDatabase.host":     "my-database-host",
-			"identity.externalDatabase.port":     "2345",
-			"identity.externalDatabase.database": "my-database-name",
-			"identity.externalDatabase.username": "my-database-username",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	// then
-	s.NotEmpty(configmap.Data)
-	s.Require().Equal("true", configmap.Data["MULTITENANCY_ENABLED"])
-	s.Require().Equal("my-database-host", configmap.Data["IDENTITY_DATABASE_HOST"])
-	s.Require().Equal("2345", configmap.Data["IDENTITY_DATABASE_PORT"])
-	s.Require().Equal("my-database-name", configmap.Data["IDENTITY_DATABASE_NAME"])
-	s.Require().Equal("my-database-username", configmap.Data["IDENTITY_DATABASE_USERNAME"])
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
