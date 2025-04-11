@@ -183,27 +183,27 @@ jobs:
         run: |
           echo "${{ fromJson(needs.access-info.outputs.values-file).values_content_output[matrix.version] }}"
 
-  # integration:
-  #   if: ${{ needs.init.outputs.matrix != '[]' }}
-  #   name: Integration Test - Camunda ${{ matrix.version }}
-  #   needs: [init, read-values]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #     deployments: write
-  #   secrets: inherit
-  #   uses: ./.github/workflows/test-integration-template.yaml
-  #   with:
-  #     identifier: "${{ matrix.scenario-file }}-intg-${{ matrix.version }}"
-  #     deployment-ttl: 1d
-  #     platforms: "gke"
-  #     flows: "install,upgrade"
-  #     camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-  #     #not sure what to pu as the git-ref since this will be a cron job and not a PR
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-  #     caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-  #     extra-values: |
-  #       "${{ needs.read-values.outputs.values-content }}"
+  integration:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Integration Test - Camunda ${{ matrix.version }}
+    needs: [init, read-values]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ matrix.scenario-file }}-intg-${{ matrix.version }}"
+      deployment-ttl: 1d
+      platforms: "gke"
+      flows: "install,upgrade"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      #not sure what to pu as the git-ref since this will be a cron job and not a PR
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      extra-values: |
+        "${{ fromJson(needs.access-info.outputs.values-file).values_content_output[matrix.version] }}"
