@@ -1,12 +1,12 @@
 package optimize
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -14,7 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type configMapTemplateTest struct {
+type ConfigMapTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -28,7 +28,7 @@ func TestConfigMapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configMapTemplateTest{
+	suite.Run(t, &ConfigMapTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -36,54 +36,48 @@ func TestConfigMapTemplate(t *testing.T) {
 	})
 }
 
-func (s *configMapTemplateTest) TestContainerShouldAddContextPath() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"optimize.contextPath": "/optimize",
+func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:                 "TestContainerShouldAddContextPath",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"optimize.contextPath": "/optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OptimizeConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("/optimize", configmapApplication.Container.ContextPath)
+			},
+		}, {
+			Name:                 "TestCustomZeebeName",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.elasticsearch.prefix": "custom-prefix",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OptimizeConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("custom-prefix", configmapApplication.Zeebe.Name)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
 	}
 
-	// when
-
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication OptimizeConfigYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("/optimize", configmapApplication.Container.ContextPath)
-}
-
-func (s *configMapTemplateTest) TestCustomZeebeName() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"global.elasticsearch.prefix": "custom-prefix",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-		ExtraArgs:      map[string][]string{"install": {"--debug"}},
-	}
-
-	// when
-
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication OptimizeConfigYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("custom-prefix", configmapApplication.Zeebe.Name)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
