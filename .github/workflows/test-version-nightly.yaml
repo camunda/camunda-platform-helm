@@ -53,7 +53,8 @@ jobs:
         run: |
           set -euo pipefail
           values_content=$(cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE})
-          echo "values_content_output=${values_content}" >> "$GITHUB_OUTPUT"
+          content=$(printf "%q" "${values_content}")
+          echo "values_content_output=${content}" >> "$GITHUB_OUTPUT"
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
         id: out
         with:
