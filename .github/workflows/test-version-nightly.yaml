@@ -52,9 +52,14 @@ jobs:
           SCENARIO_FILE: ${{ matrix.scenario-file }}
         run: |
           set -euo pipefail
-          values_content=$(cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE})
-          content=$(printf "%q" "${values_content}")
-          echo "values_content_output=${content}" >> "$GITHUB_OUTPUT"
+          file_path="charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE}"
+          values_content=$(cat "$file_path")
+
+          # Format as valid YAML multi-line string
+          {
+            echo "values_content_output: |"
+            echo "$values_content" | sed 's/^/  /'
+          } >> "$GITHUB_OUTPUT"
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
         id: out
         with:
