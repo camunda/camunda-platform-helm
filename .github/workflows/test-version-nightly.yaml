@@ -186,7 +186,7 @@ jobs:
   integration:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Integration Test - Camunda ${{ matrix.version }}
-    needs: [init, read-values]
+    needs: [init, read-values, access-info]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
