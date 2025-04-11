@@ -84,7 +84,7 @@ jobs:
     steps:
       - name: testing
         run: |
-          echo "${{ fromJson(needs.access-info.outputs.result).image }}"
+          echo "${{ fromJson(needs.access-info.outputs.result).image[matrix.version] }}"
 
   # integration:
   #   if: ${{ needs.init.outputs.matrix != '[]' }}
