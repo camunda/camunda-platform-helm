@@ -55,8 +55,8 @@ jobs:
           file_path="charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE}"
           values_content=$(cat "$file_path")
 
-          json_content=$(jq -Rs . <<< "$values_content")
-          echo "values_content_output=$json_content" >> "$GITHUB_OUTPUT"
+          # Encode as JSON string using GitHub's built-in function
+          echo "values_content_output=${{ toJSON(values_content) }}" >> "$GITHUB_OUTPUT"
 
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375
         id: out
