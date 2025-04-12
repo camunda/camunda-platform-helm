@@ -60,7 +60,7 @@ jobs:
         with:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.version }}
-          outputs: |
+          outputs: |-
             values_content: ${{ toJson(steps.cat-file.outputs.values_content) }}
 
   access-info:
