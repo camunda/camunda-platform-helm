@@ -45,24 +45,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: camunda/camunda-platform-helm
-      # - name: Read Values File
-      #   id: cat-file
-      #   env:
-      #     CHART_VERSION: ${{ matrix.version }}
-      #     SCENARIO_FILE: ${{ matrix.scenario-file }}
-      #   run: |
-      #     set -euo pipefail
-      #     values_content=$(cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE})
-      #     echo "values_content_output=${values_content}" >> "$GITHUB_OUTPUT"
+      - name: Read Values File
+        id: cat-file
+        env:
+          CHART_VERSION: ${{ matrix.version }}
+          SCENARIO_FILE: ${{ matrix.scenario-file }}
+        run: |
+          set -euo pipefail
+          cat charts/camunda-platform-${CHART_VERSION}/test/integration/scenarios/extra-scenarios/${SCENARIO_FILE} > values.yaml
+          values_base64=$(base64 -w 0 values.yaml)
+          echo "values_content=${values_base64}" >> "$GITHUB_OUTPUT"
       - uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # v1
         id: out
         with:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.version }}
           outputs: |-
-            image:
-              testing: "quite"
-            tags: "testing"
+            values_content: ${{ steps.cat-file.outputs.values_content }}
 
   access-info:
     name: Read values files from matrix
@@ -85,7 +84,7 @@ jobs:
     steps:
       - name: testing
         run: |
-          echo "${{ fromJson(needs.access-info.outputs.result).image[matrix.version] }}"
+          echo "${{ fromJson(needs.access-info.outputs.result).values_content[matrix.version] }}"
 
   # integration:
   #   if: ${{ needs.init.outputs.matrix != '[]' }}
