@@ -13,6 +13,7 @@ data:
   application.yaml: |
     identity:
       url: {{ include "identity.externalUrl" . | quote }}
+      
       {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
       flags:
         multi-tenancy: {{ .Values.global.multitenancy.enabled | quote }}
