@@ -102,11 +102,11 @@ jobs:
   failure:
     runs-on: ubuntu-latest
     needs: [integration]
+    if: failure()
     continue-on-error: true
     steps:
       - id: slack-notification
         name: slack-notification
-        if: failure()
         uses: camunda/infraex-common-config/.github/actions/report-failure-on-slack@b95c5e92a23ad7a2ad0351eeac24e7a2af9ba1b7 # 1.3.4
         with:
           vault_addr: ${{ secrets.VAULT_ADDR }}
