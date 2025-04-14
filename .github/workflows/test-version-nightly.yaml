@@ -110,8 +110,8 @@ jobs:
         env:
           CI_NIGHTLY_MATRIX_FILE: ".github/config/integration-testing-scenarios/multitenancy.yaml"
         run: |
-          filename="${CI_NIGHTLY_MATRIX_FILE##*/}"                # Extracts 'multitenancy.yaml'
-          CI_NIGHTLY_MATRIX_FILE="${filename%%.*}"                # Removes extension, keeps 'multitenancy'
+          filename="${CI_NIGHTLY_MATRIX_FILE##*/}"
+          echo CI_NIGHTLY_MATRIX_FILE="${filename%%.*}" >> "$GITHUB_ENV"
 
       - name: Notify in Slack in case of failure
         id: slack-notification
