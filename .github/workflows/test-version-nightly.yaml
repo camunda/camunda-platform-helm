@@ -107,7 +107,6 @@ jobs:
     steps:
       - name: Notify in Slack in case of failure
         id: slack-notification
-        if: failure()
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
