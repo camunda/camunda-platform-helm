@@ -137,20 +137,3 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.DISTRO_CI_SLACK_BOT_TOKEN }}
           WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-  # test:
-  #   if: ${{ needs.init.outputs.matrix != '[]' }}
-  #   name: Camunda ${{ matrix.version }}
-  #   needs: [init, read-values, access-info]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       version: ${{ fromJson(needs.init.outputs.matrix) }}
-  #   uses: ./.github/workflows/test-chart-version-template.yaml
-  #   secrets: inherit
-  #   with:
-  #     chart-version: "${{ matrix.version }}"
-  #     pr_number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
-  #     identifier: "${{ matrix.scenario-file }}-intg-${{ matrix.version }}"
-  #     extra-values: |
-  #       ${{ fromJson(needs.access-info.outputs.result).values_content[matrix.version] }}
