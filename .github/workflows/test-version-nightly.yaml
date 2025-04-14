@@ -122,7 +122,7 @@ jobs:
             {
               "unfurl_links": false,
               "unfurl_media": false,
-              "text": "${{ github.event.repository.name }} (${{ github.server_url }}/${{ github.repository }}) scheduled workflow: ${{ github.workflow }} failed for {{ env.CI_NIGHTLY_MATRIX_FILE }}! Please check: ${{ env.WORKFLOW_URL }}",
+              "text": "${{ github.event.repository.name }} (${{ github.server_url }}/${{ github.repository }}) scheduled workflow: ${{ github.workflow }} failed for ${{ env.CI_NIGHTLY_MATRIX_FILE }}! Please check: ${{ env.WORKFLOW_URL }}",
               "blocks": [
                 {
                   "type": "section",
