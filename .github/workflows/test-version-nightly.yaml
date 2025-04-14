@@ -101,6 +101,7 @@ jobs:
         ${{ fromJson(needs.access-info.outputs.result).values_content[matrix.version] }}
   failure:
     runs-on: ubuntu-latest
+    needs: [integration]
     steps:
       - id: slack-notification
         name: slack-notification
