@@ -2,7 +2,8 @@
 name: "Test - nightly integration testing"
 
 on:
-  pull_request:
+  schedule:
+    - cron: "0 1 * * *" # At 01:00 everyday.
   workflow_dispatch: {}
 
 permissions:
