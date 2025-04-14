@@ -1,5 +1,5 @@
 # Basic test for maintenance Camunda 8 Helm charts.
-name: "Test - nightly integration testsing"
+name: "Test - nightly integration testing"
 
 on:
   pull_request:
@@ -105,6 +105,14 @@ jobs:
     if: failure()
     continue-on-error: true
     steps:
+      - name: Get integration testing scneario
+        id: get-scneario
+        env:
+          CI_NIGHTLY_MATRIX_FILE: ".github/config/integration-testing-scenarios/multitenancy.yaml"
+        run: |
+          filename="${CI_NIGHTLY_MATRIX_FILE##*/}"                # Extracts 'multitenancy.yaml'
+          CI_NIGHTLY_MATRIX_FILE="${filename%%.*}"                # Removes extension, keeps 'multitenancy'
+
       - name: Notify in Slack in case of failure
         id: slack-notification
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
@@ -114,7 +122,7 @@ jobs:
             {
               "unfurl_links": false,
               "unfurl_media": false,
-              "text": "${{ github.event.repository.name }} (${{ github.server_url }}/${{ github.repository }}) scheduled workflow: ${{ github.workflow }} failed! Please check: ${{ env.WORKFLOW_URL }}",
+              "text": "${{ github.event.repository.name }} (${{ github.server_url }}/${{ github.repository }}) scheduled workflow: ${{ github.workflow }} failed for {{ env.CI_NIGHTLY_MATRIX_FILE }}! Please check: ${{ env.WORKFLOW_URL }}",
               "blocks": [
                 {
                   "type": "section",
