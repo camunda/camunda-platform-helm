@@ -93,6 +93,3 @@ identity:
       value: console-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
       value: "write:*"
-
-identityPostgresql:
-  enabled: true
