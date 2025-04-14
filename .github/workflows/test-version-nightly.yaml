@@ -118,7 +118,7 @@ jobs:
         id: slack-notification
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
-          channel-id: C08NG8JPBCH
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
               "unfurl_links": false,
