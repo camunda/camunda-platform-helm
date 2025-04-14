@@ -12,6 +12,12 @@ on:
         description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
         required: true
         type: string
+      extra-values:
+        required: false
+        type: string
+      identifier:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr_number }}-${{ inputs.chart-version }}
@@ -50,10 +56,13 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.chart-version }}"
+      # identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.chart-version }}"
+      identifier: "${{ inputs.identifier }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      extra-values: |
+        "${{ inputs.extra-values }}"

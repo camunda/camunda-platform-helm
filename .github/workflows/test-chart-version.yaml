@@ -49,3 +49,4 @@ jobs:
     with:
       chart-version: "${{ matrix.version }}"
       pr_number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
