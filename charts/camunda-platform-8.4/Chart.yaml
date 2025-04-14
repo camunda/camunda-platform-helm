@@ -72,3 +72,4 @@ annotations:
     - kind: fixed
       description: "Changing helper function for identityURL"
   camunda.io/helmCLIVersion: 3.17.2
+  test: test

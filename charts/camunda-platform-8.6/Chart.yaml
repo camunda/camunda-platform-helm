@@ -80,3 +80,4 @@ annotations:
       description: "Refactored unit tests for identity and operate in 8.6"
     - kind: fixed
       description: "Refactor unit tests in 8.6/test/unit/console to new style"
+  test: test

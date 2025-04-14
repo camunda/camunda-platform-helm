@@ -8,6 +8,10 @@ on:
         description: Chart version to test
         required: true
         type: string
+      previous-helm-version:
+        description: Previous helm version to upgrade from in minor upgrade test
+        required: false
+        type: string
       pr_number:
         description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
         required: true
@@ -57,3 +61,24 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  minor-upgrade-integration:
+    name: Camunda ${{ inputs.chart-version }} - Minor upgrade Integration Test
+    needs: [validation, unit]
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-minr-${{ inputs.chart-version }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
+      platforms: "gke"
+      flows: "upgrade"
+      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      # TODO: find a way to auto bump
+      camunda-helm-upgrade-version: "${{ inputs.previous-helm-version }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+

@@ -42,10 +42,11 @@ jobs:
     needs: init
     strategy:
       fail-fast: false
-      matrix:
-        version: ${{ fromJson(needs.init.outputs.matrix) }}
+      matrix: 
+        include: ${{ fromJson(needs.init.outputs.matrix) }}
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
       chart-version: "${{ matrix.version }}"
+      previous-helm-version: "${{ matrix.previousHelmVersion }}"
       pr_number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
