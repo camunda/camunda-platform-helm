@@ -1,3 +1,3 @@
 matrix:
   version: ["8.7"]
-  scenario-file: ["mt.yaml"]
+  scenario-file: ["multitenancy.yaml"]
