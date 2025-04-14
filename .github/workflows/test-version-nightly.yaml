@@ -97,6 +97,7 @@ jobs:
       #not sure what to pu as the git-ref since this will be a cron job and not a PR
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      github-workflow-rerun-enabled: false
       extra-values: |
         ${{ fromJson(needs.access-info.outputs.result).values_content[matrix.version] }}
   failure:
