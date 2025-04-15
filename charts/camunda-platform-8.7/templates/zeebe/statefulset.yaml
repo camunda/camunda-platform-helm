@@ -122,6 +122,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+              value: {{ .Values.global.opensearch.prefix | quote }}
             {{- end}}
             {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
