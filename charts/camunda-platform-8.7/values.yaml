@@ -200,7 +200,7 @@ global:
       host:
       port: 443
     ## @param global.opensearch.prefix Opensearch.prefix defines the prefix which is used by the Zeebe Opensearch Exporter to create Opensearch indexes
-    prefix: zeebe-record
+    prefix:
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
