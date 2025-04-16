@@ -36,29 +36,16 @@ jobs:
         with:
           charts-path: "charts/camunda-platform-8*"
 
-  test-output:
-    name: test output
-    runs-on: ubuntu-latest
+  test:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Camunda ${{ matrix.version }}
     needs: init
-    env:
-      TEST_OUTPUT: ${{ fromJson(needs.init.outputs.matrix) }}
-    steps:
-      - name: test
-        shell: bash
-        run: |
-          echo $TEST_OUTPUT
-
-  # test:
-  #   if: ${{ needs.init.outputs.matrix != '[]' }}
-  #   name: Camunda ${{ matrix.version }}
-  #   needs: init
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       version: ${{ fromJson(needs.init.outputs.matrix) }}
-  #   uses: ./.github/workflows/test-chart-version-template.yaml
-  #   secrets: inherit
-  #   with:
-  #     chart-version: "${{ matrix.version }}"
-  #     pr_number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
-  #     identifier: "${{ github.event.pull_request.number }}-intg-${{ matrix.version }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/test-chart-version-nightly-template.yaml
+    secrets: inherit
+    with:
+      chart-version: "${{ matrix.version }}"
+      # no point of haing case, or scenario as input since they will be handled in the child workflow. The case will always be nightly and the scenarios are already all listed in the child workflow.

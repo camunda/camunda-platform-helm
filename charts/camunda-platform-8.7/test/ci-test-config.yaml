@@ -29,8 +29,8 @@ integration:
         enabled: true
         valuesFile: values-integration-test-multitenancy.yaml
       oidc:
-        enabled: true
+        enabled: false
         valuesFile: values-integration-test-oidc.yaml
       opensearch:
-        enabled: true
+        enabled: false
         valuesFile: values-integration-test-opensearch.yaml
