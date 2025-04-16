@@ -67,6 +67,13 @@ on:
       matrix-data:
         required: false
         type: string
+      test-case:
+        required: false
+        type: string
+        default: pr
+      scenario:
+        required: false
+        type: string
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -336,6 +343,9 @@ jobs:
         if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          # Nightly integration test env vars
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
