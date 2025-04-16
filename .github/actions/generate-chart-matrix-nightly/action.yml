@@ -18,28 +18,16 @@ runs:
       run: |
         echo "Action Inputs:"
         echo "${GITHUB_CONTEXT}"
-    - name: Get changed dirs
-      id: changed-files
-      uses: tj-actions/changed-files@823fcebdb31bb35fdf2229d9f769b400309430d0 # v46
-      with:
-        dir_names: "true"
     - name: Generate matrix
       shell: bash
       id: set-chart-versions
-      env:
-        ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
       run: |
-        echo "Setting matrix based on changed files"
-        echo "Changed files:"
-        printf "%s\n" ${ALL_MODIFIED_FILES}
         touch matrix_versions.txt
 
         ls -d ${{ inputs.charts-path }} | while read chart_dir; do
-          if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
             camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')";
             echo "Camunda version: ${camunda_version}"
             echo "${camunda_version}" >> matrix_versions.txt;
-          fi
         done
 
         matrix="$(cat matrix_versions.txt | jq --slurp --compact-output --raw-input 'split("\n") | .[:-1]')"
