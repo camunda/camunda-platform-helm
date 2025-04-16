@@ -70,3 +70,4 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
       test-case: nightly
       scenario: multitenancy
+      camunda-helm-git-ref: nightly-integration-tests
