@@ -85,6 +85,8 @@ tasks:
     deps: [init.seed]
     cmds:
     - |
+      echo "here are test extra args:"
+      echo ${TEST_HELM_EXTRA_ARGS}
       if [[ "${TEST_CASE}" == 'nightly' ]]; then
         helm install integration "${TEST_CHART_NAME}" \
           --version "${TEST_CHART_VERSION}" \
