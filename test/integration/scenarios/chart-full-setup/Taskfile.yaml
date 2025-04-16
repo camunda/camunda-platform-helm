@@ -89,7 +89,6 @@ tasks:
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress.yaml
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-{{ ${TEST_VALUES_SCENARIO} }}.yaml
         --timeout 20m0s
         --wait
         {{ .TEST_HELM_EXTRA_ARGS }}
