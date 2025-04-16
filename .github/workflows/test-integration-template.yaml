@@ -325,9 +325,8 @@ jobs:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           # Nightly integration test env vars
-          TEST_CASE: ${{ inputs.test-case }}
-          TEST_OPENSHIFT_TEST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_CASE: nightly
+          TEST_VALUES_SCENARIO: multitenancy
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
