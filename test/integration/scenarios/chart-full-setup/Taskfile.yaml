@@ -84,8 +84,7 @@ tasks:
   setup.exec:
     deps: [init.seed]
     cmds:
-    - |
-      helm install integration {{ .TEST_CHART_NAME }}
+    - helm install integration {{ .TEST_CHART_NAME }}
         --version {{ .TEST_CHART_VERSION }}
         --namespace {{ .TEST_NAMESPACE }}
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
