@@ -93,7 +93,8 @@ tasks:
       if [[ "${TEST_CASE}" == 'nightly' ]]; then
         helm_cmd+=" --values ${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-${TEST_VALUES_SCENARIO}.yaml"
       fi
-      helm_cmd+=" --timeout 20m0s --wait ${TEST_HELM_EXTRA_ARGS}"
+      helm_cmd+=" --timeout 20m0s --wait"
+      helm_cmd+=" ${TEST_HELM_EXTRA_ARGS}"
       eval $helm_cmd
   setup.post:
     cmds:
