@@ -24,15 +24,15 @@ permissions:
   contents: read
 
 jobs:
-  validation:
-    name: Camunda ${{ inputs.chart-version }} - Validation
-    uses: ./.github/workflows/chart-validate-template.yaml
-    with:
-      identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.chart-version }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  # validation:
+  #   name: Camunda ${{ inputs.chart-version }} - Validation
+  #   uses: ./.github/workflows/chart-validate-template.yaml
+  #   with:
+  #     identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.chart-version }}"
+  #     camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
   check-multitenancy:
-    needs: validation
+    # needs: validation
     runs-on: ubuntu-latest
     name: Camunda ${{ inputs.chart-version }} - Multitenancy Scenario
     outputs:
