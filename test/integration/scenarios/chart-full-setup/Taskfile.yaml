@@ -85,17 +85,26 @@ tasks:
     deps: [init.seed]
     cmds:
     - |
-      helm_cmd="helm install integration ${TEST_CHART_NAME} \
-        --version ${TEST_CHART_VERSION} \
-        --namespace ${TEST_NAMESPACE} \
-        --values ${TEST_VALUES_BASE_DIR}/common/values-integration-test.yaml \
-        --values ${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress.yaml"
       if [[ "${TEST_CASE}" == 'nightly' ]]; then
-        helm_cmd+=" --values ${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-${TEST_VALUES_SCENARIO}.yaml"
+        helm install integration "${TEST_CHART_NAME}" \
+          --version "${TEST_CHART_VERSION}" \
+          --namespace "${TEST_NAMESPACE}" \
+          --values "${TEST_VALUES_BASE_DIR}/common/values-integration-test.yaml" \
+          --values "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress.yaml" \
+          --values "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-${TEST_VALUES_SCENARIO}.yaml" \
+          --timeout 20m0s \
+          --wait \
+          ${TEST_HELM_EXTRA_ARGS}
+      else
+        helm install integration "${TEST_CHART_NAME}" \
+          --version "${TEST_CHART_VERSION}" \
+          --namespace "${TEST_NAMESPACE}" \
+          --values "${TEST_VALUES_BASE_DIR}/common/values-integration-test.yaml" \
+          --values "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress.yaml" \
+          --timeout 20m0s \
+          --wait \
+          ${TEST_HELM_EXTRA_ARGS}
       fi
-      helm_cmd+=" --timeout 20m0s --wait"
-      helm_cmd+=" ${TEST_HELM_EXTRA_ARGS}"
-      eval $helm_cmd
   setup.post:
     cmds:
     - echo "No post task for this test."
