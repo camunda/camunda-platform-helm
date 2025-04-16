@@ -105,6 +105,7 @@ tasks:
           --wait \
           ${TEST_HELM_EXTRA_ARGS}
       fi
+
   setup.post:
     cmds:
     - echo "No post task for this test."
