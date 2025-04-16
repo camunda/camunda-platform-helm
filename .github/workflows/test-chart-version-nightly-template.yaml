@@ -38,6 +38,11 @@ jobs:
     outputs:
       multitenancy-enabled: ${{ steps.check-enabled.outputs.multitenancy-enabled }}
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          # This is needed if the workflow is triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
       - name: check enabled
         id: check-enabled
         env:
