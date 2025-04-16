@@ -26,7 +26,7 @@ data:
 
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
-        backend-url: "camunda-platform-test-keycloak://camunda-platform-test-keycloak:/auth/realms/camunda-platform"
+        backend-url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
 
       component-presets:
         connectors:
@@ -170,7 +170,7 @@ data:
                 - audience: "web-modeler-api"
                   definition: admin:*
     keycloak:
-      url: "camunda-platform-test-keycloak://camunda-platform-test-keycloak:/auth"
+      url: "http://camunda-platform-test-keycloak:80/auth"
       setup:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
