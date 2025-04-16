@@ -94,6 +94,8 @@ data:
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        # Index prefix, configured in Zeebe Opensearch exporter
+        prefix: {{ .Values.global.opensearch.prefix }}
         {{- if .Values.global.opensearch.aws.enabled }}
         awsEnabled: true
         {{- end }}
