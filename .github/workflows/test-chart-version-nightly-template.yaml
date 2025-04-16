@@ -1,5 +1,5 @@
 # Basic test for maintenance Camunda 8 Helm charts.
-name: "Test - Chart Version - Template"
+name: "Test - Chart Version Nightly - Template"
 
 on:
   workflow_call:
@@ -55,7 +55,7 @@ jobs:
   integration-multitenancy:
     name: Camunda ${{ inputs.chart-version }} - Integration Test
     needs: check-multitenancy
-    # if: ${{ needs.check-multitenancy.outputs.multitenancy-enabled == true }}
+    if: ${{ needs.check-multitenancy.outputs.multitenancy-enabled == 'true' }}
     permissions:
       contents: read
       id-token: write

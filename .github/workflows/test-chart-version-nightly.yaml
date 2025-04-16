@@ -1,5 +1,5 @@
 # Basic test for maintenance Camunda 8 Helm charts.
-name: "Test - Chart Version"
+name: "Test - Chart Version Nightly"
 
 on:
   pull_request:
