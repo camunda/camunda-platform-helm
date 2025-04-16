@@ -55,7 +55,7 @@ jobs:
   integration-multitenancy:
     name: Camunda ${{ inputs.chart-version }} - Integration Test
     needs: check-multitenancy
-    if: ${{ needs.check-multitenancy.outputs.multitenancy-enabled == true }}
+    # if: ${{ needs.check-multitenancy.outputs.multitenancy-enabled == true }}
     permissions:
       contents: read
       id-token: write
