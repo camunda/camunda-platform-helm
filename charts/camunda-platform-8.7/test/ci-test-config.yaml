@@ -23,7 +23,7 @@ integration:
       fullSetup:
         enabled: true
         id: pr
-        valuesFile:
+        valuesFile: values-integration-test-ingress.yaml
     nightly:
       multitenancy:
         enabled: true
