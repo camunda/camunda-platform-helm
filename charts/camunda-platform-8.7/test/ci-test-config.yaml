@@ -22,15 +22,14 @@ integration:
     pr:
       fullSetup:
         enabled: true
-        id: pr
-        valuesFile: values-integration-test-ingress-common.yaml
+        # valuesFile: values-integration-test-ingress-common.yaml
     nightly:
       multitenancy:
         enabled: true
-        valuesFile: values-integration-test-multitenancy.yaml
+        # valuesFile: values-integration-test-multitenancy.yaml
       oidc:
         enabled: false
-        valuesFile: values-integration-test-oidc.yaml
+        # valuesFile: values-integration-test-oidc.yaml
       opensearch:
         enabled: false
-        valuesFile: values-integration-test-opensearch.yaml
+        # valuesFile: values-integration-test-opensearch.yaml
