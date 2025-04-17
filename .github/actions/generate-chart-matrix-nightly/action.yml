@@ -4,6 +4,9 @@ inputs:
   charts-path:
     description: Charts path to match.
     default: "charts/camunda-platform*"
+  type:
+    description: what type of integration tests do you want to run? e.g pr, nightly
+    default: pr
 outputs:
   matrix:
     description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.

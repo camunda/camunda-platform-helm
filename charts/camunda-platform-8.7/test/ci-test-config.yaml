@@ -24,12 +24,12 @@ integration:
         enabled: true
         # valuesFile: values-integration-test-ingress-common.yaml
     nightly:
-      multitenancy:
+      - name: multitenancy
         enabled: true
         # valuesFile: values-integration-test-multitenancy.yaml
-      oidc:
-        enabled: false
+      - name: oidc
+        enabled: true
         # valuesFile: values-integration-test-oidc.yaml
-      opensearch:
+      - name: opensearch
         enabled: false
         # valuesFile: values-integration-test-opensearch.yaml
