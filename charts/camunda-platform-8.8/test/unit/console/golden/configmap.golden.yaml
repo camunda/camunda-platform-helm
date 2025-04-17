@@ -59,8 +59,9 @@ data:
               url: http://localhost:8088/identity
               readiness: http://camunda-platform-test-core.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-core.camunda-platform:9600/actuator/prometheus
-            - name: Zeebe Gateway
-              id: zeebeGateway
+          
+            - name: Orchestration Core
+              id: core
               urls:
                 grpc: http://localhost:26500
                 http: http://localhost:8088

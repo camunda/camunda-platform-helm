@@ -143,7 +143,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 
 {{- if .Values.core.ingress.grpc.enabled }}
-- Camunda gRPC API: {{  include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
+- Camunda gRPC API: {{  include "camundaPlatform.coreGRPCExternalURL" . }}
 {{- end }}
 
 {{- if .Values.global.ingress.enabled }}
