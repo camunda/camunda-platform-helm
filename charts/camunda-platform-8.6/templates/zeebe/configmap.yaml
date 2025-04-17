@@ -36,7 +36,7 @@ data:
             className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
             args:
               url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-                index:
+              index:
                 prefix: {{ .Values.global.opensearch.prefix | quote }}
               {{- if .Values.global.opensearch.auth.username }}
               authentication:
