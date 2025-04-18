@@ -51,7 +51,7 @@ jobs:
               scenarios: ["multitenancy", "oidc"],
             },
             {
-              app: "8.6",
+              version: "8.6",
               type: nightly,
               scenarios: ["multitenancy", "openserach", oidc],
             },
