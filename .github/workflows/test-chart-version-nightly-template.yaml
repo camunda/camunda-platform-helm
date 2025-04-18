@@ -12,6 +12,10 @@ on:
         description: Scenario
         required: true
         type: string
+      type:
+        description: Type
+        required: true
+        type: string
       # pr_number:
       #   description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
       #   required: true
