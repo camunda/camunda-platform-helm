@@ -46,7 +46,7 @@ jobs:
         include:
           - version: "8.7"
             type: "nightly"
-            scenario: ["multitenancy", "oidc"]
+            scenario: ["multitenancy", "oidc", "test", "more-test"]
           - version: "8.6"
             type: "nightly"
             scenario: ["multitenancy"]
