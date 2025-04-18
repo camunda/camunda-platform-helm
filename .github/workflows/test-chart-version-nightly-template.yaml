@@ -63,7 +63,7 @@ jobs:
   #         echo "multitenancy-enabled=${multitenancy_enabled}" | tee -a $GITHUB_OUTPUT
   integration-multitenancy:
     name: Camunda ${{ inputs.chart-version }} - Integration Test
-    needs: check-multitenancy
+    # needs: check-multitenancy
     # if: ${{ needs.check-multitenancy.outputs.multitenancy-enabled == 'true' }}
     strategy:
       fail-fast: false
