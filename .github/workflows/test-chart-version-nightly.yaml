@@ -23,40 +23,43 @@ permissions:
   deployments: write
 
 jobs:
-  init:
-    name: Generate chart matrix
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Generate chart versions
-        id: generate-chart-versions
-        uses: ./.github/actions/generate-chart-matrix-nightly
-        with:
-          charts-path: "charts/camunda-platform-8*"
+  # init:
+  #   name: Generate chart matrix
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+  #   steps:
+  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+  #     - name: Generate chart versions
+  #       id: generate-chart-versions
+  #       uses: ./.github/actions/generate-chart-matrix-nightly
+  #       with:
+  #         charts-path: "charts/camunda-platform-8*"
 
   test:
-    if: ${{ needs.init.outputs.matrix != '[]' }}
+    # if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Camunda ${{ matrix.version }}
-    needs: init
+    # needs: init
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - version: "8.7"
-            type: "nightly"
-            scenario: ["multitenancy", "oidc", "test", "more-test"]
-          - version: "8.6"
-            type: "nightly"
-            scenario: ["multitenancy"]
-          - version: "8.4"
-            type: "nightly"
-            scenario: ["multitenancy"]
+        config:
+          [
+            {
+              version: 8.7,
+              type: nightly,
+              scenarios: ["multitenancy", "oidc"],
+            },
+            {
+              app: 8.6,
+              type: nightly,
+              scenarios: ["multitenancy", "openserach", oidc],
+            },
+          ]
     uses: ./.github/workflows/test-chart-version-nightly-template.yaml
     secrets: inherit
     with:
-      chart-version: "${{ matrix.version }}"
-      scenario: "${{ matrix.scenario }}"
-      type: "${{ matrix.type }}"
+      chart-version: "${{ matrix.config.version }}"
+      scenario: "${{ matrix.config.scenario }}"
+      type: "${{ matrix.config.type }}"
       # no point of haing case, or scenario as input since they will be handled in the child workflow. The case will always be nightly and the scenarios are already all listed in the child workflow.
