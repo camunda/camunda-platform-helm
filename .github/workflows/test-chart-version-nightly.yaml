@@ -50,6 +50,9 @@ jobs:
           - version: "8.6"
             type: "nightly"
             scenario: ["multitenancy"]
+          - version: "8.4"
+            type: "nightly"
+            scenario: ["multitenancy"]
     uses: ./.github/workflows/test-chart-version-nightly-template.yaml
     secrets: inherit
     with:
