@@ -96,4 +96,3 @@ annotations:
       description: "Refactored zeebe gateway unit tests to new style"
     - kind: fixed
       description: "Refactor of connector unit tests to new style in 8.7"
-  test: test
