@@ -46,12 +46,12 @@ jobs:
         config:
           [
             {
-              version: 8.7,
+              version: "8.7",
               type: nightly,
               scenarios: ["multitenancy", "oidc"],
             },
             {
-              app: 8.6,
+              app: "8.6",
               type: nightly,
               scenarios: ["multitenancy", "openserach", oidc],
             },
