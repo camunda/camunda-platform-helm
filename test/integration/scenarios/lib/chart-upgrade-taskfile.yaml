@@ -27,7 +27,8 @@ tasks:
       if [ $? -eq 0 ]; then
         helm show chart {{ .TEST_CHART_NAME }} | yq .appVersion | grep 8.5
         if [ $? -eq 0 ]; then
-          FORCE="--force"
+          kubectl delete deployment -n {{ .TEST_NAMESPACE }} integration-identity
+          FORCE="--force --install"
         fi
       fi
       set -e
