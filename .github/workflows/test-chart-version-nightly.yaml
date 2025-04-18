@@ -35,33 +35,33 @@ jobs:
   #       uses: ./.github/actions/generate-chart-matrix-nightly
   #       with:
   #         charts-path: "charts/camunda-platform-8*"
-  check:
-    # if: ${{ needs.init.outputs.matrix != '[]' }}
-    name: Camunda ${{ matrix.version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          [
-            {
-              version: "8.7",
-              type: nightly,
-              scenarios: ["multitenancy", "oidc"],
-            },
-            {
-              version: "8.6",
-              type: nightly,
-              scenarios: ["multitenancy", "openserach", oidc],
-            },
-          ]
-    # steps:
-    #   - name: run
-    #     id: run
-    #     env:
-    #       STEP:
-    #     run: |
-    #       echo MATRIX_STEP: ${{ matrix.scenario }}
+  # check:
+  #   # if: ${{ needs.init.outputs.matrix != '[]' }}
+  #   name: Camunda ${{ matrix.version }}
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       config:
+  #         [
+  #           {
+  #             version: "8.7",
+  #             type: nightly,
+  #             scenarios: ["multitenancy", "oidc"],
+  #           },
+  #           {
+  #             version: "8.6",
+  #             type: nightly,
+  #             scenarios: ["multitenancy", "openserach", oidc],
+  #           },
+  #         ]
+  #   steps:
+  #     - name: run
+  #       id: run
+  #       env:
+  #         STEP:
+  #       run: |
+  #         echo MATRIX_STEP: ${{ matrix.scenario }}
 
   test:
     # if: ${{ needs.init.outputs.matrix != '[]' }}
