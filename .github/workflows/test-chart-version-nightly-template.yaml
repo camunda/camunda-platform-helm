@@ -8,8 +8,8 @@ on:
         description: Chart version to test
         required: true
         type: string
-      scenario:
-        description: Scenario
+      scenarios:
+        description: Scenarios
         required: true
         type: string
       type:
@@ -43,7 +43,7 @@ jobs:
   check-multitenancy:
     # needs: validation
     runs-on: ubuntu-latest
-    name: Camunda ${{ inputs.chart-version }} - ${{ inputs.scenario }}
+    name: Camunda ${{ inputs.chart-version }} - ${{ inputs.scenarios }}
     outputs:
       multitenancy-enabled: ${{ steps.check-enabled.outputs.multitenancy-enabled }}
     steps:
