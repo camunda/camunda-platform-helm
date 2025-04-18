@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ${{ fromJson(inputs.scenarios) }}
+        scenario: ${{ fromJson(inputs.scenarios) }}
     permissions:
       contents: read
       id-token: write
@@ -76,11 +76,11 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "multitenancy-intg-${{ inputs.chart-version }}"
+      identifier: "${{ matrix.scenario }}-intg-${{ inputs.chart-version }}"
       deployment-ttl: 1d
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
       test-case: ${{inputs.type}}
-      scenario: ${{matrix.test}}
+      scenario: ${{matrix.scenario}}
       camunda-helm-git-ref: nightly-integration-tests
