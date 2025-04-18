@@ -43,7 +43,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.init.outputs.matrix) }}
+        - version: [8.7]
+          type: [nightly]
+          scenario: ["multitenancy", "oidc"]
+        - version: [8.6]
+          type: [nightly]
+          scenario: ["multitenancy"]
     uses: ./.github/workflows/test-chart-version-nightly-template.yaml
     secrets: inherit
     with:
