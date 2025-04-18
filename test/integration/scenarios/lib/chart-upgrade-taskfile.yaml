@@ -28,6 +28,7 @@ tasks:
         helm show chart {{ .TEST_CHART_NAME }} | yq .appVersion | grep 8.5
         if [ $? -eq 0 ]; then
           kubectl delete deployment -n {{ .TEST_NAMESPACE }} integration-identity
+          kubectl wait -n {{ .TEST_NAMESPACE }} --for='delete' deployment/integration-identity
           FORCE="--force --install"
         fi
       fi
