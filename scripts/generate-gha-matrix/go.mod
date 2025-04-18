@@ -1,4 +1,4 @@
-module main
+module github.com/camunda/camunda-platform-helm/scripts/generate-gha-matrix
 
 go 1.23.7
 
