@@ -20,10 +20,10 @@ tasks:
   exec:
     cmds:
     - |
-      set +e
+      set +e -x
       # if the upgrade is from 8.4 -> 8.5, we need to add --force
       FORCE=""
-      helm history -o json integration | jq '.[].app_version' | grep 8.4
+      helm history -n {{ .TEST_NAMESPACE }} -o json integration | jq '.[].app_version' | grep 8.4
       if [ $? -eq 0 ]; then
         helm show chart {{ .TEST_CHART_NAME }} | yq .appVersion | grep 8.5
         if [ $? -eq 0 ]; then
@@ -32,7 +32,7 @@ tasks:
           FORCE="--force --install"
         fi
       fi
-      set -e
+      set -e +x
 
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
