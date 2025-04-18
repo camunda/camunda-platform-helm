@@ -36,15 +36,10 @@ runs:
 
         ls -d ${{ inputs.charts-path }} | while read chart_dir; do
           if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
-            camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')";
-            echo "Camunda version: ${camunda_version}"
-            chart_version="$(cat ${chart_dir}/Chart.yaml | grep '^version:' | head -n 1 | sed 's/version: //')";
-            chart_previous_camunda_version="$(echo ${camunda_version} | jq '. | (((.|tonumber) - .1)*10|round/10)')"
-            chart_previous_helm_version="$(cat charts/camunda-platform-${chart_previous_camunda_version}/Chart.yaml | grep '^version:' | head -n 1 | sed 's/version: //')"
-            echo "${camunda_version} ${chart_version} ${chart_previous_helm_version}" >> matrix_versions.txt;
+            echo ${chart_dir} >> matrix_versions.txt
           fi
         done
 
-        matrix="$(cat matrix_versions.txt | jq --slurp --compact-output --raw-input '[ split("\n") | .[] | split(" ") | { version: .[0], chartVersion: .[1], previousHelmVersion: .[2] } | select(.version != null)] ')"
-
+        cd scripts/generate-gha-matrix/
+        matrix="$(cat ../../matrix_versions.txt | go run .)"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
