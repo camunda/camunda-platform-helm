@@ -20,8 +20,23 @@ tasks:
   exec:
     cmds:
     - |
+      set +e -x
+      # if the upgrade is from 8.4 -> 8.5, we need to add --force
+      FORCE=""
+      helm history -n {{ .TEST_NAMESPACE }} -o json integration | jq '.[].app_version' | grep 8.4
+      if [ $? -eq 0 ]; then
+        helm show chart {{ .TEST_CHART_NAME }} | yq .appVersion | grep 8.5
+        if [ $? -eq 0 ]; then
+          kubectl delete deployment -n {{ .TEST_NAMESPACE }} integration-identity
+          kubectl wait -n {{ .TEST_NAMESPACE }} --for='delete' deployment/integration-identity
+          FORCE="--force --install"
+        fi
+      fi
+      set -e +x
+
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --timeout 20m0s \
+        $FORCE \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
