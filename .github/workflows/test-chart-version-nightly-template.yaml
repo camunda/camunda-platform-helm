@@ -42,7 +42,7 @@ jobs:
   check-multitenancy:
     # needs: validation
     runs-on: ubuntu-latest
-    name: Camunda ${{ inputs.chart-version }} - ${{ inptus.scenario }}
+    name: Camunda ${{ inputs.chart-version }} - ${{ inputs.scenario }}
     outputs:
       multitenancy-enabled: ${{ steps.check-enabled.outputs.multitenancy-enabled }}
     steps:
