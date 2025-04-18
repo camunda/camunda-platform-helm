@@ -44,11 +44,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: [8.7]
-            type: [nightly]
+          - version: "8.7"
+            type: "nightly"
             scenario: ["multitenancy", "oidc"]
-          - version: [8.6]
-            type: [nightly]
+          - version: "8.6"
+            type: "nightly"
             scenario: ["multitenancy"]
     uses: ./.github/workflows/test-chart-version-nightly-template.yaml
     secrets: inherit
