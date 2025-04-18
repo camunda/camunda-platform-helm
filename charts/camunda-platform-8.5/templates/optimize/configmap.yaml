@@ -19,7 +19,7 @@ data:
     zeebe:
       enabled: true
       partitionCount: {{ .Values.optimize.partitionCount }}
-      name: {{ .Values.global.elasticsearch.prefix }}
+      name: {{ .Values.global.elasticsearch.prefix | quote }}
 
     {{- if .Values.global.elasticsearch.enabled }}
     es:

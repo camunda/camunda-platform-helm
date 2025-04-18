@@ -49,8 +49,9 @@ type JWTYAML struct {
 }
 
 type CamundaTasklistYAML struct {
-	Identity     TasklistIdentityYAML `yaml:"identity"`
-	MultiTenancy MultiTenancyYAML     `yaml:"multiTenancy"`
+	Identity        TasklistIdentityYAML `yaml:"identity"`
+	MultiTenancy    MultiTenancyYAML     `yaml:"multiTenancy"`
+	ZeebeOpensearch ZeebeOpensearchYAML  `yaml:"zeebeOpensearch"`
 }
 type TasklistIdentityYAML struct {
 	RedirectRootURL string `yaml:"redirectRootUrl"`
@@ -58,4 +59,8 @@ type TasklistIdentityYAML struct {
 
 type MultiTenancyYAML struct {
 	Enabled string `yaml:"enabled"`
+}
+
+type ZeebeOpensearchYAML struct {
+	Prefix string `yaml:"prefix"`
 }
