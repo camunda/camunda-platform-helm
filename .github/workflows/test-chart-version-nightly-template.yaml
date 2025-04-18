@@ -8,6 +8,10 @@ on:
         description: Chart version to test
         required: true
         type: string
+      scenario:
+        description: Scenario
+        required: true
+        type: string
       # pr_number:
       #   description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
       #   required: true
@@ -34,7 +38,7 @@ jobs:
   check-multitenancy:
     # needs: validation
     runs-on: ubuntu-latest
-    name: Camunda ${{ inputs.chart-version }} - Multitenancy Scenario
+    name: Camunda ${{ inputs.chart-version }} - ${{ inptus.scenario }}
     outputs:
       multitenancy-enabled: ${{ steps.check-enabled.outputs.multitenancy-enabled }}
     steps:

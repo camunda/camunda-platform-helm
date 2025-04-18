@@ -57,4 +57,6 @@ jobs:
     secrets: inherit
     with:
       chart-version: "${{ matrix.version }}"
+      scenario: "${{ matrix.scenario }}"
+      type: "${{ matrix.type }}"
       # no point of haing case, or scenario as input since they will be handled in the child workflow. The case will always be nightly and the scenarios are already all listed in the child workflow.
