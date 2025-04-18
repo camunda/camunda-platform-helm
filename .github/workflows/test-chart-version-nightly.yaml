@@ -75,12 +75,12 @@ jobs:
             {
               version: "8.7",
               type: nightly,
-              scenarios: '["multitenancy", "oidc"]',
+              scenarios: "[multitenancy, oidc]",
             },
             {
               version: "8.6",
               type: nightly,
-              scenarios: '["multitenancy", "oidc", "opensearch"]',
+              scenarios: "[multitenancy, oidc, opensearch]",
             },
           ]
     uses: ./.github/workflows/test-chart-version-nightly-template.yaml
