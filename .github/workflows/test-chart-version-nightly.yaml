@@ -72,8 +72,16 @@ jobs:
       matrix:
         config:
           [
-            { version: "8.7", type: nightly, scenarios: "oidc" },
-            { version: "8.6", type: nightly, scenarios: "mt" },
+            {
+              version: "8.7",
+              type: nightly,
+              scenarios: '["multitenancy", "oidc"]',
+            },
+            {
+              version: "8.6",
+              type: nightly,
+              scenarios: '["multitenancy", "oidc", "opensearch"]',
+            },
           ]
     uses: ./.github/workflows/test-chart-version-nightly-template.yaml
     secrets: inherit
