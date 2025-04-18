@@ -78,7 +78,6 @@ jobs:
       flows: "upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-      # TODO: find a way to auto bump
       camunda-helm-upgrade-version: "${{ inputs.previous-helm-version }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
 
