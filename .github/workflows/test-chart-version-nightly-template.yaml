@@ -1,0 +1,86 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Chart Version Nightly - Template"
+
+on:
+  workflow_call:
+    inputs:
+      chart-version:
+        description: Chart version to test
+        required: true
+        type: string
+      scenarios:
+        description: Scenarios
+        required: true
+        type: string
+      type:
+        description: Type
+        required: true
+        type: string
+      # pr_number:
+      #   description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
+      #   required: true
+      #   type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.chart-version }}
+  cancel-in-progress: true
+
+# env:
+#   KUBECONFIG: .github/config/kubeconfig
+
+permissions:
+  contents: read
+
+jobs:
+  # validation:
+  #   name: Camunda ${{ inputs.chart-version }} - Validation
+  #   uses: ./.github/workflows/chart-validate-template.yaml
+  #   with:
+  #     identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.chart-version }}"
+  #     camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+  #
+  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  # check-multitenancy:
+  #   # needs: validation
+  #   runs-on: ubuntu-latest
+  #   name: Camunda ${{ inputs.chart-version }} - ${{ inputs.scenarios }}
+  #   outputs:
+  #     multitenancy-enabled: ${{ steps.check-enabled.outputs.multitenancy-enabled }}
+  #   steps:
+  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+  #       with:
+  #         # This is needed if the workflow is triggered by workflow_call.
+  #         repository: camunda/camunda-platform-helm
+  #         ref: ${{ inputs.camunda-helm-git-ref }}
+  #     - name: check enabled
+  #       id: check-enabled
+  #       env:
+  #         CHART_PATH: charts/camunda-platform-${{ inputs.chart-version }}
+  #       run: |
+  #         matrix_file="${CHART_PATH}/test/ci-test-config.yaml"
+  #
+  #         multitenancy_enabled="$(yq '.integration.scenarios.nightly.multitenancy.enabled' --indent=0 --output-format json ${matrix_file})"
+  #         echo "multitenancy-enabled=${multitenancy_enabled}" | tee -a $GITHUB_OUTPUT
+  integration-multitenancy:
+    name: Camunda ${{ inputs.chart-version }} - Integration Test
+    # needs: check-multitenancy
+    # if: ${{ needs.check-multitenancy.outputs.multitenancy-enabled == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJson(inputs.scenarios) }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ matrix.scenario }}-intg-${{ inputs.chart-version }}"
+      deployment-ttl: 1d
+      platforms: "gke"
+      flows: "install,upgrade"
+      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      test-case: ${{inputs.type}}
+      scenario: ${{matrix.scenario}}
+      camunda-helm-git-ref: nightly-integration-tests

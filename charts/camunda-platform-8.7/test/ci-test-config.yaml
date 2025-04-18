@@ -13,8 +13,23 @@ unit:
 
 # Used in the GitHub Actions integration test CI workflow.
 integration:
-  scenarios:
+  vars:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../../charts
+  scenarios:
+    pr:
+      fullSetup:
+        enabled: true
+        # valuesFile: values-integration-test-ingress-common.yaml
+    nightly:
+      - name: multitenancy
+        enabled: true
+        # valuesFile: values-integration-test-multitenancy.yaml
+      - name: oidc
+        enabled: true
+        # valuesFile: values-integration-test-oidc.yaml
+      - name: opensearch
+        enabled: false
+        # valuesFile: values-integration-test-opensearch.yaml
