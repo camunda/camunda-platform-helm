@@ -266,7 +266,9 @@ spec:
 
   {{- if eq .Values.core.persistenceType "disk" }}
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: data
         annotations:
           {{- toYaml .Values.core.pvcAnnotations | nindent 10 }}
