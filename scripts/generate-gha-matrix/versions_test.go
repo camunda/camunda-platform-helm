@@ -36,7 +36,8 @@ func TestGetPreviousChart(t *testing.T) {
 	version := getCamundaVersion(chart)
 	previousVersion, err := getPreviousHelmChartVersion(chart, version)
 	require.NoError(t, err)
-	require.Equal(t, "12", previousVersion)
+	require.Equal(t, "12", previousVersion.Version)
+	require.Equal(t, "camunda-platform-8.7", previousVersion.Dir)
 }
 
 func TestGetPreviousChartInvalidVersion(t *testing.T) {

@@ -13,7 +13,7 @@ func processInputs(input Input) ([]Output, error) {
 		}
 
 		version := getCamundaVersion(chart)
-		previousVersionMajor, err := getPreviousHelmChartVersion(chart, version)
+		previousVersion, err := getPreviousHelmChartVersion(chart, version)
 		if err != nil {
 			return nil, ProcessErrorf("failed to get previous helm chart metadata for version %s : %s", version, err)
 		}
@@ -21,7 +21,8 @@ func processInputs(input Input) ([]Output, error) {
 		matrixRunVector := Output{
 			CamundaVersion:           version,
 			HelmChartVersion:         chart.Metadata.Version,
-			PreviousHelmChartVersion: previousVersionMajor,
+			PreviousHelmChartVersion: previousVersion.Version,
+			PreviousHelmChartDir:     previousVersion.Dir,
 		}
 
 		output = append(output, matrixRunVector)

@@ -16,6 +16,10 @@ on:
         description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
         required: true
         type: string
+      previous-helm-dir:
+        description: base directory of the previous helm version to upgrade from for references to test values.yamls
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr_number }}-${{ inputs.chart-version }}
@@ -79,5 +83,6 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       camunda-helm-upgrade-version: "${{ inputs.previous-helm-version }}"
+      camunda-upgrade-helm-dir: "${{ inputs.previous-helm-dir }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
 

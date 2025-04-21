@@ -50,3 +50,4 @@ jobs:
       chart-version: "${{ matrix.version }}"
       previous-helm-version: "${{ matrix.previousHelmVersion }}"
       pr_number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
+      previous-helm-dir: "${{ matrix.previousHelmDir }}"

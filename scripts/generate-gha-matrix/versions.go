@@ -20,19 +20,23 @@ func getCamundaVersion(chart *chart.Chart) string {
 	return camundaVersionParsed
 }
 
-func getPreviousHelmChartVersion(chart *chart.Chart, version string) (string, error) {
+func getPreviousHelmChartVersion(chart *chart.Chart, version string) (*ChartVersion, error) {
 	camundaVersionFloat, err := strconv.ParseFloat(version, 64)
 	if err != nil {
-		return "", VersionParsingErrorf("failed to parse version from input: %s", err)
+		return nil, VersionParsingErrorf("failed to parse version from input: %s", err)
 	}
 	previousVersionFloat := (camundaVersionFloat*10 - 1) / 10
 	previousCamundaVersion := strconv.FormatFloat(previousVersionFloat, 'f', -1, 64)
-	previousChart, err := loader.Load("../../charts/camunda-platform-" + previousCamundaVersion)
+	previousChartDir := "camunda-platform-" + previousCamundaVersion
+	previousChart, err := loader.Load("../../charts/" + previousChartDir)
 	if err != nil {
-		return "", VersionParsingErrorf("failed to load the previous chart: %s", err)
+		return nil, VersionParsingErrorf("failed to load the previous chart: %s", err)
 	}
 	previousChartVersionSemver := "v" + previousChart.Metadata.Version
 	previousVersionMajor := semver.Major(previousChartVersionSemver)
 	previousVersionMajor = strings.TrimPrefix(previousVersionMajor, "v")
-	return previousVersionMajor, nil
+	return &ChartVersion{
+		Version: previousVersionMajor,
+		Dir:     previousChartDir,
+	}, nil
 }
