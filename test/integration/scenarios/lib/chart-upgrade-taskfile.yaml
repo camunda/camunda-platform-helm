@@ -29,7 +29,7 @@ tasks:
         if [ $? -eq 0 ]; then
           kubectl delete deployment -n {{ .TEST_NAMESPACE }} integration-identity
           kubectl wait -n {{ .TEST_NAMESPACE }} --for='delete' deployment/integration-identity
-          FORCE="--force --install"
+          FORCE="--force --install --set=global.postgresql.auth.existingSecret=integration-test-credentials"
         fi
       fi
       set -e +x
