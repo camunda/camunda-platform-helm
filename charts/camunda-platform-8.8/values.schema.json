@@ -5422,7 +5422,7 @@
                     }
                 },
                 "extraConfig": {
-                    "type": "string",
+                    "type": "object",
                     "description": "Append extra configuration to the elasticsearch node configuration",
                     "default": "# Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285\nlogger.org.elasticsearch.deprecation: \"OFF\"\n"
                 },
