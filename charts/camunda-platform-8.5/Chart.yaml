@@ -72,3 +72,4 @@ annotations:
       description: "Add global.extraManifests support for injecting arbitrary YAML"
     - kind: fixed
       description: "Changing helper function for identityURL"
+  test: test
