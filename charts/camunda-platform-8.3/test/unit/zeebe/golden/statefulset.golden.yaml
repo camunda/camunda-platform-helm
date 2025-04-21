@@ -171,7 +171,9 @@ spec:
             topologyKey: kubernetes.io/hostname
 # yamllint enable
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: data
       spec:
         accessModes: [ReadWriteOnce]
