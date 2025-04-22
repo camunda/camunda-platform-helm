@@ -84,6 +84,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInput() {
 				"elasticsearch.enabled":        "false",
 				"global.opensearch.enabled":    "true",
 				"global.opensearch.prefix":     "opensearch-prefix",
+				"global.opensearch.url.host":   "test",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
