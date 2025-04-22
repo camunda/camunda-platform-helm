@@ -147,3 +147,30 @@ func (s *configMapTemplateTest) TestRedirectRootUrlTrimsComplexSuffixes() {
 	// then
 	s.Require().Equal("http://localhost:8081", configmapApplication.CamundaOperate.Identity.RedirectRootUrl)
 }
+func (s *configMapTemplateTest) TestOperateOpenSearchPrefix() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.enabled": "false",
+			"elasticsearch.enabled":        "false",
+			"global.opensearch.enabled":    "true",
+			"global.opensearch.prefix":     "opensearch-prefix",
+			"global.opensearch.url.host":   "test",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication OperateConfigYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("opensearch-prefix", configmapApplication.CamundaOperate.ZeebeOpensearch.Prefix)
+}
