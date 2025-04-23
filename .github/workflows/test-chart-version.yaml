@@ -47,5 +47,5 @@ jobs:
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
-      chart-version: "${{ matrix.version }}"
-      pr_number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
+      camunda-version: "${{ matrix.version }}"
+      pr-number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
