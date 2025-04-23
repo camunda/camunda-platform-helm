@@ -4,17 +4,17 @@ name: "Test - Chart Version - Template"
 on:
   workflow_call:
     inputs:
-      chart-version:
-        description: Chart version to test
+      camunda-version:
+        description: Camunda version to test
         required: true
         type: string
-      pr_number:
+      pr-number:
         description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
         required: true
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr_number }}-${{ inputs.chart-version }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.camunda-version }}
   cancel-in-progress: true
 
 env:
@@ -25,23 +25,23 @@ permissions:
 
 jobs:
   validation:
-    name: Camunda ${{ inputs.chart-version }} - Validation
+    name: Camunda ${{ inputs.camunda-version }} - Validation
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.chart-version }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.camunda-version }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   unit:
-    name: Camunda ${{ inputs.chart-version }} - Unit Test
+    name: Camunda ${{ inputs.camunda-version }} - Unit Test
     uses: ./.github/workflows/test-unit-template.yml
     with:
-      identifier: "${{ github.event.pull_request.number }}-unit-${{ inputs.chart-version }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      identifier: "${{ github.event.pull_request.number }}-unit-${{ inputs.camunda-version }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
-    name: Camunda ${{ inputs.chart-version }} - Integration Test
+    name: Camunda ${{ inputs.camunda-version }} - Integration Test
     needs: [validation, unit]
     permissions:
       contents: read
@@ -50,10 +50,10 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.chart-version }}"
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
-      camunda-helm-dir: "camunda-platform-${{ inputs.chart-version }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
