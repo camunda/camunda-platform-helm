@@ -10,6 +10,7 @@ import (
 type Display struct {
 	NoColors  bool
 	QuietMode bool
+	Debug     bool
 	mutex     sync.Mutex
 }
 
@@ -74,10 +75,9 @@ func (d *Display) PrintBold(message string) {
 }
 
 // DebugLog logs debug messages if debug mode is enabled
-func (d *Display) DebugLog(debug bool, message string) {
-	if debug && !d.QuietMode {
+func (d *Display) DebugLog(message string) {
+	if d.Debug && !d.QuietMode {
 		gray := color.New(color.FgHiBlack)
 		gray.Printf("[DEBUG] %s\n", message)
 	}
 }
-

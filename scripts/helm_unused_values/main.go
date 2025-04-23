@@ -9,6 +9,7 @@ import (
 	"camunda.com/helm-unused-values/pkg/output"
 	"camunda.com/helm-unused-values/pkg/patterns"
 	"camunda.com/helm-unused-values/pkg/search"
+	"camunda.com/helm-unused-values/pkg/utils"
 	"camunda.com/helm-unused-values/pkg/values"
 
 	"github.com/schollz/progressbar/v3"
@@ -43,12 +44,10 @@ Progress indicators are displayed during long-running operations.`,
 	rootCmd.Flags().BoolVar(&cfg.NoColors, "no-colors", false, "Disable colored output")
 	rootCmd.Flags().BoolVar(&cfg.ShowAllKeys, "show-all-keys", false, "Show all keys (used and unused), not just unused ones")
 	rootCmd.Flags().BoolVar(&cfg.JSONOutput, "json", false, "Output results in JSON format (useful for CI)")
-	rootCmd.Flags().StringVar(&cfg.OutputFile, "output-file", "", "Write results to the specified file")
 	rootCmd.Flags().IntVar(&cfg.ExitCodeOnUnused, "exit-code", 0, "Set exit code when unused values are found (default: 0)")
 	rootCmd.Flags().BoolVar(&cfg.QuietMode, "quiet", false, "Suppress all output except results and errors")
 	rootCmd.Flags().StringVar(&cfg.FilterPattern, "filter", "", "Only show keys that match the specified pattern (works with --show-all-keys)")
 	rootCmd.Flags().BoolVar(&cfg.Debug, "debug", false, "Enable verbose debug logging")
-	rootCmd.Flags().IntVar(&cfg.GrepTimeout, "grep-timeout", 5, "Timeout for grep/ripgrep in seconds")
 	rootCmd.Flags().StringVar(&cfg.SearchTool, "search-tool", "", "Search tool to use: 'ripgrep' or 'grep' (default: use ripgrep if available)")
 	rootCmd.Flags().BoolVar(&cfg.UseShell, "use-shell", false, "Use shell for executing search commands (troubleshooting)")
 	rootCmd.Flags().BoolVar(&cfg.ShowTestCommands, "show-test-commands", false, "Show test commands for unused keys that you can run on the terminal")
@@ -61,34 +60,26 @@ Progress indicators are displayed during long-running operations.`,
 	}
 }
 
-// run executes the main application logic
 func run(cfg *config.Config) error {
-	// Create output display
 	display := output.NewDisplay(cfg.NoColors, cfg.QuietMode)
-
-	// Set progress visibility (show progress bars except in quiet/JSON modes)
 	showProgress := !cfg.QuietMode && !cfg.JSONOutput
-
-	// Validate templates directory
-	if err := values.ValidateDirectory(cfg.TemplatesDir); err != nil {
+	if err := utils.ValidateDirectory(cfg.TemplatesDir); err != nil {
 		return fmt.Errorf("invalid templates directory: %w", err)
 	}
 
-	// Check dependencies
-	depOk, missing := search.CheckDependencies()
+	depOk, missing := utils.CheckDependencies()
 	if !depOk {
 		display.PrintError(fmt.Sprintf("Missing required dependencies: %v", missing))
 		return fmt.Errorf("missing required dependencies")
 	}
 
-	// Check for ripgrep and determine search tool to use
-	ripgrepAvailable := search.DetectRipgrep()
+	ripgrepAvailable := utils.DetectRipgrep()
 
-	// Set UseRipgrep based on SearchTool preference or auto-detection
-	if cfg.SearchTool == "grep" {
+	switch cfg.SearchTool {
+	case "grep":
 		cfg.UseRipgrep = false
 		display.PrintInfo("Using grep as specified")
-	} else if cfg.SearchTool == "ripgrep" {
+	case "ripgrep":
 		if !ripgrepAvailable {
 			display.PrintWarning("Ripgrep was specified but not found, falling back to grep")
 			cfg.UseRipgrep = false
@@ -96,7 +87,7 @@ func run(cfg *config.Config) error {
 			cfg.UseRipgrep = true
 			display.PrintSuccess("Using ripgrep as specified")
 		}
-	} else {
+	default:
 		// Auto-detect
 		cfg.UseRipgrep = ripgrepAvailable
 		if cfg.UseRipgrep {
@@ -106,23 +97,19 @@ func run(cfg *config.Config) error {
 		}
 	}
 
-	// Create pattern registry
-	patternRegistry := patterns.New(cfg.Debug)
+	patternRegistry := patterns.New()
 	if err := patternRegistry.RegisterBuiltins(); err != nil {
 		return fmt.Errorf("failed to register patterns: %w", err)
 	}
 	defer patternRegistry.CleanUp()
 
-	// Set up key extractor
-	keyExtractor := values.NewExtractor(cfg.Debug)
+	keyExtractor := values.NewExtractor(display)
 
-	// Define values.yaml path
 	valuesFile := filepath.Join(cfg.TemplatesDir, "..", "values.yaml")
-	if err := values.ValidateFile(valuesFile); err != nil {
+	if err := utils.ValidateFile(valuesFile); err != nil {
 		return fmt.Errorf("invalid values file: %w", err)
 	}
 
-	// Extract keys from values.yaml with progress bar
 	if !cfg.QuietMode {
 		display.PrintInfo("Extracting keys from values.yaml...")
 	}
@@ -131,27 +118,18 @@ func run(cfg *config.Config) error {
 	var err error
 
 	if showProgress {
-		// Create a progress bar for parsing
 		bar := progressbar.NewOptions(1,
-			progressbar.OptionEnableColorCodes(true),
+			progressbar.OptionEnableColorCodes(!cfg.NoColors),
 			progressbar.OptionSetWidth(50),
 			progressbar.OptionSetDescription("Parsing YAML file..."),
 			progressbar.OptionShowCount(),
-			progressbar.OptionUseANSICodes(true),
-			progressbar.OptionSetPredictTime(false),
+			progressbar.OptionUseANSICodes(!cfg.NoColors),
+			progressbar.OptionSetPredictTime(true),
 			progressbar.OptionSpinnerType(14),
-			progressbar.OptionSetTheme(progressbar.Theme{
-				Saucer:        "[blue]=[reset]",
-				SaucerHead:    "[blue]>[reset]",
-				SaucerPadding: " ",
-				BarStart:      "[",
-				BarEnd:        "]",
-			}))
+		)
 
-		// Start the key extraction (with progress reporting)
 		keys, err = keyExtractor.ExtractKeysWithProgress(valuesFile, bar)
 	} else {
-		// Start the key extraction (without progress reporting)
 		keys, err = keyExtractor.ExtractKeys(valuesFile)
 	}
 
@@ -159,7 +137,6 @@ func run(cfg *config.Config) error {
 		return fmt.Errorf("extract values keys: %w", err)
 	}
 
-	// Apply filter if specified
 	if cfg.FilterPattern != "" {
 		display.PrintInfo(fmt.Sprintf("Filtering results to only show keys matching: %s", cfg.FilterPattern))
 		keys = keyExtractor.FilterKeys(keys, cfg.FilterPattern)
@@ -170,7 +147,7 @@ func run(cfg *config.Config) error {
 	fmt.Println()
 
 	// Create finder
-	finder := search.NewFinder(cfg.TemplatesDir, patternRegistry, cfg.UseRipgrep, cfg.Debug)
+	finder := search.NewFinder(cfg.TemplatesDir, patternRegistry, cfg.UseRipgrep, display)
 
 	// Set parallelism if configured
 	if cfg.Parallelism > 0 {
@@ -200,7 +177,7 @@ func run(cfg *config.Config) error {
 
 	// Exit with appropriate code if unused keys found
 	if totalUnused > 0 && cfg.ExitCodeOnUnused != 0 {
-		display.DebugLog(cfg.Debug, fmt.Sprintf("Exiting with code %d (unused keys found)", cfg.ExitCodeOnUnused))
+		display.DebugLog(fmt.Sprintf("Exiting with code %d (unused keys found)", cfg.ExitCodeOnUnused))
 		os.Exit(cfg.ExitCodeOnUnused)
 	}
 

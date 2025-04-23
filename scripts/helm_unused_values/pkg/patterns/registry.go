@@ -14,11 +14,10 @@ type Registry struct {
 	KeysFiles     map[string]string
 	LocationFiles map[string]string
 	CompiledRegex map[string]*regexp.Regexp // Cache for compiled regex patterns
-	Debug         bool                      // Debug flag to control debug output
 }
 
 // New creates a new pattern registry
-func New(debug bool) *Registry {
+func New() *Registry {
 	return &Registry{
 		Names:         []string{},
 		Descriptions:  make(map[string]string),
@@ -26,7 +25,6 @@ func New(debug bool) *Registry {
 		KeysFiles:     make(map[string]string),
 		LocationFiles: make(map[string]string),
 		CompiledRegex: make(map[string]*regexp.Regexp),
-		Debug:         debug,
 	}
 }
 
@@ -73,9 +71,8 @@ func (r *Registry) CleanUp() {
 	}
 }
 
-// RegisterBuiltins registers all the built-in patterns
+// See testcases for examples of how to use this
 func (r *Registry) RegisterBuiltins() error {
-	// Register built-in patterns - these match the bash script patterns
 	patterns := []struct {
 		name        string
 		description string

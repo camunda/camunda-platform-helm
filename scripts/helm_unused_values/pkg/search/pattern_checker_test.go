@@ -1,9 +1,11 @@
-package search
+package search_test
 
 import (
 	"testing"
 
+	"camunda.com/helm-unused-values/pkg/output"
 	"camunda.com/helm-unused-values/pkg/patterns"
+	"camunda.com/helm-unused-values/pkg/search"
 )
 
 func TestSearchKeyInTemplates(t *testing.T) {
@@ -26,17 +28,17 @@ func TestSearchKeyInTemplates(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a test registry
-			registry := patterns.New(false)
+			registry := patterns.New()
 
 			// Create the test finder
-			finder := &Finder{
+			finder := &search.Finder{
 				TemplatesDir: "./testdata",
 				Registry:     registry,
-				Debug:        true,
 				UseRipgrep:   true,
+				Display:      output.NewDisplay(true, true),
 			}
 
-			found, matches := finder.searchForDirectUsageOfKeyAcrossAllTemplates(tc.key)
+			found, matches := finder.SearchForDirectUsageOfKeyAcrossAllTemplates(tc.key)
 
 			// Check results
 			if found != tc.expectedFound {
@@ -126,18 +128,18 @@ func TestSearchKeyByPatternInTemplates(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a test registry
-			registry := patterns.New(false)
+			registry := patterns.New()
 			registry.RegisterBuiltins()
 
 			// Create the test finder
-			finder := &Finder{
+			finder := &search.Finder{
 				TemplatesDir: "./testdata",
 				Registry:     registry,
-				Debug:        true,
 				UseRipgrep:   true,
+				Display:      output.NewDisplay(true, true),
 			}
 
-			found, _, matches := finder.isKeyUsedWithPattern(tc.key, tc.patternName)
+			found, _, matches := finder.IsKeyUsedWithPattern(tc.key, tc.patternName)
 
 			// Check results
 			if found != tc.expectedFound {

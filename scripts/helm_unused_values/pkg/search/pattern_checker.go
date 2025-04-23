@@ -5,26 +5,22 @@ import (
 	"strings"
 )
 
-// searchForDirectUsageOfKeyAcrossAllTemplates searches for a key in the template files
-func (f *Finder) searchForDirectUsageOfKeyAcrossAllTemplates(key string) (bool, []string) {
+// SearchForDirectUsageOfKeyAcrossAllTemplates searches for a key in the template files
+func (f *Finder) SearchForDirectUsageOfKeyAcrossAllTemplates(key string) (bool, []string) {
 	// Escape dots in the key for regex pattern
 	escapedKey := strings.ReplaceAll(key, ".", "\\.")
 	pattern := fmt.Sprintf("\\.Values\\.%s", escapedKey)
 
-	if f.Debug {
-		fmt.Println("SearchKeyInTemplates debug: Key:", key)
-		fmt.Println("SearchKeyInTemplates debug: Search pattern:", pattern)
-		fmt.Println("SearchKeyInTemplates debug: Templates directory:", f.TemplatesDir)
-		fmt.Println("SearchKeyInTemplates debug: Escaped key:", escapedKey)
-	}
+	f.Display.DebugLog(fmt.Sprintln("SearchKeyInTemplates debug: Key:", key))
+	f.Display.DebugLog(fmt.Sprintln("SearchKeyInTemplates debug: Search pattern:", pattern))
+	f.Display.DebugLog(fmt.Sprintln("SearchKeyInTemplates debug: Templates directory:", f.TemplatesDir))
+	f.Display.DebugLog(fmt.Sprintln("SearchKeyInTemplates debug: Escaped key:", escapedKey))
 
 	// Search for the pattern in template files
 	matches := f.searchFiles(pattern, f.TemplatesDir)
 
-	if f.Debug {
-		fmt.Printf("SearchKeyInTemplates debug: Key '%s' found: %v, matches: %d\n",
-			key, len(matches) > 0, len(matches))
-	}
+	f.Display.DebugLog(fmt.Sprintf("SearchKeyInTemplates debug: Key '%s' found: %v, matches: %d\n",
+		key, len(matches) > 0, len(matches)))
 
 	return len(matches) > 0, matches
 }
@@ -52,13 +48,13 @@ func (f *Finder) adjustRegexPatterns(patternName string, key string) string {
 }
 
 // adjustKeysForHelpers transforms keys based on known helper patterns
-func (f *Finder) adjustKeysForHelpers(patternName string, key string) string {
+func (f *Finder) adjustKeysForHelpers(key string) string {
 	var localKey string
 	if strings.Contains(key, "identityKeycloak.postgresql") ||
 		strings.Contains(key, "identityKeycloak.resources") ||
 		strings.Contains(key, "identityKeycloak.containerSecurityContext") ||
 		strings.Contains(key, "identityKeycloak.podSecurityContext") ||
-		strings.Contains(key, "identityKeycloak.ingress"){
+		strings.Contains(key, "identityKeycloak.ingress") {
 		localKey = strings.ReplaceAll(key, "identityKeycloak.", "identity.")
 	} else if strings.Contains(key, "zeebe-gateway") {
 		localKey = strings.ReplaceAll(key, "zeebe-gateway.", "zeebeGateway.")
@@ -70,11 +66,9 @@ func (f *Finder) adjustKeysForHelpers(patternName string, key string) string {
 	return localKey
 }
 
-// isKeyUsedWithPattern checks if a key is used with a specific pattern
-func (f *Finder) isKeyUsedWithPattern(key, patternName string) (bool, string, []string) {
-	if f.Debug {
-		fmt.Println("IsKeyUsedWithPattern debug: Key:", key)
-	}
+// IsKeyUsedWithPattern checks if a key is used with a specific pattern
+func (f *Finder) IsKeyUsedWithPattern(key, patternName string) (bool, string, []string) {
+	f.Display.DebugLog(fmt.Sprintln("IsKeyUsedWithPattern debug: Key:", key))
 	if patternName == "imageByParams" {
 		if !strings.Contains(key, "image") {
 			return false, "", nil
@@ -90,7 +84,7 @@ func (f *Finder) isKeyUsedWithPattern(key, patternName string) (bool, string, []
 			return false, "", nil
 		}
 	}
-	localKey := f.adjustKeysForHelpers(patternName, key)
+	localKey := f.adjustKeysForHelpers(key)
 	if patternName == "imageByParams" {
 		if !strings.Contains(localKey, "image") {
 			return false, "", nil
@@ -105,14 +99,12 @@ func (f *Finder) isKeyUsedWithPattern(key, patternName string) (bool, string, []
 		regexPattern := f.adjustRegexPatterns(patternName, strings.Join(parts, "."))
 		matches = f.searchFiles(regexPattern, f.TemplatesDir)
 
-		if f.Debug {
-			fmt.Println("IsKeyUsedWithPattern debug: Key:", key)
-			fmt.Println("IsKeyUsedWithPattern debug: Local Key:", localKey)
-			fmt.Println("IsKeyUsedWithPattern debug: PatternName:", patternName)
-			fmt.Println("IsKeyUsedWithPattern debug: Parts:", parts)
-			fmt.Println("IsKeyUsedWithPattern debug: Trying pattern:", regexPattern)
-			fmt.Println("IsKeyUsedWithPattern debug: Matches:", matches)
-		}
+		f.Display.DebugLog(fmt.Sprintln("IsKeyUsedWithPattern debug: Key:", key))
+		f.Display.DebugLog(fmt.Sprintln("IsKeyUsedWithPattern debug: Local Key:", localKey))
+		f.Display.DebugLog(fmt.Sprintln("IsKeyUsedWithPattern debug: PatternName:", patternName))
+		f.Display.DebugLog(fmt.Sprintln("IsKeyUsedWithPattern debug: Parts:", parts))
+		f.Display.DebugLog(fmt.Sprintln("IsKeyUsedWithPattern debug: Trying pattern:", regexPattern))
+		f.Display.DebugLog(fmt.Sprintln("IsKeyUsedWithPattern debug: Matches:", matches))
 		if len(matches) > 0 { // Fixed: Consistent with loop condition
 			break
 		}
@@ -120,4 +112,3 @@ func (f *Finder) isKeyUsedWithPattern(key, patternName string) (bool, string, []
 
 	return len(matches) != 0, patternName, matches
 }
-
