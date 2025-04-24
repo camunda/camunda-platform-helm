@@ -129,6 +129,29 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("true", configmapApplication.CamundaTasklist.MultiTenancy.Enabled)
 			},
+		}, {
+			Name:                 "TestCustomZeebeOpenSearchPrefix",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
+				"global.opensearch.prefix":     "opensearch-prefix",
+				"global.opensearch.url.host":   "test",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication TasklistConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then - custom OpenSearch prefix
+				s.Require().Equal("opensearch-prefix", configmapApplication.CamundaTasklist.ZeebeOpensearch.Prefix)
+			},
 		},
 	}
 
