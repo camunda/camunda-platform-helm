@@ -52,7 +52,7 @@ data:
           - id: "default-cluster"
             name: {{ tpl .Values.global.zeebeClusterName . | quote }}
             version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) | quote }}
-            authentication: {{ .Values.global.identity.auth.enabled | ternary "BEARER_TOKEN" "NONE" | quote }}
+            authentication: {{ include "webModeler.authenticationType" . | quote }}
             url:
               zeebe:
                 grpc: "grpc://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}"

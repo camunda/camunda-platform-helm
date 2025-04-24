@@ -291,39 +291,56 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
 	// given
-	values := map[string]string{
-		"webModelerPostgresql.enabled": "false",
-		"global.zeebeClusterName":      "test-zeebe",
-		"core.image.tag":               "8.x.x-alpha1",
-		"core.contextPath":             "/core",
-		"core.service.grpcPort":        "26600",
-		"core.service.httpPort":        "8090",
-	}
-	maps.Insert(values, maps.All(requiredValues))
-	options := &helm.Options{
-		SetValues:      values,
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	testCases := []struct {
+		name                   string
+		authEnabled            string
+		authMethod             string
+		expectedAuthentication string
+	}{
+		{"OIDC Authentication", "true", "oidc", "BEARER_TOKEN"},
+		{"Basic Authentication", "true", "basic", "BASIC"},
+		{"No Authentication", "false", "basic", "NONE"},
 	}
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication WebModelerRestAPIApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			values := map[string]string{
+				"webModelerPostgresql.enabled":          "false",
+				"global.zeebeClusterName":               "test-zeebe",
+				"global.identity.auth.enabled":          tc.authEnabled,
+				"global.security.authentication.method": tc.authMethod,
+				"core.image.tag":                        "8.x.x-alpha1",
+				"core.contextPath":                      "/core",
+				"core.service.grpcPort":                 "26600",
+				"core.service.httpPort":                 "8090",
+			}
+			maps.Insert(values, maps.All(requiredValues))
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
+			// when
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+			var configmap corev1.ConfigMap
+			var configmapApplication WebModelerRestAPIApplicationYAML
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+			if err != nil {
+				s.Fail("Failed to unmarshal yaml. error=", err)
+			}
+
+			// then
+			s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
+			s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
+			s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
+			s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
+			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
+			s.Require().Equal("grpc://camunda-platform-test-core:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
+			s.Require().Equal("http://camunda-platform-test-core:8090/core/v1", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
+		})
 	}
-
-	// then
-	s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
-	s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
-	s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-	s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
-	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
-	s.Require().Equal("grpc://camunda-platform-test-core:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
-	s.Require().Equal("http://camunda-platform-test-core:8090/core/v1", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
@@ -345,6 +362,14 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 		"webModeler.restapi.clusters[1].url.zeebe.rest": "http://core.test-2:8080",
 		"webModeler.restapi.clusters[1].url.operate":    "http://operate.test-2:8080",
 		"webModeler.restapi.clusters[1].url.tasklist":   "http://tasklist.test-2:8080",
+		"webModeler.restapi.clusters[2].id":             "test-cluster-3",
+		"webModeler.restapi.clusters[2].name":           "test cluster 3",
+		"webModeler.restapi.clusters[2].version":        "8.x.x-alpha1",
+		"webModeler.restapi.clusters[2].authentication": "BASIC",
+		"webModeler.restapi.clusters[2].url.zeebe.grpc": "grpc://core.test-3:26500",
+		"webModeler.restapi.clusters[2].url.zeebe.rest": "http://core.test-3:8080",
+		"webModeler.restapi.clusters[2].url.operate":    "http://operate.test-3:8080",
+		"webModeler.restapi.clusters[2].url.tasklist":   "http://tasklist.test-3:8080",
 		"webModelerPostgresql.enabled":                  "false",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -365,7 +390,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	}
 
 	// then
-	s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
+	s.Require().Equal(3, len(configmapApplication.Camunda.Modeler.Clusters))
 	s.Require().Equal("test-cluster-1", configmapApplication.Camunda.Modeler.Clusters[0].Id)
 	s.Require().Equal("test cluster 1", configmapApplication.Camunda.Modeler.Clusters[0].Name)
 	s.Require().Equal("8.6.0", configmapApplication.Camunda.Modeler.Clusters[0].Version)
@@ -378,6 +403,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Modeler.Clusters[1].Authentication)
 	s.Require().Equal("grpc://core.test-2:26500", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Grpc)
 	s.Require().Equal("http://core.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Rest)
+	s.Require().Equal("test-cluster-3", configmapApplication.Camunda.Modeler.Clusters[2].Id)
+	s.Require().Equal("test cluster 3", configmapApplication.Camunda.Modeler.Clusters[2].Name)
+	s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[2].Version)
+	s.Require().Equal("BASIC", configmapApplication.Camunda.Modeler.Clusters[2].Authentication)
+	s.Require().Equal("grpc://core.test-3:26500", configmapApplication.Camunda.Modeler.Clusters[2].Url.Zeebe.Grpc)
+	s.Require().Equal("http://core.test-3:8080", configmapApplication.Camunda.Modeler.Clusters[2].Url.Zeebe.Rest)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
