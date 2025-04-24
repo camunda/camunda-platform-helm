@@ -35,7 +35,7 @@ func TestSearchKeyInTemplates(t *testing.T) {
 				TemplatesDir: "./testdata",
 				Registry:     registry,
 				UseRipgrep:   true,
-				Display:      output.NewDisplay(true, true),
+				Display:      output.NewDisplay(true, true, true),
 			}
 
 			found, matches := finder.SearchForDirectUsageOfKeyAcrossAllTemplates(tc.key)
@@ -136,7 +136,7 @@ func TestSearchKeyByPatternInTemplates(t *testing.T) {
 				TemplatesDir: "./testdata",
 				Registry:     registry,
 				UseRipgrep:   true,
-				Display:      output.NewDisplay(true, true),
+				Display:      output.NewDisplay(true, true, true),
 			}
 
 			found, _, matches := finder.IsKeyUsedWithPattern(tc.key, tc.patternName)

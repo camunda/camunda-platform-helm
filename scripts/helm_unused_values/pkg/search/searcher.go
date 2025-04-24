@@ -38,7 +38,7 @@ func (f *Finder) executeSearchCommand(pattern, directory string) []string {
 			pattern, directory)
 	}
 
-	f.Display.DebugLog(fmt.Sprintln("\n\033[1;36mCommand Details:\033[0m"))
+	f.Display.DebugLog(fmt.Sprintln("\nCommand Details:"))
 	f.Display.DebugLog(fmt.Sprintln("  Shell command: ", shellCmd))
 
 	cmd = exec.Command("sh", "-c", shellCmd)
@@ -47,7 +47,7 @@ func (f *Finder) executeSearchCommand(pattern, directory string) []string {
 	if err != nil {
 		// Exit code 1 means no matches found, which is expected
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-			f.Display.DebugLog(fmt.Sprintln("\033[1;33m→ No matches found (exit code 1)\033[0m"))
+			f.Display.DebugLog(fmt.Sprintln("→ No matches found (exit code 1)"))
 			return []string{}
 		}
 		f.Display.DebugLog(fmt.Sprintf("✗ Error running search command: %v\n", err))

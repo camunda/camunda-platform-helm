@@ -1,7 +1,7 @@
 package output
 
 import (
-	"sync"
+	"fmt"
 
 	"github.com/fatih/color"
 )
@@ -11,11 +11,10 @@ type Display struct {
 	NoColors  bool
 	QuietMode bool
 	Debug     bool
-	mutex     sync.Mutex
 }
 
 // NewDisplay creates a new display handler
-func NewDisplay(noColors, quietMode bool) *Display {
+func NewDisplay(noColors, quietMode bool, debug bool) *Display {
 	if noColors {
 		color.NoColor = true
 	}
@@ -23,6 +22,7 @@ func NewDisplay(noColors, quietMode bool) *Display {
 	return &Display{
 		NoColors:  noColors,
 		QuietMode: quietMode,
+		Debug:     debug,
 	}
 }
 
@@ -76,8 +76,12 @@ func (d *Display) PrintBold(message string) {
 
 // DebugLog logs debug messages if debug mode is enabled
 func (d *Display) DebugLog(message string) {
-	if d.Debug && !d.QuietMode {
+	if d.Debug {
 		gray := color.New(color.FgHiBlack)
 		gray.Printf("[DEBUG] %s\n", message)
 	}
+}
+
+func (d *Display) PrintJson(message string) {
+	fmt.Print(message)
 }

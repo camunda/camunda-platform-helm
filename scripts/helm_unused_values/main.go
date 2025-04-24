@@ -49,8 +49,6 @@ Progress indicators are displayed during long-running operations.`,
 	rootCmd.Flags().StringVar(&cfg.FilterPattern, "filter", "", "Only show keys that match the specified pattern (works with --show-all-keys)")
 	rootCmd.Flags().BoolVar(&cfg.Debug, "debug", false, "Enable verbose debug logging")
 	rootCmd.Flags().StringVar(&cfg.SearchTool, "search-tool", "", "Search tool to use: 'ripgrep' or 'grep' (default: use ripgrep if available)")
-	rootCmd.Flags().BoolVar(&cfg.UseShell, "use-shell", false, "Use shell for executing search commands (troubleshooting)")
-	rootCmd.Flags().BoolVar(&cfg.ShowTestCommands, "show-test-commands", false, "Show test commands for unused keys that you can run on the terminal")
 	rootCmd.Flags().IntVar(&cfg.Parallelism, "parallelism", 0, "Number of parallel workers (0 = auto based on CPU cores)")
 
 	// Execute command
@@ -61,7 +59,11 @@ Progress indicators are displayed during long-running operations.`,
 }
 
 func run(cfg *config.Config) error {
-	display := output.NewDisplay(cfg.NoColors, cfg.QuietMode)
+	if cfg.JSONOutput {
+		cfg.NoColors = true
+		cfg.QuietMode = true
+	}
+	display := output.NewDisplay(cfg.NoColors, cfg.QuietMode, cfg.Debug)
 	showProgress := !cfg.QuietMode && !cfg.JSONOutput
 	if err := utils.ValidateDirectory(cfg.TemplatesDir); err != nil {
 		return fmt.Errorf("invalid templates directory: %w", err)
@@ -143,8 +145,7 @@ func run(cfg *config.Config) error {
 	}
 
 	// Report total keys found
-	display.PrintWarning(fmt.Sprintf("Total keys found: %d", len(keys)))
-	fmt.Println()
+	display.PrintWarning(fmt.Sprintf("\nTotal keys found: %d", len(keys)))
 
 	// Create finder
 	finder := search.NewFinder(cfg.TemplatesDir, patternRegistry, cfg.UseRipgrep, display)
@@ -163,7 +164,7 @@ func run(cfg *config.Config) error {
 	}
 
 	// Create reporter
-	reporter := output.NewReporter(display, cfg.JSONOutput, cfg.OutputFile, cfg.ShowAllKeys, cfg.ShowTestCommands)
+	reporter := output.NewReporter(display, cfg.JSONOutput, cfg.ShowAllKeys)
 
 	// Report results
 	if err := reporter.ReportResults(usages); err != nil {
