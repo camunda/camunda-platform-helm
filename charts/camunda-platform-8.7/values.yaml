@@ -3806,9 +3806,10 @@ elasticsearch:
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.17.4
-  ## @param elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
+  ## @skip elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
   extraConfig:
     # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
+    ## @skip elasticsearch.extraConfig.logger.org.elasticsearch.deprecation
     logger.org.elasticsearch.deprecation: "OFF"
   master:
     ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy

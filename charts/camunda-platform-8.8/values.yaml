@@ -2729,7 +2729,7 @@ elasticsearch:
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.17.4
-  ## @param elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
+  ## @skip elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
   extraConfig:
     # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
     logger.org.elasticsearch.deprecation: "OFF"
