@@ -290,7 +290,7 @@ global:
         clientId: operate
         ## @param global.identity.auth.operate.audience defines the audience, which is used by Operate.
         audience: operate-api
-        ## @param global.identity.auth.operate.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.operate.existingSecret.name
+        ## @param global.identity.auth.operate.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.operate.existingSecret.name.
         existingSecret:
         ## @param global.identity.auth.operate.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: operate-secret
