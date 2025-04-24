@@ -326,3 +326,15 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.authPublicApiAudience" -}}
   {{- .Values.global.identity.auth.webModeler.publicApiAudience | default "web-modeler-public-api" -}}
 {{- end -}}
+
+{{- define "webModeler.authenticationType" -}}
+{{- if .Values.global.identity.auth.enabled }}
+  {{- if eq .Values.global.security.authentication.method "oidc" }}
+    {{- "BEARER_TOKEN" }}
+  {{- else if eq .Values.global.security.authentication.method "basic" }}
+    {{- "BASIC" }}
+  {{- end }}
+{{- else }}
+  {{- "NONE" }}
+{{- end }}
+{{- end }}
