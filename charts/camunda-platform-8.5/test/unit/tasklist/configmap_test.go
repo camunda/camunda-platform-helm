@@ -144,7 +144,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				var configmapApplication TasklistConfigYAML
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
 				if e != nil {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
