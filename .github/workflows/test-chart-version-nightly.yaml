@@ -3,7 +3,7 @@ name: "Test - Chart Version Nightly"
 
 on:
   schedule:
-    # Set the cron schedule to run nightly at 9 PM UTC
+    # Set the cron schedule to run nightly at midnight UTC
     - cron: "0 0 * * *"
 
 concurrency:
