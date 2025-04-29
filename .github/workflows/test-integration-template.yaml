@@ -73,7 +73,7 @@ on:
         type: string
       scenario:
         required: false
-        default: "common"
+        default: "base"
         type: string
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
