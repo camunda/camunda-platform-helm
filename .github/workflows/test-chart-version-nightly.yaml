@@ -3,8 +3,8 @@ name: "Test - Chart Version Nightly"
 
 on:
   schedule:
-    # Set the cron schedule to run nightly at 9 PM UTC
-    - cron: "0 21 * * *"
+    # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
+    - cron: "0 4 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
