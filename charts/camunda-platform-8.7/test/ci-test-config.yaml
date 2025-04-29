@@ -13,8 +13,21 @@ unit:
 
 # Used in the GitHub Actions integration test CI workflow.
 integration:
-  scenarios:
+  vars:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../../charts
+  scenarios:
+    pr:
+      - name: base
+        enabled: true
+    nightly:
+      - name: base
+        enabled: true
+      - name: multitenancy
+        enabled: true
+      - name: oidc
+        enabled: false
+      - name: opensearch
+        enabled: false
