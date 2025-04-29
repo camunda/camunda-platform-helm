@@ -130,11 +130,16 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestOperateOpenSearchPrefix",
 			Values: map[string]string{
-				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
-				"global.opensearch.enabled":    "true",
-				"global.opensearch.prefix":     "opensearch-prefix",
-				"global.opensearch.url.host":   "test",
+				"global.elasticsearch.enabled":    "false",
+				"elasticsearch.enabled":           "false",
+				"global.opensearch.enabled":       "true",
+				"global.opensearch.prefix":        "opensearch-prefix",
+				"global.opensearch.url.host":      "test",
+				"global.opensearch.url.protocol":  "https",
+				"global.opensearch.url.port":      "443",
+				"global.opensearch.auth.username": "user",
+				"global.opensearch.auth.password": "password",
+				"optimize.migration.enabled":      "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
