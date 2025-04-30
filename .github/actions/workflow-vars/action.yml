@@ -84,7 +84,7 @@ runs:
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
 
       # Ingress hostname.
-      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
+      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${TEST_NAMESPACE}.${{ inputs.ingress-hostname-base }}"
       if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
