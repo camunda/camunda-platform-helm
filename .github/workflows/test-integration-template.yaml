@@ -307,8 +307,9 @@ jobs:
           kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
       - name: Set Deployment Secrets
         run: |
-          kubectl apply -n $TEST_NAMESPACE \
-            -f .github/config/external-secret/external-secret-certificates.yaml
+          kubectl get secret -n distribution-certs distribution-aws-camunda-cloud-tls -o yaml > distribution-aws-camunda-cloud-tls.yaml
+          sed -i "s/namespace: distribution-certs/namespace: $TEST_NAMESPACE/g" distribution-aws-camunda-cloud-tls.yaml
+          kubectl apply -f distribution-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
 
           # For backward compatibility.
           kubectl apply -n $TEST_NAMESPACE \
