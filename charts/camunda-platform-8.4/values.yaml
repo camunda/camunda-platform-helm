@@ -354,6 +354,8 @@ console:
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
     tag: 8.4.60
+    ## @param console.image.digest console image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -565,6 +567,8 @@ zeebe:
     repository: camunda/zeebe
      ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.4.18
+    ## @param zeebe.image.digest Zeebe image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -837,6 +841,8 @@ zeebe-gateway:
     repository: camunda/zeebe
     ## @param zeebe-gateway.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.4.18
+    ## @param zeebe-gateway.image.digest zeebe-gateway image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
     ## @param zeebe-gateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1091,6 +1097,8 @@ operate:
     repository: camunda/operate
     ## @param operate.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.4.19
+    ## @param operate.image.digest operate image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
     ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1309,6 +1317,8 @@ tasklist:
     repository: camunda/tasklist
     ## @param tasklist.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.4.19
+    ## @param tasklist.image.digest tasklist image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
     ## @param tasklist.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1526,6 +1536,8 @@ optimize:
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.4.16
+    ## @param optimize.image.digest optimize image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1766,6 +1778,8 @@ identity:
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.4.20
+    ## @param identity.image.digest identity image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1957,10 +1971,12 @@ identity:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     ## @param identity.postgresql.image.repository PostgreSQL repo
     ## @param identity.postgresql.image.tag PostgreSQL image tag
+    ## @param identity.postgresql.image.digest PostgreSQL image digest
     ##
     image:
       repository: bitnami/postgresql
       tag: 15.10.0-debian-12-r2
+      digest: ""
     ## @param identity.postgresql.nameOverride the name used for Identity PostgreSQL.
     ##
     nameOverride: identity-postgresql
@@ -2019,6 +2035,8 @@ identity:
         repository: bitnami/postgresql
         ## @param identity.keycloak.postgresql.image.tag image tag
         tag: 15.10.0-debian-12-r2
+        ## @param identity.keycloak.postgresql.image.digest image digest
+        digest: ""
       primary:
         ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].name
         ## @skip identity.keycloak.postgresql.primary.extraVolumes[0].emptyDir
@@ -2084,6 +2102,8 @@ identity:
       repository: bitnami/keycloak
       ## @param identity.keycloak.image.tag image tag
       tag: 22.0.5
+      ## @param identity.keycloak.image.digest image digest
+      digest: ""
 
     # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
     # Docs: https://www.keycloak.org/server/reverseproxy
@@ -2172,7 +2192,7 @@ identity:
     ## @param identity.keycloak.initContainers[1].volumeMounts[1].name
     ## @param identity.keycloak.initContainers[1].volumeMounts[1].mountPath
     - name: copy-configs
-      image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ else }}:{{ .Values.image.tag }}{{ end }}"
       imagePullPolicy: "Always"
       command: ["sh", "-c", "cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/* /quarkus"]
       securityContext:
@@ -2312,6 +2332,8 @@ webModeler:
     ## @param webModeler.image.tag can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
     tag: 8.4.16
+    ## @param webModeler.image.digest webModeler image digest
+    digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the Web Modeler images are pulled directly from Camunda's private registry.
     #
@@ -2959,6 +2981,8 @@ connectors:
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.4.19
+    ## @param connectors.image.digest connectors image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -3165,6 +3189,8 @@ elasticsearch:
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.9.2
+    ## @param elasticsearch.image.digest elasticsearch image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
   ## @param elasticsearch.extraVolumes[0].name
   ## @param elasticsearch.extraVolumes[0].emptyDir
   ## @param elasticsearch.extraVolumes[1].name
