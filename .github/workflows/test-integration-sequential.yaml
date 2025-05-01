@@ -184,6 +184,7 @@ jobs:
           chart-dir: "camunda-platform-8.4"
       - name: Upgrade and test 8.4
         uses: ./.github/actions/sequential-deploy-test
+        timeout-minutes: 30
         with:
           chart-version: 8.4
 
