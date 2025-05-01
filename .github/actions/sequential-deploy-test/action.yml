@@ -10,9 +10,11 @@ runs:
   using: 'composite'
   steps:
     - name: Pre Upgrade
+      shell: bash
       run: |
         task -d test/integration/scenarios/chart-full-setup upgrade.pre
     - name: 🌟 Upgrade Camunda chart 🌟
+      shell: bash
       env:
         TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
         TEST_CASE: ${{ inputs.test-case }}
@@ -28,10 +30,12 @@ runs:
       run: |
         task -d test/integration/scenarios/chart-full-setup upgrade.exec
     - name: ⭐️ Run Preflight TestSuite ⭐️
+      shell: bash
       timeout-minutes: 10
       run: |
         task -d test/integration/scenarios/chart-full-setup test.preflight
     - name: ⭐️ Run Core TestSuite ⭐️
+      shell: bash
       timeout-minutes: 20
       run: |
         task -d test/integration/scenarios/chart-full-setup test.core
