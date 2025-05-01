@@ -31,12 +31,10 @@ runs:
         task -d test/integration/scenarios/chart-full-setup upgrade.exec
     - name: ⭐️ Run Preflight TestSuite ⭐️
       shell: bash
-      timeout-minutes: 10
       run: |
         task -d test/integration/scenarios/chart-full-setup test.preflight
     - name: ⭐️ Run Core TestSuite ⭐️
       shell: bash
-      timeout-minutes: 20
       run: |
         task -d test/integration/scenarios/chart-full-setup test.core
 
