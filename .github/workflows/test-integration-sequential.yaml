@@ -82,10 +82,10 @@ jobs:
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:
-          cluster-name: ${{ secrets[matrix.distro.secret.cluster-name] }}
-          cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
-          workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
-          service-account: ${{ secrets[matrix.distro.secret.service-account] }}
+          cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
+          cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
+          workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
+          service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
       - name: Add Helm repos and dependencies
         run: |
           make helm.repos-add
