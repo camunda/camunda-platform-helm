@@ -181,7 +181,7 @@ jobs:
         id: test-type-vars-8-4
         uses: ./.github/actions/test-type-vars
         with:
-          chart-dir: "camunda-platform-${{ inputs.chart-version }}"
+          chart-dir: "camunda-platform-8.4"
       - name: Upgrade and test 8.4
         uses: ./.github/actions/sequential-deploy-test
         with:
