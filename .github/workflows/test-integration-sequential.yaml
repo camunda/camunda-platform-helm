@@ -159,7 +159,7 @@ jobs:
             --values ${{ steps.test-type-vars-8-3.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
             --values /tmp/extra-values-file.yaml
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.3/test/integration/scenarios
-          TEST_CHART_NAME: camunda-platform-8.3
+          TEST_CHART_NAME: ../../../../charts/camunda-platform-8.3
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.3
           TEST_VALUES_SCENARIO: base
         run: |
@@ -190,7 +190,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: base
-          TEST_CHART_NAME: camunda-platform-8.4
+          TEST_CHART_NAME: ../../../../charts/camunda-platform-8.4
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.4/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.4
           TEST_HELM_EXTRA_ARGS: >-
@@ -226,7 +226,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: base
-          TEST_CHART_NAME: camunda-platform-8.5
+          TEST_CHART_NAME: ../../../../charts/camunda-platform-8.5
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.5/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.5
           TEST_HELM_EXTRA_ARGS: >-
@@ -264,7 +264,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: base
-          TEST_CHART_NAME: camunda-platform-8.6
+          TEST_CHART_NAME: ../../../../charts/camunda-platform-8.6
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.6/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.6
           TEST_HELM_EXTRA_ARGS: >-
@@ -298,7 +298,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: base
-          TEST_CHART_NAME: camunda-platform-8.7
+          TEST_CHART_NAME: ../../../../charts/camunda-platform-8.7
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.7/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.7
           TEST_HELM_EXTRA_ARGS: >-
