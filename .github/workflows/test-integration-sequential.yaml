@@ -123,8 +123,8 @@ jobs:
         with:
           step: start
           token: ${{ steps.generate-github-token.outputs.token }}
-          env: ${{ steps.vars.outputs.identifier }}
-          ref: ${{ inputs.caller-git-ref }}
+          env: gke-${{ github.run_id }}
+          ref: ${{ github.ref }}
       - name: Pre setup
         timeout-minutes: 5
         env:
@@ -315,8 +315,8 @@ jobs:
           status: ${{ job.status }}
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
           env_url: https://${{ steps.vars.outputs.ingress-host }}
-          env: ${{ steps.vars.outputs.identifier }}
-          ref: ${{ inputs.caller-git-ref }}
+          env: gke-${{ github.run_id }}
+          ref: ${{ github.ref }}
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info
