@@ -155,6 +155,7 @@ jobs:
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.3/test/integration/scenarios
           TEST_CHART_NAME: camunda-platform-8.3
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.3
+          TEST_VALUES_SCENARIO: base
         run: |
           task -d test/integration/scenarios/chart-full-setup setup.exec
       - name: Post setup
