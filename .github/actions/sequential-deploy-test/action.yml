@@ -5,6 +5,9 @@ inputs:
   chart-version:
     description: 'chart version intended to be major.minor matching the charts dir. example: 8.5'
     required: true
+  infra-values:
+    description: 'Path to the infra values file'
+    required: true
 
 runs:
   using: 'composite'
@@ -25,7 +28,7 @@ runs:
         TEST_HELM_EXTRA_ARGS: >-
           ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
           --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-          --values ${{ steps.test-type-vars-8-5.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
+          --values ${{ inputs.infra-values }}
           --values /tmp/extra-values-file.yaml
       run: |
         task -d test/integration/scenarios/chart-full-setup upgrade.exec

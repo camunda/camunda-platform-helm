@@ -187,6 +187,7 @@ jobs:
         timeout-minutes: 30
         with:
           chart-version: 8.4
+          infra-values: ${{ steps.test-type-vars-8-4.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
 
       - name: Set test type vars
         id: test-type-vars-8-5
