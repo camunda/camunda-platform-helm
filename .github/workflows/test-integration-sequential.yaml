@@ -93,7 +93,7 @@ jobs:
       - name: Create test namespace
         run: |
           export TEST_NAMESPACE=distribution-sequential-${{ github.run_id }}
-          echo $TEST_NAMESPACE
+          echo $TEST_NAMESPACE | tee -a $GITHUB_ENV
           kubectl create ns $TEST_NAMESPACE
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
