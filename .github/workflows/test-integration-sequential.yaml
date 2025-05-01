@@ -123,7 +123,7 @@ jobs:
         with:
           step: start
           token: ${{ steps.generate-github-token.outputs.token }}
-          env: gke-${{ github.run_id }}
+          env: gke-sequential-${{ github.run_id }}
           ref: ${{ github.ref }}
       - name: Pre setup
         timeout-minutes: 5
@@ -315,7 +315,7 @@ jobs:
           status: ${{ job.status }}
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
           env_url: https://${{ steps.vars.outputs.ingress-host }}
-          env: gke-${{ github.run_id }}
+          env: gke-sequential-${{ github.run_id }}
           ref: ${{ github.ref }}
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
@@ -326,8 +326,8 @@ jobs:
         with:
           step: delete-env
           token: ${{ steps.generate-github-token.outputs.token }}
-          env: ${{ steps.vars.outputs.identifier }}
-          ref: ${{ inputs.caller-git-ref }}
+          env: gke-sequential-${{ github.run_id }}
+          ref: ${{ github.ref }}
       - name: Cleanup test namespace
         if: always()
         run: |
