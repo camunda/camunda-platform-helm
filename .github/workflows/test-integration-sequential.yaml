@@ -169,7 +169,7 @@ jobs:
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_VALUES_SCENARIO: base
           TEST_CHART_NAME: camunda-platform-8.4
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.4/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.4
@@ -213,7 +213,7 @@ jobs:
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_VALUES_SCENARIO: base
           TEST_CHART_NAME: camunda-platform-8.5
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.5/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.5
@@ -256,7 +256,7 @@ jobs:
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_VALUES_SCENARIO: base
           TEST_CHART_NAME: camunda-platform-8.6
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.6/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.6
@@ -298,7 +298,7 @@ jobs:
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_VALUES_SCENARIO: base
           TEST_CHART_NAME: camunda-platform-8.7
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.7/test/integration/scenarios
           TEST_CHART_DIR: ../../../../charts/camunda-platform-8.7
