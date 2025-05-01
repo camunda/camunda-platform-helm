@@ -177,41 +177,11 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup test.core
 
-      - name: Set test type vars
-        id: test-type-vars-8-4
-        uses: ./.github/actions/test-type-vars
+      - name: Upgrade and test 8.4
+        uses: ./.github/actions/sequential-deploy-test
         with:
-          chart-dir: "camunda-platform-8.4"
-      - name: Pre Upgrade
-        run: |
-          task -d test/integration/scenarios/chart-full-setup upgrade.pre
-      - name: 🌟 Upgrade Camunda chart 🌟
-        env:
-          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: base
-          TEST_CHART_NAME: ../../../../charts/camunda-platform-8.4
-          TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.4/test/integration/scenarios
-          TEST_CHART_DIR: ../../../../charts/camunda-platform-8.4
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars-8-4.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
-            --values /tmp/extra-values-file.yaml
-        run: |
-          task -d test/integration/scenarios/chart-full-setup upgrade.exec
-      - name: ⭐️ Run Preflight TestSuite ⭐️
-        timeout-minutes: 10
-        run: |
-          task -d test/integration/scenarios/chart-full-setup test.preflight
-      - name: ⭐️ Run Core TestSuite ⭐️
-        timeout-minutes: 20
-        run: |
-          task -d test/integration/scenarios/chart-full-setup test.core
-
-
-
-
+          chart-version: 8.4
+          chart-version-dash: 8-4
 
       - name: Set test type vars
         id: test-type-vars-8-5
