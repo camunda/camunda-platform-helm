@@ -168,6 +168,14 @@ jobs:
         timeout-minutes: 5
         run: |
           task -d test/integration/scenarios/chart-full-setup setup.post
+      - name: ⭐️ Run Preflight TestSuite ⭐️
+        timeout-minutes: 10
+        run: |
+          task -d test/integration/scenarios/chart-full-setup test.preflight
+      - name: ⭐️ Run Core TestSuite ⭐️
+        timeout-minutes: 20
+        run: |
+          task -d test/integration/scenarios/chart-full-setup test.core
 
       - name: Set test type vars
         id: test-type-vars-8-4
@@ -178,7 +186,6 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
-        if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
@@ -194,12 +201,10 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 10
         run: |
           task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 20
         run: |
           task -d test/integration/scenarios/chart-full-setup test.core
@@ -217,7 +222,6 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
-        if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
@@ -233,12 +237,10 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 10
         run: |
           task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 20
         run: |
           task -d test/integration/scenarios/chart-full-setup test.core
@@ -258,7 +260,6 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
-        if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
@@ -274,12 +275,10 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 10
         run: |
           task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 20
         run: |
           task -d test/integration/scenarios/chart-full-setup test.core
@@ -295,7 +294,6 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
-        if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
@@ -311,12 +309,10 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 10
         run: |
           task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
-        if: inputs.test-enabled
         timeout-minutes: 20
         run: |
           task -d test/integration/scenarios/chart-full-setup test.core
