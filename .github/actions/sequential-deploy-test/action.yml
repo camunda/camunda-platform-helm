@@ -8,6 +8,9 @@ inputs:
   infra-values:
     description: 'Path to the infra values file'
     required: true
+  ingress-host:
+    description: 'url for the tests'
+    required: true
 
 runs:
   using: 'composite'
@@ -19,15 +22,13 @@ runs:
     - name: 🌟 Upgrade Camunda chart 🌟
       shell: bash
       env:
-        TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-        TEST_CASE: ${{ inputs.test-case }}
         TEST_VALUES_SCENARIO: base
         TEST_CHART_NAME: ../../../../charts/camunda-platform-${{ inputs.chart-version }}
         TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-${{ inputs.chart-version }}/test/integration/scenarios
         TEST_CHART_DIR: ../../../../charts/camunda-platform-${{ inputs.chart-version }}
         TEST_HELM_EXTRA_ARGS: >-
           ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
-          --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          --set global.ingress.host=${{ inputs.ingress-host }}
           --values ${{ inputs.infra-values }}
           --values /tmp/extra-values-file.yaml
       run: |

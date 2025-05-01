@@ -188,6 +188,7 @@ jobs:
         with:
           chart-version: 8.4
           infra-values: ${{ steps.test-type-vars-8-4.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
+          ingress-host: ${{ steps.vars.outputs.ingress-host }}
 
       - name: Set test type vars
         id: test-type-vars-8-5
