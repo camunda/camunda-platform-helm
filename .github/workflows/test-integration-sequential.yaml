@@ -321,7 +321,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
       - name: Cleanup GitHub deployment
-        if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
+        if: always()
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
           step: delete-env
