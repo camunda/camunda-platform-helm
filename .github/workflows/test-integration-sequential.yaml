@@ -131,7 +131,7 @@ jobs:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
         run: |
-          task -d camunda-platform-8.3/chart-full-setup setup.pre
+          task -d test/integration/scenarios/chart-full-setup setup.pre
 
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
@@ -146,14 +146,14 @@ jobs:
           TEST_VALUES_BASE_DIR: charts/camunda-platform-8.3
           TEST_CHART_NAME: camunda-platform-8.3
         run: |
-          task -d camunda-platform-8.3/chart-full-setup setup.exec
+          task -d test/integration/scenarios/chart-full-setup setup.exec
       - name: Post setup
         timeout-minutes: 5
         run: |
-          task -d camunda-platform-8.3/chart-full-setup setup.post
+          task -d test/integration/scenarios/chart-full-setup setup.post
       - name: Pre Upgrade
         run: |
-          task -d camunda-platform-8.4/chart-full-setup upgrade.pre
+          task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
         if: matrix.scenario.flow == 'upgrade'
         env:
@@ -168,17 +168,17 @@ jobs:
             --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
-          task -d camunda-platform-8.4/chart-full-setup upgrade.exec
+          task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          task -d camunda-platform-8.4/chart-full-setup test.preflight
+          task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
-          task -d camunda-platform-8.4/chart-full-setup test.core
+          task -d test/integration/scenarios/chart-full-setup test.core
 
 
 
@@ -188,15 +188,15 @@ jobs:
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          task -d camunda-platform-8.5/chart-full-setup test.preflight
+          task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
-          task -d camunda-platform-8.5/chart-full-setup test.core
+          task -d test/integration/scenarios/chart-full-setup test.core
       - name: Pre Upgrade
         run: |
-          task -d camunda-platform-8.5/chart-full-setup upgrade.pre
+          task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
         if: matrix.scenario.flow == 'upgrade'
         env:
@@ -211,17 +211,17 @@ jobs:
             --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
-          task -d camunda-platform-8.5/chart-full-setup upgrade.exec
+          task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          task -d camunda-platform-8.5/chart-full-setup test.preflight
+          task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
-          task -d camunda-platform-8.5/chart-full-setup test.core
+          task -d test/integration/scenarios/chart-full-setup test.core
 
 
 
@@ -230,15 +230,15 @@ jobs:
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          task -d camunda-platform-8.6/chart-full-setup test.preflight
+          task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
-          task -d camunda-platform-8.6/chart-full-setup test.core
+          task -d test/integration/scenarios/chart-full-setup test.core
       - name: Pre Upgrade
         run: |
-          task -d camunda-platform-8.6/chart-full-setup upgrade.pre
+          task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
         if: matrix.scenario.flow == 'upgrade'
         env:
@@ -253,17 +253,17 @@ jobs:
             --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
-          task -d camunda-platform-8.6/chart-full-setup upgrade.exec
+          task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          task -d camunda-platform-8.6/chart-full-setup test.preflight
+          task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
-          task -d camunda-platform-8.6/chart-full-setup test.core
+          task -d test/integration/scenarios/chart-full-setup test.core
 
 
 
@@ -271,15 +271,15 @@ jobs:
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          task -d camunda-platform-8.7/chart-full-setup test.preflight
+          task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
-          task -d camunda-platform-8.7/chart-full-setup test.core
+          task -d test/integration/scenarios/chart-full-setup test.core
       - name: Pre Upgrade
         run: |
-          task -d camunda-platform-8.7/chart-full-setup upgrade.pre
+          task -d test/integration/scenarios/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
         if: matrix.scenario.flow == 'upgrade'
         env:
@@ -294,17 +294,17 @@ jobs:
             --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
-          task -d camunda-platform-8.7/chart-full-setup upgrade.exec
+          task -d test/integration/scenarios/chart-full-setup upgrade.exec
       - name: ⭐️ Run Preflight TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 10
         run: |
-          task -d camunda-platform-8.7/chart-full-setup test.preflight
+          task -d test/integration/scenarios/chart-full-setup test.preflight
       - name: ⭐️ Run Core TestSuite ⭐️
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
-          task -d camunda-platform-8.7/chart-full-setup test.core
+          task -d test/integration/scenarios/chart-full-setup test.core
 
 
       - name: Update GitHub deployment status
