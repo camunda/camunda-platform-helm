@@ -5,18 +5,10 @@ inputs:
   chart-version:
     description: 'chart version intended to be major.minor matching the charts dir. example: 8.5'
     required: true
-  chart-version-dash:
-    description: 'chart version intended to be major-minor matching the charts dir. Just used in the ID for the test-type-vars action. example: 8-5'
-    required: true
 
 runs:
   using: 'composite'
   steps:
-    - name: Set test type vars
-      id: test-type-vars-${{ inputs.chart-version-dash }}
-      uses: ./.github/actions/test-type-vars
-      with:
-        chart-dir: "camunda-platform-${{ inputs.chart-version }}"
     - name: Pre Upgrade
       run: |
         task -d test/integration/scenarios/chart-full-setup upgrade.pre

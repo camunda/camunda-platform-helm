@@ -177,11 +177,15 @@ jobs:
         run: |
           task -d test/integration/scenarios/chart-full-setup test.core
 
+      - name: Set test type vars
+        id: test-type-vars-8-4
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "camunda-platform-${{ inputs.chart-version }}"
       - name: Upgrade and test 8.4
         uses: ./.github/actions/sequential-deploy-test
         with:
           chart-version: 8.4
-          chart-version-dash: 8-4
 
       - name: Set test type vars
         id: test-type-vars-8-5
