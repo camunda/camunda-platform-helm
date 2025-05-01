@@ -138,7 +138,7 @@ jobs:
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
-          TEST_CHART_DIR: charts/camunda-platform-8.3
+          TEST_CHART_DIR: ../../../../charts/camunda-platform-8.3
         run: |
           task -d test/integration/scenarios/chart-full-setup setup.pre
 
@@ -154,7 +154,7 @@ jobs:
             --values /tmp/extra-values-file.yaml
           TEST_VALUES_BASE_DIR: charts/camunda-platform-8.3
           TEST_CHART_NAME: camunda-platform-8.3
-          TEST_CHART_DIR: charts/camunda-platform-8.3
+          TEST_CHART_DIR: ../../../../charts/camunda-platform-8.3
         run: |
           task -d test/integration/scenarios/chart-full-setup setup.exec
       - name: Post setup
@@ -172,7 +172,7 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_CHART_NAME: camunda-platform-8.4
           TEST_VALUES_BASE_DIR: camunda-platform-8.4
-          TEST_CHART_DIR: charts/camunda-platform-8.4
+          TEST_CHART_DIR: ../../../../charts/camunda-platform-8.4
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -216,7 +216,7 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_CHART_NAME: camunda-platform-8.5
           TEST_VALUES_BASE_DIR: camunda-platform-8.5
-          TEST_CHART_DIR: charts/camunda-platform-8.5
+          TEST_CHART_DIR: ../../../../charts/camunda-platform-8.5
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -259,7 +259,7 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_CHART_NAME: camunda-platform-8.6
           TEST_VALUES_BASE_DIR: camunda-platform-8.6
-          TEST_CHART_DIR: charts/camunda-platform-8.6
+          TEST_CHART_DIR: ../../../../charts/camunda-platform-8.6
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -301,7 +301,7 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_CHART_NAME: camunda-platform-8.7
           TEST_VALUES_BASE_DIR: camunda-platform-8.7
-          TEST_CHART_DIR: charts/camunda-platform-8.7
+          TEST_CHART_DIR: ../../../../charts/camunda-platform-8.7
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
