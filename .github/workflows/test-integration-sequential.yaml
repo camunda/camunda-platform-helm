@@ -61,6 +61,15 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
+      - name: ℹ️ Set workflow vars ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          setup-flow: sequential
+          platform: gke
+          identifier-base: sequential
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: camunda-platform-8.3
       # Used to create/delete GitHub environment.
       # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
       - name: Generate GitHub token
@@ -92,8 +101,7 @@ jobs:
           make helm.dependency-update
       - name: Create test namespace
         run: |
-          export TEST_NAMESPACE=distribution-sequential-${{ github.run_id }}
-          echo TEST_NAMESPACE=$TEST_NAMESPACE | tee -a $GITHUB_ENV
+          echo $TEST_NAMESPACE
           kubectl create ns $TEST_NAMESPACE
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
