@@ -150,7 +150,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
             --values /tmp/extra-values-file.yaml
           TEST_VALUES_BASE_DIR: ../../../../charts/camunda-platform-8.3/test/integration/scenarios
           TEST_CHART_NAME: camunda-platform-8.3
@@ -177,7 +177,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
@@ -221,7 +221,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
@@ -264,7 +264,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
@@ -306,7 +306,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-preemptible.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d test/integration/scenarios/chart-full-setup upgrade.exec
