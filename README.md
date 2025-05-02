@@ -43,7 +43,7 @@ For more details, check out the [full version matrix](./camunda-platform/version
 
 ## Installing Charts
 
-Follow [the instructions in the Camunda Platform documentation](https://docs.camunda.io/docs/self-managed/zeebe-deployment/kubernetes/index/) to install the Camunda Platform to a K8s cluster.
+Follow [the instructions in the Camunda Platform documentation](https://docs.camunda.io/docs/self-managed/setup/install/) to install the Camunda Platform to a K8s cluster.
 
 Check the repo branch for more technical details:
 [camunda/camunda-platform-helm](https://github.com/camunda/camunda-platform-helm)
