@@ -27,6 +27,10 @@ tasks:
       if [ $? -eq 0 ]; then
         helm show chart {{ .TEST_CHART_NAME }} | yq .appVersion | grep 8.5
         if [ $? -eq 0 ]; then
+          old_password="$(kubectl get -n {{ .TEST_NAMESPACE }} secret integration-postgresql -o yaml | yq .data.postgres-password | base64 -d | xargs echo)"
+          new_password="$(kubectl get -n {{ .TEST_NAMESPACE }} secret integration-test-credentials -o yaml | yq .data.webmodeler-postgresql-user-password | base64 -d | xargs echo)"
+          kubectl exec -n {{ .TEST_NAMESPACE }} -it integration-postgresql-web-modeler-0 -- env PGPASSWORD=$old_password psql -U web-modeler -c "ALTER USER \"web-modeler\" WITH PASSWORD '$newpassword';"
+
           kubectl delete deployment -n {{ .TEST_NAMESPACE }} integration-identity
           kubectl wait -n {{ .TEST_NAMESPACE }} --for='delete' deployment/integration-identity
           FORCE="--force --install --set=global.postgresql.auth.existingSecret=integration-test-credentials"
