@@ -33,7 +33,7 @@ spec:
         {{- tpl (.Values.operate.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
         - name: operate
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.operate) | trim | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.operate.containerSecurityContext }}
           securityContext: {{- toYaml .Values.operate.containerSecurityContext | nindent 12 }}

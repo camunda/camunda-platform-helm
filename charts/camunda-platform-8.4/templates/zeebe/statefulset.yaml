@@ -44,7 +44,7 @@ spec:
         {{- tpl ((coalesce .Values.zeebe.initContainers .Values.zeebe.extraInitContainers) | default list | toYaml | nindent 8) $ }}
       containers:
         - name: zeebe
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.zeebe) | trim | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.zeebe.containerSecurityContext }}
           securityContext: {{- toYaml .Values.zeebe.containerSecurityContext | nindent 12 }}

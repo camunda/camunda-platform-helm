@@ -33,7 +33,7 @@ spec:
         {{- tpl (.Values.tasklist.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
         - name: tasklist
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.tasklist) | trim | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.tasklist.containerSecurityContext }}
           securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}

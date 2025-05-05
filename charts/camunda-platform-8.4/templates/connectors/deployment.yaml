@@ -27,7 +27,7 @@ spec:
         {{- tpl (.Values.connectors.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
         - name: connectors
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.connectors) | trim | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.connectors.containerSecurityContext }}
           securityContext: {{- toYaml .Values.connectors.containerSecurityContext | nindent 12 }}

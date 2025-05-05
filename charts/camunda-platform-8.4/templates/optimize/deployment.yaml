@@ -34,7 +34,7 @@ spec:
         {{- end }}
         {{- if .Values.optimize.migration.enabled }}
         - name: migration
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.optimize) | trim | quote }}
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           {{- if .Values.optimize.containerSecurityContext }}
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
@@ -64,7 +64,7 @@ spec:
         {{- end }}
       containers:
         - name: optimize
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.optimize) | trim | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.optimize.containerSecurityContext }}
           securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}

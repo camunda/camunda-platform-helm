@@ -34,7 +34,7 @@ spec:
         {{- tpl ((coalesce .Values.zeebeGateway.initContainers .Values.zeebeGateway.extraInitContainers) | default list | toYaml | nindent 8) $ }}
       containers:
         - name: zeebe-gateway
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.zeebeGateway) | trim | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           ports:
             - containerPort: {{  .Values.zeebeGateway.service.httpPort }}

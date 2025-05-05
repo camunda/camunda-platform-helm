@@ -162,21 +162,21 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the restapi Docker image
 */}}
 {{- define "webModeler.restapi.image" -}}
-{{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.restapi.image))) }}
+{{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.restapi.image))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the webapp Docker image
 */}}
 {{- define "webModeler.webapp.image" -}}
-{{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.webapp.image))) }}
+{{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.webapp.image))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the websockets Docker image
 */}}
 {{- define "webModeler.websockets.image" -}}
-{{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.websockets.image))) }}
+{{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.websockets.image))) }}
 {{- end }}
 
 {{/*

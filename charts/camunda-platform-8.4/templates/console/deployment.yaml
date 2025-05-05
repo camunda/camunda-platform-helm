@@ -35,7 +35,7 @@ spec:
         {{- toYaml .Values.console.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+          image: {{ include "camundaPlatform.imageReference" (dict "base" .Values.global "overlay" .Values.console) | trim | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.console.containerSecurityContext }}
           securityContext:
