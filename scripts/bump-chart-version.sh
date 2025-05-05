@@ -20,9 +20,8 @@ if [ "${1:-''}" == '-h' ]; then
   exit 1
 fi
 
-# Chart name is hard-coded since we only have 1 main chart,
-# but it could be customized in case we have more in the future.
-chart_name="camunda-platform-alpha"
+# Chart name based on the latest Camunda version in the charts dir.
+chart_name="$(basename $(ls -d1 charts/camunda-platform-8.* | tail -n1))"
 
 # When changing the major version, export "is_major_version=1",
 # that will increment the major version and set the patch version to zero.
