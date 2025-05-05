@@ -76,6 +76,24 @@ Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global
 {{- end -}}
 
 {{/*
+Return full image name with optional digest override.
+*/}}
+{{- define "camundaPlatform.imageReference" -}}
+  {{- $base := .base -}}
+  {{- $over := .overlay -}}
+  {{- $registry := $over.image.registry | default $base.image.registry -}}
+  {{- $repo := $over.image.repository | default $base.image.repository -}}
+  {{- $tag := $over.image.tag | default $base.image.tag -}}
+  {{- $digest := $over.image.digest | default $base.image.digest -}}
+
+  {{- if $digest }}
+    {{ printf "%s%s%s@%s" $registry (ternary "" "/" (eq $registry "")) $repo $digest }}
+  {{- else }}
+    {{ printf "%s%s%s:%s" $registry (ternary "" "/" (eq $registry "")) $repo $tag }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Get image according the values of "base" or "overlay" values.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
 Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
