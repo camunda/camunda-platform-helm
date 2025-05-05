@@ -1,17 +1,10 @@
 # Basic test for maintenance Camunda 8 Helm charts.
-name: "Test - Chart Version"
+name: "Test - Chart Version Nightly"
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/chart-validate-template.yaml"
-      - ".github/workflows/test-unit-template.yml"
-      - ".github/workflows/test-integration-template.yaml"
-      - ".github/workflows/test-chart-version-template.yaml"
-      - ".github/workflows/test-chart-version.yaml"
-      - ".tool-versions"
-      - "charts/camunda-platform-8*/**"
-  workflow_dispatch: {}
+  schedule:
+    # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
+    - cron: "0 4 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -24,17 +17,21 @@ permissions:
 
 jobs:
   init:
-    name: Generate chart matrix
+    name: Generate chart matrix Nightly
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          repository: camunda/camunda-platform-helm
       - name: Generate chart versions
         id: generate-chart-versions
-        uses: ./.github/actions/generate-chart-matrix
+        uses: ./.github/actions/generate-chart-matrix-nightly
         with:
           charts-path: "charts/camunda-platform-8*"
+          # The minimum version that we support
+          min-supported-version: 8.4
 
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
@@ -43,10 +40,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-    uses: ./.github/workflows/test-chart-version-template.yaml
+    uses: ./.github/workflows/test-chart-version-nightly-template.yaml
     secrets: inherit
     with:
-      pr-number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
-      camunda-version: "${{ matrix.version }}"
+      camunda-version: ${{ matrix.version }}
       scenarios: ${{ matrix.scenarios }}
       case: ${{ matrix.case }}

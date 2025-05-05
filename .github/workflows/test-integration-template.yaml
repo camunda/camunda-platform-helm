@@ -67,6 +67,14 @@ on:
       matrix-data:
         required: false
         type: string
+      test-case:
+        required: false
+        default: "pr"
+        type: string
+      scenario:
+        required: false
+        default: "base"
+        type: string
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -110,7 +118,7 @@ env:
 
 jobs:
   init:
-    name: Integration - Generate test matrix
+    name: Integration ${{ inputs.scenario }} - Generate test matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
@@ -143,7 +151,7 @@ jobs:
 
   test:
     if: github.event.action != 'closed'
-    name: Integration - ${{ matrix.distro.name }} - ${{ matrix.scenario.name }}
+    name: Integration ${{ inputs.scenario }} - ${{ matrix.scenario.name }}
     needs: init
     runs-on: ubuntu-latest
     permissions:
@@ -317,6 +325,8 @@ jobs:
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: "${{ inputs.test-case }}"
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -336,6 +346,8 @@ jobs:
         if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}

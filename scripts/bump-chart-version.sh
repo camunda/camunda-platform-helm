@@ -21,7 +21,7 @@ if [ "${1:-''}" == '-h' ]; then
 fi
 
 # Chart name based on the latest Camunda version in the charts dir.
-chart_name="$(basename $(ls -d1 charts/camunda-platform-8.* | tail -n1))"
+chart_name="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
 
 # When changing the major version, export "is_major_version=1",
 # that will increment the major version and set the patch version to zero.

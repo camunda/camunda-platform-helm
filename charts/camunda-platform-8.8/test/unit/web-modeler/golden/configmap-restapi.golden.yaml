@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: web-modeler
-    app.kubernetes.io/version: "8.8.0-alpha3"
+    app.kubernetes.io/version: "8.8.0-alpha4"
   annotations:
     {}
 data:
@@ -45,7 +45,7 @@ data:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
             version: "8.8.0-alpha3"
-            authentication: "BEARER_TOKEN"
+            authentication: "BASIC"
             url:
               zeebe:
                 grpc: "grpc://camunda-platform-test-core:26500"

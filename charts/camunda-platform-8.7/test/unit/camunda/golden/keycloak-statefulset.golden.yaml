@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 26.1.5
+    app.kubernetes.io/version: 26.2.2
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -31,9 +31,9 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 26.1.5
+        app.kubernetes.io/version: 26.2.2
         app.kubernetes.io/component: keycloak
-        app.kubernetes.io/app-version: 26.1.5
+        app.kubernetes.io/app-version: 26.2.2
     spec:
       serviceAccountName: camunda-platform-test-keycloak
       
@@ -76,6 +76,7 @@ spec:
               cp -r --preserve=mode /opt/bitnami/keycloak/lib/quarkus /emptydir/app-quarkus-dir
               cp -r --preserve=mode /opt/bitnami/keycloak/data /emptydir/app-data-dir
               cp -r --preserve=mode /opt/bitnami/keycloak/providers /emptydir/app-providers-dir
+              cp -r --preserve=mode /opt/bitnami/keycloak/themes /emptydir/app-themes-dir
               info "Copy operation completed"
           securityContext:
             allowPrivilegeEscalation: false
@@ -128,7 +129,7 @@ spec:
             - name: KC_BOOTSTRAP_ADMIN_PASSWORD_FILE
               value: /opt/bitnami/keycloak/secrets/admin-password
             - name: KEYCLOAK_DATABASE_PASSWORD_FILE
-              value: /opt/bitnami/keycloak/secrets/password
+              value: /opt/bitnami/keycloak/secrets/db-password
             - name: KEYCLOAK_HTTP_RELATIVE_PATH
               value: "/auth/"
             - name: KC_SPI_ADMIN_REALM
@@ -187,6 +188,9 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/keycloak/providers
               subPath: app-providers-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/keycloak/themes
+              subPath: app-themes-dir
             - name: keycloak-secrets
               mountPath: /opt/bitnami/keycloak/secrets
             - mountPath: /opt/bitnami/keycloak/data/tmp
@@ -198,8 +202,11 @@ spec:
           projected:
             sources:
               - secret:
-                  name:  camunda-platform-test-keycloak
+                  name: camunda-platform-test-keycloak
               - secret:
-                  name:  camunda-platform-test-postgresql
+                  name: camunda-platform-test-postgresql
+                  items:
+                    - key: password
+                      path: db-password
         - emptyDir: {}
           name: data-tmp

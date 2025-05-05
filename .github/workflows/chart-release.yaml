@@ -122,7 +122,7 @@ jobs:
             helm-ct
             yq
       - name: Install Cosign
-        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
       - name: Setup caching
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:

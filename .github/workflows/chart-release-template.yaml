@@ -137,7 +137,7 @@ jobs:
       # Security signature.
       - name: Install Cosign CLI
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
       - name: Sign Helm chart with Cosign
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
@@ -159,7 +159,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install ORAS CLI
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: oras-project/setup-oras@5c0b487ce3fe0ce3ab0d034e63669e426e294e4d # v1
+        uses: oras-project/setup-oras@8d34698a59f5ffe24821f0b48ab62a3de8b64b20 # v1
       - name: Upload Helm chart Cosign bundle
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |

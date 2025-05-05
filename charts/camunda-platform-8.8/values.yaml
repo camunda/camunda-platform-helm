@@ -1239,7 +1239,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0-alpha3
+    tag: 8.8.0-alpha4
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1833,7 +1833,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.tag PostgreSQL image tag
   image:
     repository: bitnami/postgresql
-    tag: 14.17.0-debian-12-r15
+    tag: 14.17.0-debian-12-r17
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param webModelerPostgresql.auth.username defines the name of the database user to be created for WebModeler
@@ -2729,7 +2729,7 @@ elasticsearch:
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.17.4
-  ## @param elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
+  ## @skip elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
   extraConfig:
     # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
     logger.org.elasticsearch.deprecation: "OFF"

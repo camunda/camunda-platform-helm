@@ -3587,7 +3587,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.17.0-debian-12-r10"
+                            "default": "14.17.0-debian-12-r17"
                         }
                     }
                 },
@@ -5420,11 +5420,6 @@
                             "default": "8.17.4"
                         }
                     }
-                },
-                "extraConfig": {
-                    "type": "object",
-                    "description": "Append extra configuration to the elasticsearch node configuration",
-                    "default": "# Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285\nlogger.org.elasticsearch.deprecation: \"OFF\"\n"
                 },
                 "master": {
                     "type": "object",
