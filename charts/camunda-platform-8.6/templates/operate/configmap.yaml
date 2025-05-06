@@ -126,7 +126,7 @@ data:
         {{- end }}
       zeebeOpensearch:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-        # Index prefix, configured in Zeebe Opensearch exporter
+        # Index prefix, configured in Zeebe OpenSearch exporter
         prefix: {{ .Values.global.opensearch.prefix | quote }}
         {{- if .Values.global.opensearch.auth.username }}
         username: {{ .Values.global.opensearch.auth.username | quote }}
