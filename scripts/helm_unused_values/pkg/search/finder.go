@@ -1,9 +1,9 @@
 package search
 
 import (
-	"camunda.com/helm-unused-values/pkg/keys"
-	"camunda.com/helm-unused-values/pkg/output"
-	"camunda.com/helm-unused-values/pkg/patterns"
+	"camunda.com/helmunusedvalues/pkg/keys"
+	"camunda.com/helmunusedvalues/pkg/output"
+	"camunda.com/helmunusedvalues/pkg/patterns"
 )
 
 type Finder struct {

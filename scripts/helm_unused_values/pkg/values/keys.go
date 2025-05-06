@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"camunda.com/helm-unused-values/pkg/output"
-	"camunda.com/helm-unused-values/pkg/utils"
+	"camunda.com/helmunusedvalues/pkg/output"
+	"camunda.com/helmunusedvalues/pkg/utils"
 	"github.com/schollz/progressbar/v3"
 )
 

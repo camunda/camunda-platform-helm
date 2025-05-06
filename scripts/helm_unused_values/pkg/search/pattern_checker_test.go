@@ -3,9 +3,9 @@ package search_test
 import (
 	"testing"
 
-	"camunda.com/helm-unused-values/pkg/output"
-	"camunda.com/helm-unused-values/pkg/patterns"
-	"camunda.com/helm-unused-values/pkg/search"
+	"camunda.com/helmunusedvalues/pkg/output"
+	"camunda.com/helmunusedvalues/pkg/patterns"
+	"camunda.com/helmunusedvalues/pkg/search"
 )
 
 func TestSearchKeyInTemplates(t *testing.T) {

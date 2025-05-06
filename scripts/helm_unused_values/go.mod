@@ -1,4 +1,4 @@
-module camunda.com/helm-unused-values
+module camunda.com/helmunusedvalues
 
 go 1.22
 

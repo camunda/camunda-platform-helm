@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"camunda.com/helm-unused-values/pkg/config"
-	"camunda.com/helm-unused-values/pkg/output"
-	"camunda.com/helm-unused-values/pkg/patterns"
-	"camunda.com/helm-unused-values/pkg/search"
-	"camunda.com/helm-unused-values/pkg/utils"
-	"camunda.com/helm-unused-values/pkg/values"
+	"camunda.com/helmunusedvalues/pkg/config"
+	"camunda.com/helmunusedvalues/pkg/output"
+	"camunda.com/helmunusedvalues/pkg/patterns"
+	"camunda.com/helmunusedvalues/pkg/search"
+	"camunda.com/helmunusedvalues/pkg/utils"
+	"camunda.com/helmunusedvalues/pkg/values"
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"

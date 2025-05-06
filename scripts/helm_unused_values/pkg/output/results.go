@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"camunda.com/helm-unused-values/pkg/keys"
+	"camunda.com/helmunusedvalues/pkg/keys"
 	"github.com/fatih/color"
 )
 
