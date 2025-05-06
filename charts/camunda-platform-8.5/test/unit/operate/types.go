@@ -22,8 +22,9 @@ type ProfilesYAML struct {
 }
 
 type CamundaOperateYAML struct {
-	MultiTenancy MultiTenancyYAML `yaml:"multiTenancy"`
-	Identity     IdentityYAML     `yaml:"identity"`
+	MultiTenancy    MultiTenancyYAML    `yaml:"multiTenancy"`
+	Identity        IdentityYAML        `yaml:"identity"`
+	ZeebeOpensearch ZeebeOpensearchYAML `yaml:"zeebeOpensearch"`
 }
 
 type IdentityYAML struct {
@@ -32,4 +33,8 @@ type IdentityYAML struct {
 
 type MultiTenancyYAML struct {
 	Enabled string `yaml:"enabled"`
+}
+
+type ZeebeOpensearchYAML struct {
+	Prefix string `yaml:"prefix"`
 }

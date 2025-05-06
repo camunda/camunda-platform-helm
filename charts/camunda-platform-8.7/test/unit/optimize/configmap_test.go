@@ -58,7 +58,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInput() {
 				s.Require().Equal("/optimize", configmapApplication.Container.ContextPath)
 			},
 		}, {
-			Name:                 "TestCustomZeebeName",
+			Name:                 "TestCustomZeebeNameElasticSearch",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.elasticsearch.prefix": "custom-prefix",
@@ -75,6 +75,29 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInput() {
 
 				// then
 				s.Require().Equal("custom-prefix", configmapApplication.Zeebe.Name)
+			},
+		}, {
+			Name:                 "TestCustomZeebeNameOpenSearch",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
+				"global.opensearch.prefix":     "opensearch-prefix",
+				"global.opensearch.url.host":   "test",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OptimizeConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then - OpenSearch prefix
+				s.Require().Equal("opensearch-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
 	}
