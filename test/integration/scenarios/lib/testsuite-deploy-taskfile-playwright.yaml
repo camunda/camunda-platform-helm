@@ -10,7 +10,7 @@ env:
   TEST_TIMEOUT: 15m
   TEST_PARENT: "../../testsuites"
   TEST_DIR: "{{ .TEST_PARENT }}/{{ .testID }}"
-  TEST_NAME: "{{ .TEST_PLAYWRIGHT_PREFIX }}-{{ .testID }}"
+  TEST_PLAYWRIGHT_NAME: "{{ .TEST_PLAYWRIGHT_PREFIX }}-{{ .testID }}"
 
 tasks:
   # TODO: Simplify the steps here when we use TestKube.
@@ -39,10 +39,10 @@ tasks:
     # Deploy.
     - kubectl kustomize $TEST_DIR/playwright | kubectl apply -n $TEST_NAMESPACE -f -
     # Get logs.
-    - while [[ ! $(kubectl logs -n $TEST_NAMESPACE job/$TEST_NAME 2> /dev/null) ]]; do
-          echo "Waiting for the test Pod to start in namespace $TEST_NAMESPACE with name $TEST_NAME ...";
+    - while [[ ! $(kubectl logs -n $TEST_NAMESPACE job/$TEST_PLAYWRIGHT_NAME 2> /dev/null) ]]; do
+          echo "Waiting for the test Pod to start in namespace $TEST_NAMESPACE with name $TEST_PLAYWRIGHT_NAME ...";
           sleep 5;
       done
-    - kubectl logs -n $TEST_NAMESPACE --follow job/$TEST_NAME
+    - kubectl logs -n $TEST_NAMESPACE --follow job/$TEST_PLAYWRIGHT_NAME
     # Check status.
-    - kubectl wait -n $TEST_NAMESPACE --for=condition=Complete job/$TEST_NAME --timeout=$TEST_TIMEOUT
+    - kubectl wait -n $TEST_NAMESPACE --for=condition=Complete job/$TEST_PLAYWRIGHT_NAME --timeout=$TEST_TIMEOUT
