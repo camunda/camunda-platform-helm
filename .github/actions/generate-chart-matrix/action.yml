@@ -23,6 +23,12 @@ runs:
       uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46
       with:
         dir_names: "true"
+    - name: Abort if no changed files
+      shell: bash
+      if: steps.changed-files.outputs.all_modified_files == ''
+      run: |
+        echo "No changed files found. This workflow is only triggered when there are changes to the code. Aborting."
+        exit 1
     - name: Generate matrix
       shell: bash
       id: set-chart-versions
