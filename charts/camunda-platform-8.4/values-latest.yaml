@@ -25,13 +25,13 @@ operate:
   # https://hub.docker.com/r/camunda/operate/tags?page=&page_size=&ordering=&name=8.4
   image:
     repository: camunda/operate
-    tag: 8.4.19
+    tag: 8.4.20
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags?page=&page_size=&ordering=&name=8.4
   image:
     repository: camunda/optimize
-    tag: 8.4.16
+    tag: 8.4.17
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.4
@@ -44,7 +44,7 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.4.16
+    tag: 8.4.17
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.4
