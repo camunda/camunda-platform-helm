@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-playwright
+  labels:
+    app: playwright
+    test: integration
+spec:
+  template:
+    metadata:
+      labels:
+        app: playwright
+        test: integration
+    spec:
+      imagePullSecrets: []
+      initContainers:
+      - name: download-tools
+        image: alpine
+        envFrom:
+        - configMapRef:
+            name: playwright-env-vars
+        command:
+        - sh
+        - -c
+        # TODO: Check if we can use asdf here to unify and simplify tools management.
+        - |
+          get_zbctl () {
+            wget https://github.com/camunda/camunda/releases/download/${1}/zbctl -O /tools/zbctl
+          }
+          echo "Downloading additional tools";
+          get_zbctl "${ZEEBE_VERSION}" || get_zbctl "${ZEEBE_VERSION_FALLBACK}"
+          chmod +x /tools/zbctl
+          echo Finished downloading;
+        volumeMounts:
+        - mountPath: /tools
+          name: tools
+      containers:
+      - name: playwright
+        image: mcr.microsoft.com/playwright:v1.50.0-focal
+        workingDir: /e2e
+        command: ["npx","playwright","test","--reporter=junit,html"]
+        envFrom:
+        - configMapRef:
+            name: playwright-env-vars
+        volumeMounts:
+          - name: playwright-test-setup
+            mountPath: /e2e
+          - name: playwright-test-files
+            mountPath: /e2e/tests
+          - name: results
+            mountPath: /results
+          - name: tools
+            mountPath: /usr/local/bin
+      volumeMounts:
+        - mountPath: /usr/local/bin/zbctl
+          name: tools
+          subPath: zbctl
+        - name: venom-tests-common
+          mountPath: /workdir/tests/common
+        - name: venom-tests
+          mountPath: /workdir/tests/overlay
+        - name: venom-vars
+          mountPath: /workdir/vars
+        - name: venom-fixtures
+          mountPath: /mnt/fixtures
+      volumes:
+      - name: tools
+        emptyDir: {}
+      - name: venom-tests-common
+        configMap:
+          name: venom-tests-common
+      - name: venom-tests
+        configMap:
+          name: venom-tests
+      - name: venom-vars
+        configMap:
+          name: venom-vars
+      - name: venom-fixtures
+        configMap:
+          name: venom-fixtures
+      - name: playwright-test-setup
+        configMap:
+          name: playwright-test-setup
+      - name: playwright-test-files
+        configMap:
+          name: playwright-test-files
+      - name: results
+        emptyDir: {}
+      restartPolicy: Never
+  backoffLimit: 0
