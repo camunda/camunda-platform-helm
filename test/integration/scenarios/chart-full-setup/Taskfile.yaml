@@ -35,6 +35,11 @@ includes:
     vars:
       testID: core
       chartDir: "{{ .TEST_CHART_DIR }}"
+  test.playwright.core:
+    taskfile: ../lib/testsuite-deploy-taskfile-playwright.yaml
+    vars:
+      testID: playwright.core
+      chartDir: "{{ .TEST_CHART_DIR }}"
 
 tasks:
   setup.pre:
@@ -119,3 +124,4 @@ tasks:
     - task: setup.post
     - task: test.preflight
     - task: test.core
+    - task: test.playwright.core
