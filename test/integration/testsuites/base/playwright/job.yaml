@@ -59,9 +59,9 @@ spec:
           mountPath: /workdir/tests/common
         - name: venom-tests
           mountPath: /workdir/tests/overlay
-        - name: venom-vars
+        - name: playwright-vars
           mountPath: /workdir/vars
-        - name: venom-fixtures
+        - name: playwright-fixtures
           mountPath: /mnt/fixtures
       volumes:
       - name: tools
@@ -72,12 +72,12 @@ spec:
       - name: venom-tests
         configMap:
           name: venom-tests
-      - name: venom-vars
+      - name: playwright-vars
         configMap:
-          name: venom-vars
-      - name: venom-fixtures
+          name: playwright-vars
+      - name: playwright-fixtures
         configMap:
-          name: venom-fixtures
+          name: playwright-fixtures
       - name: playwright-test-setup
         configMap:
           name: playwright-test-setup
