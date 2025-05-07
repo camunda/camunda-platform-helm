@@ -13,10 +13,10 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
   files:
-  - ../files/variables-default.yaml
-  - ../files/variables-ingress-combined.yaml
+  - ./files/variables-default.yaml
+  - ./files/variables-ingress-combined.yaml
 - name: playwright-env-vars
   options:
     disableNameSuffixHash: true
   envs:
-  - ../files/playwright-job-vars.env
+  - ./files/playwright-job-vars.env
