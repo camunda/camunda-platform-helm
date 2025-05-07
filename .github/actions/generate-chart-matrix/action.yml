@@ -4,6 +4,9 @@ inputs:
   charts-path:
     description: Charts path to match.
     default: "charts/camunda-platform*"
+  manual-trigger:
+    description: Input used by workflow dispatch to trigger a build on a specific chart version
+    default: "none"
 outputs:
   matrix:
     description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
@@ -29,41 +32,56 @@ runs:
       env:
         ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
       run: |
-        echo "Setting matrix based on changed files"
-        echo "Changed files:"
-        printf "%s\n" ${ALL_MODIFIED_FILES}
-        touch matrix_versions.txt
-        echo "matrix:" >>matrix_versions.txt
-
-        ls -d ${{ inputs.charts-path }} | while read chart_dir; do
-          if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
-            camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
-            cat >>matrix_versions.txt <<-EOL
-          - version: ${camunda_version}
-            case: pr
-        EOL
-
-            #reads the array from the yaml file
-            readarray prScenarios < <(yq e -o=j -I=0 '.integration.scenarios.pr.[]' ${chart_dir}/test/ci-test-config.yaml)
-
-            echo -n "scenarios: \"" | sed 's/^/    /' >>matrix_versions.txt
-
+        write_matrix_entry() {
+          local camunda_version="$1"
+          local chart_dir="$2"
+          echo "  - version: ${camunda_version}" >> matrix_versions.txt
+          echo "    case: pr" >> matrix_versions.txt
+          if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
+            readarray prScenarios < <(yq e -o=j -I=0 '.integration.scenarios.pr.[]' $chart_dir/test/ci-test-config.yaml)
+            echo -n "    scenarios: \"" >> matrix_versions.txt
             for prScenario in "${prScenarios[@]}"; do
               enabled=$(echo "$prScenario" | yq e '.enabled' -)
-              # skip if scenario is not enabled
               if [ "$enabled" = "false" ]; then
                 continue
               fi
               name=$(echo "$prScenario" | yq e '.name' -)
-              # indent name so it complies with yaml formatting
               echo -n "$name," >>matrix_versions.txt
             done
-            # replace the "," and the end of the file with '"\n'
             sed -i -e '$s/,$/"\n/' matrix_versions.txt
-
           fi
-        done
+        }
+
+        echo "Checking for manual-trigger"
+        touch matrix_versions.txt
+        echo "matrix:" > matrix_versions.txt
+        if [[ "${{ inputs.manual-trigger }}" != "none" ]]; then
+          echo "Manual trigger detected: ${{ inputs.manual-trigger }}"
+          chart_dir="charts/camunda-platform-${{ inputs.manual-trigger }}"
+          if [ -d "$chart_dir" ]; then
+            camunda_version="${{ inputs.manual-trigger }}"
+            write_matrix_entry "$camunda_version" "$chart_dir"
+          else
+            echo "Chart directory $chart_dir does not exist. Aborting."
+            exit 1
+          fi
+        else
+          echo "Setting matrix based on changed files"
+          echo "Changed files:"
+          printf "%s\n" ${ALL_MODIFIED_FILES}
+          ls -d ${{ inputs.charts-path }} | while read chart_dir; do
+            if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
+              camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
+              write_matrix_entry "$camunda_version" "$chart_dir"
+            fi
+          done
+        fi
         cat matrix_versions.txt
+
+        if [ "$(cat matrix_versions.txt)" = "matrix:" ]; then
+          echo "The matrix.txt file is empty. This workflow is only triggered when there are changes to the code. Aborting."
+          exit 1
+        fi
 
         matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' | jq -c 'walk(if type == "number" then tostring else . end)')"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT

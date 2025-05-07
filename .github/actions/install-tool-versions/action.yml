@@ -21,16 +21,19 @@ runs:
         grep -w -f .tool-versions-input .tool-versions-orig > .tool-versions
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
+
     - name: Install asdf and tools
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
       with:
         # TODO: Upgrade to 0.16 when it's supported in the GHA.
         # https://github.com/asdf-vm/actions/pull/590
         asdf_branch: v0.15.0
+
     - name: List installed versions
       shell: bash
       run: |
         asdf current
+
     - name: Checkout .tool-versions changes
       shell: bash
       run: |
