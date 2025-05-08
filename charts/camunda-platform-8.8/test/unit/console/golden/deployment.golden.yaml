@@ -70,7 +70,7 @@ spec:
             - name: NODE_ENV
               value: prod
             - name: KEYCLOAK_INTERNAL_BASE_URL
-              value: "://:/auth"
+              value: "http://:/auth"
             - name: KEYCLOAK_BASE_URL
               value: "http://localhost:18080/auth"
             - name: KEYCLOAK_REALM
