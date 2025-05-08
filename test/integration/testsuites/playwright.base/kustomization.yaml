@@ -13,11 +13,11 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
   files:
-    - ../../charts/camunda-platform-8.7/test/integration/testsuites/playwright.config.ts
-    - ../../charts/camunda-platform-8.7/test/integration/testsuites/package.json
-    - ../../charts/camunda-platform-8.7/test/integration/testsuites/package-lock.json
+    - ../../../../../charts/camunda-platform-8.7/test/integration/testsuites/playwright.config.ts
+    - ../../../../../charts/camunda-platform-8.7/test/integration/testsuites/package.json
+    - ../../../../../charts/camunda-platform-8.7/test/integration/testsuites/package-lock.json
 - name: playwright-test-files
   options:
     disableNameSuffixHash: true
   files:
-    - ../../charts/camunda-platform-8.7/test/integration/testsuites/tests/login.spec.ts
+    - ../../../../../charts/camunda-platform-8.7/test/integration/testsuites/tests/login.spec.ts
