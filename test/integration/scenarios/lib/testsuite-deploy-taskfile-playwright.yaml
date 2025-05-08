@@ -58,6 +58,7 @@ tasks:
     - cmd: |
         echo "🔎 Listing files in $TEST_DIR"
         ls -la $TEST_DIR
+        ls -la /home/runner/work/camunda-platform-helm
     - |
       echo "🚀 Deploying Playwright test job at $TEST_DIR into namespace $TEST_NAMESPACE"
       if ! kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -; then
