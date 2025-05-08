@@ -41,8 +41,8 @@ tasks:
           # Ensure the destination directory exists so that `cp` doesn't fail silently.
           mkdir -p "$TEST_DIR/playwright"
 
-          echo "📄 Copying $TEST_PARENT/base/patches/job-image-pull-secrets.yaml ➡️  $TEST_DIR/playwright/"
-          cp -av "$TEST_PARENT/base/patches/job-image-pull-secrets.yaml" "$TEST_DIR/playwright/"
+          echo "📄 Copying $TEST_PARENT/base/patches/job-image-pull-secrets.yaml ➡️  $TEST_DIR"
+          cp -av "$TEST_PARENT/base/patches/job-image-pull-secrets.yaml" "$TEST_DIR"
 
           echo "🛠️  Registering patch in kustomization.yaml"
           (
