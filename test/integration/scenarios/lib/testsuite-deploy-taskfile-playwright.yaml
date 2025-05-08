@@ -39,7 +39,7 @@ tasks:
           echo "🔐 TEST_CREATE_DOCKER_LOGIN_SECRET is set – adding imagePullSecrets patch"
 
           # Ensure the destination directory exists so that `cp` doesn't fail silently.
-          mkdir -p "$TEST_DIR"
+          mkdir -p "$TEST_DIR/playwright"
 
           echo "📄 Copying $TEST_PARENT/base/patches/job-image-pull-secrets.yaml ➡️  $TEST_DIR"
           cp -av "$TEST_PARENT/base/patches/job-image-pull-secrets.yaml" "$TEST_DIR"
@@ -55,6 +55,9 @@ tasks:
           echo "ℹ️  TEST_CREATE_DOCKER_LOGIN_SECRET not set – skipping imagePullSecrets patch step"
         fi
     # Deploy.
+    - cmd: |
+        echo "🔎 Listing files in $TEST_DIR"
+        ls -la $TEST_DIR
     - |
       echo "🚀 Deploying Playwright test job at $TEST_DIR into namespace $TEST_NAMESPACE"
       if ! kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -; then
