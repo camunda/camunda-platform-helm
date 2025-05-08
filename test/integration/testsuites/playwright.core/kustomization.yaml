@@ -4,7 +4,7 @@ kind: Kustomization
 nameSuffix: -core
 
 resources:
-- ../../base/playwright
+- ../base/playwright
 
 configMapGenerator:
 - name: playwright-fixtures

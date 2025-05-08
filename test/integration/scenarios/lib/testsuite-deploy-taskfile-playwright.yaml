@@ -43,8 +43,8 @@ tasks:
       silent: true
     # Deploy.
     - |
-      echo "🚀 Deploying Playwright test job at $TEST_DIR/playwright into namespace $TEST_NAMESPACE"
-      if ! kubectl kustomize $TEST_DIR/playwright | kubectl apply -n $TEST_NAMESPACE -f -; then
+      echo "🚀 Deploying Playwright test job at $TEST_DIR into namespace $TEST_NAMESPACE"
+      if ! kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -; then
         echo "❌ Failed to deploy Playwright test job"
         exit 1
       fi
