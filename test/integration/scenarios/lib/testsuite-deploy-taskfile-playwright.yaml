@@ -22,7 +22,12 @@ tasks:
         ../../testsuites/core/patches/
     # This is where the environment variables are set for the playwright tests.
     - |
-      kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars/playwright | kubectl apply -n $TEST_NAMESPACE -f -
+      echo "🔧 Applying Playwright environment variables from {{ .chartDir }}/test/integration/testsuites/vars/playwright"
+      if ! kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars/playwright | kubectl apply -n $TEST_NAMESPACE -f -; then
+        echo "❌ Failed to apply Playwright environment variables"
+        exit 1
+      fi
+      echo "✅ Successfully applied Playwright environment variables"
     # Add imagePullSecrets if needed.
     - cmd: |
         if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then
@@ -37,12 +42,33 @@ tasks:
         fi
       silent: true
     # Deploy.
-    - kubectl kustomize $TEST_DIR/playwright | kubectl apply -n $TEST_NAMESPACE -f -
-    # Get logs.
-    - while [[ ! $(kubectl logs -n $TEST_NAMESPACE job/$TEST_PLAYWRIGHT_NAME 2> /dev/null) ]]; do
-          echo "Waiting for the test Pod to start in namespace $TEST_NAMESPACE with name $TEST_PLAYWRIGHT_NAME ...";
-          sleep 5;
-      done
-    - kubectl logs -n $TEST_NAMESPACE --follow job/$TEST_PLAYWRIGHT_NAME
-    # Check status.
-    - kubectl wait -n $TEST_NAMESPACE --for=condition=Complete job/$TEST_PLAYWRIGHT_NAME --timeout=$TEST_TIMEOUT
+    - |
+      echo "🚀 Deploying Playwright test job at $TEST_DIR/playwright into namespace $TEST_NAMESPACE"
+      if ! kubectl kustomize $TEST_DIR/playwright | kubectl apply -n $TEST_NAMESPACE -f -; then
+        echo "❌ Failed to deploy Playwright test job"
+        exit 1
+      fi
+      echo "✅ Successfully deployed Playwright test job"
+    # Stream logs once the Job Pod is running.
+    - cmd: |
+        echo "🔎 Waiting for Pod of job/$TEST_PLAYWRIGHT_NAME to start in namespace $TEST_NAMESPACE ..."
+        while [[ -z "$(kubectl get pods -n $TEST_NAMESPACE -l job-name=$TEST_PLAYWRIGHT_NAME -o name 2> /dev/null)" ]]; do
+          sleep 3
+        done
+        POD_NAME=$(kubectl get pods -n $TEST_NAMESPACE -l job-name=$TEST_PLAYWRIGHT_NAME -o jsonpath='{.items[0].metadata.name}')
+        echo "✅ Detected Pod $POD_NAME – streaming logs"
+        kubectl logs -n $TEST_NAMESPACE --follow $POD_NAME
+    # Wait for Job completion and gather diagnostics on failure.
+    - cmd: |
+        echo "⏳ Waiting for job/$TEST_PLAYWRIGHT_NAME to reach 'Complete' for up to $TEST_TIMEOUT ..."
+        if ! kubectl wait -n $TEST_NAMESPACE --for=condition=Complete job/$TEST_PLAYWRIGHT_NAME --timeout=$TEST_TIMEOUT; then
+          echo "❌ Job $TEST_PLAYWRIGHT_NAME did not finish successfully. Collecting diagnostics …"
+          kubectl -n $TEST_NAMESPACE describe job $TEST_PLAYWRIGHT_NAME || true
+          kubectl -n $TEST_NAMESPACE get pods -l job-name=$TEST_PLAYWRIGHT_NAME -o wide || true
+          for pod in $(kubectl -n $TEST_NAMESPACE get pods -l job-name=$TEST_PLAYWRIGHT_NAME -o name); do
+            echo -e "\n------ Logs for $pod ------"
+            kubectl -n $TEST_NAMESPACE logs --all-containers=true $pod || true
+          done
+          exit 1
+        fi
+        echo "✅ job/$TEST_PLAYWRIGHT_NAME completed successfully."
