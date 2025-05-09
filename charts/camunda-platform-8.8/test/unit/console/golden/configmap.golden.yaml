@@ -21,7 +21,7 @@ data:
           audience: "console-api"
           clientId: "console"
           issuer: "http://localhost:18080/auth/realms/camunda-platform"
-          jwksUri: "://:/auth/realms/camunda-platform/protocol/openid-connect/certs"
+          jwksUri: "http://:/auth/realms/camunda-platform/protocol/openid-connect/certs"
           type: "KEYCLOAK"
           wellKnown: "https://well-known-uri"
         managed:
