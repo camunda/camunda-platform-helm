@@ -4311,6 +4311,95 @@ entries:
     version: 10.0.2
   - annotations:
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "Task 448 backport and refactor Camunda unit test refactor from 8.6 to 8.4"
+        - kind: fixed
+          description: "Add elasticsearch golden files"
+        - kind: fixed
+          description: "Refactor 8.4 unit test connectors"
+        - kind: fixed
+          description: "Refactor of optimize in 8.4"
+        - kind: fixed
+          description: "Refactor 8.4 unit test operate"
+        - kind: fixed
+          description: "Refactored unit tests in 8.4 to new style in tasklist"
+        - kind: fixed
+          description: "Refactored unit tests in 8.4 to new style in zeebe"
+        - kind: fixed
+          description: "Refactored unit tests in 8.4 to new style in zeebe-gateway"
+        - kind: fixed
+          description: "Refactor 8 4 unit test identity"
+        - kind: fixed
+          description: "Refactor 8.4 unit test console"
+        - kind: fixed
+          description: "Refactored unit tests in 8.4 to new style in web modeler"
+        - kind: fixed
+          description: "Add apiVersion and kind to PersistentVolumeClaims"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.17.3
+    apiVersion: v2
+    appVersion: 8.4.x
+    created: "2025-05-09T15:08:04.092004079Z"
+    dependencies:
+    - condition: identity.enabled
+      import-values:
+      - child: image
+        parent: global.identity.image
+      name: identity
+      repository: ""
+      version: 9.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.19.4
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 11.x.x
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 0dabde9c7db36366d85f8da22a101d7443015c83ac4507605ac5f05902309112
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: ChrisKujawa
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.4-9.5.1/camunda-platform-9.5.1.tgz
+    version: 9.5.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Add global.extraManifests support for injecting arbitrary YAML"
         - kind: fixed
@@ -17336,4 +17425,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-04-10T13:31:58.640882766Z"
+generated: "2025-05-09T15:08:04.09253412Z"
