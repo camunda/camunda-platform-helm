@@ -2522,6 +2522,103 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Dedicated opensearch.prefix support"
+        - kind: fixed
+          description: "Backport 8.6 refactoring on test/unit/camunda to 8.5"
+        - kind: fixed
+          description: "Refactor unit tests in connectors of 8.5 to new styles"
+        - kind: fixed
+          description: "Refactored unit tests to new style in zeebe 8.5"
+        - kind: fixed
+          description: "Add elasticsearch golden files"
+        - kind: fixed
+          description: "Refactored unit tests to new style in console"
+        - kind: fixed
+          description: "Refactored unit tests to new style in tasklist"
+        - kind: fixed
+          description: "Refactored unit tests to new style in identity 8.5"
+        - kind: fixed
+          description: "Refactored unit tests to new style in operate on 8.5"
+        - kind: fixed
+          description: "Refactored unit tests to new style in optimize on 8.5"
+        - kind: fixed
+          description: "Refactored unit tests to new style in web modeler"
+        - kind: fixed
+          description: "Refactored unit tests to new style in zeebe-gateway 8.5"
+        - kind: fixed
+          description: "Grpc port of zeebe gateway for venom tests"
+        - kind: fixed
+          description: "Add apiVersion and kind to PersistentVolumeClaims"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.17.3
+    apiVersion: v2
+    appVersion: 8.5.x
+    created: "2025-05-09T15:29:16.677914093Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.4.1
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 12.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql
+      version: 11.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 20.0.4
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 2a49082e7d868c5919caa52bfdbe3fc626a7a0d921bfa9baafc562fb695bc119
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: christopher.zell@camunda.com
+      name: ChrisKujawa
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.5-10.7.0/camunda-platform-10.7.0.tgz
+    version: 10.7.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Add global.extraManifests support for injecting arbitrary YAML"
         - kind: fixed
           description: "Changing helper function for identityURL"
@@ -17425,4 +17522,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-05-09T15:08:04.09253412Z"
+generated: "2025-05-09T15:29:16.67850882Z"
