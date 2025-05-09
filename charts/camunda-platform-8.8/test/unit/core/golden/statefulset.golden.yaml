@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: core
-    app.kubernetes.io/version: "8.8.0-alpha3"
+    app.kubernetes.io/version: "8.8.0-alpha4"
   annotations:
 spec:
   replicas: 3
@@ -36,7 +36,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: core
-        app.kubernetes.io/version: "8.8.0-alpha3"
+        app.kubernetes.io/version: "8.8.0-alpha4"
       annotations:
     spec:
       imagePullSecrets:
@@ -45,7 +45,7 @@ spec:
         []
       containers:
         - name: core
-          image: camunda/camunda:8.8.0-alpha3
+          image: camunda/camunda:8.8.0-alpha4
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
