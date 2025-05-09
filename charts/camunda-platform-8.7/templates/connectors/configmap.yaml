@@ -43,7 +43,9 @@ data:
     operate:
       client:
         base-url: {{ include "camundaPlatform.operateURL" . | quote }}
+        {{- if (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth")) }}
         auth-url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
+        {{- end }}
         {{- if eq .Values.connectors.inbound.mode "oauth" }}
         profile: "oidc"
         audience: {{ include "operate.authAudience" . | quote }}
