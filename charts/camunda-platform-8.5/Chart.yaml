@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.6.0
+version: 10.7.0
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -58,7 +58,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.17.2"
+  camunda.io/helmCLIVersion: "3.17.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -69,6 +69,30 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Add global.extraManifests support for injecting arbitrary YAML"
+      description: "Dedicated opensearch.prefix support"
     - kind: fixed
-      description: "Changing helper function for identityURL"
+      description: "Backport 8.6 refactoring on test/unit/camunda to 8.5"
+    - kind: fixed
+      description: "Refactor unit tests in connectors of 8.5 to new styles"
+    - kind: fixed
+      description: "Refactored unit tests to new style in zeebe 8.5"
+    - kind: fixed
+      description: "Add elasticsearch golden files"
+    - kind: fixed
+      description: "Refactored unit tests to new style in console"
+    - kind: fixed
+      description: "Refactored unit tests to new style in tasklist"
+    - kind: fixed
+      description: "Refactored unit tests to new style in identity 8.5"
+    - kind: fixed
+      description: "Refactored unit tests to new style in operate on 8.5"
+    - kind: fixed
+      description: "Refactored unit tests to new style in optimize on 8.5"
+    - kind: fixed
+      description: "Refactored unit tests to new style in web modeler"
+    - kind: fixed
+      description: "Refactored unit tests to new style in zeebe-gateway 8.5"
+    - kind: fixed
+      description: "Grpc port of zeebe gateway for venom tests"
+    - kind: fixed
+      description: "Add apiVersion and kind to PersistentVolumeClaims"
