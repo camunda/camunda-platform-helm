@@ -1833,7 +1833,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.tag PostgreSQL image tag
   image:
     repository: bitnami/postgresql
-    tag: 14.17.0-debian-12-r18
+    tag: 14.18.0-debian-12-r0
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param webModelerPostgresql.auth.username defines the name of the database user to be created for WebModeler
@@ -2728,7 +2728,7 @@ elasticsearch:
     ## @param elasticsearch.image.repository
     repository: bitnami/elasticsearch
     ## @param elasticsearch.image.tag
-    tag: 8.17.4
+    tag: 8.18.0
   ## @skip elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
   extraConfig:
     # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
