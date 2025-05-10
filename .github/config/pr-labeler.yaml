@@ -1,10 +1,10 @@
 #
 # Versions.
 
-version/alpha:
+version/8.10:
   - changed-files:
     - any-glob-to-any-file:
-        - 'charts/camunda-platform-alpha/**'
+        - 'charts/camunda-platform-8.10/**'
 
 version/8.9:
   - changed-files:

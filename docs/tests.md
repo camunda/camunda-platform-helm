@@ -1,8 +1,8 @@
 # Docs: Tests
 
 In this repo, we have the following tests:
-1. [Unit tests](../charts/camunda-platform-alpha/test/unit/)
-2. [Integration tests](../charts/camunda-platform-alpha/test/integration/)
+1. Unit tests under `test/unit` dir.
+2. Integration tests under `test/integration` dir.
 
 ## Unit Tests
 
@@ -19,4 +19,4 @@ With the integration tests we want to test for two things:
 1. Whether the charts can be deployed to Kubernetes, and are accepted by the K8s API.
 2. Whether the services are running and can work with each other.
 
-Other things, like broken templates, incorrectly set values, etc., are caught by the tests above. Also, the integration test are categorized into [scenarios](../charts/camunda-platform-alpha/test/integration/scenarios). These scenarios are developed using the [Taskfile](https://taskfile.dev/) tool. 
+Other things, like broken templates, incorrectly set values, etc., are caught by the tests above. Also, the integration test are categorized into `test/integration/scenarios`. These scenarios are developed using the [Taskfile](https://taskfile.dev/) tool. 
