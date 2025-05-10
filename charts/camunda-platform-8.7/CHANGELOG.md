@@ -1,5 +1,32 @@
 # Changelog
 
+## [12.0.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.0.1...camunda-platform-8.7-12.0.2) (2025-05-05)
+
+
+### Bug Fixes
+
+* add apiVersion and kind to PersistentVolumeClaims ([#2321](https://github.com/camunda/camunda-platform-helm/issues/2321)) ([b7c6092](https://github.com/camunda/camunda-platform-helm/commit/b7c6092654001387834c40e15b8adfffa7896b50))
+* elasticsearch.extraConfig is a table ([#3353](https://github.com/camunda/camunda-platform-helm/issues/3353)) ([2db5f0b](https://github.com/camunda/camunda-platform-helm/commit/2db5f0b802a4cc5068ea0e553fec58933fbf7b38))
+* grpc port of zeebe gateway for venom tests ([#3364](https://github.com/camunda/camunda-platform-helm/issues/3364)) ([9228eb5](https://github.com/camunda/camunda-platform-helm/commit/9228eb542eaebb263c8fef88087291a4d82daf93))
+* skip elasticsearch.extraConfig ([#3397](https://github.com/camunda/camunda-platform-helm/issues/3397)) ([f25b1f0](https://github.com/camunda/camunda-platform-helm/commit/f25b1f068c1d5168659544739c3e959b4138ffc3))
+* update param for operate ([ad97adb](https://github.com/camunda/camunda-platform-helm/commit/ad97adb222f04c80d80a04989bc0901c6a615e7d))
+
+
+### Dependencies
+
+* update bitnami/keycloak docker tag to v26.1.5 ([#3374](https://github.com/camunda/camunda-platform-helm/issues/3374)) ([7282631](https://github.com/camunda/camunda-platform-helm/commit/7282631e166248f38b00ebd6b05e8c7013ed1ad4))
+* update bitnami/keycloak docker tag to v26.2.0 ([#3375](https://github.com/camunda/camunda-platform-helm/issues/3375)) ([cab2beb](https://github.com/camunda/camunda-platform-helm/commit/cab2beb7b2f9287de29c292fd460e30519dc2798))
+* update bitnami/postgresql docker tag to v14.17.0-debian-12-r15 ([#3383](https://github.com/camunda/camunda-platform-helm/issues/3383)) ([3b5f929](https://github.com/camunda/camunda-platform-helm/commit/3b5f929e88718a75f288ba1c2450eeb43cf47e8e))
+* update camunda-platform-8.7 (patch) ([#3389](https://github.com/camunda/camunda-platform-helm/issues/3389)) ([2b8078e](https://github.com/camunda/camunda-platform-helm/commit/2b8078e24a6d7153db9a6c54bc5a06675b3f8592))
+* update camunda-platform-8.7 (patch) ([#3410](https://github.com/camunda/camunda-platform-helm/issues/3410)) ([7039d83](https://github.com/camunda/camunda-platform-helm/commit/7039d835cb8cbb747cdda1a2e445d5dbf99a5554))
+* update camunda-platform-8.7 (patch) ([#3418](https://github.com/camunda/camunda-platform-helm/issues/3418)) ([7181890](https://github.com/camunda/camunda-platform-helm/commit/71818900c38858ae04ac52302678fe5e039e8776))
+* update camunda/console docker tag to v8.7.8 ([#3387](https://github.com/camunda/camunda-platform-helm/issues/3387)) ([5f7f704](https://github.com/camunda/camunda-platform-helm/commit/5f7f7049233539abbc258aca01a367d74dd84d96))
+* update elasticsearch docker tag to v21.6.2 ([#3390](https://github.com/camunda/camunda-platform-helm/issues/3390)) ([7499fd5](https://github.com/camunda/camunda-platform-helm/commit/7499fd5fc3769b065cde8ae6f7601e757967f248))
+* update keycloak docker tag to v24.5.2 ([#3305](https://github.com/camunda/camunda-platform-helm/issues/3305)) ([a586205](https://github.com/camunda/camunda-platform-helm/commit/a5862053bb7c6f49287976321a3cd71f01305de8))
+* update keycloak docker tag to v24.6.1 ([#3393](https://github.com/camunda/camunda-platform-helm/issues/3393)) ([be33bd1](https://github.com/camunda/camunda-platform-helm/commit/be33bd10dc772676d385a625ae5a36cd079048f3))
+* update keycloak docker tag to v24.6.2 ([#3411](https://github.com/camunda/camunda-platform-helm/issues/3411)) ([4ff9d4a](https://github.com/camunda/camunda-platform-helm/commit/4ff9d4a7bf225c5d35f62b698f90746d5c36dbf5))
+* update module gopkg.in/yaml.v2 to v3 ([#3398](https://github.com/camunda/camunda-platform-helm/issues/3398)) ([4e8231c](https://github.com/camunda/camunda-platform-helm/commit/4e8231c4faacae58570136cf64bd58e3449944fe))
+
 ## [12.0.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.0.0...camunda-platform-8.7-12.0.1) (2025-04-10)
 
 
