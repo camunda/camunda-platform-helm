@@ -39,7 +39,6 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
   {{- end }}
 {{- end }}
 
-
 {{/*
 Fail with a message if global.identity.auth.identity.existingSecret is set and global.identity.auth.type is set to KEYCLOAK
 */}}
@@ -85,13 +84,6 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
 {{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
   {{- $errorMessage := "[camunda][error] global.opensearch.auth.existingSecret and global.opensearch.auth.password cannot both be set." -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-
-{{/* Fail if OpenSearch is enabled but no prefix was provided */}}
-{{- if and .Values.global.opensearch.enabled (not .Values.global.opensearch.prefix) }}
-  {{- $errorMessage := "[camunda][error] global.opensearch.prefix must be set when global.opensearch.enabled is true. "
-      | printf "%sFor backward-compatibility, you can reuse the same value as global.elasticsearch.prefix." }}
-  {{- printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
 {{- end }}
 
 {{- define "camunda.constraints.warnings" }}

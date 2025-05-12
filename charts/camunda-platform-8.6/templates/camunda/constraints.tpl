@@ -86,13 +86,6 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
-{{/* Fail if OpenSearch is enabled but no prefix was provided */}}
-{{- if and .Values.global.opensearch.enabled (not .Values.global.opensearch.prefix) }}
-  {{- $errorMessage := "[camunda][error] global.opensearch.prefix must be set when global.opensearch.enabled is true. "
-      | printf "%sFor backward-compatibility, you can reuse the same value as global.elasticsearch.prefix." }}
-  {{- printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-{{- end }}
-
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
