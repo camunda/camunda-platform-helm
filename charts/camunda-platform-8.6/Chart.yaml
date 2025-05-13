@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 11.3.1
+version: 11.3.2
 appVersion: 8.6.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.17.2"
+  camunda.io/helmCLIVersion: "3.17.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,10 +73,24 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Task 448 refactor unit test in 8.6/test/unit/camunda directory"
+      description: "Refactored optimize unit tests to the new style for 8.6"
     - kind: fixed
-      description: "Task 448 refactor unit test in 8.6/test/unit/connectors"
+      description: "Refactor unit tests in zeebe-gateway to new style on 8.6"
     - kind: fixed
-      description: "Refactored unit tests for identity and operate in 8.6"
+      description: "Refactor unit tests in webmodeller of 8.6 to new style"
     - kind: fixed
-      description: "Refactor unit tests in 8.6/test/unit/console to new style"
+      description: "Unit tests in tasklist on 8.6 have been refactored to the new style"
+    - kind: fixed
+      description: "Update existingSecret params for 8.6 8.7 and 8.8"
+    - kind: fixed
+      description: "Add gateway enabled"
+    - kind: fixed
+      description: "Refactor of zeebe unit tests in 8.6"
+    - kind: fixed
+      description: "Add elasticsearch golden files"
+    - kind: fixed
+      description: "Grpc port of zeebe gateway for venom tests"
+    - kind: fixed
+      description: "Add apiVersion and kind to PersistentVolumeClaims"
+    - kind: fixed
+      description: "Openshift elasticsearch disabled error"
