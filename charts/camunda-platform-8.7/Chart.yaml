@@ -72,8 +72,6 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Dedicated opensearch.prefix support"
     - kind: fixed
       description: "Grpc port of zeebe gateway for venom tests"
     - kind: fixed
@@ -88,5 +86,3 @@ annotations:
       description: "Openshift elasticsearch disabled error"
     - kind: fixed
       description: "Corrected a misplaced end key"
-    - kind: fixed
-      description: "Revert "feat: dedicated opensearch.prefix support""

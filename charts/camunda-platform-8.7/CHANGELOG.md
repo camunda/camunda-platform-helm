@@ -9,7 +9,6 @@
 * elasticsearch.extraConfig is a table ([#3353](https://github.com/camunda/camunda-platform-helm/issues/3353)) ([2db5f0b](https://github.com/camunda/camunda-platform-helm/commit/2db5f0b802a4cc5068ea0e553fec58933fbf7b38))
 * grpc port of zeebe gateway for venom tests ([#3364](https://github.com/camunda/camunda-platform-helm/issues/3364)) ([9228eb5](https://github.com/camunda/camunda-platform-helm/commit/9228eb542eaebb263c8fef88087291a4d82daf93))
 * openshift elasticsearch disabled error ([#3472](https://github.com/camunda/camunda-platform-helm/issues/3472)) ([1f7d2f3](https://github.com/camunda/camunda-platform-helm/commit/1f7d2f38b6f149c7ef5d8d1b37c5ba5e6256f998))
-* revert "feat: dedicated opensearch.prefix support" ([#3482](https://github.com/camunda/camunda-platform-helm/issues/3482)) ([bcfe32a](https://github.com/camunda/camunda-platform-helm/commit/bcfe32a1b1e9fbe9ca516a70831080bf3f7bb7d0))
 * skip elasticsearch.extraConfig ([#3397](https://github.com/camunda/camunda-platform-helm/issues/3397)) ([f25b1f0](https://github.com/camunda/camunda-platform-helm/commit/f25b1f068c1d5168659544739c3e959b4138ffc3))
 * update param for operate ([ad97adb](https://github.com/camunda/camunda-platform-helm/commit/ad97adb222f04c80d80a04989bc0901c6a615e7d))
 
