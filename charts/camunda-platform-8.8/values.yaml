@@ -500,10 +500,11 @@ global:
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: If using Keycloak, Identity is required by WebModeler.
-  #       If you don't need WebModeler, make sure to disable both the Identity authentication and the applications by setting:
+  # Note: Identity is always required by WebModeler. By default, if no OIDC provider is specified, Keycloak is used by identity.
+  #       If you don't need WebModeler, make sure to disable Identity authentication, keycloak, and the WebModeler application by setting:
   #         global.identity.auth.enabled=false
   #         webModeler.enabled=false
+  #         identityKeycloak.enabled=false
   enabled: false
 
   ## @param identity.fullnameOverride can be used to override the full name of the Identity resources
