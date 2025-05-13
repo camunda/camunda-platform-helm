@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   testID: PLACEHOLDER
-  chartDir: camunda-platform-alpha
+  chartDir: PLACEHOLDER
 
 env:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'

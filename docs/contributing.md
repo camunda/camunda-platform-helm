@@ -112,8 +112,8 @@ We separate our tests into two parts, with different targets and goals.
 
 **For new contributions it is expected to write new unit tests, but no integration tests.** We keep the count of integration tests to a minimum, and the knowledge for writing them is not expected for contributors.
 
-Tests can be found in the `charts/camunda-platform-alpha` directory under `test/`. For each component, we have a sub-directory
-in the `test/` directory. For example [test/zeebe](charts/camunda-platform-alpha/test/zeebe).
+Tests can be found in the chart directory under `test/`. For each component, we have a sub-directory
+in the `test/` directory.
 
 To run the tests, execute `make go.test` on the root repository level.
 
@@ -126,9 +126,9 @@ golden file tests and explicit property tests. In this section, we want to expla
 
 We write new golden file tests, for default values, where we can compare a complete manifest with his properties.
 Most of the golden file tests are part of the `goldenfiles_test.go` to the corresponding sub-chart testing directory.
-For an example see [zeebe/goldenfiles_test.go](charts/camunda-platform-alpha/test/zeebe/goldenfiles_test.go).
+For an example see `/test/zeebe/goldenfiles_test.go`.
 
-If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the Prometheus [servicemonitor](charts/camunda-platform-alpha/templates/service-monitor.yaml) can be enabled by a toggle. This means we write a golden file test in [servicemonitor_test.go](charts/camunda-platform-alpha/test/servicemonitor_test.go).
+If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, the Prometheus `templates/service-monitor.yaml` can be enabled by a toggle. This means we write a golden file test in `test/servicemonitor_test.go`.
 
 To generate the golden files run `go.test-golden-updated` on the root level of the repository.
 This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should also be named related to the manifest.
@@ -137,7 +137,7 @@ This will add a new golden file in a `golden` sub-dir and run the corresponding 
 
 For things that are not per default enabled or set we write a property test.
 
-Here we directly set the specific property/variable and verify that the Helm chart can be rendered and the property is set correctly on the object. This kind of test should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, for the Zeebe statefulset manifest we have the test [statefulset_test.go](charts/camunda-platform-alpha/test/zeebe/statefulset_test.go) under the `zeebe` sub-dir.
+Here we directly set the specific property/variable and verify that the Helm chart can be rendered and the property is set correctly on the object. This kind of test should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename we have in the sub-chart `templates` dir. For example, for the Zeebe statefulset manifest we have the test `test/zeebe/statefulset_test.go` under the `zeebe` sub-dir.
 
 It is always helpful to check already existing tests to get a better understanding of how to write new tests, so do not hesitant to read and copy them.
 
