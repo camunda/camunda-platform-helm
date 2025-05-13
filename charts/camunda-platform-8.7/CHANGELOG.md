@@ -1,12 +1,6 @@
 # Changelog
 
-## [12.1.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.0.1...camunda-platform-8.7-12.1.0) (2025-05-13)
-
-
-### Features
-
-* dedicated opensearch.prefix support ([#3379](https://github.com/camunda/camunda-platform-helm/issues/3379)) ([672886b](https://github.com/camunda/camunda-platform-helm/commit/672886bf8e308f56a0455f97fc62433d94aa6b1b))
-
+## [12.0.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.0.1...camunda-platform-8.7-12.0.2) (2025-05-13)
 
 ### Bug Fixes
 
