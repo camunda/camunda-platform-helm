@@ -16,13 +16,6 @@
 * changed name of zeebegateway in console configmap ([#2660](https://github.com/camunda/camunda-platform-helm/issues/2660)) ([21e99c0](https://github.com/camunda/camunda-platform-helm/commit/21e99c025204d0846399946a7715a67a1a48e507))
 * elasticsearch.extraConfig is a table ([#3353](https://github.com/camunda/camunda-platform-helm/issues/3353)) ([2db5f0b](https://github.com/camunda/camunda-platform-helm/commit/2db5f0b802a4cc5068ea0e553fec58933fbf7b38))
 * ingress port not rendering when identityKeycloak enabled ([#3461](https://github.com/camunda/camunda-platform-helm/issues/3461)) ([0d92490](https://github.com/camunda/camunda-platform-helm/commit/0d924907a9d8efd559a020e303ca5e183d77476e))
-* refactor 8 8 unit test camunda ([#3368](https://github.com/camunda/camunda-platform-helm/issues/3368)) ([7f66172](https://github.com/camunda/camunda-platform-helm/commit/7f66172247a57e690194cde1ad04af1347f29882))
-* refactor 8 8 unit test connectors ([#3369](https://github.com/camunda/camunda-platform-helm/issues/3369)) ([1be555e](https://github.com/camunda/camunda-platform-helm/commit/1be555e9f5118086d2a75f936c156bab43386992))
-* refactor 8 8 unit test console ([#3367](https://github.com/camunda/camunda-platform-helm/issues/3367)) ([62ab365](https://github.com/camunda/camunda-platform-helm/commit/62ab365c13fdb0b66f81b08002ad6b2996f901b6))
-* refactor 8 8 unit test core ([#3371](https://github.com/camunda/camunda-platform-helm/issues/3371)) ([f790b8b](https://github.com/camunda/camunda-platform-helm/commit/f790b8bb57d315069070fc8c5162afa7f6f8c329))
-* refactor 8 8 unit test identity ([#3373](https://github.com/camunda/camunda-platform-helm/issues/3373)) ([d2246d7](https://github.com/camunda/camunda-platform-helm/commit/d2246d7efb150d99e6fa7e955f7bac3a18f66643))
-* refactor 8 8 unit test optimize ([#3370](https://github.com/camunda/camunda-platform-helm/issues/3370)) ([95e39be](https://github.com/camunda/camunda-platform-helm/commit/95e39be63b06b81fda37f362958d251ecfc1e437))
-* refactor 8 8 unit test web modeler ([#3372](https://github.com/camunda/camunda-platform-helm/issues/3372)) ([0fd0dd2](https://github.com/camunda/camunda-platform-helm/commit/0fd0dd2ffebae1a35173bf3a5306116da0ebe768))
 * skip elasticsearch.extraConfig ([#3397](https://github.com/camunda/camunda-platform-helm/issues/3397)) ([f25b1f0](https://github.com/camunda/camunda-platform-helm/commit/f25b1f068c1d5168659544739c3e959b4138ffc3))
 * update existingSecret params for 8.6 8.7 and 8.8 ([#3299](https://github.com/camunda/camunda-platform-helm/issues/3299)) ([057f855](https://github.com/camunda/camunda-platform-helm/commit/057f855936311fc1a90fc261aca3179f9172163c))
 

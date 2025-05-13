@@ -82,20 +82,6 @@ annotations:
     - kind: fixed
       description: "Add elasticsearch golden files"
     - kind: fixed
-      description: "Refactor 8 8 unit test console"
-    - kind: fixed
-      description: "Refactor 8 8 unit test camunda"
-    - kind: fixed
-      description: "Refactor 8 8 unit test connectors"
-    - kind: fixed
-      description: "Refactor 8 8 unit test optimize"
-    - kind: fixed
-      description: "Refactor 8 8 unit test core"
-    - kind: fixed
-      description: "Refactor 8 8 unit test web modeler"
-    - kind: fixed
-      description: "Refactor 8 8 unit test identity"
-    - kind: fixed
       description: "Changed name of zeebegateway in console configmap"
     - kind: fixed
       description: "Add apiVersion and kind to PersistentVolumeClaims"

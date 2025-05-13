@@ -14,13 +14,6 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 
 - Update existingSecret params for 8.6 8.7 and 8.8 (#3299)
 - Add elasticsearch golden files (#3334)
-- Refactor 8 8 unit test console (#3367)
-- Refactor 8 8 unit test camunda (#3368)
-- Refactor 8 8 unit test connectors (#3369)
-- Refactor 8 8 unit test optimize (#3370)
-- Refactor 8 8 unit test core (#3371)
-- Refactor 8 8 unit test web modeler (#3372)
-- Refactor 8 8 unit test identity (#3373)
 - Changed name of zeebegateway in console configmap (#2660)
 - Add apiVersion and kind to PersistentVolumeClaims (#2321)
 - Elasticsearch.extraConfig is a table (#3353)
