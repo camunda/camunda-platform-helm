@@ -63,7 +63,7 @@ maintainers:
     email: jesse.simpson@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.17.2"
+  camunda.io/helmCLIVersion: "3.17.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,5 +73,35 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Add basic auth for web-modeler"
+    - kind: changed
+      description: "Update core configMap with retention parameters"
     - kind: fixed
-      description: "Bump core and connectors to 8.8.0-alpha3"
+      description: "Update existingSecret params for 8.6 8.7 and 8.8"
+    - kind: fixed
+      description: "Add elasticsearch golden files"
+    - kind: fixed
+      description: "Refactor 8 8 unit test console"
+    - kind: fixed
+      description: "Refactor 8 8 unit test camunda"
+    - kind: fixed
+      description: "Refactor 8 8 unit test connectors"
+    - kind: fixed
+      description: "Refactor 8 8 unit test optimize"
+    - kind: fixed
+      description: "Refactor 8 8 unit test core"
+    - kind: fixed
+      description: "Refactor 8 8 unit test web modeler"
+    - kind: fixed
+      description: "Refactor 8 8 unit test identity"
+    - kind: fixed
+      description: "Changed name of zeebegateway in console configmap"
+    - kind: fixed
+      description: "Add apiVersion and kind to PersistentVolumeClaims"
+    - kind: fixed
+      description: "Elasticsearch.extraConfig is a table"
+    - kind: fixed
+      description: "Skip elasticsearch.extraConfig"
+    - kind: fixed
+      description: "Ingress port not rendering when identityKeycloak enabled"
