@@ -58,7 +58,7 @@ const config = {
 
 // Helper to fetch a token
 async function fetchToken(id: string, sec: string, api: APIRequestContext) {
-  console.log(`Fetching from url: ${config}`);
+  console.log(`Fetching from url: ${JSON.stringify(config)}`);
   const r = await api.post(config.authURL, {
     form: {
       client_id: id,
@@ -269,7 +269,10 @@ test.describe("Camunda core", () => {
     if (testInfo.status !== testInfo.expectedStatus) {
       // Secrets are dumped as-is because the surrounding CI already treats logs as sensitive.
       // If this becomes a concern, mask the values here before logging.
-      console.error("\n===== CONFIG DUMP (test failed) =====\n" + JSON.stringify(config, null, 2));
+      console.error(
+        "\n===== CONFIG DUMP (test failed) =====\n" +
+          JSON.stringify(config, null, 2),
+      );
     }
   });
 });
