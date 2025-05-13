@@ -1,11 +1,6 @@
 # Changelog
 
-## [11.4.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.3.1...camunda-platform-8.6-11.4.0) (2025-05-13)
-
-
-### Features
-
-* dedicated opensearch.prefix support ([#3379](https://github.com/camunda/camunda-platform-helm/issues/3379)) ([672886b](https://github.com/camunda/camunda-platform-helm/commit/672886bf8e308f56a0455f97fc62433d94aa6b1b))
+## [11.3.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.3.1...camunda-platform-8.6-11.3.2) (2025-05-13)
 
 
 ### Bug Fixes
@@ -19,7 +14,6 @@
 * refactor unit tests in webmodeller of 8.6 to new style ([#3319](https://github.com/camunda/camunda-platform-helm/issues/3319)) ([8b5a1d0](https://github.com/camunda/camunda-platform-helm/commit/8b5a1d03d846dce09cbc4c09954f59fb0e0a3ed6))
 * refactor unit tests in zeebe-gateway to new style on 8.6 ([#3321](https://github.com/camunda/camunda-platform-helm/issues/3321)) ([972806e](https://github.com/camunda/camunda-platform-helm/commit/972806e85238da13d2485b61736c22447094a315))
 * refactored optimize unit tests to the new style for 8.6 ([#3300](https://github.com/camunda/camunda-platform-helm/issues/3300)) ([619c20e](https://github.com/camunda/camunda-platform-helm/commit/619c20ef74a7f935fd65a5220f73cff6fb100180))
-* revert "feat: dedicated opensearch.prefix support" ([#3482](https://github.com/camunda/camunda-platform-helm/issues/3482)) ([bcfe32a](https://github.com/camunda/camunda-platform-helm/commit/bcfe32a1b1e9fbe9ca516a70831080bf3f7bb7d0))
 * unit tests in tasklist on 8.6 have been refactored to the new style ([#3318](https://github.com/camunda/camunda-platform-helm/issues/3318)) ([83f03bd](https://github.com/camunda/camunda-platform-helm/commit/83f03bd4e055c3e777f334e66569c5ea54845dc5))
 * update existingSecret params for 8.6 8.7 and 8.8 ([#3299](https://github.com/camunda/camunda-platform-helm/issues/3299)) ([057f855](https://github.com/camunda/camunda-platform-helm/commit/057f855936311fc1a90fc261aca3179f9172163c))
 
