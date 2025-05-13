@@ -1679,6 +1679,101 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
+          description: "Refactored optimize unit tests to the new style for 8.6"
+        - kind: fixed
+          description: "Refactor unit tests in zeebe-gateway to new style on 8.6"
+        - kind: fixed
+          description: "Refactor unit tests in webmodeller of 8.6 to new style"
+        - kind: fixed
+          description: "Unit tests in tasklist on 8.6 have been refactored to the new style"
+        - kind: fixed
+          description: "Update existingSecret params for 8.6 8.7 and 8.8"
+        - kind: fixed
+          description: "Add gateway enabled"
+        - kind: fixed
+          description: "Refactor of zeebe unit tests in 8.6"
+        - kind: fixed
+          description: "Add elasticsearch golden files"
+        - kind: fixed
+          description: "Grpc port of zeebe gateway for venom tests"
+        - kind: fixed
+          description: "Add apiVersion and kind to PersistentVolumeClaims"
+        - kind: fixed
+          description: "Openshift elasticsearch disabled error"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.17.3
+    apiVersion: v2
+    appVersion: 8.6.x
+    created: "2025-05-13T11:41:00.254368512Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 22.2.6
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 512e97a5f1050853efdf6bde0c235fa7ae413126936f491bba20d0f2efa41950
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.6-11.3.2/camunda-platform-11.3.2.tgz
+    version: 11.3.2
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
           description: "Task 448 refactor unit test in 8.6/test/unit/camunda directory"
         - kind: fixed
           description: "Task 448 refactor unit test in 8.6/test/unit/connectors"
@@ -17609,4 +17704,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-05-13T10:38:49.162354946Z"
+generated: "2025-05-13T11:41:00.254921393Z"
