@@ -30,19 +30,19 @@ data:
     {{- if eq .Values.global.security.authentication.method "oidc" }}
       profiles:
         active: "identity,operate,tasklist,broker,consolidated-auth"
-    camunda.security:
-      authentication:
-        oidc:
-          client-id: {{ include "core.authClientId" . | quote }}
-          client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-          audiences:
-            - {{ .Values.global.identity.auth.core.audience | quote }}
-            - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
-            - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
-          {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
-          {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
-          issuer-uri: {{ $issuerURIDefault | quote }}
-          redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
+      camunda.security:
+        authentication:
+          oidc:
+            client-id: {{ include "core.authClientId" . | quote }}
+            client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+            audiences:
+              - {{ .Values.global.identity.auth.core.audience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
+            {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
+            {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
+            issuer-uri: "http://auth.identity:9000"
+            redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
     {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
         active: "identity,operate,tasklist,broker,consolidated-auth"
