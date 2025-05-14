@@ -23,25 +23,22 @@ data:
         multipart:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
-      {{- if eq .Values.global.security.authentication.method "oidc" }}
+    {{- if eq .Values.global.security.authentication.method "oidc" }}
       profiles:
-        active: "identity,operate,tasklist,broker,auth-oidc"
-      security:
-        oauth2:
-          client:
-            provider:
-              oidcclient:
-                {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
-                issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | default $issuerURIDefault | quote }}
-            registration:
-              oidcclient:
-                client-id: {{ include "core.authClientId" . | quote }}
-                client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-                authorization-grant-type: authorization_code
-                {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
-                redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
-                provider: oidcclient
-                scope: openid,profile
+        active: "identity,operate,tasklist,broker,consolidated-auth"
+      camunda.security:
+        authentication:
+          oidc:
+            client-id: {{ include "core.authClientId" . | quote }}
+            client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+            audiences:
+              - {{ .Values.global.identity.auth.core.audience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
+            {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
+            {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
+            issuer-uri: "http://auth.identity:9000"
+            redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
     {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
         active: "identity,operate,tasklist,broker,consolidated-auth"
@@ -212,6 +209,13 @@ data:
               password: {{ $user.password | quote }}
               name: {{ $user.name | quote }}
               email: {{ $user.email | quote }}
+            {{- end }}
+          {{- else if eq .Values.global.security.authentication.method "oidc" }}
+          mappings:
+            {{- range $mapping := .Values.global.security.initialization.mappings }}
+            - mapping-id: {{ index $mapping "mapping-id" | quote }}
+              claim-name: {{ index $mapping "claim-name" | quote }}
+              claim-value: {{ index $mapping "claim-value" | quote }}
             {{- end }}
           {{- end }}
         multiTenancy:
