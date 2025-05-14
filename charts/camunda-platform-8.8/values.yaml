@@ -89,9 +89,12 @@ global:
     ## @extra global.security.authentication
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
-      method: basic
+      method: oidc
       ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
+      oidc:
+        audiences: aud1
+        username-claim: sub
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
@@ -106,15 +109,14 @@ global:
       ## @param global.security.initialization.users[0].password
       ## @param global.security.initialization.users[0].name
       ## @param global.security.initialization.users[0].email
-      users:
-        ## @extra global.security.initialization.users.username, the username of an initial user.
-        - username: demo
-          ## @extra global.security.initialization.users.password, the password of an initial user.
-          password: demo
-          ## @extra global.security.initialization.users.name, the name of an initial user.
-          name: Demo User
-          ## @extra global.security.initialization.users.email, the email of an initial user.
-          email: demo@demo.com
+      mappings:
+        ## @extra global.security.initialization.mappings.mapping-id, the mapping-id of an initial mapping.
+        - mapping-id: user-mapping
+          ## @extra global.security.initialization.mappings.claim-name, the claim-name of an initial mapping.
+          claim-name: sub
+          ## @extra global.security.initialization.mappings.claim-value, the name of an initial user.
+          claim-value: user
+
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
