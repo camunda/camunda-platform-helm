@@ -37,7 +37,7 @@ data:
             - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
           {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
           {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
-          issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | default $issuerURIDefault | quote }}
+          issuer-uri: {{ $issuerURIDefault | quote }}
           redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
     {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
