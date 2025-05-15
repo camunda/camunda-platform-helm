@@ -249,10 +249,12 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other components
   identity:
+    enabled: true
     service:
       ## @param global.identity.service.url
       url: ""
     keycloak:
+      enabled: true
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       internal: false
