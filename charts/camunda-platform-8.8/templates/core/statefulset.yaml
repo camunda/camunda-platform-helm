@@ -62,29 +62,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            {{- end }}
-            {{- if .Values.global.opensearch.enabled }}
-              {{- if eq .Values.global.opensearch.url.protocol "https" }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
-              value: "true"
-              {{- end }}
-            - name: CAMUNDA_OPTIMIZE_DATABASE
-              value: opensearch
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
-              value: {{ .Values.global.opensearch.url.port | quote }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
-              value: {{ include "camundaPlatform.opensearchHost" . | quote }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
-              value: {{ .Values.global.opensearch.auth.username | quote }}
-              {{- if or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-              {{- end}}
-            {{- end }}
-            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
             - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -100,8 +77,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            {{- end }}
-            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -117,7 +92,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            {{- end}}
+            {{- end }}
             - name: CAMUNDA_LICENSE_KEY
               valueFrom:
                 secretKeyRef:
