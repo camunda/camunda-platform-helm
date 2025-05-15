@@ -75,19 +75,3 @@ annotations:
   artifacthub.io/changes: |
     - kind: added
       description: "Add basic auth for web-modeler"
-    - kind: changed
-      description: "Update core configMap with retention parameters"
-    - kind: fixed
-      description: "Update existingSecret params for 8.6 8.7 and 8.8"
-    - kind: fixed
-      description: "Add elasticsearch golden files"
-    - kind: fixed
-      description: "Changed name of zeebegateway in console configmap"
-    - kind: fixed
-      description: "Add apiVersion and kind to PersistentVolumeClaims"
-    - kind: fixed
-      description: "Elasticsearch.extraConfig is a table"
-    - kind: fixed
-      description: "Skip elasticsearch.extraConfig"
-    - kind: fixed
-      description: "Ingress port not rendering when identityKeycloak enabled"
