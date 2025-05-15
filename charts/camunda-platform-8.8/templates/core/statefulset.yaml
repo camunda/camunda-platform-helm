@@ -72,11 +72,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
               valueFrom:
                 secretKeyRef:
