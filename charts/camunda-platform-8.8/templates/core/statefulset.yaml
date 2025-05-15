@@ -51,6 +51,43 @@ spec:
           command: ["bash", "/usr/local/bin/startup.sh"]
           {{- end }}
           env:
+            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
+            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
             - name: CAMUNDA_LICENSE_KEY
               valueFrom:
                 secretKeyRef:
