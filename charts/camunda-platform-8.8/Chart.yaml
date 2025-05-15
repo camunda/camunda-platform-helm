@@ -73,5 +73,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add basic auth for web-modeler"
+    - kind: fixed
+      description: "Modified comment for identity component in 8.8"
+    - kind: fixed
+      description: "Add missing env vars for opensearch password"
