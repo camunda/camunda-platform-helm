@@ -472,6 +472,18 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
+  ## @param global.extraManifests Array of extra objects to deploy with the release.
+  #Example:
+  # extraManifests:
+  #   - |
+  #     apiVersion: v1
+  #     kind: ConfigMap
+  #     metadata:
+  #       name: example-cm
+  #     data:
+  #       test: test
+  extraManifests: []
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #############################################################################################################
