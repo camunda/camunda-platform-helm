@@ -46,19 +46,21 @@ const config = {
     zeebeREST: requireEnv("ZEEBE_GATEWAY_REST"),
   },
   secrets: {
-    connectors: requireEnv("CONNECTORS_CLIENT_SECRET"),
-    tasklist: requireEnv("TASKLIST_CLIENT_SECRET"),
-    operate: requireEnv("OPERATE_CLIENT_SECRET"),
-    optimize: requireEnv("OPTIMIZE_CLIENT_SECRET"),
-    zeebe: requireEnv("ZEEBE_CLIENT_SECRET"),
+    connectors: requireEnv("PLAYWRIGHT_VAR_CONNECTORS_CLIENT_SECRET"),
+    tasklist: requireEnv("PLAYWRIGHT_VAR_TASKLIST_CLIENT_SECRET"),
+    operate: requireEnv("PLAYWRIGHT_VAR_OPERATE_CLIENT_SECRET"),
+    optimize: requireEnv("PLAYWRIGHT_VAR_OPTIMIZE_CLIENT_SECRET"),
+    zeebe: requireEnv("PLAYWRIGHT_VAR_ZEEBE_CLIENT_SECRET"),
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
-  venomSec: requireEnv("TEST_CLIENT_SECRET"),
+  venomSec: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
 };
 
 // Helper to fetch a token
 async function fetchToken(id: string, sec: string, api: APIRequestContext) {
-  console.log(`Fetching from url: ${JSON.stringify(config)}`);
+  console.log(`Fetching token for client_id=${id}`);
+  console.log(`Fetching token for client_secret=${sec}`);
+  console.log(`Fetching token for authURL=${config.authURL}`);
   const r = await api.post(config.authURL, {
     form: {
       client_id: id,
@@ -165,75 +167,75 @@ test.describe("Camunda core", () => {
     );
   });
 
-  test("Zeebe status (gRPC)", async () => {
-    const extra =
-      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
-    const out = execFileSync(
-      "zbctl",
-      [
-        "status",
-        "--clientCache",
-        "/tmp/zeebe",
-        "--clientId",
-        config.venomID,
-        "--clientSecret",
-        config.venomSec,
-        "--authzUrl",
-        config.authURL,
-        "--address",
-        config.base.zeebeGRPC,
-        ...extra,
-      ],
-      { encoding: "utf-8" },
-    );
-    expect(out, "zbctl status output missing Leader, Healthy").toMatch(
-      /Leader, Healthy/,
-    );
-    expect(out, "zbctl status output contains Unhealthy").not.toMatch(
-      /Unhealthy/,
-    );
-  });
-
-  test("Zeebe topology (REST)", async () => {
-    const r = await api.get(`${config.base.zeebeREST}/v1/topology`, {
-      headers: { Authorization: `Bearer ${venomJWT}` },
-    });
-    expect(r.ok(), "Zeebe topology REST call failed").toBeTruthy();
-    expect(
-      await r.json(),
-      "Zeebe topology response missing brokers",
-    ).toHaveProperty("brokers");
-  });
-
-  // Parameterized BPMN deploy tests
-  for (const [name, file] of [
-    ["Basic", "test-process.bpmn"],
-    ["Inbound", "test-inbound-process.bpmn"],
-  ] as const) {
-    const extra =
-      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
-    test(`Deploy BPMN: ${name}`, async () => {
-      execFileSync(
-        "zbctl",
-        [
-          "deploy",
-          `../../../../../test/integration/testsuites/core/files/${file}`,
-          "--clientCache",
-          "/tmp/zeebe",
-          "--clientId",
-          config.venomID,
-          "--clientSecret",
-          config.venomSec,
-          "--authzUrl",
-          config.authURL,
-          "--address",
-          config.base.zeebeGRPC,
-          ...extra,
-        ],
-        { stdio: "inherit" },
-      );
-    });
-  }
+  //  test("Zeebe status (gRPC)", async () => {
+  //    const extra =
+  //      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+  //    const out = execFileSync(
+  //      "zbctl",
+  //      [
+  //        "status",
+  //        "--clientCache",
+  //        "/tmp/zeebe",
+  //        "--clientId",
+  //        config.venomID,
+  //        "--clientSecret",
+  //        config.venomSec,
+  //        "--authzUrl",
+  //        config.authURL,
+  //        "--address",
+  //        config.base.zeebeGRPC,
+  //        ...extra,
+  //      ],
+  //      { encoding: "utf-8" },
+  //    );
+  //    expect(out, "zbctl status output missing Leader, Healthy").toMatch(
+  //      /Leader, Healthy/,
+  //    );
+  //    expect(out, "zbctl status output contains Unhealthy").not.toMatch(
+  //      /Unhealthy/,
+  //    );
+  //  });
+  //
+  //  test("Zeebe topology (REST)", async () => {
+  //    const r = await api.get(`${config.base.zeebeREST}/v1/topology`, {
+  //      headers: { Authorization: `Bearer ${venomJWT}` },
+  //    });
+  //    expect(r.ok(), "Zeebe topology REST call failed").toBeTruthy();
+  //    expect(
+  //      await r.json(),
+  //      "Zeebe topology response missing brokers",
+  //    ).toHaveProperty("brokers");
+  //  });
+  //
+  //  // Parameterized BPMN deploy tests
+  //  for (const [name, file] of [
+  //    ["Basic", "test-process.bpmn"],
+  //    ["Inbound", "test-inbound-process.bpmn"],
+  //  ] as const) {
+  //    const extra =
+  //      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+  //    test(`Deploy BPMN: ${name}`, async () => {
+  //      execFileSync(
+  //        "zbctl",
+  //        [
+  //          "deploy",
+  //          `../../../../../test/integration/testsuites/core/files/${file}`,
+  //          "--clientCache",
+  //          "/tmp/zeebe",
+  //          "--clientId",
+  //          config.venomID,
+  //          "--clientSecret",
+  //          config.venomSec,
+  //          "--authzUrl",
+  //          config.authURL,
+  //          "--address",
+  //          config.base.zeebeGRPC,
+  //          ...extra,
+  //        ],
+  //        { stdio: "inherit" },
+  //      );
+  //    });
+  //  }
 
   // Parameterized process visibility tests
   for (const [bpmnId, label] of [

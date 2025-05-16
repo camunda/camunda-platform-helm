@@ -35,8 +35,6 @@ tasks:
 
           echo "🔑 Checking if an imagePullSecrets patch needs to be added …"
 
-          echo "stopping the workflow for a test cycle"
-          sleep 6000
           if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET-}" ]]; then
             echo "🔐 TEST_CREATE_DOCKER_LOGIN_SECRET is set – adding imagePullSecrets patch"
 
@@ -64,6 +62,9 @@ tasks:
           echo "❌ Failed to deploy Playwright test job"
           exit 1
         fi
+        echo "stopping the workflow for a test cycle"
+        sleep 6000
+
         echo "✅ Successfully deployed Playwright test job"
       # Stream logs once the Job Pod is running.
       - cmd: |
