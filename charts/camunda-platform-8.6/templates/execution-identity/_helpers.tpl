@@ -25,7 +25,7 @@ Defines extra labels for executionIdentity.
 */}}
 {{- define "executionIdentity.extraLabels" -}}
 app.kubernetes.io/component: execution-identity
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.executionIdentity) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.executionIdentity "chart" .Chart) | quote }}
 {{- end -}}
 
 {{/*
