@@ -3,9 +3,11 @@
 {{- $chartDir := printf "charts/camunda-platform-%s" $release.app -}}
 {{- if $releaseHeader -}}
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
-🔙 [Back to index](../)
+🔙 [Back to version matrix index](../)
 
 # Camunda {{ $release.app }} Helm Chart Version Matrix
+
+## ToC
 {{ range $chartVersion := $release.charts }}
 - {{ printf "[Helm chart %s](#helm-chart-%s)" $chartVersion ($chartVersion | strings.ReplaceAll "." "") }}
 {{- end }}
