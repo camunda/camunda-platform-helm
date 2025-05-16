@@ -25,7 +25,7 @@ Define common labels for operate, combining the match labels and transient label
 */}}
 {{- define "operate.labels" -}}
     {{- include "camundaPlatform.labels" . }}
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.operate "chart" .Chart) | quote }}
     {{- "\n" }}
     {{- include "operate.extraLabels" . }}
 {{- end -}}
