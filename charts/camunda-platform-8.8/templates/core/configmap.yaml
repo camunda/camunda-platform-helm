@@ -25,7 +25,7 @@ data:
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
     {{- if eq .Values.global.security.authentication.method "oidc" }}
       profiles:
-        active: "identity,broker,consolidated-auth"
+        active: "identity,tasklist,operate,broker,consolidated-auth"
     camunda.security:
       authentication:
         oidc:
