@@ -109,8 +109,6 @@ global:
       ## @param global.security.initialization.users[0].password
       ## @param global.security.initialization.users[0].name
       ## @param global.security.initialization.users[0].email
-<<<<<<< Updated upstream
-=======
       users:
         ## @extra global.security.initialization.users.username, the username of an initial user.
         - username: demo
@@ -120,20 +118,14 @@ global:
           name: Demo User
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
->>>>>>> Stashed changes
       mappings:
         ## @extra global.security.initialization.mappings.mapping-id, the mapping-id of an initial mapping.
         - mapping-id: user-mapping
           ## @extra global.security.initialization.mappings.claim-name, the claim-name of an initial mapping.
           claim-name: sub
           ## @extra global.security.initialization.mappings.claim-value, the name of an initial user.
-<<<<<<< Updated upstream
-          claim-value: user
-
-
-=======
           claim-value: demo
->>>>>>> Stashed changes
+
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
 
