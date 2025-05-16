@@ -843,7 +843,7 @@ identityPostgresql:
 ## @extra identityKeycloak configuration, for the Keycloak dependency chart which is used by Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
 identityKeycloak:
   ## @param identityKeycloak.enabled Enable Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
-  enabled: false
+  enabled: true
   ## @extra identityKeycloak.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
@@ -858,7 +858,6 @@ identityKeycloak:
     security:
       ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Identity login theme)
       allowInsecureImages: true
-
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
   nameOverride: "keycloak"
 
@@ -885,6 +884,14 @@ identityKeycloak:
       cpu: 2000m
       memory: 2Gi
 
+  ## @extra identityKeycloak.image configuration.
+  # https://hub.docker.com/r/bitnami/keycloak/tags
+  image:
+    ## @param identityKeycloak.image.repository image repo
+    repository: camunda/keycloak
+    ## @param identityKeycloak.image.tag image tag
+    tag: 26.1.4
+
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
@@ -897,12 +904,12 @@ identityKeycloak:
       digest: ""
     auth:
       ## @param identityKeycloak.postgresql.auth.existingSecret defines the existing secret resource containing the database credentials
-      existingSecret: camunda-credentials
+      existingSecret: ""
       secretKeys:
         ## @param identityKeycloak.postgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        adminPasswordKey: "postgres-password"
         ## @param identityKeycloak.postgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-        userPasswordKey: "identity-keycloak-postgresql-user-password"
+        userPasswordKey: "password"
     primary:
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
@@ -1025,9 +1032,9 @@ identityKeycloak:
     adminUser: admin
     ## @param identityKeycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
     # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
-    existingSecret: camunda-credentials
+    existingSecret: ""
     ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
-    passwordSecretKey: identity-keycloak-admin-password
+    passwordSecretKey: "admin-password"
 
 #################################################
 #####
