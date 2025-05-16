@@ -790,6 +790,12 @@
                             }
                         }
                     }
+                },
+                "extraManifests": {
+                    "type": "array",
+                    "description": "Array of extra objects to deploy with the release.",
+                    "default": [],
+                    "items": {}
                 }
             }
         },
