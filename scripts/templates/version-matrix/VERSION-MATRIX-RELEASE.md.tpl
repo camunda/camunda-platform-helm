@@ -12,7 +12,7 @@
 {{- end }}
 
 {{- range $chartVersion := $release.charts }}
-{{- $gitRef := printf "camunda-platform-%s" $chartVersion -}}
+{{- $gitRef := printf "camunda-platform-%s-%s" $release.app $chartVersion -}}
 {{- $vars := dict
   "app_version" $release.app
   "chart_version" $chartVersion
@@ -36,7 +36,8 @@
 {{- with $vars -}}
 Supported versions:
 
-- Camunda applications: [{{ .app_version }}](https://github.com/camunda/camunda-platform/releases?q=tag%3A{{ .app_version }}&expanded=true)
+- Camunda applications: [{{ .app_version }}](https://github.com/camunda/camunda/releases?q=tag%3A{{ .app_version }}&expanded=true)
+- Camunda version matrix: [{{ .app_version }}](https://helm.camunda.io/camunda-platform/version-matrix/camunda-{{ .app_version }})
 - Helm values: [{{ .chart_version }}](https://artifacthub.io/packages/helm/camunda/camunda-platform/{{ .chart_version }}#parameters)
 - Helm CLI: {{ $helmCLIVersion }}
 
