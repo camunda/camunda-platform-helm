@@ -25,7 +25,7 @@ Define common labels for optimize, combining the match labels and transient labe
 */}}
 {{- define "optimize.labels" -}}
     {{- include "camundaPlatform.labels" . }}
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.optimize "chart" .Chart) | quote }}
     {{- "\n" }}
     {{- include "optimize.extraLabels" . }}
 {{- end -}}

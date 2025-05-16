@@ -27,7 +27,7 @@ Define common labels for tasklist, combining the match labels and transient labe
 */}}
 {{- define "tasklist.labels" -}}
     {{- include "camundaPlatform.labels" . }}
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.tasklist) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.tasklist "chart" .Chart) | quote }}
     {{- "\n" }}
     {{- include "tasklist.extraLabels" . }}
 {{- end -}}
