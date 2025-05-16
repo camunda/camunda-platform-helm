@@ -119,6 +119,27 @@ Usage: {{ include "camundaPlatform.image" . }}
 {{- end -}}
 
 {{/*
+Return the version label for resources.
+If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., “8.5.x”); otherwise use the resolved image tag.
+*/}}
+{{- define "camundaPlatform.versionLabel" -}}
+  {{- $base := .base -}}
+  {{- $over := .overlay -}}
+  {{- $tag := include "camundaPlatform.imageTagByParams" (dict "base" $base "overlay" $over) -}}
+  {{- $digest := $over.image.digest | default $base.image.digest -}}
+  {{- if $digest }}
+    {{- /* Using digest: fall back to application version for label */ -}}
+    {{- .chart.AppVersion -}}
+  {{- else if $tag }}
+    {{- /* Using tag: use the tag for the label */ -}}
+    {{- $tag -}}
+  {{- else }}
+    {{- /* Neither tag nor digest provided: use appVersion as default */ -}}
+    {{- .chart.AppVersion -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 Get imagePullSecrets according the values of global, subchart, or empty.
 */}}
 {{- define "camundaPlatform.subChartImagePullSecrets" -}}
