@@ -35,6 +35,8 @@ tasks:
 
           echo "🔑 Checking if an imagePullSecrets patch needs to be added …"
 
+          echo "stopping the workflow for a test cycle"
+          sleep 6000
           if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET-}" ]]; then
             echo "🔐 TEST_CREATE_DOCKER_LOGIN_SECRET is set – adding imagePullSecrets patch"
 
