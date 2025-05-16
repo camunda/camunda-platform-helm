@@ -87,13 +87,27 @@ If the "overlay" values exist, they will override the "base" values, otherwise t
 Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 */}}
 {{- define "camundaPlatform.imageByParams" -}}
-    {{- $imageRegistry := .overlay.image.registry | default .base.image.registry -}}
+  {{- $reg    := .overlay.image.registry | default .base.image.registry -}}
+  {{- $repo   := .overlay.image.repository | default .base.image.repository -}}
+  {{- $digest := .overlay.image.digest | default .base.image.digest | default "" -}}
+
+  {{- if $digest }}
+    {{- /* digest‐override path */ -}}
+    {{- printf "%s%s%s@%s"
+        $reg
+        (empty $reg | ternary "" "/")
+        $repo
+        $digest
+    -}}
+  {{- else }}
+    {{- /* original tag path */ -}}
     {{- printf "%s%s%s:%s"
-        $imageRegistry
-        (empty $imageRegistry | ternary "" "/")
-        (.overlay.image.repository | default .base.image.repository)
+        $reg
+        (empty $reg | ternary "" "/")
+        $repo
         (include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay))
     -}}
+  {{- end }}
 {{- end -}}
 
 {{/*
