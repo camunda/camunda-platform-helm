@@ -29,7 +29,11 @@ data:
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
     {{- if eq .Values.global.security.authentication.method "oidc" }}
       profiles:
+<<<<<<< Updated upstream
         active: "identity,operate,tasklist,broker,consolidated-auth"
+=======
+        active: "identity,broker,consolidated-auth"
+>>>>>>> Stashed changes
     camunda.security:
       authentication:
         oidc:
@@ -39,9 +43,16 @@ data:
             - {{ .Values.global.identity.auth.core.audience | quote }}
             - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
             - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
+<<<<<<< Updated upstream
           {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
           {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
           issuer-uri: {{ $issuerURIDefault | quote }}
+=======
+          # {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
+          {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
+          # issuer-uri: {{ $issuerURIDefault | quote }}
+          issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
+>>>>>>> Stashed changes
           redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
     {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
