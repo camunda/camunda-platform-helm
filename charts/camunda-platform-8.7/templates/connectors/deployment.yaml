@@ -80,7 +80,6 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
                   key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
               {{- end }}
-            {{- end }}
             - name: CAMUNDA_CLIENT_AUTH_CLIENT_ID
               value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
             - name: CAMUNDA_CLIENT_AUTH_CLIENT_SECRET
@@ -103,6 +102,7 @@ spec:
             - name: CAMUNDA_CLIENT_ZEEBE_SCOPE
               value: {{ include "zeebe.authTokenScope" . | quote }}
             {{- end }}
+          {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:

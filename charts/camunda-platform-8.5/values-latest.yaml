@@ -18,7 +18,7 @@ console:
   # registry.camunda.cloud/console
   image:
     # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.113
+    tag: 8.5.115
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -30,19 +30,19 @@ operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.5.13
+    tag: 8.5.14
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.13
+    tag: 8.5.15
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.5.14
+    tag: 8.5.15
 
 webModeler:
   # Camunda Enterprise repository.
@@ -55,13 +55,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.17
+    tag: 8.5.18
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.17
+    tag: 8.5.18
 
 #
 # Identity

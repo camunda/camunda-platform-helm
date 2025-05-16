@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-gateway
-    app.kubernetes.io/version: "8.6.13"
+    app.kubernetes.io/version: "8.6.15"
 spec:
   minAvailable: 1
   selector:

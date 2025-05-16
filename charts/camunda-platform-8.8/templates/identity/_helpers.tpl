@@ -133,9 +133,7 @@ For more details, please check Camunda Helm chart documentation.
     {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.protocol -}}
         {{- .Values.global.identity.keycloak.url.protocol -}}
     {{- else -}}
-        {{- if .Values.identityKeycloak.enabled -}}
             {{- ternary "https" "http" (.Values.identityKeycloak.tls.enabled) -}}
-        {{- end -}}
     {{- end -}}
 {{- end -}}
 

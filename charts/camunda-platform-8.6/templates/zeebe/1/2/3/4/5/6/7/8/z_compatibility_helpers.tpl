@@ -82,10 +82,12 @@ The label `tuned.openshift.io/elasticsearch` is added to ensure compatibility wi
 Without this label, the Helm upgrade will fail for OpenShift because it is already set for the volumeClaimTemplate.
 */}}
 
-{{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
-    {{- if not (hasKey .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch") -}}
-        {{- $_ := set .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch" "" -}}
-    {{- end -}}
+{{- if .Values.elasticsearch.enabled -}}
+  {{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
+      {{- if not (hasKey .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch") -}}
+          {{- $_ := set .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch" "" -}}
+      {{- end -}}
+  {{- end -}}
 {{- end -}}
 {{/*
 Elasticsearch.

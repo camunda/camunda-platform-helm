@@ -66,6 +66,10 @@ runs:
 
       echo "TEST_NAMESPACE=$(echo ${TEST_NAMESPACE} | head -c 63)" | tee -a $GITHUB_ENV
 
+      # Get alpha chart dir.
+      TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
+      echo "TEST_CAMUNDA_HELM_DIR_ALPHA=${TEST_CAMUNDA_HELM_DIR_ALPHA}" | tee -a $GITHUB_ENV
+
       echo "Output vars:"
 
       # Deployment identifier.
