@@ -3143,6 +3143,7 @@ postgresql:
   # https://hub.docker.com/r/bitnami/postgresql/tags
   ## @param postgresql.image.repository PostgreSQL repo
   ## @param postgresql.image.tag PostgreSQL image tag
+  ## @param postgresql.image.digest PostgreSQL image digest
   image:
     repository: bitnami/postgresql
     tag: 14.18.0-debian-12-r0
