@@ -125,6 +125,7 @@ global:
           claim-name: sub
           ## @extra global.security.initialization.mappings.claim-value, the name of an initial user.
           claim-value: demo
+
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
 
