@@ -53,7 +53,7 @@ const config = {
     zeebe: requireEnv("PLAYWRIGHT_VAR_ZEEBE_CLIENT_SECRET"),
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
-  venomSec: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
+  venomSec: requireEnv("PLAYWRIGHT_VAR_ZEEBE_CLIENT_SECRET"),
 };
 
 // Helper to fetch a token
