@@ -16,7 +16,7 @@ CHART_NAME="${CHART_NAME:-camunda-platform}"
 CHART_DIR="${CHART_DIR:-$(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1)}"
 CHART_SOURCE="${CHART_SOURCE:-camunda/$CHART_NAME}"
 # Add unsupported Camunda version to reduce generation time.
-CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[01])'
+CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[0123])'
 
 # Update Helm and Git repos to get the latest versions.
 init_updates () {

@@ -1,7 +1,9 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
-🔙 [Back to index](../)
+🔙 [Back to version matrix index](../)
 
 # Camunda 8.4 Helm Chart Version Matrix
+
+## ToC
 
 - [Helm chart 9.5.1](#helm-chart-951)
 - [Helm chart 9.5.0](#helm-chart-950)
@@ -36,9 +38,10 @@
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.5.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.5.1#parameters)
-- Helm CLI: N/A
+- Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
 
 Camunda images:
 
@@ -65,9 +68,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.5.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.5.0#parameters)
-- Helm CLI: N/A
+- Helm CLI: [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2)
 
 Camunda images:
 
@@ -94,7 +98,8 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.8](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.8#parameters)
 - Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
 
@@ -123,9 +128,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.7](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.7#parameters)
-- Helm CLI: [3.17.0](https://github.com/helm/helm/releases/tag/v3.17.0)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -152,9 +158,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.6](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.6#parameters)
-- Helm CLI: [3.16.4](https://github.com/helm/helm/releases/tag/v3.16.4)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -181,9 +188,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.5](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.5#parameters)
-- Helm CLI: [3.16.3](https://github.com/helm/helm/releases/tag/v3.16.3)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -210,9 +218,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.4](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.4#parameters)
-- Helm CLI: [3.16.2](https://github.com/helm/helm/releases/tag/v3.16.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -239,9 +248,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.3](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.3#parameters)
-- Helm CLI: [3.16.2](https://github.com/helm/helm/releases/tag/v3.16.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -268,9 +278,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.2#parameters)
-- Helm CLI: [3.16.2](https://github.com/helm/helm/releases/tag/v3.16.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -297,9 +308,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.1#parameters)
-- Helm CLI: [3.16.1](https://github.com/helm/helm/releases/tag/v3.16.1)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -326,9 +338,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.4.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.4.0#parameters)
-- Helm CLI: [3.15.4](https://github.com/helm/helm/releases/tag/v3.15.4)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -355,9 +368,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.9](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.9#parameters)
-- Helm CLI: [3.15.3](https://github.com/helm/helm/releases/tag/v3.15.3)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -384,9 +398,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.8](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.8#parameters)
-- Helm CLI: [3.15.3](https://github.com/helm/helm/releases/tag/v3.15.3)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -413,9 +428,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.7](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.7#parameters)
-- Helm CLI: [3.15.2](https://github.com/helm/helm/releases/tag/v3.15.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -442,9 +458,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.6](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.6#parameters)
-- Helm CLI: [3.15.1](https://github.com/helm/helm/releases/tag/v3.15.1)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -471,9 +488,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.5](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.5#parameters)
-- Helm CLI: [3.14.2](https://github.com/helm/helm/releases/tag/v3.14.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -500,9 +518,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.4](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.4#parameters)
-- Helm CLI: [3.14.2](https://github.com/helm/helm/releases/tag/v3.14.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -529,9 +548,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.3](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.3#parameters)
-- Helm CLI: [3.14.2](https://github.com/helm/helm/releases/tag/v3.14.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -558,9 +578,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.2#parameters)
-- Helm CLI: [3.14.2](https://github.com/helm/helm/releases/tag/v3.14.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -587,9 +608,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.1#parameters)
-- Helm CLI: [3.14.2](https://github.com/helm/helm/releases/tag/v3.14.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -616,9 +638,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.3.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.3.0#parameters)
-- Helm CLI: [3.14.2](https://github.com/helm/helm/releases/tag/v3.14.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -645,9 +668,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.2.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.2.0#parameters)
-- Helm CLI: [3.14.2](https://github.com/helm/helm/releases/tag/v3.14.2)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -674,9 +698,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.1.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.1.2#parameters)
-- Helm CLI: [3.14.1](https://github.com/helm/helm/releases/tag/v3.14.1)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -703,9 +728,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.1.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.1.1#parameters)
-- Helm CLI: [3.14.0](https://github.com/helm/helm/releases/tag/v3.14.0)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -732,9 +758,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.1.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.1.0#parameters)
-- Helm CLI: [3.14.0](https://github.com/helm/helm/releases/tag/v3.14.0)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -761,9 +788,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.0.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.0.2#parameters)
-- Helm CLI: [3.13.3](https://github.com/helm/helm/releases/tag/v3.13.3)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -790,9 +818,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.0.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.0.1#parameters)
-- Helm CLI: [3.13.3](https://github.com/helm/helm/releases/tag/v3.13.3)
+- Helm CLI: N/A
 
 Camunda images:
 
@@ -819,9 +848,10 @@ Non-Camunda images:
 
 Supported versions:
 
-- Camunda applications: [8.4](https://github.com/camunda/camunda-platform/releases?q=tag%3A8.4&expanded=true)
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
 - Helm values: [9.0.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.0.0#parameters)
-- Helm CLI: [3.13.3](https://github.com/helm/helm/releases/tag/v3.13.3)
+- Helm CLI: N/A
 
 Camunda images:
 
