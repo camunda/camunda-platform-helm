@@ -95,6 +95,8 @@ spec:
               value: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
               value: /login/oauth2/code/core
+            - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_1
+              value: /sso-callback
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "Confidential"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
