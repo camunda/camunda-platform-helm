@@ -75,7 +75,9 @@ spec:
                   number: {{ .Values.core.service.httpPort }}
             path: {{ .Values.core.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
-          # Core - Optimize.
+          {{- end }}
+          {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
+          # Optimize.
           - backend:
               service:
                 name: {{ template "optimize.fullname" . }}
