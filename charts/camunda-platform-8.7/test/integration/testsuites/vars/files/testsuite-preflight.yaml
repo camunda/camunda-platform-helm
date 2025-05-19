@@ -7,8 +7,8 @@ vars:
   releaseName: integration
   skipTestWebModeler: "{{ .SKIP_TEST_WEBMODELER }}"
   # Skip the Elasticsearch test
-  # skipes: "{{ .SKIP_TEST_ELASTICSEARCH }}"
-  skipes: true
+  skipes: "{{ .SKIP_TEST_ELASTICSEARCH }}"
+  # skipes: true
 
 testcases:
 - name: TEST - Readiness Elasticsearch
