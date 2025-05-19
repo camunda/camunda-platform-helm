@@ -3,7 +3,7 @@
 #
 
 global:
-  # https://github.com/camunda/camunda-platform/releases
+  # https://github.com/camunda/camunda/releases
   # https://hub.docker.com/u/camunda
   image:
     tag:
