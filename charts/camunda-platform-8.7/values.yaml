@@ -180,7 +180,7 @@ global:
   ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
   ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
   opensearch:
-    enabled: false
+    enabled: true
     aws:
       enabled: false
     tls:
@@ -3788,7 +3788,7 @@ connectors:
 ## @extra elasticsearch
 elasticsearch:
   ## @param elasticsearch.enabled
-  enabled: true
+  enabled: false
   ## @extra elasticsearch.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
