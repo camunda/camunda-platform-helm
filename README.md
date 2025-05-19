@@ -1,5 +1,6 @@
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/camunda)](https://artifacthub.io/packages/search?repo=camunda)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
+[![Artifact Hub](https://img.shields.io/badge/Artifact%20Hub-Camunda-417598?logo=artifacthub&logoColor=fff&style=flat-square)](https://artifacthub.io/packages/helm/camunda/camunda-platform)
+[![Helm Chart Version Matrix](https://img.shields.io/badge/Helm_Chart-Version_Matrix-0F1689?logo=helm&logoColor=fff&style=flat-square)](https://helm.camunda.io/camunda-platform/version-matrix/)
 
 <!-- omit in toc -->
 # Camunda Platform Helm
