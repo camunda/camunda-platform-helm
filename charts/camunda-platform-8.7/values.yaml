@@ -143,7 +143,7 @@ global:
   ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
   ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
-    enabled: true
+    enabled: false
     external: false
     tls:
       enabled: false
