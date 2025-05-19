@@ -790,7 +790,7 @@ identityPostgresql:
   # https://hub.docker.com/r/bitnami/postgresql/tags
   ## @param identityPostgresql.image.repository PostgreSQL repo
   ## @param identityPostgresql.image.tag PostgreSQL image tag
-  ## @param identity.postgresql.image.digest PostgreSQL image digest
+  ## @param identityPostgresql.image.digest PostgreSQL image digest
   ##
   image:
     repository: bitnami/postgresql
@@ -1856,7 +1856,7 @@ webModelerPostgresql:
   # https://hub.docker.com/r/bitnami/postgresql/tags
   ## @param webModelerPostgresql.image.repository PostgreSQL repo
   ## @param webModelerPostgresql.image.tag PostgreSQL image tag
-  ## @param postgresql.image.digest PostgreSQL image digest
+  ## @param webModelerPostgresql.image.digest PostgreSQL image digest
   image:
     repository: bitnami/postgresql
     tag: 14.18.0-debian-12-r0
