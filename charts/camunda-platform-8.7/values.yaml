@@ -1022,7 +1022,7 @@ zeebeGateway:
     repository: camunda/zeebe
     ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.7.3
-    ## @param zeebe-gateway.image.digest zeebe-gateway image digest (overrides tag if set, e.g. "sha256:abcd...")
+    ## @param zeebeGateway.image.digest zeebeGateway image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
@@ -2107,6 +2107,8 @@ executionIdentity:
     ## @skip executionIdentity.image.tag can be used to set the Docker image tag for the executionIdentity image (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/executionIdentity lookupName=registry.camunda.cloud/executionIdentity/executionIdentity-sm
     tag: SNAPSHOT
+    ## @skip executionIdentity.image.digest sets image digest
+    digest: ""
     ## @skip executionIdentity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2624,7 +2626,7 @@ identityPostgresql:
   # https://hub.docker.com/r/bitnami/postgresql/tags
   ## @param identityPostgresql.image.repository PostgreSQL repo
   ## @param identityPostgresql.image.tag PostgreSQL image tag
-  ## @param identity.postgresql.image.digest PostgreSQL image digest
+  ## @param identityPostgresql.image.digest PostgreSQL image digest
   ##
   image:
     repository: bitnami/postgresql
