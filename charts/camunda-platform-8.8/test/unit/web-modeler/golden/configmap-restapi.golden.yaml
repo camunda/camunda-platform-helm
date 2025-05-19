@@ -50,8 +50,8 @@ data:
               zeebe:
                 grpc: "grpc://camunda-platform-test-core:26500"
                 rest: "http://camunda-platform-test-core:8080/v1"
-              operate: "http://camunda-platform-test-core:8080/v1"
-              tasklist: "http://camunda-platform-test-core:8080/tasklist"
+              operate: "http://camunda-platform-test-core:8080"
+              tasklist: "http://camunda-platform-test-core:8080"
 
     spring:
       datasource:

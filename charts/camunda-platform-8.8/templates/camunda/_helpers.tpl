@@ -345,17 +345,6 @@ Operate templates.
 */}}
 
 {{/*
-[camunda-platform] Operate internal URL.
-*/}}
-{{ define "camundaPlatform.operateURL" }}
-  {{- if .Values.core.enabled -}}
-    {{- print "http://" -}}{{- include "core.fullname" . -}}:{{- .Values.core.service.httpPort -}}
-    {{- .Values.core.contextPath -}}/v1
-  {{- end -}}
-{{- end -}}
-
-
-{{/*
 Get the external url for a given component.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
 Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "context" .) }}
@@ -419,16 +408,6 @@ Connectors templates.
 Tasklist templates.
 ********************************************************************************
 */}}
-
-{{/*
-[camunda-platform] Tasklist internal URL.
-*/}}
-{{ define "camundaPlatform.tasklistURL" }}
-  {{- if .Values.core.enabled -}}
-    {{- print "http://" -}}{{- include "core.fullname" . -}}:{{- .Values.core.service.httpPort -}}
-    {{- .Values.core.contextPath -}}/tasklist
-  {{- end -}}
-{{- end -}}
 
 {{/*
 [camunda-platform] Tasklist external URL.
@@ -551,6 +530,26 @@ Console templates.
   {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "console" "context" .)) -}}
 {{- end -}}
 
+
+{{/*
+********************************************************************************
+Core templates.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-platform] Core internal URL.
+*/}}
+{{ define "camundaPlatform.CoreURL" }}
+  {{- if .Values.core.enabled -}}
+    {{-
+      printf "http://%s:%v%s"
+        (include "core.fullname" .)
+        .Values.core.service.httpPort
+        .Values.core.contextPath
+    -}}
+  {{- end -}}
+{{- end -}}
 
 {{/*
 ********************************************************************************
