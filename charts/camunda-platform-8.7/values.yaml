@@ -188,7 +188,7 @@ global:
       existingSecret:
     auth:
       username: test
-      password: test
+      password: Test#test1
       existingSecret:
       existingSecretKey: "password"
     ## @extra global.opensearch.url Configuration to configure opensearch url
