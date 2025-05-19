@@ -187,7 +187,7 @@ global:
       enabled: false
       existingSecret:
     auth:
-      username: test
+      username: camunda
       password: Test#test1
       existingSecret:
       existingSecretKey: "password"
