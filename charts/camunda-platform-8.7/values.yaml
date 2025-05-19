@@ -143,7 +143,7 @@ global:
   ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
   ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
-    enabled: false
+    enabled: true
     external: false
     tls:
       enabled: false
@@ -180,15 +180,15 @@ global:
   ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
   ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
   opensearch:
-    enabled: true
+    enabled: false
     aws:
       enabled: false
     tls:
       enabled: false
       existingSecret:
     auth:
-      username: camunda
-      password: Test#test1
+      username:
+      password:
       existingSecret:
       existingSecretKey: "password"
     ## @extra global.opensearch.url Configuration to configure opensearch url
@@ -197,7 +197,7 @@ global:
     ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
     url:
       protocol: https
-      host: search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com
+      host:
       port: 443
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
@@ -3788,7 +3788,7 @@ connectors:
 ## @extra elasticsearch
 elasticsearch:
   ## @param elasticsearch.enabled
-  enabled: false
+  enabled: true
   ## @extra elasticsearch.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms

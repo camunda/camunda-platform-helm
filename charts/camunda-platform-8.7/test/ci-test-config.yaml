@@ -1,6 +1,6 @@
 # Used in the GitHub Actions unit test CI workflow.
 unit:
-  enabled: false
+  enabled: true
   matrix:
     - name: Core
       packages: identity camunda console
