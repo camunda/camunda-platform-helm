@@ -32,12 +32,12 @@ data:
           client-id: {{ include "core.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
           audiences:
+            - {{ include "core.authClientId" . | quote }}
             - {{ .Values.global.identity.auth.core.audience | quote }}
             - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
             - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
           {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
           issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
-
           redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
     {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
