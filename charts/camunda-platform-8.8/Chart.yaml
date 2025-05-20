@@ -74,6 +74,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Modified comment for identity component in 8.8"
+      description: "Add missing extra mainfest configuration in 8.8"
     - kind: fixed
-      description: "Add missing env vars for opensearch password"
+      description: "Set context path only if optimize is enabled"
+    - kind: fixed
+      description: "Use correct core URL"
