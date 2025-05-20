@@ -103,6 +103,16 @@ on:
         required: false
         default: true
         type: boolean
+      teleport-token:
+        description: The Teleport token to use for authentication.
+        required: false
+        default: infra-ci-prod-github-action-distribution
+        type: string
+      namespace-prefix:
+        description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
+        required: false
+        default: distribution
+        type: string
 
 permissions:
   contents: read
@@ -278,6 +288,8 @@ jobs:
           ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
       - name: Set test type vars
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
