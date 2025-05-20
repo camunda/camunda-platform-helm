@@ -23,7 +23,7 @@ data:
         multipart:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
-    {{- if eq .Values.global.security.authentication.method "oidc" }}
+  {{- if eq .Values.global.security.authentication.method "oidc" }}
       profiles:
         active: "identity,tasklist,operate,broker,consolidated-auth"
     camunda.security:
@@ -39,13 +39,13 @@ data:
           {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
           issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
           redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
-    {{- else if eq .Values.global.security.authentication.method "basic" }}
+  {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
         active: "identity,broker,consolidated-auth"
-    {{- else }}
+  {{- else }}
       profiles:
         active: "operate,tasklist,broker,auth"
-    {{- end }}
+  {{- end }}
 
     management:
       server:
