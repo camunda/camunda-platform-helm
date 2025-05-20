@@ -93,8 +93,7 @@ global:
       ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
       oidc:
-        audiences: aud1
-        username-claim: sub
+        username-claim: preferred_username
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
