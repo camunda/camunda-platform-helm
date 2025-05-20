@@ -29,6 +29,7 @@ data:
     camunda.security:
       authentication:
         oidc:
+          username-claim: {{ .Values.global.security.authentication.oidc.usernameClaim | quote }}
           client-id: {{ include "core.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
           audiences:
@@ -213,13 +214,13 @@ data:
           {{- else if eq .Values.global.security.authentication.method "oidc" }}
           mappings:
             {{- range $mapping := .Values.global.security.initialization.mappings }}
-            - mapping-id: {{ index $mapping "mapping-id" | quote }}
-              claim-name: {{ index $mapping "claim-name" | quote }}
-              claim-value: {{ index $mapping "claim-value" | quote }}
+            - mapping-id: {{ index $mapping "mappingID" | quote }}
+              claim-name: {{ index $mapping "claimName" | quote }}
+              claim-value: {{ index $mapping "claimValue" | quote }}
             {{- end }}
           default-roles.admin.mappings:
             {{- range $mapping := .Values.global.security.initialization.mappings }}
-            - {{ index $mapping "mapping-id" | quote }}
+            - {{ index $mapping "mappingID" | quote }}
             {{- end }}
           {{- end }}
         multiTenancy:
