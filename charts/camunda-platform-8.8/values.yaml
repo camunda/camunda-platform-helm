@@ -1948,7 +1948,7 @@ connectors:
   ## @extra connectors.inbound Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     ## @param connectors.inbound.mode acceptable values: disabled, credentials, or oauth
-    mode: disabled
+    mode: oauth
     ## @extra connectors.inbound.auth configuration of the credentials authentication.
     auth:
       ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains password (if inbound mode is credentials)
