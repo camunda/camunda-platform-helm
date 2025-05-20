@@ -41,7 +41,7 @@ data:
           redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
   {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
-        active: "identity,broker,consolidated-auth"
+        active: "identity,operate,tasklist,broker,consolidated-auth"
   {{- else }}
       profiles:
         active: "operate,tasklist,broker,auth"
