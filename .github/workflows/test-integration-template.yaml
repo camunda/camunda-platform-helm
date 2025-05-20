@@ -130,7 +130,7 @@ env:
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
   LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true
-  TOKEN: infra-ci-prod-github-action-distribution
+  TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
   init:
