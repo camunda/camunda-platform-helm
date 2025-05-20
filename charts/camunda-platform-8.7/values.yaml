@@ -383,8 +383,6 @@ global:
     regions: 1
     ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
     regionId: 0
-    ## @skip global.multiregion.installationType mode of installation for multi-region disaster recovery: normal, failOver, failBack
-    installationType: normal
 
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
