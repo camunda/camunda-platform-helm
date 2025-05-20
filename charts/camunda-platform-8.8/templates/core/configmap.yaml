@@ -221,6 +221,10 @@ data:
               claim-name: {{ index $mapping "claim-name" | quote }}
               claim-value: {{ index $mapping "claim-value" | quote }}
             {{- end }}
+          default-roles.admin.mappings:
+            {{- range $mapping := .Values.global.security.initialization.mappings }}
+            - {{ index $mapping "mapping-id" | quote }}
+            {{- end }}
           {{- end }}
         multiTenancy:
             enabled: {{ .Values.global.multitenancy.enabled }}
