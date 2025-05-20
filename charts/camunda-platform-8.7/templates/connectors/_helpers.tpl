@@ -33,7 +33,7 @@ Defines extra labels for connectors.
 */}}
 {{- define "connectors.extraLabels" -}}
 app.kubernetes.io/component: connectors
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.connectors "chart" .Chart) | quote }}
 {{- end -}}
 
 {{/*

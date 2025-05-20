@@ -23,7 +23,7 @@
 */}}
 {{ define "core.extraLabels" -}}
 app.kubernetes.io/component: core
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.core "chart" .Chart) | quote }}
 {{- end }}
 
 {{/*
