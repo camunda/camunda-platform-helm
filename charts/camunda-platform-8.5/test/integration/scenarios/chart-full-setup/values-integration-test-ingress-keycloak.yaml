@@ -12,7 +12,7 @@ global:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-      secretName: camunda-platform
+      secretName: distribution-aws-camunda-cloud-tls
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
@@ -120,7 +120,7 @@ zeebeGateway:
       tls:
         enabled: true
         # A wildcard certificate will be used.
-        secretName: camunda-platform-zeebe-gateway
+        secretName: distribution-aws-camunda-cloud-tls
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
