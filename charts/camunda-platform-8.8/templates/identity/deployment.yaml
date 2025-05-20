@@ -36,6 +36,29 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
+            - name: KEYCLOAK_USERS_0_USERNAME
+              value: {{ .Values.identity.firstUser.username | quote }}
+            - name: KEYCLOAK_USERS_0_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.identity.firstUser.existingSecret }}
+                  key: {{ .Values.identity.firstUser.existingSecretKey }}
+            - name: KEYCLOAK_USERS_0_EMAIL
+              value: {{ .Values.identity.firstUser.email | quote }}
+            - name: KEYCLOAK_USERS_0_FIRST_NAME
+              value: {{ .Values.identity.firstUser.firstName | quote }}
+            - name: KEYCLOAK_USERS_0_LAST_NAME
+              value: {{ .Values.identity.firstUser.lastName | quote }}
+            - name: KEYCLOAK_USERS_0_ROLES_0
+              value: "Identity"
+            - name: KEYCLOAK_USERS_0_ROLES_1
+              value: "Optimize"
+            - name: KEYCLOAK_USERS_0_ROLES_2
+              value: "Web Modeler"
+            - name: KEYCLOAK_USERS_0_ROLES_3
+              value: "Web Modeler Admin"
+            - name: KEYCLOAK_USERS_0_ROLES_4
+              value: "Console"
             - name: CAMUNDA_LICENSE_KEY
               valueFrom:
                 secretKeyRef:
