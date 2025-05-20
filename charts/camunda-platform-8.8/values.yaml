@@ -858,6 +858,7 @@ identityKeycloak:
     security:
       ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Identity login theme)
       allowInsecureImages: true
+
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
   nameOverride: "keycloak"
 
@@ -884,14 +885,6 @@ identityKeycloak:
       cpu: 2000m
       memory: 2Gi
 
-  ## @extra identityKeycloak.image configuration.
-  # https://hub.docker.com/r/bitnami/keycloak/tags
-  image:
-    ## @param identityKeycloak.image.repository image repo
-    repository: camunda/keycloak
-    ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.4
-
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
@@ -904,12 +897,12 @@ identityKeycloak:
       digest: ""
     auth:
       ## @param identityKeycloak.postgresql.auth.existingSecret defines the existing secret resource containing the database credentials
-      existingSecret: ""
+      existingSecret: camunda-credentials
       secretKeys:
         ## @param identityKeycloak.postgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-        adminPasswordKey: "postgres-password"
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
         ## @param identityKeycloak.postgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-        userPasswordKey: "password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
     primary:
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
       ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
@@ -1032,9 +1025,9 @@ identityKeycloak:
     adminUser: admin
     ## @param identityKeycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
     # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
-    existingSecret: ""
+    existingSecret: camunda-credentials
     ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
-    passwordSecretKey: "admin-password"
+    passwordSecretKey: identity-keycloak-admin-password
 
 #################################################
 #####
