@@ -60,6 +60,17 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{- end }}
 
 {{/*
+Fail with a message if Identity is disabled and identityKeycloak is enabled.
+*/}}
+{{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Identity is disabled but identityKeycloak is enabled."
+      "Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
 [opensearch] when existingSecret is provided for opensearch then password field should be empty
 */}}
 {{- if and .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
