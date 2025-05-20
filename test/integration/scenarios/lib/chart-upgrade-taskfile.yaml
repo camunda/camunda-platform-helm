@@ -36,6 +36,13 @@ tasks:
           FORCE="--force --install --set=global.postgresql.auth.existingSecret=integration-test-credentials"
         fi
       fi
+
+      # if the upgrade is 8.5 -> 8.6, we need to change the password of keycloak admin user
+      helm history -n {{ .TEST_NAMESPACE }} -o json integration | jq '.[].app_version' | grep 8.5
+      if [ $? -eq 0 ]; then
+        kubectl exec -n {{ .TEST_NAMESPACE }} integration-keycloak-0 -- bash -c "/opt/keycloak/bin/kc.sh bootstrap-admin user --username admin --password:env KEYCLOAK_SETUP_PASSWORD"
+      fi
+
       set -e +x
 
       helm upgrade integration {{ .TEST_CHART_NAME }} \

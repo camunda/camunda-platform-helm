@@ -44,6 +44,7 @@ tasks:
             )
         fi
       silent: true
+    - (kubectl kustomize $TEST_DIR | kubectl delete -n $TEST_NAMESPACE -f -) || true
     # Deploy.
     - kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -
     # Get logs.
