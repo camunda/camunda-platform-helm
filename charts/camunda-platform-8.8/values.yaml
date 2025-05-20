@@ -120,9 +120,9 @@ global:
           email: demo@demo.com
       mappings:
         ## @extra global.security.initialization.mappings.mapping-id, the mapping-id of an initial mapping.
-        - mapping-id: user-mapping
+        - mapping-id: demo-user-mapping
           ## @extra global.security.initialization.mappings.claim-name, the claim-name of an initial mapping.
-          claim-name: sub
+          claim-name: preferred_username
           ## @extra global.security.initialization.mappings.claim-value, the name of an initial user.
           claim-value: demo
 
