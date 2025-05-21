@@ -37,14 +37,14 @@ tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.4
   image:
     repository: camunda/tasklist
-    tag: 8.4.20
+    tag: 8.4.21
 
 webModeler:
   # Camunda Enterprise repository.
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.4.17
+    tag: 8.4.18
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.4
