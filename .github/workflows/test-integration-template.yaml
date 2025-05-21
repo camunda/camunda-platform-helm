@@ -319,9 +319,9 @@ jobs:
           kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
       - name: Set Deployment Secrets
         run: |
-          kubectl get secret -n distribution-certs distribution-aws-camunda-cloud-tls -o yaml > distribution-aws-camunda-cloud-tls.yaml
-          sed -i "s/namespace: distribution-certs/namespace: $TEST_NAMESPACE/g" distribution-aws-camunda-cloud-tls.yaml
-          kubectl apply -f distribution-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
+          kubectl get secret -n ${NAMESPACE_PREFIX}-certs ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls -o yaml > ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
+          sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
+          kubectl apply -f ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
 
           # For backward compatibility.
           kubectl apply -n $TEST_NAMESPACE \
@@ -343,6 +343,8 @@ jobs:
               fi
             fi
           fi
+        env:
+          NAMESPACE_PREFIX: ${{ inputs.namespace-prefix }}
 
       - name: Set Helm extra args
         env:
