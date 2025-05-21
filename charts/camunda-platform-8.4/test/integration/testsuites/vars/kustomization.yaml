@@ -13,7 +13,6 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
   files:
-  - files/variables-default.yaml
   - files/variables-ingress-combined.yaml
 - name: venom-env-vars
   options:
