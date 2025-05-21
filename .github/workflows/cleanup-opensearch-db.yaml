@@ -4,6 +4,7 @@ on:
   schedule:
     # Set the cron schedule to run nightly at US time, EST (4AM UTC)
     # - cron: "0 1 * * *"
+    pull_request:
 
 permissions:
   contents: read
