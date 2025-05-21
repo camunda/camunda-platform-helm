@@ -63,7 +63,9 @@ runs:
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
       fi
-
+      
+      TEST_NAMESPACE="${TEST_NAMESPACE%-}"
+      
       echo "TEST_NAMESPACE=$(echo ${TEST_NAMESPACE} | head -c 63)" | tee -a $GITHUB_ENV
 
       # Get alpha chart dir.
