@@ -16,6 +16,7 @@ tasks:
   # TODO: Simplify the steps here when we use TestKube.
   default:
     cmds:
+    - kubectl delete -n $TEST_NAMESPACE job/$TEST_NAME || true
     # Add testsuites vars.
     - |
       # Kustomize doesn't support dir with edit/patch.
@@ -44,7 +45,6 @@ tasks:
             )
         fi
       silent: true
-    - kubectl delete -n $TEST_NAMESPACE job/$TEST_NAME || true
     # Deploy.
     - kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -
     # Get logs.
