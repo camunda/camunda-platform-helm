@@ -117,7 +117,7 @@ env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
-  CI_HOSTNAME_BASE: distribution.aws.camunda.cloud
+  CI_HOSTNAME_BASE: ${{ inputs.namespace-prefix }}.aws.camunda.cloud
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
