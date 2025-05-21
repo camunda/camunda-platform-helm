@@ -1514,7 +1514,7 @@ tasklist:
     ## @param tasklist.image.repository defines which image repository to use
     repository: camunda/tasklist
     ## @param tasklist.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.5.15
+    tag: 8.5.16
     ## @param tasklist.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2522,7 +2522,7 @@ webModeler:
     registry: registry.camunda.cloud
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.18
+    tag: 8.5.19
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     # Note: A secret will be required, if the WebModeler images are pulled directly from Camunda's private registry.
     #
