@@ -1,0 +1,24 @@
+name: "Clean up OpenSearch Indices"
+
+on:
+  schedule:
+    # Set the cron schedule to run nightly at US time, EST (4AM UTC)
+    # - cron: "0 1 * * *"
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+jobs:
+  clean:
+    name: Clean up Indices
+    runs-on: ubuntu
+    steps:
+      - name: Authenticate to GKE
+        uses: ./.github/actions/gke-login
+        with:
+          cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
+          cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
+          workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
+          service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
