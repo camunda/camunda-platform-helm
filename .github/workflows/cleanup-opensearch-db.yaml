@@ -23,3 +23,8 @@ jobs:
           cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
           workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
           service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
+      - name: Get pods
+        shell: bash
+        # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
+        run: |
+          kubectl -n hamza get po
