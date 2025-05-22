@@ -2954,7 +2954,7 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
-          description: "Revert feat: dedicated opensearch.prefix support"
+          description: "Revert feat dedicated opensearch.prefix support"
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
         - name: Camunda 8 docs
