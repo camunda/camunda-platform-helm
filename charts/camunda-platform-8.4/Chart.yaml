@@ -66,29 +66,5 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "Task 448 backport and refactor Camunda unit test refactor from 8.6 to 8.4"
-    - kind: fixed
-      description: "Add elasticsearch golden files"
-    - kind: fixed
-      description: "Refactor 8.4 unit test connectors"
-    - kind: fixed
-      description: "Refactor of optimize in 8.4"
-    - kind: fixed
-      description: "Refactor 8.4 unit test operate"
-    - kind: fixed
-      description: "Refactored unit tests in 8.4 to new style in tasklist"
-    - kind: fixed
-      description: "Refactored unit tests in 8.4 to new style in zeebe"
-    - kind: fixed
-      description: "Refactored unit tests in 8.4 to new style in zeebe-gateway"
-    - kind: fixed
-      description: "Refactor 8 4 unit test identity"
-    - kind: fixed
-      description: "Refactor 8.4 unit test console"
-    - kind: fixed
-      description: "Refactored unit tests in 8.4 to new style in web modeler"
-    - kind: fixed
-      description: "Add apiVersion and kind to PersistentVolumeClaims"
+  artifacthub.io/changes: ""
   camunda.io/helmCLIVersion: 3.17.3
