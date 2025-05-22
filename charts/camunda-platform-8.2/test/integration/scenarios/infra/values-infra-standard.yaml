@@ -1,136 +1,213 @@
 # GKE stable nodes need nodeSelector and tolerations config.
 
-# Auth.
 identity:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
-  postgresql:
-    primary:
-      nodeSelector:
-        workload: standard
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: standard
   keycloak:
-    nodeSelector:
-      workload: standard
     tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
     postgresql:
       primary:
-        nodeSelector:
-          workload: standard
         tolerations:
-        - effect: NoSchedule
-          key: workload
-          operator: Equal
-          value: standard
+          - key: t-core-8-unstable
+            operator: Exists
+            effect: NoSchedule
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: nodegroup
+                      operator: In
+                      values:
+                        - t-core-8-unstable
 
-# Web Apps.
-connectors:
-  nodeSelector:
-    workload: standard
   tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
-tasklist:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
-operate:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
-optimize:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
 
-# Web Modeler.
-webModeler:
-  restapi:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
-  webapp:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
-  websockets:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
 postgresql:
   primary:
-    nodeSelector:
-      workload: standard
     tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
 
-# Zeebe.
+operate:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+tasklist:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
 zeebe:
-  nodeSelector:
-    workload: standard
   tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
-zeebe-gateway:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
 
-# Elasticsearch.
+zeebe-gateway:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+optimize:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+connectors:
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-8-unstable
+
+webModeler:
+  restapi:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
+  webapp:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
+  websockets:
+    tolerations:
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
+
+
 elasticsearch:
   master:
-    nodeSelector:
-      workload: standard
     tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
+      - key: t-core-8-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-8-unstable
