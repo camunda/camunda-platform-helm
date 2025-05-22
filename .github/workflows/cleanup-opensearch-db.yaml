@@ -1,4 +1,4 @@
-name: "Clean up OpenSearch Indices"
+name: "Clean Up OpenSearch Indices"
 
 on:
   pull_request:
