@@ -383,8 +383,8 @@ jobs:
         timeout-minutes: 20
         run: |
           export TEST_INGRESS_HOST="${{ steps.vars.outputs.ingress-host }}"
-          envsubst < ${TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/playwright-job-vars.env.template > ${TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/variables.env
-          ${TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/variables.env
+          envsubst < ${ABSOLUTE_TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/playwright-job-vars.env.template > ${ABSOLUTE_TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/variables.env
+          cat ${ABSOLUTE_TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/variables.env
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.playwright.core
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
