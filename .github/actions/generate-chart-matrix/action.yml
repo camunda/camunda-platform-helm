@@ -55,7 +55,7 @@ runs:
         echo "Checking for manual-trigger"
         touch matrix_versions.txt
         echo "matrix:" > matrix_versions.txt
-        if [[ "${{ inputs.manual-trigger }}" != "none" ]]; then
+        if [[ "${{ inputs.manual-trigger }}" != "none" && "${{ inputs.manual-trigger }}" != "" ]]; then
           echo "Manual trigger detected: ${{ inputs.manual-trigger }}"
           chart_dir="charts/camunda-platform-${{ inputs.manual-trigger }}"
           if [ -d "$chart_dir" ]; then
