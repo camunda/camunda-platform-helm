@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.7.0
+version: 10.7.1
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -68,31 +68,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Dedicated opensearch.prefix support"
     - kind: fixed
-      description: "Backport 8.6 refactoring on test/unit/camunda to 8.5"
-    - kind: fixed
-      description: "Refactor unit tests in connectors of 8.5 to new styles"
-    - kind: fixed
-      description: "Refactored unit tests to new style in zeebe 8.5"
-    - kind: fixed
-      description: "Add elasticsearch golden files"
-    - kind: fixed
-      description: "Refactored unit tests to new style in console"
-    - kind: fixed
-      description: "Refactored unit tests to new style in tasklist"
-    - kind: fixed
-      description: "Refactored unit tests to new style in identity 8.5"
-    - kind: fixed
-      description: "Refactored unit tests to new style in operate on 8.5"
-    - kind: fixed
-      description: "Refactored unit tests to new style in optimize on 8.5"
-    - kind: fixed
-      description: "Refactored unit tests to new style in web modeler"
-    - kind: fixed
-      description: "Refactored unit tests to new style in zeebe-gateway 8.5"
-    - kind: fixed
-      description: "Grpc port of zeebe gateway for venom tests"
-    - kind: fixed
-      description: "Add apiVersion and kind to PersistentVolumeClaims"
+      description: "Revert "feat: dedicated opensearch.prefix support""
