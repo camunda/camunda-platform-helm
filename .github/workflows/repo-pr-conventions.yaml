@@ -17,6 +17,7 @@ jobs:
             feat
             fix
             refactor
+            revert
             test
             docs
             style

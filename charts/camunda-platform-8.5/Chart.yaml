@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.7.1
+version: 10.7.0
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -69,4 +69,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Revert feat: dedicated opensearch.prefix support"
+      description: "Description on chart.yaml for 8.5"
