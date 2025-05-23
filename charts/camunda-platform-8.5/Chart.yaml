@@ -69,4 +69,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Description on chart.yaml for 8.5"
+      description: "Description on chart.yaml for 8.5 "
+    - kind: fixed
+      description: "Revert feat: dedicated opensearch.prefix support"
