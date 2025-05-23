@@ -1,4 +1,3 @@
-# Use Microsoft’s official image that already contains all browsers
 FROM mcr.microsoft.com/playwright:v1.50.0-noble 
 
 WORKDIR /e2e
