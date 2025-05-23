@@ -2238,6 +2238,8 @@ core:
     grpc:
       ## @param core.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
       enabled: false
+      ## @param core.ingress.grpc.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
+      external: false
       ## @param core.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
       className: nginx
       ## @param core.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
