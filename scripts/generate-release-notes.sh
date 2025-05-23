@@ -67,7 +67,7 @@ main () {
         if [[ -n "${change_type_section}" && "${!kac_map[@]}" =~ "${change_type}" ]]; then
             echo "${change_type_section}" | egrep '^\-' | sed 's/^- //g' | while read commit_message; do
                 echo "    - kind: ${kac_map[${change_type}]}"
-                echo "      description: \"$(echo ${commit_message} | sed -r "s/ \(.+\)$//")\""
+                echo "      description: \"$(echo "${commit_message}" | tr -d '"' | sed -r "s/ \(.+\)$//")\""
             done >> "${artifacthub_changes_tmp}"
         fi
     done
