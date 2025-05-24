@@ -1,7 +1,7 @@
 git-cliff 2.5.0
 golang 1.24.3
 gomplate v4.3.2
-helm 3.17.3
+helm 3.18.0
 helm-cr 1.7.0
 helm-ct 3.11.0
 kubectl 1.27.16 # The kubectl version depends on the K8s CI cluster version
