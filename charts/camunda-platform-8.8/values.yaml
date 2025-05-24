@@ -89,9 +89,11 @@ global:
     ## @extra global.security.authentication
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
-      method: basic
+      method: oidc
       ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
+      oidc:
+        usernameClaim: preferred_username
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
@@ -115,6 +117,13 @@ global:
           name: Demo User
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
+      mappings:
+        ## @extra global.security.initialization.mappings.mapping-id, the mapping-id of an initial mapping.
+        - mappingID: demo-user-mapping
+          ## @extra global.security.initialization.mappings.claim-name, the claim-name of an initial mapping.
+          claimName: preferred_username
+          ## @extra global.security.initialization.mappings.claim-value, the name of an initial user.
+          claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
@@ -245,10 +254,12 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other components
   identity:
+    enabled: true
     service:
       ## @param global.identity.service.url
       url: ""
     keycloak:
+      enabled: true
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       internal: false
@@ -825,7 +836,7 @@ identityPostgresql:
 ## @extra identityKeycloak configuration, for the Keycloak dependency chart which is used by Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
 identityKeycloak:
   ## @param identityKeycloak.enabled Enable Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
-  enabled: false
+  enabled: true
   ## @extra identityKeycloak.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
@@ -850,7 +861,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.2
+    tag: 26.1.4
 
   ## @extra identityKeycloak.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param identityKeycloak.resources.requests.cpu
@@ -1923,7 +1934,7 @@ connectors:
   ## @extra connectors.inbound Switch for inbound mode (e.g., for webhook or polling)
   inbound:
     ## @param connectors.inbound.mode acceptable values: disabled, credentials, or oauth
-    mode: disabled
+    mode: oauth
     ## @extra connectors.inbound.auth configuration of the credentials authentication.
     auth:
       ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains password (if inbound mode is credentials)
