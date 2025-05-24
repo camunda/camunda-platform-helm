@@ -10,12 +10,7 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
-  {{- if eq .Values.global.multiregion.installationType "failOver" }}
-  replicas: {{ div (div .Values.zeebe.clusterSize .Values.global.multiregion.regions) 2 }}
-  {{- end }}
-  {{- if ne .Values.global.multiregion.installationType "failOver" }}
   replicas: {{ div .Values.zeebe.clusterSize .Values.global.multiregion.regions }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "zeebe.matchLabels.broker" . | nindent 6 }}

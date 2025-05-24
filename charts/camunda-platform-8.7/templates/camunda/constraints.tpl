@@ -223,10 +223,6 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- if .Values.global.multiregion.installationType }}
-    {{- $installationTypeMessage := "[camunda][warning]\nDEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer support the global.multiregion.installationType option. This is replaced with a new procedure for managing multi-region installations documented here:\nhttps://docs.camunda.io/docs/self-managed/operational-guides/multi-region/dual-region-operational-procedure/\nPlease unset this option to remove the warning.\n" }}
-    {{ printf "\n%s" $installationTypeMessage }}
-  {{- end }}
 {{- end }}
 
 
