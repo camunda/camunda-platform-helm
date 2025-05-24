@@ -1,5 +1,6 @@
 {{- include "zeebeGatewayRename" $ -}}
 {{- if and .Values.zeebe.enabled .Values.zeebeGateway.ingress.enabled -}}
+{{- if not .Values.zeebeGateway.ingress.external -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -35,4 +36,5 @@ spec:
       secretName: {{ .Values.zeebeGateway.ingress.tls.secretName }}
       {{- end }}
   {{- end }}
+{{- end }}
 {{- end }}
