@@ -11,7 +11,20 @@ on:
       - ".github/workflows/test-chart-version.yaml"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
-  workflow_dispatch: {}
+  workflow_dispatch: 
+    inputs:
+      manual-trigger:
+        description: "Manual trigger"
+        required: false
+        default: "none"
+        type: choice
+        options:
+          - none
+          - "8.4"
+          - "8.5"
+          - "8.6"
+          - "8.7"
+          - "8.8"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -35,7 +48,7 @@ jobs:
         uses: ./.github/actions/generate-chart-matrix
         with:
           charts-path: "charts/camunda-platform-8*"
-
+          manual-trigger: ${{ github.event.inputs.manual-trigger }}
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Camunda ${{ matrix.version }}

@@ -48,7 +48,7 @@ tasks:
     - kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -
     # Get logs.
     - while [[ ! $(kubectl logs -n $TEST_NAMESPACE job/$TEST_NAME 2> /dev/null) ]]; do
-          echo "Waiting for the test Pod to start ...";
+          echo "Waiting for the test Pod to start in namespace $TEST_NAMESPACE with name $TEST_NAME ...";
           sleep 5;
       done
     - kubectl logs -n $TEST_NAMESPACE --follow job/$TEST_NAME
