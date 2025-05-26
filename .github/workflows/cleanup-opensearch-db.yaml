@@ -16,6 +16,11 @@ jobs:
     name: Clean up Indices
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:
@@ -25,6 +30,5 @@ jobs:
           service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
       - name: Get pods
         shell: bash
-        # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
         run: |
           kubectl -n hamza get po
