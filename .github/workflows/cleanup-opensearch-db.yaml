@@ -30,4 +30,11 @@ jobs:
       - name: Get pods
         shell: bash
         run: |
-          kubectl get ns
+          # kubectl get ns
+          # Get all namespaces and extract run-IDs
+          run_ids=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' \
+            | tr ' ' '\n' \
+            | grep -oP '^camunda-pr-qa-e2e-\K\d+'))
+
+          # Print the array
+          echo "${run_ids[@]}"
