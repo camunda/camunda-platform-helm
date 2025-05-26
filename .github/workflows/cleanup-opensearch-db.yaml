@@ -1,9 +1,10 @@
 name: "Clean Up OpenSearch Indices"
 
 on:
-  schedule:
-    # Set the cron schedule to run nightly at US time, EST (1AM UTC)
-    - cron: "0 1 * * *"
+  pull_request:
+  # schedule:
+  #   # Set the cron schedule to run nightly at US time, EST (1AM UTC)
+  #   - cron: "0 1 * * *"
 
 permissions:
   contents: read
@@ -17,6 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
