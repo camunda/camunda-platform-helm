@@ -12,9 +12,9 @@ vars:
 testcases:
 - name: TEST - Readiness Elasticsearch
   skip:
-    # should be lowercase in skip
-    # https://github.com/ovh/venom/issues/654
-    - skiptestelasticsearch ShouldBeFalse
+  # The var with "skip" section should be in lower case as there is a bug in Venom:
+  # https://github.com/ovh/venom/issues/654
+  - skiptestelasticsearch ShouldBeFalse
   steps:
     - name: Elasticsearch
       type: http
@@ -80,9 +80,9 @@ testcases:
 
 - name: TEST - Liveness Elasticsearch
   skip:
-    # should be lowercase in skip
-    # https://github.com/ovh/venom/issues/654
-    - skiptestelasticsearch ShouldBeFalse
+  # The var with "skip" section should be in lower case as there is a bug in Venom:
+  # https://github.com/ovh/venom/issues/654
+  - skiptestelasticsearch ShouldBeFalse
   steps:
   - name: Elasticsearch
     type: http
