@@ -33,6 +33,7 @@ jobs:
         run: |
           # Get all namespaces and extract run-IDs from QA namespaces
           KEEP_PREFIXES=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -oP '^camunda-id-qa-e2e-\K\d+'))
+          # this element is needed since the master user does not have permissions to delete default OpenSearch prefixes which start with "."
           KEEP_PREFIXES+=(".")
           # OpenSearch endpoint
           OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
