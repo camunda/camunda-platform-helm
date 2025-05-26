@@ -60,7 +60,7 @@ jobs:
               IFS=,
               echo "${INDICES_TO_DELETE[*]}"
             )
-            curl -L -X DELETE ${OPENSEARCH_HOST}/${DELETE_LIST} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
+            curl -L -X DELETE ${OPENSEARCH_HOST}/${DELETE_LIST} -H "Authorization: Basic ${OPENSEARCH_BASIC_AUTH_BASE64}"
             echo $DELETE_LIST
           else
             echo "No indices to delete."
