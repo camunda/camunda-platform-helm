@@ -59,6 +59,8 @@ spec:
               value: "Web Modeler Admin"
             - name: KEYCLOAK_USERS_0_ROLES_4
               value: "Console"
+            - name: KEYCLOAK_USERS_0_ROLES_5
+              value: "Core"
             - name: CAMUNDA_LICENSE_KEY
               valueFrom:
                 secretKeyRef:
