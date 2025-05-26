@@ -1,3 +1,40 @@
+# -----------------------------------------------------------------------------
+# Camunda Platform Helm – Build Matrix Generator (Purpose & Rationale)
+#
+# Problem
+# -------
+# The repository hosts many versioned Camunda Platform Helm charts (8.2, 8.3, …).
+# Building and testing every single chart on every pull-request would slow the
+# feedback loop and needlessly consume CI resources.
+#
+# Goal
+# ----
+# Run the smallest *sufficient* set of chart builds for a given change set while
+# still guaranteeing correctness when the build or release process itself is
+# modified.
+#
+# Strategy
+# --------
+# 1. Detect which files were modified in the commit / PR.
+# 2. Derive the **minimum chart version matrix** from that file list.
+#    • Regular code or chart changes  → build only the impacted versions.
+#    • Changes in CI configuration    → build *all* versions, as any could be
+#      affected.
+# 3. Provide the resulting set as a JSON matrix so downstream workflows can
+#    fan-out their jobs.
+#
+# When is *every* chart built?
+# ---------------------------
+# If the change touches `.github/workflows/**` or `.github/actions/**`, the
+# CI pipeline itself may have changed. In the absence of guarantees we take the
+# conservative route and rebuild every chart to retain confidence.
+#
+# Manual override
+# ---------------
+# Maintainers can bypass automatic detection by passing the `manual-trigger`
+# input, forcing the matrix to contain exactly one desired version. This is
+# useful for re-publishing a chart or running ad-hoc validations.
+# -----------------------------------------------------------------------------
 name: Generate chart matrix
 description: Find changed charts and generate matrix for changed ones only.
 inputs:
@@ -69,12 +106,22 @@ runs:
           echo "Setting matrix based on changed files"
           echo "Changed files:"
           printf "%s\n" ${ALL_MODIFIED_FILES}
-          ls -d ${{ inputs.charts-path }} | while read chart_dir; do
-            if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
+
+          # If any workflow or action files have changed, build all chart versions
+          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)/"; then
+            echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
+            ls -d ${{ inputs.charts-path }} | while read chart_dir; do
               camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
               write_matrix_entry "$camunda_version" "$chart_dir"
-            fi
-          done
+            done
+          else
+            ls -d ${{ inputs.charts-path }} | while read chart_dir; do
+              if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
+                camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
+                write_matrix_entry "$camunda_version" "$chart_dir"
+              fi
+            done
+          fi
         fi
         cat matrix_versions.txt
 
