@@ -27,4 +27,4 @@ jobs:
         shell: bash
         # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
         run: |
-          kubectl -n hamza get pod
+          kubectl -n hamza get po
