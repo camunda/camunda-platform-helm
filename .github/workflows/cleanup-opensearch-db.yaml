@@ -20,7 +20,6 @@ jobs:
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
-          ref: ${{ inputs.camunda-helm-git-ref }}
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:
