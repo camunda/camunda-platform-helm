@@ -52,10 +52,6 @@ tasks:
             echo "ℹ️  TEST_CREATE_DOCKER_LOGIN_SECRET not set – skipping imagePullSecrets patch step"
           fi
       # Deploy.
-      - cmd: |
-          echo "🔎 Listing files in $TEST_DIR"
-          ls -la $TEST_DIR
-          ls -la /home/runner/work/camunda-platform-helm/camunda-platform-helm
       - |
         echo "🚀 Deploying Playwright test job at $TEST_DIR into namespace $TEST_NAMESPACE"
         if ! kubectl kustomize $TEST_DIR --load-restrictor=LoadRestrictionsNone | kubectl apply -n $TEST_NAMESPACE -f -; then
