@@ -7,12 +7,14 @@ vars:
   releaseName: integration
   skipTestWebModeler: "{{ .SKIP_TEST_WEBMODELER }}"
   # Skip the Elasticsearch test
-  skipes: "{{ .SKIP_TEST_ELASTICSEARCH }}"
+  skipTestElasticsearch: "{{ .SKIP_TEST_ELASTICSEARCH }}"
 
 testcases:
 - name: TEST - Readiness Elasticsearch
   skip:
-    - skipes ShouldBeFalse
+    # should be lowercase in skip
+    # https://github.com/ovh/venom/issues/654
+    - skiptestelasticsearch ShouldBeFalse
   steps:
     - name: Elasticsearch
       type: http
@@ -78,7 +80,9 @@ testcases:
 
 - name: TEST - Liveness Elasticsearch
   skip:
-    - skipes ShouldBeFalse
+    # should be lowercase in skip
+    # https://github.com/ovh/venom/issues/654
+    - skiptestelasticsearch ShouldBeFalse
   steps:
   - name: Elasticsearch
     type: http
