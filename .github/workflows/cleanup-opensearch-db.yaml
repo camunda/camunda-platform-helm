@@ -33,18 +33,12 @@ jobs:
         shell: bash
         run: |
           # Get all namespaces and extract run-IDs from QA namespaces
-          KEEP_PREFIXES=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' \
-            | tr ' ' '\n' \
-            | grep -oP '^camunda-pr-qa-e2e-\K\d+'))
-
-          # Adding "." because those are default AWS OpenSearch prefixes that we don't have permissions to delete
+          KEEP_PREFIXES=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | ggrep -oP '^camunda-id-qa-e2e-\K\d+'))
           KEEP_PREFIXES+=(".")
-
           # OpenSearch endpoint
-          OPENSEARCH_HOST="https://search-qa-e2e-test.eu-north-1.es.amazonaws.com:443"
-
+          OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
           # Get all indices
-          ALL_INDICES=$(curl -s "${OPENSEARCH_HOST}/_cat/indices?h=index" -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64" | tr -d '\r')
+          ALL_INDICES=$(curl -s "${OPENSEARCH_HOST}/_cat/indices?h=index" -H "Authorization: Basic ${OPENSEARCH_BASIC_AUTH_BASE64}" | tr -d '\r')
 
           # Build list of indices to delete
           INDICES_TO_DELETE=()
@@ -60,7 +54,6 @@ jobs:
               INDICES_TO_DELETE+=("$index")
             fi
           done
-          # echo ${INDICES_TO_DELETE[@]} | sed 's/ /\n/g'
 
           # Delete indices
           if [ ${#INDICES_TO_DELETE[@]} -gt 0 ]; then
@@ -68,7 +61,8 @@ jobs:
               IFS=,
               echo "${INDICES_TO_DELETE[*]}"
             )
-            # curl -L -X DELETE ${OPENSEARCH_HOST}/${DELETE_LIST} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
+            curl -L -X DELETE ${OPENSEARCH_HOST}/${DELETE_LIST} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
+            echo $DELETE_LIST
           else
             echo "No indices to delete."
           fi
