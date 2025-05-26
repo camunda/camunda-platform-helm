@@ -30,4 +30,4 @@ jobs:
       - name: Get pods
         shell: bash
         run: |
-          kubectl -n hamza get po
+          kubectl get ns
