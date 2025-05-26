@@ -27,14 +27,48 @@ jobs:
           cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
           workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
-      - name: Get pods
+      - name: cleanup
+        env:
+          OPENSEARCH_BASIC_AUTH_BASE64: ${{ secrets.OPENSEARCH_BASIC_AUTH_BASE64 }}
         shell: bash
         run: |
-          # kubectl get ns
-          # Get all namespaces and extract run-IDs
-          run_ids=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' \
+          # Get all namespaces and extract run-IDs from QA namespaces
+          KEEP_PREFIXES=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' \
             | tr ' ' '\n' \
             | grep -oP '^camunda-pr-qa-e2e-\K\d+'))
 
-          # Print the array
-          echo "${run_ids[@]}"
+          # Adding "." because those are default AWS OpenSearch prefixes that we don't have permissions to delete
+          KEEP_PREFIXES+=(".")
+
+          # OpenSearch endpoint
+          OPENSEARCH_HOST="https://search-qa-e2e-test.eu-north-1.es.amazonaws.com:443"
+
+          # Get all indices
+          ALL_INDICES=$(curl -s "${OPENSEARCH_HOST}/_cat/indices?h=index" -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64" | tr -d '\r')
+
+          # Build list of indices to delete
+          INDICES_TO_DELETE=()
+          for index in $ALL_INDICES; do
+            KEEP=false
+            for prefix in "${KEEP_PREFIXES[@]}"; do
+              if [[ "$index" == $prefix* ]]; then
+                KEEP=true
+                break
+              fi
+            done
+            if ! $KEEP; then
+              INDICES_TO_DELETE+=("$index")
+            fi
+          done
+          # echo ${INDICES_TO_DELETE[@]} | sed 's/ /\n/g'
+
+          # Delete indices
+          if [ ${#INDICES_TO_DELETE[@]} -gt 0 ]; then
+            DELETE_LIST=$(
+              IFS=,
+              echo "${INDICES_TO_DELETE[*]}"
+            )
+            # curl -L -X DELETE ${OPENSEARCH_HOST}/${DELETE_LIST} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
+          else
+            echo "No indices to delete."
+          fi
