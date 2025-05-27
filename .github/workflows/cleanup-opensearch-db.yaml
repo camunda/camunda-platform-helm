@@ -30,38 +30,14 @@ jobs:
           OPENSEARCH_BASIC_AUTH_BASE64: ${{ secrets.OPENSEARCH_BASIC_AUTH_BASE64 }}
         shell: bash
         run: |
+          # OpenSearch endpoint
+          OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
           # Get all namespaces and extract run-IDs from QA namespaces
           KEEP_PREFIXES=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -oP '\d+$'))
           # this element is needed since the master user does not have permissions to delete default OpenSearch prefixes which start with "."
           KEEP_PREFIXES+=(".")
-          # OpenSearch endpoint
-          OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
-          # Get all indices
-          ALL_INDICES=$(curl -s "${OPENSEARCH_HOST}/_cat/indices?h=index" -H "Authorization: Basic ${OPENSEARCH_BASIC_AUTH_BASE64}" | tr -d '\r')
-
-          # Build list of indices to delete
-          INDICES_TO_DELETE=()
-          for index in $ALL_INDICES; do
-            KEEP=false
-            for prefix in "${KEEP_PREFIXES[@]}"; do
-              if [[ "$index" == $prefix* ]]; then
-                KEEP=true
-                break
-              fi
-            done
-            if ! $KEEP; then
-              INDICES_TO_DELETE+=("$index")
-            fi
-          done
-
-          # Delete indices
-          if [ ${#INDICES_TO_DELETE[@]} -gt 0 ]; then
-            DELETE_LIST=$(
-              IFS=,
-              echo "${INDICES_TO_DELETE[*]}"
-            )
-            curl -L -X DELETE ${OPENSEARCH_HOST}/${DELETE_LIST} -H "Authorization: Basic ${OPENSEARCH_BASIC_AUTH_BASE64}"
-            echo $DELETE_LIST
-          else
-            echo "No indices to delete."
-          fi
+          echo "prefixes to keep:"
+          echo "${KEEP_PREFIXES[@]}"
+          #Exclude prefixes from `KEEP_PREFIXES`array
+          EXCLUSIONS=$(printf -- ",-%s*" "${KEEP_PREFIXES[@]}" | cut -c2-)
+          curl -L -X DELETE ${OPENSEARCH_HOST}/*,${EXCLUSIONS} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
