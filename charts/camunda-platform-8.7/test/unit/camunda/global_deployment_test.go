@@ -122,6 +122,51 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(output, "image: global.custom.registry.io/camunda/tasklist:8.x.x")
 				s.Require().Contains(output, "image: global.custom.registry.io/camunda/zeebe:8.x.x")
 			},
+		}, {
+			Name: "TestComponentDigestOverridesTag",
+			Values: map[string]string{
+				// leave tags empty to force each component to use its own digest
+				"connectors.image.tag":   "",
+				"identity.image.tag":     "",
+				"operate.image.tag":      "",
+				"optimize.image.tag":     "",
+				"tasklist.image.tag":     "",
+				"zeebe.image.tag":        "",
+				"zeebeGateway.image.tag": "",
+				// set component‐level digests
+				"connectors.image.digest": "sha256:aaa111",
+				"identity.image.digest":   "sha256:bbb222",
+				"operate.image.digest":    "sha256:ccc333",
+				"optimize.image.digest":   "sha256:ddd444",
+				"tasklist.image.digest":   "sha256:eee555",
+				"zeebe.image.digest":      "sha256:fff666",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "image: docker.io/camunda/connectors-bundle@sha256:aaa111")
+				require.Contains(t, output, "image: docker.io/camunda/identity@sha256:bbb222")
+				require.Contains(t, output, "image: docker.io/camunda/operate@sha256:ccc333")
+				require.Contains(t, output, "image: docker.io/camunda/optimize@sha256:ddd444")
+				require.Contains(t, output, "image: docker.io/camunda/tasklist@sha256:eee555")
+				require.Contains(t, output, "image: docker.io/camunda/zeebe@sha256:fff666")
+			},
+		},
+		{
+			Name: "TestDigestFallsBackToTagWhenNoDigest",
+			Values: map[string]string{
+				"connectors.image.digest": "8.x.x",
+				"identity.image.digest":   "8.x.x",
+				// no component tags set, so they all fall back to global.tag
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "image: docker.io/camunda/connectors-bundle:8.x.x")
+				require.Contains(t, output, "image: docker.io/camunda/identity:8.x.x")
+				require.Contains(t, output, "image: docker.io/camunda/operate:8.x.x")
+				require.Contains(t, output, "image: docker.io/camunda/optimize:8.x.x")
+				require.Contains(t, output, "image: docker.io/camunda/tasklist:8.x.x")
+				require.Contains(t, output, "image: docker.io/camunda/zeebe:8.x.x")
+			},
 		},
 	}
 
