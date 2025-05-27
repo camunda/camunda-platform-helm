@@ -317,6 +317,7 @@ jobs:
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_SCENARIO: ${{ inputs.scenario }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
