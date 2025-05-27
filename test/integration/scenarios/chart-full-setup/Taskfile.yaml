@@ -24,7 +24,8 @@ includes:
       TEST_HELM_EXTRA_ARGS: |-
         {{ .TEST_HELM_EXTRA_ARGS }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-base.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        {{ eq (env "IS_EKS") "true" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -105,6 +106,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml
         --values /tmp/extra-values-file.yaml
+        {{ eq (env "IS_EKS") "true" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}
         --timeout 20m0s
         --wait
         {{ .TEST_HELM_EXTRA_ARGS }}
