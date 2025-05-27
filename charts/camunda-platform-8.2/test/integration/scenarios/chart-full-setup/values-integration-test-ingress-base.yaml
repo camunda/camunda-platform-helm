@@ -1,7 +1,4 @@
 global:
-  labels:
-    janitor/ttl: 1h
-    camunda.cloud/ephemeral: "true"
   ingress:
     enabled: true
     className: nginx
@@ -10,7 +7,7 @@ global:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-      secretName: distribution-aws-camunda-cloud-tls
+      secretName: camunda-platform
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
@@ -48,14 +45,8 @@ identity:
     auth:
       existingSecret: "integration-test-credentials"
     postgresql:
-      commonLabels:
-        janitor/ttl: 1h
-        camunda.cloud/ephemeral: "true"
       auth:
         existingSecret: "integration-test-credentials"
-    commonLabels:
-      janitor/ttl: 1h
-      camunda.cloud/ephemeral: "true"
 
 operate:
   contextPath: "/operate"
@@ -84,9 +75,6 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
-  commonLabels:
-    janitor/ttl: 1h
-    camunda.cloud/ephemeral: "true"
 
 zeebe-gateway:
   ingress:
@@ -96,7 +84,7 @@ zeebe-gateway:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-      secretName: distribution-aws-camunda-cloud-tls
+      secretName: camunda-platform-zeebe-gateway
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
@@ -106,6 +94,3 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
-  commonLabels:
-    janitor/ttl: 1h
-    camunda.cloud/ephemeral: "true"
