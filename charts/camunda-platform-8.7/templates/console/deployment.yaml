@@ -1,4 +1,5 @@
 {{- if .Values.console.enabled -}}
+{{- include "camunda.version-gate" (dict "global" .Values.global "deployment" .Values.console "name" "console") | nindent 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -1,4 +1,5 @@
 {{- if .Values.zeebe.enabled -}}
+{{- include "camunda.version-gate" (dict "global" .Values.global "deployment" .Values.zeebeGateway "name" "zeebe") | nindent 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

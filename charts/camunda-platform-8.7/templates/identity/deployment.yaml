@@ -1,4 +1,5 @@
 {{- if .Values.identity.enabled -}}
+{{- include "camunda.version-gate" (dict "global" .Values.global "deployment" .Values.identity "name" "identity") | nindent 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
