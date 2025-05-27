@@ -1,0 +1,18 @@
+{{- /* Test template for version-gate */ -}}
+{{- include "camunda.version-gate" (dict "global" .Values.global "deployment" .Values.currentdeployment "name" "currentdeployment" "Release" .Release) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-release-currentdeployment
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app 
+    spec:
+      containers:
+        - name: operate
+          image: camunda/operate:{{.Values.currentdeployment.image.tag}}

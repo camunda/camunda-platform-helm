@@ -93,6 +93,10 @@ jobs:
     - name: Get Helm dependency
       run: |
         make helm.dependency-update
+    - name: Setup envtest
+      uses: kubernetes-sigs/setup-envtest@v2 # https://github.com/kubernetes-sigs/setup-envtest
+      with:
+        version: "1.30.x"
     - name: ⭐️ Test ⭐️
       run: |
         cd charts/${{ inputs.camunda-helm-dir }}/test/unit

@@ -1,4 +1,6 @@
 {{- if .Values.operate.enabled -}}
+{{- /* Run version gate check but don't output anything */ -}}
+{{- include "camunda.version-gate" (dict "global" .Values.global "deployment" .Values.operate "name" "operate") | nindent 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

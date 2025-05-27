@@ -27,6 +27,9 @@ convertValuesDoc.sh
 # Tests
 test/
 
+# Local-only envtest binaries (downloaded via setup-envtest/action)
+testbin/
+
 # Values for previous versions
 values/
 
