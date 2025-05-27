@@ -1,4 +1,4 @@
-package testhelpers
+package camunda
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
-func withEnvtest(t *testing.T, fn func(cfg *rest.Config, kubeconfig string, namespace string)) {
+func withEnvtest(t *testing.T, fn func(cfg *rest.Config, kubeconfig string, namespace string, absTestChart string)) {
 	t.Helper()
 
 	// The envtest control-plane binaries (kube-apiserver, etc.) have to be
@@ -83,7 +83,24 @@ In CI the binaries are provisioned automatically via the "kubernetes-sigs/setup-
 	}
 	require.NoError(t, clientcmd.WriteToFile(kc, kcPath))
 
-	fn(cfg, kcPath, "default")
+	helmChartPath := "../../../" // this is the root of the camunda-platform-8.7 chart...
+	testChartPath := "test-chart" // this is the path to the test-chart directory...
+
+	absChart, err := filepath.Abs(helmChartPath)
+	require.NoError(t, err)
+	absTestChart, err := filepath.Abs(testChartPath)
+	require.NoError(t, err)
+
+	// we need to symlink the version-gate.tpl file from the camunda-platform-8.7 chart to the test-chart directory otherwise
+	// the test-chart doesn't know about the version-gate.tpl file and will fail to render the templates.
+	templateSrc := filepath.Join(absChart, "templates", "camunda", "_version-gate.tpl")
+	templateDst := filepath.Join(absTestChart, "templates", "camunda", "_version-gate.tpl")
+	_ = os.MkdirAll(filepath.Dir(templateDst), 0o755)
+	_ = os.Remove(templateDst)
+	require.NoError(t, os.Symlink(templateSrc, templateDst))
+	defer os.Remove(templateDst)
+
+	fn(cfg, kcPath, "default", absTestChart)
 }
 
 // Integration-style test that runs the full set of scenarios against a
@@ -192,23 +209,7 @@ func TestVersionGate_LookupScenarios(t *testing.T) {
 		},
 	}
 
-	withEnvtest(t, func(cfg *rest.Config, kubeconfig, ns string) {
-		// Prepare chart path & helper template link once.
-		helmChartPath := "../../../"
-		testChartPath := "test-chart"
-
-		absChart, err := filepath.Abs(helmChartPath)
-		require.NoError(t, err)
-		absTestChart, err := filepath.Abs(testChartPath)
-		require.NoError(t, err)
-
-		templateSrc := filepath.Join(absChart, "templates", "camunda", "_version-gate.tpl")
-		templateDst := filepath.Join(absTestChart, "templates", "camunda", "_version-gate.tpl")
-		_ = os.MkdirAll(filepath.Dir(templateDst), 0o755)
-		_ = os.Remove(templateDst)
-		require.NoError(t, os.Symlink(templateSrc, templateDst))
-		defer os.Remove(templateDst)
-
+	withEnvtest(t, func(cfg *rest.Config, kubeconfig, ns string, absTestChart string) {
 		for _, sc := range scenarios {
 			t.Run(sc.name, func(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -250,27 +251,41 @@ func TestVersionGate_LookupScenarios(t *testing.T) {
 						},
 					}
 
-					_, err := helm.RunHelmCommandAndGetStdOutE(
+					stdout, err := helm.RunHelmCommandAndGetStdOutE(
 						t, opts,
 						"install", "test-release", absTestChart,
 						"-n", ns,
 						"--set-json", convertMapToJsonString(initialVals),
+						"--debug",
 					)
+
+					fmt.Printf("stdout: %s\n", stdout)
+					fmt.Printf("err: %v\n", err)
 					require.NoError(t, err)
 				}
 
-				_, err = helm.RunHelmCommandAndGetStdOutE(
+				stdout, err := helm.RunHelmCommandAndGetStdOutE(
 					t, opts,
 					"upgrade", "--dry-run=server",
 					"test-release", absTestChart,
 					"-n", ns,
 					"--set-json", convertMapToJsonString(sc.setValues),
+					"--debug",
 				)
 
+				fmt.Printf("stdout: %s\n", stdout)
+				fmt.Printf("err: %v\n", err)
+
 				if sc.expectedError != "" {
+					if err == nil || !strings.Contains(err.Error(), sc.expectedError) {
+						printDebugOnFailure(t, sc.name, stdout, err)
+					}
 					require.Error(t, err)
 					require.Contains(t, err.Error(), sc.expectedError)
 				} else {
+					if err != nil {
+						printDebugOnFailure(t, sc.name, stdout, err)
+					}
 					require.NoError(t, err)
 				}
 			})
@@ -294,4 +309,12 @@ func convertMapToJsonString(in any) string {
 	}
 
 	return strings.Join(result, ",")
+}
+
+func printDebugOnFailure(t *testing.T, name, yaml string, err error) {
+	t.Helper()
+	fmt.Printf("YAML output for failed test '%s':\n%s\n", name, yaml)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
 }

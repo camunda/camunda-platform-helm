@@ -4,6 +4,21 @@
      already running. Works only on upgrades; does nothing on an
      initial install because lookup returns nil.
 
+     ⚠️ Helm Name Scoping & Lookup Note:
+     -----------------------------------
+     When using Helm's `lookup` function to fetch existing resources, the resource name must be constructed
+     in the exact same way as it was during the original deployment. This is typically done by combining
+     the release name (e.g., `$ctx.Release.Name`) with a resource-specific suffix (e.g., `"zeebe-gateway"`).
+
+     If you pass a fully rendered name (e.g., via `include "zeebe.names.gateway" .`) from a different context,
+     it may not match the actual resource name in the cluster if the context (such as release name, namespace,
+     or chart scope) differs. This can cause lookups to fail, even if the printed name appears correct.
+
+     **Best Practice:**  
+     Always generate the resource name for lookups inside the helper using the current release context,
+     or pass the context needed to reconstruct the name, not just the rendered string. This ensures
+     the lookup will always target the correct resource, regardless of where or how the helper is called.
+
      Edge Cases Handled:
 
      1. Initial Installation
@@ -48,10 +63,10 @@
 */ -}}
 
 {{- define "camunda.version-gate" -}}
-{{- if .Release -}}
-{{- if .Release.IsUpgrade }}
+{{- $ctx := .ctx }}
+{{- if $ctx.Release.IsUpgrade }}
   {{- /* This template is used to prevent downgrades of the Camunda Platform */ -}}
-  {{- $global := .global -}}
+  {{- $global := $ctx.Values.global -}}
   {{- $deployment := .deployment -}}
   {{- $name := .name -}}
   
@@ -76,8 +91,11 @@
     {{- fail "neither global.image.tag nor deployment.image.tag is set" -}}
   {{- end -}}
 
-  {{- $current := lookup "apps/v1" "Deployment" .Release.Namespace (printf "%s-%s" .Release.Name $name) -}}
-  
+  {{- /* fail (printf "%s-%s" $ctx.Release.Name $name) | nindent 0  */ -}}
+  {{- /* $current := lookup "apps/v1" "Deployment" $ctx.Release.Namespace (printf "%s-%s" $ctx.Release.Name $name) -}} */ -}}
+  {{- /* fail (printf $name) | nindent 0 -}} */ -}}
+  {{- $current := lookup "apps/v1" "Deployment" $ctx.Release.Namespace (include $name .nameContext) -}}
+    
   {{- if $current }}
     {{- /* Extract current version from deployment */ -}}
     {{- $container := index $current.spec.template.spec.containers 0 -}}
@@ -139,6 +157,5 @@
       {{- end -}}
     {{- end -}}
   {{- end -}}
-{{- end -}}
 {{- end -}}
 {{- end -}}

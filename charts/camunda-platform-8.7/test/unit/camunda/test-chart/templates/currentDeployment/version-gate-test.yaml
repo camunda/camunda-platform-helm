@@ -1,5 +1,5 @@
 {{- /* Test template for version-gate */ -}}
-{{- include "camunda.version-gate" (dict "global" .Values.global "deployment" .Values.currentdeployment "name" "currentdeployment" "Release" .Release) -}}
+{{- include "camunda.version-gate" (dict "ctx" $ "deployment" .Values.currentdeployment "nameContext" . "name" "currentdeployment.fullname") -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

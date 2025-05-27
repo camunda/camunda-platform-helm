@@ -356,6 +356,19 @@ jobs:
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+      - name: 🌟 Test downgrade Camunda chart is not possible (only for 8.7) 🌟
+        if: matrix.scenario.flow == 'upgrade' && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7')
+        env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values /tmp/extra-values-file.yaml
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.downgrade
       - name: Update GitHub deployment status
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
