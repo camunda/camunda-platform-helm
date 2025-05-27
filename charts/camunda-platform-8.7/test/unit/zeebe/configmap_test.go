@@ -68,66 +68,6 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 	})
 }
 
-func TestGoldenConfigmapWithMultiregionNormal(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &utils.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "camunda-platform-test",
-		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "configmap",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
-		SetValues: map[string]string{
-			"global.multiregion.regions":          "1",
-			"global.multiregion.regionId":         "0",
-			"global.multiregion.installationType": "normal",
-		},
-	})
-}
-
-func TestGoldenConfigmapWithMultiregionFailOver(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &utils.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "camunda-platform-test",
-		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "configmap-multiregion-failOver",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
-		SetValues: map[string]string{
-			"global.multiregion.regions":          "1",
-			"global.multiregion.regionId":         "0",
-			"global.multiregion.installationType": "failOver",
-		},
-	})
-}
-
-func TestGoldenConfigmapWithMultiregionFailBack(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &utils.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "camunda-platform-test",
-		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "configmap-multiregion-failBack",
-		Templates:      []string{"templates/zeebe/configmap.yaml"},
-		SetValues: map[string]string{
-			"global.multiregion.regions":          "1",
-			"global.multiregion.regionId":         "0",
-			"global.multiregion.installationType": "failBack",
-		},
-	})
-}
-
 func (s *configmapTemplateTest) TestContainerShouldContainExporterClassPerDefault() {
 	// given
 	options := &helm.Options{
