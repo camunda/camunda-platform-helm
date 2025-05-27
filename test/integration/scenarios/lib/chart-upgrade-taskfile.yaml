@@ -23,6 +23,5 @@ tasks:
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-scheduling.yaml \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
