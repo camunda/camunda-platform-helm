@@ -1,5 +1,4 @@
 {{- if .Values.zeebe.enabled -}}
-{{- /* include "camunda.version-gate" (dict "ctx" $ "deployment" .Values.zeebeGateway "name" "zeebe-gateway") | nindent 0 */ -}}
 {{- include "camunda.version-gate" (dict "ctx" $ "deployment" .Values.zeebeGateway "nameContext" . "name" "zeebe.names.gateway") | nindent 0 -}}
 apiVersion: apps/v1
 kind: Deployment

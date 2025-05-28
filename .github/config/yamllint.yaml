@@ -3,7 +3,7 @@ ignore:
   - "charts/camunda-platform*/test/unit/camunda/golden/keycloak-statefulset.golden.yaml"
   - "charts/camunda-platform*/test/unit/golden/elasticsearch-statefulset.golden.yaml"
   - "charts/camunda-platform*/test/unit/camunda/golden/elasticsearch-statefulset.golden.yaml"
-  - "charts/camunda-platform*/test/unit/camunda/test-chart/templates/currentDeployment/version-gate-test.yaml" # this is a test chart for the 
+  - "charts/camunda-platform*/test/unit/camunda/test-chart/templates/currentDeployment/version-gate-test.yaml" # this is a test chart for the version-gate helper
 
 rules:
   brackets:

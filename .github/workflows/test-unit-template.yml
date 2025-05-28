@@ -95,10 +95,10 @@ jobs:
         make helm.dependency-update
     - name: ⭐️ Test ⭐️
       run: |
-        cd charts/${{ inputs.camunda-helm-dir }}
         go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-        export PATH="$PATH:$(go env GOBIN):$(go env GOPATH)/bin:$HOME/go/bin"
+        PATH="$PATH:$(go env GOBIN):$(go env GOPATH)/bin:$HOME/go/bin"
         envtestPath=$(setup-envtest use -p path 1.30.0)
         export KUBEBUILDER_ASSETS="$envtestPath"
-        cd test/unit
+
+        cd charts/${{ inputs.camunda-helm-dir }}/test/unit
         go test $(printf "./%s " ${{ matrix.test.packages }})

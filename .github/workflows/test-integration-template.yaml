@@ -391,7 +391,7 @@ jobs:
         timeout-minutes: 20
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
-      - name: ⭐️ Run Playwright Core TestSuite ⭐️
+      - name: ⭐️ Run Playwright Core TestSuite (only for 8.7) ⭐️
         if: ${{ always() && inputs.test-enabled && (steps.core-testsuite.outcome == 'success' || steps.core-testsuite.outcome == 'failure') && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
         timeout-minutes: 20
         run: |

@@ -1,5 +1,5 @@
 {{- if .Values.webModeler.enabled -}}
-{{- include "camunda.version-gate" (dict "ctx" . "global" .Values.global "deployment" .Values.webModeler "nameContext" . "name" "webModeler.restapi.fullname") | nindent 0 }}
+{{- include "camunda.version-gate" (dict "ctx" . "deployment" .Values.webModeler "nameContext" . "name" "webModeler.restapi.fullname") | nindent 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -27,18 +27,6 @@ import (
 func withEnvtest(t *testing.T, fn func(cfg *rest.Config, kubeconfig string, namespace string, absTestChart string)) {
 	t.Helper()
 
-	// The envtest control-plane binaries (kube-apiserver, etc.) have to be
-	// present on the host where the tests run.  In CI we download them via the
-	// `kubernetes-sigs/setup-envtest` GitHub Action which exports the
-	// KUBEBUILDER_ASSETS environment variable.  When running the tests
-	// locally users can either:
-	//   * run `go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest && \ 
-	//         setup-envtest use 1.30.0 --bin-dir $(pwd)/testbin`
-	//   * export KUBEBUILDER_ASSETS to point at a directory that contains the
-	//     required binaries.
-	//
-	// We deliberately fail (instead of silently skipping) so that missing
-	// assets are obvious to contributors.
 	assetsDir := os.Getenv("KUBEBUILDER_ASSETS")
 	if assetsDir == "" {
 		t.Fatalf(`KUBEBUILDER_ASSETS environment variable is not set. This test requires the Kubernetes envtest binaries.
@@ -46,13 +34,12 @@ func withEnvtest(t *testing.T, fn func(cfg *rest.Config, kubeconfig string, name
 You can obtain them by installing the setup-envtest tool:
 
     go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-    setup-envtest use 1.30.0 --bin-dir ./testbin
 
-and then export the variable before running tests:
+Then run the following command to set the KUBEBUILDER_ASSETS environment variable:
 
-    export KUBEBUILDER_ASSETS="$(pwd)/testbin"
+    export KUBEBUILDER_ASSETS=$(setup-envtest use -p path 1.30.0)
 
-In CI the binaries are provisioned automatically via the "kubernetes-sigs/setup-envtest" action.`)
+In CI the binaries are provisioned automatically in the unit test workflow.`)
 	}
 
 	testEnv := &envtest.Environment{
@@ -91,8 +78,8 @@ In CI the binaries are provisioned automatically via the "kubernetes-sigs/setup-
 	absTestChart, err := filepath.Abs(testChartPath)
 	require.NoError(t, err)
 
-	// we need to symlink the version-gate.tpl file from the camunda-platform-8.7 chart to the test-chart directory otherwise
-	// the test-chart doesn't know about the version-gate.tpl file and will fail to render the templates.
+	// we need to symlink the _version-gate.tpl file from the camunda-platform-8.7 chart to the test-chart directory otherwise
+	// the test-chart doesn't know about the _version-gate.tpl file and will fail to render the templates.
 	templateSrc := filepath.Join(absChart, "templates", "camunda", "_version-gate.tpl")
 	templateDst := filepath.Join(absTestChart, "templates", "camunda", "_version-gate.tpl")
 	_ = os.MkdirAll(filepath.Dir(templateDst), 0o755)
@@ -215,8 +202,6 @@ func TestVersionGate_LookupScenarios(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 
-				fmt.Printf("sc: %+v\n", sc)
-
 				cl, err := client.New(cfg, client.Options{})
 				require.NoError(t, err)
 
@@ -251,7 +236,7 @@ func TestVersionGate_LookupScenarios(t *testing.T) {
 						},
 					}
 
-					stdout, err := helm.RunHelmCommandAndGetStdOutE(
+					_, err := helm.RunHelmCommandAndGetStdOutE(
 						t, opts,
 						"install", "test-release", absTestChart,
 						"-n", ns,
@@ -259,8 +244,6 @@ func TestVersionGate_LookupScenarios(t *testing.T) {
 						"--debug",
 					)
 
-					fmt.Printf("stdout: %s\n", stdout)
-					fmt.Printf("err: %v\n", err)
 					require.NoError(t, err)
 				}
 
@@ -272,9 +255,6 @@ func TestVersionGate_LookupScenarios(t *testing.T) {
 					"--set-json", convertMapToJsonString(sc.setValues),
 					"--debug",
 				)
-
-				fmt.Printf("stdout: %s\n", stdout)
-				fmt.Printf("err: %v\n", err)
 
 				if sc.expectedError != "" {
 					if err == nil || !strings.Contains(err.Error(), sc.expectedError) {
