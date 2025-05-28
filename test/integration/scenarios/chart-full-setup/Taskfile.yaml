@@ -94,7 +94,7 @@ tasks:
     cmds:
     - |
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
-        sed 's/custom/{{ .TEST_VALUES_BASE_DIR }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i "s/custom/${TEST_VALUES_BASE_DIR}/g" {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       fi
     - helm install integration {{ .TEST_CHART_NAME }}
         --version {{ .TEST_CHART_VERSION }}
