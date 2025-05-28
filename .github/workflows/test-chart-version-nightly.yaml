@@ -2,6 +2,7 @@
 name: "Test - Chart Version Nightly"
 
 on:
+  pull_request:
   schedule:
     # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
     - cron: "0 4 * * *"

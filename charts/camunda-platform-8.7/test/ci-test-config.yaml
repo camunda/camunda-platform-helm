@@ -21,7 +21,7 @@ integration:
   scenarios:
     pr:
       - name: base
-        enabled: false
+        enabled: true
     nightly:
       - name: base
         enabled: false
