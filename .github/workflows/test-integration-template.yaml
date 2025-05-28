@@ -294,7 +294,11 @@ jobs:
           fi
 
       - name: Set Helm extra args
+        env:
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
         run: |
+          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.ingress.host=${TEST_INGRESS_HOST}"
+          echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
           # The Zeebe team advised to use SNAPSHOT tag instead.
           if [[ ${{ matrix.scenario.flow }} == 'upgrade' ]] &&
@@ -317,22 +321,21 @@ jobs:
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_SCENARIO: ${{ inputs.scenario }}
         run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
-
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
+
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
       - name: 🌟 Setup Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: "${{ inputs.test-case }}"
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
-            --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
       - name: Post setup
