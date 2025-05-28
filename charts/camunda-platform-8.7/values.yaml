@@ -3788,7 +3788,6 @@ connectors:
 ## @extra elasticsearch
 elasticsearch:
   ## @param elasticsearch.enabled
-  #
   enabled: true
   ## @extra elasticsearch.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
