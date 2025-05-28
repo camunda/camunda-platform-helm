@@ -161,7 +161,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"connectors.image.tag": "8.x.x",
 				"identity.image.tag":   "8.x.x",
-				// no component tags set, so they all fall back to global.tag
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
