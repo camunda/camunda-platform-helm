@@ -65,7 +65,7 @@ jobs:
     with:
       identifier: "${{ matrix.scenario }}-intg-${{ inputs.camunda-version }}"
       #remove this
-      # camunda-helm-git-ref: opensearch-scenario
+      camunda-helm-git-ref: opensearch-scenario
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
