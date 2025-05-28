@@ -296,9 +296,17 @@ jobs:
       - name: Set Helm extra args
         env:
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_OPENSEARCH_PASSWORD: ${{ secrets.OPENSEARCH_PASSWORD }}
         run: |
           TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.ingress.host=${TEST_INGRESS_HOST}"
           echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+          # Section for the OpenSearch scenario
+          if [[ ${{ inputs.scenario }} == 'opensearch' ]]; then
+            TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.opensearch.url.host=search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
+            echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+            TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.opensearch.auth.password=${TEST_OPENSEARCH_PASSWORD}"
+            echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+          fi
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
           # The Zeebe team advised to use SNAPSHOT tag instead.
           if [[ ${{ matrix.scenario.flow }} == 'upgrade' ]] &&
@@ -334,6 +342,8 @@ jobs:
           TEST_CASE: "${{ inputs.test-case }}"
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_SCENARIO: ${{ inputs.scenario }}
+          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
         run: |

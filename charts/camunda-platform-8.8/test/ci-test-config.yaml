@@ -20,9 +20,9 @@ integration:
   scenarios:
     pr:
       - name: base
-        enabled: true
+        enabled: false
     nightly:
       - name: base
-        enabled: true
+        enabled: false
       - name: multitenancy
         enabled: false

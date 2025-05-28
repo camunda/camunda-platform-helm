@@ -31,7 +31,7 @@ jobs:
         with:
           charts-path: "charts/camunda-platform-8*"
           # The minimum version that we support
-          min-supported-version: 8.4
+          min-supported-version: 8.6
 
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
