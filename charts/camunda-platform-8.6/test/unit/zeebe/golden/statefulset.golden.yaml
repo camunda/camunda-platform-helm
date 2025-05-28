@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.6.15"
+    app.kubernetes.io/version: "8.6.16"
   annotations:
 spec:
   replicas: 3
@@ -36,7 +36,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "8.6.15"
+        app.kubernetes.io/version: "8.6.16"
       annotations:
     spec:
       imagePullSecrets:
@@ -45,7 +45,7 @@ spec:
         []
       containers:
         - name: zeebe
-          image: camunda/zeebe:8.6.15
+          image: camunda/zeebe:8.6.16
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
