@@ -131,8 +131,46 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(output, "image: global.custom.registry.io/camunda/optimize:8.x.x")
 				s.Require().Contains(output, "image: global.custom.registry.io/camunda/camunda:8.x.x")
 			},
+		}, {
+			Name: "TestComponentDigestOverridesTag",
+			Values: map[string]string{
+				// leave tags empty to force each component to use its own digest
+				"connectors.image.tag": "",
+				"identity.image.tag":   "",
+				"optimize.image.tag":   "",
+				"core.image.tag":       "",
+				"identity.enabled":     "true",
+
+				// set component‐level digests
+				"connectors.image.digest": "sha256:aaa111",
+				"identity.image.digest":   "sha256:bbb222",
+				"optimize.image.digest":   "sha256:ccc333",
+				"core.image.digest":       "sha256:ddd444",
+			},
+			HelmOptionsExtraArgs: map[string][]string{
+				"install":  {"--debug"},
+				"template": {"--debug"},
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "image: camunda/connectors-bundle@sha256:aaa111")
+				require.Contains(t, output, "image: camunda/identity@sha256:bbb222")
+				require.Contains(t, output, "image: camunda/optimize@sha256:ccc333")
+				require.Contains(t, output, "image: camunda/zeebe@sha256:ddd444")
+			},
+		},
+		{
+			Name: "TestDigestFallsBackToTagWhenNoDigest",
+			Values: map[string]string{
+				"connectors.image.tag": "8.x.x",
+				"core.image.tag":       "8.x.x",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "image: camunda/connectors-bundle:8.x.x")
+				require.Contains(t, output, "image: camunda/core:8.x.x")
+			},
 		},
 	}
-
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
