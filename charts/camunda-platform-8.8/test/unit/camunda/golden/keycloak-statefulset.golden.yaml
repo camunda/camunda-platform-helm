@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 26.2.4
+    app.kubernetes.io/version: 26.2.5
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -19,6 +19,7 @@ spec:
   updateStrategy:
     rollingUpdate: {}
     type: RollingUpdate
+  minReadySeconds: 0
   selector:
     matchLabels:
       app.kubernetes.io/instance: camunda-platform-test
@@ -31,9 +32,9 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 26.2.4
+        app.kubernetes.io/version: 26.2.5
         app.kubernetes.io/component: keycloak
-        app.kubernetes.io/app-version: 26.2.4
+        app.kubernetes.io/app-version: 26.2.5
     spec:
       serviceAccountName: camunda-platform-test-keycloak
       
