@@ -211,6 +211,17 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
 			},
+		}, {
+			Name:                 "TestIngressExternal",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":  "true",
+				"global.ingress.external": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				s.Require().NotContains(output, "kind: Ingress")
+			},
 		},
 	}
 
