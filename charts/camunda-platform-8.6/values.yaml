@@ -2605,7 +2605,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.4
+    tag: 25.0.6
 
   ## @extra identityKeycloak.postgresql configuration.
   postgresql:
