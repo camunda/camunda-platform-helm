@@ -349,7 +349,8 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_SCENARIO: ${{ inputs.scenario }}
-          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-nightlyit
+          # both the run-id and the helm-dir is needed since all versions would use the same github-run-id when running the OpenSearch scenario
+          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ camunda-helm-dir }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
         run: |
