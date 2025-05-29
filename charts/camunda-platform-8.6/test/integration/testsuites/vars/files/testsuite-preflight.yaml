@@ -6,8 +6,27 @@ name: Run preflight checks for Camunda
 vars:
   releaseName: integration
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
+  # Skip the Elasticsearch test
+  skipTestElasticsearch: "{{ .SKIP_TEST_ELASTICSEARCH }}"
 
 testcases:
+- name: TEST - Readiness Elasticsearch
+  skip:
+  # The var with "skip" section should be in lower case as there is a bug in Venom:
+  # https://github.com/ovh/venom/issues/654
+  - skiptestelasticsearch ShouldBeFalse
+  steps:
+    - name: Elasticsearch
+      type: http
+      method: GET
+      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+      retry: 3
+      delay: 10
+      info: |
+        Elasticsearch URL: {{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s
+        Response Body: {{ .result.body }}
+      assertions:
+        - result.statuscode ShouldEqual 200
 
 - name: TEST - Readiness
   steps:
@@ -15,8 +34,6 @@ testcases:
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
     - component: Keycloak
       url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
     # Camunda.
@@ -60,14 +77,30 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
 
+- name: TEST - Liveness Elasticsearch
+  skip:
+  # The var with "skip" section should be in lower case as there is a bug in Venom:
+  # https://github.com/ovh/venom/issues/654
+  - skiptestelasticsearch ShouldBeFalse
+  steps:
+  - name: Elasticsearch
+    type: http
+    method: GET
+    url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+    retry: 3
+    delay: 10
+    info: |
+      Elasticsearch URL: {{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+
 - name: TEST - Liveness
   steps:
   - name: "{{ .value.component }}"
     type: http
     range:
     # Dependencies.
-    - component: Elasticsearch
-      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
     - component: Keycloak
       url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
     # Camunda.
