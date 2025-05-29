@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 11.3.2
+version: 11.4.0
 appVersion: 8.6.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.17.3"
+  camunda.io/helmCLIVersion: "3.18.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -72,25 +72,11 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Support ingress external hostname"
     - kind: fixed
-      description: "Refactored optimize unit tests to the new style for 8.6"
+      description: "Bump keycloak minor version"
     - kind: fixed
-      description: "Refactor unit tests in zeebe-gateway to new style on 8.6"
+      description: "Update condition for Playwright Core TestSuite execution to incl…"
     - kind: fixed
-      description: "Refactor unit tests in webmodeller of 8.6 to new style"
-    - kind: fixed
-      description: "Unit tests in tasklist on 8.6 have been refactored to the new style"
-    - kind: fixed
-      description: "Update existingSecret params for 8.6 8.7 and 8.8"
-    - kind: fixed
-      description: "Add gateway enabled"
-    - kind: fixed
-      description: "Refactor of zeebe unit tests in 8.6"
-    - kind: fixed
-      description: "Add elasticsearch golden files"
-    - kind: fixed
-      description: "Grpc port of zeebe gateway for venom tests"
-    - kind: fixed
-      description: "Add apiVersion and kind to PersistentVolumeClaims"
-    - kind: fixed
-      description: "Openshift elasticsearch disabled error"
+      description: "Change back keycloak image version"
