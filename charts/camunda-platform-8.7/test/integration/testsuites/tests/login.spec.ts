@@ -54,6 +54,7 @@ const config = {
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
+  fixturesDir: process.env.FIXTURES_DIR || "/mnt/fixtures",
 };
 
 // Helper to fetch a token
@@ -216,7 +217,7 @@ test.describe("Camunda core", () => {
         "zbctl",
         [
           "deploy",
-          `/mnt/fixtures/${file}`,
+          `${config.fixturesDir}/${file}`,
           "--clientCache",
           "/tmp/zeebe",
           "--clientId",
@@ -246,7 +247,7 @@ test.describe("Camunda core", () => {
         "zbctl",
         [
           "deploy",
-          `/mnt/fixtures/${file}`,
+          `${config.fixturesDir}/${file}`,
           "--clientCache",
           "/tmp/zeebe",
           "--clientId",

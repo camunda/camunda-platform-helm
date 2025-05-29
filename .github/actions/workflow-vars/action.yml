@@ -4,6 +4,9 @@ inputs:
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"
+  ingress-hostname-base:
+    description: The base of the Ingress hostname.
+    required: true
   platform:
     description: The deployment cloud platform like GKE or ROSA.
   deployment-ttl:
@@ -14,6 +17,7 @@ inputs:
     description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
   chart-dir:
     description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
+    required: true
   chart-upgrade-version:
     description: The Helm chart released version to upgrade from.
     required: false
@@ -68,6 +72,12 @@ runs:
       echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
       echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
 
+      # Identifier
+      local_identifier=${{ inputs.identifier-base }}
+      if [[ -z "${{ inputs.identifier-base }}" ]]; then
+        local_identifier="no-id-use-ran-$(uuidgen | head -c 6)"
+      fi
+
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
       TEST_NAMESPACE="$NAMESPACE_PREFIX-$(echo ${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
@@ -80,7 +90,7 @@ runs:
         TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
       fi
       
-      echo "TEST_NAMESPACE=$(printf '%s' "${TEST_NAMESPACE%-}" | head -c 63)" | tee -a $GITHUB_ENV
+        echo "TEST_NAMESPACE=$(printf '%s' "$TEST_NAMESPACE" | head -c $max_length_for_k8s_dns_labels_limits | sed 's/-$//')" | tee -a $GITHUB_ENV
 
       # Get alpha chart dir.
       TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
@@ -89,14 +99,13 @@ runs:
       echo "Output vars:"
 
       # Deployment identifier.
-      TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+      TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${local_identifier} | sed 's/\./-/g')"
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
         TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
       fi
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
 
       # Ingress hostname.
-
       if [[ "${{ inputs.platform }}" == 'eks' ]]; then
         export INGRESS_HOSTNAME_BASE=${NAMESPACE_PREFIX}.aws.camunda.cloud
       else
