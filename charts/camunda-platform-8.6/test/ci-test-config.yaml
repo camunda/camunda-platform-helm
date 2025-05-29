@@ -27,3 +27,5 @@ integration:
         enabled: true
       - name: multitenancy
         enabled: true
+      - name: opensearch
+        enabled: true

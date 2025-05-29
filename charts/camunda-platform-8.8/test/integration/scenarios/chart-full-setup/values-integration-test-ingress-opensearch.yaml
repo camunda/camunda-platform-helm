@@ -1,0 +1,49 @@
+global:
+  elasticsearch:
+    enabled: false
+  opensearch:
+    enabled: true
+    auth:
+      username: camunda
+      password: camunda
+    url:
+      protocol: https
+      host: camunda.com
+      port: 443
+
+elasticsearch:
+  enabled: false
+
+core:
+  # index:
+  #   prefix: app
+  env:
+    # group1
+    - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
+      value: custom
+    - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
+      value: custom
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
+      value: custom
+    - name: CAMUNDA_DATABASE_INDEXPREFIX
+      value: custom
+    # group2
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+      value: custom-zeebe
+    - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
+      value: custom-zeebe
+    - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
+      value: custom-zeebe
+
+optimize:
+  env:
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: custom-optimize
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+      value: custom-zeebe
+  migration:
+    env:
+      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+        value: custom-optimize
+      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+        value: custom-zeebe

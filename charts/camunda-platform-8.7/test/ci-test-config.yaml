@@ -30,4 +30,4 @@ integration:
       - name: oidc
         enabled: false
       - name: opensearch
-        enabled: false
+        enabled: true
