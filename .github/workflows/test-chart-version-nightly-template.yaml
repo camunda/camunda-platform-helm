@@ -66,8 +66,6 @@ jobs:
       identifier: "${{ matrix.scenario }}-intg-${{ inputs.camunda-version }}"
       #remove this
       camunda-helm-git-ref: opensearch-scenario
-      #remove
-      camunda-helm-git-ref: preflight-es-disable
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
