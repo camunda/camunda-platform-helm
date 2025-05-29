@@ -343,7 +343,7 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_SCENARIO: ${{ inputs.scenario }}
-          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}
+          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-nightlyit
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
         run: |
