@@ -149,12 +149,14 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: CI Setup - Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # This is needed if the workflow is triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
-      - name: Generate workflow matrix
+
+      - name: CI Setup - Generate workflow matrix
         id: generate-workflow-matrix
         env:
           CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
@@ -192,7 +194,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ matrix.distro.type || inputs.cluster-type }}
 
     steps:
-      - name: ℹ️ Print workflow inputs ℹ️
+      - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: |
@@ -200,14 +202,17 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: CI Setup - Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
       # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
       # and populate environment variables from Vault
-      - name: Import Vault secrets
+      - name: CI Setup - Import Vault secrets
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         if: inputs.vault-secret-mapping != ''
@@ -218,6 +223,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
+
       - name: Import Vault secrets
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -229,15 +235,17 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
           exportEnv: true
+      #
       # Used to create/delete GitHub environment.
       # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
-      - name: Generate GitHub token
+      - name: CI Setup - Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-      - name: Install tools
+
+      - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
@@ -247,8 +255,10 @@ jobs:
             oc
             task
             yq
+            zbctl
+
       # TODO: Later, find a way to abstract the auth for different platforms.
-      - name: Authenticate to GKE
+      - name: CI Setup - Authenticate to GKE
         if: matrix.distro.platform == 'gke' && inputs.auth-data == ''
         uses: ./.github/actions/gke-login
         with:
@@ -256,6 +266,7 @@ jobs:
           cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
           workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
           service-account: ${{ secrets[matrix.distro.secret.service-account] }}
+      
       - name: Set up Teleport
         if: matrix.distro.platform == 'eks'
         uses: teleport-actions/setup@176c25dfcd19cd31a252f275d579822b243e7b9c # v1
@@ -268,14 +279,16 @@ jobs:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER_NAME }}
-      - name: Authenticate to OpenShift
+
+      - name: CI Setup - Authenticate to OpenShift
         if: matrix.distro.platform == 'rosa' && inputs.auth-data == ''
         uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1
         with:
           openshift_server_url: ${{ secrets[matrix.distro.secret.server-url] }}
           openshift_username: ${{ secrets[matrix.distro.secret.username] }}
           openshift_password: ${{ secrets[matrix.distro.secret.password] }}
-      - name: Authenticate via var
+
+      - name: CI Setup - Authenticate via var
         if: inputs.auth-data != ''
         run: |
           mkdir -p $HOME/.kube
@@ -283,7 +296,8 @@ jobs:
           openssl enc -aes-256-cbc -d -in encrypted_kubeconfig.enc -out "$HOME/.kube/config" -pass pass:"${GITHUB_TOKEN}" -pbkdf2
           rm encrypted_kubeconfig.enc
           chmod 600 $HOME/.kube/config
-      - name: ℹ️ Set workflow vars ℹ️
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
         uses: ./.github/actions/workflow-vars
         with:
@@ -294,7 +308,8 @@ jobs:
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
-      - name: Set test type vars
+
+      - name: CI Setup - Set test type vars
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
         with:
@@ -302,12 +317,23 @@ jobs:
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ matrix.distro.platform }}"
           enterprise: "${{ inputs.enterprise }}"
-      - name: Add Helm repos and dependencies
+
+      - name: CI Setup - Add Helm repos and update helm dependencies
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
           make helm.repos-add
           make helm.dependency-update
-      - name: Create test namespace
+
+      - name: CI Setup - Start GitHub deployment
+        uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
+        id: deployment
+        with:
+          step: start
+          token: ${{ steps.generate-github-token.outputs.token }}
+          env: ${{ steps.vars.outputs.identifier }}
+          ref: ${{ inputs.caller-git-ref }}
+
+      - name: Cluster Setup - Configure the namespace
         run: |
           echo $TEST_NAMESPACE
           kubectl delete ns --ignore-not-found=true \
@@ -326,11 +352,23 @@ jobs:
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
           if [[ "${{ matrix.distro.platform }}" == "eks" ]]; then
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
-      - name: Set Deployment Secrets
+
+      - name: Cluster Setup - Install docker registry on cluster
+        run: |
+          kubectl create secret docker-registry registry-camunda-cloud \
+          --namespace $TEST_NAMESPACE \
+          --docker-server "registry.camunda.cloud" \
+          --docker-username $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD \
+          --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
+
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
+
+      - name: Cluster Setup - Configure TLS Certificates/Secrets
         run: |
           if [[ "${{ matrix.distro.platform }}" == "gke" || "${{ matrix.distro.platform }}" == "rosa" ]]; then
             kubectl apply -n $TEST_NAMESPACE \
@@ -403,7 +441,7 @@ jobs:
           token: ${{ steps.generate-github-token.outputs.token }}
           env: ${{ steps.vars.outputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
           ref: ${{ inputs.caller-git-ref }}
-      - name: Pre setup
+      - name: Helm - Execute before install lifecycle tasks
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
@@ -418,9 +456,15 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
-
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
-      - name: 🌟 Setup Camunda chart 🌟
+
+      - name: Helm - Install - Setup helm extra args
+        if: matrix.scenario.flow == 'install' && inputs.camunda-helm-credentials-source == 'auto-generated'
+        run: |
+          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS} --set global.secrets.autoGenerated=true"
+          echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+
+      - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
@@ -440,15 +484,28 @@ jobs:
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
-      - name: Post setup
+
+      - name: Helm - Execute after install lifecycle tasks
         timeout-minutes: 5
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
-      - name: Pre Upgrade
+
+      - name: Helm - Upgrade - Setup helm extra args
+        if: matrix.scenario.flow == 'upgrade' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
+        run: |
+          # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
+          # The Zeebe team advised to use SNAPSHOT tag instead.
+          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set zeebe.image.tag=SNAPSHOT"
+          echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+          TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set zeebe.image.tag=SNAPSHOT"
+          echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
+
+      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
         if: matrix.scenario.flow == 'upgrade'
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
-      - name: 🌟 Upgrade Camunda chart 🌟
+
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
@@ -461,7 +518,8 @@ jobs:
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
-      - name: Update GitHub deployment status
+
+      - name: CI Setup - Update GitHub deployment status
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
           step: finish
@@ -471,20 +529,34 @@ jobs:
           env_url: https://${{ steps.vars.outputs.ingress-host }}
           env: ${{ steps.vars.outputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
           ref: ${{ inputs.caller-git-ref }}
-      - name: ⭐️ Run Preflight TestSuite ⭐️
+
+      - name: Test - ⭐️ Run Venom Env Setup ⭐️
         if: inputs.test-enabled
+        env:
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+        timeout-minutes: 1
+        continue-on-error: false
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.venom.env
+
+      - name: Testplit- ⭐️ Run Venom Preflight TestSuite ⭐️
+        if: inputs.test-enabled
+        env:
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
         timeout-minutes: 10
         continue-on-error: true
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
+
         # The venom tests are replaced by the playwright tests in 8.7 and above
-      - name: ⭐️ Run Core TestSuite ⭐️
+      - name: Test - ⭐️ Run Venom Core TestSuite ⭐️
         if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.4') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.5') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.6')) }}
         id: core-testsuite
         timeout-minutes: 20
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
-      - name: ⭐️ Run Playwright Core TestSuite ⭐️
+
+      - name: Test - ⭐️ Run Playwright Core TestSuite ⭐️
         if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
         timeout-minutes: 20
         run: |
@@ -494,10 +566,28 @@ jobs:
           envsubst < ${ABSOLUTE_TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/playwright-job-vars.env.template > ${ABSOLUTE_TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/variables.env
           cat ${ABSOLUTE_TEST_CHART_DIR}/test/integration/testsuites/vars/playwright/files/variables.env
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.playwright.core
-      - name: 🚨 Get failed Pods info 🚨
+
+      - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
+        if: ${{ always() && inputs.test-enabled && (steps.core-testsuite.outcome == 'success' || steps.core-testsuite.outcome == 'failure') && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+        timeout-minutes: 5
+        run: |
+          cd $GITHUB_WORKSPACE/scripts
+          ./run-integration-tests.sh --absolute-chart-path ${ABSOLUTE_TEST_CHART_DIR} --namespace $TEST_NAMESPACE --update-helm-dependencies
+
+      - name: Test - Upload Playwright report
+        if: ${{ always() && inputs.test-enabled && (steps.core-testsuite.outcome == 'success' || steps.core-testsuite.outcome == 'failure') && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/test-results/
+          name: playwright-report-${{ matrix.scenario.flow }} # Flow is required to avoid clashing between install and upgrade
+          if-no-files-found: error
+          retention-days: 5
+
+      - name: CI Cleanup - 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info
-      - name: Cleanup GitHub deployment
+
+      - name: CI Cleanup - Cleanup GitHub deployment
         if: always() && (env.CI_DEPLOYMENT_TTL == '' || matrix.distro.type != 'kubernetes')
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
@@ -505,7 +595,8 @@ jobs:
           token: ${{ steps.generate-github-token.outputs.token }}
           env: ${{ steps.vars.outputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
           ref: ${{ inputs.caller-git-ref }}
-      - name: Cleanup test namespace
+
+      - name: CI Cleanup - Cleanup test namespace
         if: always()
         run: |
           if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then

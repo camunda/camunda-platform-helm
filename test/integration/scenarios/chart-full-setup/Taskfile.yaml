@@ -14,7 +14,7 @@ dotenv:
 includes:
   init.seed:
     taskfile: ../lib/init-seed-taskfile.yaml
-    internal: true
+    internal: false
   upgrade:
     taskfile: ../lib/chart-upgrade-taskfile.yaml
     internal: true
@@ -40,10 +40,6 @@ includes:
 
 tasks:
   setup.pre:
-    preconditions:
-    - test -n "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
-    - test -n "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
-    - test -n "${TEST_INGRESS_HOST}"
     env:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
@@ -145,8 +141,24 @@ tasks:
 
       fi
 
+  setup.venom.env:
+    preconditions:
+      - test -n "${TEST_INGRESS_HOST}"
+    env:
+      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
+    cmds:
+      - |
+        echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq '.elasticsearch.enabled // false | not' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
+        echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
+        # In case the Zeebe version has not been released officially yet.
+        echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
+        cat ${VARIABLES_ENV_FILE}
+
   setup.exec:
-    deps: [init.seed]
     cmds:
     - |
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
