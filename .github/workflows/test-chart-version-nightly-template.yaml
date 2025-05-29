@@ -25,15 +25,15 @@ permissions:
   contents: read
 
 jobs:
-  # validation:
-  #   name: Camunda ${{ inputs.camunda-version }} - Validation
-  #   uses: ./.github/workflows/chart-validate-template.yaml
-  #   with:
-  #     identifier: "${{ inputs.case }}-vald-${{ inputs.camunda-version }}"
-  #     camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  validation:
+    name: Camunda ${{ inputs.camunda-version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ inputs.case }}-vald-${{ inputs.camunda-version }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
   init:
-    # needs: validation
+    needs: validation
     runs-on: ubuntu-latest
     env:
       SCENARIOS_LIST: ${{ inputs.scenarios }}
@@ -64,8 +64,6 @@ jobs:
     uses: ./.github/workflows/test-integration-template.yaml
     with:
       identifier: "${{ matrix.scenario }}-intg-${{ inputs.camunda-version }}"
-      #remove this
-      camunda-helm-git-ref: opensearch-scenario
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"

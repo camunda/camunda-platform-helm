@@ -1,6 +1,6 @@
 # Used in the GitHub Actions unit test CI workflow.
 unit:
-  enabled: false
+  enabled: true
   matrix:
     - name: Core
       packages: identity camunda console
@@ -24,9 +24,9 @@ integration:
         enabled: true
     nightly:
       - name: base
-        enabled: false
+        enabled: true
       - name: multitenancy
-        enabled: false
+        enabled: true
       - name: oidc
         enabled: false
       - name: opensearch

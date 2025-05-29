@@ -2,7 +2,6 @@
 name: "Test - Chart Version Nightly"
 
 on:
-  pull_request:
   schedule:
     # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
     - cron: "0 4 * * *"
@@ -32,7 +31,7 @@ jobs:
         with:
           charts-path: "charts/camunda-platform-8*"
           # The minimum version that we support
-          min-supported-version: 8.6
+          min-supported-version: 8.4
 
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
