@@ -41,6 +41,16 @@
 # systems mark the job as failed.
 # ============================================================================
 
+print_banner() {
+  cat <<'EOF'
+============================================================
+  Camunda Platform – e2e-tests Runner
+============================================================
+EOF
+}
+
+print_banner
+
 cleanup() {
   [[ -n "${ENV_FILE:-}" && -f "$ENV_FILE" ]] && rm -f "$ENV_FILE"
 }
@@ -117,7 +127,7 @@ setup_env_file() {
   local namespace="$5"
 
   export TEST_INGRESS_HOST="$hostname"
-  envsubst <"$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template >"$env_file"
+  envsubst <"$test_suite_path"/.env.template >"$env_file"
   echo "PLAYWRIGHT_BASE_URL=https://$hostname" >>"$env_file"
   echo "CLUSTER_VERSION=8" >>"$env_file"
   echo "MINOR_VERSION=SM-8.7" >>"$env_file"
@@ -155,13 +165,45 @@ run_playwright_tests() {
   local repo_root="$3"
   local shard_index="$4"
   local shard_total="$5"
-
+  local test_pattern="$6"
+  log "Test pattern: $test_pattern"
   log "Changing directory to $test_suite_path"
   log "Running test suite"
 
   cd "$repo_root" || exit
 
-  cd "$test_suite_path" || exit
+  local build_from="local-tarball"
+  if [[ $build_from == "local" ]]; then
+    echo "packing with local"
+    cd ../c8-cross-component-e2e-tests || exit
+    npm ci --no-audit --no-fund --silent
+    npm pack
+    cd "$test_suite_path" || exit
+    cp package.json package.json.bak
+    cp package-lock.json package-lock.json.bak
+    npm install -D "${repo_root%/}/../c8-cross-component-e2e-tests/playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+  elif [[ $build_from == "local-tarball" ]]; then
+    echo "packing with local tarball"
+    cd "$test_suite_path" || exit
+    cp package.json package.json.bak
+    cp package-lock.json package-lock.json.bak
+    npm install -D "${repo_root%/}/scripts/playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+  elif [[ $build_from == "git" ]]; then
+    echo "packing with git"
+    # git clone git@github.com:camunda/c8-cross-component-e2e-tests.git
+    git clone -b 526-task-use-the-qa-test-code-for-our-login-test-in-it git@github.com:camunda/c8-cross-component-e2e-tests.git
+    cd c8-cross-component-e2e-tests || exit
+    npm ci --no-audit --no-fund --silent
+    npm pack
+    cd "$test_suite_path" || exit
+    cp package.json package.json.bak
+    cp package-lock.json package-lock.json.bak
+    npm install -D "${repo_root%/}/c8-cross-component-e2e-tests/playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+    rm -fr "${repo_root%/}/c8-cross-component-e2e-tests"
+  else
+    echo "packaging from npm"
+    npm install -D "playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+  fi
 
   npx playwright install
 
@@ -175,7 +217,7 @@ run_playwright_tests() {
 
     exit 0
   else
-    npx playwright test --reporter=html
+    npx playwright test --shard=${shard_index}/${shard_total} --reporter=blob 
     playwright_rc=$?          # <-- capture the exit status BEFORE doing anything else
 
     if [[ $playwright_rc -eq 0 ]]; then
@@ -204,6 +246,7 @@ Options:
   --update-helm-dependencies                  Update the Helm dependencies for the chart.
   --shard-index SHARD_INDEX                   The shard index to run.
   --shard-total SHARD_TOTAL                   The total number of shards.
+  --test-pattern TEST_PATTERN                 The test pattern to run. Is mapped to the playwright test --grep option.
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -220,6 +263,7 @@ VERBOSE=false
 UPDATE_HELM_DEPENDENCIES=false
 SHARD_INDEX=1
 SHARD_TOTAL=1
+TEST_PATTERN="**/smoke-tests.spec.{ts,js}"
 
 required_cmds=(kubectl jq git envsubst npm npx make)
 for cmd in "${required_cmds[@]}"; do
@@ -258,6 +302,10 @@ while [[ $# -gt 0 ]]; do
     SHARD_TOTAL="$2"
     shift 2
     ;;
+  --test-pattern)
+    TEST_PATTERN="$2"
+    shift 2
+    ;;
   -v | --verbose)
     VERBOSE=true
     shift
@@ -274,12 +322,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
+TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 
 hostname=$(get_ingress_hostname "$NAMESPACE")
-setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE"
+setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$REPO_ROOT" "$SHARD_INDEX" "$SHARD_TOTAL"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$REPO_ROOT" "$SHARD_INDEX" "$SHARD_TOTAL" "$TEST_PATTERN"
