@@ -512,7 +512,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/test-results/
-          name: playwright-report
+          name: playwright-report-${{ matrix.scenario.flow }} # Flow is required to avoid clashing between install and upgrade
           if-no-files-found: error
           retention-days: 5
         
