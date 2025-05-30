@@ -2,7 +2,7 @@
 
 identity:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -13,11 +13,11 @@ identity:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 identityKeycloak:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -28,11 +28,11 @@ identityKeycloak:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
   postgresql:
     primary:
       tolerations:
-        - key: t-core-8-unstable
+        - key: t-core-16-unstable
           operator: Exists
           effect: NoSchedule
       affinity:
@@ -43,11 +43,11 @@ identityKeycloak:
                   - key: nodegroup
                     operator: In
                     values:
-                      - t-core-8-unstable
+                      - t-core-16-unstable
 
 identityPostgresql:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -58,11 +58,11 @@ identityPostgresql:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 console:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -73,12 +73,12 @@ console:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 postgresql:
   primary:
     tolerations:
-      - key: t-core-8-unstable
+      - key: t-core-16-unstable
         operator: Exists
         effect: NoSchedule
     affinity:
@@ -89,11 +89,11 @@ postgresql:
                 - key: nodegroup
                   operator: In
                   values:
-                    - t-core-8-unstable
+                    - t-core-16-unstable
 
 operate:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -104,11 +104,11 @@ operate:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 tasklist:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -119,11 +119,11 @@ tasklist:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 zeebe:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -134,11 +134,11 @@ zeebe:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 zeebeGateway:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -149,11 +149,11 @@ zeebeGateway:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 optimize:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -164,11 +164,11 @@ optimize:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 connectors:
   tolerations:
-    - key: t-core-8-unstable
+    - key: t-core-16-unstable
       operator: Exists
       effect: NoSchedule
   affinity:
@@ -179,12 +179,12 @@ connectors:
               - key: nodegroup
                 operator: In
                 values:
-                  - t-core-8-unstable
+                  - t-core-16-unstable
 
 webModeler:
   restapi:
     tolerations:
-      - key: t-core-8-unstable
+      - key: t-core-16-unstable
         operator: Exists
         effect: NoSchedule
     affinity:
@@ -195,10 +195,10 @@ webModeler:
                 - key: nodegroup
                   operator: In
                   values:
-                    - t-core-8-unstable
+                    - t-core-16-unstable
   webapp:
     tolerations:
-      - key: t-core-8-unstable
+      - key: t-core-16-unstable
         operator: Exists
         effect: NoSchedule
     affinity:
@@ -209,10 +209,10 @@ webModeler:
                 - key: nodegroup
                   operator: In
                   values:
-                    - t-core-8-unstable
+                    - t-core-16-unstable
   websockets:
     tolerations:
-      - key: t-core-8-unstable
+      - key: t-core-16-unstable
         operator: Exists
         effect: NoSchedule
     affinity:
@@ -223,13 +223,13 @@ webModeler:
                 - key: nodegroup
                   operator: In
                   values:
-                    - t-core-8-unstable
+                    - t-core-16-unstable
 
 
 elasticsearch:
   master:
     tolerations:
-      - key: t-core-8-unstable
+      - key: t-core-16-unstable
         operator: Exists
         effect: NoSchedule
     affinity:
@@ -240,4 +240,4 @@ elasticsearch:
                 - key: nodegroup
                   operator: In
                   values:
-                    - t-core-8-unstable
+                    - t-core-16-unstable
