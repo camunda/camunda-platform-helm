@@ -95,7 +95,7 @@ install_helm_dependencies() {
 get_ingress_hostname() {
   local namespace="$1"
   local hostname
-  
+
   hostname=$(kubectl -n "$namespace" get ingress -o json | jq -r '
     .items[]
     | select(all(.spec.rules[].host; contains("zeebe") | not))
@@ -115,9 +115,12 @@ setup_env_file() {
   local hostname="$3"
   local repo_root="$4"
   local namespace="$5"
-  
+
   export TEST_INGRESS_HOST="$hostname"
-  envsubst < "$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template > "$env_file"
+  envsubst <"$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template >"$env_file"
+  echo "PLAYWRIGHT_BASE_URL=https://$hostname" >>"$env_file"
+  echo "CLUSTER_VERSION=8" >>"$env_file"
+  echo "MINOR_VERSION=7" >>"$env_file"
 
   # during helm install, we create a secret with the credentials for the services
   # that are used to test the platform. This is grabbing those credentials and
@@ -125,15 +128,16 @@ setup_env_file() {
   # with an authorized kubectl context.
   for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE TEST; do
     secret=$(kubectl -n "$namespace" \
-               get secret integration-test-credentials \
-               -o jsonpath='{.data.identity-admin-client-password}' | base64 -d)
-    echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
+      get secret integration-test-credentials \
+      -o jsonpath='{.data.identity-admin-client-password}' | base64 -d)
+    echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
   done
+  echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=demo" >>"$env_file"
 
   # fixtures are the *.bpmn files that are used to test the platform. This is likely to change
   # to be more flexible in what we are testing.
   log "Setting FIXTURES_DIR to ${repo_root%/}/test/integration/testsuites/playwright.core/files"
-  echo "FIXTURES_DIR=${repo_root%/}/test/integration/testsuites/playwright.core/files" >> "$env_file"
+  echo "FIXTURES_DIR=${repo_root%/}/test/integration/testsuites/playwright.core/files" >>"$env_file"
 
   log "Contents of .env file:"
   if $VERBOSE; then
@@ -144,21 +148,40 @@ setup_env_file() {
 run_playwright_tests() {
   local test_suite_path="$1"
   local show_html_report="$2"
+  local repo_root="$3"
+
   log "Changing directory to $test_suite_path"
   log "Running test suite"
 
-  cd "$test_suite_path"
+  cd "$repo_root"
+  git clone git@github.com:camunda/c8-cross-component-e2e-tests.git
+  #git clone -b 526-task-use-the-qa-test-code-for-our-login-test-in-it git@github.com:camunda/c8-cross-component-e2e-tests.git
+  cd c8-cross-component-e2e-tests
   npm ci --no-audit --no-fund --silent
+  npm pack
+
+  cd "$test_suite_path"
+  mkdir -p "$test_suite_path/test-results"
+  cp package.json package.json.bak
+  cp package-lock.json package-lock.json.bak
+  npm install "$repo_root/c8-cross-component-e2e-tests/playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+
+  rm -fr "$repo_root/c8-cross-component-e2e-tests"
 
   if [[ $show_html_report == "true" ]]; then
     npx playwright test --reporter=html
     npx playwright show-report
+    mv package.json.bak package.json
+    mv package-lock.json.bak package-lock.json
     exit 0
   else
-    mkdir -p "$test_suite_path/test-results"
+
     PLAYWRIGHT_JSON_OUTPUT_FILE="$test_suite_path/test-results/results.json" npx playwright test --reporter=json
     passed=$(jq -r '.stats.unexpected == 0' "$test_suite_path/test-results/results.json")
-    
+
+    mv package.json.bak package.json
+    mv package-lock.json.bak package-lock.json
+
     # Playwright exit codes are not well defined, so we need to check the JSON output
     # to determine if the tests passed or failed.
     if [[ "$passed" == true ]]; then
@@ -250,4 +273,4 @@ install_helm_dependencies "$ABSOLUTE_CHART_PATH" "$REPO_ROOT" "$UPDATE_HELM_DEPE
 hostname=$(get_ingress_hostname "$NAMESPACE")
 setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$REPO_ROOT"

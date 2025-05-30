@@ -262,7 +262,7 @@ jobs:
             task
             yq
             zbctl
-            
+
       # TODO: Later, find a way to abstract the auth for different platforms.
       - name: CI Setup - Authenticate to GKE
         if: matrix.distro.platform == 'gke' && inputs.auth-data == ''
@@ -466,7 +466,8 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
 
       - name: Test - ⭐️ Run Playwright Core TestSuite ⭐️
-        if: ${{ always() && inputs.test-enabled && (steps.core-testsuite.outcome == 'success' || steps.core-testsuite.outcome == 'failure') && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+        if: false # disabled so we can test github runner setup
+        # if: ${{ always() && inputs.test-enabled && (steps.core-testsuite.outcome == 'success' || steps.core-testsuite.outcome == 'failure') && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
         timeout-minutes: 20
         run: |
           export TEST_INGRESS_HOST="${{ steps.vars.outputs.ingress-host }}"
@@ -489,7 +490,7 @@ jobs:
           name: playwright-report-${{ matrix.scenario.flow }} # Flow is required to avoid clashing between install and upgrade
           if-no-files-found: error
           retention-days: 5
-        
+
       - name: CI Cleanup - 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info

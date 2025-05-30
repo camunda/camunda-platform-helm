@@ -8,6 +8,7 @@ dotenv(); // ← loads .env before anything else
 
 import { test, expect, APIRequestContext } from "@playwright/test";
 import { execFileSync } from "child_process";
+import { test as c8test } from "playwright-automation/dist/fixtures/SM-8.7";
 
 // ---------- config & helpers ----------
 
@@ -92,6 +93,32 @@ test.describe("Camunda core", () => {
     }
   });
 
+  for (const name of [
+    "Console",
+    "Tasklist",
+    "Modeler",
+    "Optimize",
+    "Operate",
+    "Identity",
+  ]) {
+    c8test(
+      `Go to the ${name} homeage`,
+      async ({
+        taskDetailsPage,
+        taskPanelPage,
+        modelerHomePage,
+        navigationPage,
+        modelerCreatePage,
+        operateHomePage,
+        operateProcessesPage,
+        operateProcessInstancePage,
+        page,
+      }) => {
+        await navigationPage[`goTo${name}`]();
+      },
+    );
+  }
+
   // Parameterized login page tests
   for (const [name, url] of Object.entries({
     Console: config.base.console,
@@ -116,7 +143,6 @@ test.describe("Camunda core", () => {
       ).not.toMatch(/error/i);
     });
   }
-
   test("Connectors inbound page", async () => {
     expect(
       (await api.get(config.base.connectors, { timeout: 45_000 })).ok(),
