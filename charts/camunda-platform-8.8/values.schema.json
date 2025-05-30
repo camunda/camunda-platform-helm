@@ -2483,7 +2483,7 @@
                                 },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
-                                    "description": "string",
+                                    "description": "string Key in the Secret data that holds the DB password; defaults to `\"password\"`.",
                                     "default": "database-password"
                                 }
                             }
