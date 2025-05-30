@@ -41,8 +41,6 @@
 # systems mark the job as failed.
 # ============================================================================
 
-set -euo pipefail
-
 cleanup() {
   [[ -n "${ENV_FILE:-}" && -f "$ENV_FILE" ]] && rm -f "$ENV_FILE"
 }
@@ -81,6 +79,11 @@ log() {
 install_helm_dependencies() {
   local chart_path="$1"
   local repo_root="$2"
+  local update_helm_dependencies="$3"
+
+  if [[ $update_helm_dependencies != "true" ]]; then
+    return 0
+  fi
 
   export chartPath="charts/$(basename "$chart_path")" # this is used implicitly in the Makefile
   log "Installing Helm repos and dependencies with chartPath=$chartPath"
@@ -145,16 +148,25 @@ run_playwright_tests() {
   log "Running test suite"
 
   cd "$test_suite_path"
-  npm ci --no-audit --no-fund
+  npm ci --no-audit --no-fund --silent
 
-  playwright_status=0
-  npx playwright test --reporter=line,json${show_html_report:+",html"} || playwright_status=$?
-
-  if $show_html_report; then
-    npx playwright show-report || playwright_status=$?
+  if [[ $show_html_report == "true" ]]; then
+    npx playwright test --reporter=html
+    npx playwright show-report
+    exit 0
+  else
+    mkdir -p "$test_suite_path/test-results"
+    PLAYWRIGHT_JSON_OUTPUT_FILE="$test_suite_path/test-results/results.json" npx playwright test --reporter=json
+    passed=$(jq -r '.stats.unexpected == 0' "$test_suite_path/test-results/results.json")
+    
+    # Playwright exit codes are not well defined, so we need to check the JSON output
+    # to determine if the tests passed or failed.
+    if [[ "$passed" == true ]]; then
+      exit 0
+    fi
   fi
 
-  exit $playwright_status
+  exit 1
 }
 
 usage() {
@@ -168,6 +180,7 @@ Options:
   --absolute-chart-path ABSOLUTE_CHART_PATH   The absolute path to the chart directory.
   --namespace NAMESPACE                       The namespace c8 is deployed into
   --show-html-report                          Show the HTML report after the tests have run.
+  --update-helm-dependencies                  Update the Helm dependencies for the chart.
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -181,6 +194,7 @@ ABSOLUTE_CHART_PATH=""
 NAMESPACE=""
 SHOW_HTML_REPORT=false
 VERBOSE=false
+UPDATE_HELM_DEPENDENCIES=false
 
 required_cmds=(kubectl jq git envsubst npm npx make)
 for cmd in "${required_cmds[@]}"; do
@@ -191,7 +205,6 @@ for cmd in "${required_cmds[@]}"; do
 done
 
 trap cleanup EXIT
-trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -206,6 +219,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   --show-html-report)
     SHOW_HTML_REPORT=true
+    shift
+    ;;
+  --update-helm-dependencies)
+    UPDATE_HELM_DEPENDENCIES=true
     shift
     ;;
   -v | --verbose)
@@ -229,7 +246,7 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
-install_helm_dependencies "$ABSOLUTE_CHART_PATH" "$REPO_ROOT"
+install_helm_dependencies "$ABSOLUTE_CHART_PATH" "$REPO_ROOT" "$UPDATE_HELM_DEPENDENCIES"
 hostname=$(get_ingress_hostname "$NAMESPACE")
 setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE"
 

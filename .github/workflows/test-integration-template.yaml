@@ -505,7 +505,7 @@ jobs:
         timeout-minutes: 5
         run: |
           cd $GITHUB_WORKSPACE/scripts
-          ./run-integration-tests.sh --absolute-chart-path ${ABSOLUTE_TEST_CHART_DIR} --namespace $TEST_NAMESPACE
+          ./run-integration-tests.sh --absolute-chart-path ${ABSOLUTE_TEST_CHART_DIR} --namespace $TEST_NAMESPACE --update-helm-dependencies
 
       - name: Test - Upload Playwright report
         if: ${{ always() && inputs.test-enabled && (steps.core-testsuite.outcome == 'success' || steps.core-testsuite.outcome == 'failure') && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
