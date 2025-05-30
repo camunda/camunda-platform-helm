@@ -14,7 +14,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: integration-test-credentials
-                  key: identity-user-password
+                  key: identity-admin-client-password
                   # Making it optional for debugging Venom where is no Camunda is deployed.
                   optional: true
             - name: PLAYWRIGHT_VAR_CONSOLE_CLIENT_SECRET
