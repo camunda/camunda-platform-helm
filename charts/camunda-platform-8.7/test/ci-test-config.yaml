@@ -22,6 +22,8 @@ integration:
     pr:
       - name: base
         enabled: true
+      - name: oidc
+        enabled: true
     nightly:
       - name: base
         enabled: true
