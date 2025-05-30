@@ -197,17 +197,15 @@ webModeler:
 
 
 elasticsearch:
-  master:
-    tolerations:
-      - key: t-core-8-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-8-unstable
+  tolerations:
+    - key: t-core-8-unstable
+      operator: Exists
+      effect: NoSchedule
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: nodegroup
+              operator: In
+              values:
+                - t-core-8-unstable
