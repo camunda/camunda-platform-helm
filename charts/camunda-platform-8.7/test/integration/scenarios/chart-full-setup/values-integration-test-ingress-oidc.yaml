@@ -1,0 +1,65 @@
+global:
+  identity:
+    auth:
+      issuer: https://login.microsoftonline.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/v2.0 #the ID is the tenant ID
+      issuerBackendUrl: https://login.microsoftonline.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/v2.0
+      tokenUrl: https://login.microsoftonline.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/oauth2/v2.0/token
+      jwksUrl: https://login.microsoftonline.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/discovery/v2.0/keys
+      publicIssuerUrl: https://login.microsoftonline.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/v2.0
+      type: "MICROSOFT"
+      identity:
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        existingSecret: token
+        initialClaimValue: userObjectId # object ID of user Hamza Masood on entra ID tenant that Camunda IT control
+        redirectUrl: "https://redirectUrl/identity"
+      operate:
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        existingSecret: token
+        redirectUrl: "https://redirectUrl/operate"
+      optimize:
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        existingSecret: token
+        redirectUrl: "https://redirectUrl/optimize"
+      tasklist:
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        existingSecret: token
+        redirectUrl: "https://redirectUrl/tasklist"
+      zeebe:
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        existingSecret: token
+        tokenScope: clientId/.default # appplication ID
+      connectors:
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        existingSecret: token
+        clientApiAudience: clientId
+        tokenScope: clientId/.default # appplication ID
+      webModeler:
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        clientApiAudience: clientId
+        publicApiAudience: clientId
+        redirectUrl: "https://redirectUrl/modeler"
+      console:
+        wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration # can be found in "endpoints" section of overview page
+        clientId: clientId #This is the application (client) ID found on the overview page.
+        audience: clientId
+        existingSecret: token
+        tokenScope: clientId/.default # appplication ID
+        redirectUrl: "https://redirectUrl/modeler"
+
+console:
+  env:
+    - name: CAMUNDA_IDENTITY_JWKS_URL
+      value: https://login.microsoftonline.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/discovery/v2.0/keys
+
+identityKeycloak:
+  enabled: false
+
+identityPostgresql:
+  enabled: true

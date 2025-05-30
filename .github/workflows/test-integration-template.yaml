@@ -297,9 +297,16 @@ jobs:
         env:
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_OPENSEARCH_PASSWORD: ${{ secrets.OPENSEARCH_PASSWORD }}
+          CI_HOSTNAME_BASE: ${{ env.CI_HOSTNAME_BASE }}
+          CI_HELM_DIR: ${{ inputs.camunda-helm-dir }}
         run: |
-          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.ingress.host=${TEST_INGRESS_HOST}"
-          echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+          if [[ ${{ inputs.scenario }} == 'oidc' ]]; then
+            TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.ingress.host=${CI_HELM_DIR}.${CI_HOSTNAME_BASE}"
+            echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+          else
+            TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.ingress.host=${TEST_INGRESS_HOST}"
+            echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+          fi
           # Section for the OpenSearch scenario
           if [[ ${{ inputs.scenario }} == 'opensearch' ]]; then
             # install
