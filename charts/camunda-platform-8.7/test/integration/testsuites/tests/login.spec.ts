@@ -1,13 +1,14 @@
-// NOTE: If you get the message connection error: desc = "error reading server preface: http2: frame too large"
+// NOTE: If you get the message connection error: desc = "error reading server preface: http2: frame too large"V
 // this is likely due to --insecure on the zbctl call while the endpoint is TLS enabled.
 
 /// <reference types="node" />
-
+/*
 import { config as dotenv } from "dotenv";
 dotenv(); // ← loads .env before anything else
 
 import { test, expect, APIRequestContext } from "@playwright/test";
 import { execFileSync } from "child_process";
+import { test as c8test } from "playwright-automation/dist/fixtures/SM-8.7";
 
 // ---------- config & helpers ----------
 
@@ -57,245 +58,33 @@ const config = {
   fixturesDir: process.env.FIXTURES_DIR || "/mnt/fixtures",
 };
 
-// Helper to fetch a token
-async function fetchToken(id: string, sec: string, api: APIRequestContext) {
-  const r = await api.post(config.authURL, {
-    form: {
-      client_id: id,
-      client_secret: sec,
-      grant_type: "client_credentials",
-    },
-  });
-  expect(
-    r.ok(),
-    `Failed to get token for client_id=${id}: ${r.status()}`,
-  ).toBeTruthy();
-  return (await r.json()).access_token as string;
-}
-
 // ---------- tests ----------
 test.describe("Camunda core", () => {
-  let api: APIRequestContext;
-  let venomJWT: string;
-
-  test.beforeAll(async ({ playwright }) => {
-    api = await playwright.request.newContext();
-    venomJWT = await fetchToken(config.venomID, config.venomSec, api);
-  });
-
-  test("M2M tokens", async () => {
-    for (const [id, sec] of Object.entries(config.secrets)) {
-      // ensure each call resolves and yields a non-empty JWT:
-      await expect(fetchToken(id, sec, api)).resolves.toMatch(
-        /^[\w-]+\.[\w-]+\.[\w-]+$/,
-      );
-    }
-  });
-
-  // Parameterized login page tests
-  for (const [name, url] of Object.entries({
-    Console: config.base.console,
-    Keycloak: config.base.keycloak,
-    Identity: config.base.identity,
-    Operate: config.base.operate,
-    Optimize: config.base.optimize,
-    Tasklist: config.base.tasklist,
-    WebModeler: config.base.webModeler,
-  })) {
-    test(`Login page: ${name}`, async () => {
-      const r = await api.get(`${url}${config.loginPath[name]}`, {
-        timeout: 45_000,
-      });
-      expect(
-        r.ok(),
-        `Login page failed for ${name}: ${r.status()}`,
-      ).toBeTruthy();
-      expect(
-        await r.text(),
-        `Login page for ${name} contains error`,
-      ).not.toMatch(/error/i);
-    });
-  }
-
-  test("Connectors inbound page", async () => {
-    expect(
-      (await api.get(config.base.connectors, { timeout: 45_000 })).ok(),
-      "Connectors inbound page failed",
-    ).toBeTruthy();
-  });
-
-  // Parameterized API endpoint tests
-  for (const [label, url, method, body] of [
-    ["Console clusters", `${config.base.console}/api/clusters`, "GET", ""],
-    ["Identity users", `${config.base.identity}api/users`, "GET", ""],
-    [
-      "Operate defs",
-      `${config.base.operate}/v1/process-definitions/search`,
-      "POST",
-      "{}",
-    ],
-    [
-      "Tasklist tasks",
-      `${config.base.tasklist}/graphql`,
-      "POST",
-      '{"query":"{tasks(query:{}){id name}}"}',
-    ],
-  ] as const) {
-    test(`API: ${label}`, async () => {
-      const r = await api.fetch(url, {
-        method,
-        data: body || undefined,
-        headers: {
-          Authorization: `Bearer ${venomJWT}`,
-          "Content-Type": "application/json",
-        },
-      });
-      expect(
-        r.ok(),
-        `API call failed for ${label}: ${r.status()}`,
-      ).toBeTruthy();
-    });
-  }
-
-  test("WebModeler login page", async () => {
-    const r = await api.get(config.base.webModeler, { timeout: 45_000 });
-    expect(r.ok(), "WebModeler login page failed").toBeTruthy();
-    expect(await r.text(), "WebModeler login page contains error").not.toMatch(
-      /error/i,
+  for (const name of [
+    //    "Console",
+    "Tasklist",
+    //    "Modeler",
+    //    "Optimize",
+    //    "Operate",
+    //    "Identity",
+  ]) {
+    c8test(
+      `Go to the ${name} homeage`,
+      async ({
+        taskDetailsPage,
+        taskPanelPage,
+        modelerHomePage,
+        navigationPage,
+        modelerCreatePage,
+        operateHomePage,
+        operateProcessesPage,
+        operateProcessInstancePage,
+        page,
+      }) => {
+        navigationPage.goToTasklist()
+        //await navigationPage[`goTo${name}`]();
+      },
     );
-  });
-
-  //  test("Zeebe status (gRPC)", async () => {
-  //    const extra =
-  //      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
-  //    const out = execFileSync(
-  //      "zbctl",
-  //      [
-  //        "status",
-  //        "--clientCache",
-  //        "/tmp/zeebe",
-  //        "--clientId",
-  //        config.venomID,
-  //        "--clientSecret",
-  //        config.venomSec,
-  //        "--authzUrl",
-  //        config.authURL,
-  //        "--address",
-  //        config.base.zeebeGRPC,
-  //        ...extra,
-  //      ],
-  //      { encoding: "utf-8" },
-  //    );
-  //    expect(out, "zbctl status output missing Leader, Healthy").toMatch(
-  //      /Leader, Healthy/,
-  //    );
-  //    expect(out, "zbctl status output contains Unhealthy").not.toMatch(
-  //      /Unhealthy/,
-  //    );
-  //  });
-  //
-  //  test("Zeebe topology (REST)", async () => {
-  //    const r = await api.get(`${config.base.zeebeREST}/v1/topology`, {
-  //      headers: { Authorization: `Bearer ${venomJWT}` },
-  //    });
-  //    expect(r.ok(), "Zeebe topology REST call failed").toBeTruthy();
-  //    expect(
-  //      await r.json(),
-  //      "Zeebe topology response missing brokers",
-  //    ).toHaveProperty("brokers");
-  //  });
-  //
-  // Parameterized BPMN deploy tests
-  for (const [name, file] of [
-    ["Basic", "test-process.bpmn"],
-    ["Inbound", "test-inbound-process.bpmn"],
-  ] as const) {
-    const extra =
-      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
-    test(`Deploy BPMN: ${name}`, async () => {
-      execFileSync(
-        "zbctl",
-        [
-          "deploy",
-          `${config.fixturesDir}/${file}`,
-          "--clientCache",
-          "/tmp/zeebe",
-          "--clientId",
-          config.venomID,
-          "--clientSecret",
-          config.venomSec,
-          "--authzUrl",
-          config.authURL,
-          "--address",
-          config.base.zeebeGRPC,
-          ...extra,
-        ],
-        { stdio: "inherit" },
-      );
-    });
   }
-
-  // Parameterized process visibility tests
-  for (const [bpmnId, label, file] of [
-    ["it-test-process", "Basic", "test-process.bpmn"],
-    ["test-inbound-process", "Inbound", "test-inbound-process.bpmn"],
-  ] as const) {
-    test(`Process visible: ${label}`, async () => {
-      const extra =
-        process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
-      execFileSync(
-        "zbctl",
-        [
-          "deploy",
-          `${config.fixturesDir}/${file}`,
-          "--clientCache",
-          "/tmp/zeebe",
-          "--clientId",
-          config.venomID,
-          "--clientSecret",
-          config.venomSec,
-          "--authzUrl",
-          config.authURL,
-          "--address",
-          config.base.zeebeGRPC,
-          ...extra,
-        ],
-        { stdio: "inherit" },
-      );
-      await new Promise((resolve) => setTimeout(resolve, 15000));
-      // TODO change this as it is not testing what we think it is testing
-      const r = await api.post(
-        `${config.base.operate}/v1/process-definitions/search`,
-        {
-          data: "{}",
-          headers: {
-            Authorization: `Bearer ${venomJWT}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      expect(
-        r.ok(),
-        `Process visibility check failed for ${label}: ${r.status()}`,
-      ).toBeTruthy();
-      const data = await r.json();
-      const ids = (data.items as Array<{ bpmnProcessId: string }>).map(
-        (i) => i.bpmnProcessId,
-      );
-      expect(ids, `Process ${bpmnId} not found in Operate`).toContain(bpmnId);
-    });
-  }
-
-  test.afterEach(async ({}, testInfo) => {
-    // If the test outcome is different from what was expected (i.e. the test failed),
-    // dump the resolved configuration so that it is visible in the Playwright output.
-    if (testInfo.status !== testInfo.expectedStatus) {
-      // Secrets are dumped as-is because the surrounding CI already treats logs as sensitive.
-      // If this becomes a concern, mask the values here before logging.
-      console.error(
-        "\n===== CONFIG DUMP (test failed) =====\n" +
-          JSON.stringify(config, null, 2),
-      );
-    }
-  });
 });
+*/

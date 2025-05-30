@@ -18,6 +18,7 @@
     "dotenv": "^16.5.0",
     "eslint": "^9.26.0",
     "globals": "^16.1.0",
+    "playwright-automation": "file:../../../../../scripts/playwright-automation-1.0.0.tgz",
     "typescript-eslint": "^8.32.0"
   }
 }

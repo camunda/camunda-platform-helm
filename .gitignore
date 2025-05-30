@@ -4,3 +4,6 @@ Chart.lock
 *.tmp
 .DS_Store
 **/.helm_ls_cache
+
+# exceptions
+!scripts/*.tgz

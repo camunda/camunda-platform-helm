@@ -95,10 +95,10 @@ install_helm_dependencies() {
 get_ingress_hostname() {
   local namespace="$1"
   local hostname
-  
+
   hostname=$(kubectl -n "$namespace" get ingress -o json | jq -r '
     .items[]
-    | select(all(.spec.rules[].host; contains("zeebe") | not))
+    | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
     | ([.spec.rules[].host] | join(","))')
 
   if [[ -z "$hostname" || "$hostname" == "null" ]]; then
@@ -115,9 +115,12 @@ setup_env_file() {
   local hostname="$3"
   local repo_root="$4"
   local namespace="$5"
-  
+
   export TEST_INGRESS_HOST="$hostname"
-  envsubst < "$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template > "$env_file"
+  envsubst <"$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template >"$env_file"
+  echo "PLAYWRIGHT_BASE_URL=https://$hostname" >>"$env_file"
+  echo "CLUSTER_VERSION=8" >>"$env_file"
+  echo "MINOR_VERSION=SM-8.7" >>"$env_file"
 
   # during helm install, we create a secret with the credentials for the services
   # that are used to test the platform. This is grabbing those credentials and
@@ -125,15 +128,19 @@ setup_env_file() {
   # with an authorized kubectl context.
   for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE TEST; do
     secret=$(kubectl -n "$namespace" \
-               get secret integration-test-credentials \
-               -o jsonpath='{.data.identity-admin-client-password}' | base64 -d)
-    echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
+      get secret integration-test-credentials \
+      -o jsonpath='{.data.identity-admin-client-password}' | base64 -d)
+    echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
   done
+  DEMOPASS=$(kubectl -n "$namespace" exec $(kubectl -n "$namespace" get pod -o name | grep identity | head -n1) -- printenv KEYCLOAK_USERS_0_PASSWORD)
+  echo "DEMOPASS: ${DEMOPASS}"
+  echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=${DEMOPASS}" >>"$env_file"
+  echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" get secret integration-test-credentials -o jsonpath='{.data.identity-admin-client-password}' | base64 -d)" >>"$env_file"
 
   # fixtures are the *.bpmn files that are used to test the platform. This is likely to change
   # to be more flexible in what we are testing.
   log "Setting FIXTURES_DIR to ${repo_root%/}/test/integration/testsuites/playwright.core/files"
-  echo "FIXTURES_DIR=${repo_root%/}/test/integration/testsuites/playwright.core/files" >> "$env_file"
+  echo "FIXTURES_DIR=${repo_root%/}/test/integration/testsuites/playwright.core/files" >>"$env_file"
 
   log "Contents of .env file:"
   if $VERBOSE; then
@@ -144,21 +151,70 @@ setup_env_file() {
 run_playwright_tests() {
   local test_suite_path="$1"
   local show_html_report="$2"
+  local repo_root="$3"
+  local shard_index="$4"
+  local shard_total="$5"
+
   log "Changing directory to $test_suite_path"
   log "Running test suite"
 
-  cd "$test_suite_path"
-  npm ci --no-audit --no-fund --silent
+  cd "$repo_root" || exit
 
+  local build_from="local-tarball"
+  if [[ $build_from == "local" ]]; then
+    echo "packing with local"
+    cd ../c8-cross-component-e2e-tests || exit
+    npm ci --no-audit --no-fund --silent
+    npm pack
+    cd "$test_suite_path" || exit
+    cp package.json package.json.bak
+    cp package-lock.json package-lock.json.bak
+    npm install -D "${repo_root%/}/../c8-cross-component-e2e-tests/playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+  elif [[ $build_from == "local-tarball" ]]; then
+    echo "packing with local tarball"
+    cd "$test_suite_path" || exit
+    cp package.json package.json.bak
+    cp package-lock.json package-lock.json.bak
+    npm install -D "${repo_root%/}/scripts/playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+  elif [[ $build_from == "git" ]]; then
+    echo "packing with git"
+    # git clone git@github.com:camunda/c8-cross-component-e2e-tests.git
+    git clone -b 526-task-use-the-qa-test-code-for-our-login-test-in-it git@github.com:camunda/c8-cross-component-e2e-tests.git
+    cd c8-cross-component-e2e-tests || exit
+    npm ci --no-audit --no-fund --silent
+    npm pack
+    cd "$test_suite_path" || exit
+    cp package.json package.json.bak
+    cp package-lock.json package-lock.json.bak
+    npm install -D "${repo_root%/}/c8-cross-component-e2e-tests/playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+    rm -fr "${repo_root%/}/c8-cross-component-e2e-tests"
+  else
+    echo "packaging from npm"
+    npm install -D "playwright-automation-1.0.0.tgz" --no-audit --no-fund --silent
+  fi
+
+  npx playwright install --with-deps
+
+  mkdir -p "$test_suite_path/test-results"
   if [[ $show_html_report == "true" ]]; then
+    NODE_EXTRA_CA_CERTS="$(mkcert -CAROOT)/rootCA.pem"
+    export NODE_EXTRA_CA_CERTS
+
     npx playwright test --reporter=html
     npx playwright show-report
+    #mv package.json.bak package.json
+    #mv package-lock.json.bak package-lock.json
+
     exit 0
   else
-    mkdir -p "$test_suite_path/test-results"
-    PLAYWRIGHT_JSON_OUTPUT_FILE="$test_suite_path/test-results/results.json" npx playwright test --reporter=json
-    passed=$(jq -r '.stats.unexpected == 0' "$test_suite_path/test-results/results.json")
-    
+    npx playwright test --shard=${shard_index}/${shard_total} --reporter=blob
+
+    #PLAYWRIGHT_JSON_OUTPUT_FILE="$test_suite_path/test-results/results.json" npx playwright test --reporter=blob --headed
+    #passed=$(jq -r '.stats.unexpected == 0' "$test_suite_path/test-results/results.json")
+
+    #mv package.json.bak package.json
+    #mv package-lock.json.bak package-lock.json
+
     # Playwright exit codes are not well defined, so we need to check the JSON output
     # to determine if the tests passed or failed.
     if [[ "$passed" == true ]]; then
@@ -195,6 +251,8 @@ NAMESPACE=""
 SHOW_HTML_REPORT=false
 VERBOSE=false
 UPDATE_HELM_DEPENDENCIES=false
+SHARD_INDEX=1
+SHARD_TOTAL=1
 
 required_cmds=(kubectl jq git envsubst npm npx make)
 for cmd in "${required_cmds[@]}"; do
@@ -225,6 +283,14 @@ while [[ $# -gt 0 ]]; do
     UPDATE_HELM_DEPENDENCIES=true
     shift
     ;;
+  --shard-index)
+    SHARD_INDEX="$2"
+    shift 2
+    ;;
+  --shard-total)
+    SHARD_TOTAL="$2"
+    shift 2
+    ;;
   -v | --verbose)
     VERBOSE=true
     shift
@@ -250,4 +316,4 @@ install_helm_dependencies "$ABSOLUTE_CHART_PATH" "$REPO_ROOT" "$UPDATE_HELM_DEPE
 hostname=$(get_ingress_hostname "$NAMESPACE")
 setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$REPO_ROOT" "$SHARD_INDEX" "$SHARD_TOTAL"
