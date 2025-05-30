@@ -2931,7 +2931,7 @@ webModeler:
       ##         name: my-webmodeler-db-secret
       existingSecret: {}
 
-      ## @param webModeler.restapi.externalDatabase.existingSecret.name string
+      ## @skip webModeler.restapi.externalDatabase.existingSecret.name string
       ##   Name of the Kubernetes Secret containing the database password.
       ##   Required when you use the **object** form of `existingSecret` (see above).
       # existingSecret:
