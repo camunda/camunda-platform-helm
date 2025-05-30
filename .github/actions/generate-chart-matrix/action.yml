@@ -82,6 +82,7 @@ runs:
               echo "  - version: ${camunda_version}" >> matrix_versions.txt
               echo "    case: pr" >> matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
+              echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
               echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
               echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
             done
@@ -92,7 +93,13 @@ runs:
         echo "Checking for manual-trigger"
         touch matrix_versions.txt
         echo "matrix:" > matrix_versions.txt
-        if [[ "${{ inputs.manual-trigger }}" != "none" && "${{ inputs.manual-trigger }}" != "" ]]; then
+        if [[ "${{ inputs.manual-trigger }}" == "all" ]]; then
+          echo "Running on all versions"
+          ls -d ${{ inputs.charts-path }} | while read chart_dir; do
+            camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
+            write_matrix_entry "$camunda_version" "$chart_dir"
+          done
+        elif [[ "${{ inputs.manual-trigger }}" != "none" && "${{ inputs.manual-trigger }}" != "" ]]; then
           echo "Manual trigger detected: ${{ inputs.manual-trigger }}"
           chart_dir="charts/camunda-platform-${{ inputs.manual-trigger }}"
           if [ -d "$chart_dir" ]; then

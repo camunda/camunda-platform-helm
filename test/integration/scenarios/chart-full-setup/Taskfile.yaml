@@ -43,12 +43,6 @@ tasks:
     env:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
-    # This is needed to access WebModeler Docker image since it's not public.
-    - kubectl create secret docker-registry registry-camunda-cloud
-        --namespace {{ .TEST_NAMESPACE }}
-        --docker-server "registry.camunda.cloud"
-        --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
-        --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
     # Set Venom vars.
     - |
       echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
@@ -159,6 +153,9 @@ tasks:
         cat ${VARIABLES_ENV_FILE}
 
   setup.exec:
+    env:
+      TEST_AUTH_TYPE: "{{ .TEST_AUTH_TYPE }}"
+      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then

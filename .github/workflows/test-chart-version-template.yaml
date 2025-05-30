@@ -20,39 +20,98 @@ on:
         description: Scenario
         required: true
         type: string
+      shortname:
+        description: Shortname for the scenario within the identifier
+        required: true
+        type: string
       auth:
-        description: Scenario
+        description: Auth
         required: true
         type: string
       exclude:
-        description: Scenario
-        required: true
+        description: Exclude
+        required: false
+        default: ""
         type: string
+      run-all-e2e-tests:
+        description: "Run all E2E tests (playwright)"
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: The deployment cloud platform
+        default: gke
+        required: false
+        type: string
+      flows:
+        description: The flows to run
+        default: "install,upgrade"
+        type: string
+        required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+<<<<<<< HEAD
+=======
+  validation:
+    name: Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  init:
+    name: Init
+    runs-on: ubuntu-latest
+    env:
+      SCENARIOS_LIST: ${{ inputs.scenarios }}
+    outputs:
+      scenarios-formatted: ${{ steps.make-json-array.outputs.json_array }}
+      platforms: ${{ steps.make-json-array.outputs.platforms }}
+    steps:
+      - name: Convert string to JSON array and set as output
+        id: make-json-array
+        run: |
+          # For example, this converts the SCENARIOS_LIST, which is a string input ("multitenancy, oidc") to ["multitenancy","oidc"]
+          # This is done because it is not possible to pass JSON arrays as input to a workflow. Therefore,
+          # a string is passed and converted to a json array
+          json=$(echo "$SCENARIOS_LIST" | jq -R -c 'split(",")')
+          echo "json_array=$json" | tee -a $GITHUB_OUTPUT
+          platforms="${{ inputs.platforms }}"
+          echo "platforms=$(jq -cn --arg p "$platforms" '$p | split(",")')" >> "$GITHUB_OUTPUT"
+          echo "platforms=$platforms"
+
+>>>>>>> a2b1cb2d0 (fix: now using e2e code for our ITs)
   integration:
-    name: Camunda ${{ inputs.camunda-version }} - Integration Test
+    name: ${{ matrix.platform }} - ITs
+    needs: [init]
     permissions:
       contents: read
       id-token: write
       deployments: write
     secrets: inherit
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.init.outputs.platforms) }}
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}"
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}-${{ matrix.platform }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
-      flows: "install,upgrade"
+      flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
       test-case: ${{inputs.case}}
       scenario: ${{inputs.scenario}}
+      shortname: ${{inputs.shortname}}
       auth: ${{inputs.auth}}
       exclude: ${{inputs.exclude}}
+      platforms: ${{ matrix.platform }}
+      run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}

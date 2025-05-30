@@ -10,8 +10,6 @@ import { test, expect, APIRequestContext } from "@playwright/test";
 import { execFileSync } from "child_process";
 
 // ---------- config & helpers ----------
-
-// Helper to require environment variables
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required env var: ${name}`);
@@ -53,7 +51,7 @@ const config = {
     zeebe: requireEnv("PLAYWRIGHT_VAR_ZEEBE_CLIENT_SECRET"),
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
-  venomSec: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
+  venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
   fixturesDir: process.env.FIXTURES_DIR || "/mnt/fixtures",
 };
 
@@ -116,7 +114,6 @@ test.describe("Camunda core", () => {
       ).not.toMatch(/error/i);
     });
   }
-
   test("Connectors inbound page", async () => {
     expect(
       (await api.get(config.base.connectors, { timeout: 45_000 })).ok(),
@@ -285,17 +282,4 @@ test.describe("Camunda core", () => {
       expect(ids, `Process ${bpmnId} not found in Operate`).toContain(bpmnId);
     });
   }
-
-  test.afterEach(async ({}, testInfo) => {
-    // If the test outcome is different from what was expected (i.e. the test failed),
-    // dump the resolved configuration so that it is visible in the Playwright output.
-    if (testInfo.status !== testInfo.expectedStatus) {
-      // Secrets are dumped as-is because the surrounding CI already treats logs as sensitive.
-      // If this becomes a concern, mask the values here before logging.
-      console.error(
-        "\n===== CONFIG DUMP (test failed) =====\n" +
-          JSON.stringify(config, null, 2),
-      );
-    }
-  });
 });
