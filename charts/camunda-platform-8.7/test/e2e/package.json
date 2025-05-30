@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@camunda/e2e-test-suite": "^0.0.1",
     "@eslint/js": "^9.26.0",
     "@playwright/test": "^1.52.0",
     "@types/node": "^22.15.14",
@@ -18,7 +19,6 @@
     "dotenv": "^16.5.0",
     "eslint": "^9.26.0",
     "globals": "^16.1.0",
-    "typescript-eslint": "^8.32.0",
-    "@camunda/e2e-test-suite": "^0.0.1"
+    "typescript-eslint": "^8.32.0"
   }
 }
