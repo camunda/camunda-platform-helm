@@ -1322,23 +1322,14 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object]
-      ##   Reference an existing Kubernetes Secret for the database password.
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.4–8.7; string form will be treated as a literal password).
+      ## @skip webModeler.restapi.externalDatabase.existingSecret.name string Name of the Kubernetes Secret containing the DB password; required when using the object form of `existingSecret`.
       ##   • **String form** (schema‐native, but in 8.4–8.7 it will be treated as the literal password rather than the secret name).
-      ##   • **Object form** (recommended workaround until 8.8 GA):
+      ##  • **Object form** (recommended workaround until 8.8 GA):
       ##       existingSecret:
       ##         name: my-webmodeler-db-secret
       existingSecret: {}
-
-      ## @skip webModeler.restapi.externalDatabase.existingSecret.name string
-      ##   Name of the Kubernetes Secret containing the database password.
-      ##   Required when you use the **object** form of `existingSecret` (see above).
-      # existingSecret:
-      #   name: my-webmodeler-db-secret
-
-      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string
-      ##   The key in the Secret data that holds the database password.
-      ##   Defaults to `"password"`, override if your Secret uses a different key name.
+      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string Key in the Secret data that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: "database-password"
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
