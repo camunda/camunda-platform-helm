@@ -2412,7 +2412,7 @@
                                 },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
-                                    "description": "can be used to provide the name of an existing secret key containing the database password",
+                                    "description": "string",
                                     "default": "database-password"
                                 }
                             }
