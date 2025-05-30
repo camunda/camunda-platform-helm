@@ -358,6 +358,11 @@ jobs:
           TEST_SCENARIO: ${{ inputs.scenario }}
           # both the run-id and the helm-dir is needed since all versions would use the same github-run-id when running the OpenSearch scenario
           TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ inputs.camunda-helm-dir }}
+          TEST_OIDC_URL_ID: ${{ secrets.TEST_OIDC_URL_ID }}
+          TEST_OIDC_CLIENT_ID: ${{ secrets.TEST_OIDC_CLIENT_ID }}
+          TEST_OIDC_TOKEN: ${{ secrets.TEST_OIDC_TOKEN }}
+          TEST_OIDC_USER_OBJECT_TOKEN: ${{ secrets.TEST_OIDC_USER_OBJECT_TOKEN }}
+          TEST_OIDC_REDIRECT: ${{ secrets.TEST_OIDC_REDIRECT }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
         run: |
