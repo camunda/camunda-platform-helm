@@ -54,14 +54,14 @@ jobs:
         with:
           python-version: 3.9
       - name: Cache Helm chart dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: charts/${{ inputs.camunda-helm-dir }}/charts
           key: ${{ runner.os }}-helm-${{ hashFiles('charts/${{ inputs.camunda-helm-dir }}/Chart.yaml') }}
           restore-keys: |
             ${{ runner.os }}-helm-
       - name: Cache Go modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -70,7 +70,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
