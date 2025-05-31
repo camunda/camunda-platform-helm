@@ -4,3 +4,5 @@ Chart.lock
 *.tmp
 .DS_Store
 **/.helm_ls_cache
++# Local-only envtest binaries
++**/testbin/

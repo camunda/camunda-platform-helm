@@ -25,3 +25,22 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
+  
+  downgrade:
+    cmds:
+    - |
+      # Iterate over each entry in downgrade-matrix.yaml and call helm upgrade for each
+      yq -r '.downgrade[] | to_entries[] | "\(.key)=\(.value)"' {{ .TEST_VALUES_BASE_DIR }}/common/downgrade-matrix.yaml | while IFS== read -r comp tag; do
+        if helm upgrade integration {{ .TEST_CHART_NAME }} \
+          --namespace {{ .TEST_NAMESPACE }} \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+          --set "$comp.$tag" \
+          --timeout 2m0s \
+          --dry-run=server \
+          --wait {{ .TEST_HELM_EXTRA_ARGS }}; then
+            echo "ERROR: Helm upgrade succeeded, but failure was expected for $comp.$tag"
+            exit 1
+        else
+            echo "Helm upgrade failed as expected for $comp.$tag"
+        fi
+      done

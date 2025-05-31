@@ -123,6 +123,9 @@ tasks:
   upgrade.exec:
     deps: [upgrade:exec]
 
+  upgrade.downgrade:
+    deps: [upgrade:downgrade]
+
   all:
     cmds:
     - task: init.seed
