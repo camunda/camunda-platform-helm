@@ -4933,7 +4933,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set environment variables for Optimize migration init container",
+                            "description": "can be used to set environment variables for Optimize migration init container (Note: there is no need to define if optimize.env is defined)",
                             "default": [],
                             "items": {}
                         },

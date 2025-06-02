@@ -1266,7 +1266,7 @@ operate:
   migration:
     ## @param operate.migration.enabled if true, run Operate migration script as an init container
     enabled: true
-    ## @param operate.migration.env can be used to set environment variables for Operate migration init container
+    ## @param operate.migration.env can be used to set environment variables for Operate migration init container (Note: there is no need to define if operate.env is defined)
     env: []
 
     ## @extra operate.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -1764,7 +1764,7 @@ optimize:
   migration:
     ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
     enabled: true
-    ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container
+    ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container (Note: there is no need to define if optimize.env is defined)
     env: []
 
     ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits

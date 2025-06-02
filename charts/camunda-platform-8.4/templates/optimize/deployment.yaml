@@ -50,6 +50,9 @@ spec:
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.port | quote }}
+            {{- with .Values.optimize.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

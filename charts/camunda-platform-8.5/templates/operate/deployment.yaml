@@ -75,6 +75,9 @@ spec:
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.url.port | quote }}
             {{- end }}
+            {{- with .Values.operate.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
             {{- with .Values.operate.migration.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

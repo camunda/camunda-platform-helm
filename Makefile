@@ -236,3 +236,10 @@ release.generate-version-matrix-unreleased:
 .PHONY: release.set-prs-version-label
 release.set-prs-version-label:
 	@bash scripts/set-prs-version-label.sh
+
+#########################################################
+######### Precommit
+#########################################################
+
+.PHONY: precommit.chores
+precommit.chores: helm.lint helm.readme-update helm.schema-update go.update-golden-only-lite
