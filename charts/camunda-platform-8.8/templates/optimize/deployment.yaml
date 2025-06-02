@@ -88,6 +88,9 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
+            {{- with .Values.optimize.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
             {{- with .Values.optimize.migration.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
