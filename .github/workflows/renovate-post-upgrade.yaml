@@ -67,12 +67,20 @@ jobs:
           echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
       - name: Update golden files
         run: |
-          chartPath="${CHANGED_CHARTS}" \
+          if [ -n "${CHANGED_CHARTS}" ]; then
+            chartPath="${CHANGED_CHARTS}" \
+              make go.update-golden-only
+          else
             make go.update-golden-only
+          fi
       - name: Update README
         run: |
-          chartPath="${CHANGED_CHARTS}" \
+          if [ -n "${CHANGED_CHARTS}" ]; then
+            chartPath="${CHANGED_CHARTS}" \
+              make helm.readme-update
+          else
             make helm.readme-update
+          fi
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
