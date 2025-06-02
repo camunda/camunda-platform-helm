@@ -23,7 +23,7 @@ runs:
         cat .tool-versions
 
     - name: Install asdf and tools
-      uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
+      uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4
       with:
         # TODO: Upgrade to 0.16 when it's supported in the GHA.
         # https://github.com/asdf-vm/actions/pull/590
