@@ -242,4 +242,4 @@ release.set-prs-version-label:
 #########################################################
 
 .PHONY: precommit.chores
-precommit.chores: helm.lint helm.readme-update go.update-golden-only-lite
+precommit.chores: helm.lint helm.readme-update helm.schema-update go.update-golden-only-lite
