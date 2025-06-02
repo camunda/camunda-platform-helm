@@ -29,7 +29,7 @@ spec:
       {{- if .Values.migration.enabled }}
       - name: migration
         image: {{ include "camundaPlatform.image" . | quote }}
-        command: ['./upgrade/upgrade.sh', '--skip-warning']
+        command: {{ .Values.command | default "['./upgrade/upgrade.sh', '--skip-warning']" }}
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         {{- if .Values.containerSecurityContext }}
         securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
@@ -86,9 +86,6 @@ spec:
             value: "false"
         {{- with .Values.env }}
             {{- tpl (toYaml .) $ | nindent 10 }}
-        {{- end }}
-        {{- if .Values.command}}
-        command: {{ .Values.command }}
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
