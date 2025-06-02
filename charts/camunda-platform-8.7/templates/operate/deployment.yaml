@@ -69,6 +69,9 @@ spec:
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
             {{- end }}
+            {{- with .Values.operate.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
             {{- with .Values.operate.migration.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
