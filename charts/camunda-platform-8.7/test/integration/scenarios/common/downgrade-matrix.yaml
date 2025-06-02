@@ -1,0 +1,11 @@
+downgrade:
+  - tasklist: image.tag=8.2.0
+  - webModeler: image.tag=8.2.0
+  - operate: image.tag=8.2.0
+  - zeebeGateway: image.tag=8.2.0
+  - identity: image.tag=8.2.0
+  - console: image.tag=8.2.0
+  - connectors: image.tag=8.2.0
+  - identity: image.tag=8.2.0
+  - optimize: image.tag=8.2.0
+

@@ -1,4 +1,5 @@
 {{- if .Values.identity.enabled -}}
+{{- include "camunda.version-gate" (dict "ctx" . "deployment" .Values.identity "nameContext" . "name" "identity.fullname") | nindent 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
