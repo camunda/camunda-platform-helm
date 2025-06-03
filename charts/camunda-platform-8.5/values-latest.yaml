@@ -36,7 +36,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.15
+    tag: 8.5.16
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
@@ -55,13 +55,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.18
+    tag: 8.5.19
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.18
+    tag: 8.5.19
 
 #
 # Identity
