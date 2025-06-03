@@ -2845,7 +2845,7 @@ webModeler:
       ##  • **Object form** (recommended workaround until 8.8 GA):
       ##       existingSecret:
       ##         name: my-webmodeler-db-secret
-      existingSecret: {}
+      existingSecret: ""
       ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string Key in the Secret data that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: "database-password"
 
