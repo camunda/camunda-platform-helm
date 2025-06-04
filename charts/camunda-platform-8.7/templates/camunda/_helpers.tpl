@@ -87,13 +87,27 @@ If the "overlay" values exist, they will override the "base" values, otherwise t
 Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 */}}
 {{- define "camundaPlatform.imageByParams" -}}
-    {{- $imageRegistry := .overlay.image.registry | default .base.image.registry -}}
+  {{- $imageRegistry    := .overlay.image.registry | default .base.image.registry -}}
+  {{- $imageRepository   := .overlay.image.repository | default .base.image.repository -}}
+  {{- $imageDigest := .overlay.image.digest | default .base.image.digest | default "" -}}
+
+  {{- if $imageDigest }}
+    {{- /* digest‐override path */ -}}
+    {{- printf "%s%s%s@%s"
+        $imageRegistry
+        (empty $imageRegistry | ternary "" "/")
+        $imageRepository
+        $imageDigest
+    -}}
+  {{- else }}
+    {{- /* original tag path */ -}}
     {{- printf "%s%s%s:%s"
         $imageRegistry
         (empty $imageRegistry | ternary "" "/")
-        (.overlay.image.repository | default .base.image.repository)
+        $imageRepository
         (include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay))
     -}}
+  {{- end }}
 {{- end -}}
 
 {{/*
@@ -102,6 +116,25 @@ Usage: {{ include "camundaPlatform.image" . }}
 */}}
 {{- define "camundaPlatform.image" -}}
     {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values) }}
+{{- end -}}
+
+{{/*
+Return the version label for resources.
+If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., “8.7.x”); otherwise use the resolved image tag.
+*/}}
+{{- define "camundaPlatform.versionLabel" -}}
+  {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
+  {{- $imageDigest := .overlay.image.digest | default .base.image.digest -}}
+  {{- if $imageDigest }}
+    {{- /* Using digest: fall back to application version for label */ -}}
+    {{- .chart.AppVersion -}}
+  {{- else if $imageTag }}
+    {{- /* Using tag: use the tag for the label */ -}}
+    {{- $imageTag -}}
+  {{- else }}
+    {{- /* Neither tag nor digest provided: use appVersion as default */ -}}
+    {{- .chart.AppVersion -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*

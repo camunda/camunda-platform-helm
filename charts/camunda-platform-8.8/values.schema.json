@@ -889,7 +889,12 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha4"
+                            "default": "8.8.0-alpha5"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -1399,6 +1404,11 @@
                             "type": "string",
                             "description": "PostgreSQL image tag",
                             "default": "15.10.0-debian-12-r2"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         }
                     }
                 },
@@ -1504,6 +1514,11 @@
                             "type": "string",
                             "description": "image tag",
                             "default": "26.1.2"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         }
                     }
                 },
@@ -1557,6 +1572,11 @@
                                     "type": "string",
                                     "description": "image tag",
                                     "default": "15.10.0-debian-12-r2"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "default": ""
                                 }
                             }
                         },
@@ -1888,7 +1908,12 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha4"
+                            "default": "8.8.0-alpha5"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2352,7 +2377,12 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha4"
+                            "default": "8.8.0-alpha5"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -3599,6 +3629,11 @@
                             "type": "string",
                             "description": "PostgreSQL image tag",
                             "default": "14.18.0-debian-12-r0"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         }
                     }
                 },
@@ -3779,6 +3814,11 @@
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
                             "default": "8.8.0-alpha4.1"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4213,6 +4253,11 @@
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
                             "default": "8.8.0-alpha4.1"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4915,6 +4960,11 @@
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
                             "default": "8.8.0-alpha4"
                         },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
+                        },
                         "pullSecrets": {
                             "type": "array",
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
@@ -5434,6 +5484,11 @@
                             "type": "string",
                             "description": "",
                             "default": "8.18.0"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "default": ""
                         }
                     }
                 },
