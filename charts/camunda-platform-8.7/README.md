@@ -581,7 +581,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 ### Console Parameters
 
 | Name                                                        | Description                                                                                                                                                                                                                                               | Value                      |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |----------------------------|
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
 | `console`                                                   | configuration for the Console.                                                                                                                                                                                                                            |                            |
 | `console.enabled`                                           | if true, the Console deployment and its related resources are deployed via a helm release                                                                                                                                                                 | `false`                    |
 | `console.configuration`                                     | Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)                                                                      | `""`                       |
@@ -1441,7 +1441,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 ### WebModeler Parameters
 
 | Name                           | Description                                                                                                                                   | Value   |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |---------|
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `webModeler.enabled`           | if true, the WebModeler deployment and its related resources are deployed via a helm release                                                  | `false` |
 | `webModeler.fullnameOverride`  | can be used to override the full name of the WebModeler resources                                                                             | `""`    |
 | `webModeler.nameOverride`      | can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)                      | `""`    |
