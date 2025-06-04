@@ -215,6 +215,10 @@ data:
               name: {{ $user.name | quote }}
               email: {{ $user.email | quote }}
             {{- end }}
+          default-roles.admin.users:
+            {{- range $mapping := .Values.global.security.initialization.users }}
+            - {{ index $mapping "username" | quote }}
+            {{- end }}
           {{- else if eq .Values.global.security.authentication.method "oidc" }}
           mappings:
             {{- range $mapping := .Values.global.security.initialization.mappings }}
