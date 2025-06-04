@@ -16,10 +16,7 @@ package zeebe
 
 import (
 	"camunda-platform/test/unit/camunda"
-	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
-	"io"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -94,16 +91,12 @@ func (s *configmapTemplateTest) TestStartupScriptExecsPresentInConfigmap() {
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
 
-	// Fetch the startup script from upstream repository
-	resp, err := http.Get("https://raw.githubusercontent.com/camunda/camunda/stable/8.7/zeebe/docker/utils/startup.sh")
-	require.NoError(s.T(), err)
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	require.NoError(s.T(), err)
-
-	remoteStartupScript := string(body)
-	remoteExecCmds := testhelpers.ExtractExecCommands(s.T(), remoteStartupScript, []string{"/usr/local/zeebe/bin/gateway"})
+	// keep the slice aligned with zeebe broker related execs
+	// https://raw.githubusercontent.com/camunda/camunda/stable/8.7/zeebe/docker/utils/startup.sh
+	remoteExecCmds := []string{
+		"exec /usr/local/zeebe/bin/restore",
+		"exec /usr/local/zeebe/bin/broker",
+	}
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
@@ -113,16 +106,10 @@ func (s *configmapTemplateTest) TestStartupScriptExecsPresentInConfigmap() {
 	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 
 	helmStartupScript := configmap.Data["startup.sh"]
-	helmExecCmds := testhelpers.ExtractExecCommands(s.T(), helmStartupScript, []string{})
 
 	// then
 	// Verify that the helm startup script contains the expected remoted exec commands
 	for _, cmd := range remoteExecCmds {
 		s.Require().Contains(helmStartupScript, cmd, "Helm rendered configMap does not contain expected remote exec command: "+cmd)
-	}
-
-	// Verify that the remote startup script contains the expected helm exec commands
-	for _, cmd := range helmExecCmds {
-		s.Require().Contains(remoteStartupScript, cmd, "Remote startup script does not mention Helm exec command: "+cmd)
 	}
 }

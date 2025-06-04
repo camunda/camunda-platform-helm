@@ -4,7 +4,6 @@
 package testhelpers
 
 import (
-	"bufio"
 	"os"
 	"strings"
 	"testing"
@@ -169,33 +168,4 @@ func getConfigMapFieldValue(configmapApplication map[string]any, keyPath []strin
 	}
 	// If the final value is not a string, return an empty string
 	return ""
-}
-
-// ExtractExecCommands extracts all exec commands from a given script string.
-// It scans the script line by line, looking for lines that start with "exec ".
-// It ignores specific exec commands that are not relevant that can be passed in the ignore slice.
-func ExtractExecCommands(t *testing.T, script string, ignore []string) []string {
-	t.Helper()
-
-	var cmds []string
-	scanner := bufio.NewScanner(strings.NewReader(script))
-
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "exec ") {
-			shouldIgnore := false
-			for _, ignoreStr := range ignore {
-				if strings.Contains(line, ignoreStr) {
-					shouldIgnore = true
-					break
-				}
-			}
-			if !shouldIgnore {
-				cmds = append(cmds, line)
-			}
-		}
-	}
-
-	require.NoError(t, scanner.Err())
-	return cmds
 }
