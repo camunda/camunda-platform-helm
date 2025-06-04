@@ -2160,7 +2160,7 @@ core:
     repository: camunda/camunda
     ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: SNAPSHOT
-      ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
   ## @param core.sidecars can be used to attach extra containers to the deployment
