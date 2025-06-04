@@ -84,3 +84,32 @@ func (s *configmapTemplateTest) TestContainerShouldContainExporterClassPerDefaul
 	// then
 	s.Require().Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", configmapApplication.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
 }
+
+func (s *configmapTemplateTest) TestStartupScriptExecsPresentInConfigmap() {
+	// given
+	options := &helm.Options{
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// keep the slice aligned with zeebe broker related execs
+	// https://raw.githubusercontent.com/camunda/camunda/stable/8.7/zeebe/docker/utils/startup.sh
+	remoteExecCmds := []string{
+		"exec /usr/local/zeebe/bin/restore",
+		"exec /usr/local/zeebe/bin/broker",
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication camunda.ZeebeApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+	helmStartupScript := configmap.Data["startup.sh"]
+
+	// then
+	// Verify that the helm startup script contains the expected remoted exec commands
+	for _, cmd := range remoteExecCmds {
+		s.Require().Contains(helmStartupScript, cmd, "Helm rendered configMap does not contain expected remote exec command: "+cmd)
+	}
+}
