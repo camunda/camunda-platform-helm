@@ -19,7 +19,6 @@ spec:
   updateStrategy:
     rollingUpdate: {}
     type: RollingUpdate
-  minReadySeconds: 0
   selector:
     matchLabels:
       app.kubernetes.io/instance: camunda-platform-test
