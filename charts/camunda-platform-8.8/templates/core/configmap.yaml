@@ -11,7 +11,11 @@ data:
     export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}"
     echo "export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID}"
 
-    exec /usr/local/camunda/bin/camunda
+    if [ "${ZEEBE_RESTORE}" = "true" ]; then
+      exec /usr/local/camunda/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
+    else
+      exec /usr/local/camunda/bin/camunda
+    fi   
 
   {{- if .Values.core.configuration }}
   application.yaml: |

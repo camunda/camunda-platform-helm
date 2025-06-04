@@ -99,6 +99,24 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", configmapApplication.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
 			},
 		},
+		{
+			Name:   "TestStartupScriptExecsPresentInConfigmap",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				remoteExecCmds := []string{
+					"exec /usr/local/camunda/bin/restore",
+					"exec /usr/local/camunda/bin/camunda",
+				}
+
+				// then
+				for _, cmd := range remoteExecCmds {
+					s.Require().Contains(configmap.Data["startup.sh"], cmd, "Helm rendered configMap does not contain expected remote exec command: "+cmd)
+				}
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
