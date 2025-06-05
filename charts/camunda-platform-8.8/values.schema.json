@@ -1888,7 +1888,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha4"
+                            "default": "8.8.0-alpha5"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2352,7 +2352,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha4"
+                            "default": "8.8.0-alpha5"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2417,7 +2417,7 @@
                                 },
                                 "database": {
                                     "type": "string",
-                                    "description": "The database name",
+                                    "description": "defines the name of the database to connect to",
                                     "default": ""
                                 }
                             }
