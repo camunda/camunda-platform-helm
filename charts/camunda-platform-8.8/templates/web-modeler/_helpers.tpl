@@ -186,8 +186,21 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
+{{- if .Values.webModelerPostgresql.enabled -}}
+  {{ printf "jdbc:postgresql://%s:5432/%s"
+            (include "webModeler.postgresql.fullname" .)
+            (default "web-modeler" .Values.webModeler.restapi.externalDatabase.database) }}
+{{- else -}}
+  {{- $db := .Values.webModeler.restapi.externalDatabase.database -}}
+  {{- $url := .Values.webModeler.restapi.externalDatabase.url -}}
+  {{- if and $db (ne $db "") -}}
+    {{ regexReplaceAll "/[^/]+$" $url (printf "/%s" $db) }}
+  {{- else -}}
+    {{ $url }}
+  {{- end -}}
 {{- end -}}
+{{- end -}}
+
 
 {{/*
 [web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
