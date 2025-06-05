@@ -53,6 +53,7 @@
         'patch',
         'pin',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.3',
@@ -68,6 +69,7 @@
         'patch',
         'pin',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.4',
@@ -83,6 +85,7 @@
         'patch',
         'pin',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.5',
@@ -98,6 +101,7 @@
         'patch',
         'pin',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.6',
@@ -113,6 +117,7 @@
         'patch',
         'pin',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.7',
@@ -128,6 +133,7 @@
         'patch',
         'pin',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.8',
@@ -145,6 +151,7 @@
         'minor',
         'patch',
       ],
+      pinDigests: false,
     },
     // End of minor cycle chores.
 
