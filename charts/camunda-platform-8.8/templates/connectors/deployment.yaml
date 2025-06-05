@@ -44,15 +44,13 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-          {{- if .Values.global.identity.auth.enabled }}
-            {{- if eq .Values.connectors.inbound.mode "oauth" }}
+            {{- if eq .Values.global.security.authentication.method "oidc" }}
             - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "connectors.authClientSecretName" . }}
                   key: {{ include "connectors.authClientSecretKey" . }}
             {{- end }}
-          {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
