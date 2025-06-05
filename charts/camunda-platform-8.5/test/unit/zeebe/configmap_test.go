@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -146,4 +147,33 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestStartupScriptExecsPresentInConfigmap() {
+	// given
+	options := &helm.Options{
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// keep the slice aligned with zeebe broker related execs
+	// https://raw.githubusercontent.com/camunda/camunda/stable/8.5/zeebe/docker/utils/startup.sh
+	remoteExecCmds := []string{
+		"exec /usr/local/zeebe/bin/restore",
+		"exec /usr/local/zeebe/bin/broker",
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication camunda.ZeebeApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+	helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+	helmStartupScript := configmap.Data["startup.sh"]
+
+	// then
+	// Verify that the helm startup script contains the expected remoted exec commands
+	for _, cmd := range remoteExecCmds {
+		s.Require().Contains(helmStartupScript, cmd, "Helm rendered configMap does not contain expected remote exec command: "+cmd)
+	}
 }

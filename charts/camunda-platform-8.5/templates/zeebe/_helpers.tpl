@@ -27,7 +27,7 @@
 */}}
 {{ define "zeebe.extraLabels.broker" -}}
 app.kubernetes.io/component: zeebe-broker
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.zeebe "chart" .Chart) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
 {{- end }}
 
 {{/*
