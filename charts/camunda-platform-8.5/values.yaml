@@ -2420,7 +2420,7 @@ identityKeycloak:
   ## @param identityKeycloak.initContainers[0].volumeMounts[0].name
   ## @param identityKeycloak.initContainers[0].volumeMounts[0].mountPath
   - name: copy-camunda-theme
-    image: "{{ .Values.global.identity.image.registry }}/{{ .Values.global.identity.image.repository }}{{ if .Values.global.identity.image.digest }}@{{ .Values.global.identity.image.digest }}{{ else }}:{{ .Values.global.identity.image.tag }}{{ end }}"
+    image: "{{ .Values.global.identity.image.registry }}/{{ .Values.global.identity.image.repository }}{{ if .Values.global.identity.image.digest }}@{{ .Values.global.identity.image.digest }}{{ else }}:{{ .Values.global.identity.image.tag }}{{ end }}" # renovate:ignore
     imagePullPolicy: "{{ .Values.global.identity.image.pullPolicy | default \"Always\" }}"
     command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
     securityContext:
