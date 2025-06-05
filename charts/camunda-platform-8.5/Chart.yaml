@@ -58,7 +58,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.17.3"
+  camunda.io/helmCLIVersion: "3.18.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -68,7 +68,11 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Support ingress external hostname"
+    - kind: added
+      description: "Support image.digest for all components"
     - kind: fixed
-      description: "Description on chart.yaml for 8.5 "
+      description: "Add main env to migration init container"
     - kind: fixed
-      description: "Revert feat: dedicated opensearch.prefix support"
+      description: "Restore the original Zeebe startup script behaviour for backup operations"
