@@ -2181,7 +2181,8 @@ core:
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param core.env can be used to set extra environment variables in each broker container
-  env: []
+  env:
+    []
     # - name: LOGGING_LEVEL_IO_CAMUNDA
     #   value: DEBUG
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
