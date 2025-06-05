@@ -48,6 +48,7 @@ data:
         {{- if eq .Values.global.security.authentication.method "basic" }}
         auth:
           {{- $user := first .Values.global.security.initialization.users }}
+          method: basic
           username: {{ $user.username | quote }}
           password: {{ $user.password | quote }}
         {{- else }}

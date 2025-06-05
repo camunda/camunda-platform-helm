@@ -1945,17 +1945,6 @@ connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
   enabled: true
 
-  ## @extra connectors.inbound Switch for inbound mode (e.g., for webhook or polling)
-  inbound:
-    ## @param connectors.inbound.mode acceptable values: disabled, credentials, or oauth
-    mode: disabled
-    ## @extra connectors.inbound.auth configuration of the credentials authentication.
-    auth:
-      ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains password (if inbound mode is credentials)
-      existingSecret: ""
-      ## @param connectors.inbound.auth.existingSecretKey defines the key within the existing secret object.
-      existingSecretKey: "connectors-secret"
-
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
@@ -2189,7 +2178,8 @@ core:
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param core.env can be used to set extra environment variables in each broker container
-  env: []
+  env:
+    []
     # - name: LOGGING_LEVEL_IO_CAMUNDA
     #   value: DEBUG
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
