@@ -24,13 +24,13 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.16
+    tag: 8.5.17
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.5.14
+    tag: 8.5.15
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -42,7 +42,7 @@ tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.5.16
+    tag: 8.5.17
 
 webModeler:
   # Camunda Enterprise repository.
