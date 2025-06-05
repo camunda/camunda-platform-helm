@@ -15,7 +15,7 @@ apiVersion: v1
 data:
   startup.sh: |
     # The Node ID depends on the Pod name so it cannot be templated in the StatefulSet level.
-    export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}"
+    export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}"
     echo "export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID}"
 
     if [ "${ZEEBE_RESTORE}" = "true" ]; then
