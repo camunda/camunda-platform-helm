@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.18.0"
+  camunda.io/helmCLIVersion: "3.18.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,10 +73,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Support ingress external hostname"
+      description: "Support image.digest for all components"
     - kind: fixed
-      description: "Bump keycloak minor version"
+      description: "Add main env to migration init container"
     - kind: fixed
-      description: "Update condition for Playwright Core TestSuite execution to incl…"
-    - kind: fixed
-      description: "Change back keycloak image version"
+      description: "Restore the original Zeebe startup script behaviour for backup operations"
