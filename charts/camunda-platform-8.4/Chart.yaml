@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 9.5.2
+version: 9.6.0
 appVersion: 8.4.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -66,5 +66,11 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
-  camunda.io/helmCLIVersion: 3.17.3
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Support ingress external hostname"
+    - kind: fixed
+      description: "Add main env to migration init container"
+    - kind: fixed
+      description: "Restore the original Zeebe startup script behaviour for backup operations"
+  camunda.io/helmCLIVersion: 3.18.2
