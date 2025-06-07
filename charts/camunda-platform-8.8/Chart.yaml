@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.0.0-alpha4.2
+version: 13.0.0-alpha4.3
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -63,7 +63,7 @@ maintainers:
     email: jesse.simpson@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.17.3"
+  camunda.io/helmCLIVersion: "3.18.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,9 +73,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Support ingress external hostname"
     - kind: fixed
-      description: "Add missing extra mainfest configuration in 8.8"
+      description: "Add main env to migration init container"
     - kind: fixed
-      description: "Set context path only if optimize is enabled"
-    - kind: fixed
-      description: "Use correct core URL"
+      description: "Correct identity 8.8 image tag"
