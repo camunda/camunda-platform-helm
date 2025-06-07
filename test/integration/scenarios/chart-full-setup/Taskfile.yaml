@@ -96,6 +96,13 @@ tasks:
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       fi
+      if [[ "${TEST_SCENARIO}" == 'oidc' ]]; then
+        sed -i 's/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/{{ .TEST_OIDC_URL_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i 's/clientId/{{ .TEST_OIDC_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i 's/token/{{ .TEST_OIDC_TOKEN }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i 's/userObjectId/{{ .TEST_OIDC_USER_OBJECT_TOKEN }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i 's/redirectUrl/{{ .TEST_OIDC_REDIRECT }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      fi
     - helm install integration {{ .TEST_CHART_NAME }}
         --version {{ .TEST_CHART_VERSION }}
         --namespace {{ .TEST_NAMESPACE }}
