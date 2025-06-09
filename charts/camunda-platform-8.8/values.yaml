@@ -257,12 +257,10 @@ global:
 
   # Identity configuration to configure identity specifics on global level, which can be accessed by other components
   identity:
-    enabled: false
     service:
       ## @param global.identity.service.url
       url: ""
     keycloak:
-      enabled: false
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       internal: false
@@ -2181,8 +2179,7 @@ core:
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param core.env can be used to set extra environment variables in each broker container
-  env:
-    []
+  env: []
     # - name: LOGGING_LEVEL_IO_CAMUNDA
     #   value: DEBUG
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
