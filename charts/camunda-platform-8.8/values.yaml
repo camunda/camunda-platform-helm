@@ -866,6 +866,8 @@ identityKeycloak:
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
     tag: 26.1.4
+    ## @param identityKeycloak.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
 
   ## @extra identityKeycloak.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param identityKeycloak.resources.requests.cpu
