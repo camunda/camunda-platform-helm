@@ -52,8 +52,8 @@
       matchUpdateTypes: [
         'patch',
         'pin',
-        'digest',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.3',
@@ -68,8 +68,8 @@
       matchUpdateTypes: [
         'patch',
         'pin',
-        'digest',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.4',
@@ -84,8 +84,8 @@
       matchUpdateTypes: [
         'patch',
         'pin',
-        'digest',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.5',
@@ -100,8 +100,8 @@
       matchUpdateTypes: [
         'patch',
         'pin',
-        'digest',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.6',
@@ -116,8 +116,8 @@
       matchUpdateTypes: [
         'patch',
         'pin',
-        'digest',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.7',
@@ -132,8 +132,8 @@
       matchUpdateTypes: [
         'patch',
         'pin',
-        'digest',
       ],
+      pinDigests: false,
     },
     {
       groupName: 'camunda-platform-8.8',
@@ -151,6 +151,7 @@
         'minor',
         'patch',
       ],
+      pinDigests: false,
     },
     // End of minor cycle chores.
 
@@ -453,6 +454,12 @@
       // without all checks passed.
       platformAutomerge: false,
       automerge: true,
+    },
+    // This package name is used by the initContainer for keycloak in v8.5, and doesn't make sense to
+    // be processed by renovate because it requires helm templating to render the real image name.
+    {
+      "matchDepNames": ["{{ .Values.global.identity.image.registry }}/{{ .Values.global.identity.image.repository }}{{ if .Values.global.identity.image.digest }}"],
+      "enabled": false
     },
   ],
   customManagers: [
