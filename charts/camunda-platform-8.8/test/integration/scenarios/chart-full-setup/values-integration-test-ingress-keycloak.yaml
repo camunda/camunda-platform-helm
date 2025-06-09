@@ -111,6 +111,7 @@ core:
         external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
+  enabled: true
   contextPath: "/"
   image:
     pullSecrets:
