@@ -15,7 +15,7 @@ global:
       external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
     auth:
-      enabled: false
+      enabled: true
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
       admin:
         enabled: true
@@ -44,19 +44,16 @@ global:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
         existingSecret:
           name: "integration-test-credentials"
-  security:
-    authentication:
-      method: basic
 
 
 identity:
-  enabled: false
+  enabled: true
   contextPath: "/identity"
   firstUser:
     existingSecret: "integration-test-credentials"
 
 identityKeycloak:
-  enabled: false
+  enabled: true
   postgresql:
     auth:
       existingSecret: "integration-test-credentials"
@@ -71,14 +68,14 @@ identityKeycloak:
 #   contextPath: "/core"
 
 optimize:
-  enabled: false
+  enabled: true
   contextPath: "/optimize"
 
 connectors:
   contextPath: "/connectors"
 
 webModeler:
-  enabled: false
+  enabled: true
   contextPath: "/modeler"
   image:
     pullSecrets:
@@ -91,7 +88,7 @@ webModeler:
 
 # WebModeler Database.
 webModelerPostgresql:
-  enabled: false
+  enabled: true
   auth:
     existingSecret: "integration-test-credentials"
     secretKeys:
@@ -114,7 +111,6 @@ core:
         external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:
-  enabled: false
   contextPath: "/"
   image:
     pullSecrets:
