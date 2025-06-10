@@ -13,19 +13,19 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.7.28
+    tag: 8.7.29
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.7.2
+    tag: 8.7.3
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.7.4
+    tag: 8.7.5
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -37,7 +37,7 @@ tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.7.4
+    tag: 8.7.5
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
@@ -49,13 +49,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.7.4
+    tag: 8.7.5
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.7.4
+    tag: 8.7.5
 
 #
 # Identity
