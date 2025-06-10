@@ -93,6 +93,7 @@ global:
       ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
       oidc:
+        ## @param global.security.authentication.usernameClaim username claim.
         usernameClaim: preferred_username
     ## Authorizations configuration.
     ## @extra global.security.authorizations
@@ -118,11 +119,11 @@ global:
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
       mappings:
-        ## @extra global.security.initialization.mappings.mapping-id, the mapping-id of an initial mapping.
+        ## @param global.security.initialization.mappings[0].mappingID the mapping-id of an initial mapping.
         - mappingID: demo-user-mapping
-          ## @extra global.security.initialization.mappings.claim-name, the claim-name of an initial mapping.
+          ## @param global.security.initialization.mappings[0].claimName, the claim-name of an initial mapping.
           claimName: preferred_username
-          ## @extra global.security.initialization.mappings.claim-value, the name of an initial user.
+          ## @param global.security.initialization.mappings[0].claimValue, the name of an initial user.
           claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
