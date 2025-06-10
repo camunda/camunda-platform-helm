@@ -19,9 +19,9 @@ coreVars:
     console: "https://{{ .TEST_INGRESS_HOST }}"
     keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth"
     identity: "https://{{ .TEST_INGRESS_HOST }}/identity"
-    operate: "https://{{ .TEST_INGRESS_HOST }}/operate"
+    operate: "https://{{ .TEST_INGRESS_HOST }}/core"
     optimize: "https://{{ .TEST_INGRESS_HOST }}/optimize"
-    tasklist: "https://{{ .TEST_INGRESS_HOST }}/tasklist"
+    tasklist: "https://{{ .TEST_INGRESS_HOST }}/core/tasklist"
     connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
