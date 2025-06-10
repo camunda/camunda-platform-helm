@@ -92,6 +92,9 @@ global:
       method: basic
       ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
+      oidc:
+        ## @param global.security.authentication.oidc.usernameClaim username claim.
+        usernameClaim: preferred_username
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
@@ -115,6 +118,13 @@ global:
           name: Demo User
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
+      mappings:
+        ## @param global.security.initialization.mappings[0].mappingID the mapping-id of an initial mapping.
+        - mappingID: demo-user-mapping
+          ## @param global.security.initialization.mappings[0].claimName the claim-name of an initial mapping.
+          claimName: preferred_username
+          ## @param global.security.initialization.mappings[0].claimValue the name of an initial user.
+          claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
@@ -282,7 +292,7 @@ global:
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
       ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
-      enabled: true
+      enabled: false
 
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
@@ -856,7 +866,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.2
+    tag: 26.1.4
     ## @param identityKeycloak.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
 
@@ -1935,17 +1945,6 @@ webModelerPostgresql:
 connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
   enabled: true
-
-  ## @extra connectors.inbound Switch for inbound mode (e.g., for webhook or polling)
-  inbound:
-    ## @param connectors.inbound.mode acceptable values: disabled, credentials, or oauth
-    mode: disabled
-    ## @extra connectors.inbound.auth configuration of the credentials authentication.
-    auth:
-      ## @param connectors.inbound.auth.existingSecret can be used to configure Secret name that contains password (if inbound mode is credentials)
-      existingSecret: ""
-      ## @param connectors.inbound.auth.existingSecretKey defines the key within the existing secret object.
-      existingSecretKey: "connectors-secret"
 
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags

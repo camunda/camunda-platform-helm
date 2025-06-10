@@ -41,8 +41,9 @@ data:
           defaults:
             max-jobs-active: 32
             stream-enabled: true
-        mode: basic
+        mode: selfManaged
         auth:
+          method: basic
           username: "demo"
           password: "demo"
       connector:

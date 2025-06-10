@@ -66,8 +66,6 @@ spec:
                   key: CAMUNDA_LICENSE_KEY
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-identity-env-vars
-            - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:

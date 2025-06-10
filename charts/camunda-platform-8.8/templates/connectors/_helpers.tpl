@@ -6,12 +6,6 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 
-{{/*Pre-validate that inbound mode contains correct values*/}}
-{{- $inboundMode := .Values.connectors.inbound.mode -}}
-{{- if not (has $inboundMode (list "disabled" "credentials" "oauth")) }}
-  {{ fail "Not supported inbound mode" }}
-{{- end -}}
-
 {{ define "connectors.zeebeEndpoint" }}
   {{- include "core.fullname" . | replace "\"" "" -}}:{{- .Values.core.service.grpcPort -}}
 {{- end -}}
