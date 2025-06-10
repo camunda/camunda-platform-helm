@@ -849,7 +849,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.2
+    tag: 26.1.4
 
   ## @extra identityKeycloak.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param identityKeycloak.resources.requests.cpu
