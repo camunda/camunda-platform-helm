@@ -291,7 +291,7 @@ global:
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
       ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
-      enabled: true
+      enabled: false
 
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
