@@ -2540,7 +2540,7 @@
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "can be used to set the number of replicas for the restapi deployment",
+                            "description": "Number of restapi replicas",
                             "default": 1
                         },
                         "podSecurityContext": {
@@ -2918,7 +2918,7 @@
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "can be used to set the number of replicas for the webapp deployment",
+                            "description": "Number of webapp replicas",
                             "default": 1
                         },
                         "podSecurityContext": {
@@ -4968,7 +4968,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha4"
+                            "default": "8.8.0-alpha5"
                         },
                         "digest": {
                             "type": "string",
