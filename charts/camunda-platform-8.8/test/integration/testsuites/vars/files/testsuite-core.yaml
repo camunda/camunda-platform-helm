@@ -130,9 +130,9 @@ testcases:
       url: "{{ .coreVars.baseURLs.identity }}/api/users"
       method: GET
       body: ''
-    - component: Operate
+    - component: Core Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
-      url: "{{ .coreVars.baseURLs.operate }}/v1/process-definitions/search"
+      url: "{{ .coreVars.baseURLs.core }}/v1/process-definitions/search"
       method: POST
       body: '{}'
     method: "{{ .value.method }}"
