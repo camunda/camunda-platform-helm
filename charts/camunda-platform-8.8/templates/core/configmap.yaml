@@ -235,10 +235,6 @@ data:
             {{- range $mapping := .Values.global.security.initialization.mappings }}
             - {{ index $mapping "mappingID" | quote }}
             {{- end }}
-          default-roles.admin.mappings:
-            {{- range $mapping := .Values.global.security.initialization.mappings }}
-            - {{ index $mapping "mappingID" | quote }}
-            {{- end }}
           {{- end }}
         multiTenancy:
             enabled: {{ .Values.global.multitenancy.enabled }}
