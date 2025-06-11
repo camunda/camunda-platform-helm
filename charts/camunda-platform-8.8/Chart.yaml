@@ -30,7 +30,7 @@ dependencies:
   - name: keycloak
     alias: identityKeycloak
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 24.7.3
+    version: 24.7.4
     condition: "identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
