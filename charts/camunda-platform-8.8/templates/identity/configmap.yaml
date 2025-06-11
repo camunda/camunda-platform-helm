@@ -205,19 +205,18 @@ data:
       users:
         {{- if .Values.identity.firstUser.enabled }}
         - username: {{ .Values.identity.firstUser.username | quote }}
-          email: {{ .Values.identity.firstUser.email | quote }}
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
           firstName: {{ .Values.identity.firstUser.firstName | quote }}
           lastName: {{ .Values.identity.firstUser.lastName | quote }}
-          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          email: {{ .Values.identity.firstUser.email | quote }}
           {{- if .Values.global.identity.auth.enabled }}
           roles:
             - Identity
-            - Console
-            - Core
             - Optimize
             - Web Modeler
             - Web Modeler Admin
-            - Zeebe
+            - Console
+            - Core
           {{- end }}
         {{- end }}
         {{- if .Values.identity.users }}

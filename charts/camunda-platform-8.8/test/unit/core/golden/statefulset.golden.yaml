@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: core
-    app.kubernetes.io/version: "8.8.0-alpha4.1"
+    app.kubernetes.io/version: "8.8.0-alpha5"
   annotations:
 spec:
   replicas: 3
@@ -36,7 +36,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: core
-        app.kubernetes.io/version: "8.8.0-alpha4.1"
+        app.kubernetes.io/version: "8.8.0-alpha5"
       annotations:
     spec:
       imagePullSecrets:
@@ -45,7 +45,7 @@ spec:
         []
       containers:
         - name: core
-          image: camunda/camunda:8.8.0-alpha4.1
+          image: camunda/camunda:8.8.0-alpha5
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -74,11 +74,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: VALUES_CAMUNDA_CORE_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-core-client-token
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
             - name: K8S_POD_NAME
