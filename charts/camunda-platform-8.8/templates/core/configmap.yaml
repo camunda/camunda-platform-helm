@@ -221,11 +221,16 @@ data:
             {{- end }}
           {{- else if eq .Values.global.security.authentication.method "oidc" }}
           mappings:
+            - mapping-id: "connectors-client-mapping"
+              claim-name: "client_id"
+              claim-value: "connectors"
             {{- range $mapping := .Values.global.security.initialization.mappings }}
             - mapping-id: {{ index $mapping "mappingID" | quote }}
               claim-name: {{ index $mapping "claimName" | quote }}
               claim-value: {{ index $mapping "claimValue" | quote }}
             {{- end }}
+          default-roles.connectors.mappings:
+            - "connectors-client-mapping"
           default-roles.admin.mappings:
             {{- range $mapping := .Values.global.security.initialization.mappings }}
             - {{ index $mapping "mappingID" | quote }}
