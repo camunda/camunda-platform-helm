@@ -25,9 +25,9 @@ coreVars:
     connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
-    core: "https://{{ .TEST_INGRESS_HOST }}/core"
+    core: "https://{{ .TEST_INGRESS_HOST }}/core/v2"
     coreGRPC: "grpc-{{ .TEST_INGRESS_HOST }}:443"
-    coreREST: "https://{{ .TEST_INGRESS_HOST }}/core/v1"
+    coreREST: "https://{{ .TEST_INGRESS_HOST }}/core/v2"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""
