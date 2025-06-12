@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.8.0-alpha4"
+    app.kubernetes.io/version: "8.8.0-alpha5"
   annotations:
     {}
 data:
@@ -187,18 +187,17 @@ data:
       clients:
       users:
         - username: "demo"
-          email: "demo@example.org"
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
           firstName: "Demo"
           lastName: "User"
-          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          email: "demo@example.org"
           roles:
             - Identity
-            - Console
-            - Core
             - Optimize
             - Web Modeler
             - Web Modeler Admin
-            - Zeebe
+            - Console
+            - Core
       environment:
         clients:
           - name: Identity

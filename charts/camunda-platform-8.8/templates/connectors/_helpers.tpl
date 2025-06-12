@@ -6,12 +6,6 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 
-{{/*Pre-validate that inbound mode contains correct values*/}}
-{{- $inboundMode := .Values.connectors.inbound.mode -}}
-{{- if not (has $inboundMode (list "disabled" "credentials" "oauth")) }}
-  {{ fail "Not supported inbound mode" }}
-{{- end -}}
-
 {{ define "connectors.zeebeEndpoint" }}
   {{- include "core.fullname" . | replace "\"" "" -}}:{{- .Values.core.service.grpcPort -}}
 {{- end -}}
@@ -29,7 +23,7 @@ Defines extra labels for connectors.
 */}}
 {{- define "connectors.extraLabels" -}}
 app.kubernetes.io/component: connectors
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.connectors "chart" .Chart) | quote }}
 {{- end -}}
 
 {{/*

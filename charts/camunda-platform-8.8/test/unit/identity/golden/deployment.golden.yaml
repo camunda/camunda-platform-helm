@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.8.0-alpha4"
+    app.kubernetes.io/version: "8.8.0-alpha5"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: identity
-        app.kubernetes.io/version: "8.8.0-alpha4"
+        app.kubernetes.io/version: "8.8.0-alpha5"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,7 +44,7 @@ spec:
         []
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.8.0-alpha4
+          image: camunda/identity:8.8.0-alpha5
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -110,6 +110,8 @@ spec:
               value: "http://localhost:8082"
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
               value: /login/oauth2/code/core
+            - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_1
+              value: /sso-callback
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "Confidential"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID

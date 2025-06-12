@@ -24,6 +24,10 @@ data:
     else
       echo "No exporters available."
     fi
-    exec /usr/local/zeebe/bin/broker
+    if [ "${ZEEBE_RESTORE}" = "true" ]; then
+      exec /usr/local/zeebe/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
+    else
+      exec /usr/local/zeebe/bin/broker
+    fi
 
   broker-log4j2.xml: |

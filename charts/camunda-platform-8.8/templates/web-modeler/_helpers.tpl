@@ -44,7 +44,7 @@ Define extra labels for Web Modeler.
 */}}
 {{- define "webModeler.extraLabels" -}}
 app.kubernetes.io/component: web-modeler
-app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.webModeler "chart" .Chart) | quote }}
 {{- end -}}
 
 {{/*

@@ -43,5 +43,14 @@
       "docker.io/camunda/camunda:8.8.0-alpha4.1",
       "docker.io/camunda/connectors-bundle:8.8.0-alpha4.1"
     ]
+  },
+  {
+    "chart_version": "13.0.0-alpha5",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.18.0",
+      "docker.io/bitnami/os-shell:12-debian-12-r43",
+      "docker.io/camunda/camunda:8.8.0-alpha5",
+      "docker.io/camunda/connectors-bundle:8.8.0-alpha5"
+    ]
   }
 ]
