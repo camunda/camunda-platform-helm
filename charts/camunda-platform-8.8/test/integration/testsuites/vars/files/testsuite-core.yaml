@@ -254,7 +254,7 @@ testcases:
     - name: Inbound Connector
       id: test-inbound-process
     method: POST
-    url: "{{ .coreVars.baseURLs.core }}/v1/process-definitions/search"
+    url: "{{ .coreVars.baseURLs.core }}/v2/process-definitions/search"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
