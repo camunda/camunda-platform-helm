@@ -23,6 +23,6 @@ coreVars:
     webModelerRestapi: http://integration-web-modeler-restapi
     core: http://integration-core:9600
     coreGRPC: integration-core:26500
-    coreREST: http://integration-core:8080/v1
+    coreREST: http://integration-core:8080
   zbctl:
     extraArgs: "--insecure"
