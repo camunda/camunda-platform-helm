@@ -97,6 +97,7 @@ core:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "core-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
+  # giving access to venom to deploy a model
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_MAPPINGID
       value: "demo-user-mapping"

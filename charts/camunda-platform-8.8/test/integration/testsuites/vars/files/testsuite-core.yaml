@@ -210,7 +210,7 @@ testcases:
   - name: Check Core status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.coreREST }}/v2/topology"
+    url: "{{ .coreVars.baseURLs.coreREST }}/topology"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -254,7 +254,7 @@ testcases:
     - name: Inbound Connector
       id: test-inbound-process
     method: POST
-    url: "{{ .coreVars.baseURLs.core }}/v2/process-definitions/search"
+    url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -266,7 +266,7 @@ testcases:
       = Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.bodyjson.items.items{{ .index }}.bpmnProcessId ShouldEqual {{ .value.id }}
+    - result.bodyjson.items{{ .index }}.processDefinitionId ShouldEqual {{ .value.id }}
 
 # TODO: Enable this test again once the Connectors issue is fixed:
 # https://github.com/camunda/connectors/issues/3326
