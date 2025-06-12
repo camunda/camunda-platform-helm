@@ -22,7 +22,7 @@ coreVars:
     connectors: http://integration-connectors:8080/inbound
     webModelerRestapi: http://integration-web-modeler-restapi
     core: http://integration-core:9600
-    coreGRPC: http://integration-core:26500
+    coreGRPC: integration-core:26500
     coreREST: http://integration-core:8080/v1
   zbctl:
     extraArgs: "--insecure"
