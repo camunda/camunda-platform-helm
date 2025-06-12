@@ -1,11 +1,12 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-13.0.0-alpha4.3](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha4.3) (2025-06-12)
+## [camunda-platform-13.0.0-alpha5](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha5) (2025-06-12)
 
 ### Fixes
 
 - Bump version in webModeler alpha to alpha5.1 (#3646)
 - Connectors default mapping for the core component (#3650)
+- The release is alpha5 not alpha4.3
 
 
 ## [camunda-platform-8.7-12.1.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.1.0) (2025-06-11)
@@ -36,7 +37,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha4.3](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.3#parameters)
+- Helm values: [13.0.0-alpha5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5#parameters)
 - Helm CLI: [3.18.2](https://github.com/helm/helm/releases/tag/v3.18.2)
 
 Camunda images:
@@ -54,8 +55,8 @@ Non-Camunda images:
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-13.0.0-alpha4.3.tgz \
-  --bundle camunda-platform-13.0.0-alpha4.3.cosign.bundle \
+cosign verify-blob camunda-platform-13.0.0-alpha5.tgz \
+  --bundle camunda-platform-13.0.0-alpha5.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/3604/merge"
 ```

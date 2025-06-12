@@ -84,6 +84,8 @@ annotations:
     - kind: fixed
       description: "Connectors default mapping for the core component"
     - kind: fixed
+      description: "The release is alpha5 not alpha4.3"
+    - kind: fixed
       description: "Add main env to migration init container"
     - kind: fixed
       description: "Correct identity 8.8 image tag"
