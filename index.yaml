@@ -3,6 +3,100 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "Support image.digest for all components"
+        - kind: added
+          description: "Support core identity oidc"
+        - kind: added
+          description: "Support ingress external hostname"
+        - kind: fixed
+          description: "Bump version in webModeler alpha to alpha5.1"
+        - kind: fixed
+          description: "Connectors default mapping for the core component"
+        - kind: fixed
+          description: "The release is alpha5 not alpha4.3"
+        - kind: fixed
+          description: "Add main env to migration init container"
+        - kind: fixed
+          description: "Correct identity 8.8 image tag"
+        - kind: fixed
+          description: "Restore the original Zeebe startup script behaviour for backup operations"
+        - kind: fixed
+          description: "Readd Zeebe NodeId logic from multi-region for 8.8"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/helmCLIVersion: 3.18.2
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2025-06-12T17:50:45.920614901Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 24.7.4
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 53c9a2c42120d8fc6581d95e1e54be686f5be0d47731a68d2af2e4dc0ee15081
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.0.0-alpha5/camunda-platform-13.0.0-alpha5.tgz
+    version: 13.0.0-alpha5
+  - annotations:
+      artifacthub.io/changes: |
         - kind: fixed
           description: "Add missing extra mainfest configuration in 8.8"
         - kind: fixed
@@ -18509,4 +18603,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-06-11T13:51:14.452706421Z"
+generated: "2025-06-12T17:50:45.921411249Z"
