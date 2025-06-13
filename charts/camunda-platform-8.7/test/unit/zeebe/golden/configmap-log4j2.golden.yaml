@@ -59,6 +59,7 @@ data:
   startup.sh: |
     #!/usr/bin/env bash
     set -eux -o pipefail
+
     export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}
 
     if [ "$(ls -A /exporters/)" ]; then
@@ -67,11 +68,13 @@ data:
     else
       echo "No exporters available."
     fi
+
     if [ "${ZEEBE_RESTORE}" = "true" ]; then
       exec /usr/local/zeebe/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
     else
       exec /usr/local/zeebe/bin/broker
     fi
+
 
   broker-log4j2.xml: |
     <xml>
