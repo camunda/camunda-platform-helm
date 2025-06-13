@@ -2569,6 +2569,11 @@
                             "default": [],
                             "items": {}
                         },
+                        "replicas": {
+                            "type": "number",
+                            "description": "Number of restapi replicas",
+                            "default": 1
+                        },
                         "podSecurityContext": {
                             "type": "object",
                             "properties": {
@@ -2941,6 +2946,11 @@
                             "description": "can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates",
                             "default": [],
                             "items": {}
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "Number of webapp replicas",
+                            "default": 1
                         },
                         "podSecurityContext": {
                             "type": "object",
