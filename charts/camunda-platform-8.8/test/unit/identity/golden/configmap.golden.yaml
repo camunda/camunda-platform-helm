@@ -187,18 +187,17 @@ data:
       clients:
       users:
         - username: "demo"
-          email: "demo@example.org"
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
           firstName: "Demo"
           lastName: "User"
-          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          email: "demo@example.org"
           roles:
             - Identity
-            - Console
-            - Core
             - Optimize
             - Web Modeler
             - Web Modeler Admin
-            - Zeebe
+            - Console
+            - Core
       environment:
         clients:
           - name: Identity

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.0.2
+version: 12.1.0
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -30,7 +30,7 @@ dependencies:
   - name: keycloak
     alias: identityKeycloak
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 24.7.3
+    version: 24.7.4
     condition: "identity.keycloak.enabled,identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.17.3"
+  camunda.io/helmCLIVersion: "3.18.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -72,17 +72,15 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Support image.digest for all components"
+    - kind: added
+      description: "Core test suite inital migration to playwright"
+    - kind: added
+      description: "Support ingress external hostname"
     - kind: fixed
-      description: "Grpc port of zeebe gateway for venom tests"
+      description: "Add main env to migration init container"
     - kind: fixed
-      description: "Add apiVersion and kind to PersistentVolumeClaims"
+      description: "Restore the original Zeebe startup script behaviour for backup operations"
     - kind: fixed
-      description: "Elasticsearch.extraConfig is a table"
-    - kind: fixed
-      description: "Skip elasticsearch.extraConfig"
-    - kind: fixed
-      description: "Update param for operate"
-    - kind: fixed
-      description: "Openshift elasticsearch disabled error"
-    - kind: fixed
-      description: "Corrected a misplaced end key"
+      description: "Remove installationType for 8.7"

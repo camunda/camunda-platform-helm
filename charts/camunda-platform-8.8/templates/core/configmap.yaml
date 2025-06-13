@@ -8,7 +8,7 @@ apiVersion: v1
 data:
   startup.sh: |
     # The Node ID depends on the Pod name so it cannot be templated in the StatefulSet level.
-    export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}"
+    export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}"
     echo "export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID}"
 
     if [ "${ZEEBE_RESTORE}" = "true" ]; then
@@ -27,32 +27,30 @@ data:
         multipart:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
-      {{- if eq .Values.global.security.authentication.method "oidc" }}
+  {{- if eq .Values.global.security.authentication.method "oidc" }}
       profiles:
-        active: "identity,operate,tasklist,broker,auth-oidc"
-      security:
-        oauth2:
-          client:
-            provider:
-              oidcclient:
-                {{- $issuerURIDefault := (include "camundaPlatform.authIssuerBackendUrl" . | replace ":80" "") }}
-                issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | default $issuerURIDefault | quote }}
-            registration:
-              oidcclient:
-                client-id: {{ include "core.authClientId" . | quote }}
-                client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-                authorization-grant-type: authorization_code
-                {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
-                redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/login/oauth2/code/core"
-                provider: oidcclient
-                scope: openid,profile
-    {{- else if eq .Values.global.security.authentication.method "basic" }}
+        active: "identity,tasklist,operate,broker,consolidated-auth"
+    camunda.security:
+      authentication:
+        oidc:
+          username-claim: {{ .Values.global.security.authentication.oidc.usernameClaim | quote }}
+          client-id: {{ include "core.authClientId" . | quote }}
+          client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+          audiences:
+            - {{ include "core.authClientId" . | quote }}
+            - {{ .Values.global.identity.auth.core.audience | quote }}
+            - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+            - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
+          {{- $redirectURIDefault := printf "http://%s:8080" (include "core.fullname" .) }}
+          issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
+          redirect-uri: "{{ tpl .Values.global.identity.auth.core.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
+  {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:
         active: "identity,operate,tasklist,broker,consolidated-auth"
-    {{- else }}
+  {{- else }}
       profiles:
         active: "operate,tasklist,broker,auth"
-    {{- end }}
+  {{- end }}
 
     management:
       server:
@@ -216,6 +214,26 @@ data:
               password: {{ $user.password | quote }}
               name: {{ $user.name | quote }}
               email: {{ $user.email | quote }}
+            {{- end }}
+          default-roles.admin.users:
+            {{- range $mapping := .Values.global.security.initialization.users }}
+            - {{ index $mapping "username" | quote }}
+            {{- end }}
+          {{- else if eq .Values.global.security.authentication.method "oidc" }}
+          mappings:
+            - mapping-id: "connectors-client-mapping"
+              claim-name: "client_id"
+              claim-value: "connectors"
+            {{- range $mapping := .Values.global.security.initialization.mappings }}
+            - mapping-id: {{ index $mapping "mappingID" | quote }}
+              claim-name: {{ index $mapping "claimName" | quote }}
+              claim-value: {{ index $mapping "claimValue" | quote }}
+            {{- end }}
+          default-roles.connectors.mappings:
+            - "connectors-client-mapping"
+          default-roles.admin.mappings:
+            {{- range $mapping := .Values.global.security.initialization.mappings }}
+            - {{ index $mapping "mappingID" | quote }}
             {{- end }}
           {{- end }}
         multiTenancy:

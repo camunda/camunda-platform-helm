@@ -90,6 +90,16 @@
                                     "type": "boolean",
                                     "description": "if true, then allow unauthenticated API access.",
                                     "default": false
+                                },
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "usernameClaim": {
+                                            "type": "string",
+                                            "description": "username claim.",
+                                            "default": "preferred_username"
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -127,6 +137,27 @@
                                             "email": {
                                                 "type": "string",
                                                 "description": ""
+                                            }
+                                        }
+                                    }
+                                },
+                                "mappings": {
+                                    "type": "array",
+                                    "description": "the mapping-id of an initial mapping.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "mappingID": {
+                                                "type": "string",
+                                                "description": "the mapping-id of an initial mapping."
+                                            },
+                                            "claimName": {
+                                                "type": "string",
+                                                "description": "the claim-name of an initial mapping."
+                                            },
+                                            "claimValue": {
+                                                "type": "string",
+                                                "description": "the name of an initial user."
                                             }
                                         }
                                     }
@@ -450,7 +481,7 @@
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true, enables the identity authentication otherwise basic-auth will be used on all services.",
-                                    "default": true
+                                    "default": false
                                 },
                                 "issuer": {
                                     "type": "string",
@@ -1513,7 +1544,7 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "26.1.2"
+                            "default": "26.1.4"
                         },
                         "digest": {
                             "type": "string",
@@ -2377,7 +2408,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha5"
+                            "default": "8.8.0-alpha5.1"
                         },
                         "digest": {
                             "type": "string",
@@ -3782,31 +3813,6 @@
                     "description": "if true, the Connectors deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
-                "inbound": {
-                    "type": "object",
-                    "properties": {
-                        "mode": {
-                            "type": "string",
-                            "description": "acceptable values: disabled, credentials, or oauth",
-                            "default": "disabled"
-                        },
-                        "auth": {
-                            "type": "object",
-                            "properties": {
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "can be used to configure Secret name that contains password (if inbound mode is credentials)",
-                                    "default": ""
-                                },
-                                "existingSecretKey": {
-                                    "type": "string",
-                                    "description": "defines the key within the existing secret object.",
-                                    "default": "connectors-secret"
-                                }
-                            }
-                        }
-                    }
-                },
                 "image": {
                     "type": "object",
                     "properties": {
@@ -3823,7 +3829,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha4.1"
+                            "default": "8.8.0-alpha5"
                         },
                         "digest": {
                             "type": "string",
@@ -4262,7 +4268,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha4.1"
+                            "default": "8.8.0-alpha5"
                         },
                         "digest": {
                             "type": "string",
@@ -4968,7 +4974,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha4"
+                            "default": "8.8.0-alpha5"
                         },
                         "digest": {
                             "type": "string",
