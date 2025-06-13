@@ -132,7 +132,7 @@ testcases:
       body: ''
     - component: Core Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
-      url: "{{ .coreVars.baseURLs.core }}/v2/process-definitions/search"
+      url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
       method: POST
       body: '{}'
     method: "{{ .value.method }}"
@@ -266,7 +266,7 @@ testcases:
       = Response Body: {{ .result.body }}
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.bodyjson.items{{ .index }}.processDefinitionId ShouldEqual {{ .value.id }}
+    - result.bodyjson.items.items{{ .index }}.processDefinitionId ShouldEqual {{ .value.id }}
 
 # TODO: Enable this test again once the Connectors issue is fixed:
 # https://github.com/camunda/connectors/issues/3326
