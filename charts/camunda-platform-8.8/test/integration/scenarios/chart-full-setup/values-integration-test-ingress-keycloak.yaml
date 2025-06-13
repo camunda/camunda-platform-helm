@@ -121,7 +121,7 @@ core:
       value: "demo-user-mapping"
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_1
       value: "venom-client-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_1
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_2
       value: "connectors-client-mapping"
 
 
