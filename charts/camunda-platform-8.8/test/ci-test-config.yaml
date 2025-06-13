@@ -19,7 +19,7 @@ integration:
     chartsBaseDir: ../../../../charts
   scenarios:
     pr:
-      - name: base
+      - name: keycloak
         enabled: true
     nightly:
       - name: base
