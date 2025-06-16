@@ -83,9 +83,6 @@ jobs:
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      #UNCOMMENT ME
-      # camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-      #DELTE ME
       camunda-helm-git-ref: "8.8-integration-test"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
       test-case: ${{inputs.case}}
