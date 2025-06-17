@@ -2572,7 +2572,7 @@
                         "replicas": {
                             "type": "number",
                             "description": "can be used to set the number of replicas for the restapi deployment",
-                            "default": 1
+                            "default": 2
                         },
                         "podSecurityContext": {
                             "type": "object",
@@ -2950,7 +2950,7 @@
                         "replicas": {
                             "type": "number",
                             "description": "can be used to set the number of replicas for the webapp deployment",
-                            "default": 1
+                            "default": 2
                         },
                         "podSecurityContext": {
                             "type": "object",
