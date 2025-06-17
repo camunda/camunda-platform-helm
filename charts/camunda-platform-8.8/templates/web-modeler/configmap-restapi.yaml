@@ -56,7 +56,7 @@ data:
             url:
               zeebe:
                 grpc: "grpc://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}"
-                rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}/v1"
+                rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}"
               operate: {{ include "camundaPlatform.CoreURL" . | quote }}
               tasklist: {{ include "camundaPlatform.CoreURL" . | quote }}
           {{- end }}
