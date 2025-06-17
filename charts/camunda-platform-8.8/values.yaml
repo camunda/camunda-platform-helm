@@ -1380,7 +1380,7 @@ webModeler:
     extraVolumeMounts: []
 
     ## @param webModeler.restapi.replicas can be used to set the number of replicas for the restapi deployment
-    replicas: 1
+    replicas: 2
 
     ## @extra webModeler.restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
     podSecurityContext:
@@ -1548,7 +1548,7 @@ webModeler:
     extraVolumeMounts: []
 
     ## @param webModeler.webapp.replicas can be used to set the number of replicas for the webapp deployment
-    replicas: 1
+    replicas: 2
 
     ## @extra webModeler.webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
     ## @param webModeler.webapp.podSecurityContext.runAsNonRoot
