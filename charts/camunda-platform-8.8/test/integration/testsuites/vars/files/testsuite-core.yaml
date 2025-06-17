@@ -12,11 +12,6 @@ vars:
 
 testcases:
 
-- name: Core test suite is disabled
-  steps:
-  - type: exec
-    script: echo 'Core test suite is disabled till full 8.7 refactor'
-
 # https://docs.camunda.io/docs/self-managed/identity/user-guide/generating-m2m-tokens/
 - name: TEST - Generating machine-to-machine token
   description: |
