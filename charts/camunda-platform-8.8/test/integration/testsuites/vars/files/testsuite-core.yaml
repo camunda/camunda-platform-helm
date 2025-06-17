@@ -344,6 +344,7 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
     - result.bodyjson.items.items{{ .index }}.processDefinitionId ShouldEqual {{ .value.id }}
+
 # TODO:: modify this tests to use the REST api and deploy with basic auth
 - name: TEST - Deploying BPMN process - REST Basic auth
   skip:
@@ -361,7 +362,7 @@ testcases:
     method: POST
     url: "{{ .coreVars.baseURLs.core }}/deployments"
     headers:
-      Content-Ty pe: application/json
+      Content-Type: application/json
       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
       Authorization: "Basic ZGVtbzpkZW1v"
     body: 'resources=@"/mnt/fixtures/{{ .value.file }}"'
