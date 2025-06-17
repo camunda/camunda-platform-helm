@@ -32,29 +32,29 @@ permissions:
   contents: read
 
 jobs:
-  validation:
-    name: Camunda ${{ inputs.camunda-version }} - Validation
-    uses: ./.github/workflows/chart-validate-template.yaml
-    with:
-      identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.camunda-version }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-  # init:
-  #   needs: validation
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     SCENARIOS_LIST: ${{ inputs.scenarios }}
-  #   outputs:
-  #     scenarios-formatted: ${{ steps.make-json-array.outputs.json_array }}
-  #   steps:
-  #     - name: Convert string to JSON array and set as output
-  #       id: make-json-array
-  #       run: |
-  #         # For example, this converts the SCENARIOS_LIST, which is a string input ("multitenancy, oidc") to ["multitenancy","oidc"]
-  #         # This is done because it is not possible to pass JSON arrays as input to a workflow. Therefore,
-  #         # a string is passed and converted to a json array
-  #         json=$(echo "$SCENARIOS_LIST" | jq -R -c 'split(",")')
-  #         echo "json_array=$json" | tee -a $GITHUB_OUTPUT
+  # validation:
+  #   name: Camunda ${{ inputs.camunda-version }} - Validation
+  #   uses: ./.github/workflows/chart-validate-template.yaml
+  #   with:
+  #     identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.camunda-version }}"
+  #     camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  init:
+    # needs: validation
+    runs-on: ubuntu-latest
+    env:
+      SCENARIOS_LIST: ${{ inputs.scenarios }}
+    outputs:
+      scenarios-formatted: ${{ steps.make-json-array.outputs.json_array }}
+    steps:
+      - name: Convert string to JSON array and set as output
+        id: make-json-array
+        run: |
+          # For example, this converts the SCENARIOS_LIST, which is a string input ("multitenancy, oidc") to ["multitenancy","oidc"]
+          # This is done because it is not possible to pass JSON arrays as input to a workflow. Therefore,
+          # a string is passed and converted to a json array
+          json=$(echo "$SCENARIOS_LIST" | jq -R -c 'split(",")')
+          echo "json_array=$json" | tee -a $GITHUB_OUTPUT
 
   unit:
     name: Camunda ${{ inputs.camunda-version }} - Unit Test
@@ -66,7 +66,7 @@ jobs:
 
   integration:
     name: Camunda ${{ inputs.camunda-version }} - Integration Test
-    # needs: [init]
+    needs: [init]
     permissions:
       contents: read
       id-token: write
@@ -83,7 +83,7 @@ jobs:
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: 8.8-integration-test-basic-auth
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
       test-case: ${{inputs.case}}
       scenario: ${{matrix.scenario}}

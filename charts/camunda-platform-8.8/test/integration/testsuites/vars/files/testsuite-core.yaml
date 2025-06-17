@@ -361,11 +361,10 @@ testcases:
 #     method: POST
 #     url: "{{ .coreVars.baseURLs.core }}/deployments"
 #     headers:
-#       Content-Type: application/json
+#       Content-Ty pe: application/json
 #       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
 #       Authorization: "Basic ZGVtbzpkZW1v"
-#
-#     body: '{}'
+#     body: 'resources=@'
 #     retry: 3
 #     delay: 15
 #     info: |
