@@ -353,7 +353,7 @@ testcases:
   - skiptestkeycloak ShouldBeTrue
   steps:
   - name: Deploy BPMN process to Core - {{ .value.name }}
-    type: exec
+    type: http
     range:
     - name: Basic
       file: test-process.bpmn
