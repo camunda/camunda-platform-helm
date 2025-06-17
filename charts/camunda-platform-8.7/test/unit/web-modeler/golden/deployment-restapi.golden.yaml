@@ -16,7 +16,7 @@ metadata:
 spec:
   strategy:
     type: RollingUpdate
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: camunda-platform
