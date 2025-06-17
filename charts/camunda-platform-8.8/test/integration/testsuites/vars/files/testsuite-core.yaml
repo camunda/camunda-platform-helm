@@ -391,7 +391,8 @@ testcases:
     url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
     headers:
       Content-Type: application/json
-      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      Authorization: "Basic ZGVtbzpkZW1v"
     body: '{}'
     retry: 3
     delay: 15
@@ -411,7 +412,8 @@ testcases:
     url: "{{ .coreVars.baseURLs.connectors }}/test-mywebhook"
     headers:
       Content-Type: application/json
-      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      Authorization: "Basic ZGVtbzpkZW1v"
     body: '{"webhookDataKey":"webhookDataValue"}'
     retry: 4
     delay: 15
