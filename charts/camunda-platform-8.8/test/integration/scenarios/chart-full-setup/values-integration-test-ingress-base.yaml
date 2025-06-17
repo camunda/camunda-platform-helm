@@ -48,7 +48,6 @@ global:
     authentication:
       method: basic
 
-
 identity:
   enabled: false
   contextPath: "/identity"

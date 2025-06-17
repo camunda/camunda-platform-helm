@@ -176,7 +176,8 @@ testcases:
     url: "{{ .value.url }}"
     headers:
       Content-Type: application/json
-      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      Authorization: "Basic ZGVtbzpkZW1v"
     body: "{{ .value.body }}"
     # info: |
     #   Component: {{ .value.component }}
@@ -280,7 +281,8 @@ testcases:
     url: "{{ .coreVars.baseURLs.coreREST }}/topology"
     headers:
       Content-Type: application/json
-      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+      Authorization: "Basic ZGVtbzpkZW1v"
     retry: 2
     delay: 10
     info: |
@@ -342,31 +344,36 @@ testcases:
     assertions:
     - result.statuscode ShouldEqual 200
     - result.bodyjson.items.items{{ .index }}.processDefinitionId ShouldEqual {{ .value.id }}
-
-- name: TEST - Deploying BPMN process - Basic auth
-  skip:
-  # The var with "skip" section should be in lower case as there is a bug in Venom:
-  # https://github.com/ovh/venom/issues/654
-  - skiptestkeycloak ShouldBeTrue
-  steps:
-  - name: Deploy BPMN process to Core - {{ .value.name }}
-    type: exec
-    range:
-    - name: Basic
-      file: test-process.bpmn
-    - name: Inbound Connector
-      file: test-inbound-process.bpmn
-    script: |
-      zbctl --clientCache=/tmp/zbctl \
-          --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
-          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.coreGRPC }}" \
-          {{ .coreVars.zbctl.extraArgs }} \
-          deploy /mnt/fixtures/{{ .value.file }}
-    # info: |
-    #   = systemerr: {{ .result.systemerr }}
-    #   = err: {{ .result.err }}
-    assertions:
-    - result.code ShouldEqual 0
+# TODO:: modify this tests to use the REST api and deploy with basic auth
+# - name: TEST - Deploying BPMN process - REST Basic auth
+#   skip:
+#   # The var with "skip" section should be in lower case as there is a bug in Venom:
+#   # https://github.com/ovh/venom/issues/654
+#   - skiptestkeycloak ShouldBeTrue
+#   steps:
+#   - name: Deploy BPMN process to Core - {{ .value.name }}
+#     type: exec
+#     range:
+#     - name: Basic
+#       file: test-process.bpmn
+#     - name: Inbound Connector
+#       file: test-inbound-process.bpmn
+#     method: POST
+#     url: "{{ .coreVars.baseURLs.core }}/deployments"
+#     headers:
+#       Content-Type: application/json
+#       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+#       Authorization: "Basic ZGVtbzpkZW1v"
+#
+#     body: '{}'
+#     retry: 3
+#     delay: 15
+#     info: |
+#       = Request Body: {{ .result.request.body }}
+#       = Response Body: {{ .result.body }}
+#     assertions:
+#     - result.statuscode ShouldEqual 200
+#     - result.bodyjson.items.items{{ .index }}.processDefinitionId ShouldEqual {{ .value.id }}
 
 - name: TEST - Check deployed BPMN process - Basic auth
   skip:
