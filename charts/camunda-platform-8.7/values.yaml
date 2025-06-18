@@ -739,7 +739,7 @@ zeebe:
   partitionCount: "3"
   ## @param zeebe.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @extra zeebe.env can be used to set extra environment variables in each zeebe broker container
+  ## @param zeebe.env can be used to set extra environment variables in each zeebe broker container
   env: []
   ## @param zeebe.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
