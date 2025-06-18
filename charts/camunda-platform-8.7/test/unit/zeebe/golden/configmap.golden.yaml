@@ -51,8 +51,8 @@ data:
           snapshotPeriod: "5m"
           disk:
             freeSpace:
-              processing: "2GB"
-              replication: "3GB"
+              processing: "3GB"
+              replication: "2GB"
 
     # Camunda Database configuration
     camunda.database:
