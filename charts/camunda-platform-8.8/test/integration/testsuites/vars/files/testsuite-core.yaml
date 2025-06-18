@@ -426,6 +426,10 @@ testcases:
 #     - result.statuscode ShouldEqual 200
 
 - name: TEST - Check ServiceMonitor - Keycloak
+  skip:
+  # The var with "skip" section should be in lower case as there is a bug in Venom:
+  # https://github.com/ovh/venom/issues/654
+  - skiptestkeycloak ShouldBeFalse
   steps:
   - name: Check prometheus could query containers
     type: http
