@@ -843,7 +843,7 @@ zeebe:
         ## @param zeebe.data.disk.freeSpace.processing the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         processing: "2GB"
         ## @param zeebe.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
-        replication: "3GB"
+        replication: "2GB"
   ## @param zeebe.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
   ## @param zeebe.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
