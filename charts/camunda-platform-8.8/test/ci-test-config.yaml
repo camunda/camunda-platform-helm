@@ -22,6 +22,8 @@ integration:
       - name: keycloak
         enabled: false
       - name: base
+        enabled: false
+      - name: oidc
         enabled: true
     nightly:
       - name: base
