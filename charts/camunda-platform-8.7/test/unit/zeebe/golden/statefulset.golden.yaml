@@ -96,12 +96,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
-              value: 5m
-            - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
-              value: 2GB
-            - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
-              value: 3GB
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
