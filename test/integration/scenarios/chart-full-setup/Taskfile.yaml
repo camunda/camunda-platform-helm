@@ -86,6 +86,43 @@ tasks:
       }
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
       bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install/*.sh
+    - |
+      if [[ "${TEST_SCENARIO}" == 'oidc' ]]; then
+        # This token will expire in June 2027, a new one can be created in the Azure Entra UI
+        RESPONSE=$(curl -X POST \
+          https://login.microsoftonline.com/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
+          -d "scope=https://graph.microsoft.com/.default" \
+          -d "client_secret=${ENTRA_PARENT_APP_CLIENT_SECRET}" \
+          -d "grant_type=client_credentials")
+
+        BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
+        
+        echo $BEARER_TOKEN
+        
+        curl -X PATCH \
+          https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }} \
+          -H 'Authorization: Bearer xxx' \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "web": {
+              "redirectUris": [
+                "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback",
+                "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/core/sso-callback"
+              ]
+            },
+            "spa": {
+              "redirectUris": [
+                "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/",
+              ]
+            }
+          }'
+      fi
 
   setup.exec:
     deps: [init.seed]
