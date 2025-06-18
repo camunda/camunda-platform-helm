@@ -546,11 +546,6 @@
                                             "description": "defines the audience, which is used by Identity.",
                                             "default": "camunda-identity-resource-server"
                                         },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.",
-                                            "default": ""
-                                        },
                                         "existingSecretKey": {
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
