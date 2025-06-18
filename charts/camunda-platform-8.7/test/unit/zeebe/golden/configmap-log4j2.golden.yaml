@@ -47,6 +47,12 @@ data:
         threads:
           cpuThreadCount: "3"
           ioThreadCount: "3"
+        data:
+          snapshotPeriod: "5m"
+          disk:
+            freeSpace:
+              processing: "2GB"
+              replication: "3GB"
 
     # Camunda Database configuration
     camunda.database:

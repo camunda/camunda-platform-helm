@@ -77,6 +77,12 @@ data:
         threads:
           cpuThreadCount: {{ .Values.zeebe.cpuThreadCount  | quote }}
           ioThreadCount: {{ .Values.zeebe.ioThreadCount  | quote }}
+        data:
+          snapshotPeriod: {{ .Values.zeebe.data.snapshotPeriod | quote }}
+          disk:
+            freeSpace:
+              processing: {{ .Values.zeebe.data.disk.freeSpace.processing | quote }}
+              replication: {{ .Values.zeebe.data.disk.freeSpace.replication | quote }}
 
     # Camunda Database configuration
     {{- if .Values.global.elasticsearch.enabled }}
