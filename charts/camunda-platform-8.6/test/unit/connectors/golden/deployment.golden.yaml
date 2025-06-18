@@ -94,6 +94,7 @@ spec:
             httpGet:
               path: /actuator/health/readiness
               port: http
+              scheme: HTTP
             initialDelaySeconds: 30
             periodSeconds: 30
             successThreshold: 1

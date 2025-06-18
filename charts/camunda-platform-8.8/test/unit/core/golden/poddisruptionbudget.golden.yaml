@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: core
     app.kubernetes.io/version: "8.8.0-alpha5"
 spec:
-  maxUnavailable: 1
+  minAvailable: 0
   selector:
     matchLabels:
       app: camunda-platform
