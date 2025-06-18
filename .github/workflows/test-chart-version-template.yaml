@@ -32,15 +32,15 @@ permissions:
   contents: read
 
 jobs:
-  # validation:
-  #   name: Camunda ${{ inputs.camunda-version }} - Validation
-  #   uses: ./.github/workflows/chart-validate-template.yaml
-  #   with:
-  #     identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.camunda-version }}"
-  #     camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  validation:
+    name: Camunda ${{ inputs.camunda-version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.camunda-version }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
   init:
-    # needs: validation
+    needs: validation
     runs-on: ubuntu-latest
     env:
       SCENARIOS_LIST: ${{ inputs.scenarios }}

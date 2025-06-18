@@ -404,7 +404,7 @@ testcases:
 #     assertions:
 #     - result.statuscode ShouldEqual 200
 #     - result.bodyjson.items.items{{ .index }}.processDefinitionId ShouldEqual {{ .value.id }}
-          #
+
 # TODO:: uncomment and fix this test for basic auth.
 # - name: TEST - Check Connectors webhook
 #   steps:
