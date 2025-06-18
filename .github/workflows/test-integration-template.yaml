@@ -254,6 +254,15 @@ jobs:
             version: 17.2.2
 
       # TODO: Later, find a way to abstract the auth for different platforms.
+      - name: Authenticate to GKE
+        if: matrix.distro.platform == 'gke' && inputs.auth-data == ''
+        uses: ./.github/actions/gke-login
+        with:
+          cluster-name: ${{ secrets[matrix.distro.secret.cluster-name] }}
+          cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
+          workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
+          service-account: ${{ secrets[matrix.distro.secret.service-account] }}
+
       - name: Authenticate with Teleport
         if: matrix.distro.platform == 'eks' && inputs.auth-data == ''
         uses: teleport-actions/auth-k8s@v2
