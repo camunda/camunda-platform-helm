@@ -37,7 +37,7 @@ on:
         default: ""
         type: string
       platforms:
-        default: gke
+        default: eks
         type: string
       infra-type:
         description: Define the infrastructure that will be used to run the deployment.
@@ -138,7 +138,6 @@ env:
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
-  LABELS: janitor/ttl=1h camunda.cloud/ephemeral=true
   TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
@@ -163,6 +162,7 @@ jobs:
           # TODO: Find a better way to handle GitHub Actions expressions substitution.
           # Substitute vars.
           export INPUTS_PLATFORMS_GKE=${{ contains(inputs.platforms, 'gke') }}
+          export INPUTS_PLATFORMS_EKS=${{ contains(inputs.platforms, 'eks') }}
           export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
           export INPUTS_FLOWS_INSTALL=${{ contains(inputs.flows, 'install') }}
           export INPUTS_FLOWS_UPGRADE=${{ contains(inputs.flows, 'upgrade') }}
@@ -255,7 +255,7 @@ jobs:
 
       # TODO: Later, find a way to abstract the auth for different platforms.
       - name: Authenticate with Teleport
-        if: matrix.distro.platform == 'gke' && inputs.auth-data == ''
+        if: matrix.distro.platform == 'eks' && inputs.auth-data == ''
         uses: teleport-actions/auth-k8s@v2
         with:
           proxy: camunda.teleport.sh:443

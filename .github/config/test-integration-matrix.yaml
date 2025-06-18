@@ -8,7 +8,12 @@ matrix:
         cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
         workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
         service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
-      if: $INPUTS_PLATFORMS_GKE
+      if: false
+    - name: Kubernetes
+      type: kubernetes
+      platform: eks
+      secret: {}
+      if: $INPUTS_PLATFORMS_EKS
     - name: OpenShift
       type: openshift
       platform: rosa
