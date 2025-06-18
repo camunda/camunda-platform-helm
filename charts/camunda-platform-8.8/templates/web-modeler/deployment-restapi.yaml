@@ -8,7 +8,7 @@ metadata:
 spec:
   strategy:
     type: RollingUpdate
-  replicas: 1
+  replicas: {{ .Values.webModeler.restapi.replicas }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
   template:
