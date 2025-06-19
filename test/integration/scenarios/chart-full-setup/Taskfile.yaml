@@ -134,6 +134,7 @@ tasks:
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       fi
+      # use the helm extra value env var instead of sed and append stuff onto that env var
       if [[ "${TEST_SCENARIO}" == 'oidc' ]]; then
         sed -i 's/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/g' {{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
         sed -i 's/clientId/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
