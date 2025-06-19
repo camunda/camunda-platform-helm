@@ -89,6 +89,43 @@ tasks:
       }
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
       bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install/*.sh
+    - |
+      if [[ "${TEST_SCENARIO}" == 'oidc' ]]; then
+        # This token will expire in June 2027, a new one can be created in the Azure Entra UI
+        RESPONSE=$(curl -X POST \
+          https://login.microsoftonline.com/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
+          -d "scope=https://graph.microsoft.com/.default" \
+          -d "client_secret=${ENTRA_PARENT_APP_CLIENT_SECRET}" \
+          -d "grant_type=client_credentials")
+
+        BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
+        
+        echo $BEARER_TOKEN
+        
+        curl -X PATCH \
+          https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }} \
+          -H 'Authorization: Bearer xxx' \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "web": {
+              "redirectUris": [
+                "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback",
+                "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/core/sso-callback"
+              ]
+            },
+            "spa": {
+              "redirectUris": [
+                "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback",
+                "https://{{ .TEST_INGRESS_HOST }}/",
+              ]
+            }
+          }'
+      fi
 
   setup.exec:
     deps: [init.seed]
@@ -96,6 +133,15 @@ tasks:
     - |
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      fi
+      # use the helm extra value env var instead of sed and append stuff onto that env var
+      if [[ "${TEST_SCENARIO}" == 'oidc' ]]; then
+        sed -i 's/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/g' {{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i 's/clientId/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i 's/token/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        sed -i 's/userObjectId/{{ .ENTRA_PARENT_APP_OBJECT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        #change below
+        sed -i 's/redirectUrl/test/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       fi
     - helm install integration {{ .TEST_CHART_NAME }}
         --version {{ .TEST_CHART_VERSION }}
