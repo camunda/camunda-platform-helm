@@ -331,7 +331,7 @@ global:
         clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+        ## @param global.identity.auth.identity.existingSecret [string,object] can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
         existingSecret: ""
         ## @param global.identity.auth.identity.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
@@ -1381,6 +1381,9 @@ webModeler:
     ## @param webModeler.restapi.extraVolumeMounts can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates
     extraVolumeMounts: []
 
+    ## @param webModeler.restapi.replicas can be used to set the number of replicas for the restapi deployment
+    replicas: 1
+
     ## @extra webModeler.restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
     podSecurityContext:
       ## @param webModeler.restapi.podSecurityContext.runAsNonRoot
@@ -1545,6 +1548,9 @@ webModeler:
     extraVolumes: []
     ## @param webModeler.webapp.extraVolumeMounts can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates
     extraVolumeMounts: []
+
+    ## @param webModeler.webapp.replicas can be used to set the number of replicas for the webapp deployment
+    replicas: 1
 
     ## @extra webModeler.webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
     ## @param webModeler.webapp.podSecurityContext.runAsNonRoot

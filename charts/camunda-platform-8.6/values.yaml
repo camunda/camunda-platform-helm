@@ -2798,7 +2798,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.11
+    tag: 8.6.12
     ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2881,6 +2881,9 @@ webModeler:
     extraVolumes: []
     ## @param webModeler.restapi.extraVolumeMounts can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates
     extraVolumeMounts: []
+
+    ## @param webModeler.restapi.replicas can be used to set the number of replicas for the restapi deployment
+    replicas: 1
 
     ## @extra webModeler.restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
     podSecurityContext:
@@ -3046,6 +3049,9 @@ webModeler:
     extraVolumes: []
     ## @param webModeler.webapp.extraVolumeMounts can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates
     extraVolumeMounts: []
+
+    ## @param webModeler.webapp.replicas can be used to set the number of replicas for the webapp deployment
+    replicas: 1
 
     ## @extra webModeler.webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
     ## @param webModeler.webapp.podSecurityContext.runAsNonRoot

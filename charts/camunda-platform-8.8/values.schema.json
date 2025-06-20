@@ -546,11 +546,6 @@
                                             "description": "defines the audience, which is used by Identity.",
                                             "default": "camunda-identity-resource-server"
                                         },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.",
-                                            "default": ""
-                                        },
                                         "existingSecretKey": {
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
@@ -2574,6 +2569,11 @@
                             "default": [],
                             "items": {}
                         },
+                        "replicas": {
+                            "type": "number",
+                            "description": "can be used to set the number of replicas for the restapi deployment",
+                            "default": 1
+                        },
                         "podSecurityContext": {
                             "type": "object",
                             "properties": {
@@ -2946,6 +2946,11 @@
                             "description": "can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates",
                             "default": [],
                             "items": {}
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "can be used to set the number of replicas for the webapp deployment",
+                            "default": 1
                         },
                         "podSecurityContext": {
                             "type": "object",
