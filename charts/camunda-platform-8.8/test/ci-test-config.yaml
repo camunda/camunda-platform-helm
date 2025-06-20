@@ -23,6 +23,8 @@ integration:
         enabled: false
       - name: base
         enabled: true
+      - name: qa-mt
+        enabled: true
     nightly:
       - name: base
         enabled: true
