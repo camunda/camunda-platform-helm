@@ -545,7 +545,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: blob-report-${{ matrix.shardIndex }}
+          name: blob-report-${{ inputs.flow }}-${{ matrix.shardIndex }}
           path: ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}}/test/integration/testsuites/blob-report
           retention-days: 1
 
@@ -569,12 +569,12 @@ jobs:
       - name: Download blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: all-blob-reports
-          pattern: blob-report-*
+          path: all-blob-${{ inputs.flow }}-reports
+          pattern: blob-report-${{ inputs.flow }}-*
           merge-multiple: true
 
       - name: Merge into HTML Report
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        run: npx playwright merge-reports --reporter html ./all-blob-${{ inputs.flow }}-reports
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
