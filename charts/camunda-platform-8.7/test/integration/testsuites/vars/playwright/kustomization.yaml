@@ -17,11 +17,11 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
   files:
-    - ../playwright.config.ts
-    - ../package.json
-    - ../package-lock.json
+    - ../../playwright.config.ts
+    - ../../package.json
+    - ../../package-lock.json
 - name: playwright-test-files
   options:
     disableNameSuffixHash: true
   files:
-    - ../tests/login.spec.ts
+    - ../../tests/login.spec.ts
