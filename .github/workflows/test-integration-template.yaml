@@ -33,6 +33,11 @@ on:
         required: false
         default: camunda/camunda-platform
         type: string
+      deployment-ttl:
+        description: Define a TTL for the lifespan of the deployment.
+        required: false
+        default: ""
+        type: string
       camunda-helm-credentials-source:
         description: |
           Auto-generate credentials or copy them from external secret.
