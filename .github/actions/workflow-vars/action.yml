@@ -87,7 +87,7 @@ runs:
       fi
       # The var is needed in some non-shell steps.
       # echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
-      echo 'ingress-host="hamzatest"' | tee -a $GITHUB_OUTPUT
+      echo 'ingress-host="hamzatest.ci.distro.ultrawombat.com"' | tee -a $GITHUB_OUTPUT
 
   - name: Set workflow vars - Chart version
     shell: bash
