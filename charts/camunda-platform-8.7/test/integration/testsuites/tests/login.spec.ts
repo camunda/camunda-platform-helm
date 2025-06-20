@@ -123,6 +123,33 @@ test.describe("Camunda core", () => {
     ).toBeTruthy();
   });
 
+  // Gather application build information from actuator/info endpoints
+  test("Application build information", async () => {
+    const components = [
+      ["Operate", config.base.operate],
+      ["Tasklist", config.base.tasklist], 
+      ["Connectors", config.base.connectors],
+      ["ZeebeGateway", config.base.zeebeREST],
+    ];
+
+    for (const [name, baseUrl] of components) {
+      try {
+        const r = await api.get(`${baseUrl}/actuator/info`, { timeout: 15_000 });
+        if (r.ok()) {
+          const info = await r.json();
+          console.log(`\n===== ${name} Build Information =====`);
+          console.log(JSON.stringify(info, null, 2));
+        } else {
+          console.log(`\n===== ${name} Build Information =====`);
+          console.log(`/actuator/info endpoint not available (HTTP ${r.status()})`);
+        }
+      } catch (error) {
+        console.log(`\n===== ${name} Build Information =====`);
+        console.log(`Failed to fetch info: ${error}`);
+      }
+    }
+  });
+
   // Parameterized API endpoint tests
   for (const [label, url, method, body] of [
     ["Console clusters", `${config.base.console}/api/clusters`, "GET", ""],
