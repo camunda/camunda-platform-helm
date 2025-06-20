@@ -3,6 +3,50 @@ name: "Test - Integration - Template"
 
 on:
   workflow_dispatch:
+    inputs:
+      camunda-helm-dir:
+        description: The directory name of the chart to build upon
+        required: false
+        default: camunda-platform-8.8
+        type: string
+      platforms:
+        description: The platforms to run the test on
+        required: false
+        default: gke
+        type: string
+      flows:
+        description: The flows to run the test on
+        required: false
+        default: install,upgrade
+        type: string
+      infra-type:
+        description: Define the infrastructure that will be used to run the deployment.
+        default: preemptible
+        type: string
+      scenario:
+        description: The scenario to run the test on
+        required: false
+        default: base
+        type: string
+      camunda-helm-repo:
+        description: The Helm repo which is used during the upgrade flow.
+        required: false
+        default: camunda/camunda-platform
+        type: string
+      camunda-helm-credentials-source:
+        description: |
+          Auto-generate credentials or copy them from external secret.
+          Valid options: auto-generated or external-secret-only.
+          New optional auto-generated secrets are only supported in Camunda 8.4 chart and above.
+        required: false
+        default: auto-generated
+        type: string
+      test-enabled:
+        description: Flag to enable or disable the test suites
+        required: false
+        default: true
+        type: boolean
+
   workflow_call:
     inputs:
       identifier:
