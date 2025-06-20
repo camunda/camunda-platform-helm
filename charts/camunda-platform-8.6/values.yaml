@@ -664,7 +664,7 @@ zeebe:
      ## @param zeebe.image.repository defines which image repository to use
     repository: camunda/zeebe
      ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.18
+    tag: 8.6.19
     ## @param zeebe.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -959,7 +959,7 @@ zeebeGateway:
     ## @param zeebeGateway.image.repository defines which image repository to use
     repository: camunda/zeebe
     ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.18
+    tag: 8.6.19
     ## @param zeebeGateway.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2798,7 +2798,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.12
+    tag: 8.6.13
     ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod

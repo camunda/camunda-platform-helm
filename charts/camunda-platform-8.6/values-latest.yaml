@@ -43,19 +43,19 @@ webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.12
+    tag: 8.6.13
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.18
+    tag: 8.6.19
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.18
+    tag: 8.6.19
 
 #
 # Identity
