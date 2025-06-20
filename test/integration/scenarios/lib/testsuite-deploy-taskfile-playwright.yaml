@@ -23,7 +23,7 @@ tasks:
       # This is where the environment variables are set for the playwright tests.
       - |
         echo "🔧 Applying Playwright environment variables from {{ .chartDir }}/test/integration/testsuites/vars/playwright"
-        if ! kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars/playwright | kubectl apply -n $TEST_NAMESPACE -f -; then
+        if ! kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars/playwright --load-restrictor=LoadRestrictionsNone | kubectl apply -n $TEST_NAMESPACE -f -; then
           echo "❌ Failed to apply Playwright environment variables"
           exit 1
         fi
