@@ -14,6 +14,11 @@ spec:
                 secretKeyRef:
                   name: integration-test-credentials
                   key: identity-admin-client-password
+            - name: PLAYWRIGHT_VAR_CORE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-admin-client-password
             - name: PLAYWRIGHT_VAR_CONNECTORS_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
