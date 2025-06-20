@@ -39,7 +39,9 @@ jobs:
       identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.camunda-version }}"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
   init:
+    name: Init Scenarios
     needs: validation
     runs-on: ubuntu-latest
     env:
@@ -63,6 +65,78 @@ jobs:
       identifier: "${{ github.event.pull_request.number }}-unit-${{ inputs.camunda-version }}"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  local:
+    name: Local cluster - KIND
+    # needs: [init]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            kind
+            kubectl
+      - name: Create KIND cluster
+        run: |
+          kind create cluster --name camunda-platform
+          kubectl config use-context kind-camunda-platform
+      - name: Prepare Camunda Helm chart installation
+        run: |
+          make helm.repos-add
+          helm package --dependency-update "charts/camunda-platform-${{ inputs.camunda-version }}"
+      - name: Install Camunda Helm chart
+        run: |
+          helm install camunda-platform *.tgz \
+            --create-namespace --namespace camunda-platform \
+            --values "charts/camunda-platform-${{ inputs.camunda-version }}/values-local.yaml"
+      - name: Debug - Get Pods info
+        run: |
+          end=$((SECONDS+300))
+          while [ $SECONDS -lt $end ]; do
+            echo "###############################################################"
+            echo "Waiting for Pods to be ready... finish time: $SECONDS seconds"
+            kubectl get pods --namespace camunda-platform
+            sleep 30
+          done
+          # kubectl describe pods --namespace camunda-platform
+      - name: Gather diagnostics for failed Pods
+        # if: failure()
+        env:
+          TEST_NAMESPACE: camunda-platform
+        run: |
+          set -euo pipefail
+          ARTIFACT_DIR="$RUNNER_TEMP/failed-pods"
+          mkdir -p "$ARTIFACT_DIR"
+          IFS=$'\n'
+
+          for pod in $(kubectl -n "$TEST_NAMESPACE" get pods --field-selector=status.phase!=Succeeded -o json | jq -r '
+                          .items[] | select(.status.containerStatuses[]? | select(.ready == false)) | .metadata.name'); do
+            echo "⇢ Collecting diagnostics for $pod"
+            pod_dir="$ARTIFACT_DIR/$pod"; mkdir -p "$pod_dir"
+
+            kubectl -n "$TEST_NAMESPACE" describe pod "$pod"           > "$pod_dir/describe.txt"
+            kubectl -n "$TEST_NAMESPACE" get pod "$pod" -o yaml        > "$pod_dir/pod.yaml"
+            kubectl -n "$TEST_NAMESPACE" get events \
+              --field-selector involvedObject.name="$pod" \
+              --sort-by=.metadata.creationTimestamp                    > "$pod_dir/events.txt"
+
+            node=$(kubectl -n "$TEST_NAMESPACE" get pod "$pod" -o jsonpath='{.spec.nodeName}')
+            kubectl describe node "$node"                              > "$pod_dir/node.txt" || true
+
+            for c in $(kubectl -n "$TEST_NAMESPACE" get pod "$pod" -o jsonpath='{.spec.containers[*].name}'); do
+              kubectl -n "$TEST_NAMESPACE" logs "$pod" -c "$c" --timestamps            > "$pod_dir/$c.log" || true
+              kubectl -n "$TEST_NAMESPACE" logs "$pod" -c "$c" --previous --timestamps > "$pod_dir/$c.previous.log" || true
+            done
+            kubectl -n "$TEST_NAMESPACE" top pod "$pod" --containers   > "$pod_dir/top.txt" || true
+          done
+      # - name: 🚨 Get failed Pods info 🚨
+      #   if: failure()
+      #   uses: ./.github/actions/failed-pods-info
+      #   env:
+      #     TEST_NAMESPACE: camunda-platform
 
   integration:
     name: Camunda ${{ inputs.camunda-version }} - Integration Test
