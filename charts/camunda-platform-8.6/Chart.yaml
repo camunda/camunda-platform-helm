@@ -73,8 +73,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Support image.digest for all components"
-    - kind: fixed
-      description: "Add main env to migration init container"
-    - kind: fixed
-      description: "Restore the original Zeebe startup script behaviour for backup operations"
+      description: "Support configure replicas for web modeler restapi and webapp"
