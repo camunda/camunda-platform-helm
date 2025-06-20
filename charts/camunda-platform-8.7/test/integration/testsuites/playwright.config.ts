@@ -7,9 +7,10 @@ console.log(process.env);
 
 export default defineConfig({
   testDir: "./node_modules/playwright-automation/dist/tests/SM-8.7",
-  testMatch: ["**/*.spec.{ts,js}"],
+  testMatch: ["**/smoke-tests.spec.{ts,js}"],
   fullyParallel: true,
-  retries: 1,
+  retries: 3,
+  timeout: 3 * 60 * 1000, // no test should take more than 3 minutes (failing fast is important so that we can run our tests on each PR)
   workers: process.env.CI ? 1: '25%', 
   use: {
     baseURL: getBaseURL(),

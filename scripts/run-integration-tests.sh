@@ -50,7 +50,7 @@ validate_args() {
   local namespace="$2"
 
   if [[ -z "$chart_path" ]]; then
-    echo "--chart-path is required"
+    echo "--absolute-chart-path is required"
     exit 1
   fi
 
@@ -141,6 +141,8 @@ setup_env_file() {
   # to be more flexible in what we are testing.
   log "Setting FIXTURES_DIR to ${repo_root%/}/test/integration/testsuites/playwright.core/files"
   echo "FIXTURES_DIR=${repo_root%/}/test/integration/testsuites/playwright.core/files" >>"$env_file"
+  echo "CI=true" >>"$env_file"
+  echo "CLUSTER_NAME=integration" >>"$env_file"
 
   log "Contents of .env file:"
   if $VERBOSE; then
@@ -208,17 +210,14 @@ run_playwright_tests() {
     exit 0
   else
     npx playwright test --shard=${shard_index}/${shard_total} --reporter=blob
+    playwright_rc=$?          # <-- capture the exit status BEFORE doing anything else
 
-    #PLAYWRIGHT_JSON_OUTPUT_FILE="$test_suite_path/test-results/results.json" npx playwright test --reporter=blob --headed
-    #passed=$(jq -r '.stats.unexpected == 0' "$test_suite_path/test-results/results.json")
-
-    #mv package.json.bak package.json
-    #mv package-lock.json.bak package-lock.json
-
-    # Playwright exit codes are not well defined, so we need to check the JSON output
-    # to determine if the tests passed or failed.
-    if [[ "$passed" == true ]]; then
-      exit 0
+    if [[ $playwright_rc -eq 0 ]]; then
+      log "✅  All Playwright tests passed"
+      exit 0                  # success exit for the script itself
+    else
+      log "❌  Playwright tests failed with code $playwright_rc"
+      exit $playwright_rc     # propagate the failure to CI
     fi
   fi
 
@@ -237,6 +236,8 @@ Options:
   --namespace NAMESPACE                       The namespace c8 is deployed into
   --show-html-report                          Show the HTML report after the tests have run.
   --update-helm-dependencies                  Update the Helm dependencies for the chart.
+  --shard-index SHARD_INDEX                   The shard index to run.
+  --shard-total SHARD_TOTAL                   The total number of shards.
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
