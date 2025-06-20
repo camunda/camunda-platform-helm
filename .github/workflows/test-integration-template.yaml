@@ -417,18 +417,18 @@ jobs:
           token: ${{ steps.generate-github-token.outputs.token }}
           env: ${{ steps.vars.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
-      - name: Cleanup test namespace
-        if: always()
-        run: |
-          if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
-            if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
-            else
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
-            fi
-          else
-            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
-          fi
+      #- name: Cleanup test namespace
+      #  if: always()
+      #  run: |
+      #    if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
+      #      if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
+      #        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+      #      else
+      #        kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+      #      fi
+      #  else
+      #    kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+      #  fi
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
