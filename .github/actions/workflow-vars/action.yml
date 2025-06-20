@@ -55,7 +55,7 @@ runs:
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
       TEST_NAMESPACE="$(echo camunda-${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
-
+      
       if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-run-${{ github.run_id }}-sfx-${GITHUB_WORKFLOW_JOB_ID}"
       fi
@@ -64,7 +64,8 @@ runs:
         TEST_NAMESPACE="${TEST_NAMESPACE}-upgrade"
       fi
       
-      echo "TEST_NAMESPACE=$(printf '%s' "${TEST_NAMESPACE%-}" | head -c 63)" | tee -a $GITHUB_ENV
+      # echo "TEST_NAMESPACE=$(printf '%s' "${TEST_NAMESPACE%-}" | head -c 63)" | tee -a $GITHUB_ENV
+      echo "TEST_NAMESPACE=hamza" | tee -a $GITHUB_ENV
 
       # Get alpha chart dir.
       TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
@@ -85,7 +86,8 @@ runs:
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
       # The var is needed in some non-shell steps.
-      echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+      # echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+      echo 'ingress-host="hamzatest.ci.distro.ultrawombat.com"' | tee -a $GITHUB_OUTPUT
 
   - name: Set workflow vars - Chart version
     shell: bash

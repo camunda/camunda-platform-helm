@@ -13,3 +13,15 @@ configMapGenerator:
     disableNameSuffixHash: true
   envs:
   - ./files/variables.env
+- name: playwright-test-setup
+  options:
+    disableNameSuffixHash: true
+  files:
+    - ../../playwright.config.ts
+    - ../../package.json
+    - ../../package-lock.json
+- name: playwright-test-files
+  options:
+    disableNameSuffixHash: true
+  files:
+    - ../../tests/login.spec.ts
