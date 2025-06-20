@@ -146,3 +146,31 @@ testcases:
     - result.statuscode ShouldEqual 200
 
 # TODO: Check seed config like ES indexes.
+
+- name: INFO - Application Build Information
+  steps:
+  - name: "{{ .value.component }}"
+    type: http
+    range:
+    # Components with /actuator/info endpoint (supported in 8.7+)
+    - component: Operate
+      url: "{{ .preflightVars.baseURLs.operate }}/actuator/info"
+    - component: Tasklist  
+      url: "{{ .preflightVars.baseURLs.tasklist }}/actuator/info"
+    - component: Connectors
+      url: "{{ .preflightVars.baseURLs.connectors }}/actuator/info"
+    - component: ZeebeGateway
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/info"
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 10
+    info: |
+      {{ .value.component }} Build Info:
+      URL: {{ .value.url }}
+      Response: {{ .result.body }}
+    # Don't fail the test if the endpoint doesn't exist or returns an error
+    # This is informational only
+    ignore_failure: true
+    assertions:
+    - result.statuscode ShouldBeIn 200 404
