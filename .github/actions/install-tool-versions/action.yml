@@ -22,15 +22,15 @@ runs:
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
 
-    #- name: Cache asdf
-      #id: cache
-      #uses: actions/cache@v4
-      #with:
-        #path: |
-          #~/.asdf
-        #key: asdf-${{ runner.os }}-${{ hashFiles('.tool-versions') }}
-        #restore-keys: |
-          #asdf-${{ runner.os }}-
+    - name: Cache asdf
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.asdf
+        key: asdf-${{ runner.os }}-${{ hashFiles('.tool-versions') }}
+        restore-keys: |
+          asdf-${{ runner.os }}-
 
     - name: Install asdf and tools
       uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3

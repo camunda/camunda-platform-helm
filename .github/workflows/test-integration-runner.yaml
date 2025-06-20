@@ -541,6 +541,14 @@ jobs:
           cd $GITHUB_WORKSPACE/scripts
           ./run-integration-tests.sh --absolute-chart-path ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{needs.ci-setup.outputs.TEST_NAMESPACE}} --update-helm-dependencies --shard-index ${{ matrix.shardIndex }} --shard-total ${{ matrix.shardTotal }}
 
+      - name: Upload blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}}/test/integration/testsuites/blob-report
+          retention-days: 1
+
   merge-reports:
     if: ${{ !cancelled() }}
     needs: [ci-setup, playwright-e2e-tests]
