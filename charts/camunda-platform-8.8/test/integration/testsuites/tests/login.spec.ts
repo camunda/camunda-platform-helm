@@ -203,7 +203,7 @@ test.describe("Camunda core", () => {
     ["it-test-process", "Basic", "test-process.bpmn"],
     ["test-inbound-process", "Inbound", "test-inbound-process.bpmn"],
   ] as const) {
-    test(`Process visible: ${label}`, async () => {
+    test(`Deploy and check model: ${label}`, async () => {
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
       execFileSync(
