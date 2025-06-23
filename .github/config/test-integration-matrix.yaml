@@ -13,7 +13,7 @@ matrix:
       type: kubernetes
       platform: eks
       secret: {}
-      if: false
+      if: $INPUTS_PLATFORMS_EKS
     - name: OpenShift
       type: openshift
       platform: rosa
