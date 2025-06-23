@@ -280,7 +280,6 @@ jobs:
           identifier-base: ${{ inputs.identifier }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          prefix: "camunda"
       - name: Set test type vars
         id: test-type-vars
         uses: ./.github/actions/test-type-vars

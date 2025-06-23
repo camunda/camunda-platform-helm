@@ -21,7 +21,7 @@ inputs:
   prefix:
     description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
     required: false
-    default: "distribution"
+    default: ""
 
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
@@ -43,6 +43,16 @@ runs:
       is_pr() {
         echo ${{ github.event.pull_request.number }} | grep -q .
       }
+
+      if [[ -z "${{ inputs.prefix }}" ]]; then
+        if [[ "${{ inputs.platform }}" == 'eks' ]]; then
+          export NAMESPACE_PREFIX=distribution
+        else
+          export NAMESPACE_PREFIX=camunda
+        fi
+      else
+        export NAMESPACE_PREFIX="${{ inputs.prefix }}"
+      fi
 
       # NOTE: We should use the matrix job id var once it's available.
       # https://github.com/orgs/community/discussions/40291
@@ -95,8 +105,6 @@ runs:
       fi
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
-    env:
-      NAMESPACE_PREFIX: ${{ inputs.prefix }}
 
   - name: Set workflow vars - Chart version
     shell: bash
