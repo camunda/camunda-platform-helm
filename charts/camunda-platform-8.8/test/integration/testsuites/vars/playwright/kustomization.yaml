@@ -24,4 +24,7 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
   files:
-    - ../../tests/login.spec.ts
+    - ../../tests/core.spec.ts
+    - ../../tests/connectors.spec.ts
+    - ../../tests/console.spec.ts
+    - ../../tests/identity.spec.ts

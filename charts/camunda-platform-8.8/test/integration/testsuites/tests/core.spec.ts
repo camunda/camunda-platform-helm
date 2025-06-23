@@ -3,6 +3,7 @@
 
 /// <reference types="node" />
 
+//TODO: this test should be run first
 import { config as dotenv } from "dotenv";
 dotenv(); // ← loads .env before anything else
 
@@ -90,49 +91,40 @@ test.describe("Camunda core", () => {
     }
   });
 
-/*
-  // Parameterized login page tests
-  for (const [name, url] of Object.entries({
-    Console: config.base.console,
-    Keycloak: config.base.keycloak,
-    Identity: config.base.identity,
-    Optimize: config.base.optimize,
-    CoreTasklist: config.base.coreTasklist,
-    CoreOperate: config.base.coreOperate,
-    WebModeler: config.base.webModeler,
-  })) {
-    test(`Login page: ${name}`, async () => {
-      const r = await api.get(`${url}${config.loginPath[name]}`, {
-        timeout: 45_000,
+  /*
+    // Parameterized login page tests
+    for (const [name, url] of Object.entries({
+      Console: config.base.console,
+      Keycloak: config.base.keycloak,
+      Identity: config.base.identity,
+      Optimize: config.base.optimize,
+      CoreTasklist: config.base.coreTasklist,
+      CoreOperate: config.base.coreOperate,
+      WebModeler: config.base.webModeler,
+    })) {
+      test(`Login page: ${name}`, async () => {
+        const r = await api.get(`${url}${config.loginPath[name]}`, {
+          timeout: 45_000,
+        });
+        expect(
+          r.ok(),
+          `Login page failed for ${name}: ${r.status()}`,
+        ).toBeTruthy();
+        expect(
+          await r.text(),
+          `Login page for ${name} contains error`,
+        ).not.toMatch(/error/i);
       });
-      expect(
-        r.ok(),
-        `Login page failed for ${name}: ${r.status()}`,
-      ).toBeTruthy();
-      expect(
-        await r.text(),
-        `Login page for ${name} contains error`,
-      ).not.toMatch(/error/i);
-    });
-  }
-*/
-  test("Connectors inbound page", async () => {
-    expect(
-      (await api.get(config.base.connectors, { timeout: 45_000 })).ok(),
-      "Connectors inbound page failed",
-    ).toBeTruthy();
-  });
-
+    }
+  */
   // Parameterized API endpoint tests
   for (const [label, url, method, body] of [
-    ["Console clusters", `${config.base.console}/api/clusters`, "GET", ""],
-    ["Identity users", `${config.base.identity}api/users`, "GET", ""],
     [
       "Operate defs",
       `${config.base.coreOperate}/v2/process-definitions/search`,
       "POST",
       "{}",
-    ],    
+    ],
   ] as const) {
     test(`API: ${label}`, async () => {
       const r = await api.fetch(url, {
@@ -149,15 +141,15 @@ test.describe("Camunda core", () => {
       ).toBeTruthy();
     });
   }
-/*
-  test("WebModeler login page", async () => {
-    const r = await api.get(config.base.webModeler, { timeout: 45_000 });
-    expect(r.ok(), "WebModeler login page failed").toBeTruthy();
-    expect(await r.text(), "WebModeler login page contains error").not.toMatch(
-      /error/i,
-    );
-  });
-*/
+  /*
+    test("WebModeler login page", async () => {
+      const r = await api.get(config.base.webModeler, { timeout: 45_000 });
+      expect(r.ok(), "WebModeler login page failed").toBeTruthy();
+      expect(await r.text(), "WebModeler login page contains error").not.toMatch(
+        /error/i,
+      );
+    });
+  */
   //  test("Zeebe status (gRPC)", async () => {
   //    const extra =
   //      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
@@ -226,7 +218,7 @@ test.describe("Camunda core", () => {
         { stdio: "inherit" },
       );
       await new Promise((resolve) => setTimeout(resolve, 15000));
-      
+
       const r = await api.post(
         `${config.base.coreOperate}/v2/process-definitions/search`,
         {
@@ -249,23 +241,8 @@ test.describe("Camunda core", () => {
     });
   }
 
-  
-  test(`TEST - Check Connectors webhook`, async () => {
-    const r = await api.post(config.base.connectors + '/test-mywebhook', {
-      data: {"webhookDataKey":"webhookDataValue"},
-      headers: {
-        Authorization: `Bearer ${venomJWT}`,
-        //Authorization: `Basic ZGVtbzpkZW1v`,
-        "Content-Type": "application/json",
-      },
-    });
-    expect(
-      r.ok(),
-      `API call failed with ${r.status()}`,
-    ).toBeTruthy();
-  });
 
-  test.afterAll(async ({}, testInfo) => {
+  test.afterAll(async ({ }, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {
@@ -273,7 +250,7 @@ test.describe("Camunda core", () => {
       // If this becomes a concern, mask the values here before logging.
       console.error(
         "\n===== CONFIG DUMP (test failed) =====\n" +
-          JSON.stringify(config, null, 2),
+        JSON.stringify(config, null, 2),
       );
     }
   });
