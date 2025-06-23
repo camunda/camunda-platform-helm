@@ -244,6 +244,7 @@ jobs:
           workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
           service-account: ${{ secrets[matrix.distro.secret.service-account] }}
       - name: Set up Teleport
+        if: matrix.distro.platform == 'eks' 
         uses: teleport-actions/setup@v1
         with:
             version: 17.2.2
