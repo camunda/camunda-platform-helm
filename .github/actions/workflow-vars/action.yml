@@ -84,9 +84,9 @@ runs:
       # Ingress hostname.
 
       if [[ "${{ inputs.platform }}" == 'eks' ]]; then
-        ingress-hostname-base=ci.distro.ultrawombat.com
+        export ingress-hostname-base=ci.distro.ultrawombat.com
       else
-        ingress-hostname-base=$NAMESPACE_PREFIX.aws.camunda.cloud
+        export ingress-hostname-base=$NAMESPACE_PREFIX.aws.camunda.cloud
       fi
 
       TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
