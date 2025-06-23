@@ -86,10 +86,10 @@ runs:
       if [[ "${{ inputs.platform }}" == 'eks' ]]; then
         export INGRESS_HOSTNAME_BASE=ci.distro.ultrawombat.com
       else
-        export INGRESS_HOSTNAME_BASE=$NAMESPACE_PREFIX.aws.camunda.cloud
+        export INGRESS_HOSTNAME_BASE=${NAMESPACE_PREFIX}.aws.camunda.cloud
       fi
 
-      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.$INGRESS_HOSTNAME_BASE"
+      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${INGRESS_HOSTNAME_BASE}"
       if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
