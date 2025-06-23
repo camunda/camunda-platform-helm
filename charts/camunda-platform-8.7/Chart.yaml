@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.1.0
+version: 12.2.0
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -73,14 +73,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Support image.digest for all components"
-    - kind: added
-      description: "Core test suite inital migration to playwright"
-    - kind: added
-      description: "Support ingress external hostname"
+      description: "Support configure replicas for web modeler restapi and webapp"
     - kind: fixed
-      description: "Add main env to migration init container"
-    - kind: fixed
-      description: "Restore the original Zeebe startup script behaviour for backup operations"
-    - kind: fixed
-      description: "Remove installationType for 8.7"
+      description: "Cleanup multiregion installationtype"
