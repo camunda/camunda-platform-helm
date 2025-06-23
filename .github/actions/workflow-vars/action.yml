@@ -4,8 +4,6 @@ inputs:
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"
-  ingress-hostname-base:
-    description: The base of the Ingress hostname.
   platform:
     description: The deployment cloud platform like GKE or ROSA.
   deployment-ttl:
@@ -84,6 +82,13 @@ runs:
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
 
       # Ingress hostname.
+
+      if [[ "${{ inputs.platform }}" == 'eks' ]]; then
+        ingress-hostname-base=ci.distro.ultrawombat.com
+      else
+        ingress-hostname-base=$NAMESPACE_PREFIX.aws.camunda.cloud
+      fi
+
       TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
       if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
