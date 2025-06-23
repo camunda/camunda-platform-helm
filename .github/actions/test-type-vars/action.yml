@@ -59,9 +59,9 @@ runs:
         echo "test-values-base-dir=${integration_scenarios_values_dir}" | tee -a $GITHUB_OUTPUT
 
         if [[ "${{ inputs.platform }}" == "eks" ]]; then
-          echo "INFRA_TYPE_VALUES=${values_base_dir}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
+          echo "INFRA_TYPE_VALUES=${integration_scenarios_values_dir}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
         else
-          echo "INFRA_TYPE_VALUES=${values_base_dir}/infra/values-infra-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
+          echo "INFRA_TYPE_VALUES=${integration_scenarios_values_dir}/infra/values-infra-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
         fi
 
         # Charts dir.
