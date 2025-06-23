@@ -4,7 +4,6 @@ kind: ConfigMap
 metadata:
   name: camunda-platform-test-zeebe-configuration
   labels:
-    app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm

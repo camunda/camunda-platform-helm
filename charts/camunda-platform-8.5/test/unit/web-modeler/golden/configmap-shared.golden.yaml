@@ -5,7 +5,6 @@ kind: ConfigMap
 metadata:
   name: camunda-platform-test-web-modeler-configuration
   labels:
-    app: camunda-platform
     app.kubernetes.io/name: web-modeler
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
