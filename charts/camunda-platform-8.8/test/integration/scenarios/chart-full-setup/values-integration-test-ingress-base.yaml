@@ -65,13 +65,10 @@ identity:
     existingSecret: "integration-test-credentials"
 
 identityKeycloak:
-<<<<<<< HEAD
   enabled: false
   commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
-=======
->>>>>>> 931e96cc3 (fix: enable a smooth transition from GKE to EKS workflows)
   postgresql:
     auth:
       existingSecret: "integration-test-credentials"
