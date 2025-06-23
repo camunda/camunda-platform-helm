@@ -36,7 +36,7 @@ on:
         default: ""
         type: string
       platforms:
-        default: eks
+        default: gke
         type: string
       infra-type:
         description: Define the infrastructure that will be used to run the deployment.
@@ -93,9 +93,20 @@ on:
         required: false
         default: true
         type: boolean
+      teleport-token:
+        description: The Teleport token to use for authentication.
+        required: false
+        default: infra-ci-prod-github-action-distribution
+        type: string
+      namespace-prefix:
+        description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
+        required: false
+        default: distribution
+        type: string
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}
@@ -194,6 +205,17 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: ${{ inputs.vault-secret-mapping }}
+          exportEnv: true
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
           exportEnv: true
       # Used to create/delete GitHub environment.
       # NOTE: The GH app requires "administration:write" access to be able to delete the GH environment.
@@ -352,6 +374,7 @@ jobs:
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
       - name: 🌟 Setup Camunda chart 🌟
+        if: matrix.distro.platform == 'gke' || matrix.distro.platform == 'rosa'
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
@@ -368,6 +391,24 @@ jobs:
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
+      - name: 🌟 Setup Camunda chart 🌟
+        if: matrix.distro.platform == 'eks'
+        env:
+          TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: "${{ inputs.test-case }}"
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_SCENARIO: ${{ inputs.scenario }}
+          # both the run-id and the helm-dir is needed since all versions would use the same github-run-id when running the OpenSearch scenario
+          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ inputs.camunda-helm-dir }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml
+            --values /tmp/extra-values-file.yaml
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
       - name: Post setup
         timeout-minutes: 5
         run: |
@@ -377,7 +418,7 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
-        if: matrix.scenario.flow == 'upgrade'
+        if: matrix.scenario.flow == 'upgrade' && matrix.distro.platform == 'gke'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
@@ -386,6 +427,19 @@ jobs:
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values /tmp/extra-values-file.yaml
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+      - name: 🌟 Upgrade Camunda chart 🌟
+        if: matrix.scenario.flow == 'upgrade' && matrix.distro.platform == 'gke'
+        env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
@@ -408,6 +462,7 @@ jobs:
         if: inputs.test-enabled
         timeout-minutes: 20
         run: |
+          export TEST_INGRESS_HOST="${{ steps.vars.outputs.ingress-host }}"
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
@@ -426,11 +481,14 @@ jobs:
           if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
             if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
             else
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
             fi
           else
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
           fi
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
