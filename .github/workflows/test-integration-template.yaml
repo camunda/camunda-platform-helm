@@ -280,6 +280,8 @@ jobs:
         uses: ./.github/actions/test-type-vars
         with:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ matrix.distro.platform }}"
       - name: Add Helm repos and dependencies
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
@@ -302,6 +304,7 @@ jobs:
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
       - name: Set Deployment Secrets
+        if: matrix.distro.platform == 'gke' || matrix.distro.platform == 'rosa'
         run: |
           kubectl apply -n $TEST_NAMESPACE \
             -f .github/config/external-secret/external-secret-certificates.yaml
@@ -374,7 +377,6 @@ jobs:
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
       - name: 🌟 Setup Camunda chart 🌟
-        if: matrix.distro.platform == 'gke' || matrix.distro.platform == 'rosa'
         env:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
@@ -387,25 +389,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
-            --values /tmp/extra-values-file.yaml
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
-      - name: 🌟 Setup Camunda chart 🌟
-        if: matrix.distro.platform == 'eks'
-        env:
-          TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
-          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_CASE: "${{ inputs.test-case }}"
-          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          INFRA_TYPE: ${{ inputs.infra-type }}
-          TEST_SCENARIO: ${{ inputs.scenario }}
-          # both the run-id and the helm-dir is needed since all versions would use the same github-run-id when running the OpenSearch scenario
-          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ inputs.camunda-helm-dir }}
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml
+            --values $INFRA_TYPE_VALUES
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
@@ -426,20 +410,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
-            --values /tmp/extra-values-file.yaml
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
-      - name: 🌟 Upgrade Camunda chart 🌟
-        if: matrix.scenario.flow == 'upgrade' && matrix.distro.platform == 'gke'
-        env:
-          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml
+            --values $INFRA_TYPE_VALUES
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
