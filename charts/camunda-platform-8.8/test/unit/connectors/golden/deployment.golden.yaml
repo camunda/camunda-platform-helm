@@ -5,6 +5,7 @@ kind: Deployment
 metadata:
   name: camunda-platform-test-connectors
   labels:
+    app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
@@ -19,6 +20,7 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
+      app: camunda-platform
       app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
@@ -27,6 +29,7 @@ spec:
   template:
     metadata:
       labels:
+        app: camunda-platform
         app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm

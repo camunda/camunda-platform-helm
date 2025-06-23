@@ -5,6 +5,7 @@ kind: Service
 metadata:
   name: camunda-platform-test-operate
   labels:
+    app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
@@ -20,6 +21,7 @@ spec:
       targetPort: 8080
       protocol: TCP
   selector:
+    app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
