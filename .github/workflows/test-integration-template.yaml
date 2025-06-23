@@ -145,9 +145,9 @@ jobs:
       - name: Generate workflow matrix
         id: generate-workflow-matrix
         env:
-            CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
-            # Use GH env to safly load JSON matrix input.
-            CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
+          CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
+          # Use GH env to safly load JSON matrix input.
+          CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
         run: |
           # TODO: Find a better way to handle GitHub Actions expressions substitution.
           # Substitute vars.
