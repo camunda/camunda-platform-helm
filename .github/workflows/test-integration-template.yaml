@@ -36,7 +36,7 @@ on:
         default: ""
         type: string
       platforms:
-        default: eks
+        default: gke
         type: string
       infra-type:
         description: Define the infrastructure that will be used to run the deployment.
