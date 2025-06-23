@@ -63,9 +63,6 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 Common match labels, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "camundaPlatform.matchLabels" -}}
-{{- if .Values.global.labels -}}
-{{ toYaml .Values.global.labels }}
-{{- end }}
 app.kubernetes.io/name: {{ template "camundaPlatform.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
