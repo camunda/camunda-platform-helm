@@ -314,8 +314,6 @@ jobs:
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
       - name: Set Deployment Secrets
-        env:
-          NAMESPACE_PREFIX: ${{ inputs.namespace-prefix }}
         run: |
           if [[ "${{ matrix.distro.platform }}" == "gke" || "${{ matrix.distro.platform }}" == "gke" ]]; then
             kubectl apply -n $TEST_NAMESPACE \
@@ -340,9 +338,6 @@ jobs:
               fi
             fi
           else
-            if [[ -z "${NAMESPACE_PREFIX}" ]]; then
-              export NAMESPACE_PREFIX=distribution
-            fi
             # running in EKS
             kubectl get secret -n ${NAMESPACE_PREFIX}-certs ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls -o yaml > ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
             sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml

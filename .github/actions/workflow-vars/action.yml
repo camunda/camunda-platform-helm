@@ -53,6 +53,10 @@ runs:
       else
         export NAMESPACE_PREFIX="${{ inputs.prefix }}"
       fi
+      echo NAMESPACE_PREFIX=$NAMESPACE_PREFIX | tee -a $GITHUB_ENV
+
+      PLATFORM=${{ inputs.platform }}
+      echo PLATFORM=${{ inputs.platform }} | tee -a $GITHUB_ENV
 
       # NOTE: We should use the matrix job id var once it's available.
       # https://github.com/orgs/community/discussions/40291
