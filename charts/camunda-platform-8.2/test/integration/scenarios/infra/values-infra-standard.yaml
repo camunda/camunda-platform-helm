@@ -1,211 +1,136 @@
 # GKE stable nodes need nodeSelector and tolerations config.
 
+# Auth.
 identity:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+  postgresql:
+    primary:
+      nodeSelector:
+        workload: standard
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: standard
   keycloak:
+    nodeSelector:
+      workload: standard
     tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
     postgresql:
       primary:
+        nodeSelector:
+          workload: standard
         tolerations:
-          - key: t-core-16-unstable
-            operator: Exists
-            effect: NoSchedule
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: nodegroup
-                      operator: In
-                      values:
-                        - t-core-16-unstable
+        - effect: NoSchedule
+          key: workload
+          operator: Equal
+          value: standard
 
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
-
-postgresql:
-  primary:
-    tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
-
-operate:
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
-
-tasklist:
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
-
-zeebe:
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
-
-zeebe-gateway:
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
-
-optimize:
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
-
+# Web Apps.
 connectors:
+  nodeSelector:
+    workload: standard
   tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+tasklist:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+operate:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+optimize:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
 
+# Web Modeler.
 webModeler:
   restapi:
+    nodeSelector:
+      workload: standard
     tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
   webapp:
+    nodeSelector:
+      workload: standard
     tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
   websockets:
+    nodeSelector:
+      workload: standard
     tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+postgresql:
+  primary:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
 
-
-elasticsearch:
+# Zeebe.
+zeebe:
+  nodeSelector:
+    workload: standard
   tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: nodegroup
-              operator: In
-              values:
-                - t-core-16-unstable
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+zeebe-gateway:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+
+# Elasticsearch.
+elasticsearch:
+  master:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard

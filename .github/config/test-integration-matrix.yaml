@@ -8,7 +8,7 @@ matrix:
         cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
         workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
         service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
-      if: false
+      if: $INPUTS_PLATFORMS_GKE
     - name: Kubernetes
       type: kubernetes
       platform: eks

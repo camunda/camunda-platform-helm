@@ -4,8 +4,6 @@ inputs:
   setup-flow:
     description: The chart setup flow either "install" or "upgrade".
     default: "install"
-  ingress-hostname-base:
-    description: The base of the Ingress hostname.
   platform:
     description: The deployment cloud platform like GKE or ROSA.
   deployment-ttl:
@@ -23,7 +21,7 @@ inputs:
   prefix:
     description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
     required: false
-    default: "distribution"
+    default: ""
 
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
@@ -45,6 +43,20 @@ runs:
       is_pr() {
         echo ${{ github.event.pull_request.number }} | grep -q .
       }
+
+      if [[ -z "${{ inputs.prefix }}" ]]; then
+        if [[ "${{ inputs.platform }}" == 'eks' ]]; then
+          export NAMESPACE_PREFIX=distribution
+        else
+          export NAMESPACE_PREFIX=camunda
+        fi
+      else
+        export NAMESPACE_PREFIX="${{ inputs.prefix }}"
+      fi
+      echo NAMESPACE_PREFIX=$NAMESPACE_PREFIX | tee -a $GITHUB_ENV
+
+      PLATFORM=${{ inputs.platform }}
+      echo PLATFORM=${{ inputs.platform }} | tee -a $GITHUB_ENV
 
       # NOTE: We should use the matrix job id var once it's available.
       # https://github.com/orgs/community/discussions/40291
@@ -84,14 +96,19 @@ runs:
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
 
       # Ingress hostname.
-      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${{ inputs.ingress-hostname-base }}"
+
+      if [[ "${{ inputs.platform }}" == 'eks' ]]; then
+        export INGRESS_HOSTNAME_BASE=${NAMESPACE_PREFIX}.aws.camunda.cloud
+      else
+        export INGRESS_HOSTNAME_BASE=ci.distro.ultrawombat.com
+      fi
+
+      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${INGRESS_HOSTNAME_BASE}"
       if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
-    env:
-      NAMESPACE_PREFIX: ${{ inputs.prefix }}
 
   - name: Set workflow vars - Chart version
     shell: bash
