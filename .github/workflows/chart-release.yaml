@@ -285,6 +285,7 @@ jobs:
           make helm.repos-add
           make release.generate-version-matrix-index
           make release.generate-version-matrix-released
+          make release.generate-version-matrix-unreleased
       # We use git-chglog to generate the release notes and release-please
       # doesn't have an option to disable the generation of CHANGELOG.md files.
       # https://github.com/googleapis/release-please/issues/2007

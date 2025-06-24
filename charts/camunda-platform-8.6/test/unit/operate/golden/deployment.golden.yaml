@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: operate
-    app.kubernetes.io/version: "8.6.18"
+    app.kubernetes.io/version: "8.6.19"
   annotations:
     {}
 spec:
@@ -35,14 +35,14 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: operate
-        app.kubernetes.io/version: "8.6.18"
+        app.kubernetes.io/version: "8.6.19"
       annotations:
     spec:
       imagePullSecrets:
         []
       initContainers:
         - name: migration
-          image: camunda/operate:8.6.18
+          image: camunda/operate:8.6.19
           command: ['/bin/sh', '/usr/local/operate/bin/migrate']
           securityContext:
             allowPrivilegeEscalation: false
@@ -70,7 +70,7 @@ spec:
               mountPath: /camunda
       containers:
         - name: operate
-          image: camunda/operate:8.6.18
+          image: camunda/operate:8.6.19
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
