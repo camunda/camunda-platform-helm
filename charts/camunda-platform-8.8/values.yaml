@@ -2200,17 +2200,18 @@ connectors:
   persistence:
     ## @param connectors.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
     enabled: false
-    ## @param core.persistence.size can be used to define the size of the persistent volume claim
+    ## @param connectors.persistence.size can be used to define the size of the persistent volume claim
     size: "5Gi"
-    ## @param core.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    ## @param connectors.persistence.accessModes can be used to define the access modes for the persistent volume claim
     accessModes: ["ReadWriteOnce"]
-   ## @param core.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    ## @param connectors.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    # Set to "-" to disable use of default storage class
     storageClassName: ""
-   ## @param core.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    ## @param connectors.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
     existingClaim: ""
-    ## @param core.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    ## @param connectors.persistence.annotations can be used to define annotations to add to the persistent volume claim
     annotations: {}
-    ## @param core.persistence.selector can be used to define a label selector for the persistent volume claim
+    ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
 ############################
