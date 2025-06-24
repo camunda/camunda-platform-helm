@@ -186,21 +186,24 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-{{- if .Values.webModelerPostgresql.enabled -}}
-  {{ printf "jdbc:postgresql://%s:5432/%s"
-            (include "webModeler.postgresql.fullname" .)
-            (default "web-modeler" .Values.webModeler.restapi.externalDatabase.database) }}
-{{- else -}}
-  {{- $db := .Values.webModeler.restapi.externalDatabase.database -}}
-  {{- $url := .Values.webModeler.restapi.externalDatabase.url -}}
-  {{- if and $db (ne $db "") -}}
-    {{ regexReplaceAll "/[^/]+$" $url (printf "/%s" $db) }}
+  {{- if .Values.webModelerPostgresql.enabled -}}
+    {{- printf "jdbc:postgresql://%s:%s/%s"
+        (include "webModeler.postgresql.fullname" .)
+        (.Values.webModelerPostgresql.auth.port | default "5432")
+        (.Values.webModelerPostgresql.auth.database | default "web-modeler")
+      -}}
+  {{- else if .Values.webModeler.restapi.externalDatabase.url -}}
+    {{- .Values.webModeler.restapi.externalDatabase.url -}}
+  {{- else if .Values.webModeler.restapi.externalDatabase.host -}}
+    {{- printf "jdbc:postgresql://%s:%s/%s"
+        .Values.webModeler.restapi.externalDatabase.host
+        (.Values.webModeler.restapi.externalDatabase.port | default "5432")
+        .Values.webModeler.restapi.externalDatabase.database
+      -}}
   {{- else -}}
-    {{ $url }}
+    {{- fail "[camunda][error] No database configuration found for web-modeler REST API. Please enable webModelerPostgresql or configure webModeler.restapi.externalDatabase." -}}
   {{- end -}}
 {{- end -}}
-{{- end -}}
-
 
 {{/*
 [web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
