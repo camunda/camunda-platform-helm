@@ -170,4 +170,4 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			testCase.Verifier(s.T(), output, err)
 		})
 	}
-} 
+}
