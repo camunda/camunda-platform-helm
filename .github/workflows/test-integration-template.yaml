@@ -315,7 +315,7 @@ jobs:
           fi
       - name: Set Deployment Secrets
         run: |
-          if [[ "${{ matrix.distro.platform }}" == "gke" || "${{ matrix.distro.platform }}" == "gke" ]]; then
+          if [[ "${{ matrix.distro.platform }}" == "gke" || "${{ matrix.distro.platform }}" == "rosa" ]]; then
             kubectl apply -n $TEST_NAMESPACE \
               -f .github/config/external-secret/external-secret-certificates.yaml
 
@@ -418,7 +418,7 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
       - name: 🌟 Upgrade Camunda chart 🌟
-        if: matrix.scenario.flow == 'upgrade' && matrix.distro.platform == 'gke'
+        if: matrix.scenario.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
