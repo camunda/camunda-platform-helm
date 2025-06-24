@@ -108,7 +108,8 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml \
         --values /tmp/extra-values-file.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}
+        {{ not eq (env "PLATFORM") "eks" | ternary "--values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml" "" }}
+        {{ eq (env "PLATFORM") "eks" | ternary "--values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml" "" }}
         --timeout 20m0s \
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
@@ -123,7 +124,8 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml \
         --values /tmp/extra-values-file.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}
+        {{ not eq (env "PLATFORM") "eks" | ternary "--values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml" "" }}
+        {{ eq (env "PLATFORM") "eks" | ternary "--values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml" "" }}
         --timeout 20m0s \
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
@@ -138,7 +140,8 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml \
         --values /tmp/extra-values-file.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}
+        {{ not eq (env "PLATFORM") "eks" | ternary "--values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml" "" }}
+        {{ eq (env "PLATFORM") "eks" | ternary "--values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml" "" }}
         --timeout 20m0s \
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
