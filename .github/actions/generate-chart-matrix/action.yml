@@ -75,17 +75,19 @@ runs:
           echo "  - version: ${camunda_version}" >> matrix_versions.txt
           echo "    case: pr" >> matrix_versions.txt
           if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
-            readarray prScenarios < <(yq e -o=j -I=0 '.integration.scenarios.pr.[]' $chart_dir/test/ci-test-config.yaml)
-            echo -n "    scenarios: \"" >> matrix_versions.txt
+            readarray prScenarios < <(yq e -o=j -I=0 '.integration.case.pr.scenario.[]' $chart_dir/test/ci-test-config.yaml)
+            echo -n "    scenarios: [" >>matrix_versions.txt
             for prScenario in "${prScenarios[@]}"; do
               enabled=$(echo "$prScenario" | yq e '.enabled' -)
               if [ "$enabled" = "false" ]; then
                 continue
               fi
               name=$(echo "$prScenario" | yq e '.name' -)
-              echo -n "$name," >>matrix_versions.txt
+              auth=$(echo "$prScenario" | yq e '.auth' -)
+              exclude=$(echo "$prScenario" | yq e '.exclude' -)
+              echo -n "{\"name\":\"$name\",\"auth\":\"$auth\",\"exclude\":$exclude}," >>matrix_versions.txt
             done
-            sed -i -e '$s/,$/"\n/' matrix_versions.txt
+            sed -i -e '$s/,$/]\n/' matrix_versions.txt
           fi
         }
 

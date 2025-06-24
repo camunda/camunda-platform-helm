@@ -1,5 +1,4 @@
 /// <reference types="node" />
-//TODO: these connector tests should run after core tests. Since a model needs to be deployed.
 import { config as dotenv } from "dotenv";
 dotenv(); // ← loads .env before anything else
 
