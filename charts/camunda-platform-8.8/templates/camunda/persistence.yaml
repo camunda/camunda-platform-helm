@@ -1,0 +1,29 @@
+{{- $connectorsPVC := include "camunda.persistence" (dict "root" . "name" "connectors") }}
+{{- if $connectorsPVC }}
+---
+{{ $connectorsPVC }}
+{{- end }}
+
+{{- $corePVC := include "camunda.persistence" (dict "root" . "name" "core") }}
+{{- if $corePVC }}
+---
+{{ $corePVC }}
+{{- end }}
+
+{{- $webModelerPVC := include "camunda.persistence" (dict "root" . "name" "webModeler") }}
+{{- if $webModelerPVC }}
+---
+{{ $webModelerPVC }}
+{{- end }}
+
+{{- $identityPVC := include "camunda.persistence" (dict "root" . "name" "identity") }}
+{{- if $identityPVC }}
+---
+{{ $identityPVC }}
+{{- end }}
+
+{{- $optimizePVC := include "camunda.persistence" (dict "root" . "name" "optimize") }}
+{{- if $optimizePVC }}
+---
+{{ $optimizePVC }}
+{{- end }} 
