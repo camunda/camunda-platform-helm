@@ -198,10 +198,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
     {{- printf "jdbc:postgresql://%s:%s/%s"
         .Values.webModeler.restapi.externalDatabase.host
         (.Values.webModeler.restapi.externalDatabase.port | default "5432")
-        .Values.webModeler.restapi.externalDatabase.database
+        (.Values.webModeler.restapi.externalDatabase.database | default "web-modeler")
       -}}
-  {{- else -}}
-    {{- fail "[camunda][error] No database configuration found for web-modeler REST API. Please enable webModelerPostgresql or configure webModeler.restapi.externalDatabase." -}}
   {{- end -}}
 {{- end -}}
 
