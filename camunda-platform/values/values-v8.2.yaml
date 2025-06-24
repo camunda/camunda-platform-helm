@@ -75,7 +75,7 @@ elasticsearch:
   # https://hub.docker.com/r/elastic/elasticsearch/tags
   image: docker.elastic.co/elasticsearch/elasticsearch
   # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
-  imageTag: 7.17.28
+  imageTag: 7.17.29
 
 retentionPolicy:
   # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags
