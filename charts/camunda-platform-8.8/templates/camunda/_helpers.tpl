@@ -752,7 +752,7 @@ This helper looks up the persistence configuration at .Values[<name>].persistenc
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "camundaPlatform.fullname" $root }}-{{ $component }}-data
+  name: {{ include "camundaPlatform.fullname" $root }}-{{ $component | lower }}-data
   labels: {{- include "camundaPlatform.labels" $root | nindent 4 }}
 {{- if $persistence.annotations }}
   annotations: {{- toYaml $persistence.annotations | nindent 4 }}
