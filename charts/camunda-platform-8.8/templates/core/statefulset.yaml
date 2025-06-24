@@ -301,15 +301,35 @@ spec:
 {{ toYaml . | indent 8 }}
 {{- end }}
 
-  {{- if eq .Values.core.persistenceType "disk" }}
+  {{- if or (eq .Values.core.persistenceType "disk") (and .Values.core.persistence.enabled (not .Values.core.persistence.existingClaim)) }}
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
         name: data
+        {{- if and .Values.core.persistence.enabled .Values.core.persistence.annotations }}
+        annotations: {{- toYaml .Values.core.persistence.annotations | nindent 10 }}
+        {{- else }}
         annotations:
           {{- toYaml .Values.core.pvcAnnotations | nindent 10 }}
+        {{- end }}
       spec:
+        {{- if .Values.core.persistence.enabled }}
+        accessModes: {{ .Values.core.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 8 }}
+        {{- if .Values.core.persistence.storageClassName }}
+        {{- if (eq "-" .Values.core.persistence.storageClassName) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ .Values.core.persistence.storageClassName | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.core.persistence.selector }}
+        selector: {{- toYaml .Values.core.persistence.selector | nindent 8 }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.core.persistence.size | default "10Gi" | quote }}
+        {{- else }}
         accessModes: {{ .Values.core.pvcAccessModes }}
         {{- if .Values.core.pvcStorageClassName }}
         {{- if (eq "-" .Values.core.pvcStorageClassName) }}
