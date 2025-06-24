@@ -2,7 +2,6 @@
 name: "Test - Integration - Template"
 
 on:
-  workflow_dispatch:
   workflow_call:
     inputs:
       identifier:
@@ -37,7 +36,7 @@ on:
         default: ""
         type: string
       platforms:
-        default: eks
+        default: gke
         type: string
       infra-type:
         description: Define the infrastructure that will be used to run the deployment.
@@ -111,7 +110,7 @@ on:
       namespace-prefix:
         description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
         required: false
-        default: distribution
+        default: ""
         type: string
 
 permissions:
@@ -126,7 +125,6 @@ env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
-  CI_HOSTNAME_BASE: ${{ inputs.namespace-prefix }}.aws.camunda.cloud
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
@@ -245,14 +243,6 @@ jobs:
             oc
             task
             yq
-      - name: Install env dependencies
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6 # v3
-
-      - name: Set up Teleport
-        uses: teleport-actions/setup@v1
-        with:
-            version: 17.2.2
-
       # TODO: Later, find a way to abstract the auth for different platforms.
       - name: Authenticate to GKE
         if: matrix.distro.platform == 'gke' && inputs.auth-data == ''
@@ -262,7 +252,11 @@ jobs:
           cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
           workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
           service-account: ${{ secrets[matrix.distro.secret.service-account] }}
-
+      - name: Set up Teleport
+        if: matrix.distro.platform == 'eks'
+        uses: teleport-actions/setup@v1
+        with:
+            version: 17.2.2
       - name: Authenticate with Teleport
         if: matrix.distro.platform == 'eks' && inputs.auth-data == ''
         uses: teleport-actions/auth-k8s@v2
@@ -270,7 +264,6 @@ jobs:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER_NAME }}
-
       - name: Authenticate to OpenShift
         if: matrix.distro.platform == 'rosa' && inputs.auth-data == ''
         uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1
@@ -294,16 +287,16 @@ jobs:
           setup-flow: ${{ matrix.scenario.flow }}
           platform: ${{ matrix.distro.platform }}
           identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
-
       - name: Set test type vars
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
         with:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ matrix.distro.platform }}"
       - name: Add Helm repos and dependencies
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
@@ -324,14 +317,17 @@ jobs:
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
-          kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
+          if [[ "${{ matrix.distro.platform }}" == "eks" ]]; then
+            echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
+            kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
+          fi
       - name: Set Deployment Secrets
         run: |
-          kubectl get secret -n ${NAMESPACE_PREFIX}-certs ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls -o yaml > ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
-          sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
-          kubectl apply -f ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
+          if [[ "${{ matrix.distro.platform }}" == "gke" || "${{ matrix.distro.platform }}" == "rosa" ]]; then
+            kubectl apply -n $TEST_NAMESPACE \
+              -f .github/config/external-secret/external-secret-certificates.yaml
 
           # For backward compatibility.
           kubectl apply -n $TEST_NAMESPACE \
@@ -352,9 +348,12 @@ jobs:
                 echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
               fi
             fi
+          else
+            # running in EKS
+            kubectl get secret -n ${NAMESPACE_PREFIX}-certs ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls -o yaml > ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
+            sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
+            kubectl apply -f ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
           fi
-        env:
-          NAMESPACE_PREFIX: ${{ inputs.namespace-prefix }}
 
       - name: Set Helm extra args
         env:
@@ -416,6 +415,9 @@ jobs:
           TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ inputs.identifier }}-${{ matrix.scenario.flow }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --values ${{ env.INFRA_TYPE_VALUES }}
+            --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
       - name: Post setup
@@ -436,7 +438,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ steps.test-type-vars.outputs.valuesBaseDir }}/infra/values-infra-${{ inputs.infra-type }}.yaml
+            --values ${{ env.INFRA_TYPE_VALUES }}
             --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec

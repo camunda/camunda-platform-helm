@@ -19,7 +19,7 @@ global:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-      secretName: distribution-aws-camunda-cloud-tls
+      secretName: camunda-platform
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
@@ -68,13 +68,7 @@ identity:
     existingSecretKey: "identity-user-password"
 
 identityKeycloak:
-  commonLabels:
-    janitor/ttl: 1h
-    camunda.cloud/ephemeral: "true"
   postgresql:
-    commonLabels:
-      janitor/ttl: 1h
-      camunda.cloud/ephemeral: "true"
     auth:
       existingSecret: "integration-test-credentials"
       secretKeys:
@@ -116,9 +110,6 @@ postgresql:
     secretKeys:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
-  commonLabels:
-    janitor/ttl: 1h
-    camunda.cloud/ephemeral: "true"
 
 zeebeGateway:
   contextPath: "/zeebe"
@@ -130,7 +121,7 @@ zeebeGateway:
       tls:
         enabled: true
         # A wildcard certificate will be used.
-        secretName: distribution-aws-camunda-cloud-tls
+        secretName: camunda-platform-zeebe-gateway
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
@@ -145,9 +136,6 @@ console:
 
 elasticsearch:
   maxUnavailable: 0
-  commonLabels:
-    janitor/ttl: 1h
-    camunda.cloud/ephemeral: "true"
 
 prometheusServiceMonitor:
   enabled: false
