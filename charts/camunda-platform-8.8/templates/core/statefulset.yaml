@@ -163,7 +163,11 @@ spec:
           {{- if .Values.core.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.core.contextPath }}{{ .Values.core.startupProbe.probePath }}
+              path: {{- if and .Values.core.contextPath (ne .Values.core.contextPath "/") }}
+                {{ .Values.core.contextPath }}{{ .Values.core.startupProbe.probePath }}
+              {{- else }}
+                {{ .Values.core.startupProbe.probePath }}
+              {{- end }}
               scheme: {{ .Values.core.startupProbe.scheme }}
               port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.startupProbe.initialDelaySeconds }}
@@ -175,7 +179,11 @@ spec:
           {{- if .Values.core.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.core.contextPath }}{{ .Values.core.readinessProbe.probePath }}
+              path: {{- if and .Values.core.contextPath (ne .Values.core.contextPath "/") }}
+                {{ .Values.core.contextPath }}{{ .Values.core.readinessProbe.probePath }}
+              {{- else }}
+                {{ .Values.core.readinessProbe.probePath }}
+              {{- end }}
               scheme: {{ .Values.core.readinessProbe.scheme }}
               port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.readinessProbe.initialDelaySeconds }}
@@ -187,7 +195,11 @@ spec:
           {{- if .Values.core.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.core.contextPath }}{{ .Values.core.livenessProbe.probePath }}
+              path: {{- if and .Values.core.contextPath (ne .Values.core.contextPath "/") }}
+                {{ .Values.core.contextPath }}{{ .Values.core.livenessProbe.probePath }}
+              {{- else }}
+                {{ .Values.core.livenessProbe.probePath }}
+              {{- end }}
               scheme: {{ .Values.core.livenessProbe.scheme }}
               port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.livenessProbe.initialDelaySeconds }}
