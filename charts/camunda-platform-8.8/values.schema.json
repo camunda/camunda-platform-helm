@@ -2470,11 +2470,6 @@
                                     "type": "string",
                                     "description": "can be used to provide the name of an existing secret key containing the database password",
                                     "default": "database-password"
-                                },
-                                "database": {
-                                    "type": "string",
-                                    "description": "The database name",
-                                    "default": ""
                                 }
                             }
                         },
