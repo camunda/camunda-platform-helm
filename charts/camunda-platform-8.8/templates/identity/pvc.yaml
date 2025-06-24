@@ -1,0 +1,5 @@
+{{- $identityPVC := include "camunda.persistence" (dict "root" . "name" "identity") }}
+{{- if $identityPVC }}
+---
+{{ $identityPVC }}
+{{- end }} 

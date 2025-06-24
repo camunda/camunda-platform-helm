@@ -1,0 +1,5 @@
+{{- $connectorsPVC := include "camunda.persistence" (dict "root" . "name" "connectors") }}
+{{- if $connectorsPVC }}
+---
+{{ $connectorsPVC }}
+{{- end }} 

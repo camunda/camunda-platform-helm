@@ -1,0 +1,5 @@
+{{- $optimizePVC := include "camunda.persistence" (dict "root" . "name" "optimize") }}
+{{- if $optimizePVC }}
+---
+{{ $optimizePVC }}
+{{- end }} 
