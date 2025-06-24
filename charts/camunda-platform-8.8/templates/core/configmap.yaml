@@ -114,10 +114,11 @@ data:
 
         # zeebe.broker.data
         data:
-          snapshotPeriod: 5m
-          freeSpace:
-            processing: 2GB
-            replication: 3GB
+          snapshotPeriod: {{ .Values.core.data.snapshotPeriod | quote }}
+          disk:
+            freeSpace:
+              processing: {{ .Values.core.data.disk.freeSpace.processing | quote }}
+              replication: {{ .Values.core.data.disk.freeSpace.replication | quote }}
 
         # zeebe.broker.threads
         threads:

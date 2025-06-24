@@ -80,10 +80,11 @@ data:
 
         # zeebe.broker.data
         data:
-          snapshotPeriod: 5m
-          freeSpace:
-            processing: 2GB
-            replication: 3GB
+          snapshotPeriod: "5m"
+          disk:
+            freeSpace:
+              processing: "3GB"
+              replication: "2GB"
 
         # zeebe.broker.threads
         threads:
