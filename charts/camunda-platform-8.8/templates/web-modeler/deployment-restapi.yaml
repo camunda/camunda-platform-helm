@@ -165,7 +165,15 @@ spec:
         {{- end }}
       volumes:
         - name: tmp
+          {{- if and .Values.webModeler.persistence.enabled .Values.webModeler.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.webModeler.persistence.existingClaim }}
+          {{- else if .Values.webModeler.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-webModeler-data
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-restapi-configuration

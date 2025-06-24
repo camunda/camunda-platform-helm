@@ -318,9 +318,25 @@ spec:
         {{- end }}
       volumes:
         - name: tmp
+          {{- if and .Values.optimize.persistence.enabled .Values.optimize.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.optimize.persistence.existingClaim }}
+          {{- else if .Values.optimize.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         - name: camunda
+          {{- if and .Values.optimize.persistence.enabled .Values.optimize.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.optimize.persistence.existingClaim }}
+          {{- else if .Values.optimize.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         - name: environment-config
           configMap:
             name: {{ include "optimize.fullname" . }}-configuration
