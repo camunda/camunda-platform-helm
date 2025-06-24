@@ -123,7 +123,7 @@ Usage: {{ include "camundaPlatform.image" . }}
 
 {{/*
 Return the version label for resources.
-If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., “8.8.x”); otherwise use the resolved image tag.
+If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., "8.8.x"); otherwise use the resolved image tag.
 */}}
 {{- define "camundaPlatform.versionLabel" -}}
   {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
@@ -732,4 +732,45 @@ Release templates.
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
   {{- end }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Generic persistence helper for optional PVC creation.
+Usage: {{ include "camunda.persistence" (dict "root" . "name" "core") }}
+
+This helper looks up the persistence configuration at .Values[<name>].persistence and:
+- If component is enabled AND persistence.enabled: true AND existingClaim is empty → renders a PVC manifest
+- If component is enabled AND persistence.enabled: true AND existingClaim is non-empty → renders nothing (uses existing claim)
+- Otherwise → renders nothing (falls back to emptyDir)
+*/}}
+{{- define "camunda.persistence" -}}
+{{- $component := .name -}}
+{{- $root := .root -}}
+{{- $componentEnabled := (index $root.Values $component "enabled") -}}
+{{- $persistence := (index $root.Values $component "persistence") -}}
+{{- if and $componentEnabled $persistence $persistence.enabled (not $persistence.existingClaim) -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "camundaPlatform.fullname" $root }}-{{ $component }}-data
+  labels: {{- include "camundaPlatform.labels" $root | nindent 4 }}
+{{- if $persistence.annotations }}
+  annotations: {{- toYaml $persistence.annotations | nindent 4 }}
+{{- end }}
+spec:
+  accessModes: {{ $persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 4 }}
+{{- if $persistence.storageClassName }}
+{{- if (eq "-" $persistence.storageClassName) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: {{ $persistence.storageClassName | quote }}
+{{- end }}
+{{- end }}
+{{- if $persistence.selector }}
+  selector: {{- toYaml $persistence.selector | nindent 4 }}
+{{- end }}
+  resources:
+    requests:
+      storage: {{ $persistence.size | default "1Gi" | quote }}
+{{- end }}
 {{- end -}}
