@@ -106,11 +106,19 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             {{- if .Values.global.identity.auth.enabled }}
+              {{- $userProvidedCoreClientSecretEnv := false }}
+              {{- range .Values.core.env }}
+                {{- if and (hasKey . "name") (eq .name "VALUES_CAMUNDA_CORE_CLIENT_SECRET") }}
+                  {{- $userProvidedCoreClientSecretEnv = true }}
+                {{- end }}
+              {{- end }}
+              {{- if not $userProvidedCoreClientSecretEnv }}
             - name: VALUES_CAMUNDA_CORE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "core.authClientSecretName" . }}
                   key: {{ include "core.authClientSecretKey" . }}
+              {{- end }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
