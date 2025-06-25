@@ -74,7 +74,15 @@ on:
         type: string
       scenario:
         required: false
-        default: "base"
+        default: "elasticsearch"
+        type: string
+      auth:
+        required: false
+        default: "keycloak"
+        type: string
+      exclude:
+        required: false
+        default: ""
         type: string
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift

@@ -49,17 +49,19 @@ jobs:
         with:
           charts-path: "charts/camunda-platform-8*"
           manual-trigger: 8.8
-  # test:
-  #   if: ${{ needs.init.outputs.matrix != '[]' }}
-  #   name: Camunda ${{ matrix.version }}
-  #   needs: init
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-  #   uses: ./.github/workflows/test-chart-version-template.yaml
-  #   secrets: inherit
-  #   with:
-  #     pr-number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
-  #     camunda-version: "${{ matrix.version }}"
-  #     scenarios: ${{ matrix.scenarios }}
-  #     case: ${{ matrix.case }}
+  test:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Camunda ${{ matrix.version }}
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/test-chart-version-template.yaml
+    secrets: inherit
+    with:
+      pr-number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
+      camunda-version: "${{ matrix.version }}"
+      case: ${{ matrix.case }}
+      scenario: ${{ matrix.scenario }}
+      auth: ${{ matrix.auth }}
+      exclude: ${{ matrix.exclude }}
