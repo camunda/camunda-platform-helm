@@ -197,8 +197,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- else if .Values.webModeler.restapi.externalDatabase.host -}}
     {{- printf "jdbc:postgresql://%s:%s/%s"
         .Values.webModeler.restapi.externalDatabase.host
-        (toString (.Values.webModeler.restapi.externalDatabase.port | default "5432"))
-        (.Values.webModeler.restapi.externalDatabase.database | default "web-modeler")
+        (toString (.Values.webModeler.restapi.externalDatabase.port))
+        (.Values.webModeler.restapi.externalDatabase.database)
       -}}
   {{- end -}}
 {{- end -}}
