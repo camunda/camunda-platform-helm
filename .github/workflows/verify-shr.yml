@@ -1,0 +1,16 @@
+name: Verify Self-Hosted Runner Labels
+
+on:
+  pull_request:
+
+jobs:
+  verify-labels:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner:
+          - aws-core-2-default
+          - gcp-core-2-default
+    steps:
+      - name: Say hello to Self-Managed
+        run: echo "Hello Self-Managed from ${{ matrix.runner }}"
