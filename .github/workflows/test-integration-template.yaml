@@ -408,7 +408,7 @@ jobs:
       #   run: |
       #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
       - name: ⭐️ Run Playwright Core TestSuite ⭐️
-        if: ${{ always() && inputs.test-enabled && (steps.core-testsuite.outcome == 'success' || steps.core-testsuite.outcome == 'failure') && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
+        if: ${{ always() && inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
         timeout-minutes: 20
         run: |
           export TEST_INGRESS_HOST="${{ steps.vars.outputs.ingress-host }}"

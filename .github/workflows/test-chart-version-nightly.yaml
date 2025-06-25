@@ -2,6 +2,15 @@
 name: "Test - Chart Version Nightly"
 
 on:
+  # pull_request:
+  #   paths:
+  #     - ".github/workflows/chart-validate-template.yaml"
+  #     - ".github/workflows/test-unit-template.yml"
+  #     - ".github/workflows/test-integration-template.yaml"
+  #     - ".github/workflows/test-chart-version-nightly-template.yaml"
+  #     - ".github/workflows/test-chart-version-nightly.yaml"
+  #     - ".tool-versions"
+  #     - "charts/camunda-platform-8*/**"
   schedule:
     # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
     - cron: "0 4 * * *"
@@ -44,5 +53,7 @@ jobs:
     secrets: inherit
     with:
       camunda-version: ${{ matrix.version }}
-      scenarios: ${{ matrix.scenarios }}
+      scenario: ${{ matrix.scenarios }}
       case: ${{ matrix.case }}
+      auth: ${{ matrix.auth }}
+      exclude: ${{ matrix.exclude }}

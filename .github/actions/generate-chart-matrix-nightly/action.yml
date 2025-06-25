@@ -35,15 +35,8 @@ runs:
             continue
           fi
 
-          cat >>matrix_versions.txt <<-EOL
-          - version: ${camunda_version}
-            case: nightly
-        EOL
-
           #reads the array from the yaml file
-          readarray nightlyScenarios < <(yq e -o=j -I=0 '.integration.scenarios.nightly.[]' ${chart_dir}/test/ci-test-config.yaml)
-
-          echo -n "scenarios: \"" | sed 's/^/    /' >>matrix_versions.txt
+          readarray nightlyScenarios < <(yq e -o=j -I=0 '.integration.case.nightly.scenario.[]' ${chart_dir}/test/ci-test-config.yaml)
 
           for nightlyScenario in "${nightlyScenarios[@]}"; do
             enabled=$(echo "$nightlyScenario" | yq e '.enabled' -)
@@ -51,12 +44,13 @@ runs:
             if [ "$enabled" = "false" ]; then
               continue
             fi
-            name=$(echo "$nightlyScenario" | yq e '.name' -)
-            # indent name so it complies with yaml formatting
-            echo -n "$name," >>matrix_versions.txt
+            echo "  - version: ${camunda_version}" >>matrix_versions.txt
+            echo "    case: nightly" >>matrix_versions.txt
+            echo "    scenario: $(echo "$nightlyScenario" | yq e '.name' -)" >>matrix_versions.txt
+            echo "    auth: $(echo "$nightlyScenario" | yq e '.auth' -)" >>matrix_versions.txt
+            echo "    exclude: $(echo "$nightlyScenario" | yq e '.exclude | join(",")' -)" >>matrix_versions.txt
           done
-          # replace the "," and the end of the file with '"\n'
-          sed -i -e '$s/,$/"\n/' matrix_versions.txt
+            sed -i -e '$s/,$/]\n/' matrix_versions.txt
 
         done
         cat matrix_versions.txt

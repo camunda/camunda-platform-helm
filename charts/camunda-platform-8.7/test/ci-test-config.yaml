@@ -18,16 +18,28 @@ integration:
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../../charts
-  scenarios:
+  case:
     pr:
-      - name: base
-        enabled: true
+      scenario:
+        - name: base
+          enabled: true
+          exclude: []
+          auth: keycloak
     nightly:
-      - name: base
-        enabled: true
-      - name: multitenancy
-        enabled: true
-      - name: oidc
-        enabled: false
-      - name: opensearch
-        enabled: true
+      scenario:
+        - name: base
+          enabled: true
+          exclude: []
+          auth: keycloak
+        - name: multitenancy
+          enabled: true
+          exclude: []
+          auth: keycloak
+        - name: oidc
+          enabled: false
+          exclude: []
+          auth: keycloak
+        - name: opensearch
+          enabled: true
+          exclude: []
+          auth: keycloak

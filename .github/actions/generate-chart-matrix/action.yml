@@ -79,8 +79,7 @@ runs:
               if [ "$enabled" = "false" ]; then
                 continue
               fi
-              enabled=$(echo "$prScenario" | yq e '.enabled' -)
-              echo "  - version: 8.8" >>matrix_versions.txt
+              echo "  - version: ${camunda_version}" >>matrix_versions.txt
               echo "    case: pr" >>matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >>matrix_versions.txt
               echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >>matrix_versions.txt

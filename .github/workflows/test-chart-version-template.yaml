@@ -86,7 +86,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-${{ matrix.scenario }}-intg-${{ inputs.camunda-version }}"
+      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-intg-${{ inputs.camunda-version }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
