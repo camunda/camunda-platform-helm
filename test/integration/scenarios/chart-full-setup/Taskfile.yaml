@@ -97,17 +97,45 @@ tasks:
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       fi
-    - helm install integration {{ .TEST_CHART_NAME }}
-        --version {{ .TEST_CHART_VERSION }}
-        --namespace {{ .TEST_NAMESPACE }}
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-base.yaml
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml
-        --values /tmp/extra-values-file.yaml
-        --timeout 20m0s
-        --wait
+    - |
+
+      if [[ "${TEST_AUTH}" == 'oidc' ]]; then
+        helm install integration {{ .TEST_CHART_NAME }} \
+        --version {{ .TEST_CHART_VERSION }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml \
+        --values /tmp/extra-values-file.yaml \
+        --timeout 20m0s \
+        --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
+      elif [[ "${TEST_AUTH}" == 'basic' ]]; then
+        helm install integration {{ .TEST_CHART_NAME }} \
+        --version {{ .TEST_CHART_VERSION }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-basic.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml \
+        --values /tmp/extra-values-file.yaml \
+        --timeout 20m0s \
+        --wait \
+        {{ .TEST_HELM_EXTRA_ARGS }}
+      else #keycloak auth
+        helm install integration {{ .TEST_CHART_NAME }} \
+        --version {{ .TEST_CHART_VERSION }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-keycloak.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE }}.yaml \
+        --values /tmp/extra-values-file.yaml \
+        --timeout 20m0s \
+        --wait \
+        {{ .TEST_HELM_EXTRA_ARGS }}
+      fi
 
   setup.post:
     cmds:

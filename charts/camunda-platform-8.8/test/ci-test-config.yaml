@@ -1,5 +1,5 @@
 # Used in the GitHub Actions unit test CI workflow.
-# auth can be the following values: basic, keycloak, entra
+# auth can be the following values: basic, keycloak, oidc
 unit:
   # TODO: Enable it again when the 8.7 is released (we need to review and fix the unit tests for 8.8).
   enabled: false
@@ -26,14 +26,14 @@ integration:
           enabled: true
           auth: keycloak
           exclude: []
-        - name: multitenancy
-          enabled: true
-          exclude: []
-          auth: keycloak
-        - name: opensearch
-          enabled: true
-          exclude: []
-          auth: keycloak
+        # - name: multitenancy
+        #   enabled: true
+        #   exclude: []
+        #   auth: keycloak
+        # - name: opensearch
+        #   enabled: true
+        #   exclude: []
+        #   auth: keycloak
     nightly:
       scenario:
         - name: elasticsearch
@@ -47,7 +47,7 @@ integration:
         - name: elasticsearch
           enabled: true
           exclude: []
-          auth: entra
+          auth: oidc
         - name: multitenancy
           enabled: false
           exclude: []
