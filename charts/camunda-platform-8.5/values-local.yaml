@@ -28,6 +28,7 @@ zeebeGateway:
   replicas: 1
 
 connectors:
+  enabled: true
   inbound:
     mode: disabled
 
@@ -36,4 +37,4 @@ elasticsearch:
     replicaCount: 1
     # Request smaller persistent volumes.
     persistence:
-      size: 10Gi
+      size: 15Gi

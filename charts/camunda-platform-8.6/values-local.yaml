@@ -28,12 +28,18 @@ zeebeGateway:
   replicas: 1
 
 connectors:
+  enabled: true
   inbound:
     mode: disabled
+  env:
+    - name: CAMUNDA_CONNECTOR_POLLING
+      value: "false"
+    - name: OPERATE_CLIENT_ENABLED
+      value: "false"
 
 elasticsearch:
   master:
     replicaCount: 1
     # Request smaller persistent volumes.
     persistence:
-      size: 10Gi
+      size: 15Gi
