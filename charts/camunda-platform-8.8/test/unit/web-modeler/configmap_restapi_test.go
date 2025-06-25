@@ -521,30 +521,31 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
-	// given
-	values := map[string]string{
-		"webModelerPostgresql.enabled":                 "false",
-		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
-		"webModeler.restapi.externalDatabase.port":     "65432",
-		"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
-	}
-	maps.Insert(values, maps.All(requiredValues))
-	options := &helm.Options{
-		SetValues:      values,
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
+    // given
+    values := map[string]string{
+        "webModelerPostgresql.enabled":                 "false",
+        "webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
+        "webModeler.restapi.externalDatabase.port":     "65432",
+        "webModeler.restapi.externalDatabase.database": "custom-modeler-db",
+    }
+    maps.Insert(values, maps.All(requiredValues))
+    options := &helm.Options{
+        SetValues:      values,
+        KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+    }
 
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication WebModelerRestAPIApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+    // when
+    output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+    var configmap corev1.ConfigMap
+    var configmapApplication WebModelerRestAPIApplicationYAML
+    helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
+    err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+    if err != nil {
+        s.Fail("Failed to unmarshal yaml. error=", err)
+    }
 
-	// then
-	s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
+    // then
+    s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
 }
+
