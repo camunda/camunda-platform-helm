@@ -72,6 +72,10 @@ jobs:
     runs-on: gcp-core-8-default
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Debug
+        run: |
+          sudo apt update
+          sudo apt-get install -y build-essential
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -79,6 +83,7 @@ jobs:
             helm
             kind
             kubectl
+            make
       - name: Create KIND cluster
         run: |
           kind create cluster --name camunda-platform
@@ -101,7 +106,8 @@ jobs:
             kubectl get pods --namespace camunda-platform
             sleep 30
           done
-          # kubectl describe pods --namespace camunda-platform
+          kubectl describe pods --namespace camunda-platform
+          kubectl get pods --namespace camunda-platform -o yaml
       - name: Gather diagnostics for failed Pods
         # if: failure()
         env:

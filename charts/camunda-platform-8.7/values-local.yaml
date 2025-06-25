@@ -15,28 +15,28 @@ identityKeycloak:
 
 optimize:
   enabled: false
-  migration:
-    resources: null
+  # migration:
+  #   resources: null
 
-operate:
-  resources: null
-  migration:
-    resources: null
+# operate:
+#   resources: null
+#   migration:
+#     resources: null
 
-tasklist:
-  resources: null
+# tasklist:
+#   # resources: null
 
 # Reduce for Zeebe and Gateway the configured replicas and with that the required resources
 # to get it running locally
 zeebe:
-  resources: null
+  # resources: null
   clusterSize: 1
   partitionCount: 1
   replicationFactor: 1
   pvcSize: 10Gi
 
 zeebeGateway:
-  resources: null
+  # resources: null
   replicas: 1
 
 connectors:
@@ -46,9 +46,8 @@ connectors:
     mode: disabled
 
 elasticsearch:
-  resources: null
   master:
-    resources: null
+    # resources: null
     replicaCount: 1
     # Request smaller persistent volumes.
     persistence:
