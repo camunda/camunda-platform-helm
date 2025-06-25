@@ -4,6 +4,7 @@ vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" }}'
 
 tasks:
   pre:
@@ -20,8 +21,25 @@ tasks:
   exec:
     cmds:
     - |
+      if [[ "${TEST_AUTH}" == 'oidc' ]]; then
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
+      elif [[ "${TEST_AUTH}" == 'basic' ]]; then
+      helm upgrade integration {{ .TEST_CHART_NAME }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-basic.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+        --timeout 20m0s \
+        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+      else #keycloak auth
+      helm upgrade integration {{ .TEST_CHART_NAME }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-keycloak.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+        --timeout 20m0s \
+        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+      fi
