@@ -74,7 +74,9 @@ jobs:
     runs-on: gcp-core-8-default
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Debug
+      # Could be replaced with common-tooling GitHub Action when the issue is resolved:
+      # https://github.com/camunda/infra-global-github-actions/issues/432
+      - name: Install dependencies
         run: |
           sudo apt update
           sudo apt-get install -y build-essential
@@ -95,21 +97,17 @@ jobs:
           make helm.repos-add
           helm package --dependency-update "charts/camunda-platform-${{ inputs.camunda-version }}"
       - name: Install Camunda Helm chart
+        timeout-minutes: 10
         run: |
-          helm install camunda-platform *.tgz \
+          helm install camunda-platform *.tgz --wait --timeout 10m0s \
             --create-namespace --namespace camunda-platform \
             --values "charts/camunda-platform-${{ inputs.camunda-version }}/values-local.yaml"
       - name: Debug - Get Pods info
+        if: failure()
         run: |
-          end=$((SECONDS+300))
-          while [ $SECONDS -lt $end ]; do
-            echo "###############################################################"
-            echo "Waiting for Pods to be ready... finish time: $SECONDS seconds"
-            kubectl get pods --namespace camunda-platform
-            sleep 30
-          done
-          kubectl describe pods --namespace camunda-platform
+          kubectl get pods --namespace camunda-platform
           kubectl get pods --namespace camunda-platform -o yaml
+          kubectl describe pods --namespace camunda-platform
 
   integration:
     name: Camunda ${{ inputs.camunda-version }} - Integration Test

@@ -35,14 +35,15 @@ jobs:
           # Values files.
           mkdir -p camunda-platform/values
 
-          # Latest version.
-          version_latest_dir="$(ls -d1 main/charts/camunda-platform-8* | tail -n1)"
-          cp -a ${version_latest_dir}/values-latest.yaml camunda-platform/values/values-latest.yaml
-
-          # Previous versions.
+          # Extra values for all chart versions.
           find main/charts -name "camunda-platform-8*" | while read chart_id; do
               camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              # Latest values files.
               cp -a ${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml;
+              # Local values files.
+              test -f ${chart_id}/values-local.yaml \
+                && cp -a ${chart_id}/values-local.yaml camunda-platform/values/values-local-v${camunda_version}.yaml \
+                || echo "No local values file for version ${camunda_version}";
           done
 
           #
@@ -51,7 +52,7 @@ jobs:
           cp -a main/version-matrix/* camunda-platform/version-matrix/
 
           #
-          # Post run.            
+          # Post run.
           rm -rf main
           find .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
