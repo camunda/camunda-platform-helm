@@ -187,17 +187,16 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
   {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- printf "jdbc:postgresql://%s:%s/%s"
+    {{- printf "jdbc:postgresql://%s:5432/%s"
         (include "webModeler.postgresql.fullname" .)
-        (.Values.webModelerPostgresql.auth.port | default "5432")
-        (.Values.webModelerPostgresql.auth.database | default "web-modeler")
+        (.Values.webModelerPostgresql.auth.database)
       -}}
   {{- else if .Values.webModeler.restapi.externalDatabase.url -}}
     {{- .Values.webModeler.restapi.externalDatabase.url -}}
   {{- else if .Values.webModeler.restapi.externalDatabase.host -}}
     {{- printf "jdbc:postgresql://%s:%s/%s"
         .Values.webModeler.restapi.externalDatabase.host
-        (.Values.webModeler.restapi.externalDatabase.port | default "5432")
+        (toString (.Values.webModeler.restapi.externalDatabase.port | default "5432"))
         (.Values.webModeler.restapi.externalDatabase.database | default "web-modeler")
       -}}
   {{- end -}}
