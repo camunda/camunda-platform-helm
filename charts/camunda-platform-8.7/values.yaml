@@ -2910,8 +2910,15 @@ webModeler:
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
     # Note: Currently, the only supported database system is PostgreSQL.
     externalDatabase:
-      ## @param webModeler.restapi.externalDatabase.url defines the JDBC url of the database instance
+      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.
+      # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
       url: ""
+      ## @param webModeler.restapi.externalDatabase.host Database host (used when url is not provided)
+      host: ""
+      ## @param webModeler.restapi.externalDatabase.port Database port number (used when url is not provided)
+      port: 5432
+      ## @param webModeler.restapi.externalDatabase.database The database name (used when url is not provided)
+      database: "web-modeler"
       ## @param webModeler.restapi.externalDatabase.user defines the database user
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set

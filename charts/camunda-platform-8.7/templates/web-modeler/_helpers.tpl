@@ -183,10 +183,24 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{/*
+
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-  {{- .Values.postgresql.enabled | ternary (printf "jdbc:postgresql://%s:5432/web-modeler" (include "webModeler.postgresql.fullname" .)) .Values.webModeler.restapi.externalDatabase.url -}}
+  {{- if .Values.postgresql.enabled -}}
+    {{- printf "jdbc:postgresql://%s:5432/%s"
+        (include "webModeler.postgresql.fullname" .)
+        (.Values.postgresql.auth.database)
+      -}}
+  {{- else if .Values.webModeler.restapi.externalDatabase.url -}}
+    {{- .Values.webModeler.restapi.externalDatabase.url -}}
+  {{- else if .Values.webModeler.restapi.externalDatabase.host -}}
+    {{- printf "jdbc:postgresql://%s:%s/%s"
+        .Values.webModeler.restapi.externalDatabase.host
+        (toString (.Values.webModeler.restapi.externalDatabase.port))
+        (.Values.webModeler.restapi.externalDatabase.database)
+      -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*
