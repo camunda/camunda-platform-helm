@@ -479,6 +479,29 @@ func (s *ConfigmapRestAPITemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("https://example.com:443/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
 			},
+		}, {
+			Name: "TestContainerShouldSetJdbcUrlFromHostPortDatabase",
+			Values: map[string]string{
+				"webModeler.enabled":                           "true",
+				"webModeler.restapi.mail.fromAddress":          "example@example.com",
+				"postgresql.enabled": 					        "false",
+				"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
+				"webModeler.restapi.externalDatabase.port":     "65432",
+				"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
+			},
 		},
 	}
 
