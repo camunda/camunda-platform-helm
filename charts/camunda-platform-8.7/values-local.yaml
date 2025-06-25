@@ -40,7 +40,7 @@ zeebeGateway:
   replicas: 1
 
 connectors:
-  # Disable connectors for local development as it doesn't support the "disabled" mode.
+  # Disable Connectors as it has a bug in the current version (8.7.2).
   enabled: false
   inbound:
     mode: disabled
