@@ -1,5 +1,5 @@
 #
-# Camunda - Latest
+# Camunda - Alpha
 #
 
 global:
@@ -8,60 +8,43 @@ global:
   image:
     tag:
 
-  identity:
-    image:
-      repository: camunda/identity
-      tag: 8.5.17
-
 console:
   # Camunda Enterprise repository.
-  # registry.camunda.cloud/console
+  # https://hub.docker.com/r/camunda/console/tags
   image:
-    # renovate: datasource=docker depName=camunda/console lookupName=registry.camunda.cloud/console/console-sm
-    tag: 8.5.117
+    repository: camunda/console
+    tag: SNAPSHOT
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.5.17
-
-operate:
-  # https://hub.docker.com/r/camunda/operate/tags
-  image:
-    repository: camunda/operate
-    tag: 8.5.15
+    tag: SNAPSHOT
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.16
+    tag: 8-SNAPSHOT
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.5.17
+    tag: SNAPSHOT
 
 webModeler:
-  # Camunda Enterprise repository.
-  # registry.camunda.cloud/web-modeler-ee
+  # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
-    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.19
+    # renovate: datasource=docker depName=camunda/web-modeler-restapi
+    tag: SNAPSHOT
 
-zeebe:
-  # https://hub.docker.com/r/camunda/zeebe/tags
+core:
+  # https://hub.docker.com/r/camunda/camunda/tags
   image:
-    repository: camunda/zeebe
-    tag: 8.5.19
+    repository: camunda/camunda
+    tag: SNAPSHOT
 
-zeebeGateway:
-  # https://hub.docker.com/r/camunda/zeebe/tags
-  image:
-    repository: camunda/zeebe
-    tag: 8.5.19
 
 #
 # Identity
@@ -71,7 +54,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.5.17
+    tag: SNAPSHOT
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
@@ -92,4 +75,4 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     repository: bitnami/elasticsearch
-    tag: 8.12.2
+    tag: 8.18.0
