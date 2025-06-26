@@ -52,7 +52,7 @@ const config = {
 };
 
 // ---------- tests ----------
-test.describe("core", () => {
+test.describe("core-grpc", () => {
   let api: APIRequestContext;
   let venomJWT: string;
 
@@ -203,7 +203,7 @@ test.describe("core", () => {
         {
           data: "{}",
           headers: {
-            Authorization: authHeader(api, config),
+            Authorization: await authHeader(api, config),
             "Content-Type": "application/json",
           },
         },

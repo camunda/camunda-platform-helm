@@ -28,7 +28,7 @@ export async function fetchToken(
 export const authHeader = async (api: APIRequestContext, config: any) => {
   if (config.authType === "basic") {
     return `Basic ${Buffer.from(
-      `${config.venomID}:${config.venomSec}`,
+      `${config.demoUser}:${config.demoPass}`,
     ).toString("base64")}`;
   } else if (config.authType === "keycloak") {
     return `Bearer ${await fetchToken(config.venomID, config.venomSec, api, config)}`;

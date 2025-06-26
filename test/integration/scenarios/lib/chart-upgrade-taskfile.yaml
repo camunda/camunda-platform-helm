@@ -21,21 +21,26 @@ tasks:
   exec:
     cmds:
     - |
-      if [[ "${TEST_AUTH}" == 'oidc' ]]; then
+      #elif does not work properly in Taskfile. This is why the if statements are separated
+      if [[ "${TEST_AUTH_TYPE}" == "oidc" ]]; then
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
-      elif [[ "${TEST_AUTH}" == 'basic' ]]; then
+      fi
+
+      if [[ "${TEST_AUTH_TYPE}" == "basic" ]]; then
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-basic.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
-      else #keycloak auth
+      fi
+
+      if [[ "${TEST_AUTH_TYPE}" == "keycloak" ]]; then
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-keycloak.yaml \

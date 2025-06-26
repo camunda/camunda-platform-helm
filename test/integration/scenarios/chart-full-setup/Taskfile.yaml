@@ -97,6 +97,7 @@ tasks:
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       fi
     - |
+      #elif does not work properly in Taskfile. This is why the if statements are separated
       if [[ "${TEST_AUTH_TYPE}" == "oidc" ]]; then
         helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
@@ -138,8 +139,6 @@ tasks:
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
       fi
-
-      echo $TEST_AUTH_TYPE
 
   setup.post:
     cmds:
