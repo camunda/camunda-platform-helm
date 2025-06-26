@@ -136,7 +136,7 @@ global:
 
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
-  ## @param global.labels Immutable labels applied to all resources and used in matchLabels/selectors.
+  ## @extra global.labels Immutable labels applied to all resources and used in matchLabels/selectors.
   labels:
   ## @param global.labels.app Name of the application
     app: camunda-platform
