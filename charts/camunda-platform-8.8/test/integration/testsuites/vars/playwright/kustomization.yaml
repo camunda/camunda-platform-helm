@@ -28,3 +28,4 @@ configMapGenerator:
     - ../../tests/connectors.spec.ts
     - ../../tests/console.spec.ts
     - ../../tests/identity.spec.ts
+    - ../../tests/helper.ts

@@ -4,7 +4,7 @@ dotenv(); // ← loads .env before anything else
 
 import { test, expect, APIRequestContext } from "@playwright/test";
 import { execFileSync } from "child_process";
-import { authHeader, fetchToken, requireEnv } from "../utils/helper";
+import { authHeader, fetchToken, requireEnv } from "./helper";
 
 // ---------- config & helpers ----------
 
@@ -13,6 +13,7 @@ import { authHeader, fetchToken, requireEnv } from "../utils/helper";
 // Grouped config for base URLs
 const config = {
   authURL: requireEnv("AUTH_URL"),
+  authType: requireEnv("AUTH_TYPE"),
   testBasePath: requireEnv("TEST_BASE_PATH"),
   base: {
     connectors: requireEnv("CONNECTORS_BASE_URL"),
@@ -44,19 +45,20 @@ test.describe("Camunda core", () => {
     ).toBeTruthy();
   });
 
-  test(`TEST - Check Connectors webhook`, async () => {
-    const r = await api.post(config.base.connectors + "/test-mywebhook", {
-      data: { webhookDataKey: "webhookDataValue" },
-      headers: {
-        Authorization: await authHeader(api, config),
-        //Authorization: `Basic ZGVtbzpkZW1v`,
-        "Content-Type": "application/json",
-      },
-    });
-    expect(r.ok(), `API call failed with ${r.status()}`).toBeTruthy();
-  });
+  // this needs to be ran after the core test. This test needs a model to be deployed before running or it results in a 404. 
+  // test(`TEST - Check Connectors webhook`, async () => {
+  //   const r = await api.post(config.base.connectors + "/test-mywebhook", {
+  //     data: { webhookDataKey: "webhookDataValue" },
+  //     headers: {
+  //       Authorization: await authHeader(api, config),
+  //       //Authorization: `Basic ZGVtbzpkZW1v`,
+  //       "Content-Type": "application/json",
+  //     },
+  //   });
+  //   expect(r.ok(), `API call failed with ${r.status()}`).toBeTruthy();
+  // });
 
-  test.afterAll(async ({}, testInfo) => {
+  test.afterAll(async ({ }, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {
@@ -64,7 +66,7 @@ test.describe("Camunda core", () => {
       // If this becomes a concern, mask the values here before logging.
       console.error(
         "\n===== CONFIG DUMP (test failed) =====\n" +
-          JSON.stringify(config, null, 2),
+        JSON.stringify(config, null, 2),
       );
     }
   });
