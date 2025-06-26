@@ -203,7 +203,7 @@ test.describe("core", () => {
         {
           data: "{}",
           headers: {
-            Authorization: `Bearer ${venomJWT}`,
+            Authorization: authHeader(api, config),
             "Content-Type": "application/json",
           },
         },

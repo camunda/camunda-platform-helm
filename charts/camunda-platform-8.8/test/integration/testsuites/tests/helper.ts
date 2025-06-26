@@ -7,18 +7,22 @@ export async function fetchToken(
   api: APIRequestContext,
   config: any,
 ) {
-  const r = await api.post(config.authURL, {
-    form: {
-      client_id: id,
-      client_secret: sec,
-      grant_type: "client_credentials",
-    },
-  });
-  expect(
-    r.ok(),
-    `Failed to get token for client_id=${id}: ${r.status()}`,
-  ).toBeTruthy();
-  return (await r.json()).access_token as string;
+  if (config.authType !== "basic") {
+    const r = await api.post(config.authURL, {
+      form: {
+        client_id: id,
+        client_secret: sec,
+        grant_type: "client_credentials",
+      },
+    });
+    expect(
+      r.ok(),
+      `Failed to get token for client_id=${id}: ${r.status()}`,
+    ).toBeTruthy();
+    return (await r.json()).access_token as string;
+  } else {
+    return ""
+  }
 }
 
 export const authHeader = async (api: APIRequestContext, config: any) => {
