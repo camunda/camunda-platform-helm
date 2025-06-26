@@ -79,5 +79,6 @@ jobs:
       scenario: ${{inputs.scenario}}
       auth: ${{inputs.auth}}
       exclude: ${{inputs.exclude}}
+      # camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       #REMOVE
       camunda-helm-git-ref: "8.8-integration-test-playwright"

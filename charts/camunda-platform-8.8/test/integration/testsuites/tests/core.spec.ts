@@ -16,7 +16,7 @@ import { authHeader, fetchToken, requireEnv } from "./helper";
 // Grouped config for base URLs
 const config = {
   authURL: requireEnv("AUTH_URL"),
-  authType: requireEnv("AUTH_TYPE"),
+  authType: requireEnv("TEST_AUTH_TYPE"),
   testBasePath: requireEnv("TEST_BASE_PATH"),
   base: {
     console: requireEnv("CONSOLE_BASE_URL"),
@@ -52,7 +52,7 @@ const config = {
 };
 
 // ---------- tests ----------
-test.describe("Camunda core", () => {
+test.describe("core", () => {
   let api: APIRequestContext;
   let venomJWT: string;
 

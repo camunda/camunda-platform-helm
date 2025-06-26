@@ -83,7 +83,7 @@ runs:
               echo "    case: pr" >>matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >>matrix_versions.txt
               echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >>matrix_versions.txt
-              echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join(",")' -)" >>matrix_versions.txt
+              echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >>matrix_versions.txt
             done
             sed -i -e '$s/,$/]\n/' matrix_versions.txt
           fi

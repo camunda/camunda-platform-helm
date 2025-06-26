@@ -30,7 +30,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
   cancel-in-progress: true
 
 env:
@@ -86,12 +86,14 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-intg-${{ inputs.camunda-version }}"
+      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-intg-${{ inputs.camunda-version }}-${{ inputs.auth }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      # camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      # REMOVE
+      camunda-helm-git-ref: "8.8-integration-test-playwright"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
       test-case: ${{inputs.case}}
       scenario: ${{inputs.scenario}}

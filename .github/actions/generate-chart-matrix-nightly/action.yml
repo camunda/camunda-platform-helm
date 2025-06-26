@@ -48,7 +48,7 @@ runs:
             echo "    case: nightly" >>matrix_versions.txt
             echo "    scenario: $(echo "$nightlyScenario" | yq e '.name' -)" >>matrix_versions.txt
             echo "    auth: $(echo "$nightlyScenario" | yq e '.auth' -)" >>matrix_versions.txt
-            echo "    exclude: $(echo "$nightlyScenario" | yq e '.exclude | join(",")' -)" >>matrix_versions.txt
+            echo "    exclude: $(echo "$nightlyScenario" | yq e '.exclude | join("|")' -)" >>matrix_versions.txt
           done
             sed -i -e '$s/,$/]\n/' matrix_versions.txt
 

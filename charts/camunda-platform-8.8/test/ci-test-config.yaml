@@ -26,6 +26,10 @@ integration:
           enabled: true
           auth: keycloak
           exclude: []
+        - name: elasticsearch
+          enabled: true
+          auth: basic
+          exclude: [identity,console]
         # - name: multitenancy
         #   enabled: true
         #   exclude: []
