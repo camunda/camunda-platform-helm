@@ -94,6 +94,39 @@ on:
         required: false
         default: true
         type: boolean
+      managementIdentityVersion:
+        description: The version of the management identity image to use.
+        required: false
+        type: string
+      connectorsVersion:
+        description: The version of the connectors image to use.
+        required: false
+        type: string
+      consoleVersion:
+        description: The version of the console image to use.
+        required: false
+        type: string
+      optimizeVersion:
+        description: The version of the optimize image to use.
+        required: false
+        type: string
+      webModelerVersion:
+        description: The version of the web modeler image to use.
+        required: false
+        type: string
+      coreVersion:
+        description: The version of the core image to use.
+        required: false
+        type: string
+    secrets:
+      E2E_TESTS_KEYCLOAK_CLIENTS_SECRET:
+        required: false
+      E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD:
+        required: false
+      E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD:
+        required: false
+      E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD:
+        required: false
 
 permissions:
   contents: read
@@ -292,6 +325,47 @@ jobs:
               echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
             fi
           fi
+
+      - name: Set image tags if provided
+        run: |
+          if [[ -n "${{ inputs.coreVersion }}" ]]; then
+            echo "E2E_TESTS_CORE_IMAGE_TAG=${{ inputs.coreVersion }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.consoleVersion }}" ]]; then
+            echo "E2E_TESTS_CONSOLE_IMAGE_TAG=${{ inputs.consoleVersion }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.optimizeVersion }}" ]]; then
+            echo "E2E_TESTS_OPTIMIZE_IMAGE_TAG=${{ inputs.optimizeVersion }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.webModelerVersion }}" ]]; then
+            echo "E2E_TESTS_WEBMODELER_IMAGE_TAG=${{ inputs.webModelerVersion }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.connectorsVersion }}" ]]; then
+            echo "E2E_TESTS_CONNECTORS_IMAGE_TAG=${{ inputs.connectorsVersion }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.managementIdentityVersion }}" ]]; then
+            echo "E2E_TESTS_IDENTITY_IMAGE_TAG=${{ inputs.managementIdentityVersion }}" | tee -a $GITHUB_ENV
+          fi
+
+      - name: Set user secrets
+        run: |
+          if [[ -n ${{ secrets.E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }} ]]; then
+            echo "E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=${{ secrets.E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n ${{ secrets.E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }} ]]; then
+            echo "E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=${{ secrets.E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n ${{ secrets.E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }} ]]; then
+            echo "E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=${{ secrets.E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }}" | tee -a $GITHUB_ENV
+          fi
+          if [[ -n ${{ secrets.E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }} ]]; then
+            echo "E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=${{ secrets.E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }}" | tee -a $GITHUB_ENV
+          fi
+
+      # This does nothing for values files without the E2E_TESTS_ prefix
+      - name: Substitute e2e values file
+        run: |
+          envsubst < ${CI_TASKS_BASE_DIR}/chart-full-setup/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario }}.yaml > ${CI_TASKS_BASE_DIR}/chart-full-setup/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario}}.yaml
 
       - name: Set Helm extra args
         env:
