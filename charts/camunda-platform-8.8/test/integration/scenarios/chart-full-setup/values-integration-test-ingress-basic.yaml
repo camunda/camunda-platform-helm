@@ -47,3 +47,6 @@ prometheusServiceMonitor:
   enabled: true
   labels:
     release: kube-prometheus-stack
+
+connectors:
+  contextPath: "/connectors"
