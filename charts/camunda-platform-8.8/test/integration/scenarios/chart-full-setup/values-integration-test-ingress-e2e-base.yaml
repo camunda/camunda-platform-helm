@@ -42,24 +42,24 @@ identityKeycloak:
 optimize:
   enabled: true
   image:
-    tag: "E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+    tag: E2E_TESTS_OPTIMIZE_IMAGE_TAG
 webModeler:
   enabled: true
   restapi:
     image:
-      tag: "${{ inputs.E2E_TESTS_WEBMODELER_IMAGE_TAG }}"
+      tag: E2E_TESTS_WEBMODELER_IMAGE_TAG
   webapp:
     image:
-      tag: "${{ inputs.E2E_TESTS_WEBMODELER_IMAGE_TAG }}"
+      tag: E2E_TESTS_WEBMODELER_IMAGE_TAG
   websockets:
     image:
-      tag: "${{ inputs.E2E_TESTS_WEBMODELER_IMAGE_TAG }}"
+      tag: E2E_TESTS_WEBMODELER_IMAGE_TAG
 webModelerPostgresql:
   enabled: true
 console:
   enabled: true
   image:
-    tag: "${{ inputs.E2E_TESTS_CONSOLE_IMAGE_TAG }}"
+    tag: E2E_TESTS_CONSOLE_IMAGE_TAG
   overrideConfiguration: |
     camunda:
       console:
@@ -86,7 +86,7 @@ console:
 identity:
   enabled: true
   image:
-    tag: "${{ inputs.E2E_TESTS_IDENTITY_IMAGE_TAG }}"
+    tag: E2E_TESTS_IDENTITY_IMAGE_TAG
   firstUser:
     existingSecret: null
     user: demo
@@ -103,7 +103,7 @@ identity:
     - name: KEYCLOAK_USERS_0_LASTNAME
       value: 'User'
     - name: KEYCLOAK_USERS_0_PASSWORD
-      value: ${{ inputs.E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+      value: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
     - name: KEYCLOAK_USERS_0_ROLES_0
       value: Identity
     - name: KEYCLOAK_USERS_0_ROLES_1
@@ -149,7 +149,7 @@ identity:
     - name: KEYCLOAK_USERS_1_USERNAME
       value: lisa
     - name: KEYCLOAK_USERS_1_PASSWORD
-      value: ${{ inputs.E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }}
+      value: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
     - name: KEYCLOAK_USERS_1_ROLES_0
       value: Identity
     - name: KEYCLOAK_USERS_1_ROLES_1
@@ -171,7 +171,7 @@ identity:
     - name: KEYCLOAK_USERS_2_USERNAME
       value: bart
     - name: KEYCLOAK_USERS_2_PASSWORD
-      value: ${{ inputs.E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }}
+      value: DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
     - name: KEYCLOAK_USERS_2_ROLES_0
       value: Identity
     - name: KEYCLOAK_USERS_2_ROLES_1
@@ -230,7 +230,7 @@ identity:
     - name: KEYCLOAK_CLIENTS_3_NAME
       value: Test
     - name: KEYCLOAK_CLIENTS_3_SECRET
-      value: ${{ inputs.E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+      value: DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
     - name: KEYCLOAK_CLIENTS_3_REDIRECT_URIS_0
       value: /dummy
     - name: KEYCLOAK_CLIENTS_3_ROOT_URL
@@ -286,7 +286,7 @@ identity:
       value: "write:*"
 connectors:
   image:
-    tag: "${{ inputs.E2E_TESTS_CONNECTORS_IMAGE_TAG }}"
+    tag: E2E_TESTS_CONNECTORS_IMAGE_TAG
   env:
     - name: username
       value: username

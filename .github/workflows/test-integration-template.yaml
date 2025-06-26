@@ -347,20 +347,27 @@ jobs:
             echo "E2E_TESTS_IDENTITY_IMAGE_TAG=${{ inputs.managementIdentityVersion }}" | tee -a $GITHUB_ENV
           fi
 
+      - name: Get e2e secrets from vault
+        id: e2e-secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: true
+          secrets: |
+              secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+              secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
+              secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;
+              secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;
+
       - name: Set user secrets
         run: |
-          if [[ -n ${{ secrets.E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }} ]]; then
-            echo "E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=${{ secrets.E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}" | tee -a $GITHUB_ENV
-          fi
-          if [[ -n ${{ secrets.E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }} ]]; then
-            echo "E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=${{ secrets.E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}" | tee -a $GITHUB_ENV
-          fi
-          if [[ -n ${{ secrets.E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }} ]]; then
-            echo "E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=${{ secrets.E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }}" | tee -a $GITHUB_ENV
-          fi
-          if [[ -n ${{ secrets.E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }} ]]; then
-            echo "E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=${{ secrets.E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }}" | tee -a $GITHUB_ENV
-          fi
+          echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=${{ steps.e2e-secrets.outputs.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}" | tee -a $GITHUB_ENV
+          echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=${{ steps.e2e-secrets.outputs.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}" | tee -a $GITHUB_ENV
+          echo "DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=${{ steps.e2e-secrets.outputs.DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }}" | tee -a $GITHUB_ENV
+          echo "DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=${{ steps.e2e-secrets.outputs.DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }}" | tee -a $GITHUB_ENV
 
       # This does nothing for values files without the E2E_TESTS_ prefix
       - name: Substitute e2e values file
