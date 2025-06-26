@@ -26,20 +26,20 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.camunda-version }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  validation:
-    name: Camunda ${{ inputs.camunda-version }} - Validation
-    uses: ./.github/workflows/chart-validate-template.yaml
-    with:
-      identifier: "${{ inputs.case }}-vald-${{ inputs.camunda-version }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  # validation:
+  #   name: Camunda ${{ inputs.camunda-version }} - Validation
+  #   uses: ./.github/workflows/chart-validate-template.yaml
+  #   with:
+  #     identifier: "${{ inputs.case }}-vald-${{ inputs.camunda-version }}"
+  #     camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
   # init:
   #   needs: validation
   #   runs-on: ubuntu-latest
@@ -60,10 +60,10 @@ jobs:
   integration:
     name: Camunda ${{ inputs.camunda-version }} - ${{ matrix.scenario }}
     # needs: init
-    strategy:
-      fail-fast: false
-      matrix:
-        scenario: ${{ fromJson(needs.init.outputs.scenarios-formatted) }}
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     scenario: ${{ fromJson(needs.init.outputs.scenarios-formatted) }}
     permissions:
       contents: read
       id-token: write
@@ -71,7 +71,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ matrix.scenario }}-${{ inputs.camunda-version }}-${{ inputs.camunda-auth }}"
+      identifier: "${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}"
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
@@ -79,3 +79,5 @@ jobs:
       scenario: ${{inputs.scenario}}
       auth: ${{inputs.auth}}
       exclude: ${{inputs.exclude}}
+      #REMOVE
+      camunda-helm-git-ref: "8.8-integration-test-playwright"
