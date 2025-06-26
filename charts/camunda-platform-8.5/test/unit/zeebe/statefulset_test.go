@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type StatefulSetTest struct {
@@ -748,6 +749,23 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				}
 
 				require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
+			},
+		}, {
+			Name: "TestExtraVolumeClaimTemplates",
+			Values: map[string]string{
+				"zeebe.extraVolumeClaimTemplates[0].apiVersion": "v1",
+				"zeebe.extraVolumeClaimTemplates[0].kind": "PersistentVolumeClaim",
+				"zeebe.extraVolumeClaimTemplates[0].metadata.name": "test-extra-pvc",
+				"zeebe.extraVolumeClaimTemplates[0].spec.accessModes[0]": "ReadWriteOnce",
+				"zeebe.extraVolumeClaimTemplates[0].spec.resources.requests.storage": "1Gi",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+				pvc := statefulSet.Spec.VolumeClaimTemplates[len(statefulSet.Spec.VolumeClaimTemplates)-1]
+				s.Require().Equal("test-extra-pvc", pvc.Name)
+				s.Require().Equal([]corev1.PersistentVolumeAccessMode{"ReadWriteOnce"}, pvc.Spec.AccessModes)
+				s.Require().True(pvc.Spec.Resources.Requests[corev1.ResourceStorage].Equal(resource.MustParse("1Gi")))
 			},
 		},
 	}
