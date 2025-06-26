@@ -2521,6 +2521,9 @@ core:
   ## @param core.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
+  ## @param core.extraVolumeClaimTemplates Array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
+  extraVolumeClaimTemplates: []
+
 #############################################
 #####
 #     # #####  ##### # #    # # ###### ######

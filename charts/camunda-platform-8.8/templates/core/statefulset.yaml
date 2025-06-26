@@ -326,5 +326,8 @@ spec:
         resources:
           requests:
             storage: {{ .Values.core.pvcSize | quote }}
+    {{- if .Values.core.extraVolumeClaimTemplates }}
+  {{- toYaml .Values.core.extraVolumeClaimTemplates | nindent 4 }}
+    {{- end }}
   {{- end }}
 {{- end }}
