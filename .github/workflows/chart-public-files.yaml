@@ -29,29 +29,43 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           path: main
-      - name: Copy files
+      - name: Copy values files
         run: |
           #
-          # Values files.
-          mkdir -p camunda-platform/values
-
-          # Latest version.
-          version_latest_dir="$(ls -d1 main/charts/camunda-platform-8* | tail -n1)"
-          cp -a ${version_latest_dir}/values-latest.yaml camunda-platform/values/values-latest.yaml
-
-          # Previous versions.
-          find main/charts -name "camunda-platform-8*" | while read chart_id; do
+          # Legacy - Extra values for all chart versions.
+          # This is considered legacy as the version is part of the file name which should not be the case.
+          # Hence, the structure is kept for backward compatibility.
+          find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
               camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              # Latest values files.
               cp -a ${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml;
           done
-
           #
-          # Version matrix.
+          # Extra values for all chart versions.
+          # This structure is preferred as the version is part of the directory name not the file name.
+          # Which makes it easier to manage in the docs. Which also used in the version matrix.
+          find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
+              camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              camunda_values_dir="camunda-platform/values/camunda-${camunda_version}";
+              mkdir -p "${camunda_values_dir}";
+
+              # Latest values files.
+              cp -a ${chart_id}/values-latest.yaml ${camunda_values_dir}/values-latest.yaml;
+              # Local values files.
+              if [ -f ${chart_id}/values-local.yaml ]; then
+                cp -a ${chart_id}/values-local.yaml ${camunda_values_dir}/values-local.yaml;
+                echo "Copied values-local.yaml file for Camunda ${camunda_version} chart";
+              else
+                echo "No values-local.yaml file for Camunda ${camunda_version} chart";
+              fi
+          done
+      - name: Copy version matrix files
+        run: |
           mkdir -p camunda-platform/version-matrix
           cp -a main/version-matrix/* camunda-platform/version-matrix/
-
-          #
-          # Post run.            
+          echo "Copied version matrix files to camunda-platform/version-matrix/"
+      - name: Clean up
+        run: |
           rm -rf main
           find .
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
