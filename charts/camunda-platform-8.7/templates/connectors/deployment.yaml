@@ -142,6 +142,7 @@ spec:
             httpGet:
               path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.startupProbe.probePath }}
               port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ default "HTTP" .Values.connectors.scheme }}
             initialDelaySeconds: {{ .Values.connectors.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.startupProbe.periodSeconds }}
             successThreshold: {{ .Values.connectors.startupProbe.successThreshold }}
@@ -153,6 +154,7 @@ spec:
             httpGet:
               path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.readinessProbe.probePath }}
               port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ default "HTTP" .Values.connectors.scheme }}
             initialDelaySeconds: {{ .Values.connectors.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.readinessProbe.periodSeconds }}
             successThreshold: {{ .Values.connectors.readinessProbe.successThreshold }}
@@ -164,6 +166,7 @@ spec:
             httpGet:
               path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.livenessProbe.probePath }}
               port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ default "HTTP" .Values.connectors.scheme }}
             initialDelaySeconds: {{ .Values.connectors.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.livenessProbe.periodSeconds }}
             successThreshold: {{ .Values.connectors.livenessProbe.successThreshold }}
