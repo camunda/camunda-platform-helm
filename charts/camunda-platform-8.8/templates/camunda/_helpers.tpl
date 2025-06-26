@@ -56,6 +56,9 @@ Define common labels, combining the match labels and transient labels, which mig
 */}}
 {{- define "camundaPlatform.labels" -}}
 {{- template "camundaPlatform.matchLabels" . }}
+{{- if .Values.global.commonLabels }}
+{{ toYaml .Values.global.commonLabels }}
+{{- end }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end }}
 
