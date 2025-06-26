@@ -186,6 +186,11 @@
                         }
                     }
                 },
+                "commonLabels": {
+                    "type": "object",
+                    "description": "Mutable labels applied to all resources.",
+                    "default": {}
+                },
                 "image": {
                     "type": "object",
                     "properties": {
