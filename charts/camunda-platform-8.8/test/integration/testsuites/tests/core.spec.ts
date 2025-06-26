@@ -9,15 +9,9 @@ dotenv(); // ← loads .env before anything else
 
 import { test, expect, APIRequestContext } from "@playwright/test";
 import { execFileSync } from "child_process";
+import { authHeader, fetchToken, requireEnv } from "../utils/helper";
 
 // ---------- config & helpers ----------
-
-// Helper to require environment variables
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required env var: ${name}`);
-  return value;
-}
 
 // Grouped config for base URLs
 const config = {
@@ -56,22 +50,6 @@ const config = {
   venomSec: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
 };
 
-// Helper to fetch a token
-async function fetchToken(id: string, sec: string, api: APIRequestContext) {
-  const r = await api.post(config.authURL, {
-    form: {
-      client_id: id,
-      client_secret: sec,
-      grant_type: "client_credentials",
-    },
-  });
-  expect(
-    r.ok(),
-    `Failed to get token for client_id=${id}: ${r.status()}`,
-  ).toBeTruthy();
-  return (await r.json()).access_token as string;
-}
-
 // ---------- tests ----------
 test.describe("Camunda core", () => {
   let api: APIRequestContext;
@@ -79,13 +57,13 @@ test.describe("Camunda core", () => {
 
   test.beforeAll(async ({ playwright }) => {
     api = await playwright.request.newContext();
-    venomJWT = await fetchToken(config.venomID, config.venomSec, api);
+    venomJWT = await fetchToken(config.venomID, config.venomSec, api, config);
   });
 
   test("M2M tokens", async () => {
     for (const [id, sec] of Object.entries(config.secrets)) {
       // ensure each call resolves and yields a non-empty JWT:
-      await expect(fetchToken(id, sec, api)).resolves.toMatch(
+      await expect(fetchToken(id, sec, api, config)).resolves.toMatch(
         /^[\w-]+\.[\w-]+\.[\w-]+$/,
       );
     }
@@ -131,7 +109,7 @@ test.describe("Camunda core", () => {
         method,
         data: body || undefined,
         headers: {
-          Authorization: `Bearer ${venomJWT}`,
+          Authorization: await authHeader(api, config),
           "Content-Type": "application/json",
         },
       });
@@ -241,8 +219,7 @@ test.describe("Camunda core", () => {
     });
   }
 
-
-  test.afterAll(async ({ }, testInfo) => {
+  test.afterAll(async ({}, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {
@@ -250,7 +227,7 @@ test.describe("Camunda core", () => {
       // If this becomes a concern, mask the values here before logging.
       console.error(
         "\n===== CONFIG DUMP (test failed) =====\n" +
-        JSON.stringify(config, null, 2),
+          JSON.stringify(config, null, 2),
       );
     }
   });
