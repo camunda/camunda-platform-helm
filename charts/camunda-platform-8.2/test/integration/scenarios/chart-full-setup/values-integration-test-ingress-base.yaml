@@ -1,4 +1,14 @@
 global:
+  # for bitnami images
+  imagePullSecrets:
+    - index-docker-io
+  # for camunda images
+  image:
+    pullSecrets:
+      - name: index-docker-io
+  labels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
   ingress:
     enabled: true
     className: nginx
