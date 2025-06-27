@@ -193,3 +193,4 @@ func TestPVCManifestCreated(t *testing.T) {
 
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/pvc.yaml"}, []testhelpers.TestCase{testCase})
 }
+
