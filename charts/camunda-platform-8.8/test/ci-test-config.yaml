@@ -59,3 +59,7 @@ integration:
           enabled: false
           exclude: []
           auth: keycloak
+        - name: opensearch
+          enabled: false
+          exclude: []
+          auth: basic
