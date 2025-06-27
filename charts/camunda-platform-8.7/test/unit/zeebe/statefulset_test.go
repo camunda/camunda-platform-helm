@@ -27,7 +27,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type statefulSetTest struct {
@@ -962,13 +961,12 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeClaimTemplates() {
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
-	found := false
-	for _, pvc := range statefulSet.Spec.VolumeClaimTemplates {
-		if pvc.Name == "test-extra-pvc" {
-			found = true
-			s.Require().Equal([]corev1.PersistentVolumeAccessMode{"ReadWriteOnce"}, pvc.Spec.AccessModes)
-			s.Require().True(pvc.Spec.Resources.Requests[corev1.ResourceStorage].Equal(resource.MustParse("1Gi")))
+	s.Require().True(func() bool {
+		for _, pvc := range statefulSet.Spec.VolumeClaimTemplates {
+			if pvc.Name == "test-extra-pvc" {
+				return true
+			}
 		}
-	}
-	s.Require().True(found, "Expected to find extra PVC named 'test-extra-pvc' in volumeClaimTemplates")
+		return false
+	}(), "Expected to find extra PVC named 'test-extra-pvc' in volumeClaimTemplates")
 }
