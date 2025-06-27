@@ -109,9 +109,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceWithExistingClaim",
 			Values: map[string]string{
-				"connectors.enabled":                    "true",
-				"connectors.persistence.enabled":        "true",
-				"connectors.persistence.existingClaim":  "my-existing-pvc",
+				"connectors.enabled":                   "true",
+				"connectors.persistence.enabled":       "true",
+				"connectors.persistence.existingClaim": "my-existing-pvc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -135,9 +135,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceWithStorageClass",
 			Values: map[string]string{
-				"connectors.enabled":                    "true",
-				"connectors.persistence.enabled":        "true",
-				"connectors.persistence.size":           "10Gi",
+				"connectors.enabled":                      "true",
+				"connectors.persistence.enabled":          "true",
+				"connectors.persistence.size":             "10Gi",
 				"connectors.persistence.storageClassName": "fast-ssd",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -162,9 +162,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceWithAnnotations",
 			Values: map[string]string{
-				"connectors.enabled":                    "true",
-				"connectors.persistence.enabled":        "true",
-				"connectors.persistence.size":           "5Gi",
+				"connectors.enabled":                     "true",
+				"connectors.persistence.enabled":         "true",
+				"connectors.persistence.size":            "5Gi",
 				"connectors.persistence.annotations.foo": "bar",
 				"connectors.persistence.annotations.baz": "qux",
 			},
@@ -190,9 +190,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceWithSelector",
 			Values: map[string]string{
-				"connectors.enabled":                    "true",
-				"connectors.persistence.enabled":        "true",
-				"connectors.persistence.size":           "5Gi",
+				"connectors.enabled":                                  "true",
+				"connectors.persistence.enabled":                      "true",
+				"connectors.persistence.size":                         "5Gi",
 				"connectors.persistence.selector.matchLabels.storage": "fast",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -217,9 +217,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledWhenComponentDisabled",
 			Values: map[string]string{
-				"connectors.enabled":                    "false",
-				"connectors.persistence.enabled":        "true",
-				"connectors.persistence.size":           "5Gi",
+				"connectors.enabled":             "false",
+				"connectors.persistence.enabled": "true",
+				"connectors.persistence.size":    "5Gi",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// When component is disabled, no deployment should be created
@@ -248,4 +248,4 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			testCase.Verifier(s.T(), output, err)
 		})
 	}
-} 
+}
