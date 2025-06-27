@@ -447,7 +447,6 @@ testcases:
     - result.body ShouldContainSubstring core
 
 # TODO:: uncomment and fix this test for basic auth.
-          #
 # - name: TEST - Check ServiceMonitor - Basic Auth
 #   steps:
 #   - name: Check prometheus could query containers

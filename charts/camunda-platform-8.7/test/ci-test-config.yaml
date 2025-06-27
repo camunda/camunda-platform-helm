@@ -21,13 +21,13 @@ integration:
   case:
     pr:
       scenario:
-        - name: base
+        - name: elasticsearch
           enabled: true
           exclude: []
           auth: keycloak
     nightly:
       scenario:
-        - name: base
+        - name: elasticsearch
           enabled: true
           exclude: []
           auth: keycloak

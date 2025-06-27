@@ -48,7 +48,7 @@ jobs:
         uses: ./.github/actions/generate-chart-matrix
         with:
           charts-path: "charts/camunda-platform-8*"
-          manual-trigger: 8.8
+          manual-trigger: ${{ github.event.inputs.manual-trigger }}
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Camunda ${{ matrix.version }}
