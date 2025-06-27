@@ -2,4 +2,4 @@
 {{- if $connectorsPVC }}
 ---
 {{ $connectorsPVC }}
-{{- end }} 
+{{- end }}
