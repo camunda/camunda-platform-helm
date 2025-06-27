@@ -4990,7 +4990,7 @@
                 },
                 "extraVolumeClaimTemplates": {
                     "type": "array",
-                    "description": "Array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!",
+                    "description": "can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!",
                     "default": [],
                     "items": {}
                 }
