@@ -145,7 +145,15 @@ spec:
         {{- end }}
       volumes:
         - name: tmp
+          {{- if and .Values.connectors.persistence.enabled .Values.connectors.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.connectors.persistence.existingClaim }}
+          {{- else if .Values.connectors.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-connectors-data
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         - name: config
           configMap:
             name: {{ include "connectors.fullname" . }}-configuration
