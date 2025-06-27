@@ -47,7 +47,9 @@ func TestPersistenceTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/optimize/deployment.yaml"},
+		templates: []string{
+			"templates/optimize/deployment.yaml",
+		},
 	})
 }
 
@@ -185,4 +187,28 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			testCase.Verifier(s.T(), output, err)
 		})
 	}
+}
+
+func TestPVCManifestCreated(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestPVCManifestCreated",
+		Values: map[string]string{
+			"optimize.enabled": "true",
+			"optimize.persistence.enabled": "true",
+			"optimize.persistence.size": "5Gi",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var pvc corev1.PersistentVolumeClaim
+			helm.UnmarshalK8SYaml(t, output, &pvc)
+			require.Equal(t, "camunda-platform-test-optimize-data", pvc.Name)
+			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
+		},
+	}
+
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-optimize", []string{"templates/optimize/pvc.yaml"}, []testhelpers.TestCase{testCase})
 }
