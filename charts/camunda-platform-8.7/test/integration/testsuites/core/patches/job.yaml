@@ -39,3 +39,6 @@ spec:
             secretKeyRef:
               name: integration-test-credentials
               key: identity-zeebe-client-password
+
+          
+

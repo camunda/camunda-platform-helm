@@ -1,4 +1,5 @@
 # Used in the GitHub Actions unit test CI workflow.
+# auth can be the following values: basic, keycloak, oidc
 unit:
   # TODO: Enable it again when the 8.7 is released (we need to review and fix the unit tests for 8.8).
   enabled: false
@@ -17,16 +18,40 @@ integration:
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../../charts
-  scenarios:
+  case:
     pr:
-      - name: keycloak
-        enabled: false
-      - name: base
-        enabled: true
+      scenario:
+        # keycloak auth flow
+        - name: elasticsearch
+          enabled: true
+          auth: keycloak
+          exclude: []
+        # - name: elasticsearch
+        #   enabled: true
+        #   auth: basic
+        #   exclude: [identity,console,core-grpc]
     nightly:
-      - name: base
-        enabled: true
-      - name: multitenancy
-        enabled: false
-      - name: opensearch
-        enabled: true
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          auth: keycloak
+          #the following integration tests need to be exluded when basic-auth is enabled.
+        - name: elasticsearch
+          enabled: true
+          auth: basic
+          exclude: [identity,console,core-grpc]
+          # not supported
+        - name: elasticsearch
+          enabled: false
+          exclude: []
+          auth: oidc
+          # not supported
+        - name: multitenancy
+          enabled: false
+          exclude: []
+          auth: keycloak
+        - name: opensearch
+          enabled: false
+          exclude: []
+          auth: keycloak

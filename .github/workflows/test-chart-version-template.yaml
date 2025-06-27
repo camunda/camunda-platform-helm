@@ -4,25 +4,33 @@ name: "Test - Chart Version - Template"
 on:
   workflow_call:
     inputs:
-      scenarios:
-        description: Scenarios
-        required: true
-        type: string
-      case:
-        description: Type
+      pr-number:
+        description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
         required: true
         type: string
       camunda-version:
         description: Camunda version to test
         required: true
         type: string
-      pr-number:
-        description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
+      case:
+        description: Type
+        required: true
+        type: string
+      scenario:
+        description: Scenario
+        required: true
+        type: string
+      auth:
+        description: Scenario
+        required: true
+        type: string
+      exclude:
+        description: Scenario
         required: true
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.camunda-version }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
   cancel-in-progress: true
 
 env:
@@ -36,49 +44,29 @@ jobs:
     name: Camunda ${{ inputs.camunda-version }} - Validation
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-vald-${{ inputs.camunda-version }}"
+      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-  init:
-    needs: validation
-    runs-on: ubuntu-latest
-    env:
-      SCENARIOS_LIST: ${{ inputs.scenarios }}
-    outputs:
-      scenarios-formatted: ${{ steps.make-json-array.outputs.json_array }}
-    steps:
-      - name: Convert string to JSON array and set as output
-        id: make-json-array
-        run: |
-          # For example, this converts the SCENARIOS_LIST, which is a string input ("multitenancy, oidc") to ["multitenancy","oidc"]
-          # This is done because it is not possible to pass JSON arrays as input to a workflow. Therefore,
-          # a string is passed and converted to a json array
-          json=$(echo "$SCENARIOS_LIST" | jq -R -c 'split(",")')
-          echo "json_array=$json" | tee -a $GITHUB_OUTPUT
 
   unit:
     name: Camunda ${{ inputs.camunda-version }} - Unit Test
     uses: ./.github/workflows/test-unit-template.yml
     with:
-      identifier: "${{ github.event.pull_request.number }}-unit-${{ inputs.camunda-version }}"
+      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-unit-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
     name: Camunda ${{ inputs.camunda-version }} - Integration Test
-    needs: [init]
+    needs: validation
     permissions:
       contents: read
       id-token: write
       deployments: write
-    strategy:
-      fail-fast: false
-      matrix:
-        scenario: ${{ fromJson(needs.init.outputs.scenarios-formatted) }}
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-${{ matrix.scenario }}-intg-${{ inputs.camunda-version }}"
+      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-intg-${{ inputs.camunda-version }}-${{ inputs.auth }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
       platforms: "gke"
       flows: "install,upgrade"
@@ -86,4 +74,6 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
       test-case: ${{inputs.case}}
-      scenario: ${{matrix.scenario}}
+      scenario: ${{inputs.scenario}}
+      auth: ${{inputs.auth}}
+      exclude: ${{inputs.exclude}}
