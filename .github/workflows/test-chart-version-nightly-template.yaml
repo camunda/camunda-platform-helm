@@ -26,7 +26,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
   cancel-in-progress: true
 
 permissions:
@@ -37,7 +37,7 @@ jobs:
     name: Camunda ${{ inputs.camunda-version }} - Validation
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ inputs.case }}-vald-${{ inputs.camunda-version }}"
+      identifier: "${{ inputs.case }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
