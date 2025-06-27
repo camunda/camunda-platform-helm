@@ -404,9 +404,10 @@ jobs:
         continue-on-error: true
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
+        # The venom tests are replaced by the playwright tests in 8.7 and above
       - name: ⭐️ Run Core TestSuite ⭐️
+        if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.4') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.5') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.6')) }}
         id: core-testsuite
-        if: inputs.test-enabled
         timeout-minutes: 20
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
