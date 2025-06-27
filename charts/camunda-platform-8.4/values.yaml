@@ -60,9 +60,12 @@ global:
 
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
+  ## @extra global.labels can be used to apply immutable labels applied to all Camunda resources. These are also used in matchLabels fields in selectors.
   labels:
   ## @param global.labels.app Name of the application
     app: camunda-platform
+  ## @param global.commonLabels can be used to apply mutable labels to all Camunda resources.
+  commonLabels: {}
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
   image:
