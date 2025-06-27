@@ -361,7 +361,7 @@ jobs:
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_SCENARIO: ${{ inputs.scenario }}
           TEST_AUTH_TYPE: ${{ inputs.auth }}
-          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ inputs.camunda-helm-dir }}
+          TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ inputs.identifier }}-${{ matrix.scenario.flow }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
         run: |
