@@ -73,7 +73,9 @@ app.kubernetes.io/component: core
 {{- end -}}
 
 {{- define "core.authClientSecretName" -}}
-    {{- if and .Values.global.identity.auth.core.existingSecret (not (typeIs "string" .Values.global.identity.auth.core.existingSecret)) -}}
+    {{- if and .Values.global.identity.auth.core.secret.existingSecret (not (typeIs "string" .Values.global.identity.auth.core.secret.existingSecret)) -}}
+        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.core.secret.existingSecret "context" $) -}}
+    {{- else if and .Values.global.identity.auth.core.existingSecret (not (typeIs "string" .Values.global.identity.auth.core.existingSecret)) -}}
         {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.core.existingSecret "context" $) -}}
     {{- else -}}
         {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "core") -}}
@@ -81,7 +83,11 @@ app.kubernetes.io/component: core
 {{- end -}}
 
 {{- define "core.authClientSecretKey" -}}
-    {{ .Values.global.identity.auth.core.existingSecretKey }}
+    {{- if .Values.global.identity.auth.core.secret.existingSecretKey }}
+        {{ .Values.global.identity.auth.core.secret.existingSecretKey }}
+    {{- else -}}
+        {{ .Values.global.identity.auth.core.existingSecretKey }}
+    {{- end -}}
 {{- end -}}
 
 {{- define "core.authAudience" -}}

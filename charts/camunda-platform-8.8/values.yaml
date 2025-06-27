@@ -394,9 +394,17 @@ global:
         audience: core-api
         ## @param global.identity.auth.core.clientId defines the client id, which is used by Core in authentication flows.
         clientId: core
-        ## @param global.identity.auth.core.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.core.existingSecret.name.
+        ## @extra global.identity.auth.core.secret configuration to configure the secret for Core authentication.
+        secret:
+          ## @param global.identity.auth.core.secret.password Plaintext password for non-production/development use cases. If set, will take precedence over existingSecret.
+          password: ""
+          ## @param global.identity.auth.core.secret.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.core.existingSecret.name.
+          existingSecret: ""
+          ## @param global.identity.auth.core.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: identity-core-client-token
+        ## @param global.identity.auth.core.existingSecret (DEPRECATED) [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.core.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.core.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.core.existingSecretKey (DEPRECATED) defines the key within the existing secret object.
         existingSecretKey: identity-core-client-token
         ## @param global.identity.auth.core.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
         # Should be publicly accessible, the default value works if a port-forward to Core is created to 8082.

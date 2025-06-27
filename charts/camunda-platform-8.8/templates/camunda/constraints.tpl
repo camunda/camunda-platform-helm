@@ -85,6 +85,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
     {{- $existingSecretsNotConfigured := list }}
+    {{- $plaintextPasswordsUsed := list }}
 
     {{ if .Values.global.identity.auth.enabled }}
       {{ if and (.Values.connectors.enabled)
@@ -106,9 +107,16 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       {{- end }}
 
       {{ if and (.Values.core.enabled)
+                (not .Values.global.identity.auth.core.secret.existingSecret)
                 (not .Values.global.identity.auth.core.existingSecret) }}
         {{- $existingSecretsNotConfigured = append
             $existingSecretsNotConfigured "global.identity.auth.core.existingSecret.name" }}
+      {{- end }}
+
+      {{ if and (.Values.core.enabled)
+                (.Values.global.identity.auth.core.secret.password) }}
+        {{- $plaintextPasswordsUsed = append
+            $plaintextPasswordsUsed "global.identity.auth.core.secret.password" }}
       {{- end }}
     {{- end }}
 
@@ -175,6 +183,22 @@ The following values inside your values.yaml need to be set but were not:
         {{- $errorMessage = (cat $errorMessage "\n\n" "Please be aware that each of the above parameters expect a string name of a kubernetes Secret.\n") }}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
       {{- end }}
+    {{- end }}
+
+    {{- if $plaintextPasswordsUsed }}
+      {{- $warningMessage := (printf "%s"
+    `
+[camunda][warning]
+SECURITY WARNING: The following values contain plain text passwords which are NOT recommended for production use:
+
+    `
+        )
+      -}}
+      {{- range $plaintextPasswordsUsed }}
+        {{- $warningMessage = (cat "  " $warningMessage "\n" .) }}
+      {{- end }}
+      {{- $warningMessage = (cat $warningMessage "\n\n" "Please use Kubernetes secrets instead for production deployments.\n") }}
+      {{- printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
   {{- end }}
 {{- end }}
