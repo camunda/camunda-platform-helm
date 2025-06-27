@@ -13,7 +13,7 @@ identityKeycloak:
     commonLabels:
       janitor/ttl: 1h
       camunda.cloud/ephemeral: "true"
-postgresql:
+webModelerPostgresql:
   commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
