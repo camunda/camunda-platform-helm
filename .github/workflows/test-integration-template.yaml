@@ -380,6 +380,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -397,18 +398,18 @@ jobs:
           env_url: https://${{ steps.vars.outputs.ingress-host }}
           env: ${{ steps.vars.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
-      # - name: ⭐️ Run Preflight TestSuite ⭐️
-      #   if: inputs.test-enabled
-      #   timeout-minutes: 10
-      #   continue-on-error: true
-      #   run: |
-      #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
-      # - name: ⭐️ Run Core TestSuite ⭐️
-      #   id: core-testsuite
-      #   if: inputs.test-enabled
-      #   timeout-minutes: 20
-      #   run: |
-      #     task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
+      - name: ⭐️ Run Preflight TestSuite ⭐️
+        if: inputs.test-enabled
+        timeout-minutes: 10
+        continue-on-error: true
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
+      - name: ⭐️ Run Core TestSuite ⭐️
+        id: core-testsuite
+        if: inputs.test-enabled
+        timeout-minutes: 20
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
       - name: ⭐️ Run Playwright Core TestSuite ⭐️
         if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
         timeout-minutes: 20
