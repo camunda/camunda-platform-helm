@@ -54,3 +54,4 @@ tasks:
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
       fi
+
