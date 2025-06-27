@@ -941,3 +941,32 @@ func (s *statefulSetTest) TestSetDnsPolicyAndDnsConfig() {
 
 	require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
+
+func (s *statefulSetTest) TestContainerSetExtraVolumeClaimTemplates() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.extraVolumeClaimTemplates[0].apiVersion": "v1",
+			"zeebe.extraVolumeClaimTemplates[0].kind": "PersistentVolumeClaim",
+			"zeebe.extraVolumeClaimTemplates[0].metadata.name": "test-extra-pvc",
+			"zeebe.extraVolumeClaimTemplates[0].spec.accessModes[0]": "ReadWriteOnce",
+			"zeebe.extraVolumeClaimTemplates[0].spec.resources.requests.storage": "1Gi",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	s.Require().True(func() bool {
+		for _, pvc := range statefulSet.Spec.VolumeClaimTemplates {
+			if pvc.Name == "test-extra-pvc" {
+				return true
+			}
+		}
+		return false
+	}(), "Expected to find extra PVC named 'test-extra-pvc' in volumeClaimTemplates")
+}
