@@ -44,5 +44,7 @@ jobs:
     secrets: inherit
     with:
       camunda-version: ${{ matrix.version }}
-      scenarios: ${{ matrix.scenarios }}
       case: ${{ matrix.case }}
+      scenario: ${{ matrix.scenario }}
+      auth: ${{ matrix.auth }}
+      exclude: ${{ matrix.exclude }}

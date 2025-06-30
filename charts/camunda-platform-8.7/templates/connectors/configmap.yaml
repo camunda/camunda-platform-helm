@@ -55,6 +55,11 @@ data:
         profile: "simple"
         {{- end }}
     {{- end }}
+    {{- if eq .Values.connectors.inbound.mode "disabled" }}
+    operate:
+      client:
+        enabled: false
+    {{- end }}
   {{- end }}
 
 {{- range $key, $val := .Values.connectors.extraConfiguration }}

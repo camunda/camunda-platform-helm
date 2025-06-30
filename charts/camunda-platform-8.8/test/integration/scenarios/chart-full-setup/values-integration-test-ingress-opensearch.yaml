@@ -34,8 +34,35 @@ core:
       value: custom-zeebe
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
       value: custom-zeebe
+    #################### Only needed for keycloak auth
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_MAPPINGID
+      value: "demo-user-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_MAPPINGID
+      value: "venom-client-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_CLAIMVALUE
+      value: "venom"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_MAPPINGID
+      value: "connectors-client-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_CLAIMVALUE
+      value: "connectors"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_0
+      value: "demo-user-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_1
+      value: "venom-client-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_2
+      value: "connectors-client-mapping"
+    ####################
 
 optimize:
+  enabled: false
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: custom-optimize

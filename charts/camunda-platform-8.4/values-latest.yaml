@@ -19,7 +19,7 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags?page=&page_size=&ordering=&name=8.4
   image:
     repository: camunda/connectors-bundle
-    tag: 8.4.20
+    tag: 8.4.21
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags?page=&page_size=&ordering=&name=8.4
