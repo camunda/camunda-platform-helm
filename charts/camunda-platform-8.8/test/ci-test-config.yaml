@@ -22,10 +22,6 @@ integration:
     pr:
       scenario:
         # keycloak auth flow
-        - name: elasticsearch
-          enabled: true
-          auth: keycloak
-          exclude: []
         - name: opensearch
           enabled: false
           exclude: []
