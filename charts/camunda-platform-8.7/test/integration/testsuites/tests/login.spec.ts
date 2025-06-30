@@ -50,7 +50,7 @@ const config = {
     tasklist: requireEnv("PLAYWRIGHT_VAR_TASKLIST_CLIENT_SECRET"),
     operate: requireEnv("PLAYWRIGHT_VAR_OPERATE_CLIENT_SECRET"),
     optimize: requireEnv("PLAYWRIGHT_VAR_OPTIMIZE_CLIENT_SECRET"),
-    zeebe: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
+    zeebe: requireEnv("PLAYWRIGHT_VAR_ZEEBE_CLIENT_SECRET"),
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
