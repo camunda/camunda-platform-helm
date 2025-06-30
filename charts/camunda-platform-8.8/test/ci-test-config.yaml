@@ -38,6 +38,10 @@ integration:
           enabled: false
           exclude: []
           auth: basic
+        # - name: elasticsearch
+        #   enabled: true
+        #   auth: basic
+        #   exclude: [identity,console,core-grpc]
     nightly:
       scenario:
         - name: elasticsearch
