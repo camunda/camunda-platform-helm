@@ -22,12 +22,24 @@ runs:
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
 
+    - name: Restore cache
+      uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+      with:
+        path: /home/runner/.asdf
+        key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
+
     - name: Install asdf and tools
       uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4
       with:
         # TODO: Upgrade to 0.16 when it's supported in the GHA.
         # https://github.com/asdf-vm/actions/pull/590
         asdf_branch: v0.15.0
+
+    - name: Save cache
+      uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+      with:
+        path: /home/runner/.asdf
+        key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions
       shell: bash

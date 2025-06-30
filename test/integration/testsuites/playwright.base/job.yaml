@@ -51,7 +51,11 @@ spec:
             - -c
             - |
               npm ci
-              npx playwright test || exit 1
+              if [ -z "$TEST_EXCLUDE" ]; then
+                npx playwright test
+              else
+                npx playwright test --grep-invert "$TEST_EXCLUDE" || exit 1
+              fi
           envFrom:
             - configMapRef:
                 name: playwright-env-vars
