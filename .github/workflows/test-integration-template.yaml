@@ -492,12 +492,12 @@ jobs:
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
             else
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1m --overwrite=true
-              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1m --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
             fi
           else
-            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1m --overwrite=true
-            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1m --overwrite=true
+            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
           fi
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
