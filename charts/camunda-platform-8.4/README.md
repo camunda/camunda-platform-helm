@@ -1266,7 +1266,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `webModeler.nameOverride`      | can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name)                      | `""`                     |
 | `webModeler.image`             | configuration of the Web Modeler Docker images                                                                                                 |                          |
 | `webModeler.image.registry`    | can be used to set the Docker registry for the Web Modeler images (overwrites global.image.registry)                                           | `registry.camunda.cloud` |
-| `webModeler.image.tag`         | can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)                                               | `8.4.18`                 |
+| `webModeler.image.tag`         | can be used to set the Docker image tag for the Web Modeler images (overwrites global.image.tag)                                               | `8.4.19`                 |
 | `webModeler.image.pullSecrets` | can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod   | `[]`                     |
 | `webModeler.contextPath`       | can be used to make Web Modeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. | `""`                     |
 
