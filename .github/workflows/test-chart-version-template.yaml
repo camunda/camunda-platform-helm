@@ -81,12 +81,16 @@ jobs:
       TEST_NAMESPACE: camunda-platform
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      # Could be replaced with common-tooling GitHub Action when the issue is resolved:
-      # https://github.com/camunda/infra-global-github-actions/issues/432
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y build-essential
+      - name: Install common software tooling
+        uses: camunda/infra-global-github-actions/common-tooling@main
+        with:
+          overwrite: "false"
+          build-essential-enabled: "true"
+          node-enabled: "false"
+          yarn-enabled: "false"
+          buildx-enabled: "false"
+          java-enabled: "false"
+          python-enabled: "false"
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
