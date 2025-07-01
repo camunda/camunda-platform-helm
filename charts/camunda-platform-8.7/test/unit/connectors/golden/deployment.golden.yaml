@@ -83,7 +83,7 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-zeebe-identity-secret
                   key: zeebe-secret
-            - name: CAMUNDA_CLIENT_AUTH_ISSUER
+            - name: CAMUNDA_CLIENT_AUTH_TOKENURL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: CAMUNDA_CLIENT_ZEEBE_AUDIENCE
               value: "zeebe-api"

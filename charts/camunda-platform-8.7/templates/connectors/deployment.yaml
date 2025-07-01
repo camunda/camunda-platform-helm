@@ -94,7 +94,7 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
                   key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
-            - name: CAMUNDA_CLIENT_AUTH_ISSUER
+            - name: CAMUNDA_CLIENT_AUTH_TOKENURL
               value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
             - name: CAMUNDA_CLIENT_ZEEBE_AUDIENCE
               value: {{ include "zeebe.authAudience" . | quote }}
