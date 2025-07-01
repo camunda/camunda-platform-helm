@@ -2599,12 +2599,10 @@ core:
     ## @param core.persistence.storageClassName defines the storage class to use for the persistent volume claim
     # Set to "-" to disable use of default storage class
     storageClassName: ""
-    ## @param core.persistence.existingClaim if specified, uses an existing PVC instead of creating a new one
-    existingClaim: ""
+    ## @param core.persistence.selector defines a label selector for persistent volume claims for further filtering
+    selector: {}
     ## @param core.persistence.annotations defines annotations to add to the persistent volume claim
     annotations: {}
-    ## @param core.persistence.selector defines a label selector for the persistent volume claim
-    selector: {}
 
 #############################################
 #####
