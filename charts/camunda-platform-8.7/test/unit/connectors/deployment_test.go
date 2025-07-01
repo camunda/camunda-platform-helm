@@ -607,7 +607,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 							},
 						},
 					})
-				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CLIENT_AUTH_ISSUER", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CLIENT_AUTH_TOKENURL", Value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"})
 				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_CLIENT_ZEEBE_AUDIENCE", Value: "zeebe-api"})
 				s.Require().Contains(
 					env,

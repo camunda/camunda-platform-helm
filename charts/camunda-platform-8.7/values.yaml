@@ -480,7 +480,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.7.40
+    tag: 8.7.41
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -724,7 +724,7 @@ zeebe:
      ## @param zeebe.image.repository defines which image repository to use
     repository: camunda/zeebe
      ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.6
+    tag: 8.7.7
     ## @param zeebe.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1022,7 +1022,7 @@ zeebeGateway:
     ## @param zeebeGateway.image.repository defines which image repository to use
     repository: camunda/zeebe
     ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.6
+    tag: 8.7.7
     ## @param zeebeGateway.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1338,7 +1338,7 @@ operate:
     ## @param operate.image.repository defines which image repository to use
     repository: camunda/operate
     ## @param operate.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.6
+    tag: 8.7.7
     ## @param operate.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1606,7 +1606,7 @@ tasklist:
     ## @param tasklist.image.repository defines which image repository to use
     repository: camunda/tasklist
     ## @param tasklist.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.6
+    tag: 8.7.7
     ## @param tasklist.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param tasklist.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2371,7 +2371,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.3
+    tag: 8.7.4
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2878,7 +2878,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.7.5
+    tag: 8.7.6
     ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2926,9 +2926,14 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] A string literal secret can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.externalDatabase.existingSecret.name.
-      existingSecret:
-      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the database password
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.4–8.7; string form will be treated as a literal password).
+      ## @skip webModeler.restapi.externalDatabase.existingSecret.name string Name of the Kubernetes Secret containing the DB password; required when using the object form of `existingSecret`.
+      ##   • **String form** (schema‐native, but in 8.4–8.7 it will be treated as the literal password rather than the secret name).
+      ##  • **Object form** (recommended workaround until 8.8 GA):
+      ##       existingSecret:
+      ##         name: my-webmodeler-db-secret
+      existingSecret: ""
+      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string Key in the Secret data that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: "database-password"
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
