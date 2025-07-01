@@ -822,6 +822,9 @@ zeebe:
     ## @param zeebe.retention.policyName defines the name of the created and applied ILM policy.
     policyName: zeebe-record-retention-policy
 
+  ## @param zeebe.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
+  extraVolumeClaimTemplates: []
+
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
 #    #  #  #    #   #      #    #  #  #   # #
