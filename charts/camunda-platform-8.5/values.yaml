@@ -187,7 +187,7 @@ global:
       ## @skip global.identity.image.repository defines which image repository to use
       repository: camunda/identity
       ## @skip global.identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-      tag: 8.5.17
+      tag: 8.5.18
       ## @skip global.identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
       digest: ""
       ## @skip global.identity.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
@@ -247,7 +247,7 @@ global:
       connectors:
         ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        ## @param global.identity.auth.connectors.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
         # The existing secret should contain an `connectors-secret` field, which will be used as secret for the identity-Connectors communication.
         existingSecret:
         ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
@@ -259,7 +259,7 @@ global:
         clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+        ## @param global.identity.auth.identity.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.identity.existingSecret.name. This should ONLY be used for an external OIDC provider.
         # The existing secret should contain an `identity-secret` field, which will be used as secret for the identity-identity communication.
         existingSecret:
         ## @param global.identity.auth.identity.existingSecretKey defines the key within the existing secret object.
@@ -280,7 +280,7 @@ global:
         clientId: operate
         ## @param global.identity.auth.operate.audience defines the audience, which is used by Operate.
         audience: operate-api
-        ## @param global.identity.auth.operate.existingSecret can be used to reference an existing secret. If not set, a random secret is generated.
+        ## @param global.identity.auth.operate.existingSecret [string,object] can be used to use an own existing secret. If not set a random secret is generated. Can also reference a k8s secret instead of a string literal by specifying global.identity.auth.operate.existingSecret.name
         # The existing secret should contain an `operate-secret` field, which will be used as secret for the identity-Operate communication.
         existingSecret:
         ## @param global.identity.auth.operate.existingSecretKey defines the key within the existing secret object.
@@ -296,7 +296,7 @@ global:
         clientId: tasklist
         ## @param global.identity.auth.tasklist.audience defines the audience, which is used by Tasklist.
         audience: tasklist-api
-        ## @param global.identity.auth.tasklist.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        ## @param global.identity.auth.tasklist.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.tasklist.existingSecret.name.
         # The existing secret should contain an `tasklist-secret` field, which will be used as secret for the identity-Tasklist communication.
         existingSecret:
         ## @param global.identity.auth.tasklist.existingSecretKey defines the key within the existing secret object.
@@ -312,7 +312,7 @@ global:
         clientId: optimize
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
         audience: optimize-api
-        ## @param global.identity.auth.optimize.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        ## @param global.identity.auth.optimize.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.optimize.existingSecret.name.
         # The existing secret should contain an `optimize-secret` field, which will be used as secret for the identity-Optimize communication.
         existingSecret:
         ## @param global.identity.auth.optimize.existingSecretKey defines the key within the existing secret object.
@@ -343,7 +343,7 @@ global:
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
         wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        ## @param global.identity.auth.console.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
         # The existing secret should contain an `console-secret` field, which will be used as secret for the identity-console communication.
         existingSecret:
         ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
@@ -357,7 +357,7 @@ global:
       zeebe:
         ## @param global.identity.auth.zeebe.clientId defines the client id, which is used by Zeebe in authentication flows.
         clientId: zeebe
-        ## @param global.identity.auth.zeebe.existingSecret can be used to use an own existing secret. If not set a random secret is generated.
+        ## @param global.identity.auth.zeebe.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.zeebe.existingSecret.name.
         # The existing secret should contain an `zeebe-secret` field, which will be used as secret for the Identity-Zeebe communication.
         existingSecret:
         ## @param global.identity.auth.zeebe.existingSecretKey defines the key within the existing secret object.
@@ -2051,7 +2051,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.5.17
+    tag: 8.5.18
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2315,7 +2315,7 @@ identityPostgresql:
     ## @param identityPostgresql.auth.password Password for the non-root username
     ##
     password:
-    ## @param identityPostgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
+    ## @param identityPostgresql.auth.existingSecret Name of an existing Kubernetes Secret containing the database credentials for Identity PostgreSQL.
     ##
     existingSecret:
 
@@ -2548,7 +2548,7 @@ webModeler:
     registry: registry.camunda.cloud
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.19
+    tag: 8.5.20
     ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2595,11 +2595,15 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret can be used to provide the name of an existing secret resource containing the database password
-      existingSecret:
-      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the database password
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.5).
+      ## @skip webModeler.restapi.externalDatabase.existingSecret.name string Name of the Kubernetes Secret containing the DB password; required when using the object form of `existingSecret`.
+      ##   • **String form** (schema‐native, but in 8.4–8.7 it will be treated as the literal password rather than the secret name).
+      ##  • **Object form** (recommended workaround until 8.8 GA):
+      ##       existingSecret:
+      ##         name: my-webmodeler-db-secret
+      existingSecret: ""
+      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to define the key in the Secret object that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: ""
-
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
     mail:
       ## @param webModeler.restapi.mail.smtpHost defines the host name of the SMTP server to be used by WebModeler
@@ -2612,7 +2616,7 @@ webModeler:
       smtpPassword: ""
       ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
-      ## @param webModeler.restapi.mail.existingSecret can be used to provide the name of an existing secret resource containing the SMTP password
+      ## @param webModeler.restapi.mail.existingSecret [string,object] A string literal SMTP password can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.mail.existingSecret.name.
       existingSecret:
       ## @param webModeler.restapi.mail.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the SMTP password
       existingSecretPasswordKey: ""
@@ -3279,7 +3283,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.5.17
+    tag: 8.5.18
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
