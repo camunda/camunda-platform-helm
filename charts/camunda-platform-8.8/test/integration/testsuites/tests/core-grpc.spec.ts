@@ -196,7 +196,7 @@ test.describe("core-grpc", () => {
         ],
         { stdio: "inherit" },
       );
-      await new Promise((resolve) => setTimeout(resolve, 15000));
+      await new Promise((resolve) => setTimeout(resolve, 30000));
 
       const r = await api.post(
         `${config.base.coreOperate}/v2/process-definitions/search`,

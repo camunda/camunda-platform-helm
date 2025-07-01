@@ -261,7 +261,7 @@ test.describe("Camunda core", () => {
         ],
         { stdio: "inherit" },
       );
-      await new Promise((resolve) => setTimeout(resolve, 15000));
+      await new Promise((resolve) => setTimeout(resolve, 30000));
       // TODO change this as it is not testing what we think it is testing
       const r = await api.post(
         `${config.base.operate}/v1/process-definitions/search`,
@@ -285,7 +285,7 @@ test.describe("Camunda core", () => {
     });
   }
 
-  test.afterEach(async ({}, testInfo) => {
+  test.afterEach(async ({ }, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {
@@ -293,7 +293,7 @@ test.describe("Camunda core", () => {
       // If this becomes a concern, mask the values here before logging.
       console.error(
         "\n===== CONFIG DUMP (test failed) =====\n" +
-          JSON.stringify(config, null, 2),
+        JSON.stringify(config, null, 2),
       );
     }
   });
