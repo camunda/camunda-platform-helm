@@ -28,10 +28,6 @@ jobs:
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix-nightly
-        with:
-          charts-path: "charts/camunda-platform-8*"
-          # The minimum version that we support
-          min-supported-version: 8.4
 
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}

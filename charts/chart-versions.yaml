@@ -2,17 +2,19 @@
 # - https://docs.camunda.io/docs/reference/announcements-release-notes/overview/
 # - https://docs.camunda.io/docs/reference/announcements-release-notes/release-policy/
 # - https://camunda.com/release-policy/
+# NOTE: all numbers are in the format of "major.minor" (e.g. "8.8", "8.7", etc.)
+# And should be quoted in the YAML file to avoid issues with trailing zeros.
 versions:
   alpha:
-    - 8.8
-  standardSupport:
-    - 8.7
-    - 8.6
-    - 8.5
-    - 8.4
-  extendedSupport:
-    - 8.3
-    - 8.2
+    - "8.8"
+  supportStandard:
+    - "8.7"
+    - "8.6"
+    - "8.5"
+    - "8.4"
+  supportExtended:
+    - "8.3"
+    - "8.2"
   endOfLife:
-    - 8.1
-    - 8.0
+    - "8.1"
+    - "8.0"

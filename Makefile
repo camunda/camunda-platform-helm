@@ -11,8 +11,10 @@ releaseName = camunda-platform-test
 #
 # Tests.
 
+# Sometimes the chartPath var is empty, so we need to ignore the "scirpts" directory expeictly.
 define go_test_run
-	find $(chartPath) -name "go.mod" -exec dirname {} \; | while read chart_dir; do\
+	find $(chartPath) -name scirpts -prune -or -name "go.mod" -exec dirname {} \; |\
+	while read chart_dir; do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
 		cd $$(git rev-parse --show-toplevel);\
 		cd "$${chart_dir}";\

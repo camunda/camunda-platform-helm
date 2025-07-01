@@ -34,8 +34,6 @@ jobs:
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix
-        with:
-          charts-path: "charts/camunda-platform*"
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
