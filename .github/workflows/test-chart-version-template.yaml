@@ -71,18 +71,6 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  local:
-    name: Local cluster - KIND
-    needs: [init]
-    permissions:
-      contents: read
-    secrets: inherit
-    uses: ./.github/workflows/test-local-template.yml
-    with:
-      identifier: "${{ github.event.pull_request.number }}-loc-${{ inputs.camunda-version }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-
   integration:
     name: Camunda ${{ inputs.camunda-version }} - Integration Test
     needs: validation

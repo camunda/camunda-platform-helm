@@ -49,6 +49,39 @@ jobs:
         with:
           charts-path: "charts/camunda-platform-8*"
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
+
+  matrixversiononly:
+    # Generates a chart matrix of just the versions changed
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Generate versions from chart-matrix
+    runs-on: ubuntu-latest
+    needs: [init]
+    outputs:
+      matrix: ${{ steps.generate-chart-versions-only.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Generate chart versions
+        id: generate-chart-versions-only
+        run: |
+          printf matrix="$(echo '${{ needs.init.outputs.matrix }}' | jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
+
+  local:
+    if: ${{ needs.matrixversiononly.outputs.matrix != '[]' }}
+    name: Local cluster - KIND ${{ matrix.version }}
+    needs: [init, matrixversiononly]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.matrixversiononly.outputs.matrix) }}
+    permissions:
+      contents: read
+    secrets: inherit
+    uses: ./.github/workflows/test-local-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-loc-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Camunda ${{ matrix.version }}
