@@ -30,6 +30,10 @@ integration:
         #   enabled: true
         #   auth: basic
         #   exclude: [identity,console,core-grpc]
+        - name: opensearch
+          enabled: true
+          exclude: []
+          auth: keycloak
     nightly:
       scenario:
         - name: elasticsearch
