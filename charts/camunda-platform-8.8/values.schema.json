@@ -5162,19 +5162,14 @@
                             "description": "defines the storage class to use for the persistent volume claim",
                             "default": ""
                         },
-                        "existingClaim": {
-                            "type": "string",
-                            "description": "if specified, uses an existing PVC instead of creating a new one",
-                            "default": ""
+                        "selector": {
+                            "type": "object",
+                            "description": "defines a label selector for persistent volume claims for further filtering",
+                            "default": {}
                         },
                         "annotations": {
                             "type": "object",
                             "description": "defines annotations to add to the persistent volume claim",
-                            "default": {}
-                        },
-                        "selector": {
-                            "type": "object",
-                            "description": "defines a label selector for the persistent volume claim",
                             "default": {}
                         }
                     }
