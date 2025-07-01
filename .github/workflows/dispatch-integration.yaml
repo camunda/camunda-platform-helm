@@ -25,7 +25,7 @@ on:
         type: string
       platforms:
         description: platforms
-        default: gke
+        default: eks
         type: string
       flows:
         description: flows

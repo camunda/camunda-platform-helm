@@ -2488,7 +2488,7 @@
                                 },
                                 "existingSecretPasswordKey": {
                                     "type": "string",
-                                    "description": "can be used to provide the name of an existing secret key containing the database password",
+                                    "description": "string Key in the Secret data that holds the DB password; defaults to `\"password\"`.",
                                     "default": "database-password"
                                 }
                             }

@@ -11,7 +11,7 @@ global:
   identity:
     image:
       repository: camunda/identity
-      tag: 8.5.17
+      tag: 8.5.18
 
 console:
   # Camunda Enterprise repository.
@@ -49,7 +49,7 @@ webModeler:
   # registry.camunda.cloud/web-modeler-ee
   image:
     # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
-    tag: 8.5.19
+    tag: 8.5.20
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
@@ -71,7 +71,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.5.17
+    tag: 8.5.18
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags

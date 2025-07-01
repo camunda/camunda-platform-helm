@@ -3,6 +3,10 @@ description: Get vars for different type of tests
 inputs:
   chart-dir:
     description: A reference for the Camunda Helm chart directory.
+  infra-type:
+    description: standard or preemptible
+  platform:
+    description: matrix.distro.platform
 outputs:
   unitTestEnabled:
     description: Should the unit test be executed or not.
@@ -53,6 +57,12 @@ runs:
         echo "TEST_VALUES_BASE_DIR=${integration_scenarios_values_dir}" | tee -a $GITHUB_ENV
         # The var is needed in some non-shell steps.
         echo "test-values-base-dir=${integration_scenarios_values_dir}" | tee -a $GITHUB_OUTPUT
+
+        if [[ "${{ inputs.platform }}" == "eks" ]]; then
+          echo "INFRA_TYPE_VALUES=${integration_scenarios_values_dir}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
+        else
+          echo "INFRA_TYPE_VALUES=${integration_scenarios_values_dir}/infra/values-infra-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
+        fi
 
         # Charts dir.
         charts_base_dir="$(echo ${integration_vars} | jq -r '.vars.chartsBaseDir')"
