@@ -186,6 +186,11 @@
                         }
                     }
                 },
+                "commonLabels": {
+                    "type": "object",
+                    "description": "can be used to apply mutable labels to all Camunda resources.",
+                    "default": {}
+                },
                 "image": {
                     "type": "object",
                     "properties": {
