@@ -1,0 +1,18 @@
+# Docs:
+# - https://docs.camunda.io/docs/reference/announcements-release-notes/overview/
+# - https://docs.camunda.io/docs/reference/announcements-release-notes/release-policy/
+# - https://camunda.com/release-policy/
+versions:
+  alpha:
+    - 8.8
+  standardSupport:
+    - 8.7
+    - 8.6
+    - 8.5
+    - 8.4
+  extendedSupport:
+    - 8.3
+    - 8.2
+  endOfLife:
+    - 8.1
+    - 8.0
