@@ -76,4 +76,3 @@ annotations:
       description: "Support configure replicas for web modeler restapi and webapp"
     - kind: fixed
       description: "Cleanup multiregion installationtype"
-

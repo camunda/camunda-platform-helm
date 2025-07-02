@@ -25,10 +25,6 @@ integration:
           enabled: true
           exclude: []
           auth: keycloak
-        - name: multitenancy
-          enabled: true
-          exclude: []
-          auth: keycloak
     nightly:
       scenario:
         - name: elasticsearch
