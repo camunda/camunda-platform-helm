@@ -313,11 +313,7 @@ data:
         audience: {{ include "identity.authAudience" . | quote }}
         {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
         client-id: {{ include "identity.authClientId" .  | quote }}
-        {{- if eq (typeOf .Values.global.identity.auth.identity.existingSecret) "string" }}
-        client-secret: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
-        {{- else }}
-        client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
-        {{- end }}
+        client-secret: {{ include "identity.authClientSecret" . | quote }}
         {{- end }}
         {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}
