@@ -2588,22 +2588,6 @@ core:
   ## @param core.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
   extraVolumeClaimTemplates: []
 
-  ## @extra core.persistence configuration for optional PVC creation
-  persistence:
-    ## @param core.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
-    enabled: false
-    ## @param core.persistence.size defines the size of the persistent volume claim
-    size: "10Gi"
-    ## @param core.persistence.accessModes defines the access modes for the persistent volume claim
-    accessModes: ["ReadWriteOnce"]
-    ## @param core.persistence.storageClassName defines the storage class to use for the persistent volume claim
-    # Set to "-" to disable use of default storage class
-    storageClassName: ""
-    ## @param core.persistence.selector defines a label selector for persistent volume claims for further filtering
-    selector: {}
-    ## @param core.persistence.annotations defines annotations to add to the persistent volume claim
-    annotations: {}
-
 #############################################
 #####
 #     # #####  ##### # #    # # ###### ######

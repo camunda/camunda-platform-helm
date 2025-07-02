@@ -207,7 +207,7 @@ spec:
             - name: config
               mountPath: /usr/local/bin/startup.sh
               subPath: startup.sh
-            {{- if or (eq .Values.core.persistenceType "disk") .Values.core.persistence.enabled }}
+            {{- if not ( eq .Values.core.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/camunda/data
             {{- end }}
@@ -256,9 +256,6 @@ spec:
         - name: data
           emptyDir:
             medium: "Memory"
-        {{- else if and (eq .Values.core.persistenceType "disk") (not .Values.core.persistence.enabled) }}
-        - name: data
-          emptyDir: {}
         {{- end }}
         - name: config
           configMap:
@@ -304,35 +301,15 @@ spec:
 {{ toYaml . | indent 8 }}
 {{- end }}
 
-  {{- if or (eq .Values.core.persistenceType "disk") .Values.core.persistence.enabled }}
+  {{- if eq .Values.core.persistenceType "disk" }}
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
         name: data
-        {{- if .Values.core.persistence.enabled }}
-        annotations: {{- toYaml .Values.core.persistence.annotations | nindent 10 }}
-        {{- else }}
         annotations:
           {{- toYaml .Values.core.pvcAnnotations | nindent 10 }}
-        {{- end }}
       spec:
-        {{- if .Values.core.persistence.enabled }}
-        accessModes: {{ .Values.core.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 8 }}
-        {{- if .Values.core.persistence.storageClassName }}
-        {{- if (eq "-" .Values.core.persistence.storageClassName) }}
-        storageClassName: ""
-        {{- else }}
-        storageClassName: {{ .Values.core.persistence.storageClassName | quote }}
-        {{- end }}
-        {{- end }}
-        {{- if .Values.core.persistence.selector }}
-        selector: {{- toYaml .Values.core.persistence.selector | nindent 8 }}
-        {{- end }}
-        resources:
-          requests:
-            storage: {{ .Values.core.persistence.size | default "10Gi" | quote }}
-        {{- else }}
         accessModes: {{ .Values.core.pvcAccessModes }}
         {{- if .Values.core.pvcStorageClassName }}
         {{- if (eq "-" .Values.core.pvcStorageClassName) }}
@@ -349,9 +326,8 @@ spec:
         resources:
           requests:
             storage: {{ .Values.core.pvcSize | quote }}
-        {{- end }}
-    {{- if .Values.core.extraVolumeClaimTemplates }}
-    {{- toYaml .Values.core.extraVolumeClaimTemplates | nindent 4 }}
-    {{- end }}
+      {{- if .Values.core.extraVolumeClaimTemplates }}
+      {{- toYaml .Values.core.extraVolumeClaimTemplates | nindent 8 }}
+      {{- end }}
   {{- end }}
 {{- end }}
