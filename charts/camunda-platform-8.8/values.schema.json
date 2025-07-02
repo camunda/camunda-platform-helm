@@ -317,8 +317,8 @@
                         },
                         "disableExporter": {
                             "type": "boolean",
-                            "description": "DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled",
-                            "default": false
+                            "description": "If true, disables the Zeebe ElasticSearch exporter. ",
+                            "default": true
                         },
                         "url": {
                             "type": "object",
@@ -409,6 +409,11 @@
                                     "default": "password"
                                 }
                             }
+                        },
+                        "disableExporter": {
+                            "type": "boolean",
+                            "description": "If true, disables the Zeebe OpenSearch exporter. ",
+                            "default": true
                         },
                         "url": {
                             "type": "object",
