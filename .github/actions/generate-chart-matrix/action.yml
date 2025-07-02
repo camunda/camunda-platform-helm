@@ -107,9 +107,9 @@ runs:
           echo "Changed files:"
           printf "%s\n" ${ALL_MODIFIED_FILES}
 
-          # If any workflow or action files have changed, build all chart versions
-          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)/"; then
-            echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
+          # If any workflow or action files have changed, or .tool-versions changed, build all chart versions
+          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)/|^\.tool-versions$"; then
+            echo "Changes in .github/workflows, .github/actions, or .tool-versions detected — building all chart versions"
             ls -d ${{ inputs.charts-path }} | while read chart_dir; do
               camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
               write_matrix_entry "$camunda_version" "$chart_dir"
