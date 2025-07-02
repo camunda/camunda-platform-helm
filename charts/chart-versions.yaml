@@ -1,9 +1,5 @@
-# Docs:
-# - https://docs.camunda.io/docs/reference/announcements-release-notes/overview/
-# - https://docs.camunda.io/docs/reference/announcements-release-notes/release-policy/
-# - https://camunda.com/release-policy/
-# NOTE: all numbers are in the format of "major.minor" (e.g. "8.8", "8.7", etc.)
-# And should be quoted in the YAML file to avoid issues with trailing zeros.
+# This file contains the supported versions of the chart.
+# Check the README for more information on how to update this file.
 versions:
   alpha:
     - "8.8"

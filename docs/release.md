@@ -41,6 +41,37 @@ helm template my-camunda-devel \
   --version 0.0.0-8.6.0-alpha2
 ```
 
+## Minor Version Chores
+
+Typically, Camunda releases a minor version every 6 months (with some exceptions, the cycle could be 3 months). From the Helm side, we need to reflect the changes in this repo.
+
+Follows the list of changes that should be done for the minor version release. Assuming that `current alpha is 8.8` (which will be the `latest`) and the `new alpha is 8.9`, do the following:
+
+**Before starting:**
+
+1. Inform the other team about the change at least 1 week before making it.
+2. Read the summary of [Camunda versioning and release policy](../charts/README.md)
+
+**Chart files updates:**
+
+1. Copy the current alpha chart dir `charts/camunda-platform-8.8` as the new alpha `charts/camunda-platform-8.9`
+2. Update the chart version in the current alpha `charts/camunda-platform-8.8/Chart.yaml` (remove the alpha part so if old is `13.0.0-alpha5`, the new is `13.0.0`)
+3. Update the image tags in the current alpha `charts/camunda-platform-8.8/values-latest.yaml` (no `SNAPSHOT` should be used)
+4. Update the chart version in the new alpha `charts/camunda-platform-8.9/Chart.yaml` (increase the major version and reset the alpha version, so if old is `13.0.0-alpha5`, the new is `14.0.0-alpha1`)
+
+**Other files updates:**
+
+1. Update [chart-versions.yaml](../charts/chart-versions.yaml) file
+2. Update Release-Please config [release-please-config.json](../.github/config/release-please/release-please-config.json) and manifest [.release-please-manifest.json](../.github/config/release-please/.release-please-manifest.json)
+  - Add the new alpha (8.9 in this case) to the config and manifest files.
+  - In the RP config file, remove the alpha config from the current alpha (8.8 in this case), which will be released as stable.
+3. Update Renovate configuration file [renovate.json5](../.github/renovate.json5)
+4. Update GitHub Actions with input of versions (search in the repo for `type: choice`)
+5. Update GitHub Action for snapshot artifact [chart-release-snapshot.yaml](../.github/workflows/chart-release-snapshot.yaml)
+
+**Finally, create a PR with the changes, and once merged, follow the normal release process.
+**
+
 ## Release Process
 
 We are trying to automate as much as possible of the release process yet without sacrificing

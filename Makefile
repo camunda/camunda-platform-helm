@@ -1,6 +1,6 @@
 # Makefile for managing the Helm charts
 MAKEFLAGS += --silent
-chartPath ?= charts/camunda-platform-*
+chartPath := $(if $(chartPath),$(chartPath),charts/camunda-platform-*)
 chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName = camunda-platform-test
 
@@ -11,9 +11,8 @@ releaseName = camunda-platform-test
 #
 # Tests.
 
-# Sometimes the chartPath var is empty, so we need to ignore the "scirpts" directory expeictly.
 define go_test_run
-	find $(chartPath) -name scirpts -prune -or -name "go.mod" -exec dirname {} \; |\
+	find $(chartPath) -name "go.mod" -exec dirname {} \; |\
 	while read chart_dir; do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
 		cd $$(git rev-parse --show-toplevel);\
