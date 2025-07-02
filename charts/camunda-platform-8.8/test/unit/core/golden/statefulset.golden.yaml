@@ -125,8 +125,6 @@ spec:
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
       volumes:
-        - name: data
-          emptyDir: {}
         - name: config
           configMap:
             name: camunda-platform-test-core-configuration

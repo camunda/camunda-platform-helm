@@ -5133,46 +5133,6 @@
                     "description": "can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!",
                     "default": [],
                     "items": {}
-                },
-                "persistence": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
-                            "default": false
-                        },
-                        "size": {
-                            "type": "string",
-                            "description": "defines the size of the persistent volume claim",
-                            "default": "10Gi"
-                        },
-                        "accessModes": {
-                            "type": "array",
-                            "description": "defines the access modes for the persistent volume claim",
-                            "default": [
-                                "ReadWriteOnce"
-                            ],
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "storageClassName": {
-                            "type": "string",
-                            "description": "defines the storage class to use for the persistent volume claim",
-                            "default": ""
-                        },
-                        "selector": {
-                            "type": "object",
-                            "description": "defines a label selector for persistent volume claims for further filtering",
-                            "default": {}
-                        },
-                        "annotations": {
-                            "type": "object",
-                            "description": "defines annotations to add to the persistent volume claim",
-                            "default": {}
-                        }
-                    }
                 }
             }
         },
