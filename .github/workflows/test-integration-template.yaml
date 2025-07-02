@@ -118,7 +118,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
   cancel-in-progress: true
 
 env:
@@ -306,7 +306,7 @@ jobs:
         run: |
           echo $TEST_NAMESPACE
           kubectl delete ns --ignore-not-found=true \
-            -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }}"
+            -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ matrix.scenario.flow }},scenario=${{ inputs.scenario }},auth=${{ inputs.auth }}"
           kubectl create ns $TEST_NAMESPACE
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
@@ -314,6 +314,8 @@ jobs:
           kubectl label ns $TEST_NAMESPACE test-flow=${{ matrix.scenario.flow }}
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
+          kubectl label ns $TEST_NAMESPACE scenario=${{ inputs.scenario }}
+          kubectl label ns $TEST_NAMESPACE auth=${{ inputs.auth }}
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
@@ -390,7 +392,7 @@ jobs:
         with:
           step: start
           token: ${{ steps.generate-github-token.outputs.token }}
-          env: ${{ steps.vars.outputs.identifier }}
+          env: ${{ steps.vars.outputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
           ref: ${{ inputs.caller-git-ref }}
       - name: Pre setup
         timeout-minutes: 5
@@ -448,7 +450,7 @@ jobs:
           status: ${{ job.status }}
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
           env_url: https://${{ steps.vars.outputs.ingress-host }}
-          env: ${{ steps.vars.outputs.identifier }}
+          env: ${{ steps.vars.outputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
           ref: ${{ inputs.caller-git-ref }}
       - name: ⭐️ Run Preflight TestSuite ⭐️
         if: inputs.test-enabled
@@ -482,7 +484,7 @@ jobs:
         with:
           step: delete-env
           token: ${{ steps.generate-github-token.outputs.token }}
-          env: ${{ steps.vars.outputs.identifier }}
+          env: ${{ steps.vars.outputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
           ref: ${{ inputs.caller-git-ref }}
       - name: Cleanup test namespace
         if: always()
