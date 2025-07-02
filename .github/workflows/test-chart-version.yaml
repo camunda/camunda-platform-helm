@@ -65,6 +65,20 @@ jobs:
         run: |
           printf matrix="$(echo '${{ needs.init.outputs.matrix }}' | jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
 
+  unit:
+    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
+    name: Camunda ${{ matrix.version }} - Unit Test
+    needs: [init, matrix-version-only]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
+    uses: ./.github/workflows/test-unit-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-unit-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
   local:
     if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
     name: Local cluster - KIND ${{ matrix.version }}

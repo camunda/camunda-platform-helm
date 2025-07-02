@@ -63,14 +63,6 @@ jobs:
           json=$(echo "$SCENARIOS_LIST" | jq -R -c 'split(",")')
           echo "json_array=$json" | tee -a $GITHUB_OUTPUT
 
-  unit:
-    name: Camunda ${{ inputs.camunda-version }} - Unit Test
-    uses: ./.github/workflows/test-unit-template.yml
-    with:
-      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-unit-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-
   integration:
     name: Camunda ${{ inputs.camunda-version }} - Integration Test
     needs: validation
