@@ -209,8 +209,8 @@ global:
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
-      ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
-    disableExporter: false
+    ## @param  global.elasticsearch.disableExporter If true, disables the Zeebe ElasticSearch exporter. 
+    disableExporter: true
     ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
     ## @param global.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
@@ -247,6 +247,8 @@ global:
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
+    ## @param global.opensearch.disableExporter If true, disables the Zeebe OpenSearch exporter. 
+    disableExporter: true
     ## @extra global.opensearch.url Configuration to configure opensearch url
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
     ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
