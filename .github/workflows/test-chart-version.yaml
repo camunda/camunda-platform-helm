@@ -79,10 +79,24 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
+  validation:
+    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
+    name: Camunda ${{ matrix.version }} - Validation
+    needs: [init, matrix-version-only]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
   local:
     if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
     name: Local cluster - KIND ${{ matrix.version }}
-    needs: [init, matrix-version-only]
+    needs: [init, matrix-version-only, validation]
     strategy:
       fail-fast: false
       matrix:
@@ -99,7 +113,7 @@ jobs:
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Camunda ${{ matrix.version }}
-    needs: init
+    needs: [init, validation]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
