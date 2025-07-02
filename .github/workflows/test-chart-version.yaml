@@ -50,7 +50,7 @@ jobs:
           charts-path: "charts/camunda-platform-8*"
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
 
-  matrixversiononly:
+  matrix-version-only:
     # Generates a chart matrix of just the versions changed
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Generate versions from chart-matrix
@@ -66,13 +66,13 @@ jobs:
           printf matrix="$(echo '${{ needs.init.outputs.matrix }}' | jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
 
   local:
-    if: ${{ needs.matrixversiononly.outputs.matrix != '[]' }}
+    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
     name: Local cluster - KIND ${{ matrix.version }}
-    needs: [init, matrixversiononly]
+    needs: [init, matrix-version-only]
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.matrixversiononly.outputs.matrix) }}
+        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
     permissions:
       contents: read
     secrets: inherit
