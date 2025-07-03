@@ -17,11 +17,11 @@ global:
   identity:
     auth:
       enabled: true
-      issuer: https://login.microsoftonline.com/<tenantId>/v2.0
-      issuerBackendUrl: https://login.microsoftonline.com/<tenantId>/v2.0
-      tokenUrl: https://login.microsoftonline.com/<tenantId>/oauth2/v2.0/token
-      jwksUrl: https://login.microsoftonline.com/<tenantId>/discovery/v2.0/keys
-      publicIssuerUrl: https://login.microsoftonline.com/<tenantId>/v2.0
+      issuer: https://login.microsoftonline.com/<directoryId>/v2.0
+      issuerBackendUrl: https://login.microsoftonline.com/<directoryId>/v2.0
+      tokenUrl: https://login.microsoftonline.com/<directoryId>/oauth2/v2.0/token
+      jwksUrl: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
+      publicIssuerUrl: https://login.microsoftonline.com/<directoryId>/v2.0
       type: "MICROSOFT"
       core:
         clientId: <clientId>
@@ -35,7 +35,7 @@ global:
         audience: <clientId>
         # this existngSecret must be a string literal
         existingSecret: <clientSecret>
-        initialClaimValue: "<objectId>"
+        initialClaimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
       optimize:
         clientId: <clientId>
@@ -79,14 +79,14 @@ global:
       mappings:
         - mappingID: demo-user-mapping
           claimName: oid
-          claimValue: <objectId>
+          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
 
 console:
   enabled: true
   contextPath: "/"
   env:
     - name: CAMUNDA_IDENTITY_JWKS_URL
-      value: https://login.microsoftonline.com/<tenantId>/discovery/v2.0/keys
+      value: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
 
 optimize:
   enabled: true
@@ -149,7 +149,7 @@ core:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMNAME
       value: "oid"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMVALUE
-      value: "<objectId>"
+      value: d70412f6-5a6e-4271-8e45-fa497056ac1e
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_MAPPINGID
       value: "venom-client-mapping"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_CLAIMNAME
