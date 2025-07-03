@@ -27,8 +27,8 @@ global:
         clientId: <clientId>
         audience: <clientId>
         existingSecret:
-          name: oidc
-        existingSecretKey: token
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}/core"
       identity:
         clientId: <clientId>
@@ -41,16 +41,16 @@ global:
         clientId: <clientId>
         audience: <clientId>
         existingSecret:
-          name: oidc
-        existingSecretKey: token
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
       connectors:
         clientId: <clientId>
         audience: <clientId>
         clientApiAudience: <clientId>
         existingSecret:
-          name: oidc
-        existingSecretKey: token
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
         tokenScope: <clientId>/.default
       webModeler:
         clientId: <clientId>
@@ -63,8 +63,8 @@ global:
         clientId: <clientId>
         audience: <clientId>
         existingSecret:
-          name: oidc
-        existingSecretKey: token
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
         tokenScope: <clientId>/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
   security:
