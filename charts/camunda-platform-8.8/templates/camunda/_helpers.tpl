@@ -216,14 +216,12 @@ Ensures exactly one slash between them, no double slashes.
 Usage: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}
 */}}
 {{- define "camundaPlatform.joinpath" -}}
-    {{- $context := index . 0 | default "" -}}
-    {{- $sub := index . 1 | default "" -}}
-    {{- if or (eq $context "") (eq $context "/") -}}
-        /{{- $sub | trimPrefix "/" -}}
-    {{- else -}}
-        {{- $context | trimSuffix "/" -}}/{{- $sub | trimPrefix "/" -}}
-    {{- end -}}
+  {{- $ctx  := trimAll "/" (default "" (index . 0)) -}}
+  {{- $sub  := trimAll "/" (default "" (index . 1)) -}}
+  {{- $path := join "/" (compact (list $ctx $sub)) -}}
+  {{- printf "/%s" $path -}}
 {{- end -}}
+
 
 {{/*
 ********************************************************************************
