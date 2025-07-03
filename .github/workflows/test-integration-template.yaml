@@ -409,6 +409,7 @@ jobs:
           TEST_CHART_FLOW: ${{ matrix.scenario.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_SCENARIO: ${{ inputs.scenario }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
         run: |
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
