@@ -81,7 +81,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceEnabledCreatesPVC",
+			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
 				"connectors.enabled":                    "true",
 				"connectors.persistence.enabled":        "true",
@@ -109,7 +109,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceWithExistingClaim",
+			Name: "TestPersistenceWithExistingClaimCreatesVolume",
 			Values: map[string]string{
 				"connectors.enabled":                   "true",
 				"connectors.persistence.enabled":       "true",
@@ -135,7 +135,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceWithStorageClass",
+			Name: "TestPersistenceWithStorageClassCreatesVolume",
 			Values: map[string]string{
 				"connectors.enabled":                      "true",
 				"connectors.persistence.enabled":          "true",
@@ -162,7 +162,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceWithAnnotations",
+			Name: "TestPersistenceWithAnnotationsCreatesVolume",
 			Values: map[string]string{
 				"connectors.enabled":                     "true",
 				"connectors.persistence.enabled":         "true",
@@ -190,7 +190,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceWithSelector",
+			Name: "TestPersistenceWithSelectorCreatesVolume",
 			Values: map[string]string{
 				"connectors.enabled":                                  "true",
 				"connectors.persistence.enabled":                      "true",
@@ -261,17 +261,99 @@ func TestPVCManifestCreated(t *testing.T) {
 	testCase := testhelpers.TestCase{
 		Name: "TestPVCManifestCreated",
 		Values: map[string]string{
-			"connectors.enabled": "true",
-			"connectors.persistence.enabled": "true",
-			"connectors.persistence.size": "5Gi",
+			"connectors.enabled":                    "true",
+			"connectors.persistence.enabled":        "true",
+			"connectors.persistence.size":           "5Gi",
+			"connectors.persistence.accessModes[0]": "ReadWriteOnce",
 		},
 		Verifier: func(t *testing.T, output string, err error) {
 			var pvc corev1.PersistentVolumeClaim
 			helm.UnmarshalK8SYaml(t, output, &pvc)
 			require.Equal(t, "camunda-platform-test-connectors-data", pvc.Name)
 			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
+			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
 		},
 	}
 
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-connectors", []string{"templates/connectors/pvc.yaml"}, []testhelpers.TestCase{testCase})
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-connectors", []string{"templates/connectors/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
+}
+
+func TestPVCWithAnnotations(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestPVCWithAnnotations",
+		Values: map[string]string{
+			"connectors.enabled":                     "true",
+			"connectors.persistence.enabled":         "true",
+			"connectors.persistence.size":            "5Gi",
+			"connectors.persistence.annotations.foo": "bar",
+			"connectors.persistence.annotations.baz": "qux",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var pvc corev1.PersistentVolumeClaim
+			helm.UnmarshalK8SYaml(t, output, &pvc)
+			require.Equal(t, "camunda-platform-test-connectors-data", pvc.Name)
+			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
+			require.Equal(t, "bar", pvc.Annotations["foo"])
+			require.Equal(t, "qux", pvc.Annotations["baz"])
+		},
+	}
+
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-connectors", []string{"templates/connectors/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
+}
+
+func TestPVCWithSelector(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestPVCWithSelector",
+		Values: map[string]string{
+			"connectors.enabled":                                  "true",
+			"connectors.persistence.enabled":                      "true",
+			"connectors.persistence.size":                         "5Gi",
+			"connectors.persistence.selector.matchLabels.storage": "fast",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var pvc corev1.PersistentVolumeClaim
+			helm.UnmarshalK8SYaml(t, output, &pvc)
+			require.Equal(t, "camunda-platform-test-connectors-data", pvc.Name)
+			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
+			require.Equal(t, "fast", pvc.Spec.Selector.MatchLabels["storage"])
+		},
+	}
+
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-connectors", []string{"templates/connectors/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
+}
+
+func TestPVCWithStorageClass(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestPVCWithStorageClass",
+		Values: map[string]string{
+			"connectors.enabled":                      "true",
+			"connectors.persistence.enabled":          "true",
+			"connectors.persistence.size":             "10Gi",
+			"connectors.persistence.storageClassName": "fast-ssd",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var pvc corev1.PersistentVolumeClaim
+			helm.UnmarshalK8SYaml(t, output, &pvc)
+			require.Equal(t, "camunda-platform-test-connectors-data", pvc.Name)
+			require.Equal(t, "10Gi", pvc.Spec.Resources.Requests.Storage().String())
+			require.Equal(t, "fast-ssd", *pvc.Spec.StorageClassName)
+		},
+	}
+
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-connectors", []string{"templates/connectors/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
 }

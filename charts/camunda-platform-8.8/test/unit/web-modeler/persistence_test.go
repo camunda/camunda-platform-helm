@@ -58,8 +58,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledUsesEmptyDir",
 			Values: map[string]string{
-				"webModeler.enabled":                    "true",
-				"webModeler.restapi.mail.fromAddress":   "example@example.com",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				// persistence.enabled defaults to false
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -82,7 +82,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceEnabledCreatesPVC",
+			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
 				"webModeler.enabled":                    "true",
 				"webModeler.restapi.mail.fromAddress":   "example@example.com",
@@ -111,12 +111,12 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceWithExistingClaim",
+			Name: "TestPersistenceWithExistingClaimCreatesVolume",
 			Values: map[string]string{
-				"webModeler.enabled":                    "true",
-				"webModeler.restapi.mail.fromAddress":   "example@example.com",
-				"webModeler.persistence.enabled":        "true",
-				"webModeler.persistence.existingClaim":  "my-existing-pvc",
+				"webModeler.enabled":                   "true",
+				"webModeler.restapi.mail.fromAddress":  "example@example.com",
+				"webModeler.persistence.enabled":       "true",
+				"webModeler.persistence.existingClaim": "my-existing-pvc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -140,10 +140,10 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledWhenComponentDisabled",
 			Values: map[string]string{
-				"webModeler.enabled":                    "false",
-				"webModeler.restapi.mail.fromAddress":   "example@example.com",
-				"webModeler.persistence.enabled":        "true",
-				"webModeler.persistence.size":           "5Gi",
+				"webModeler.enabled":                  "false",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.persistence.enabled":      "true",
+				"webModeler.persistence.size":         "5Gi",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// When component is disabled, no deployment should be created
@@ -183,17 +183,19 @@ func TestPVCManifestCreated(t *testing.T) {
 	testCase := testhelpers.TestCase{
 		Name: "TestPVCManifestCreated",
 		Values: map[string]string{
-			"webModeler.enabled": "true",
-			"webModeler.persistence.enabled": "true",
-			"webModeler.persistence.size": "5Gi",
+			"webModeler.enabled":                    "true",
+			"webModeler.persistence.enabled":        "true",
+			"webModeler.persistence.size":           "5Gi",
+			"webModeler.persistence.accessModes[0]": "ReadWriteOnce",
 		},
 		Verifier: func(t *testing.T, output string, err error) {
 			var pvc corev1.PersistentVolumeClaim
 			helm.UnmarshalK8SYaml(t, output, &pvc)
 			require.Equal(t, "camunda-platform-test-webmodeler-data", pvc.Name)
 			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
+			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
 		},
 	}
 
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/pvc.yaml"}, []testhelpers.TestCase{testCase})
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/persistentvolumeclaim-restapi.yaml"}, []testhelpers.TestCase{testCase})
 }

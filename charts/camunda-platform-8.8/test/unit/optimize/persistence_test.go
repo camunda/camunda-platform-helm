@@ -87,7 +87,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceEnabledCreatesPVC",
+			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
 				"optimize.enabled":                    "true",
 				"optimize.persistence.enabled":        "true",
@@ -122,11 +122,11 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestPersistenceWithExistingClaim",
+			Name: "TestPersistenceWithExistingClaimCreatesVolume",
 			Values: map[string]string{
-				"optimize.enabled":                    "true",
-				"optimize.persistence.enabled":        "true",
-				"optimize.persistence.existingClaim":  "my-existing-pvc",
+				"optimize.enabled":                   "true",
+				"optimize.persistence.enabled":       "true",
+				"optimize.persistence.existingClaim": "my-existing-pvc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -156,9 +156,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledWhenComponentDisabled",
 			Values: map[string]string{
-				"optimize.enabled":                    "false",
-				"optimize.persistence.enabled":        "true",
-				"optimize.persistence.size":           "5Gi",
+				"optimize.enabled":             "false",
+				"optimize.persistence.enabled": "true",
+				"optimize.persistence.size":    "5Gi",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// When component is disabled, no deployment should be created
@@ -198,17 +198,19 @@ func TestPVCManifestCreated(t *testing.T) {
 	testCase := testhelpers.TestCase{
 		Name: "TestPVCManifestCreated",
 		Values: map[string]string{
-			"optimize.enabled": "true",
-			"optimize.persistence.enabled": "true",
-			"optimize.persistence.size": "5Gi",
+			"optimize.enabled":                    "true",
+			"optimize.persistence.enabled":        "true",
+			"optimize.persistence.size":           "5Gi",
+			"optimize.persistence.accessModes[0]": "ReadWriteOnce",
 		},
 		Verifier: func(t *testing.T, output string, err error) {
 			var pvc corev1.PersistentVolumeClaim
 			helm.UnmarshalK8SYaml(t, output, &pvc)
 			require.Equal(t, "camunda-platform-test-optimize-data", pvc.Name)
 			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
+			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
 		},
 	}
 
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-optimize", []string{"templates/optimize/pvc.yaml"}, []testhelpers.TestCase{testCase})
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-optimize", []string{"templates/optimize/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
 }
