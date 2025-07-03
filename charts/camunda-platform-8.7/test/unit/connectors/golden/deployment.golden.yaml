@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.7.4"
+    app.kubernetes.io/version: "8.7.5"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: "8.7.4"
+        app.kubernetes.io/version: "8.7.5"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,7 +44,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.7.4
+          image: camunda/connectors-bundle:8.7.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -83,7 +83,7 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-zeebe-identity-secret
                   key: zeebe-secret
-            - name: CAMUNDA_CLIENT_AUTH_ISSUER
+            - name: CAMUNDA_CLIENT_AUTH_TOKENURL
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: CAMUNDA_CLIENT_ZEEBE_AUDIENCE
               value: "zeebe-api"

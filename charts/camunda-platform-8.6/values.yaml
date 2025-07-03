@@ -84,9 +84,12 @@ global:
 
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
+  ## @extra global.labels can be used to apply immutable labels applied to all Camunda resources. These are also used in matchLabels fields in selectors.
   labels:
-  ## @param global.labels.app Name of the application
+    ## @param global.labels.app Name of the application
     app: camunda-platform
+  ## @param global.commonLabels can be used to apply mutable labels to all Camunda resources.
+  commonLabels: {}
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
   image:
@@ -664,7 +667,7 @@ zeebe:
      ## @param zeebe.image.repository defines which image repository to use
     repository: camunda/zeebe
      ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.20
+    tag: 8.6.21
     ## @param zeebe.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -940,6 +943,9 @@ zeebe:
   ## @param zeebe.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
+  ## @param zeebe.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
+  extraVolumeClaimTemplates: []
+
 # Zeebe.
  ####    ##   ##### ###### #    #   ##   #   #
 #    #  #  #    #   #      #    #  #  #   # #
@@ -959,7 +965,7 @@ zeebeGateway:
     ## @param zeebeGateway.image.repository defines which image repository to use
     repository: camunda/zeebe
     ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.20
+    tag: 8.6.21
     ## @param zeebeGateway.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1275,7 +1281,7 @@ operate:
     ## @param operate.image.repository defines which image repository to use
     repository: camunda/operate
     ## @param operate.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.20
+    tag: 8.6.21
     ## @param operate.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1543,7 +1549,7 @@ tasklist:
     ## @param tasklist.image.repository defines which image repository to use
     repository: camunda/tasklist
     ## @param tasklist.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.20
+    tag: 8.6.21
     ## @param tasklist.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param tasklist.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1789,7 +1795,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.11
+    tag: 8.6.12
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2308,7 +2314,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.6.16
+    tag: 8.6.17
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2798,7 +2804,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.14
+    tag: 8.6.15
     ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2839,9 +2845,14 @@ webModeler:
       user: ""
       ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] A string literal secret can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.externalDatabase.existingSecret.name.
-      existingSecret:
-      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the database password
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.4–8.7; string form will be treated as a literal password).
+      ## @skip webModeler.restapi.externalDatabase.existingSecret.name string Name of the Kubernetes Secret containing the DB password; required when using the object form of `existingSecret`.
+      ##   • **String form** (schema‐native, but in 8.4–8.7 it will be treated as the literal password rather than the secret name).
+      ##  • **Object form** (recommended workaround until 8.8 GA):
+      ##       existingSecret:
+      ##         name: my-webmodeler-db-secret
+      existingSecret: ""
+      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string Key in the Secret data that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: "database-password"
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler

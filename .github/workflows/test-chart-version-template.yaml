@@ -33,32 +33,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
   cancel-in-progress: true
 
-env:
-  KUBECONFIG: .github/config/kubeconfig
-
 permissions:
   contents: read
 
 jobs:
-  validation:
-    name: Camunda ${{ inputs.camunda-version }} - Validation
-    uses: ./.github/workflows/chart-validate-template.yaml
-    with:
-      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-
-  unit:
-    name: Camunda ${{ inputs.camunda-version }} - Unit Test
-    uses: ./.github/workflows/test-unit-template.yml
-    with:
-      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-unit-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
-      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  init:
+    name: Init Scenarios
+    runs-on: ubuntu-latest
+    env:
+      SCENARIOS_LIST: ${{ inputs.scenarios }}
+    outputs:
+      scenarios-formatted: ${{ steps.make-json-array.outputs.json_array }}
+    steps:
+      - name: Convert string to JSON array and set as output
+        id: make-json-array
+        run: |
+          # For example, this converts the SCENARIOS_LIST, which is a string input ("multitenancy, oidc") to ["multitenancy","oidc"]
+          # This is done because it is not possible to pass JSON arrays as input to a workflow. Therefore,
+          # a string is passed and converted to a json array
+          json=$(echo "$SCENARIOS_LIST" | jq -R -c 'split(",")')
+          echo "json_array=$json" | tee -a $GITHUB_OUTPUT
 
   integration:
     name: Camunda ${{ inputs.camunda-version }} - Integration Test
-    needs: validation
     permissions:
       contents: read
       id-token: write
@@ -66,9 +63,8 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-intg-${{ inputs.camunda-version }}-${{ inputs.auth }}"
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || '' }}"
-      platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

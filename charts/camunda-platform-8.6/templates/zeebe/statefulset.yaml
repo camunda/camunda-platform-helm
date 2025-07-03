@@ -296,5 +296,8 @@ spec:
         resources:
           requests:
             storage: {{ .Values.zeebe.pvcSize | quote }}
+      {{- if .Values.zeebe.extraVolumeClaimTemplates }}
+      {{- toYaml .Values.zeebe.extraVolumeClaimTemplates | nindent 4 }}
+      {{- end }}
   {{- end }}
 {{- end }}
