@@ -410,6 +410,9 @@ jobs:
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_SCENARIO: ${{ inputs.scenario }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
+          ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
+          ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
         run: |
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml

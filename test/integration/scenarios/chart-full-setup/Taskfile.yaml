@@ -90,7 +90,7 @@ tasks:
       if [[ "${TEST_SCENARIO}" == 'oidc' ]]; then
         # This token will expire in June 2027, a new one can be created in the Azure Entra UI
         RESPONSE=$(curl -X POST \
-          https://login.microsoftonline.com/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
+          https://login.microsoftonline.com/${ENTRA_PARENT_APP_DIRECTORY_ID}/oauth2/v2.0/token \
           -H "Content-Type: application/x-www-form-urlencoded" \
           -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
           -d "scope=https://graph.microsoft.com/.default" \
