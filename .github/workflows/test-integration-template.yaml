@@ -430,6 +430,10 @@ jobs:
           TEST_SCENARIO: ${{ inputs.scenario }}
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           TEST_OPENSEARCH_PREFIX: ${{ github.run_id }}-${{ inputs.identifier }}-${{ matrix.scenario.flow }}
+          ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
+          ENTRA_CHILD_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
+          ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
+          ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
