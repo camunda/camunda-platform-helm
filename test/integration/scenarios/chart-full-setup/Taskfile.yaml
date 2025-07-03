@@ -100,7 +100,7 @@ tasks:
         BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
         
         curl -X PATCH \
-          https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }} \
+          https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID} \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H 'Content-Type: application/json' \
           -d '{
