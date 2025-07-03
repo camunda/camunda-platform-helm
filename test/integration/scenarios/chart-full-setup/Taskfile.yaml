@@ -108,6 +108,7 @@ tasks:
           -d '{
             "web": {
               "redirectUris": [
+                "https://{{ .TEST_INGRESS_HOST }}",
                 "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback",
                 "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback",
                 "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback",
