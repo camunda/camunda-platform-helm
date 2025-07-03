@@ -68,9 +68,17 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Support ingress external hostname"
+      description: "8.8 integration test playwright"
+    - kind: added
+      description: "Implement mutable global.commonLabels value"
+    - kind: added
+      description: "Add extraVolumeClaimTemplates support"
+    - kind: changed
+      description: "Add local values file per chart version"
     - kind: fixed
-      description: "Add main env to migration init container"
+      description: "Add scheme into templates for use by connectors"
     - kind: fixed
-      description: "Restore the original Zeebe startup script behaviour for backup operations"
-  camunda.io/helmCLIVersion: 3.18.2
+      description: "Update params for existingSecret "
+    - kind: fixed
+      description: "Replace GKE with teleport EKS cluster"
+  camunda.io/helmCLIVersion: 3.18.3
