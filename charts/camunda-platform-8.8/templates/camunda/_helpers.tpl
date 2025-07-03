@@ -213,9 +213,9 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
 {{/*
 [camunda-platform] Joins a contextPath and a subpath (e.g., probePath) for HTTP paths.
 Ensures exactly one slash between them, no double slashes.
-Usage: {{ include "camunda.joinPath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}
+Usage: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}
 */}}
-{{- define "camunda.joinPath" -}}
+{{- define "camundaPlatform.joinpath" -}}
     {{- $context := index . 0 | default "" -}}
     {{- $sub := index . 1 | default "" -}}
     {{- if or (eq $context "") (eq $context "/") -}}
