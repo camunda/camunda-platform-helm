@@ -46,8 +46,9 @@ setup_env_file() {
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
     echo "CLUSTER_VERSION=8"
     echo "MINOR_VERSION=SM-8.7"
-    echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" get secret integration-test-credentials -o jsonpath='{.data.identity-user-password}' | base64 -d)"
-    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" get secret integration-test-credentials -o jsonpath='{.data.identity-keycloak-admin-password}' | base64 -d)"
+    identity_pod_name=$(kubectl -n "$namespace" get pods --no-headers -o custom-columns=':metadata.name' | grep identity | head -n 1)
+    echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_USERS_0_PASSWORD)"
+    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_SETUP_PASSWORD)"
     echo "CI=${is_ci}"
     echo "CLUSTER_NAME=integration"
   } >>"$env_file"
