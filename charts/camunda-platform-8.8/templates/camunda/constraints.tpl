@@ -67,7 +67,18 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       "Identity is disabled but identityKeycloak is enabled."
       "Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
   -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{ printf "%s" $errorMessage | trimSuffix ""| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Optimize is enabled, but the global exporter is disabled.
+*/}}
+{{- if and .Values.optimize.enabled (not .Values.global.exporter.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Optimize is enabled but the global exporter is disabled."
+      "Please ensure that if Optimize is enabled, the global exporter must also be enabled."
+  -}}
+  {{ printf "%s" $errorMessage | trimSuffix ""| fail }}
 {{- end }}
 
 {{/*
