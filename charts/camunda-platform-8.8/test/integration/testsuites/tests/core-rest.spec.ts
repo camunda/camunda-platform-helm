@@ -48,7 +48,7 @@ const config = {
     core: requireEnv("PLAYWRIGHT_VAR_CORE_CLIENT_SECRET"),
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
-  venomSec: requireEnv("PLAYWRIGHT_VAR_TEST_CLIENT_SECRET"),
+  venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
   demoUser: "demo",
   demoPass: "demo",
 };
@@ -137,7 +137,7 @@ test.describe("core-rest", () => {
   //   });
   // }
 
-  test.afterAll(async ({ }, testInfo) => {
+  test.afterAll(async ({}, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {
@@ -145,7 +145,7 @@ test.describe("core-rest", () => {
       // If this becomes a concern, mask the values here before logging.
       console.error(
         "\n===== CONFIG DUMP (test failed) =====\n" +
-        JSON.stringify(config, null, 2),
+          JSON.stringify(config, null, 2),
       );
     }
   });
