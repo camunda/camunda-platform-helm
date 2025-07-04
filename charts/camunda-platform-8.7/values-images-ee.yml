@@ -45,7 +45,7 @@ identityKeycloak:
   image:
     registry: registry.camunda.cloud
     repository: keycloak-ee/keycloak
-    tag: 26.1.4
+    tag: 26.2.5
 
   keycloakConfigCli:
     image:
