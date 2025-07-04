@@ -63,6 +63,10 @@ on:
         required: false
         default: true
         type: boolean
+      e2e-enabled:
+        required: false
+        default: true
+        type: boolean
       extra-values:
         description: Pass extra values to the Helm chart.
         required: false
@@ -310,10 +314,9 @@ jobs:
           kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1d
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=30m
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=30m
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1d
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
@@ -603,10 +606,10 @@ jobs:
           retention-days: 5
 
   playwright-e2e-tests:
-    name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} / ${{ matrix.shardTotal }})
+    name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [ci-setup]
     runs-on: ubuntu-latest
-    if: ${{ inputs.test-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
     timeout-minutes: 10
     env:
       TEST_EXCLUDE: ${{ inputs.exclude }}
@@ -678,7 +681,7 @@ jobs:
       - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
         run: |
           cd $GITHUB_WORKSPACE/scripts
-          ./run-e2e-tests.sh --absolute-chart-path ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{needs.ci-setup.outputs.TEST_NAMESPACE}} --shard-index ${{ matrix.shardIndex }} --shard-total ${{ matrix.shardTotal }} --test-pattern "${{ inputs.e2e-test-pattern }}" $( [ "${{ inputs.run-all-e2e-tests }}" = "false" ] && echo "--run-smoke-tests" )
+          ./run-e2e-tests.sh --absolute-chart-path ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{needs.ci-setup.outputs.TEST_NAMESPACE}} --shard-index ${{ matrix.shardIndex }} --shard-total ${{ matrix.shardTotal }} $( [ "${{ inputs.run-all-e2e-tests }}" = "false" ] && echo "--run-smoke-tests" )
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}

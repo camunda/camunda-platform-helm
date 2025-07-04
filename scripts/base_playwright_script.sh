@@ -83,6 +83,7 @@ run_playwright_tests() {
 
   log "Changing directory to $test_suite_path"
   log "Smoke tests: $run_smoke_tests"
+  log "Reporter: $reporter"
 
   cd "$test_suite_path" || exit
 
