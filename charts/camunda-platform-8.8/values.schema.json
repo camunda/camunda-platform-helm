@@ -315,11 +315,6 @@
                                 }
                             }
                         },
-                        "disableExporter": {
-                            "type": "boolean",
-                            "description": "If true, disables the Zeebe ElasticSearch exporter. ",
-                            "default": true
-                        },
                         "url": {
                             "type": "object",
                             "properties": {
@@ -409,11 +404,6 @@
                                     "default": "password"
                                 }
                             }
-                        },
-                        "disableExporter": {
-                            "type": "boolean",
-                            "description": "If true, disables the Zeebe OpenSearch exporter. ",
-                            "default": true
                         },
                         "url": {
                             "type": "object",
@@ -829,6 +819,16 @@
                                     }
                                 }
                             }
+                        }
+                    }
+                },
+                "exporter": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
+                            "default": false
                         }
                     }
                 },
