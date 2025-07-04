@@ -3,36 +3,36 @@ global:
     pullPolicy: Always
 zeebe:
   image:
-    tag: "${{ inputs.E2E_TESTS_ZEEBE_IMAGE_TAG }}"
+    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
 tasklist:
   image:
-    tag: "${{ inputs.E2E_TESTS_TASKLIST_IMAGE_TAG }}"
+    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
 operate:
   image:
-    tag: "${{ inputs.E2E_TESTS_OPERATE_IMAGE_TAG }}"
+    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
 optimize:
   image:
-    tag: "${{ inputs.E2E_TESTS_OPTIMIZE_IMAGE_TAG }}"
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
 webModeler:
   restapi:
     image:
-      tag: "${{ inputs.E2E_TESTS_WEBMODELER_IMAGE_TAG }}"
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
   webapp:
     image:
-      tag: "${{ inputs.E2E_TESTS_WEBMODELER_IMAGE_TAG }}"
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
   websockets:
     image:
-      tag: "${{ inputs.E2E_TESTS_WEBMODELER_IMAGE_TAG }}"
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
 console:
   image:
-    tag: "${{ inputs.E2E_TESTS_CONSOLE_IMAGE_TAG }}"
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
   overrideConfiguration: |
     camunda:
       console:
         managed:
           releases:
             - name: integration
-              namespace: "${{ inputs.HC_NAMESPACE }}"
+              namespace: "$HC_NAMESPACE"
               tags:
                 - dev
                 - custom
@@ -51,11 +51,11 @@ console:
       value: 'true'      
 identity:
   image:
-    tag: "${{ inputs.E2E_TESTS_IDENTITY_IMAGE_TAG }}"
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
     existingSecret: null
     user: demo
-    password: ${{ inputs.E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+    password: $E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
   # Keycloak client seed which is used to query Camunda APIs. 
   env:
     # TODO: Remove the KEYCLOAK_USERS env vars in favor of relying on the default configmap values
@@ -68,7 +68,7 @@ identity:
     - name: KEYCLOAK_USERS_0_LASTNAME
       value: 'User'
     - name: KEYCLOAK_USERS_0_PASSWORD
-      value: ${{ inputs.E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+      value: $E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
     - name: KEYCLOAK_USERS_0_ROLES_0
       value: Identity
     - name: KEYCLOAK_USERS_0_ROLES_1
@@ -121,7 +121,7 @@ identity:
     - name: KEYCLOAK_USERS_1_USERNAME
       value: lisa
     - name: KEYCLOAK_USERS_1_PASSWORD
-      value: ${{ inputs.E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }}
+      value: $E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
     - name: KEYCLOAK_USERS_1_ROLES_0
       value: Identity
     - name: KEYCLOAK_USERS_1_ROLES_1
@@ -145,7 +145,7 @@ identity:
     - name: KEYCLOAK_USERS_2_USERNAME
       value: bart
     - name: KEYCLOAK_USERS_2_PASSWORD
-      value: ${{ inputs.E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }}
+      value: $E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
     - name: KEYCLOAK_USERS_2_ROLES_0
       value: Identity
     - name: KEYCLOAK_USERS_2_ROLES_1
@@ -206,7 +206,7 @@ identity:
     - name: KEYCLOAK_CLIENTS_3_NAME
       value: Test
     - name: KEYCLOAK_CLIENTS_3_SECRET
-      value: ${{ inputs.E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+      value: $E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
     - name: KEYCLOAK_CLIENTS_3_REDIRECT_URIS_0
       value: /dummy
     - name: KEYCLOAK_CLIENTS_3_ROOT_URL
@@ -262,7 +262,7 @@ identity:
       value: "write:*"
 connectors:
   image:
-    tag: "${{ inputs.E2E_TESTS_CONNECTORS_IMAGE_TAG }}"
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:
     - name: username
       value: username
