@@ -205,7 +205,7 @@ jobs:
       # and populate environment variables from Vault
       - name: Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         if: inputs.vault-secret-mapping != ''
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -216,7 +216,7 @@ jobs:
           exportEnv: true
       - name: Import Vault secrets
         id: test-credentials-secret
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -254,12 +254,12 @@ jobs:
           service-account: ${{ secrets[matrix.distro.secret.service-account] }}
       - name: Set up Teleport
         if: matrix.distro.platform == 'eks'
-        uses: teleport-actions/setup@v1
+        uses: teleport-actions/setup@176c25dfcd19cd31a252f275d579822b243e7b9c # v1
         with:
             version: 17.2.2
       - name: Authenticate with Teleport
         if: matrix.distro.platform == 'eks' && inputs.auth-data == ''
-        uses: teleport-actions/auth-k8s@v2
+        uses: teleport-actions/auth-k8s@171cc0ad4b6b7cebcb33c672defe3f6dc58967ba # v2
         with:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TOKEN }}
