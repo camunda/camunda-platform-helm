@@ -71,8 +71,8 @@ Options:
   --show-html-report                          Show the HTML report after the tests have run.
   --shard-index SHARD_INDEX                   The shard index to run.
   --shard-total SHARD_TOTAL                   The total number of shards.
-  --test-pattern TEST_PATTERN                 The test pattern to run. Is mapped to the playwright test --grep option.
-  --no-ci                                     Don't set the CI env var to true
+  --test-exclude TEST_EXCLUDE                  The tests to exclude
+  --not-ci                                    Don't set the CI env var to true
   --run-smoke-tests                           Run the smoke tests
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
@@ -118,7 +118,7 @@ while [[ $# -gt 0 ]]; do
     SHARD_TOTAL="$2"
     shift 2
     ;;
-  --test-exlude)
+  --test-exclude)
     TEST_EXCLUDE="$2"
     shift 2
     ;;
@@ -155,4 +155,4 @@ setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPAC
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "$TEST_EXCLUDE" "blob" "$RUN_SMOKE_TESTS"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS"
