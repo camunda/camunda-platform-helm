@@ -20,3 +20,11 @@ jobs:
           configuration-path: .github/config/issue-labeler.yaml
           enable-versioned-regex: 0
           repo-token: "${{ github.token }}"
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Ensure PR branch is up to date
+        run: |
+          git rev-list --left-right --count origin/main...HEAD | grep -q "^0"
