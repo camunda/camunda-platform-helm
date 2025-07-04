@@ -24,7 +24,7 @@ integration:
         # keycloak auth flow
         - name: opensearch
           enabled: true
-          exclude: []
+          exclude: [identity,console,core-grpc]
           auth: basic
         # - name: elasticsearch
         #   enabled: true
