@@ -75,7 +75,11 @@ jobs:
         run: |
           helm install camunda-platform *.tgz --wait --timeout 10m0s \
             --namespace ${{ env.TEST_NAMESPACE }} \
+            --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
             --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml"
+      - name: Get Pods
+        if: failure()
+        run: |
           kubectl get pods --namespace ${{ env.TEST_NAMESPACE }}
       - name: Debug - Get Pods info
         if: failure()
