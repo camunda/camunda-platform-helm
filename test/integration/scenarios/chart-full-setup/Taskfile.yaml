@@ -59,7 +59,7 @@ tasks:
       echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ env "INFRA_TYPE_VALUES" }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_SCENARIO" = "keycloak" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_SCENARIO" = "elasticsearch" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
       echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
       # In case the Zeebe version has not been released officially yet.
