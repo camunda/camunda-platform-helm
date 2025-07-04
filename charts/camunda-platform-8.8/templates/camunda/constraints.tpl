@@ -78,7 +78,7 @@ Fail with a message if Optimize is enabled, but the global exporter is disabled.
       "Optimize is enabled but the global exporter is disabled."
       "Please ensure that if Optimize is enabled, the global exporter must also be enabled."
   -}}
-  {{ printf "%s" $errorMessage | trimSuffix ""| fail }}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
 {{/*
