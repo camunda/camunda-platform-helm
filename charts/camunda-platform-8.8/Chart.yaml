@@ -30,7 +30,7 @@ dependencies:
   - name: keycloak
     alias: identityKeycloak
     repository: oci://registry-1.docker.io/bitnamicharts
-    version: 24.7.4
+    version: 24.7.5
     condition: "identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
@@ -93,4 +93,3 @@ annotations:
       description: "Restore the original Zeebe startup script behaviour for backup operations"
     - kind: fixed
       description: "Readd Zeebe NodeId logic from multi-region for 8.8"
-

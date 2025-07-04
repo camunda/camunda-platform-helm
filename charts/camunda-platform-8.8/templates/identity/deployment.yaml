@@ -251,7 +251,15 @@ spec:
 
       volumes:
         - name: tmp
+          {{- if and .Values.identity.persistence.enabled .Values.identity.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.identity.persistence.existingClaim }}
+          {{- else if .Values.identity.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-identity-data
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         - name: config
           configMap:
             name: {{ include "identity.fullname" . }}-configuration
