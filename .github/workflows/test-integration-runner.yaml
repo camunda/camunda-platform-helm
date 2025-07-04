@@ -380,8 +380,6 @@ jobs:
       - name: Helm - Install - Fill out yaml with values-config
         if: inputs.values-config != '{}'
         run: |
-          export $(jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' ${{ toJSON(inputs.values-config) }})
-          envsubst < ${GITHUB_WORKSPACE}/cmaunda/camunda-platform-helm@${{ inputs.camunda-helm-git-ref }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario }}.yaml > ${GITHUB_WORKSPACE}/cmaunda/camunda-platform-helm@${{ inputs.camunda-helm-git-ref }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario }}.yaml
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -391,6 +389,7 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
