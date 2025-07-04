@@ -107,6 +107,9 @@ identityKeycloak:
 connectors:
   enabled: true
   contextPath: "/connectors"
+  env:
+    - name: CAMUNDA_CLIENT_AUTH_SCOPE
+      value: <clientId>/.default
 
 webModeler:
   enabled: true
