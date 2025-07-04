@@ -121,6 +121,10 @@ on:
         required: false
         default: false
         type: boolean
+    outputs:
+      deployment-url:
+        description: The URL of the deployed application.
+        value: ${{ jobs.runner.outputs.deployment-url }}
 
 permissions:
   contents: read

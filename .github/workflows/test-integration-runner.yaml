@@ -143,6 +143,10 @@ on:
         required: true
         default: ""
         type: string
+    outputs:
+      deployment-url:
+        description: The URL of the deployed application.
+        value: ${{ jobs.ci-setup.outputs.vars-ingress-host }}
 
 permissions:
   contents: read
