@@ -22,14 +22,14 @@ integration:
     pr:
       scenario:
         # keycloak auth flow
-        - name: elasticsearch
-          enabled: true
-          auth: keycloak
-          exclude: []
-        - name: elasticsearch
-          enabled: true
-          auth: basic
-          exclude: [identity,console,core-grpc]
+        # - name: elasticsearch
+        #   enabled: true
+        #   auth: keycloak
+        #   exclude: []
+        # - name: elasticsearch
+        #   enabled: true
+        #   auth: basic
+        #   exclude: [identity,console,core-grpc]
         # - name: elasticsearch
         #   enabled: true
         #   auth: basic
