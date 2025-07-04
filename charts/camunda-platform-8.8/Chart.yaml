@@ -93,4 +93,3 @@ annotations:
       description: "Restore the original Zeebe startup script behaviour for backup operations"
     - kind: fixed
       description: "Readd Zeebe NodeId logic from multi-region for 8.8"
-
