@@ -17,8 +17,6 @@
 # For more details on using pullSecrets in pods:
 # https://kubernetes.io/docs/concepts/containers/images/#specifying-pullSecrets-on-a-pod
 
-# TODO: add missing metrics elasticsearch + postgresql metrics + keycloakConfigCli
-
 identityPostgresql:
   image:
     registry: registry.camunda.cloud
@@ -40,6 +38,12 @@ identityKeycloak:
     tag: 26.1.4
     pullSecrets:
       - name: camunda-registry-secret
+  keycloakConfigCli:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/keycloak-config-cli
+      pullSecrets:
+        - name: camunda-registry-secret    
   postgresql:
     image:
       registry: registry.camunda.cloud
@@ -53,6 +57,12 @@ identityKeycloak:
         repository: vendor-ee/os-shell
         pullSecrets:
           - name: camunda-registry-secret  
+    metrics:
+      image:
+        registry: registry.camunda.cloud
+        repository: vendor-ee/postgres-exporter
+        pullSecrets:
+          - name: camunda-registry-secret
 
 postgresql:
   image:
@@ -67,6 +77,12 @@ postgresql:
       repository: vendor-ee/os-shell
       pullSecrets:
         - name: camunda-registry-secret  
+  metrics:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/postgres-exporter
+      pullSecrets:
+        - name: camunda-registry-secret
 
 elasticsearch:
   image:
@@ -91,5 +107,11 @@ elasticsearch:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
+      pullSecrets:
+        - name: camunda-registry-secret
+  metrics:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/elasticsearch-exporter
       pullSecrets:
         - name: camunda-registry-secret
