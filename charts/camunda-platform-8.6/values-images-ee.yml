@@ -12,106 +12,97 @@
 #   --docker-password=<your-password> \
 #   --docker-email=unused@example.com
 #
+# Once created, reference the secret in your Helm values using the global.image.pullSecrets field:
+#
+# global:
+#   image:
+#     pullSecrets:
+#       - name: camunda-registry-secret
+#
 # Replace <your-username> and <your-password> with your LDAP credentials.
 #
 # For more details on using pullSecrets in pods:
-# https://kubernetes.io/docs/concepts/containers/images/#specifying-pullSecrets-on-a-pod
+# https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 
 identityPostgresql:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     tag: 15.10.0-debian-12-r2
-    pullSecrets:
-      - name: camunda-registry-secret
+
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      pullSecrets:
-        - name: camunda-registry-secret  
+
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
-      pullSecrets:
-        - name: camunda-registry-secret
+
 
 identityKeycloak:
   image:
     registry: registry.camunda.cloud
     repository: keycloak-ee/keycloak
     tag: 25.0.6
-    pullSecrets:
-      - name: camunda-registry-secret
+
   keycloakConfigCli:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/keycloak-config-cli
-      pullSecrets:
-        - name: camunda-registry-secret    
+  
   postgresql:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgresql
       tag: 15.10.0-debian-12-r2
-      pullSecrets:
-        - name: camunda-registry-secret
+
     volumePermissions:
       image:
         registry: registry.camunda.cloud
         repository: vendor-ee/os-shell
-        pullSecrets:
-          - name: camunda-registry-secret  
+  
     metrics:
       image:
         registry: registry.camunda.cloud
         repository: vendor-ee/postgres-exporter
-        pullSecrets:
-          - name: camunda-registry-secret
+
 
 postgresql:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     tag: 14.18.0-debian-12-r0
-    pullSecrets:
-      - name: camunda-registry-secret
+
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      pullSecrets:
-        - name: camunda-registry-secret  
+
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
-      pullSecrets:
-        - name: camunda-registry-secret
+
 
 elasticsearch:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/elasticsearch
     tag: 8.15.4
-    pullSecrets:
-      - name: camunda-registry-secret
+
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      pullSecrets:
-        - name: camunda-registry-secret  
+
   sysctlImage:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      pullSecrets:
-        - name: camunda-registry-secret  
+
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/elasticsearch-exporter
-      pullSecrets:
-        - name: camunda-registry-secret
