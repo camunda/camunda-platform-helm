@@ -101,16 +101,14 @@ tasks:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - bash -c '
-        echo "{{ .VALUES_CONFIG }}" > /tmp/values-config.json
-        cat /tmp/values-config.json
-        export $(jq -r 'to_entries | map("\(.key)=\(.value|tostring)") | .[]' /tmp/values-config.json)
-        echo "Print out the yaml"
-        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        echo "{{ .VALUES_CONFIG }}" > /tmp/values-config.json \
+        cat /tmp/values-config.json \
+        export $(jq -r 'to_entries | map("\(.key)=\(.value|tostring)") | .[]' /tmp/values-config.json) \
+        echo "Print out the yaml" \
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \ 
         cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       '
-    - cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-
     - |
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
