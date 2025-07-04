@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       values-config:
-        type: object
+        type: string
         description: Some of the values files will allow subsitutions. For example, on the image.tags. This config supplies those values
         default: '{}'
         required: false
