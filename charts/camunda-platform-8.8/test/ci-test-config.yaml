@@ -35,7 +35,7 @@ integration:
         #   auth: basic
         #   exclude: [identity,console,core-grpc]
         - name: opensearch
-          enabled: false
+          enabled: true
           exclude: []
           auth: basic
         # - name: elasticsearch
@@ -68,6 +68,6 @@ integration:
           exclude: []
           auth: keycloak
         - name: opensearch
-          enabled: false
+          enabled: true
           exclude: []
           auth: basic
