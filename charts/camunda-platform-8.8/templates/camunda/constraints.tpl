@@ -67,7 +67,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
       "Identity is disabled but identityKeycloak is enabled."
       "Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
   -}}
-  {{ printf "%s" $errorMessage | trimSuffix ""| fail }}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
 {{/*
