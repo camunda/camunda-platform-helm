@@ -23,7 +23,7 @@ integration:
       scenario:
         # keycloak auth flow
         - name: opensearch
-          enabled: false
+          enabled: true
           exclude: []
           auth: basic
         # - name: elasticsearch
@@ -56,6 +56,6 @@ integration:
           exclude: []
           auth: keycloak
         - name: opensearch
-          enabled: false
+          enabled: true
           exclude: []
           auth: basic
