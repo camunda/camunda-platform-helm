@@ -21,7 +21,8 @@ CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[0123])'
 # Update Helm and Git repos to get the latest versions.
 init_updates () {
     helm repo update > /dev/null
-    git fetch origin tag "${CHART_NAME}-*"
+    # git fetch origin tag "${CHART_NAME}-*"
+    git ls-remote --tags origin "${CHART_NAME}-*"
 }
 
 # Get all Helm chart released versions grouped by chart 'appVersion' (Camunda release like 8.5).
