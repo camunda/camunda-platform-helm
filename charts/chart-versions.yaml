@@ -1,0 +1,16 @@
+# This file contains the supported versions of the chart.
+# Check the README for more information on how to update this file.
+versions:
+  alpha:
+    - "8.8"
+  supportStandard:
+    - "8.7"
+    - "8.6"
+    - "8.5"
+    - "8.4"
+  supportExtended:
+    - "8.3"
+    - "8.2"
+  endOfLife:
+    - "8.1"
+    - "8.0"
