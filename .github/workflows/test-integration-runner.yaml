@@ -381,7 +381,7 @@ jobs:
         if: inputs.values-config != '{}'
         run: |
           export $(jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' ${{ toJSON(inputs.values-config) }})
-          envsubst < ${{ env.TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-${{ env.TEST_VALUES_SCENARIO }}.yaml > ${{ env.TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-${{ env.TEST_VALUES_SCENARIO }}.yaml
+          envsubst < ${{ env.GITHUB_WORKSPACE }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario }}.yaml > ${{ env.GITHUB_WORKSPACE }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario }}.yaml
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
