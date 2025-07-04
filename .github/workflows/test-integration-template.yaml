@@ -196,7 +196,7 @@ jobs:
   # we can shard the tests across multiple jobs (this is done via the matrix). If the tests where another job in this workflow, we
   # would need to wait for all the install/upgrade flows to complete before we can run the tests.
   runner:
-    name: Scenario - ${{ inputs.scenario }}
+    name: Scenario - ${{ inputs.shortname }} - ${{ matrix.distro.platform }}
     needs: [init]
     uses: ./.github/workflows/test-integration-runner.yaml
     secrets: inherit
@@ -238,6 +238,7 @@ jobs:
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
       github-workflow-rerun-enabled: ${{ inputs.github-workflow-rerun-enabled }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
+      shortname: ${{ inputs.shortname }}
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:

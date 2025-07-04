@@ -27,7 +27,7 @@ integration:
           shortname: eske
           exclude: []
         - name: elasticsearch
-          enabled: true
+          enabled: false
           shortname: esba
           auth: basic
           exclude: [identity,console,core-grpc]

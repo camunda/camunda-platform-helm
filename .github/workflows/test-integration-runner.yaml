@@ -138,6 +138,11 @@ on:
         required: false
         default: infra-ci-prod-github-action-distribution
         type: string
+      shortname:
+        description: The shortname of the scenario.
+        required: true
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -167,7 +172,7 @@ env:
 jobs:
   ci-setup:
     if: github.event.action != 'closed'
-    name: ${{ inputs.flow }} on ${{ inputs.distro-platform }}
+    name: ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
@@ -441,7 +446,7 @@ jobs:
           echo "SHARD_INDEX=${SHARD_INDEX_LIST}" | tee -a "$GITHUB_ENV"
 
   venom-test:
-    name: Venom ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }}
+    name: Venom ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.4') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.5') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.6')) }}
     needs: [ci-setup]
     runs-on: ubuntu-latest
@@ -510,7 +515,7 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
 
   playwright-integration-tests:
-    name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }}
+    name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [ci-setup]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -598,7 +603,7 @@ jobs:
           retention-days: 5
 
   playwright-e2e-tests:
-    name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} (${{ matrix.shardIndex }} / ${{ matrix.shardTotal }})
+    name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} / ${{ matrix.shardTotal }})
     needs: [ci-setup]
     runs-on: ubuntu-latest
     if: ${{ inputs.test-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
@@ -684,6 +689,7 @@ jobs:
           retention-days: 1
 
   merge-reports:
+    name: Merge reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     if: ${{ !cancelled() && inputs.test-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
     needs: [ci-setup, playwright-e2e-tests]
 
@@ -718,6 +724,7 @@ jobs:
           retention-days: 14
 
   cleanup:
+    name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [playwright-e2e-tests, ci-setup]
     runs-on: ubuntu-latest
     permissions:

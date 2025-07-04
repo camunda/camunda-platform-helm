@@ -50,7 +50,7 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}
   cancel-in-progress: true
 
 permissions:
@@ -63,7 +63,7 @@ jobs:
     name: Validation
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}"
+      identifier: "${{ github.event.pull_request.number }}-${{ inputs.shortname }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
