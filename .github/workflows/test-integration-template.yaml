@@ -77,7 +77,7 @@ on:
         type: string
       shortname:
         required: false
-        default: "elasticsearch"
+        default: "es"
         type: string
       auth:
         required: false
