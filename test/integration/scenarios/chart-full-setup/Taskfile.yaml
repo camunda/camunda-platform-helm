@@ -127,7 +127,7 @@ tasks:
         FINAL_WEB_URIS=$(printf "%s\n" "${ALL_WEB_URIS[@]}" | sort -u | jq -R . | jq -s .)
         FINAL_SPA_URIS=$(printf "%s\n" "${ALL_SPA_URIS[@]}" | sort -u | jq -R . | jq -s .)
 
-        # print out the URIs
+        # print out the final URIs
         echo "web URIs:"
         echo $FINAL_WEB_URIS
         echo "SPA URIs:"
