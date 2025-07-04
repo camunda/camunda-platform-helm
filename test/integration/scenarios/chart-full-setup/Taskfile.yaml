@@ -98,29 +98,51 @@ tasks:
           -d "grant_type=client_credentials")
 
         BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
-        
-        curl -X PATCH \
-          https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }} \
+        # There is no way to append URIs from a single curl request so we have to first GET, append, deduplicate, then curl with the updated list.
+        NEW_WEB_URIS=(
+          "https://{{ .TEST_INGRESS_HOST }}"
+          "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback"
+          "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/core/sso-callback"
+        )
+        NEW_SPA_URIS=(
+          "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/"
+        )
+
+        APP_JSON=$(curl -s -X GET \
+          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
-          -H 'Content-Type: application/json' \
-          -d '{
-            "web": {
-              "redirectUris": [
-                "https://{{ .TEST_INGRESS_HOST }}",
-                "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback",
-                "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback",
-                "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback",
-                "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback",
-                "https://{{ .TEST_INGRESS_HOST }}/core/sso-callback"
-              ]
-            },
-            "spa": {
-              "redirectUris": [
-                "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback",
-                "https://{{ .TEST_INGRESS_HOST }}/",
-              ]
-            }
-          }'
+          -H "Content-Type: application/json")
+
+        WEB_URIS=$(echo "$APP_JSON" | jq -r '.web.redirectUris[]?')
+        SPA_URIS=$(echo "$APP_JSON" | jq -r '.spa.redirectUris[]?')
+
+        ALL_WEB_URIS=("${WEB_URIS[@]}" "${NEW_WEB_URIS[@]}")
+        ALL_SPA_URIS=("${SPA_URIS[@]}" "${NEW_SPA_URIS[@]}")
+
+        # Deduplicate using sort/uniq
+        FINAL_WEB_URIS=$(printf "%s\n" "${ALL_WEB_URIS[@]}" | sort -u | jq -R . | jq -s .)
+        FINAL_SPA_URIS=$(printf "%s\n" "${ALL_SPA_URIS[@]}" | sort -u | jq -R . | jq -s .)
+
+        print out the URIs
+        echo "web URIs:"
+        echo $FINAL_WEB_URIS
+        echo "SPA URIs:"
+        echo $FINAL_SPA_URIS
+
+        # PATCH the updated list
+        curl -X PATCH \
+          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"web\": { \"redirectUris\": $FINAL_WEB_URIS },
+            \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
+          }"
+
       fi
 
   setup.exec:
