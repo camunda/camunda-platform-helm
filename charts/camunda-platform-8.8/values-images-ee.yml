@@ -24,6 +24,11 @@
 # For more details on using pullSecrets in pods:
 # https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 
+global:
+  security:
+    # This setting is set to true to allow images issued by Camunda to be used instead of those provided by Bitnami
+    allowInsecureImages: true 
+
 identityPostgresql:
   image:
     registry: registry.camunda.cloud
