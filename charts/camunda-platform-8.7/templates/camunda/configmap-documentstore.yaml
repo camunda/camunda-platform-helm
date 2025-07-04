@@ -15,6 +15,9 @@ data:
   {{- if .Values.global.documentStore.type.aws.bucketPath }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_PATH: {{ .Values.global.documentStore.type.aws.bucketPath | quote }}
   {{- end }}
+  {{- if .Values.global.documentStore.type.aws.region }}
+  AWS_REGION: {{ .Values.global.documentStore.type.aws.region | quote }}
+  {{- end }}
   {{- if .Values.global.documentStore.type.aws.bucketTtl }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | quote }}
   {{- end }}
