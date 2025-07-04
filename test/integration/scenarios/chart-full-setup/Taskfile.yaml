@@ -101,8 +101,9 @@ tasks:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
-        export $(jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' {{ .VALUES_CONFIG }})
-        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml 
+      - echo '{{ .VALUES_CONFIG }}' > {{ .VALUES_JSON_FILE }}
+      - export $(jq -r 'to_entries | map("\(.key)=\(.value|tostring)") | .[]' {{ .VALUES_JSON_FILE }})
+      - envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
     - |
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
