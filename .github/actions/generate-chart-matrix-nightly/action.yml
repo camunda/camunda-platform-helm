@@ -25,7 +25,7 @@ runs:
         echo "matrix:" >> matrix_versions.txt
 
         # TODO: Use `active` versions instead of `support-standard` versions when 8.8 is ready.
-        for camunda_version in ${{ steps.get-chart-versions.outputs.support-standard }}; do
+        for camunda_version in ${{ steps.get-chart-versions.outputs.alpha }}; do
           chart_dir="charts/camunda-platform-${camunda_version}"
 
           # Read the array from the yaml file.
@@ -37,11 +37,12 @@ runs:
             if [ "$enabled" = "false" ]; then
               continue
             fi
-            echo "  - version: ${camunda_version}" >>matrix_versions.txt
-            echo "    case: nightly" >>matrix_versions.txt
-            echo "    scenario: $(echo "$nightlyScenario" | yq e '.name' -)" >>matrix_versions.txt
-            echo "    auth: $(echo "$nightlyScenario" | yq e '.auth' -)" >>matrix_versions.txt
-            echo "    exclude: $(echo "$nightlyScenario" | yq e '.exclude | join("|")' -)" >>matrix_versions.txt
+            echo "  - version: ${camunda_version}" >> matrix_versions.txt
+            echo "    case: nightly" >> matrix_versions.txt
+            echo "    scenario: $(echo "$nightlyScenario" | yq e '.name' -)" >> matrix_versions.txt
+            echo "    auth: $(echo "$nightlyScenario" | yq e '.auth' -)" >> matrix_versions.txt
+            echo "    exclude: $(echo "$nightlyScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+            echo "    enterprise: $(echo "$nightlyScenario" | yq e '.enterprise // "false"' -)" >> matrix_versions.txt
           done
             sed -i -e '$s/,$/]\n/' matrix_versions.txt
 

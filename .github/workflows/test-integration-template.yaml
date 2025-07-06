@@ -84,6 +84,10 @@ on:
         required: false
         default: ""
         type: string
+      enterprise:
+        required: false
+        default: false
+        type: boolean
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -384,6 +388,13 @@ jobs:
             TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set zeebe.image.tag=SNAPSHOT"
             echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
             TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set zeebe.image.tag=SNAPSHOT"
+            echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
+          fi
+          # Test the enterprise scenario.
+          if [[ "${{ inputs.enterprise }}" == "true" ]]; then
+            TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --values charts/${{ inputs.camunda-helm-dir }}/values-enterprise.yaml"
+            echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+            TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --values charts/${{ inputs.camunda-helm-dir }}/values-enterprise.yaml"
             echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
           fi
       - name: Start GitHub deployment
