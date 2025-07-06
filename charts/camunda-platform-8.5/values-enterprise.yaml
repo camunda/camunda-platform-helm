@@ -19,102 +19,112 @@
 # For more details on using pullSecrets in pods:
 # https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 
-commonVendorPullSecrets: &commonVendorPullSecrets
-  # this is a workaround as global.image.pullSecrets does not apply to vendor charts
-  pullSecrets:
-    - name: camunda-registry-secret
-
 identityPostgresql:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     tag: 15.10.0-debian-12-r2
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
 identityKeycloak:
   image:
     registry: registry.camunda.cloud
     repository: keycloak-ee/keycloak
     tag: 23.0.7
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
   keycloakConfigCli:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/keycloak-config-cli
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   postgresql:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgresql
       tag: 15.10.0-debian-12-r2
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
     volumePermissions:
       image:
         registry: registry.camunda.cloud
         repository: vendor-ee/os-shell
-        <<: *commonVendorPullSecrets
+        pullSecrets:
+          - name: camunda-registry-secret
 
     metrics:
       image:
         registry: registry.camunda.cloud
         repository: vendor-ee/postgres-exporter
-        <<: *commonVendorPullSecrets
+        pullSecrets:
+          - name: camunda-registry-secret
 
 postgresql:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     tag: 14.18.0-debian-12-r0
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
 elasticsearch:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/elasticsearch
     tag: 8.12.2
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   sysctlImage:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/elasticsearch-exporter
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
