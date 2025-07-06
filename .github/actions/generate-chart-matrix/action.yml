@@ -38,9 +38,6 @@
 name: Generate chart matrix
 description: Find changed charts and generate matrix for changed ones only.
 inputs:
-  charts-path:
-    description: Charts path to match.
-    default: "charts/camunda-platform*"
   manual-trigger:
     description: Input used by workflow dispatch to trigger a build on a specific chart version
     default: "none"
@@ -63,6 +60,9 @@ runs:
       uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46
       with:
         dir_names: "true"
+    - name: Get chart versions
+      id: get-chart-versions
+      uses: ./.github/actions/get-chart-versions
     - name: Generate matrix
       shell: bash
       id: set-chart-versions
@@ -79,11 +79,11 @@ runs:
               if [ "$enabled" = "false" ]; then
                 continue
               fi
-              echo "  - version: ${camunda_version}" >>matrix_versions.txt
-              echo "    case: pr" >>matrix_versions.txt
-              echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >>matrix_versions.txt
-              echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >>matrix_versions.txt
-              echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >>matrix_versions.txt
+              echo "  - version: ${camunda_version}" >> matrix_versions.txt
+              echo "    case: pr" >> matrix_versions.txt
+              echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
+              echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
+              echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
             done
             sed -i -e '$s/,$/]\n/' matrix_versions.txt
           fi
@@ -110,14 +110,14 @@ runs:
           # If any workflow or action files have changed, build all chart versions
           if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)/"; then
             echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
-            ls -d ${{ inputs.charts-path }} | while read chart_dir; do
-              camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
+            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+              chart_dir="charts/camunda-platform-${camunda_version}"
               write_matrix_entry "$camunda_version" "$chart_dir"
             done
           else
-            ls -d ${{ inputs.charts-path }} | while read chart_dir; do
+            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+              chart_dir="charts/camunda-platform-${camunda_version}"
               if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
-                camunda_version="$(basename ${chart_dir} | sed 's/camunda-platform-//')"
                 write_matrix_entry "$camunda_version" "$chart_dir"
               fi
             done
@@ -130,5 +130,6 @@ runs:
           exit 1
         fi
 
-        matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' | jq -c 'walk(if type == "number" then tostring else . end)')"
+        matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \
+          | jq -c 'walk(if type == "number" then tostring else . end)')"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
