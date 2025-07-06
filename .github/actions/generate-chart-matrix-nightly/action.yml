@@ -25,7 +25,7 @@ runs:
         echo "matrix:" >> matrix_versions.txt
 
         # TODO: Use `active` versions instead of `support-standard` versions when 8.8 is ready.
-        for camunda_version in ${{ steps.get-chart-versions.outputs.alpha }}; do
+        for camunda_version in ${{ steps.get-chart-versions.outputs.support-standard }}; do
           chart_dir="charts/camunda-platform-${camunda_version}"
 
           # Read the array from the yaml file.
