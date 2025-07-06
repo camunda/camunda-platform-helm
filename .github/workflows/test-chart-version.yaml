@@ -2,15 +2,15 @@
 name: "Test - Chart Version"
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/chart-validate-template.yaml"
-      - ".github/workflows/test-unit-template.yml"
-      - ".github/workflows/test-integration-template.yaml"
-      - ".github/workflows/test-chart-version-template.yaml"
-      - ".github/workflows/test-chart-version.yaml"
-      - ".tool-versions"
-      - "charts/camunda-platform-8*/**"
+  # pull_request:
+  #   paths:
+  #     - ".github/workflows/chart-validate-template.yaml"
+  #     - ".github/workflows/test-unit-template.yml"
+  #     - ".github/workflows/test-integration-template.yaml"
+  #     - ".github/workflows/test-chart-version-template.yaml"
+  #     - ".github/workflows/test-chart-version.yaml"
+  #     - ".tool-versions"
+  #     - "charts/camunda-platform-8*/**"
   workflow_dispatch: 
     inputs:
       manual-trigger:
