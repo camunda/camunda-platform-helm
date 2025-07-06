@@ -12,7 +12,7 @@
 #   --docker-password=<your-password> \
 #   --docker-email=unused@example.com
 #
-# Once created, reference the secret in your Helm values using the `commonVendorPullSecrets` parameter.
+# Once created, reference the secret in your Helm values using the `camunda-registry-secret` secret object.
 #
 # Replace <your-username> and <your-password> with your LDAP credentials.
 #

@@ -12,7 +12,7 @@
 #   --docker-password=<your-password> \
 #   --docker-email=unused@example.com
 #
-# Once created, reference the secret in your Helm values using the `commonVendorPullSecrets` parameter.
+# Once created, reference the secret in your Helm values using the `camunda-registry-secret` secret object.
 #
 # Replace <your-username> and <your-password> with your LDAP credentials.
 #
@@ -24,29 +24,27 @@ global:
     # This setting is set to true to allow images issued by Camunda to be used instead of those provided by Bitnami
     allowInsecureImages: true 
 
-commonVendorPullSecrets: &commonVendorPullSecrets
-  # this is a workaround as global.image.pullSecrets does not apply to vendor charts
-  pullSecrets:
-    - name: camunda-registry-secret
-
 identityPostgresql:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     tag: 15.10.0-debian-12-r2
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
 
 identityKeycloak:
@@ -54,33 +52,38 @@ identityKeycloak:
     registry: registry.camunda.cloud
     repository: keycloak-ee/keycloak
     tag: 25.0.6
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
 
   keycloakConfigCli:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/keycloak-config-cli
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   postgresql:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgresql
       tag: 15.10.0-debian-12-r2
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
     volumePermissions:
       image:
         registry: registry.camunda.cloud
         repository: vendor-ee/os-shell
-        <<: *commonVendorPullSecrets
+        pullSecrets:
+          - name: camunda-registry-secret
 
     metrics:
       image:
         registry: registry.camunda.cloud
         repository: vendor-ee/postgres-exporter
-        <<: *commonVendorPullSecrets
+        pullSecrets:
+          - name: camunda-registry-secret
 
 
 postgresql:
@@ -88,19 +91,22 @@ postgresql:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     tag: 14.18.0-debian-12-r0
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
 
 elasticsearch:
@@ -108,22 +114,26 @@ elasticsearch:
     registry: registry.camunda.cloud
     repository: vendor-ee/elasticsearch
     tag: 8.15.4
-    <<: *commonVendorPullSecrets
+    pullSecrets:
+      - name: camunda-registry-secret
 
   volumePermissions:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   sysctlImage:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
 
   metrics:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/elasticsearch-exporter
-      <<: *commonVendorPullSecrets
+      pullSecrets:
+        - name: camunda-registry-secret
