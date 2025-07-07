@@ -211,16 +211,25 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
 
 
 {{/*
-[camunda-platform] Joins a contextPath and a subpath (e.g., probePath) for HTTP paths.
-Ensures exactly one slash between them, no double slashes.
+[camunda-platform] Joins an arbirtary number of subpaths (e.g., contextPath+probePath) for HTTP paths.
+Slashes are trimmed from the beginning and end of each part, and a single slash is inserted between parts, leading slash added at the beginning.
 Usage: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}
 */}}
 {{- define "camundaPlatform.joinpath" -}}
-  {{- $ctx  := trimAll "/" (default "" (index . 0)) -}}
-  {{- $sub  := trimAll "/" (default "" (index . 1)) -}}
-  {{- $path := join "/" (compact (list $ctx $sub)) -}}
-  {{- printf "/%s" $path -}}
+  {{- $parts := list -}}
+  {{- range . }}
+    {{- $seg := trimAll "/" (default "" .) -}}
+    {{- if $seg }}
+      {{- $parts = append $parts $seg -}}
+    {{- end -}}
+  {{- end }}
+  {{- if gt (len $parts) 0 -}}
+    {{- printf "/%s" (join "/" $parts) -}}
+  {{- end -}}
 {{- end -}}
+
+
+
 
 
 {{/*
