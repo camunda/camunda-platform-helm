@@ -228,10 +228,6 @@ Usage: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Val
   {{- end -}}
 {{- end -}}
 
-
-
-
-
 {{/*
 ********************************************************************************
 Keycloak templates.
