@@ -26,10 +26,10 @@ integration:
           enabled: true
           auth: keycloak
           exclude: []
-        - name: elasticsearch
-          enabled: true
-          auth: basic
-          exclude: [identity,console,core-grpc]
+        # - name: elasticsearch
+        #   enabled: true
+        #   auth: basic
+        #   exclude: [identity,console,core-grpc]
     nightly:
       scenario:
         - name: elasticsearch
@@ -59,3 +59,4 @@ integration:
           enabled: true
           exclude: [identity,console,core-grpc]
           auth: basic
+
