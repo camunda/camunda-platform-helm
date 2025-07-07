@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.18.2"
+  camunda.io/helmCLIVersion: "3.18.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,6 +73,24 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Support configure replicas for web modeler restapi and webapp"
+      description: "Move disk settings to configmap"
+    - kind: added
+      description: "Add database name, host, port values to webmodeler.restapi.externalDatabase"
+    - kind: added
+      description: "8.8 integration test playwright"
+    - kind: added
+      description: "Implement mutable global.commonLabels value"
+    - kind: added
+      description: "Add extraVolumeClaimTemplates support"
+    - kind: changed
+      description: "Add local values file per chart version"
     - kind: fixed
-      description: "Cleanup multiregion installationtype"
+      description: "Add scheme into templates for use by connectors"
+    - kind: fixed
+      description: "Connectors inbound disabled mode"
+    - kind: fixed
+      description: "Update params for existingSecret "
+    - kind: fixed
+      description: "Replace GKE with teleport EKS cluster"
+    - kind: fixed
+      description: "Replaced old property with new one"
