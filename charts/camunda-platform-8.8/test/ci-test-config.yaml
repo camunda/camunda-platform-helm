@@ -40,11 +40,11 @@ integration:
           enabled: true
           exclude: []
           auth: keycloak
-          #the following integration tests need to be exluded when basic-auth is enabled.
+          # The following integration tests need to be exluded when basic-auth is enabled.
         - name: elasticsearch
           enabled: true
-          auth: basic
           exclude: [identity,console,core-grpc]
+          auth: basic
           # not supported
         - name: elasticsearch
           enabled: false
@@ -59,3 +59,8 @@ integration:
           enabled: false
           exclude: []
           auth: keycloak
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          auth: basic
+          enterprise: true
