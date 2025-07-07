@@ -38,17 +38,17 @@ permissions:
   contents: read
 
 jobs:
-  # validation:
-  #   name: Camunda ${{ inputs.camunda-version }} - Validation
-  #   uses: ./.github/workflows/chart-validate-template.yaml
-  #   with:
-  #     identifier: "${{ inputs.case }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
-  #     camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  validation:
+    name: Camunda ${{ inputs.camunda-version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ inputs.case }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
     name: Camunda ${{ inputs.camunda-version }} - ${{ matrix.scenario }}
-    # needs: validation
+    needs: validation
     permissions:
       contents: read
       id-token: write
