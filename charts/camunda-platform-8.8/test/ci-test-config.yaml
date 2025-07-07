@@ -59,3 +59,8 @@ integration:
           enabled: false
           exclude: []
           auth: keycloak
+        - name: opensearch
+          enabled: true
+          exclude: [identity,console,core-grpc]
+          auth: basic
+
