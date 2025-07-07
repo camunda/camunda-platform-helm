@@ -920,7 +920,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha5"
+                            "default": "8.8.0-alpha6"
                         },
                         "digest": {
                             "type": "string",
@@ -1392,6 +1392,51 @@
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
+                },
+                "persistence": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
+                            "default": false
+                        },
+                        "size": {
+                            "type": "string",
+                            "description": "can be used to define the size of the persistent volume claim",
+                            "default": "10Gi"
+                        },
+                        "accessModes": {
+                            "type": "array",
+                            "description": "can be used to define the access modes for the persistent volume claim",
+                            "default": [
+                                "ReadWriteOnce"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "storageClassName": {
+                            "type": "string",
+                            "description": "can be used to define the storage class to use for the persistent volume claim",
+                            "default": ""
+                        },
+                        "existingClaim": {
+                            "type": "string",
+                            "description": "can be used to specify an existing PVC instead of creating a new one",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to define annotations to add to the persistent volume claim",
+                            "default": {}
+                        },
+                        "selector": {
+                            "type": "object",
+                            "description": "can be used to define a label selector for the persistent volume claim",
+                            "default": {}
+                        }
+                    }
                 }
             }
         },
@@ -1939,7 +1984,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha5"
+                            "default": "8.8.0-alpha6"
                         },
                         "digest": {
                             "type": "string",
@@ -3637,6 +3682,51 @@
                             "default": false
                         }
                     }
+                },
+                "persistence": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
+                            "default": false
+                        },
+                        "size": {
+                            "type": "string",
+                            "description": "can be used to define the size of the persistent volume claim",
+                            "default": "5Gi"
+                        },
+                        "accessModes": {
+                            "type": "array",
+                            "description": "can be used to define the access modes for the persistent volume claim",
+                            "default": [
+                                "ReadWriteOnce"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "storageClassName": {
+                            "type": "string",
+                            "description": "can be used to define the storage class to use for the persistent volume claim",
+                            "default": ""
+                        },
+                        "existingClaim": {
+                            "type": "string",
+                            "description": "can be used to specify an existing PVC instead of creating a new one",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to define annotations to add to the persistent volume claim",
+                            "default": {}
+                        },
+                        "selector": {
+                            "type": "object",
+                            "description": "can be used to define a label selector for the persistent volume claim",
+                            "default": {}
+                        }
+                    }
                 }
             }
         },
@@ -3844,7 +3934,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha5"
+                            "default": "8.8.0-alpha6"
                         },
                         "digest": {
                             "type": "string",
@@ -4251,6 +4341,51 @@
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
+                },
+                "persistence": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
+                            "default": false
+                        },
+                        "size": {
+                            "type": "string",
+                            "description": "can be used to define the size of the persistent volume claim",
+                            "default": "5Gi"
+                        },
+                        "accessModes": {
+                            "type": "array",
+                            "description": "can be used to define the access modes for the persistent volume claim",
+                            "default": [
+                                "ReadWriteOnce"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "storageClassName": {
+                            "type": "string",
+                            "description": "can be used to define the storage class to use for the persistent volume claim",
+                            "default": ""
+                        },
+                        "existingClaim": {
+                            "type": "string",
+                            "description": "can be used to specify an existing PVC instead of creating a new one",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to define annotations to add to the persistent volume claim",
+                            "default": {}
+                        },
+                        "selector": {
+                            "type": "object",
+                            "description": "can be used to define a label selector for the persistent volume claim",
+                            "default": {}
+                        }
+                    }
                 }
             }
         },
@@ -4283,7 +4418,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha5"
+                            "default": "8.8.0-alpha6"
                         },
                         "digest": {
                             "type": "string",
@@ -5508,6 +5643,51 @@
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
+                },
+                "persistence": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
+                            "default": false
+                        },
+                        "size": {
+                            "type": "string",
+                            "description": "can be used to define the size of the persistent volume claim",
+                            "default": "10Gi"
+                        },
+                        "accessModes": {
+                            "type": "array",
+                            "description": "can be used to define the access modes for the persistent volume claim",
+                            "default": [
+                                "ReadWriteOnce"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "storageClassName": {
+                            "type": "string",
+                            "description": "can be used to define the storage class to use for the persistent volume claim",
+                            "default": ""
+                        },
+                        "existingClaim": {
+                            "type": "string",
+                            "description": "can be used to specify an existing PVC instead of creating a new one",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to define annotations to add to the persistent volume claim",
+                            "default": {}
+                        },
+                        "selector": {
+                            "type": "object",
+                            "description": "can be used to define a label selector for the persistent volume claim",
+                            "default": {}
+                        }
+                    }
                 }
             }
         },

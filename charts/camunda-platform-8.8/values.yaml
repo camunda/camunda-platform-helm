@@ -569,7 +569,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha5
+    tag: 8.8.0-alpha6
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -777,6 +777,24 @@ identity:
   dnsPolicy: ""
   ## @param identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+
+  ## @extra identity.persistence configuration for optional PVC creation
+  persistence:
+    ## @param identity.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
+    enabled: false
+    ## @param identity.persistence.size can be used to define the size of the persistent volume claim
+    size: "10Gi"
+    ## @param identity.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    accessModes: ["ReadWriteOnce"]
+    ## @param identity.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    # Set to "-" to disable use of default storage class
+    storageClassName: ""
+    ## @param identity.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    existingClaim: ""
+    ## @param identity.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    annotations: {}
+    ## @param identity.persistence.selector can be used to define a label selector for the persistent volume claim
+    selector: {}
 
 # Identity.
 #####   ####   ####  #####  ####  #####  ######  ####   ####  #
@@ -1059,7 +1077,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.0-alpha5
+    tag: 8.8.0-alpha6
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1859,6 +1877,26 @@ webModeler:
     ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
+  ## @extra webModeler.persistence configuration for optional PVC creation
+  persistence:
+    ## @param webModeler.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
+    enabled: false
+    ## @param webModeler.persistence.size can be used to define the size of the persistent volume claim
+    size: "5Gi"
+    ## @param webModeler.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    accessModes: ["ReadWriteOnce"]
+    ## @param webModeler.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    # Set to "-" to disable use of default storage class
+    storageClassName: ""
+    ## @param webModeler.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    existingClaim: ""
+    ## @param webModeler.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    annotations: {}
+    ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
+    selector: {}
+
+  ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
+
 # WebModeler.
 #####   ####   ####  #####  ####  #####  ######  ####   ####  #
 #    # #    # #        #   #    # #    # #      #      #    # #
@@ -1975,7 +2013,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha5
+    tag: 8.8.0-alpha6
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2158,6 +2196,24 @@ connectors:
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
+  ## @extra connectors.persistence configuration for optional PVC creation
+  persistence:
+    ## @param connectors.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
+    enabled: false
+    ## @param connectors.persistence.size can be used to define the size of the persistent volume claim
+    size: "5Gi"
+    ## @param connectors.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    accessModes: ["ReadWriteOnce"]
+    ## @param connectors.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    # Set to "-" to disable use of default storage class
+    storageClassName: ""
+    ## @param connectors.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    existingClaim: ""
+    ## @param connectors.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    annotations: {}
+    ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
+    selector: {}
+
 ############################
 #####
 #     #  ####  #####  ######
@@ -2184,7 +2240,7 @@ core:
     ## @param core.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha5
+    tag: 8.8.0-alpha6
     ## @param core.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2555,7 +2611,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha5
+    tag: 8.8.0-alpha6
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2763,6 +2819,24 @@ optimize:
   dnsPolicy: ""
   ## @param optimize.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+
+  ## @extra optimize.persistence configuration for optional PVC creation
+  persistence:
+    ## @param optimize.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
+    enabled: false
+    ## @param optimize.persistence.size can be used to define the size of the persistent volume claim
+    size: "10Gi"
+    ## @param optimize.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    accessModes: ["ReadWriteOnce"]
+    ## @param optimize.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    # Set to "-" to disable use of default storage class
+    storageClassName: ""
+    ## @param optimize.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    existingClaim: ""
+    ## @param optimize.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    annotations: {}
+    ## @param optimize.persistence.selector can be used to define a label selector for the persistent volume claim
+    selector: {}
 
 #####################################################################################
 #######

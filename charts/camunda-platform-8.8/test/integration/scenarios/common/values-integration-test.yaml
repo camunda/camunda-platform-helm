@@ -48,22 +48,3 @@ identity:
       value: console-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
       value: "write:*"
-
-global:
-  # Auth to avoid Docker download rate limit.
-  # https://docs.docker.com/docker-hub/download-rate-limit/
-  image:
-    pullSecrets:
-    - name: index-docker-io
-
-identityKeycloak:
-  # Auth to avoid Docker download rate limit.
-  image:
-    pullSecrets:
-    - name: index-docker-io
-
-elasticsearch:
-  # Auth to avoid Docker download rate limit.
-  global:
-    imagePullSecrets:
-    - name: index-docker-io

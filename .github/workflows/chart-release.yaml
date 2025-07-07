@@ -34,8 +34,6 @@ jobs:
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix
-        with:
-          charts-path: "charts/camunda-platform*"
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -122,7 +120,7 @@ jobs:
             helm-ct
             yq
       - name: Install Cosign
-        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
       - name: Setup caching
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:

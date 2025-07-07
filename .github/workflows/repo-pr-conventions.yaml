@@ -5,9 +5,9 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
-  lint-format:
+  check:
+    name: Check PR Conventions
     runs-on: ubuntu-latest
-
     steps:
       - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017 # v5.5.3
         env:
@@ -30,12 +30,25 @@ jobs:
             deps
           # Configure additional validation for the subject based on a regex.
           # Ensures the subject doesn't start with an uppercase character.
-          subjectPattern: ^(?![A-Z]).+$
+          # Also ensures the subject doesn't contain parentheses (we don't use scope in commit titles).
+          subjectPattern: ^(?![A-Z])(?!.*[()]).+$
           # Ignore release PR since it's different and already automated.
           ignoreLabels: |
             release/pr
+            dependencies
+            automation/renovatebot
           # When using "Squash and merge" on a PR with only one commit, GitHub
           # will suggest using that commit message instead of the PR title for the
           # merge commit, and it's easy to commit this by mistake. Enable this option
           # to also validate the commit message for one commit PRs.
           validateSingleCommit: true
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Ensure PR branch is up to date
+        run: |
+          (git rev-list --left-right --count origin/main...HEAD | grep -q "^0") \
+            || (echo "PR branch is not up to date with main. Please rebase or merge main into your branch." && exit 1) \
+            && echo "PR branch is up to date with main."

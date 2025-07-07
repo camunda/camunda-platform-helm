@@ -68,8 +68,7 @@ We value all feedback and contributions. To start contributing to this project, 
   and discussing it first.**
 - Familiarize yourself with the
 [contribution guide](./docs/contributing.md).
-- Find more information about configuring and deploying the Camunda 8
-  [Helm chart](./chart).
+- Find more information about the Camunda 8 [Helm charts](./charts).
 
 ## Releasing
 

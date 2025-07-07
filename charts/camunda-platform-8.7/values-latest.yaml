@@ -19,7 +19,7 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.7.4
+    tag: 8.7.5
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
@@ -31,7 +31,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.7.4
+    tag: 8.7.5
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
@@ -71,7 +71,7 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     repository: bitnami/keycloak
-    tag: 26.2.5
+    tag: 26.3.0
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
