@@ -22,10 +22,7 @@ integration:
     pr:
       scenario:
         # keycloak auth flow
-        - name: opensearch
-          enabled: true
-          exclude: [identity,console,core-grpc]
-          auth: basic
+
         # - name: elasticsearch
         #   enabled: true
         #   auth: basic
@@ -57,5 +54,5 @@ integration:
           auth: keycloak
         - name: opensearch
           enabled: true
-          exclude: []
+          exclude: [identity,console,core-grpc]
           auth: basic
