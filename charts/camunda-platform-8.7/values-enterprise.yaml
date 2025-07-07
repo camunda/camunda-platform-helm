@@ -42,8 +42,8 @@ identityPostgresql:
 identityKeycloak:
   image:
     registry: registry.camunda.cloud
-    repository: keycloak-ee/keycloak
-    tag: 26.2.5
+    repository: vendor-ee/keycloak
+    tag: 26.1.4-debian-12-r4
     pullSecrets:
       - name: registry-camunda-cloud
 
