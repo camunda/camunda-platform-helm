@@ -20,6 +20,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.8](./camunda-8.8)
 
+### [Helm chart 13.0.0-alpha6](./camunda-8.8/#helm-chart-1300-alpha6)
 ### [Helm chart 13.0.0-alpha5](./camunda-8.8/#helm-chart-1300-alpha5)
 ### [Helm chart 13.0.0-alpha4.2](./camunda-8.8/#helm-chart-1300-alpha42)
 ### [Helm chart 13.0.0-alpha4.1](./camunda-8.8/#helm-chart-1300-alpha41)
