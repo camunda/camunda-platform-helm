@@ -768,6 +768,101 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Move disk settings to configmap"
+        - kind: added
+          description: "Add database name, host, port values to webmodeler.restapi.externalDatabase"
+        - kind: added
+          description: "8.8 integration test playwright"
+        - kind: added
+          description: "Implement mutable global.commonLabels value"
+        - kind: added
+          description: "Add extraVolumeClaimTemplates support"
+        - kind: changed
+          description: "Add local values file per chart version"
+        - kind: fixed
+          description: "Add scheme into templates for use by connectors"
+        - kind: fixed
+          description: "Connectors inbound disabled mode"
+        - kind: fixed
+          description: "Update params for existingSecret "
+        - kind: fixed
+          description: "Replace GKE with teleport EKS cluster"
+        - kind: fixed
+          description: "Replaced old property with new one"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.18.3
+    apiVersion: v2
+    appVersion: 8.7.x
+    created: "2025-07-08T21:01:12.172088205Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 24.7.5
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: e5ed07c84a993066f3dabe6560fb9edd53ef286cee0f3e42b73710f1ce1cd002
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.7-12.3.0/camunda-platform-12.3.0.tgz
+    version: 12.3.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Support configure replicas for web modeler restapi and webapp"
         - kind: fixed
           description: "Cleanup multiregion installationtype"
@@ -19116,4 +19211,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-07-08T20:53:52.569231351Z"
+generated: "2025-07-08T21:01:12.172873063Z"
