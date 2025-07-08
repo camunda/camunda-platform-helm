@@ -334,6 +334,116 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Support configure replicas for web modeler restapi and webapp"
+        - kind: added
+          description: "Move disk settings to configmap"
+        - kind: added
+          description: "Add database name, host, port values to webmodeler.restapi.externalDatabase"
+        - kind: added
+          description: "8.8 integration test playwright"
+        - kind: added
+          description: "Implement mutable global.commonLabels value"
+        - kind: added
+          description: "Add extraVolumeClaimTemplates support"
+        - kind: added
+          description: "Add alternative emptyDir PVC support for components"
+        - kind: changed
+          description: "Update rest api endpoint in web modeler config"
+        - kind: changed
+          description: "Add local values file per chart version"
+        - kind: fixed
+          description: "Manually update version matrix and release notes to fix webmodeler"
+        - kind: fixed
+          description: "Schema type for `global.identity.auth.identity.existingSecret`"
+        - kind: fixed
+          description: "Add scheme into templates for use by connectors"
+        - kind: fixed
+          description: "Add existingSecret object to core"
+        - kind: fixed
+          description: "Remove the metadata in the namespace name"
+        - kind: fixed
+          description: "Update params for existingSecret "
+        - kind: fixed
+          description: "Replace GKE with teleport EKS cluster"
+        - kind: fixed
+          description: "Correct rendering for global.identity.auth.identity.existingSecret.name"
+        - kind: fixed
+          description: "Allow string literal overrides for existingSecret for all components"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/helmCLIVersion: 3.18.3
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2025-07-08T22:44:28.515629945Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 24.7.5
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: c651035fb3b88c07d48290cd5c0878d59ea8a4380632573229490a5d6673e0da
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.0.0-alpha6/camunda-platform-13.0.0-alpha6.tgz
+    version: 13.0.0-alpha6
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Support image.digest for all components"
         - kind: added
           description: "Support core identity oidc"
@@ -19541,4 +19651,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-07-08T22:44:02.144367303Z"
+generated: "2025-07-08T22:44:28.516320377Z"
