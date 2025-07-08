@@ -92,6 +92,8 @@ annotations:
     - kind: changed
       description: "Add local values file per chart version"
     - kind: fixed
+      description: "Add whitespace"
+    - kind: fixed
       description: "Schema type for `global.identity.auth.identity.existingSecret`"
     - kind: fixed
       description: "Add scheme into templates for use by connectors"
