@@ -40,6 +40,24 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 {{- end }}
 
 {{/*
+Fail with a message if auth.type = KEYCLOAK and the in-cluster Keycloak is disabled and the user has provided neither
+- (a) issuerBackendUrl
+- (b) an external Keycloak url.host
+*/}}
+{{- if and (eq (upper .Values.global.identity.auth.type) "KEYCLOAK")
+          (not .Values.identityKeycloak.enabled)
+          (empty .Values.global.identity.auth.issuerBackendUrl)
+          (empty .Values.global.identity.keycloak.url.host) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
+      "auth.type=KEYCLOAK but no Keycloak instance is reachable. Either"
+      "  - set identityKeycloak.enabled=true for the bundled chart, or"
+      "  - configure global.identity.keycloak.url.protocol/host/port, or"
+      "  - set global.identity.auth.issuerBackendUrl to the external Keycloak realm base."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
 Fail with a message if global.identity.auth.identity.existingSecret is set and global.identity.auth.type is set to KEYCLOAK
 */}}
 
