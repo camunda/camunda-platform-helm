@@ -1,5 +1,12 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
+## [camunda-platform-13.0.0-alpha6](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha6) (2025-07-08)
+
+### Fixes
+
+- Manually update version matrix and release notes to fix webmodeler
+
+
 ## [camunda-platform-8.6-11.7.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.6-11.7.0) (2025-07-08)
 
 ### Features
