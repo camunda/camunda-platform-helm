@@ -82,7 +82,7 @@ jobs:
 
           # Generate JSON matrix and set it as a GH output.
           matrix_versions="$(jq --slurp --compact-output '.' ${matrix_file})"
-          echo 'matrix=[{"dirID":"8.8","version":"13.0.0-alpha6","appVersion":"8.8","prerelease":true}]' | tee -a $GITHUB_OUTPUT
+          echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
 
   release:
     name: Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
