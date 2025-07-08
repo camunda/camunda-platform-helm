@@ -1,10 +1,10 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-13.0.0-alpha5](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha5) (2025-07-08)
+## [camunda-platform-13.0.0-alpha6](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha6) (2025-07-08)
 
 ### Fixes
 
-- Add whitespace
+- Manually update version matrix and release notes to fix webmodeler
 
 
 ## [camunda-platform-8.6-11.7.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.6-11.7.0) (2025-07-08)
@@ -42,26 +42,35 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5#parameters)
+- Helm values: [13.0.0-alpha6](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6#parameters)
 - Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
 
 Camunda images:
 
-- docker.io/camunda/camunda:8.8.0-alpha5
-- docker.io/camunda/connectors-bundle:8.8.0-alpha5
+- docker.io/camunda/camunda:8.8.0-alpha6
+- docker.io/camunda/connectors-bundle:8.8.0-alpha6
+- docker.io/camunda/console:8.8.0-alpha6
+- docker.io/camunda/identity:8.8.0-alpha6
+- docker.io/camunda/keycloak:26.1.4
+- docker.io/camunda/optimize:8.8.0-alpha6
+- docker.io/camunda/web-modeler-restapi:8.8.0-alpha6
+- docker.io/camunda/web-modeler-webapp:8.8.0-alpha6
+- docker.io/camunda/web-modeler-websockets:8.8.0-alpha6
 
 Non-Camunda images:
 
 - docker.io/bitnami/elasticsearch:8.18.0
 - docker.io/bitnami/os-shell:12-debian-12-r43
+- docker.io/bitnami/postgresql:14.18.0-debian-12-r0
+- docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
 ### Verification
 
 To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-13.0.0-alpha5.tgz \
-  --bundle camunda-platform-13.0.0-alpha5.cosign.bundle \
+cosign verify-blob camunda-platform-13.0.0-alpha6.tgz \
+  --bundle camunda-platform-13.0.0-alpha6.cosign.bundle \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/3766/merge"
+  --certificate-identity "https://github.com/camunda/camunda-platform-helm/.github/workflows/chart-release-chores.yml@refs/pull/3774/merge"
 ```

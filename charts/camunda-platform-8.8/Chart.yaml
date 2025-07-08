@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.0.0-alpha5
+version: 13.0.0-alpha6
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -92,7 +92,7 @@ annotations:
     - kind: changed
       description: "Add local values file per chart version"
     - kind: fixed
-      description: "Add whitespace"
+      description: "Manually update version matrix and release notes to fix webmodeler"
     - kind: fixed
       description: "Schema type for `global.identity.auth.identity.existingSecret`"
     - kind: fixed
