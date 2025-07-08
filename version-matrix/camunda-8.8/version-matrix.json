@@ -66,9 +66,9 @@
       "docker.io/camunda/identity:8.8.0-alpha6",
       "docker.io/camunda/keycloak:26.1.4",
       "docker.io/camunda/optimize:8.8.0-alpha6",
-      "docker.io/camunda/web-modeler-restapi:8.8.0-alpha5.1",
-      "docker.io/camunda/web-modeler-webapp:8.8.0-alpha5.1",
-      "docker.io/camunda/web-modeler-websockets:8.8.0-alpha5.1"
+      "docker.io/camunda/web-modeler-restapi:8.8.0-alpha6",
+      "docker.io/camunda/web-modeler-webapp:8.8.0-alpha6",
+      "docker.io/camunda/web-modeler-websockets:8.8.0-alpha6"
     ]
   }
 ]
