@@ -19,9 +19,7 @@ jobs:
     name: Generate release files
     runs-on: ubuntu-latest
     steps:
-      #
       # Checkout.
-      #
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
