@@ -24,6 +24,11 @@ on:
         description: Scenario
         required: true
         type: string
+      enterprise:
+        description: Enterprise values
+        required: false
+        default: "false"
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
@@ -55,8 +60,9 @@ jobs:
       platforms: "gke"
       flows: "install,upgrade"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      test-case: ${{inputs.case}}
-      scenario: ${{inputs.scenario}}
-      auth: ${{inputs.auth}}
-      exclude: ${{inputs.exclude}}
+      test-case: "${{ inputs.case }}"
+      scenario: "${{ inputs.scenario }}"
+      auth: "${{ inputs.auth }}"
+      exclude: "${{ inputs.exclude }}"
+      enterprise: "${{ inputs.enterprise }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

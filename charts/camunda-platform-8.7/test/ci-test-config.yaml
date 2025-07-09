@@ -43,3 +43,8 @@ integration:
           enabled: true
           exclude: []
           auth: keycloak
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          auth: keycloak
+          enterprise: true
