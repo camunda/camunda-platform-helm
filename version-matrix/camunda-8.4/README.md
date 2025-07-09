@@ -5,6 +5,7 @@
 
 ## ToC
 
+- [Helm chart 9.7.0](#helm-chart-970)
 - [Helm chart 9.6.0](#helm-chart-960)
 - [Helm chart 9.5.2](#helm-chart-952)
 - [Helm chart 9.5.1](#helm-chart-951)
@@ -35,6 +36,36 @@
 - [Helm chart 9.0.2](#helm-chart-902)
 - [Helm chart 9.0.1](#helm-chart-901)
 - [Helm chart 9.0.0](#helm-chart-900)
+
+## Helm chart 9.7.0
+
+Supported versions:
+
+- Camunda applications: [8.4](https://github.com/camunda/camunda/releases?q=tag%3A8.4&expanded=true)
+- Camunda version matrix: [8.4](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.4)
+- Helm values: [9.7.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/9.7.0#parameters)
+- Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:8.4.21
+- docker.io/camunda/identity:8.4.23
+- docker.io/camunda/operate:8.4.22
+- docker.io/camunda/optimize:8.4.20
+- docker.io/camunda/tasklist:8.4.23
+- docker.io/camunda/zeebe:8.4.21
+- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.19
+- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.19
+- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.19
+
+Non-Camunda images:
+
+- docker.io/bitnami/elasticsearch:8.9.2
+- docker.io/bitnami/keycloak:22.0.5
+- docker.io/bitnami/os-shell:12-debian-12-r16
+- docker.io/bitnami/postgresql:14.5.0-debian-11-r35
+- docker.io/bitnami/postgresql:15.10.0-debian-12-r2
+
 
 ## Helm chart 9.6.0
 
