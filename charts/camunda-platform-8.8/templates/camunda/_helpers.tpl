@@ -216,17 +216,11 @@ Slashes are trimmed from the beginning and end of each part, and a single slash 
 Usage: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}
 */}}
 {{- define "camundaPlatform.joinpath" -}}
-  {{- $parts := list -}}
-  {{- range . }}
-    {{- $seg := trimAll "/" (default "" .) -}}
-    {{- if $seg }}
-      {{- $parts = append $parts $seg -}}
-    {{- end -}}
-  {{- end }}
-  {{- if gt (len $parts) 0 -}}
-    {{- printf "/%s" (join "/" $parts) -}}
-  {{- end -}}
+  {{- $paths := join "/" . -}}
+  {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
+  {{- printf "/%s" $pathsSanitized -}}
 {{- end -}}
+
 
 {{/*
 ********************************************************************************
