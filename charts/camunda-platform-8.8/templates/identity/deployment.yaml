@@ -295,7 +295,7 @@ spec:
       {{- if .Values.identity.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      {{- with .Values.identity.nodeSelector }}
+      {{- with .Values.identity.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
