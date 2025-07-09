@@ -119,17 +119,6 @@ spec:
               value: {{ .Values.identity.firstUser.password | quote }}
             {{- end }}
             {{- end }}
-            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
-            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
-              value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
-                  key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
-              {{- end }}
-            {{- end }}
             {{- if .Values.global.identity.auth.admin.enabled }}
             - name: VALUES_CAMUNDA_ADMIN_CLIENT_SECRET
               {{- if (typeIs "string" .Values.global.identity.auth.admin.existingSecret) }}
@@ -141,6 +130,28 @@ spec:
                   key: {{ .Values.global.identity.auth.admin.existingSecretKey }}
               {{- end }}
             {{- end }}
+            {{- end }}
+            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+              value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
+                  key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+              {{- end }}
+            - name: CAMUNDA_OPTIMIZE_CLIENT_ID
+              value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
+            - name: CAMUNDA_OPTIMIZE_SECRET
+              {{- if (typeIs "string" .Values.global.identity.auth.optimize.existingSecret) }}
+              value: {{ .Values.global.identity.auth.optimize.existingSecret | quote }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.identity.auth.optimize.existingSecret.name }}
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
+              {{- end }}
             {{- end }}
             {{- end }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}

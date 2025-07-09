@@ -21,19 +21,10 @@ integration:
   case:
     pr:
       scenario:
-        # keycloak auth flow
         - name: elasticsearch
           enabled: true
           auth: keycloak
           exclude: []
-        - name: elasticsearch
-          enabled: true
-          auth: basic
-          exclude: [identity,console,core-grpc]
-        # - name: elasticsearch
-        #   enabled: true
-        #   auth: basic
-        #   exclude: [identity,console,core-grpc]
     nightly:
       scenario:
         - name: elasticsearch
@@ -44,8 +35,7 @@ integration:
         - name: elasticsearch
           enabled: true
           exclude: [identity,console,core-grpc]
-          auth: basic
-          # not supported
+          # deployment should work but integration tests are not passing
         - name: elasticsearch
           enabled: false
           exclude: []
