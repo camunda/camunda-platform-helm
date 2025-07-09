@@ -72,6 +72,7 @@ runs:
         write_matrix_entry() {
           local camunda_version="$1"
           local chart_dir="$2"
+          echo "⭐ Generating matrix for $camunda_version and chart $chart_dir"
           if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
             readarray prScenarios < <(yq e -o=j -I=0 '.integration.case.pr.scenario.[]' $chart_dir/test/ci-test-config.yaml)
             for prScenario in "${prScenarios[@]}"; do
@@ -82,6 +83,7 @@ runs:
               echo "  - version: ${camunda_version}" >> matrix_versions.txt
               echo "    case: pr" >> matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
+              echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
               echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
               echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
             done
@@ -92,7 +94,13 @@ runs:
         echo "Checking for manual-trigger"
         touch matrix_versions.txt
         echo "matrix:" > matrix_versions.txt
-        if [[ "${{ inputs.manual-trigger }}" != "none" && "${{ inputs.manual-trigger }}" != "" ]]; then
+        if [[ "${{ inputs.manual-trigger }}" == "all" ]]; then
+          echo "Requested to build all"
+          for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+            chart_dir="charts/camunda-platform-${camunda_version}"
+            write_matrix_entry "$camunda_version" "$chart_dir"
+          done
+        elif [[ "${{ inputs.manual-trigger }}" != "none" && "${{ inputs.manual-trigger }}" != "" ]]; then
           echo "Manual trigger detected: ${{ inputs.manual-trigger }}"
           chart_dir="charts/camunda-platform-${{ inputs.manual-trigger }}"
           if [ -d "$chart_dir" ]; then
