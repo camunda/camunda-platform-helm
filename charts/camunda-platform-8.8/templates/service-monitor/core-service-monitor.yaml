@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: core
   endpoints:
     - honorLabels: true
-      path: {{ .Values.core.contextPath }}{{ .Values.core.metrics.prometheus }}
+      path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.metrics.prometheus) }}
       port: {{ default "server" .Values.core.service.managementName }}
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}
