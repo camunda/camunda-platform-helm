@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "core.fullname" . }}
+  name: {{ include "core.fullname" . }}-gateway
   labels:
     {{- include "core.labels" . | nindent 4 }}
   annotations:
@@ -13,19 +13,18 @@ metadata:
       {{ .Values.core.service.annotations | toYaml | nindent 4 }}
     {{- end }}
 spec:
-  clusterIP: None
   publishNotReadyAddresses: true
   type: {{ .Values.core.service.type }}
   ports:
-    - port: {{ .Values.core.service.internalPort }}
+    - port: {{ .Values.core.service.httpPort }}
       protocol: TCP
-      name: {{ default "internal" .Values.core.service.internalName  }}
-    - port: {{ .Values.core.service.commandPort }}
-      protocol: TCP
-      name: {{ default "command" .Values.core.service.commandName }}
+      name: {{ default "http" .Values.core.service.httpName  }}
     - port: {{ .Values.core.service.managementPort }}
       protocol: TCP
       name: {{ default "management" .Values.core.service.managementName }}
+    - port: {{ .Values.core.service.grpcPort }}
+      protocol: TCP
+      name: {{ default "grpc-api" .Values.core.service.grpcName }}
     {{- if .Values.core.service.extraPorts}}
     {{ .Values.core.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}

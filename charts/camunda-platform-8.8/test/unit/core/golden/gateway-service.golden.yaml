@@ -1,9 +1,9 @@
 ---
-# Source: camunda-platform/templates/core/service.yaml
+# Source: camunda-platform/templates/core/gateway-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: camunda-platform-test-core
+  name: camunda-platform-test-core-gateway
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -14,19 +14,18 @@ metadata:
     app.kubernetes.io/version: "8.8.0-alpha6"
   annotations:
 spec:
-  clusterIP: None
   publishNotReadyAddresses: true
   type: ClusterIP
   ports:
-    - port: 26502
+    - port: 8080
       protocol: TCP
-      name: internal
-    - port: 26501
-      protocol: TCP
-      name: command
+      name: http
     - port: 9600
       protocol: TCP
       name: server
+    - port: 26500
+      protocol: TCP
+      name: gateway
   selector:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
