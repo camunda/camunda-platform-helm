@@ -18,9 +18,6 @@ spec:
   publishNotReadyAddresses: true
   type: ClusterIP
   ports:
-    - port: 8080
-      protocol: TCP
-      name: http
     - port: 26502
       protocol: TCP
       name: internal
@@ -30,9 +27,6 @@ spec:
     - port: 9600
       protocol: TCP
       name: server
-    - port: 26500
-      protocol: TCP
-      name: gateway
   selector:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
