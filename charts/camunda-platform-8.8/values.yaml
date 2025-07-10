@@ -132,7 +132,7 @@ global:
   ## @skip global.testDeprecationFlags
   testDeprecationFlags:
     ## @skip global.testDeprecationFlags.existingSecretsMustBeSet give error or warning when existingSecret is not set
-    existingSecretsMustBeSet: "error"
+    existingSecretsMustBeSet: "warning"
 
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
