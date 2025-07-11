@@ -147,9 +147,16 @@ on:
         required: true
         default: ""
         type: string
+      namespace-prefix:
+        description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
+  id-token: write
+  deployments: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
@@ -278,6 +285,7 @@ jobs:
           ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
 
       - name: CI Setup - Set test type vars
         id: test-type-vars
@@ -383,8 +391,6 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ env.TEST_VALUES_BASE_DIR }}/infra/values-infra-${{ inputs.infra-type }}.yaml
-            --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
@@ -417,8 +423,6 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-            --values ${{ env.TEST_VALUES_BASE_DIR }}/infra/values-infra-${{ inputs.infra-type }}.yaml
-            --values /tmp/extra-values-file.yaml
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
