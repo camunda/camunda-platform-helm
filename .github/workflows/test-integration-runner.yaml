@@ -147,6 +147,11 @@ on:
         required: true
         default: ""
         type: string
+      namespace-prefix:
+        description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -280,6 +285,7 @@ jobs:
           ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
 
       - name: CI Setup - Set test type vars
         id: test-type-vars
