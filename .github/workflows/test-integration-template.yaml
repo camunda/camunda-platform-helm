@@ -133,6 +133,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  deployments: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
