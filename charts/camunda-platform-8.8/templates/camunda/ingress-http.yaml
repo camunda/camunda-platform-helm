@@ -70,7 +70,7 @@ spec:
           # Core.
           - backend:
               service:
-                name: {{ template "core.fullname" . }}
+                name: {{ template "core.fullname" . }}-gateway
                 port:
                   number: {{ .Values.core.service.httpPort }}
             path: {{ .Values.core.contextPath }}

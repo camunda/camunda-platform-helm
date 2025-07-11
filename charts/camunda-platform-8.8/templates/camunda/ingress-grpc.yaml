@@ -24,7 +24,7 @@ spec:
             pathType: {{ .Values.core.ingress.grpc.pathType }}
             backend:
               service:
-                name: {{ include "core.fullname" . }}
+                name: {{ include "core.fullname" . }}-gateway
                 port:
                   number: {{ .Values.core.service.grpcPort }}
   {{- if .Values.core.ingress.grpc.tls.enabled }}
