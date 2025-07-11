@@ -374,7 +374,7 @@ spec:
       {{- if .Values.optimize.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-{{- with .Values.optimize.nodeSelector }}
+{{- with .Values.optimize.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}

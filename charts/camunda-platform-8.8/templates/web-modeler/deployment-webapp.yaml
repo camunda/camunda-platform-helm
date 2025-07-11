@@ -185,7 +185,7 @@ spec:
       {{- if .Values.webModeler.webapp.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.webapp.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.webapp.nodeSelector }}
+      {{- with .Values.webModeler.webapp.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}

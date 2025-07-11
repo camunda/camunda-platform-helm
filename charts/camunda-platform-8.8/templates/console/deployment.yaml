@@ -182,7 +182,7 @@ spec:
       {{- if .Values.console.extraVolumes }}
         {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
-      {{- with .Values.console.nodeSelector }}
+      {{- with .Values.console.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
