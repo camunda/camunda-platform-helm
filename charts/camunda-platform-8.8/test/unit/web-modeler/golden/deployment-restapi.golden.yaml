@@ -63,7 +63,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: camunda-platform-test-postgresql-web-modeler
-                  key: password
+                  key: web-modeler-postgresql-user-password
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:

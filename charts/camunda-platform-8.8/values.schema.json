@@ -1522,12 +1522,12 @@
                                 "adminPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL admin.",
-                                    "default": "postgres-password"
+                                    "default": "identity-postgresql-admin-password"
                                 },
                                 "userPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
-                                    "default": "password"
+                                    "default": "identity-postgresql-user-password"
                                 }
                             }
                         }
@@ -3812,12 +3812,12 @@
                                 "adminPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL admin.",
-                                    "default": "postgres-password"
+                                    "default": "web-modeler-postgresql-admin-password"
                                 },
                                 "userPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
-                                    "default": "password"
+                                    "default": "web-modeler-postgresql-user-password"
                                 }
                             }
                         }
