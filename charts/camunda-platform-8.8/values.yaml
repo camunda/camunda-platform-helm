@@ -357,7 +357,7 @@ global:
         ## @param global.identity.auth.console.audience defines the audience which is used by Console's client API.
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
-        wellKnown: "https://well-known-uri"
+        wellKnown: https://well-known-uri
         ## @param global.identity.auth.console.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
         existingSecret: ""
         ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
