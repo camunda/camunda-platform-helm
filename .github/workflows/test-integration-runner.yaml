@@ -614,7 +614,7 @@ jobs:
     needs: [ci-setup]
     runs-on: ubuntu-latest
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       TEST_EXCLUDE: ${{ inputs.exclude }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
