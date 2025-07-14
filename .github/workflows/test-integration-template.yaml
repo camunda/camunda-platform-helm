@@ -133,6 +133,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  deployments: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
@@ -244,6 +245,8 @@ jobs:
       github-workflow-rerun-enabled: ${{ inputs.github-workflow-rerun-enabled }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
       shortname: ${{ inputs.shortname }}
+      teleport-token: ${{ inputs.teleport-token }}
+      namespace-prefix: ${{ inputs.namespace-prefix }}
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
