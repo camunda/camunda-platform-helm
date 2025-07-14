@@ -405,9 +405,9 @@ global:
         region: ""
         ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
         bucket: "your-aws-bucket"
-        ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
+        ## @param global.documentStore.type.aws.bucketPath (Optional) Path/prefix within the S3 bucket.
         # bucketPath: ""
-        ## @param global.documentStore.type.aws.bucketTtl [number, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
+        ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket (number in days).
         # bucketTtl: 0
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
