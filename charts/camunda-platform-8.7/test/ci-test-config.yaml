@@ -26,6 +26,11 @@ integration:
           shortname: es
           exclude: []
           auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: os
+          exclude: []
+          auth: keycloak
     nightly:
       scenario:
         - name: elasticsearch
