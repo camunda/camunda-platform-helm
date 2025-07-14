@@ -23,8 +23,8 @@ matrix:
         password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
       if: $INPUTS_PLATFORMS_ROSA
   scenario:
-    - name: Chart Setup
-      desc: Setup chart in production-like setup with Ingress and TLS.
+    - name: Chart Install
+      desc: Install chart in production-like setup with Ingress and TLS.
       flow: install
       if: $INPUTS_FLOWS_INSTALL
     - name: Chart Upgrade

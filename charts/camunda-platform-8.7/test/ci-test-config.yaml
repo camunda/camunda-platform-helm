@@ -23,6 +23,7 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
+          shortname: es
           exclude: []
           auth: keycloak
     nightly:
@@ -30,17 +31,21 @@ integration:
         - name: elasticsearch
           enabled: true
           exclude: []
+          shortname: es
           auth: keycloak
         - name: multitenancy
           enabled: true
           exclude: []
+          shortname: mt
           auth: keycloak
         - name: oidc
           enabled: false
           exclude: []
+          shortname: oi
           auth: keycloak
         - name: opensearch
           enabled: true
+          shortname: os
           exclude: []
           auth: keycloak
         - name: elasticsearch
