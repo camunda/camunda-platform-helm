@@ -98,6 +98,19 @@ data:
       username: {{ .Values.global.opensearch.auth.username | quote }}
       {{- end }}
     {{- end }}
+
+    {{- if and .Values.global.identity.auth.enabled .Values.zeebe.gateway.enabled }}
+    spring:
+      profiles:
+        active: "identity-auth"
+
+    camunda:
+      identity:
+        type: {{ include "camundaPlatform.authType" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        audience: {{ include "zeebe.authAudience" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
+    {{- end }}
   {{- end }}
 
   startup.sh: |
