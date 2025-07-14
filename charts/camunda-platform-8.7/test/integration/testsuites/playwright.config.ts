@@ -1,10 +1,22 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 export default defineConfig({
-  testDir: './tests',
-  defaultTimeout: 30000,
+  testDir: "./tests",
+  projects: [
+    {
+      name: "full-suite",
+      testMatch: ["**/*.spec.{ts,js}"],
+    },
+  ],
   fullyParallel: true,
-  retries: 2,
-  reporter: [['html', { open: 'never' }], ['list'], ['junit', { outputFile: 'test-results/results.xml' }]],
-  use: { baseURL: 'https://camunda.local', trace: 'on-first-retry' },
-})
+  retries: 3,
+  timeout: 3 * 60 * 1000, // no test should take more than 3 minutes (failing fast is important so that we can run our tests on each PR)
+  workers: process.env.CI == "true" ? 1 : "25%",
+  use: {
+    actionTimeout: 10000,
+    screenshot: "only-on-failure",
+  },
+});
