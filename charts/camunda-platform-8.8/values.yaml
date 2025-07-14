@@ -357,7 +357,7 @@ global:
         ## @param global.identity.auth.console.audience defines the audience which is used by Console's client API.
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
-        wellKnown: https://well-known-uri
+        wellKnown: "https://well-known-uri"
         ## @param global.identity.auth.console.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
         existingSecret: ""
         ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
@@ -454,7 +454,7 @@ global:
         bucket: "your-aws-bucket"
         ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
         # bucketPath: ""
-        ## @param global.documentStore.type.aws.bucketTtl [integer, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
+        ## @param global.documentStore.type.aws.bucketTtl [number, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
         # bucketTtl: 0
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"

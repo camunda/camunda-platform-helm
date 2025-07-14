@@ -748,7 +748,7 @@
                                             "nullable": true
                                         },
                                         "bucketTtl": {
-                                            "type": "",
+                                            "type": "number",
                                             "description": "(Optional) Time-to-live for documents in the S3 bucket (number in days).",
                                             "default": null,
                                             "nullable": true
