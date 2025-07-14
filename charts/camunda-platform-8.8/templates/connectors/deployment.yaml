@@ -178,7 +178,7 @@ spec:
       {{- if .Values.connectors.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.connectors.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      {{- with .Values.connectors.nodeSelector }}
+      {{- with .Values.connectors.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
