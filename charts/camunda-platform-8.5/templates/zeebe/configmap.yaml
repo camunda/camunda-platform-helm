@@ -77,6 +77,19 @@ data:
         threads:
           cpuThreadCount: {{ .Values.zeebe.cpuThreadCount  | quote }}
           ioThreadCount: {{ .Values.zeebe.ioThreadCount  | quote }}
+
+    {{- if and .Values.global.identity.auth.enabled .Values.zeebe.gateway.enabled }}
+    spring:
+      profiles:
+        active: "identity-auth"
+
+    camunda:
+      identity:
+        type: {{ include "camundaPlatform.authType" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        audience: {{ include "zeebe.authAudience" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
+    {{- end }}
   {{- end }}
   startup.sh: |
     #!/usr/bin/env bash
