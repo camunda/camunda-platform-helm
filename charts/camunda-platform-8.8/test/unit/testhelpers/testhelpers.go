@@ -23,6 +23,9 @@ type CaseTemplate struct {
 // TestCase represents a single test scenario for Helm chart testing.
 // It encapsulates all the necessary configuration and validation logic for a test.
 type TestCase struct {
+	// Ignores a test case
+	Skip bool
+
 	// Name is the descriptive name of the test case, used for identification in test output
 	Name string
 
@@ -83,6 +86,11 @@ func renderTemplateE(t *testing.T, chartPath, release string, namespace string, 
 
 func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
+		if tc.Skip {
+			t.Skip(tc.Name)
+			return
+		}
+
 		t.Run(tc.Name, func(t *testing.T) {
 			var caseTemplates []string
 			if tc.CaseTemplates != nil {

@@ -548,16 +548,24 @@ identity:
     username: demo
     ## @param identity.firstUser.password defines the password of the first user, needed to log in into the web applications
     password: demo
+    ## @param identity.firstUser.existingSecret can be used to use an own existing secret for Identity first user.
+    existingSecret: camunda-credentials
+    ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
+    existingSecretKey: identity-firstuser-password
+    ## @param identity.firstUser.secret can be used to use an own existing secret for Identity first user.
+    secret:
+      ## @param identity.firstUser.password defines the password of the first user, needed to log in into the web applications
+      password: demo
+      ## @param identity.firstUser.existingSecret can be used to use an own existing secret for Identity first user.
+      existingSecret: camunda-credentials
+      ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: identity-firstuser-password
     ## @param identity.firstUser.email defines the email address of the first user; a valid email address is required to use WebModeler
     email: demo@example.org
     ## @param identity.firstUser.firstName defines the first name of the first user; a name is required to use WebModeler
     firstName: Demo
     ## @param identity.firstUser.lastName defines the last name of the first user; a name is required to use WebModeler
     lastName: User
-    ## @param identity.firstUser.existingSecret can be used to use an own existing secret for Identity first user.
-    existingSecret: camunda-credentials
-    ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
-    existingSecretKey: identity-firstuser-password
 
   ## @param identity.users configuration to configure properties of the Identity users, which can be used to access web applications.
   users: []
