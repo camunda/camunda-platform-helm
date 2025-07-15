@@ -163,7 +163,7 @@ spec:
           {{- if .Values.core.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.core.contextPath }}{{ .Values.core.startupProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.startupProbe.probePath) }}
               scheme: {{ .Values.core.startupProbe.scheme }}
               port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.startupProbe.initialDelaySeconds }}
@@ -175,7 +175,7 @@ spec:
           {{- if .Values.core.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.core.contextPath }}{{ .Values.core.readinessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}
               scheme: {{ .Values.core.readinessProbe.scheme }}
               port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.readinessProbe.initialDelaySeconds }}
@@ -187,7 +187,7 @@ spec:
           {{- if .Values.core.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.core.contextPath }}{{ .Values.core.livenessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.livenessProbe.probePath) }}
               scheme: {{ .Values.core.livenessProbe.scheme }}
               port: {{ .Values.core.service.managementPort }}
             initialDelaySeconds: {{ .Values.core.livenessProbe.initialDelaySeconds }}
@@ -286,7 +286,7 @@ spec:
       {{- if .Values.core.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-{{- with .Values.core.nodeSelector }}
+{{- with .Values.core.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}

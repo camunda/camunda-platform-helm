@@ -5,12 +5,42 @@
 
 ## ToC
 
+- [Helm chart 13.0.0-alpha6](#helm-chart-1300-alpha6)
 - [Helm chart 13.0.0-alpha5](#helm-chart-1300-alpha5)
 - [Helm chart 13.0.0-alpha4.2](#helm-chart-1300-alpha42)
 - [Helm chart 13.0.0-alpha4.1](#helm-chart-1300-alpha41)
 - [Helm chart 13.0.0-alpha4](#helm-chart-1300-alpha4)
 - [Helm chart 13.0.0-alpha3](#helm-chart-1300-alpha3)
 - [Helm chart 13.0.0-alpha2](#helm-chart-1300-alpha2)
+
+## Helm chart 13.0.0-alpha6
+
+Supported versions:
+
+- Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
+- Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
+- Helm values: [13.0.0-alpha6](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6#parameters)
+- Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
+
+Camunda images:
+
+- docker.io/camunda/camunda:8.8.0-alpha6
+- docker.io/camunda/connectors-bundle:8.8.0-alpha6
+- docker.io/camunda/console:8.8.0-alpha6
+- docker.io/camunda/identity:8.8.0-alpha6
+- docker.io/camunda/keycloak:26.1.4
+- docker.io/camunda/optimize:8.8.0-alpha6
+- docker.io/camunda/web-modeler-restapi:8.8.0-alpha6
+- docker.io/camunda/web-modeler-webapp:8.8.0-alpha6
+- docker.io/camunda/web-modeler-websockets:8.8.0-alpha6
+
+Non-Camunda images:
+
+- docker.io/bitnami/elasticsearch:8.18.0
+- docker.io/bitnami/os-shell:12-debian-12-r43
+- docker.io/bitnami/postgresql:14.18.0-debian-12-r0
+- docker.io/bitnami/postgresql:15.10.0-debian-12-r2
+
 
 ## Helm chart 13.0.0-alpha5
 

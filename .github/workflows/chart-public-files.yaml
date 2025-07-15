@@ -31,6 +31,16 @@ jobs:
           path: main
       - name: Copy values files
         run: |
+          # Copy values files to the camunda-platform/values directory.
+          copy_chart_file() {
+            file_name="$1";
+            if [ -f ${chart_id}/${file_name} ]; then
+              cp -a ${chart_id}/${file_name} ${camunda_values_dir}/${file_name};
+              echo "Copied ${file_name} file for Camunda ${camunda_version} chart";
+            else
+              echo "No ${file_name} file for Camunda ${camunda_version} chart";
+            fi
+          }
           #
           # Legacy - Extra values for all chart versions.
           # This is considered legacy as the version is part of the file name which should not be the case.
@@ -48,16 +58,12 @@ jobs:
               camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
               camunda_values_dir="camunda-platform/values/camunda-${camunda_version}";
               mkdir -p "${camunda_values_dir}";
-
               # Latest values files.
               cp -a ${chart_id}/values-latest.yaml ${camunda_values_dir}/values-latest.yaml;
               # Local values files.
-              if [ -f ${chart_id}/values-local.yaml ]; then
-                cp -a ${chart_id}/values-local.yaml ${camunda_values_dir}/values-local.yaml;
-                echo "Copied values-local.yaml file for Camunda ${camunda_version} chart";
-              else
-                echo "No values-local.yaml file for Camunda ${camunda_version} chart";
-              fi
+              copy_chart_file values-local.yaml
+              # Enterprise values files.
+              copy_chart_file values-enterprise.yaml
           done
       - name: Copy version matrix files
         run: |
