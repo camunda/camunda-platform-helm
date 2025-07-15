@@ -20,11 +20,40 @@ on:
         type: choice
         options:
           - none
+          - "all"
           - "8.4"
           - "8.5"
           - "8.6"
           - "8.7"
           - "8.8"
+      run-all-e2e-tests:
+        description: "Run all E2E tests (playwright)"
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: The deployment cloud platform
+        default: "gke"
+        required: false
+        type: choice
+        options:
+          - gke
+          - eks
+          - rosa
+          - gke,eks
+      flows:
+        description: The flows to run
+        default: "install"
+        required: false
+        type: choice
+        options:
+          - install
+          - upgrade
+          - install,upgrade
+      e2e-enabled:
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -64,9 +93,9 @@ jobs:
         run: |
           printf matrix="$(echo '${{ needs.init.outputs.matrix }}' | jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
 
-  unit:
+  unit-testing:
     if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
-    name: Camunda ${{ matrix.version }} - Unit Test
+    name: ${{ matrix.version }} - Unit Test
     needs: [init, matrix-version-only]
     strategy:
       fail-fast: false
@@ -80,7 +109,7 @@ jobs:
 
   validation:
     if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
-    name: Camunda ${{ matrix.version }} - Validation
+    name: ${{ matrix.version }} - Validation
     needs: [init, matrix-version-only]
     strategy:
       fail-fast: false
@@ -92,7 +121,7 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  local:
+  kind-testing:
     if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
     name: Local cluster - KIND ${{ matrix.version }}
     needs: [init, matrix-version-only, validation]
@@ -109,19 +138,23 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  test:
-    if: ${{ needs.init.outputs.matrix != '[]' }}
-    name: Camunda ${{ matrix.version }}
-    needs: [init, validation]
+  integation-tests:
+    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
+    needs: [init, matrix-version-only, validation]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
-      pr-number: "${{ github.event.pull_request.number }}" # Required as there is a github bug that prevent the concurrency group on the sub workflow getting the pull_request number from the github event
-      camunda-version: "${{ matrix.version }}"
+      pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
+      camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
       scenario: ${{ matrix.scenario }}
+      shortname: ${{ matrix.shortname }}
       auth: ${{ matrix.auth }}
+      platforms: ${{ inputs.platforms || 'gke' }}
       exclude: ${{ matrix.exclude }}
+      e2e-enabled: ${{ inputs.e2e-enabled || true }}
+      run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
+      flows: ${{ inputs.flows || 'install,upgrade' }}

@@ -44,6 +44,8 @@ jobs:
           buildx-enabled: "false"
           java-enabled: "false"
           python-enabled: "false"
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential gawk
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -53,6 +55,13 @@ jobs:
             kubectl
             make
             task
+      - name: Debug failed asdf
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          path: /home/runner/.asdf/downloads/make/4.3
+          name: install.log
+          if-no-files-found: error
       - name: Create KIND cluster
         run: |
           kind create cluster --name camunda-platform-local

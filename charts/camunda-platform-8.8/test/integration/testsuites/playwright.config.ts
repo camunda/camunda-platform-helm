@@ -1,10 +1,20 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './tests',
-  defaultTimeout: 30000,
+  testDir: "./tests",
+  projects: [
+    {
+      name: "full-suite",
+      testMatch: ["**/*.spec.{ts,js}"],
+    },
+  ],
   fullyParallel: true,
   retries: 0,
-  reporter: [['html', { open: 'never' }], ['list'], ['junit', { outputFile: 'test-results/results.xml' }]],
-  use: { baseURL: 'https://camunda.local', trace: 'on-first-retry' },
-})
+  workers: process.env.CI == "true" ? 1 : "25%",
+  reporter: [
+    ["html", { open: "never" }],
+    ["list"],
+    ["junit", { outputFile: "test-results/results.xml" }],
+  ],
+  use: { baseURL: "https://camunda.local", trace: "on-first-retry" },
+});

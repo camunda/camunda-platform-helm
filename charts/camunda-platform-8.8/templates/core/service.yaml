@@ -17,9 +17,6 @@ spec:
   publishNotReadyAddresses: true
   type: {{ .Values.core.service.type }}
   ports:
-    - port: {{ .Values.core.service.httpPort }}
-      protocol: TCP
-      name: {{ default "http" .Values.core.service.httpName  }}
     - port: {{ .Values.core.service.internalPort }}
       protocol: TCP
       name: {{ default "internal" .Values.core.service.internalName  }}
@@ -29,9 +26,6 @@ spec:
     - port: {{ .Values.core.service.managementPort }}
       protocol: TCP
       name: {{ default "management" .Values.core.service.managementName }}
-    - port: {{ .Values.core.service.grpcPort }}
-      protocol: TCP
-      name: {{ default "grpc-api" .Values.core.service.grpcName }}
     {{- if .Values.core.service.extraPorts}}
     {{ .Values.core.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}

@@ -14,7 +14,7 @@ dotenv:
 includes:
   init.seed:
     taskfile: ../lib/init-seed-taskfile.yaml
-    internal: true
+    internal: false
   upgrade:
     taskfile: ../lib/chart-upgrade-taskfile.yaml
     internal: true
@@ -40,26 +40,16 @@ includes:
 
 tasks:
   setup.pre:
-    preconditions:
-    - test -n "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
-    - test -n "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
-    - test -n "${TEST_INGRESS_HOST}"
     env:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
-    # This is needed to access WebModeler Docker image since it's not public.
-    - kubectl create secret docker-registry registry-camunda-cloud
-        --namespace {{ .TEST_NAMESPACE }}
-        --docker-server "registry.camunda.cloud"
-        --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
-        --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
     # Set Venom vars.
     - |
       echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-base.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ env "INFRA_TYPE_VALUES" }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_SCENARIO" = "base" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ env "INFRA_TYPE_VALUES" }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_SCENARIO" = "elasticsearch" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
       echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
       # In case the Zeebe version has not been released officially yet.
@@ -86,9 +76,86 @@ tasks:
       }
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
       bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install/*.sh
+    - |
+      if [[ "${TEST_AUTH_TYPE}" == 'oidc' ]]; then
+        # This token will expire in June 2027, a new one can be created in the Azure Entra UI
+        RESPONSE=$(curl -X POST \
+          https://login.microsoftonline.com/${ENTRA_PARENT_APP_DIRECTORY_ID}/oauth2/v2.0/token \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
+          -d "scope=https://graph.microsoft.com/.default" \
+          -d "client_secret=${ENTRA_PARENT_APP_CLIENT_SECRET}" \
+          -d "grant_type=client_credentials")
+
+        BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
+        # There is no way to append URIs from a single curl request so we have to first GET, append, deduplicate, then curl with the updated list.
+        NEW_WEB_URIS=(
+          "https://{{ .TEST_INGRESS_HOST }}"
+          "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback"
+          "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/core/sso-callback"
+        )
+        NEW_SPA_URIS=(
+          "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/"
+        )
+
+        APP_JSON=$(curl -s -X GET \
+          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json")
+
+        WEB_URIS=$(echo "$APP_JSON" | jq -r '.web.redirectUris[]?')
+        SPA_URIS=$(echo "$APP_JSON" | jq -r '.spa.redirectUris[]?')
+
+        ALL_WEB_URIS=("${WEB_URIS[@]}" "${NEW_WEB_URIS[@]}")
+        ALL_SPA_URIS=("${SPA_URIS[@]}" "${NEW_SPA_URIS[@]}")
+
+        # Deduplicate using sort/uniq
+        FINAL_WEB_URIS=$(printf "%s\n" "${ALL_WEB_URIS[@]}" | sort -u | jq -R . | jq -s .)
+        FINAL_SPA_URIS=$(printf "%s\n" "${ALL_SPA_URIS[@]}" | sort -u | jq -R . | jq -s .)
+
+        # print out the final URIs
+        echo "web URIs:"
+        echo $FINAL_WEB_URIS
+        echo "SPA URIs:"
+        echo $FINAL_SPA_URIS
+
+        # PATCH the updated list
+        curl -X PATCH \
+          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"web\": { \"redirectUris\": $FINAL_WEB_URIS },
+            \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
+          }"
+
+      fi
+
+  setup.venom.env:
+    preconditions:
+      - test -n "${TEST_INGRESS_HOST}"
+    env:
+      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
+    cmds:
+      - |
+        echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq '.elasticsearch.enabled // false | not' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
+        echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
+        echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
+        # In case the Zeebe version has not been released officially yet.
+        echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
+        cat ${VARIABLES_ENV_FILE}
 
   setup.exec:
-    deps: [init.seed]
+    env:
+      TEST_AUTH_TYPE: "{{ .TEST_AUTH_TYPE }}"
+      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
       if [[ "${TEST_SCENARIO}" == 'opensearch' ]]; then
@@ -97,6 +164,11 @@ tasks:
     - |
       #elif does not work properly in Taskfile. This is why the if statements are separated
       if [[ "${TEST_AUTH_TYPE}" == "oidc" ]]; then
+        sed -i 's/<clientId>/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        sed -i 's/<clientSecret>/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        sed -i 's/<directoryId>/{{ .ENTRA_CHILD_APP_DIRECTORY_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        # sed -i 's/<objectId>/{{ .ENTRA_CHILD_APP_OBJECT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
         helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \

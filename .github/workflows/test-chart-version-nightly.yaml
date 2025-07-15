@@ -5,9 +5,12 @@ on:
   schedule:
     # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
     - cron: "0 4 * * *"
+  push:
+    branches:
+    - "feature/ee-images-prem"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -44,3 +47,4 @@ jobs:
       scenario: ${{ matrix.scenario }}
       auth: ${{ matrix.auth }}
       exclude: ${{ matrix.exclude }}
+      enterprise: ${{ matrix.enterprise }}
