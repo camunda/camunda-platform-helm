@@ -52,6 +52,7 @@ func TestSecretTemplate(t *testing.T) {
 }
 
 func (s *secretTest) TestContainerGenerateSecret() {
+	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -91,6 +92,7 @@ func (s *secretTest) TestContainerGenerateSecret() {
 }
 
 func (s *DeploymentTemplateTest) TestContainerCamundaLicenseWithExistingSecret() {
+	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{

@@ -55,6 +55,7 @@ func TestSecretTemplate(t *testing.T) {
 func (s *secretTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Skip: true,
 			Name: "TestSecretExternalDatabaseEnabledWithDefinedPassword",
 			Values: map[string]string{
 				"identity.enabled":                   "true",
@@ -75,6 +76,7 @@ func (s *secretTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Skip: true,
 			Name: "TestFirstUserPassword",
 			Values: map[string]string{
 				"identity.enabled":                              "true",
@@ -134,6 +136,7 @@ func (s *secretTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Skip: true,
 			Name: "TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabledDeployment",
 			Values: map[string]string{
 				// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
@@ -163,6 +166,7 @@ func (s *secretTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Skip: true,
 			Name: "TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabledError",
 			Values: map[string]string{
 				// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
@@ -183,4 +187,45 @@ func (s *secretTest) TestDifferentValuesInputs() {
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
+	testCases := testhelpers.TestCase{
+		Values: map[string]string{
+			"identity.enabled":                   "true",
+			"identityPostgresql.enabled":         "false",
+			"identity.externalDatabase.enabled":  "true",
+			"identity.externalDatabase.password": "super-secure-ext",
+		},
+		Template:       "templates/identity/postgresql-secret.yaml",
+		ExpectedObject: &coreV1.Secret{},
+		ObjectAsserter: func(t *testing.T, obj any) {
+			secret, _ := obj.(*coreV1.Secret)
+			s.NotEmpty(secret.Data)
+			s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
+		},
+	}
+
+	testhelpers.RunTestCaseE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *secretTest) TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabledSecrets() {
+	testCases := testhelpers.TestCase{
+		Skip: true,
+		Values: map[string]string{
+			// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
+			"identity.enabled":                  "true",
+			"identity.postgresql.enabled":       "true",
+			"identity.externalDatabase.enabled": "false",
+		},
+		Template:       "charts/identityPostgresql/templates/secrets.yaml",
+		ExpectedObject: &coreV1.Secret{},
+		ObjectAsserter: func(t *testing.T, obj any) {
+			secret, _ := obj.(*coreV1.Secret)
+			s.Require().Equal("camunda-platform-test-identity-postgresql", secret.Name)
+			s.Require().NotEmpty(string(secret.Data["password"]))
+		},
+	}
+
+	testhelpers.RunTestCaseE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

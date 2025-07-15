@@ -42,6 +42,10 @@ type TestCase struct {
 	// templates set in the test suite
 	CaseTemplates *CaseTemplate
 
+	// When provided, this function is called to get the templates to render. This overrides the
+	// templates set in the test suite
+	Template string
+
 	// Values represents the Helm chart values to set for this test case
 	// These are equivalent to values passed with --set flag in Helm CLI
 	Values map[string]string
@@ -55,6 +59,10 @@ type TestCase struct {
 	// When provided, it overrides the default validation logic
 	// It receives the rendered output and any error that occurred during rendering
 	Verifier func(t *testing.T, output string, err error)
+
+	ExpectedObject any
+
+	ObjectAsserter func(t *testing.T, obj any)
 }
 
 // quietLogger returns a logger that only logs errors
@@ -86,25 +94,41 @@ func renderTemplateE(t *testing.T, chartPath, release string, namespace string, 
 
 func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
-		if tc.Skip {
-			t.Skip(tc.Name)
-			return
-		}
-
 		t.Run(tc.Name, func(t *testing.T) {
-			var caseTemplates []string
-			if tc.CaseTemplates != nil {
-				caseTemplates = tc.CaseTemplates.Templates
-			} else {
-				caseTemplates = templates
-			}
-			output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
-			if tc.Verifier != nil {
-				tc.Verifier(t, output, err)
-			} else {
-				require.ErrorContains(t, err, tc.Expected["ERROR"])
-			}
+			RunTestCaseE(t, chartPath, release, namespace, templates, tc)
 		})
+	}
+}
+
+func RunTestCaseE(t *testing.T, chartPath, release, namespace string, templates []string, tc TestCase) {
+	if tc.Skip {
+		t.Skip(tc.Name)
+	}
+	var caseTemplates []string
+	if tc.Template != "" {
+		caseTemplates = []string{tc.Template}
+	} else if tc.CaseTemplates != nil {
+		caseTemplates = tc.CaseTemplates.Templates
+	} else {
+		caseTemplates = templates
+	}
+	output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
+	if tc.Verifier != nil {
+		tc.Verifier(t, output, err)
+		return
+	}
+
+	if expectedErr, ok := tc.Expected["ERROR"]; ok {
+		require.ErrorContains(t, err, expectedErr)
+	} else if err != nil {
+		t.Fatalf("Unexpected error during rendering: %v", err)
+	}
+
+	if tc.ExpectedObject != nil && err == nil {
+		helm.UnmarshalK8SYaml(t, output, tc.ExpectedObject)
+		if tc.ObjectAsserter != nil {
+			tc.ObjectAsserter(t, tc.ExpectedObject)
+		}
 	}
 }
 

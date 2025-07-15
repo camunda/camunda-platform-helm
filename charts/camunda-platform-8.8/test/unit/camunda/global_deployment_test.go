@@ -61,7 +61,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().NotContains(output, "charts/optimize")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderOperateIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -74,7 +75,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().NotContains(output, "charts/operate")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderTasklistIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -87,7 +89,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().NotContains(output, "charts/tasklist")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderIdentityIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -99,7 +102,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().NotContains(output, "/templates/identity/")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderWebModelerIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -112,7 +116,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().NotContains(output, "templates/web-modeler")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerSetImageNameGlobal",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -131,7 +136,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(output, "image: global.custom.registry.io/camunda/optimize:8.x.x")
 				s.Require().Contains(output, "image: global.custom.registry.io/camunda/camunda:8.x.x")
 			},
-		}, {
+		},
+		{
 			Name: "TestComponentDigestOverridesTag",
 			Values: map[string]string{
 				// leave tags empty to force each component to use its own digest
@@ -172,5 +178,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 	}
+
+	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

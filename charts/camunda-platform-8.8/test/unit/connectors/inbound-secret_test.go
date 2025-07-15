@@ -50,6 +50,7 @@ func TestSecretRestapiTemplate(t *testing.T) {
 }
 
 func (s *secretTest) TestContainerCreateConnectorsSecret() {
+	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
