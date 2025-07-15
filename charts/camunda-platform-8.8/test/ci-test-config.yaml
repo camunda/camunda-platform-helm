@@ -33,6 +33,7 @@ integration:
           exclude: [identity,console,core-grpc]
         - name: opensearch
           enabled: true
+          shortname: osba
           exclude: [identity,console,core-grpc]
           auth: basic
     nightly:
@@ -67,6 +68,7 @@ integration:
           auth: keycloak
         - name: opensearch
           enabled: true
+          shortname: osba
           exclude: [identity,console,core-grpc]
           auth: basic
         - name: elasticsearch
