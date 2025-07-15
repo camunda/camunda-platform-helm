@@ -476,6 +476,18 @@
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
     },
     {
+      // This is used to update npm packages in GitHub Actions workflows.
+      customType: 'regex',
+      fileMatch: [
+        '^\\.github/workflows/.*\\.ya?ml$',
+      ],
+      datasourceTemplate: 'npm',
+      matchStrings: [
+        '# renovate: datasource=npm depName=(?<depName>[^\\s]+?)\\s*\\n\\s*npm install -g [^\\s]+?@(?<currentValue>\\S+)',
+      ],
+      versioningTemplate: 'semver',
+    },
+    {
       // This is mainly used to update enterprise image tags like Console and Web-Modeler.
       // Console and Web-Modeler Self-Managed versions are different from SaaS versions,
       // hence, we use image tags from Camunda private registry as a source of truth for those components.
