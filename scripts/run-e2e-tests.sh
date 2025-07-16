@@ -33,6 +33,7 @@ setup_env_file() {
   local hostname="$3"
   local namespace="$4"
   local is_ci="$5"
+  local is_opensearch="$6"
 
   export TEST_INGRESS_HOST="$hostname"
   envsubst <"$test_suite_path"/.env.template >"$env_file"
@@ -46,10 +47,12 @@ setup_env_file() {
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
     echo "CLUSTER_VERSION=8"
     echo "MINOR_VERSION=SM-8.7"
-    echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" get secret integration-test-credentials -o jsonpath='{.data.identity-user-password}' | base64 -d)"
-    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" get secret integration-test-credentials -o jsonpath='{.data.identity-keycloak-admin-password}' | base64 -d)"
+    identity_pod_name=$(kubectl -n "$namespace" get pods --no-headers -o custom-columns=':metadata.name' | grep identity | head -n 1)
+    echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_USERS_0_PASSWORD)"
+    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_SETUP_PASSWORD)"
     echo "CI=${is_ci}"
     echo "CLUSTER_NAME=integration"
+    echo "IS_OPENSEARCH=${is_opensearch}"
   } >>"$env_file"
 
   if $VERBOSE; then
@@ -92,6 +95,7 @@ SHARD_TOTAL=1
 TEST_EXCLUDE=""
 IS_CI=true
 RUN_SMOKE_TESTS=false
+IS_OPENSEARCH=false
 
 check_required_cmds
 
@@ -130,6 +134,10 @@ while [[ $# -gt 0 ]]; do
     RUN_SMOKE_TESTS=true
     shift
     ;;
+  --opensearch)
+    IS_OPENSEARCH=true
+    shift
+    ;;
   -v | --verbose)
     VERBOSE=true
     shift
@@ -151,7 +159,10 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 
 hostname=$(get_ingress_hostname "$NAMESPACE")
-setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI"
+if [ "$IS_OPENSEARCH" == "true" ]; then
+  log "IS_OPENSEARCH is set to true"
+fi
+setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
