@@ -1,0 +1,72 @@
+{{- if .Values.identity.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "identityMigration.fullname" . }}
+  labels: {{- include "identityMigration.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "identityMigration.labels" . | nindent 8 }}
+    spec:
+      imagePullSecrets: {{- include "core.imagePullSecrets" . | nindent 8 }}
+      # TODO: Add an initContainer to wait for the core pod to start. No need to wait for the management identity because the core relies on management identity.
+      containers:
+        - name: camunda-migration
+          # TODO: CHANGE TO A SPECIFIC VERSION
+          image: camunda/camunda:SNAPSHOT
+          # image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
+          imagePullPolicy: Always
+          # imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.core.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          # env:
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_MODE
+          #     value: KEYCLOAK
+          #   # cluster config
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_CLUSTERNAME
+          #     value: camunda-zeebe
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_INITIALCONTACTPOINTS
+          #     value: camunda-zeebe-0.camunda-core:26502,camunda-zeebe-1.camunda-core:26502,camunda-zeebe-2.camunda-core:26502
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_CLUSTERSIZE
+          #     value: "1"
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_PARTITIONSCOUNT
+          #     value: "1"
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_REPLICATIONFACTOR
+          #     value: "1"
+          #   # management identity access
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_AUDIENCE
+          #     value: camunda-identity-resource-server
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_BASEURL
+          #     value: https://hamzatest.ci.distro.ultrawombat.com/identity
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_CLIENTID
+          #     value: camunda-identity
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_CLIENTSECRET
+          #     value: NMEPWF4hlTAUkzcoZB1oSfLGwKw59Iz3
+          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_ISSUERBACKENDURL
+          #     value: http://camunda-keycloak:80/auth/realms/camunda-platform
+          command:
+            - /usr/local/camunda/bin/identity-migration
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 500m
+              memory: 500Mi
+          {{- if .Values.core.podSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/camunda/config/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: config
+      configMap:
+        name: identity-migration-configuration
+      restartPolicy: OnFailure
+{{- end }}
