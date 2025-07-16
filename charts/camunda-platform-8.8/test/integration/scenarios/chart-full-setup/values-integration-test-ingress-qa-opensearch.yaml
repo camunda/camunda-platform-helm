@@ -1,0 +1,330 @@
+global:
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
+  elasticsearch:
+    enabled: false
+  opensearch:
+    enabled: true
+    auth:
+      username: "$OPENSEARCH_USERNAME"
+      password: "$OPENSEARCH_PASSWORD"
+    url:
+      protocol: https
+      host: "$AWS_HOST_URL"
+      port: 443
+  security:
+    authentication:
+      method: oidc
+elasticsearch:
+  enabled: false
+core:
+  image:
+    tag: "$E2E_TESTS_CORE_IMAGE_TAG"
+  env:
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_MAPPINGID
+      value: "demo-user-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_MAPPINGID
+      value: "venom-client-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_CLAIMVALUE
+      value: "venom"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_MAPPINGID
+      value: "connectors-client-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_CLAIMVALUE
+      value: "connectors"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_0
+      value: "demo-user-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_1
+      value: "venom-client-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_2
+      value: "connectors-client-mapping"
+    - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
+    - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
+    - name: CAMUNDA_DATABASE_INDEXPREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+    - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+    - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+identityKeycloak:
+  enabled: true
+optimize:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+  env: 
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
+  migration:
+    env:
+      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+        value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+        value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
+webModelerPostgresql:
+  enabled: true
+webModeler:
+  enabled: true
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+console:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: "$TEST_NAMESPACE"
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: 'true'
+identity:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  firstUser:
+    existingSecret: null
+    user: demo
+    password: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+  # Keycloak client seed which is used to query Camunda APIs. 
+  env:
+    # TODO: Remove the KEYCLOAK_USERS env vars in favor of relying on the default configmap values
+    - name: KEYCLOAK_USERS_0_USERNAME
+      value: 'demo'
+    - name: KEYCLOAK_USERS_0_EMAIL
+      value: 'demo@example.com'
+    - name: KEYCLOAK_USERS_0_FIRSTNAME
+      value: 'Demo'
+    - name: KEYCLOAK_USERS_0_LASTNAME
+      value: 'User'
+    - name: KEYCLOAK_USERS_0_PASSWORD
+      value: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+    - name: KEYCLOAK_USERS_0_ROLES_0
+      value: Identity
+    - name: KEYCLOAK_USERS_0_ROLES_1
+      value: Optimize
+    - name: KEYCLOAK_USERS_0_ROLES_2
+      value: Web Modeler
+    - name: KEYCLOAK_USERS_0_ROLES_3
+      value: Web Modeler Admin
+    - name: KEYCLOAK_USERS_0_ROLES_4
+      value: Console
+    - name: KEYCLOAK_USERS_0_ROLES_5
+      value: Core
+    - name: KEYCLOAK_CLIENTS_2_ID
+      value: venom
+    - name: KEYCLOAK_CLIENTS_2_NAME
+      value: Venom
+    - name: KEYCLOAK_CLIENTS_2_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: identity-admin-client-password
+    - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
+      value: /dummy
+    - name: KEYCLOAK_CLIENTS_2_ROOT_URL
+      value: http://dummy
+    - name: KEYCLOAK_CLIENTS_2_TYPE
+      value: CONFIDENTIAL
+    # Identity access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION
+      value: read
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_DEFINITION
+      value: write
+    - name: KEYCLOAK_USERS_1_FIRST_NAME
+      value: Lisa
+    - name: KEYCLOAK_USERS_1_LAST_NAME
+      value: Doe
+    - name: KEYCLOAK_USERS_1_EMAIL
+      value: cawemodev+lisa@gmail.com
+    - name: KEYCLOAK_USERS_1_USERNAME
+      value: lisa
+    - name: KEYCLOAK_USERS_1_PASSWORD
+      value: $DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+    - name: KEYCLOAK_USERS_1_ROLES_0
+      value: Identity
+    - name: KEYCLOAK_USERS_1_ROLES_1
+      value: Optimize
+    - name: KEYCLOAK_USERS_1_ROLES_2
+      value: Web Modeler
+    - name: KEYCLOAK_USERS_1_ROLES_3
+      value: Web Modeler Admin
+    - name: KEYCLOAK_USERS_1_ROLES_4
+      value: Console
+    - name: KEYCLOAK_USERS_1_ROLES_5
+      value: Core
+    - name: KEYCLOAK_USERS_2_FIRST_NAME
+      value: Bart
+    - name: KEYCLOAK_USERS_2_LAST_NAME
+      value: Foo
+    - name: KEYCLOAK_USERS_2_EMAIL
+      value: cawemodev+bart@gmail.com
+    - name: KEYCLOAK_USERS_2_USERNAME
+      value: bart
+    - name: KEYCLOAK_USERS_2_PASSWORD
+      value: $DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+    - name: KEYCLOAK_USERS_2_ROLES_0
+      value: Identity
+    - name: KEYCLOAK_USERS_2_ROLES_1
+      value: Optimize
+    - name: KEYCLOAK_USERS_2_ROLES_2
+      value: Web Modeler
+    - name: KEYCLOAK_USERS_2_ROLES_3
+      value: Web Modeler Admin
+    - name: KEYCLOAK_USERS_2_ROLES_4
+      value: Console
+    - name: KEYCLOAK_USERS_2_ROLES_5
+      value: Core
+    # # Core access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
+      value: core-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
+      value: core-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
+      value: "write:*"
+    # # Tasklist access.
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
+    #   value: tasklist-api
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
+    #   value: "read:*"
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
+    #   value: tasklist-api
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
+    #   value: "write:*"
+    # Optimize access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
+      value: optimize-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
+      value: "write:*"
+    # # Zeebe access.
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_RESOURCE_SERVER_ID
+    #   value: zeebe-api
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_DEFINITION
+    #   value: "write:*"
+    # WebModeler access.
+    # NOTE: This actually should be only in the chart-with-web-modeler scenarios,
+    # but since Helm doesn't support merge lists it's added here.
+    # It could be removed later when the env vars could be configured via ConfigMap.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
+      value: web-modeler-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
+      value: "write:*"
+    # Console access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_RESOURCE_SERVER_ID
+      value: console-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
+      value: "write:*"
+    - name: KEYCLOAK_CLIENTS_3_ID
+      value: test
+    - name: KEYCLOAK_CLIENTS_3_NAME
+      value: Test
+    - name: KEYCLOAK_CLIENTS_3_SECRET
+      value: $DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
+    - name: KEYCLOAK_CLIENTS_3_REDIRECT_URIS_0
+      value: /dummy
+    - name: KEYCLOAK_CLIENTS_3_ROOT_URL
+      value: http://dummy
+    - name: KEYCLOAK_CLIENTS_3_TYPE
+      value: CONFIDENTIAL
+    # Identity access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_DEFINITION
+      value: read
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_DEFINITION
+      value: write
+    # Core access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_RESOURCE_SERVER_ID
+      value: core-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_RESOURCE_SERVER_ID
+      value: core-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_DEFINITION
+      value: "write:*"
+    # # Tasklist access.
+    # - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_RESOURCE_SERVER_ID
+    #   value: tasklist-api
+    # - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_DEFINITION
+    #   value: "read:*"
+    # - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_RESOURCE_SERVER_ID
+    #   value: tasklist-api
+    # - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_DEFINITION
+    #   value: "write:*"
+    # Optimize access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_RESOURCE_SERVER_ID
+      value: optimize-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_DEFINITION
+      value: "write:*"
+    # # Zeebe access.
+    # - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_RESOURCE_SERVER_ID
+    #   value: zeebe-api
+    # - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_DEFINITION
+    #   value: "write:*"
+    # WebModeler access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_RESOURCE_SERVER_ID
+      value: web-modeler-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_DEFINITION
+      value: "write:*"
+    # Console access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_RESOURCE_SERVER_ID
+      value: console-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_DEFINITION
+      value: "write:*"
+connectors:
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
