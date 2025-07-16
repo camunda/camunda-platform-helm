@@ -23,7 +23,6 @@ Define common labels for identity migration app, combining the match labels and 
 */}}
 {{- define "identityMigration.labels" -}}
 {{- template "camundaPlatform.labels" . }}
-{{ template "identityMigration.extraLabels" . }}
 {{- end -}}
 
 {{/*

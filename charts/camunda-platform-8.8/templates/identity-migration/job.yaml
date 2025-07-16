@@ -11,6 +11,7 @@ spec:
       labels:
         {{- include "identityMigration.labels" . | nindent 8 }}
     spec:
+      restartPolicy: OnFailure
       imagePullSecrets: {{- include "core.imagePullSecrets" . | nindent 8 }}
       # TODO: Add an initContainer to wait for the core pod to start. No need to wait for the management identity because the core relies on management identity.
       containers:
@@ -66,7 +67,6 @@ spec:
               subPath: application.yaml
       volumes:
         - name: config
-      configMap:
-        name: identity-migration-configuration
-      restartPolicy: OnFailure
+          configMap:
+            name: identity-migration-configuration
 {{- end }}
