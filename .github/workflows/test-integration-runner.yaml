@@ -48,7 +48,7 @@ on:
       deployment-ttl:
         description: Define a TTL for the lifespan of the deployment.
         required: false
-        default: ""
+        default: "12h"
         type: string
       distro-platform:
         default: gke
@@ -318,8 +318,8 @@ jobs:
           kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=30m
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=30m
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl }}
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl }}
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
