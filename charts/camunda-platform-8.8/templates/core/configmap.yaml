@@ -240,6 +240,7 @@ data:
           {{- end }}
         multiTenancy:
             checksEnabled: {{ .Values.global.multitenancy.checksEnabled }}
+            apiEnabled: {{ .Values.global.multitenancy.apiEnabled }}
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:
