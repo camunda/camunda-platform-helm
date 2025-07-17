@@ -81,8 +81,8 @@ global:
   ## Multitenancy configuration.
   ## @extra global.multitenancy
   multitenancy:
-    ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
-    enabled: false
+    ## @param global.multitenancy.checksEnabled if true, then enable multitenancy checks in all applicable components.
+    checksEnabled: false
 
   ## Security configuration
   ## @extra global.security
