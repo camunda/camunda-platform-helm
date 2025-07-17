@@ -68,10 +68,15 @@
                 "multitenancy": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
+                        "checksEnabled": {
                             "type": "boolean",
-                            "description": "if true, then enable multitenancy in all applicable components.",
+                            "description": "if true, then enable multitenancy checks in all applicable components.",
                             "default": false
+                        },
+                        "apiEnabled": {
+                            "type": "boolean",
+                            "description": "if true, then enable multitenancy API used for tenant management.",
+                            "default": true
                         }
                     }
                 },
