@@ -96,7 +96,7 @@ global:
         ## @param global.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
         ## @param global.security.authentication.oidc.groupsClaim group claim.
-        groupsClaim:
+        #groupsClaim:
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
