@@ -1,0 +1,139 @@
+global:
+  multitenancy:
+    enabled: true
+    
+  ingress:
+    enabled: true
+    host: "localhost"
+  
+  identity:
+    auth:
+      enabled: true
+      type: "KEYCLOAK"
+      publicIssuerUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform"
+      issuerBackendUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform"
+      tokenUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+      jwksUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+      
+      core:
+        clientId: "core"
+        audience: "core-api"
+        redirectUrl: "http://camunda-multitenancy-core-gateway/operate"
+        existingSecret: "integration-test-credentials"
+        
+      console:
+        clientId: "console"
+        audience: "console-api"
+        redirectUrl: "http://camunda-multitenancy-console"
+        existingSecret: "integration-test-credentials"
+        
+      connectors:
+        clientId: "connectors"
+        existingSecret: "integration-test-credentials"
+        
+      optimize:
+        clientId: "optimize"
+        audience: "optimize-api"
+        redirectUrl: "http://camunda-multitenancy-optimize"
+        
+      webModeler:
+        clientId: "web-modeler"
+        clientApiAudience: "web-modeler-api"
+        publicApiAudience: "web-modeler-public-api"
+        redirectUrl: "http://camunda-multitenancy-web-modeler-webapp"
+        
+      identity:
+        clientId: "camunda-identity"
+        audience: "camunda-identity-resource-server"
+        redirectUrl: "http://camunda-multitenancy-identity"
+        
+    keycloak:
+      internal: true
+      url:
+        protocol: "http"
+        host: "camunda-multitenancy-keycloak"
+        port: 80
+      contextPath: "/auth"
+      realm: "camunda-platform"
+      
+  security:
+    authentication:
+      method: "oidc"
+      oidc:
+        usernameClaim: "preferred_username"
+      unprotectedApi: false
+    
+    authorizations:
+      enabled: true
+      
+    initialization:
+      mappings:
+        - mappingID: "admin-mapping"
+          claimName: "group"
+          claimValue: "admin"
+        - mappingID: "tenant-a-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-a"
+        - mappingID: "tenant-b-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-b"
+  
+  elasticsearch:
+    enabled: true
+    external: false
+    url:
+      protocol: "http"
+      host: "camunda-multitenancy-elasticsearch"
+      port: 9200
+    clusterName: "elasticsearch"
+    prefix: "camunda-record"
+    
+identity:
+  enabled: true
+  firstUser:
+    enabled: true
+    existingSecret: "integration-test-credentials"
+    
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    
+identityKeycloak:
+  enabled: true
+  nameOverride: "keycloak"
+  
+  auth:
+    existingSecret: "integration-test-credentials"
+    
+  postgresql:
+    enabled: true
+    auth:
+      existingSecret: "integration-test-credentials"
+            
+core:
+  enabled: true
+  
+elasticsearch:
+  enabled: true
+  
+console:
+  enabled: true
+  
+connectors:
+  enabled: true
+  
+optimize:
+  enabled: true
+  
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  restapi:
+    mail:
+      fromAddress: "noreply@example.com"
+  
+webModelerPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"

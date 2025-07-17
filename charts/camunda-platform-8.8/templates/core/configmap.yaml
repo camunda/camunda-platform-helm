@@ -245,6 +245,11 @@ data:
       identity:
         clientId: {{ include "core.authClientId" . | quote }}
         audience: {{ include "core.authAudience" . | quote }}
+        {{- if .Values.global.multitenancy.enabled }}
+        type: {{ include "camundaPlatform.authType" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
+        {{- end }}
       {{- end }}
 
       #

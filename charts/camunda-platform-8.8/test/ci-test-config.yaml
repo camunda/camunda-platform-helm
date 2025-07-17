@@ -31,6 +31,11 @@ integration:
           shortname: esba
           auth: basic
           exclude: [identity,console,core-grpc]
+        - name: multitenancy
+          enabled: true
+          shortname: mtke
+          exclude: []
+          auth: keycloak
     nightly:
       scenario:
         - name: elasticsearch
