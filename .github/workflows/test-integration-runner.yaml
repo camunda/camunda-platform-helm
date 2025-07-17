@@ -235,7 +235,7 @@ jobs:
       # and populate environment variables from Vault
       - name: CI Setup - Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         if: inputs.vault-secret-mapping != ''
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -246,7 +246,7 @@ jobs:
           exportEnv: true
       - name: Import Vault secrets
         id: test-credentials-secret
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -580,7 +580,7 @@ jobs:
       
       - name: Cache - node_modules
         id: cache-node
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
           key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -589,7 +589,7 @@ jobs:
   
       - name: Cache - Playwright
         id: cache-playwright
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -602,7 +602,7 @@ jobs:
           ./run-integration-tests.sh --absolute-chart-path ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{ needs.ci-setup.outputs.TEST_NAMESPACE }}
 
       - name: Test - Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           path: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
           name: playwright-report-${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
@@ -666,7 +666,7 @@ jobs:
 
       - name: Cache - node_modules
         id: cache-node
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
           key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -675,7 +675,7 @@ jobs:
 
       - name: Cache - Playwright
         id: cache-playwright
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -689,7 +689,7 @@ jobs:
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ matrix.shardIndex }}
           path: ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
@@ -702,9 +702,9 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: lts/*
           
@@ -714,7 +714,7 @@ jobs:
           npm ci
 
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
           pattern: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-*
@@ -724,7 +724,7 @@ jobs:
         run: npx playwright merge-reports --reporter html ./all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: html-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}
           path: playwright-report
