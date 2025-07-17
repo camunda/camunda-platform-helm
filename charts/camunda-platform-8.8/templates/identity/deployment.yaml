@@ -108,6 +108,28 @@ spec:
                 secretKeyRef:
                   name: {{ include "identity.keycloak.authExistingSecret" . }}
                   key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+
+            {{- if .Values.identity.migration.enabled }}
+            - name: KEYCLOAK_CLIENTS_2_ID
+              value: migration
+            - name: KEYCLOAK_CLIENTS_2_NAME
+              value: Migration
+            - name: KEYCLOAK_CLIENTS_2_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "core.authClientSecretName" . }}
+                  key: {{ include "core.authClientSecretKey" . }}
+            - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
+              value: /dummy
+            - name: KEYCLOAK_CLIENTS_2_ROOT_URL
+              value: http://dummy
+            - name: KEYCLOAK_CLIENTS_2_TYPE
+              value: CONFIDENTIAL
+            - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID
+              value: camunda-identity-resource-server
+            - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION
+              value: read
+            {{- end }}
             {{- if .Values.identity.firstUser.enabled }}
             - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
             {{- if .Values.identity.firstUser.existingSecret }}
