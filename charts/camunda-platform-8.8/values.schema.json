@@ -98,6 +98,11 @@
                                             "type": "string",
                                             "description": "username claim.",
                                             "default": "preferred_username"
+                                        },
+                                        "groupsClaim": {
+                                            "type": "string",
+                                            "description": "group claim.",
+                                            "default": ""
                                         }
                                     }
                                 }
@@ -740,6 +745,16 @@
                                             "type": "string",
                                             "description": "Name of the AWS S3 bucket.",
                                             "default": "your-aws-bucket"
+                                        },
+                                        "bucketPath": {
+                                            "type": "string",
+                                            "description": "(Optional) Path/prefix within the S3 bucket.",
+                                            "default": ""
+                                        },
+                                        "bucketTtl": {
+                                            "type": "number",
+                                            "description": "(Optional) Time-to-live for documents in the S3 bucket (number in days).",
+                                            "default": 0
                                         },
                                         "class": {
                                             "type": "string",
@@ -1527,12 +1542,12 @@
                                 "adminPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL admin.",
-                                    "default": "postgres-password"
+                                    "default": "identity-postgresql-admin-password"
                                 },
                                 "userPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
-                                    "default": "password"
+                                    "default": "identity-postgresql-user-password"
                                 }
                             }
                         }
@@ -3817,12 +3832,12 @@
                                 "adminPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL admin.",
-                                    "default": "postgres-password"
+                                    "default": "web-modeler-postgresql-admin-password"
                                 },
                                 "userPasswordKey": {
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
-                                    "default": "password"
+                                    "default": "web-modeler-postgresql-user-password"
                                 }
                             }
                         }

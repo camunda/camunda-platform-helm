@@ -95,6 +95,8 @@ global:
       oidc:
         ## @param global.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
+        ## @param global.security.authentication.oidc.groupsClaim group claim.
+        groupsClaim: ""
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
@@ -132,7 +134,7 @@ global:
   ## @skip global.testDeprecationFlags
   testDeprecationFlags:
     ## @skip global.testDeprecationFlags.existingSecretsMustBeSet give error or warning when existingSecret is not set
-    existingSecretsMustBeSet: "error"
+    existingSecretsMustBeSet: "warning"
 
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
@@ -452,10 +454,10 @@ global:
         region: ""
         ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
         bucket: "your-aws-bucket"
-        ## @param global.documentStore.type.aws.bucketPath [string, nullable] (Optional) Path/prefix within the S3 bucket.
-        # bucketPath: ""
-        ## @param global.documentStore.type.aws.bucketTtl [int, nullable] (Optional) Time-to-live for documents in the S3 bucket (number in days).
-        # bucketTtl: 0
+        ## @param global.documentStore.type.aws.bucketPath (Optional) Path/prefix within the S3 bucket.
+        bucketPath: ""
+        ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket (number in days).
+        bucketTtl: 0
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
         ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
@@ -849,9 +851,9 @@ identityPostgresql:
     existingSecret: ""
     secretKeys:
       ## @param identityPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "postgres-password"
+      adminPasswordKey: "identity-postgresql-admin-password"
       ## @param identityPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "password"
+      userPasswordKey: "identity-postgresql-user-password"
 
 # Identity.
 #    # ###### #   #  ####  #       ####    ##   #    #
@@ -1946,9 +1948,9 @@ webModelerPostgresql:
     existingSecret: ""
     secretKeys:
       ## @param webModelerPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "postgres-password"
+      adminPasswordKey: "web-modeler-postgresql-admin-password"
       ## @param webModelerPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "password"
+      userPasswordKey: "web-modeler-postgresql-user-password"
 
   ## @param webModelerPostgresql.primary.containerSecurityContext.enabled
   ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation
