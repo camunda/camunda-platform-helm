@@ -2,8 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: identity-migration-configuration
-  namespace: hamza
+  name: {{ include "identity.fullname" . }}-migration-configuration
 data:
   application.yaml: |
     camunda:

@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "identityMigration.fullname" . }}
+  name: {{ include "identity.fullname" . }}-migration
   labels: {{- include "identityMigration.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
@@ -49,5 +49,5 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: identity-migration-configuration
+            name: {{ include "identity.fullname" . }}-migration-configuration
 {{- end }}
