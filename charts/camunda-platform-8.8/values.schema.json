@@ -98,6 +98,11 @@
                                             "type": "string",
                                             "description": "username claim.",
                                             "default": "preferred_username"
+                                        },
+                                        "groupsClaim": {
+                                            "type": "string",
+                                            "description": "group claim.",
+                                            "default": ""
                                         }
                                     }
                                 }
