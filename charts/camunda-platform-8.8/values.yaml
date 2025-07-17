@@ -543,7 +543,7 @@ identity:
 
   migration:
   ## @param identity.migration migrating data from Management Identity to Identity (in the orchestration cluster)
-    enabled: true
+    enabled: false
 
   ## @extra identity.firstUser configuration to configure properties of the first Identity user, which can be used to access all
   # web applications
