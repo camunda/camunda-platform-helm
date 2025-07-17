@@ -27,31 +27,12 @@ spec:
           {{- if .Values.core.containerSecurityContext }}
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
-          # env:
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_MODE
-          #     value: KEYCLOAK
-          #   # cluster config
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_CLUSTERNAME
-          #     value: camunda-zeebe
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_INITIALCONTACTPOINTS
-          #     value: camunda-zeebe-0.camunda-core:26502,camunda-zeebe-1.camunda-core:26502,camunda-zeebe-2.camunda-core:26502
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_CLUSTERSIZE
-          #     value: "1"
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_PARTITIONSCOUNT
-          #     value: "1"
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_CLUSTER_REPLICATIONFACTOR
-          #     value: "1"
-          #   # management identity access
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_AUDIENCE
-          #     value: camunda-identity-resource-server
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_BASEURL
-          #     value: https://hamzatest.ci.distro.ultrawombat.com/identity
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_CLIENTID
-          #     value: camunda-identity
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_CLIENTSECRET
-          #     value: NMEPWF4hlTAUkzcoZB1oSfLGwKw59Iz3
-          #   - name: CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_ISSUERBACKENDURL
-          #     value: http://camunda-keycloak:80/auth/realms/camunda-platform
+          env:
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "core.authClientSecretName" . }}
+                  key: {{ include "core.authClientSecretKey" . }}
           command:
             - /usr/local/camunda/bin/identity-migration
           resources:

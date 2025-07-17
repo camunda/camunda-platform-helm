@@ -17,12 +17,12 @@ data:
             replication-factor: {{ .Values.core.replicationFactor }}
             initial-contact-points:
             {{- range (untilStep 0 (int .Values.core.clusterSize) 1) }}
-              - {{ include "core.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.core.service.internalPort}}
+              - {{ include "core.legacyName" $ }}-{{ . }}.{{ include "core.fullname" $ }}:{{$.Values.core.service.internalPort}}
             {{- end }}
           management-identity:
             audience: {{ include "identity.authAudience" . | quote }}
             base-url: {{ tpl .Values.global.identity.auth.identity.redirectUrl $ | quote }}
-            client-id: {{  printf "%s" (include "identity.authClientId" .) | default "camunda-identity" | quote }}
-            client-secret: ${VALUES_CAMUNDA_MIGRATION_IDENTITY_MANAGEMENTIDENTITY_CLIENTSECRET:}
+            client-id: migration
+            client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
             issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 {{- end }}
