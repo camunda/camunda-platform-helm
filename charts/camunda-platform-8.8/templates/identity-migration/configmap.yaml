@@ -9,7 +9,7 @@ data:
     camunda:
       migration:
         identity:
-          mode: {{ .Values.connectors.livenessProbe.failureThreshold }}
+          mode: {{ .Values.global.identity.auth.type }}
           cluster:
             cluster-name: {{ tpl .Values.global.zeebeClusterName . }}
             cluster-size: {{ .Values.core.clusterSize }}
