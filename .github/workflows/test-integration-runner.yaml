@@ -737,7 +737,7 @@ jobs:
   playwright-e2e-tests:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [ci-setup]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-32-longrunning-big-ssd
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
     timeout-minutes: 20
     env:
@@ -746,8 +746,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: ${{ fromJson(needs.ci-setup.outputs.SHARD_INDEX) }}
-        shardTotal: ${{ fromJson(needs.ci-setup.outputs.SHARD_TOTAL) }}
+        shardIndex: [1]
+        shardTotal: [1]
+        #shardIndex: ${{ fromJson(needs.ci-setup.outputs.SHARD_INDEX) }}
+        #shardTotal: ${{ fromJson(needs.ci-setup.outputs.SHARD_TOTAL) }}
     permissions:
         contents: read
         id-token: write
@@ -760,6 +762,15 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
+      - name: Install uuidgen
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y uuid-runtime
+          sudo apt-get install -y gettext
+          sudo apt-get install -y build-essential
+          sudo apt-get install -y libssl-dev
+
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -770,6 +781,19 @@ jobs:
             oc
             task
             yq
+            make
+
+      - name: Upload on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: install.log
+          path: /home/runner/.asdf/downloads/make/4.3
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
@@ -831,7 +855,7 @@ jobs:
       - name: Test - ⭐️ Run Playwright E2E TestSuite (Github Runner) ⭐️
         run: |
           cd $GITHUB_WORKSPACE/scripts
-          ./run-e2e-tests.sh --absolute-chart-path ${{env.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{env.TEST_NAMESPACE}} --shard-index ${{ matrix.shardIndex }} --shard-total ${{ matrix.shardTotal }} $( [ "${{ inputs.run-all-e2e-tests }}" = "false" ] && echo "--run-smoke-tests" ) $( [ "${{ inputs.scenario }}" = "qa-opensearch" ] && echo "--opensearch" ) --verbose
+          ./run-e2e-tests.sh --absolute-chart-path ${{env.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{env.TEST_NAMESPACE}} --shard-index ${{ matrix.shardIndex }} --shard-total ${{ matrix.shardTotal }} $( [ "${{ inputs.run-all-e2e-tests }}" = "false" ] && echo "--run-smoke-tests" ) $( [ "${{ inputs.scenario }}" = "qa-opensearch" ] && echo "--opensearch" ) $( [ "${{ inputs.scenario }}" = "qa-elasticsearch-rba" ] && echo "--rba" ) $( [ "${{ inputs.scenario }}" = "qa-elasticsearch-mt" ] && echo "--mt" ) --verbose --not-ci
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4

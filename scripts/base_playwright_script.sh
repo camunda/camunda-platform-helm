@@ -88,6 +88,7 @@ run_playwright_tests() {
   cd "$test_suite_path" || exit
 
   npm ci --no-audit --no-fund --silent
+  sudo npx playwright install-deps
   npx playwright install
 
   if [[ $show_html_report == "true" ]]; then
