@@ -34,6 +34,8 @@ setup_env_file() {
   local namespace="$4"
   local is_ci="$5"
   local is_opensearch="$6"
+  local is_rba="$7"
+  local is_mt="$8"
 
   export TEST_INGRESS_HOST="$hostname"
   envsubst <"$test_suite_path"/.env.template >"$env_file"
@@ -42,17 +44,24 @@ setup_env_file() {
   # that are used to test the platform. This is grabbing those credentials and
   # adding them to the .env file so that we can run the tests from any environment
   # with an authorized kubectl context.
+  identity_pod_name=$(kubectl -n "$namespace" get pods --no-headers -o custom-columns=':metadata.name' | grep identity | head -n 1)
+  DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_SETUP_PASSWORD)
+
+  if [[ -z "$DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD" ]]; then
+    DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv VALUES_KEYCLOAK_SETUP_PASSWORD)
+  fi
 
   {
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
     echo "CLUSTER_VERSION=8"
     echo "MINOR_VERSION=SM-8.7"
-    identity_pod_name=$(kubectl -n "$namespace" get pods --no-headers -o custom-columns=':metadata.name' | grep identity | head -n 1)
     echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_USERS_0_PASSWORD)"
-    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_SETUP_PASSWORD)"
+    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD"
     echo "CI=${is_ci}"
     echo "CLUSTER_NAME=integration"
     echo "IS_OPENSEARCH=${is_opensearch}"
+    echo "IS_RBA=${is_rba}"
+    echo "IS_MT=${is_mt}"
   } >>"$env_file"
 
   if $VERBOSE; then
@@ -77,6 +86,9 @@ Options:
   --test-exclude TEST_EXCLUDE                  The tests to exclude
   --not-ci                                    Don't set the CI env var to true
   --run-smoke-tests                           Run the smoke tests
+  --opensearch                                Run the opensearch tests
+  --rba                                       Run the rba tests
+  --mt                                        Run the mt tests
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -96,6 +108,8 @@ TEST_EXCLUDE=""
 IS_CI=true
 RUN_SMOKE_TESTS=false
 IS_OPENSEARCH=false
+IS_RBA=false
+IS_MT=false
 
 check_required_cmds
 
@@ -138,6 +152,14 @@ while [[ $# -gt 0 ]]; do
     IS_OPENSEARCH=true
     shift
     ;;
+  --rba)
+    IS_RBA=true
+    shift
+    ;;
+  --mt)
+    IS_MT=true
+    shift
+    ;;
   -v | --verbose)
     VERBOSE=true
     shift
@@ -162,7 +184,13 @@ hostname=$(get_ingress_hostname "$NAMESPACE")
 if [ "$IS_OPENSEARCH" == "true" ]; then
   log "IS_OPENSEARCH is set to true"
 fi
-setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH"
+if [ "$IS_RBA" == "true" ]; then
+  log "IS_RBA is set to true"
+fi
+if [ "$IS_MT" == "true" ]; then
+  log "IS_MT is set to true"
+fi
+setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
