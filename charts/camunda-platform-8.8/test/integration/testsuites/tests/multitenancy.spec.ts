@@ -49,6 +49,15 @@ test.beforeAll(async ({ playwright }) => {
 
 test.describe("Multitenancy Smoke Tests", () => {
   
+  // Skip if multitenancy scenario is not enabled
+  test.beforeAll(async () => {
+    const testScenario = process.env.TEST_SCENARIO;
+    
+    if (testScenario !== "multitenancy") {
+      test.skip(true, `Multitenancy tests skipped - running scenario: ${testScenario || "unknown"}`);
+    }
+  });
+  
   // Deploy models to different tenants
   for (const tenant of tenants) {
     test(`Deploy BPMN model to ${tenant.id}`, async () => {
