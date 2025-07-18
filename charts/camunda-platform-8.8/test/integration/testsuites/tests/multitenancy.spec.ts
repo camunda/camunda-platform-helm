@@ -48,6 +48,8 @@ test.beforeAll(async ({ playwright }) => {
 
 test.describe("Multitenancy Smoke Tests", () => {
   
+  let isMultitenancyEnabled = false;
+  
   // Skip if multitenancy is not enabled - detect by checking if deployment supports real tenant isolation
   test.beforeAll(async () => {
     try {
@@ -81,44 +83,28 @@ test.describe("Multitenancy Smoke Tests", () => {
       if (testDeployResponse.ok()) {
         const deployData = await testDeployResponse.json();
         
-        // If the deployment was successful but the tenantId is "<default>", 
-        // then multitenancy is not enabled
-        if (deployData.tenantId === "<default>") {
-          test.skip(true, `Multitenancy tests skipped - deployment uses default tenant instead of requested tenant "${deployData.tenantId}"`);
-        }
-        
-        // If we got our requested tenant ID, multitenancy is enabled
-        if (deployData.tenantId !== "test-tenant-check") {
-          test.skip(true, `Multitenancy tests skipped - unexpected tenant assignment: expected "test-tenant-check", got "${deployData.tenantId}"`);
+        // If we got our exact requested tenant ID, multitenancy is enabled
+        if (deployData.tenantId === "test-tenant-check") {
+          isMultitenancyEnabled = true;
+          console.log(`✅ Multitenancy detected: deployment assigned to tenant "${deployData.tenantId}"`);
+        } else {
+          console.log(`❌ Multitenancy not enabled: requested tenant "test-tenant-check" but got "${deployData.tenantId}"`);
         }
       } else {
-        // If deployment fails, try a simple process definitions search to see if the service is ready
-        const fallbackResponse = await api.post(
-          `${config.base.coreOperate}/v2/process-definitions/search`,
-          {
-            data: JSON.stringify({}),
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-        
-        if (!fallbackResponse.ok()) {
-          test.skip(true, `Multitenancy tests skipped - services not accessible for testing (Zeebe: ${testDeployResponse.status()}, Operate: ${fallbackResponse.status()})`);
-        } else {
-          test.skip(true, `Multitenancy tests skipped - tenant-specific deployment failed with status ${testDeployResponse.status()}`);
-        }
+        console.log(`❌ Multitenancy detection failed: deployment request failed with status ${testDeployResponse.status()}`);
       }
       
     } catch (error) {
-      test.skip(true, `Multitenancy tests skipped - multitenancy detection failed: ${error}`);
+      console.log(`❌ Multitenancy detection failed: ${error}`);
     }
   });
   
   // Deploy models to different tenants using REST API
   for (const tenant of tenants) {
     test(`Deploy BPMN model to ${tenant.id}`, async () => {
+      // Skip if multitenancy is not enabled
+      test.skip(!isMultitenancyEnabled, 'Multitenancy not enabled in this deployment');
+      
       // Get authentication token
       const token = await fetchToken(config.venomID, config.venomSec, api, config);
       
@@ -164,6 +150,9 @@ test.describe("Multitenancy Smoke Tests", () => {
   // Verify tenant isolation - each tenant should only see their own processes
   for (const tenant of tenants) {
     test(`Verify process visibility for ${tenant.id}`, async () => {
+      // Skip if multitenancy is not enabled
+      test.skip(!isMultitenancyEnabled, 'Multitenancy not enabled in this deployment');
+      
       // Get authentication token
       const token = await fetchToken(config.venomID, config.venomSec, api, config);
       
@@ -226,6 +215,9 @@ test.describe("Multitenancy Smoke Tests", () => {
   // Start process instances in different tenants using REST API
   for (const tenant of tenants) {
     test(`Start process instance in ${tenant.id}`, async () => {
+      // Skip if multitenancy is not enabled
+      test.skip(!isMultitenancyEnabled, 'Multitenancy not enabled in this deployment');
+      
       // Get authentication token
       const token = await fetchToken(config.venomID, config.venomSec, api, config);
       
@@ -262,6 +254,9 @@ test.describe("Multitenancy Smoke Tests", () => {
   // Verify process instances are isolated by tenant
   for (const tenant of tenants) {
     test(`Verify process instance isolation for ${tenant.id}`, async () => {
+      // Skip if multitenancy is not enabled
+      test.skip(!isMultitenancyEnabled, 'Multitenancy not enabled in this deployment');
+      
       // Get authentication token
       const token = await fetchToken(config.venomID, config.venomSec, api, config);
       
