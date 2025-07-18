@@ -7,7 +7,6 @@ import { config as dotenv } from "dotenv";
 dotenv(); // ← loads .env before anything else
 
 import { test, expect, APIRequestContext } from "@playwright/test";
-import { execFileSync } from "child_process";
 import { authHeader, fetchToken, requireEnv } from "./helper";
 
 // ---------- config & helpers ----------
@@ -33,10 +32,10 @@ const config = {
   venomSec: requireEnv("PLAYWRIGHT_VAR_CORE_CLIENT_SECRET"),
 };
 
-// Tenant configurations
+// Tenant configurations - reusing existing BPMN files
 const tenants = [
-  { id: "tenant-a", processId: "tenant-a-process", file: "tenant-a-process.bpmn" },
-  { id: "tenant-b", processId: "tenant-b-process", file: "tenant-b-process.bpmn" },
+  { id: "tenant-a", processId: "it-test-process", file: "test-process.bpmn" },
+  { id: "tenant-b", processId: "test-inbound-process", file: "test-inbound-process.bpmn" },
 ];
 
 let api: APIRequestContext;
@@ -58,34 +57,45 @@ test.describe("Multitenancy Smoke Tests", () => {
     }
   });
   
-  // Deploy models to different tenants
+  // Deploy models to different tenants using REST API
   for (const tenant of tenants) {
     test(`Deploy BPMN model to ${tenant.id}`, async () => {
-      const extra =
-        process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+      // Get authentication token
+      const token = await fetchToken(config.venomID, config.venomSec, api, config);
       
-      // Deploy model with tenant ID
-      execFileSync(
-        "zbctl",
-        [
-          "deploy",
-          `${config.testBasePath}/${tenant.file}`,
-          "--clientCache",
-          "/tmp/zeebe",
-          "--clientId",
-          config.venomID,
-          "--clientSecret",
-          config.venomSec,
-          "--authzUrl",
-          config.authURL,
-          "--address",
-          config.base.zeebeGRPC,
-          "--tenantId",
-          tenant.id,
-          ...extra,
-        ],
-        { stdio: "inherit" },
+      // Read BPMN file content
+      const fs = require('fs');
+      const bpmnContent = fs.readFileSync(`${config.testBasePath}/${tenant.file}`, 'utf8');
+      
+      // Deploy via REST API
+      const deploymentResponse = await api.post(
+        `${config.base.zeebeREST}/v2/deployments`,
+        {
+          data: {
+            resources: [
+              {
+                name: tenant.file,
+                content: Buffer.from(bpmnContent).toString('base64'),
+                contentType: 'application/xml'
+              }
+            ],
+            tenantId: tenant.id
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
       );
+      
+      expect(
+        deploymentResponse.ok(),
+        `Deployment failed for ${tenant.id}: ${deploymentResponse.status()}`
+      ).toBeTruthy();
+      
+      const deploymentData = await deploymentResponse.json();
+      expect(deploymentData.deploymentKey).toBeDefined();
+      expect(deploymentData.tenantId).toBe(tenant.id);
       
       // Wait for deployment to propagate
       await new Promise((resolve) => setTimeout(resolve, 15000));
@@ -154,38 +164,36 @@ test.describe("Multitenancy Smoke Tests", () => {
     });
   }
 
-  // Start process instances in different tenants
+  // Start process instances in different tenants using REST API
   for (const tenant of tenants) {
     test(`Start process instance in ${tenant.id}`, async () => {
-      const extra =
-        process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+      // Get authentication token
+      const token = await fetchToken(config.venomID, config.venomSec, api, config);
       
-      // Start a process instance
-      const output = execFileSync(
-        "zbctl",
-        [
-          "create", 
-          "instance",
-          tenant.processId,
-          "--clientCache",
-          "/tmp/zeebe",
-          "--clientId",
-          config.venomID,
-          "--clientSecret",
-          config.venomSec,
-          "--authzUrl",
-          config.authURL,
-          "--address",
-          config.base.zeebeGRPC,
-          "--tenantId",
-          tenant.id,
-          ...extra,
-        ],
-        { encoding: "utf8" },
+      // Create process instance via REST API
+      const instanceResponse = await api.post(
+        `${config.base.zeebeREST}/v2/process-instances`,
+        {
+          data: {
+            processDefinitionId: tenant.processId,
+            tenantId: tenant.id
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
       );
       
-      // Verify instance was created successfully
-      expect(output).toContain("Process instance created");
+      expect(
+        instanceResponse.ok(),
+        `Process instance creation failed for ${tenant.id}: ${instanceResponse.status()}`
+      ).toBeTruthy();
+      
+      const instanceData = await instanceResponse.json();
+      expect(instanceData.processInstanceKey).toBeDefined();
+      expect(instanceData.tenantId).toBe(tenant.id);
+      expect(instanceData.processDefinitionId).toBe(tenant.processId);
       
       // Wait for instance to propagate
       await new Promise((resolve) => setTimeout(resolve, 10000));
