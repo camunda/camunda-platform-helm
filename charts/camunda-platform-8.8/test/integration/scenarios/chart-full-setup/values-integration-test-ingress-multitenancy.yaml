@@ -24,6 +24,13 @@ global:
 
 identity:
   enabled: true
+  firstUser:
+    existingSecret: "integration-test-credentials"
 
 identityPostgresql:
   enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-postgresql-admin-password"
+      userPasswordKey: "identity-postgresql-user-password"
