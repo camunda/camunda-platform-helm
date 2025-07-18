@@ -1,6 +1,10 @@
 global:
   multitenancy:
     enabled: true
+
+  identity:
+    auth:
+      enabled: true
       
   security:
     authorization:
@@ -17,3 +21,9 @@ global:
         - mappingID: "tenant-b-mapping"
           claimName: "tenant"
           claimValue: "tenant-b"
+
+identity:
+  enabled: true
+
+identityPostgresql:
+  enabled: true
