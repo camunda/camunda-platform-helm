@@ -7,54 +7,52 @@ global:
     
   ingress:
     enabled: true
-    host: "localhost"
+    className: nginx
+    host: "camunda.example.com"
+    tls:
+      enabled: true
+      secretName: camunda-platform
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
   
   identity:
     auth:
       enabled: true
-      type: "KEYCLOAK"
-      publicIssuerUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform"
-      issuerBackendUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform"
-      tokenUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
-      jwksUrl: "http://camunda-multitenancy-keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
-      
-      core:
-        clientId: "core"
-        audience: "core-api"
-        redirectUrl: "http://camunda-multitenancy-core-gateway/operate"
-        existingSecret: "integration-test-credentials"
-        
-      console:
-        clientId: "console"
-        audience: "console-api"
-        redirectUrl: "http://camunda-multitenancy-console"
-        existingSecret: "integration-test-credentials"
-        
-      connectors:
-        clientId: "connectors"
-        existingSecret: "integration-test-credentials"
-        
-      optimize:
-        clientId: "optimize"
-        audience: "optimize-api"
-        redirectUrl: "http://camunda-multitenancy-optimize"
-        
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        existingSecret:
+          name: "integration-test-credentials"
       webModeler:
-        clientId: "web-modeler"
-        clientApiAudience: "web-modeler-api"
-        publicApiAudience: "web-modeler-public-api"
-        redirectUrl: "http://camunda-multitenancy-web-modeler-webapp"
-        
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+        existingSecret:
+          name: "integration-test-credentials"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        existingSecret:
+          name: "integration-test-credentials"
+      core:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/core"
+        existingSecret:
+          name: "integration-test-credentials"
+      connectors:
+        existingSecret:
+          name: "integration-test-credentials"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        existingSecret:
+          name: "integration-test-credentials"
       identity:
-        clientId: "camunda-identity"
-        audience: "camunda-identity-resource-server"
-        redirectUrl: "http://camunda-multitenancy-identity"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
+        existingSecret:
+          name: "integration-test-credentials"
         
     keycloak:
       internal: true
       url:
         protocol: "http"
-        host: "camunda-multitenancy-keycloak"
+        host: "{{ include \"camunda-platform.identityKeycloak.fullname\" . }}"
         port: 80
       contextPath: "/auth"
       realm: "camunda-platform"
@@ -86,7 +84,7 @@ global:
     external: false
     url:
       protocol: "http"
-      host: "camunda-multitenancy-elasticsearch"
+      host: "{{ include \"camunda-platform.elasticsearch.fullname\" . }}"
       port: 9200
     clusterName: "elasticsearch"
     prefix: "camunda-record"
@@ -95,24 +93,28 @@ identity:
   enabled: true
   firstUser:
     enabled: true
-    existingSecret: "integration-test-credentials"
+    existingSecret:
+      name: "integration-test-credentials"
     
 identityPostgresql:
   enabled: true
   auth:
-    existingSecret: "integration-test-credentials"
+    existingSecret:
+      name: "integration-test-credentials"
     
 identityKeycloak:
   enabled: true
   nameOverride: "keycloak"
   
   auth:
-    existingSecret: "integration-test-credentials"
+    existingSecret:
+      name: "integration-test-credentials"
     
   postgresql:
     enabled: true
     auth:
-      existingSecret: "integration-test-credentials"
+      existingSecret:
+        name: "integration-test-credentials"
             
 core:
   enabled: true
@@ -139,4 +141,5 @@ webModeler:
 webModelerPostgresql:
   enabled: true
   auth:
-    existingSecret: "integration-test-credentials"
+    existingSecret:
+      name: "integration-test-credentials"
