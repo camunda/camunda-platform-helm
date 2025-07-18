@@ -32,5 +32,5 @@ identityPostgresql:
   auth:
     existingSecret: "integration-test-credentials"
     secretKeys:
-      adminPasswordKey: "identity-postgresql-admin-password"
-      userPasswordKey: "identity-postgresql-user-password"
+      adminPasswordKey: "postgres-password"
+      userPasswordKey: "postgres-password"
