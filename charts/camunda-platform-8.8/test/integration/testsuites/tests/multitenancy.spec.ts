@@ -54,8 +54,6 @@ test.describe("Multitenancy Smoke Tests", () => {
       // Get authentication token to test with
       const token = await fetchToken(config.venomID, config.venomSec, api, config);
       
-      // Try to make a tenant-specific API call to detect if multitenancy is enabled
-      // This is a lightweight check that won't interfere with other tests
       const response = await api.post(
         `${config.base.coreOperate}/v2/process-definitions/search`,
         {
