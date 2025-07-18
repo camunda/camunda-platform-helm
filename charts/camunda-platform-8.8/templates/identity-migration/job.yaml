@@ -19,11 +19,8 @@ spec:
       {{- end }}
       containers:
         - name: camunda-migration
-          # TODO: CHANGE TO A SPECIFIC VERSION
-          image: camunda/camunda:SNAPSHOT
-          # image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
-          imagePullPolicy: Always
-          # imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.core.containerSecurityContext }}
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
