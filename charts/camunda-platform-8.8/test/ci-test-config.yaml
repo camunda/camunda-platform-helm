@@ -31,6 +31,11 @@ integration:
           shortname: esba
           auth: basic
           exclude: [identity,console,core-grpc]
+        - name: opensearch
+          enabled: true
+          shortname: osba
+          exclude: [identity,console,core-grpc]
+          auth: basic
     nightly:
       scenario:
         - name: elasticsearch
@@ -61,6 +66,11 @@ integration:
           exclude: []
           shortname: oske
           auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: osba
+          exclude: [identity,console,core-grpc]
+          auth: basic
         - name: elasticsearch
           enabled: true
           exclude: []
