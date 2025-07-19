@@ -21,7 +21,7 @@ data:
           audience: "console-api"
           clientId: "console"
           issuer: "http://localhost:18080/auth/realms/camunda-platform"
-          jwksUri: "http://:/auth/realms/camunda-platform/protocol/openid-connect/certs"
+          jwksUri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
           type: "KEYCLOAK"
           wellKnown: "https://well-known-uri"
         managed:
@@ -38,7 +38,14 @@ data:
               url: http://localhost:8087
               readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
               metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
-            
+            - name: Keycloak
+              id: keycloak
+              url: http://localhost:18080/auth
+            - name: Identity
+              id: identity
+              url: http://localhost:8080
+              readiness: http://camunda-platform-test-identity.camunda-platform:82/actuator/health
+              metrics: http://camunda-platform-test-identity.camunda-platform:82/actuator/prometheus
             - name: Connectors
               id: connectors
               url: http://localhost:8086
