@@ -55,15 +55,6 @@ app.kubernetes.io/component: core
     {{- end -}}
 {{- end -}}
 
-{{/*
-[core] Get the image pull secrets.
-*/}}
-{{- define "core.imagePullSecrets" -}}
-    {{- include "camundaPlatform.imagePullSecrets" (dict
-        "component" "core"
-        "context" $
-    ) -}}
-{{- end }}
 
 {{/*
 [web-modeler] Define variables related to authentication.
