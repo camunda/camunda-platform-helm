@@ -134,7 +134,7 @@ global:
   ## @skip global.testDeprecationFlags
   testDeprecationFlags:
     ## @skip global.testDeprecationFlags.existingSecretsMustBeSet give error or warning when existingSecret is not set
-    existingSecretsMustBeSet: "error"
+    existingSecretsMustBeSet: "warning"
 
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
@@ -855,9 +855,9 @@ identityPostgresql:
     existingSecret: ""
     secretKeys:
       ## @param identityPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "postgres-password"
+      adminPasswordKey: "identity-postgresql-admin-password"
       ## @param identityPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "password"
+      userPasswordKey: "identity-postgresql-user-password"
 
 # Identity.
 #    # ###### #   #  ####  #       ####    ##   #    #
@@ -1952,9 +1952,9 @@ webModelerPostgresql:
     existingSecret: ""
     secretKeys:
       ## @param webModelerPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "postgres-password"
+      adminPasswordKey: "web-modeler-postgresql-admin-password"
       ## @param webModelerPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "password"
+      userPasswordKey: "web-modeler-postgresql-user-password"
 
   ## @param webModelerPostgresql.primary.containerSecurityContext.enabled
   ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation
