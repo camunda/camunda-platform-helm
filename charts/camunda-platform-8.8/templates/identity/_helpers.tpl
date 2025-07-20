@@ -1,17 +1,5 @@
 {{/* vim: set filetype=mustache: */}}
 
-{{/*
-Create a default fully qualified app name.
-*/}}
-
-{{- define "identity.fullname" -}}
-    {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "identity"
-        "componentValues" .Values.identity
-        "context" $
-    ) -}}
-{{- end -}}
-
 {{ define "identity.internalUrl" }}
   {{- if .Values.identity.enabled -}}
     {{-
@@ -205,14 +193,6 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- else }}
         {{- .Values.identityKeycloak.auth.adminUser -}}
     {{- end }}
-{{- end -}}
-
-{{- define "identity.authClientId" -}}
-  {{- .Values.global.identity.auth.identity.clientId | default "camunda-identity" -}}
-{{- end -}}
-
-{{- define "identity.authAudience" -}}
-  {{- .Values.global.identity.auth.identity.audience | default "camunda-identity-resource-server" -}}
 {{- end -}}
 
 {{- define "identity.authClientSecret" -}}

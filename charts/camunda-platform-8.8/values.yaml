@@ -95,6 +95,8 @@ global:
       oidc:
         ## @param global.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
+        ## @param global.security.authentication.oidc.groupsClaim group claim.
+        groupsClaim: ""
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
@@ -132,7 +134,7 @@ global:
   ## @skip global.testDeprecationFlags
   testDeprecationFlags:
     ## @skip global.testDeprecationFlags.existingSecretsMustBeSet give error or warning when existingSecret is not set
-    existingSecretsMustBeSet: "error"
+    existingSecretsMustBeSet: "warning"
 
   ## @param global.annotations Annotations can be used to define common annotations, which should be applied to all deployments
   annotations: {}
@@ -541,6 +543,10 @@ identity:
   ## @param identity.nameOverride can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)
   nameOverride: ""
 
+  migration:
+  ## @param identity.migration migrating data from Management Identity to Identity (in the orchestration cluster)
+    enabled: false
+
   ## @extra identity.firstUser configuration to configure properties of the first Identity user, which can be used to access all
   # web applications
   firstUser:
@@ -849,9 +855,9 @@ identityPostgresql:
     existingSecret: ""
     secretKeys:
       ## @param identityPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "postgres-password"
+      adminPasswordKey: "identity-postgresql-admin-password"
       ## @param identityPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "password"
+      userPasswordKey: "identity-postgresql-user-password"
 
 # Identity.
 #    # ###### #   #  ####  #       ####    ##   #    #
@@ -1946,9 +1952,9 @@ webModelerPostgresql:
     existingSecret: ""
     secretKeys:
       ## @param webModelerPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "postgres-password"
+      adminPasswordKey: "web-modeler-postgresql-admin-password"
       ## @param webModelerPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "password"
+      userPasswordKey: "web-modeler-postgresql-user-password"
 
   ## @param webModelerPostgresql.primary.containerSecurityContext.enabled
   ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation
