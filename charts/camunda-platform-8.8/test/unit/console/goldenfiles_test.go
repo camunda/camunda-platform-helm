@@ -43,7 +43,9 @@ func TestGoldenDefaultsTemplateConsole(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/console/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"console.enabled": "true",
+				"console.enabled":          "true",
+				"identity.enabled":         "true",
+				"identityKeycloak.enabled": "true",
 			},
 			IgnoredLines: []string{
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.

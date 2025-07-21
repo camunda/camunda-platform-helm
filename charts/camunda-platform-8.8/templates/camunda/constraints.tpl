@@ -80,6 +80,17 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
+{{/*
+Fail with a message if Console is enabled but managed Identity is not enabled.
+*/}}
+{{- if and .Values.console.enabled (not .Values.identity.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Console is enabled but managed Identity is not enabled."
+      "Please ensure that if Console is enabled, managed Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
