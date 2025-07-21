@@ -6,6 +6,7 @@ metadata:
   labels: {{- include "identityMigration.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
+  backoffLimit: {{ .Values.identity.migration.backoffLimit }}
   template:
     metadata:
       labels:
