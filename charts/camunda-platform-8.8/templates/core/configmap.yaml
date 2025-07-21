@@ -34,6 +34,7 @@ data:
       authentication:
         oidc:
           username-claim: {{ .Values.global.security.authentication.oidc.usernameClaim | quote }}
+          groups-claim: {{ .Values.global.security.authentication.oidc.groupsClaim | quote }}
           client-id: {{ include "core.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
           audiences:

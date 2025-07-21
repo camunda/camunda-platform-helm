@@ -523,6 +523,27 @@ Identity templates.
 ********************************************************************************
 */}}
 
+{{- define "identity.authAudience" -}}
+  {{- .Values.global.identity.auth.identity.audience | default "camunda-identity-resource-server" -}}
+{{- end -}}
+
+{{- define "identity.authClientId" -}}
+  {{- .Values.global.identity.auth.identity.clientId | default "camunda-identity" -}}
+{{- end -}}
+
+
+{{/*
+Create a default fully qualified app name.
+*/}}
+
+{{- define "identity.fullname" -}}
+    {{- include "camundaPlatform.componentFullname" (dict
+        "componentName" "identity"
+        "componentValues" .Values.identity
+        "context" $
+    ) -}}
+{{- end -}}
+
 {{/*
 [camunda-platform] Identity internal URL.
 */}}
@@ -585,6 +606,16 @@ Console templates.
 Core templates.
 ********************************************************************************
 */}}
+
+{{/*
+[core] Get the image pull secrets.
+*/}}
+{{- define "core.imagePullSecrets" -}}
+    {{- include "camundaPlatform.imagePullSecrets" (dict
+        "component" "core"
+        "context" $
+    ) -}}
+{{- end }}
 
 {{/*
 [camunda-platform] Core internal URL.

@@ -50,7 +50,7 @@ jobs:
           # Create a tmp file and ensure it's empty.
           echo "" > "${matrix_file}"
 
-          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.include.[].version' | while read -r dir_id; do
+          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.include.[0].version' | while read -r dir_id; do
             chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
 
             # Extract version info.
@@ -120,7 +120,7 @@ jobs:
             helm-ct
             yq
       - name: Install Cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
       - name: Setup caching
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
