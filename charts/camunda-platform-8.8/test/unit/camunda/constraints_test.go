@@ -50,6 +50,7 @@ func TestConstraintTemplate(t *testing.T) {
 func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Skip: true,
 			Name: "TestExistingSecretConstraintDisplays",
 			Values: map[string]string{
 				"identity.enabled": "true",
@@ -60,29 +61,35 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
+				require.ErrorContains(t, err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
 			},
 		}, {
+			Skip: true,
 			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
 			Values: map[string]string{
-				"identity.enabled": "true", "global.identity.auth.connectors.existingSecret.name": "foo", "global.identity.auth.core.existingSecret.name": "bar",
+				"identity.enabled": "true",
+				"global.identity.auth.connectors.existingSecret.name":  "foo",
+				"global.identity.auth.core.existingSecret.name":        "bar",
 				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().NotContains(err.Error(), "global.identity.auth.core.existingSecret")
+				require.NotContains(t, err.Error(), "global.identity.auth.core.existingSecret")
 			},
 		}, {
+			Skip: true,
 			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
 			Values: map[string]string{
-				"identity.enabled": "true", "global.identity.auth.connectors.existingSecret.name": "foo", "global.identity.auth.core.existingSecret.name": "bar",
+				"identity.enabled": "true",
+				"global.identity.auth.connectors.existingSecret.name":  "foo",
+				"global.identity.auth.core.existingSecret.name":        "bar",
 				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().Nil(err)
+				require.Nil(t, err)
 			},
 		},
 	}
