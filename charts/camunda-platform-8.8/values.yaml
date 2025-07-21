@@ -543,12 +543,6 @@ identity:
   ## @param identity.nameOverride can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)
   nameOverride: ""
 
-  migration:
-    ## @param identity.migration.enabled migrating data from Management Identity to Identity (in the orchestration cluster)
-    enabled: false
-    ## @param identity.migration.backoffLimit Specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
-    backoffLimit: 6
-
   ## @extra identity.firstUser configuration to configure properties of the first Identity user, which can be used to access all
   # web applications
   firstUser:
@@ -2237,7 +2231,6 @@ connectors:
 ## @section Orchestration Core Parameters
 ## @extra core configuration for the Orchestration Core.
 core:
-  ## @param core.enabled if true, all related resources are deployed via the helm release
   enabled: true
 
   ## @param core.debug if true, extra info is printed.
@@ -2255,6 +2248,13 @@ core:
     digest: ""
     ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  migration:
+    identity:
+      ## @param core.migration.identity.enabled migrating data from Management Identity to Identity (in the orchestration cluster)
+      enabled: false
+      ## @param core.migration.identity.backoffLimit Specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      backoffLimit: 6
 
   ## @param core.sidecars can be used to attach extra containers to the deployment
   sidecars: []

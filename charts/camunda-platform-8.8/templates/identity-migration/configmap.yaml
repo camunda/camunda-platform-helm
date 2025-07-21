@@ -1,4 +1,4 @@
-{{- if .Values.identity.migration.enabled }}
+{{- if .Values.core.migration.identity.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
