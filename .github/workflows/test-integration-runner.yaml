@@ -591,16 +591,19 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
-      - name: Test - ⭐️ Run Venom Env Setup ⭐️        
+      - name: Test - ⭐️ Run Venom Env Setup ⭐️
         timeout-minutes: 1
         env:
           CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
           TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
           TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
         continue-on-error: false
         run: |
+          echo "Extra values from workflow:"
+          echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.venom.env
 
       - name: Test - ⭐️ Run Venom Preflight TestSuite ⭐️
@@ -730,7 +733,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
-          name: playwright-report-${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
+          name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
           if-no-files-found: error
           retention-days: 5
 
