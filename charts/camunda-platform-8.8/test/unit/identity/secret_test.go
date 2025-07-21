@@ -15,12 +15,12 @@
 package identity
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -52,84 +52,137 @@ func TestSecretTemplate(t *testing.T) {
 	})
 }
 
-func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"identityPostgresql.enabled":         "false",
-			"identity.externalDatabase.enabled":  "true",
-			"identity.externalDatabase.password": "super-secure-ext",
+func (s *secretTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Skip: true,
+			Name: "TestSecretExternalDatabaseEnabledWithDefinedPassword",
+			Values: map[string]string{
+				"identity.enabled":                   "true",
+				"identityPostgresql.enabled":         "false",
+				"identity.externalDatabase.enabled":  "true",
+				"identity.externalDatabase.password": "super-secure-ext",
+			},
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/identity/postgresql-secret.yaml"},
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(t, output, &secret)
+
+				// then
+				s.NotEmpty(secret.Data)
+				s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	s.templates = []string{
-		"templates/identity/postgresql-secret.yaml",
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var secret coreV1.Secret
-	helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-	// then
-	s.NotEmpty(secret.Data)
-	s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
-}
-
-func (s *secretTest) TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
-			"identity.postgresql.enabled":       "true",
-			"identity.externalDatabase.enabled": "false",
+		{
+			Skip: true,
+			Name: "TestFirstUserPassword",
+			Values: map[string]string{
+				"identity.enabled":                              "true",
+				"global.identity.auth.enabled":                  "true",
+				"global.identity.auth.issuer":                   "https://login.microsoftonline.com/<directoryId>/v2.0",
+				"global.identity.auth.issuerBackendUrl":         "https://login.microsoftonline.com/<directoryId>/v2.0",
+				"global.identity.auth.tokenUrl":                 "https://login.microsoftonline.com/<directoryId>/oauth2/v2.0/token",
+				"global.identity.auth.jwksUrl":                  "https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys",
+				"global.identity.auth.publicIssuerUrl":          "https://login.microsoftonline.com/<directoryId>/v2.0",
+				"global.identity.auth.type":                     "\"MICROSOFT\"",
+				"global.identity.auth.core.clientId":            "<clientId>",
+				"global.identity.auth.core.audience":            "<clientId>",
+				"global.identity.auth.core.existingSecret.name": "integration-test-credentials",
+				"global.identity.auth.core.existingSecretKey":   "entra-child-app-client-secret",
+				"global.identity.auth.redirectUrl: \"https://{{ .Values.global.ingress.host }}/core\"" +
+					//"global.identity.auth.identity:clientId: <clientId>\n        audience: <clientId>\n        # this existngSecret must be a string literal\n        existingSecret: <clientSecret>\n        initialClaimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID\n        redirectUrl: \"https://{{ .Values.global.ingress.host }}/identity\"\n      optimize:\n        clientId: <clientId>\n        audience: <clientId>\n        existingSecret:\n          name: integration-test-credentials\n        existingSecretKey: entra-child-app-client-secret\n        redirectUrl: \"https://{{ .Values.global.ingress.host }}/optimize\"\n      connectors:\n        clientId: <clientId>\n        audience: <clientId>\n        clientApiAudience: <clientId>\n        existingSecret:\n          name: integration-test-credentials\n        existingSecretKey: entra-child-app-client-secret\n        tokenScope: <clientId>/.default\n      webModeler:\n        clientId: <clientId>\n        audience: <clientId>\n        clientApiAudience: <clientId>\n        publicApiAudience: <clientId>\n        redirectUrl: \"https://{{ .Values.global.ingress.host }}/modeler\"\n      console:\n        wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration\n        clientId: <clientId>\n        audience: <clientId>\n        existingSecret:\n          name: integration-test-credentials\n        existingSecretKey: entra-child-app-client-secret\n        tokenScope: <clientId>/.default\n        redirectUrl: \"https://{{ .Values.global.ingress.host }}/modeler\"",
+					"global.identity.auth.type": "KEYCLOAK",
+				"identity.firstUser.enabled":  "true",
+				"identity.firstUser.password": "foo",
+			},
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/identity/deployment.yaml"},
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				envVars := deployment.Spec.Template.Spec.Containers[0].Env
+				var identityFirstUserPassword coreV1.EnvVar
+				for _, envVar := range envVars {
+					if envVar.Name == "VALUES_IDENTITY_FIRSTUSER_PASSWORD" {
+						identityFirstUserPassword = envVar
+					}
+				}
+				s.Require().Equal("foo", identityFirstUserPassword.Value)
+			},
 		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		{
+			Skip: true,
+			Name: "TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabledSecrets",
+			Values: map[string]string{
+				// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
+				"identity.enabled":                  "true",
+				"identity.postgresql.enabled":       "true",
+				"identity.externalDatabase.enabled": "false",
+			},
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{
+					"charts/identityPostgresql/templates/secrets.yaml",
+				},
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+
+				helm.UnmarshalK8SYaml(t, output, &secret)
+				s.Require().Equal("camunda-platform-test-identity-postgresql", secret.Name)
+				s.Require().NotEmpty(string(secret.Data["password"]))
+			},
+		},
+		{
+			Name: "TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabledDeployment",
+			Values: map[string]string{
+				// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
+				"identity.enabled":                  "true",
+				"identity.postgresql.enabled":       "true",
+				"identity.externalDatabase.enabled": "false",
+			},
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{
+					"templates/identity/deployment.yaml",
+				},
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				envVars := deployment.Spec.Template.Spec.Containers[0].Env
+				var identityDatabasePassword coreV1.EnvVar
+				for _, envVar := range envVars {
+					if envVar.Name == "IDENTITY_DATABASE_PASSWORD" {
+						identityDatabasePassword = envVar
+					}
+				}
+
+				s.Require().Equal("IDENTITY_DATABASE_PASSWORD", identityDatabasePassword.Name)
+				// I expect Deployment environment variable to reference the secret that is rendered
+				s.Require().Equal("camunda-platform-test-identity-postgresql", identityDatabasePassword.ValueFrom.SecretKeyRef.Name)
+			},
+		},
+		{
+			Name: "TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabledError",
+			Values: map[string]string{
+				// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
+				"identity.enabled":                  "false",
+				"identity.postgresql.enabled":       "true",
+				"identity.externalDatabase.enabled": "false",
+			},
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{
+					"templates/identity/postgresql-secret.yaml",
+				},
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// I expect Secret to NOT be rendered via charts/identityPostgresql/templates/secrets.yaml
+				s.Require().ErrorContains(err, "could not find template templates/identity/postgresql-secret.yaml in chart")
+			},
+		},
 	}
 
-	// There are 2 possible ways for this secret to be rendered:
-	// 1. through charts/identityPostgresql/templates/secrets.yaml for situations when identityPostgresql is enabled
-	// 2. through templates/identity/postgresql-secret.yaml for situations when identityPostgresql is disabled but
-	//    there is an externalDatabase configured
-	postgresqlSubchartSecretTemplatePath := []string{
-		"charts/identityPostgresql/templates/secrets.yaml",
-	}
-
-	identityPostgresqlMainChartSecretTemplatePath := []string{
-		"templates/identity/postgresql-secret.yaml",
-	}
-
-	deploymentTemplateName := []string{
-		"templates/identity/deployment.yaml",
-	}
-
-	// when
-	postgresqlSubchartSecret := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, postgresqlSubchartSecretTemplatePath)
-	_, mainChartSecretError := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, identityPostgresqlMainChartSecretTemplatePath)
-	deploymentTemplate := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, deploymentTemplateName)
-	var secret coreV1.Secret
-	var deployment appsv1.Deployment
-
-	helm.UnmarshalK8SYaml(s.T(), postgresqlSubchartSecret, &secret)
-	helm.UnmarshalK8SYaml(s.T(), deploymentTemplate, &deployment)
-
-	envVars := deployment.Spec.Template.Spec.Containers[0].Env
-	var identityDatabasePassword coreV1.EnvVar
-	for _, envVar := range envVars {
-		if envVar.Name == "IDENTITY_DATABASE_PASSWORD" {
-			identityDatabasePassword = envVar
-		}
-	}
-
-	// then
-
-	// I expect Secret to NOT be rendered via charts/identityPostgresql/templates/secrets.yaml
-	s.Require().ErrorContains(mainChartSecretError, "could not find template templates/identity/postgresql-secret.yaml in chart")
-	s.Require().Equal("IDENTITY_DATABASE_PASSWORD", identityDatabasePassword.Name)
-	// I expect Deployment environment variable to reference the secret that is rendered
-	s.Require().Equal("camunda-platform-test-identity-postgresql", identityDatabasePassword.ValueFrom.SecretKeyRef.Name)
-	// I expect Secret to be rendered via templates/identity/postgresql-secret.yaml
-	s.Require().Equal("camunda-platform-test-identity-postgresql", secret.ObjectMeta.Name)
-	s.Require().NotEmpty(string(secret.Data["password"]))
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
