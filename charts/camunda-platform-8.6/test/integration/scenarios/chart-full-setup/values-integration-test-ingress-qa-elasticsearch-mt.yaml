@@ -261,10 +261,10 @@ identity:
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
-    - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
-      value: venom
-    - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_TYPE
       value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
+      value: venom
 connectors:
   image:
     tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
