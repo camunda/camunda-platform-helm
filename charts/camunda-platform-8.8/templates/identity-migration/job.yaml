@@ -14,7 +14,6 @@ spec:
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "core.imagePullSecrets" . | nindent 8 }}
-      # TODO: Add an initContainer to wait for the core pod to start. No need to wait for the management identity because the core relies on management identity.
       {{- if .Values.core.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
