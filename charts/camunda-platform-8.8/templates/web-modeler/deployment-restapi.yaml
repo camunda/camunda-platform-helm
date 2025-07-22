@@ -198,7 +198,7 @@ spec:
       {{- if .Values.webModeler.restapi.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.restapi.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.restapi.nodeSelector }}
+      {{- with .Values.webModeler.restapi.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}

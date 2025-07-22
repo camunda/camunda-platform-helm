@@ -138,7 +138,7 @@ spec:
       {{- if .Values.webModeler.websockets.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.websockets.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.websockets.nodeSelector }}
+      {{- with .Values.webModeler.websockets.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
