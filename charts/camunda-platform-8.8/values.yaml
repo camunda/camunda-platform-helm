@@ -566,6 +566,14 @@ identity:
     existingSecret: camunda-credentials
     ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
     existingSecretKey: identity-firstuser-password
+    ## @extra identity.firstUser.secret configuration to provide the first user password secret.
+    secret:
+      ## @param identity.firstUser.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param identity.firstUser.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+      existingSecret: ""
+      ## @param identity.firstUser.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @param identity.users configuration to configure properties of the Identity users, which can be used to access web applications.
   users: []
