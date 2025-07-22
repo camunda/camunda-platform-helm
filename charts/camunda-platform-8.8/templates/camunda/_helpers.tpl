@@ -777,3 +777,52 @@ Release templates.
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
   {{- end }}
 {{- end -}}
+
+{{/*
+********************************************************************************
+Secret helpers for consistent secret management pattern.
+********************************************************************************
+*/}}
+
+{{/*
+[camundaPlatform] Generate environment variable configuration for secret values.
+This helper prioritizes secret references over plaintext values according to this precedence:
+1. New style secret: secret.existingSecret + secret.existingSecretKey
+2. New style plaintext: secret.inlineSecret
+3. Old style secret: existingSecret + existingSecretKey  
+4. Old style plaintext: plaintextKey value
+
+Usage: 
+{{ include "camundaPlatform.secretEnvVar" (dict 
+  "name" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+  "config" .Values.identity.firstUser
+  "plaintextKey" "password"
+) }}
+
+Parameters:
+- name: The environment variable name
+- config: The configuration object containing secret/plaintext settings
+- plaintextKey: The key name for the old-style plaintext fallback value
+*/}}
+{{- define "camundaPlatform.secretEnvVar" -}}
+- name: {{ .name }}
+{{- if and .config.secret.existingSecret .config.secret.existingSecretKey }}
+  {{- /* New style secret configuration takes highest priority */}}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .config.secret.existingSecret }}
+      key: {{ .config.secret.existingSecretKey }}
+{{- else if .config.secret.inlineSecret }}
+  {{- /* New style plaintext configuration takes second priority */}}
+  value: {{ .config.secret.inlineSecret | quote }}
+{{- else if and .config.existingSecret .config.existingSecretKey }}
+  {{- /* Old style secret configuration takes third priority */}}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .config.existingSecret }}
+      key: {{ .config.existingSecretKey }}
+{{- else }}
+  {{- /* Old style plaintext fallback */}}
+  value: {{ get .config .plaintextKey | quote }}
+{{- end }}
+{{- end -}}

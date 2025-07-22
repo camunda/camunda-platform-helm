@@ -131,15 +131,11 @@ spec:
               value: read
             {{- end }}
             {{- if .Values.identity.firstUser.enabled }}
-            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
-            {{- if .Values.identity.firstUser.existingSecret }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.identity.firstUser.existingSecret }}
-                  key: {{ .Values.identity.firstUser.existingSecretKey }}
-            {{- else }}
-              value: {{ .Values.identity.firstUser.password | quote }}
-            {{- end }}
+            {{- include "camundaPlatform.secretEnvVar" (dict 
+              "name" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+              "config" .Values.identity.firstUser
+              "plaintextKey" "password"
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.identity.auth.admin.enabled }}
             - name: VALUES_CAMUNDA_ADMIN_CLIENT_SECRET
