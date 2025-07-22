@@ -131,8 +131,8 @@ spec:
               value: read
             {{- end }}
             {{- if .Values.identity.firstUser.enabled }}
-            {{- include "camundaPlatform.secretEnvVar" (dict 
-              "name" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
               "config" .Values.identity.firstUser
               "plaintextKey" "password"
             ) | nindent 12 }}
@@ -159,18 +159,15 @@ spec:
                   name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
                   key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
               {{- end }}
+            {{- end }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
-            - name: CAMUNDA_OPTIMIZE_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.optimize.existingSecret) }}
-              value: {{ .Values.global.identity.auth.optimize.existingSecret | quote }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.identity.auth.optimize.existingSecret.name }}
-                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- end }}
-            {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "CAMUNDA_OPTIMIZE_SECRET"
+              "config" .Values.global.identity.auth.optimize
+              "plaintextKey" "existingSecret"
+              "legacyKeyField" "existingSecretKey"
+            ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD

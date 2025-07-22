@@ -779,50 +779,72 @@ Release templates.
 {{- end -}}
 
 {{/*
-********************************************************************************
-Secret helpers for consistent secret management pattern.
-********************************************************************************
+normalizeSecretConfiguration
 */}}
+{{- define "camundaPlatform.normalizeSecretConfiguration" -}}
+{{- $config := .config | default dict -}}
+{{- $plaintextKey := .plaintextKey | default "password" -}}
+{{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+
+{{- $result := dict "secretRef" nil "plaintext" "" -}}
+
+{{/* New style secret */}}
+{{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
+  {{- $_ := set $result "secretRef" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
+
+{{/* New style plaintext */}}
+{{- else if and $config.secret $config.secret.inlineSecret -}}
+  {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
+
+{{/* Legacy: string + legacyKeyField => treat as secret name */}}
+{{- else if and (hasKey $config "existingSecret")
+                (kindIs "string" $config.existingSecret)
+                (ne $config.existingSecret "")
+                (hasKey $config $legacyKeyField)
+                (ne (get $config $legacyKeyField | default "") "") -}}
+  {{- $_ := set $result "secretRef" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
+
+{{/* Legacy: object form */}}
+{{- else if and (hasKey $config "existingSecret")
+                (kindIs "map" $config.existingSecret)
+                (ne ($config.existingSecret.name | default "") "") -}}
+  {{- $name := $config.existingSecret.name -}}
+  {{- $key  := (get $config $legacyKeyField | default "password") -}}
+  {{- $_ := set $result "secretRef" (dict "name" $name "key" $key) -}}
+
+{{/* Legacy: string literal fallback => plaintext */}}
+{{- else if and (hasKey $config "existingSecret")
+                (kindIs "string" $config.existingSecret)
+                (ne $config.existingSecret "") -}}
+  {{- $_ := set $result "plaintext" $config.existingSecret -}}
+
+{{/* Fallback plaintext key */}}
+{{- else if (hasKey $config $plaintextKey) -}}
+  {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
+{{- end }}
+
+{{- toYaml $result -}}
+{{- end -}}
 
 {{/*
-[camundaPlatform] Generate environment variable configuration for secret values.
-This helper prioritizes secret references over plaintext values according to this precedence:
-1. New style secret: secret.existingSecret + secret.existingSecretKey
-2. New style plaintext: secret.inlineSecret
-3. Old style secret: existingSecret + existingSecretKey  
-4. Old style plaintext: plaintextKey value
-
-Usage: 
-{{ include "camundaPlatform.secretEnvVar" (dict 
-  "name" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
-  "config" .Values.identity.firstUser
-  "plaintextKey" "password"
-) }}
-
-Parameters:
-- name: The environment variable name
-- config: The configuration object containing secret/plaintext settings
-- plaintextKey: The key name for the old-style plaintext fallback value
+emitEnvVarFromSecretConfig
+Usage:
+  {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+      "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+      "config"  .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  ) }}
 */}}
-{{- define "camundaPlatform.secretEnvVar" -}}
-- name: {{ .name }}
-{{- if and .config.secret.existingSecret .config.secret.existingSecretKey }}
-  {{- /* New style secret configuration takes highest priority */}}
+{{- define "camundaPlatform.emitEnvVarFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+- name: {{ .envName }}
+{{- if $norm.secretRef }}
   valueFrom:
     secretKeyRef:
-      name: {{ .config.secret.existingSecret }}
-      key: {{ .config.secret.existingSecretKey }}
-{{- else if .config.secret.inlineSecret }}
-  {{- /* New style plaintext configuration takes second priority */}}
-  value: {{ .config.secret.inlineSecret | quote }}
-{{- else if and .config.existingSecret .config.existingSecretKey }}
-  {{- /* Old style secret configuration takes third priority */}}
-  valueFrom:
-    secretKeyRef:
-      name: {{ .config.existingSecret }}
-      key: {{ .config.existingSecretKey }}
+      name: {{ $norm.secretRef.name }}
+      key:  {{ $norm.secretRef.key }}
 {{- else }}
-  {{- /* Old style plaintext fallback */}}
-  value: {{ get .config .plaintextKey | quote }}
+  value: {{ $norm.plaintext | default "" | quote }}
 {{- end }}
 {{- end -}}
