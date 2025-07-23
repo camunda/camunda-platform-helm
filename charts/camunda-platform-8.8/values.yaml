@@ -2231,6 +2231,7 @@ connectors:
 ## @section Orchestration Core Parameters
 ## @extra core configuration for the Orchestration Core.
 core:
+  ## @param core.enabled enable the orchestration cluster
   enabled: true
 
   ## @param core.debug if true, extra info is printed.
