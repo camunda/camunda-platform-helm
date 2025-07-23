@@ -327,6 +327,14 @@ global:
         existingSecret: ""
         ## @param global.identity.auth.admin.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: identity-admin-client-token
+        ## @extra global.identity.auth.admin.secret configuration to provide the admin client secret.
+        secret:
+          ## @param global.identity.auth.admin.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.admin.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.admin.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
       #######################
       # Management Group
