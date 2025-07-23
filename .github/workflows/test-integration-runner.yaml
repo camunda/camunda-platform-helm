@@ -162,6 +162,11 @@ on:
         default: "true"
         type: string
         description: Enable digest values
+      experimental-s3-enabled:
+        description: Enable S3 storage
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -296,6 +301,7 @@ jobs:
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
+          experimental-s3-enabled: ${{ inputs.experimental-s3-enabled }}
 
       - name: CI Setup - Set test type vars
         id: test-type-vars
@@ -401,6 +407,7 @@ jobs:
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
+          EXPERIMENTAL_S3_ENABLED: ${{ inputs.experimental-s3-enabled }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: "${{ inputs.test-case }}"
@@ -436,6 +443,7 @@ jobs:
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         if: inputs.flow == 'upgrade'
         env:
+          EXPERIMENTAL_S3_ENABLED: ${{ inputs.experimental-s3-enabled }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}

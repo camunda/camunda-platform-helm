@@ -135,6 +135,11 @@ on:
         required: false
         default: false
         type: boolean
+      experimental-s3-enabled:
+        description: Enable S3 storage
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -255,6 +260,7 @@ jobs:
       namespace-prefix: ${{ inputs.namespace-prefix }}
       values-digest: ${{ inputs.values-digest }}
       values-enterprise: ${{ inputs.values-enterprise }}
+      experimental-s3-enabled: ${{ inputs.experimental-s3-enabled }}
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:

@@ -26,6 +26,10 @@ inputs:
     description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
     required: false
     default: ""
+  experimental-s3-enabled:
+    description: Enable S3 storage
+    required: false
+    default: "false"
 
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
@@ -94,6 +98,17 @@ runs:
       # Get alpha chart dir.
       TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
       echo "TEST_CAMUNDA_HELM_DIR_ALPHA=${TEST_CAMUNDA_HELM_DIR_ALPHA}" | tee -a $GITHUB_ENV
+
+
+      # S3
+      if [[ "${{ inputs.experimental-s3-enabled" == "true" ]]; then
+        kubectl wait -n "$TEST_NAMESPACE" secret/s3-bucket-credentials --for=create
+        BUCKET_REGION=$(kubectl get -n $TEST_NAMESPACE secret s3-bucket-credentials -o json | jq .data.bucket-region | sed 's/"//g' | base64 -d | xargs echo)
+        BUCKET_NAME=$(kubectl get -n $TEST_NAMESPACE secret s3-bucket-credentials -o json | jq .data.bucket-name | sed 's/"//g' | base64 -d | xargs echo)
+
+        echo BUCKET_REGION="$BUCKET_REGION" | tee -a "$GITHUB_ENV"
+        echo BUCKET_NAME="$BUCKET_NAME" | tee -a "$GITHUB_ENV"
+      fi
 
       echo "Output vars:"
 
