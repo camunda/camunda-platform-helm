@@ -145,6 +145,11 @@ on:
         default: false
         type: boolean
         required: false
+      experimental-s3-enabled:
+        description: Enable S3 storage
+        required: false
+        default: false
+        type: boolean
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -173,7 +178,7 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   AWS_PROFILE: distribution
-  CLUSTER_NAME: camunda-ci-eks
+  CLUSTER_NAME: camunda-ci-eks-dev
   TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
@@ -271,6 +276,7 @@ jobs:
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
+      experimental-s3-enabled: ${{ inputs.experimental-s3-enabled }}
 
   print-outputs:
     name: Print outputs

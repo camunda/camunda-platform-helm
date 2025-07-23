@@ -1,0 +1,12 @@
+global:
+  documentStore:
+    activeStoreId: "aws"
+    type:
+      aws:
+        enabled: true
+        storeId: "aws"
+        bucketPath: "documents"
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        existingSecret: "s3-bucket-credentials"
+        accessKeyIdKey: "access-key-id"
+        secretAccessKeyKey: "secret-access-key"

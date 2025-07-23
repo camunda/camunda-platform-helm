@@ -26,6 +26,10 @@ inputs:
     description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
     required: false
     default: ""
+  experimental-s3-enabled:
+    description: Enable S3 storage
+    required: false
+    default: "false"
 
 # NOTE: This is not an exclusive list, some vars are exported as env var not an output.
 outputs:
@@ -87,6 +91,7 @@ runs:
       # Get alpha chart dir.
       TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
       echo "TEST_CAMUNDA_HELM_DIR_ALPHA=${TEST_CAMUNDA_HELM_DIR_ALPHA}" | tee -a $GITHUB_ENV
+
 
       echo "Output vars:"
 
