@@ -76,8 +76,8 @@ global:
     authorizations:
       enabled: true
     initialization:
-      mappings:
-        - mappingID: demo-user-mapping
+      mappingRules:
+        - mappingRuleID: demo-user-mapping-rule
           claimName: oid
           claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
 

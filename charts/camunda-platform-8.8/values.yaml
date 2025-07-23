@@ -120,12 +120,12 @@ global:
           name: Demo User
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
-      mappings:
-        ## @param global.security.initialization.mappings[0].mappingID the mapping-id of an initial mapping.
-        - mappingID: demo-user-mapping
-          ## @param global.security.initialization.mappings[0].claimName the claim-name of an initial mapping.
+      mappingRules:
+        ## @param global.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
+        - mappingRuleID: demo-user-mapping
+          ## @param global.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
           claimName: preferred_username
-          ## @param global.security.initialization.mappings[0].claimValue the name of an initial user.
+          ## @param global.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
           claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
