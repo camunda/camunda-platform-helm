@@ -146,23 +146,23 @@
                                         }
                                     }
                                 },
-                                "mappings": {
+                                "mappingRules": {
                                     "type": "array",
-                                    "description": "the mapping-id of an initial mapping.",
+                                    "description": "the mapping-rule-id of an initial mapping rule.",
                                     "items": {
                                         "type": "object",
                                         "properties": {
-                                            "mappingID": {
+                                            "mappingRuleID": {
                                                 "type": "string",
-                                                "description": "the mapping-id of an initial mapping."
+                                                "description": "the mapping-rule-id of an initial mapping rule."
                                             },
                                             "claimName": {
                                                 "type": "string",
-                                                "description": "the claim-name of an initial mapping."
+                                                "description": "the claim-name of an initial mapping rule."
                                             },
                                             "claimValue": {
                                                 "type": "string",
-                                                "description": "the name of an initial user."
+                                                "description": "the claim-value of an initial mapping rule."
                                             }
                                         }
                                     }
