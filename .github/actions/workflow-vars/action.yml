@@ -101,7 +101,7 @@ runs:
 
 
       # S3
-      if [[ "${{ inputs.experimental-s3-enabled" == "true" ]]; then
+      if [[ "${{ inputs.experimental-s3-enabled }}" == "true" ]]; then
         kubectl wait -n "$TEST_NAMESPACE" secret/s3-bucket-credentials --for=create
         BUCKET_REGION=$(kubectl get -n $TEST_NAMESPACE secret s3-bucket-credentials -o json | jq .data.bucket-region | sed 's/"//g' | base64 -d | xargs echo)
         BUCKET_NAME=$(kubectl get -n $TEST_NAMESPACE secret s3-bucket-credentials -o json | jq .data.bucket-name | sed 's/"//g' | base64 -d | xargs echo)
