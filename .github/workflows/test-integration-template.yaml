@@ -140,6 +140,11 @@ on:
         required: false
         default: false
         type: boolean
+      experimental-s3-enabled:
+        description: Enable S3 storage
+        required: false
+        default: false
+        type: boolean
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -265,6 +270,7 @@ jobs:
       values-digest: ${{ inputs.values-digest }}
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
+      experimental-s3-enabled: ${{ inputs.experimental-s3-enabled }}
 
   print-outputs:
     name: Print outputs
