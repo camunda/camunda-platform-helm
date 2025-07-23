@@ -873,21 +873,6 @@
                     "description": "can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)",
                     "default": ""
                 },
-                "migration": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "migrating data from Management Identity to Identity (in the orchestration cluster)",
-                            "default": false
-                        },
-                        "backoffLimit": {
-                            "type": "number",
-                            "description": "Specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
-                            "default": 6
-                        }
-                    }
-                },
                 "firstUser": {
                     "type": "object",
                     "properties": {
@@ -4429,7 +4414,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, all related resources are deployed via the helm release",
+                    "description": "enable the orchestration cluster",
                     "default": true
                 },
                 "debug": {
@@ -4465,6 +4450,26 @@
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
                             "default": [],
                             "items": {}
+                        }
+                    }
+                },
+                "migration": {
+                    "type": "object",
+                    "properties": {
+                        "identity": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "migrating data from Management Identity to Identity (in the orchestration cluster)",
+                                    "default": false
+                                },
+                                "backoffLimit": {
+                                    "type": "number",
+                                    "description": "Specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
+                                    "default": 6
+                                }
+                            }
                         }
                     }
                 },
