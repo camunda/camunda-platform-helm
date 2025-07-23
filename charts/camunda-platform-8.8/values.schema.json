@@ -883,6 +883,16 @@
                     "description": "can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)",
                     "default": ""
                 },
+                "migration": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "migrating data from Management Identity to Identity (in the orchestration cluster)",
+                            "default": false
+                        }
+                    }
+                },
                 "firstUser": {
                     "type": "object",
                     "properties": {
