@@ -43,22 +43,22 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
-            {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
                 "config"        .Values.global.identity.auth.connectors
-            ) }}
-            {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CORE_SECRET"
                 "config"        .Values.global.identity.auth.core
-            ) }}
-            {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONSOLE_SECRET"
                 "config"        .Values.global.identity.auth.console
-            ) }}
-            {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
-            ) }}
+            ) | nindent 12 }}
             {{- /* TODO: Use ".Values.identity.connectors.inbound.mode=oauth" as a condition when we migrate
                  to flat chart structure. Also then remove the optional flag from the secret. */}}
             - name: KEYCLOAK_CLIENTS_0_NAME
