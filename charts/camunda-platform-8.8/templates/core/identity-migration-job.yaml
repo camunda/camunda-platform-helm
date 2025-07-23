@@ -3,14 +3,14 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "identity.fullname" . }}-migration
-  labels: {{- include "identityMigration.labels" . | nindent 4 }}
+  labels: {{- include "core.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   backoffLimit: {{ .Values.core.migration.identity.backoffLimit }}
   template:
     metadata:
       labels:
-        {{- include "identityMigration.labels" . | nindent 8 }}
+        {{- include "core.labels" . | nindent 8 }}
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "core.imagePullSecrets" . | nindent 8 }}
