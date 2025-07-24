@@ -4414,7 +4414,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "enable the orchestration cluster",
+                    "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
                 "debug": {
@@ -4461,12 +4461,12 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "migrating data from Management Identity to Identity (in the orchestration cluster)",
+                                    "description": "if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs",
                                     "default": false
                                 },
                                 "backoffLimit": {
                                     "type": "number",
-                                    "description": "Specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
+                                    "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
                                 }
                             }
