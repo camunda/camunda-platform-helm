@@ -503,6 +503,16 @@ global:
   #       test: test
   extraManifests: []
 
+  ## @param global.noDb, If true, enables engine-only/no-db mode. This disables all secondary-storage-dependent features and components.
+  # When enabled, the following is set automatically:
+  #   - camunda.database.type: none
+  #   - optimize.enabled: false
+  #   - camunda.connector.webhook.enabled: false
+  #   - camunda.connector.polling.enabled: false
+  #   - camunda.connector.agenticai.enabled: false
+  #   - PLAY_ENABLED: false
+  noDb: false
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #############################################################################################################
