@@ -208,11 +208,27 @@ global:
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.elasticsearch.tls.secret configuration to provide the TLS secret.
+      secret:
+        ## @param global.elasticsearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
+        existingSecret: ""
+        ## @param global.elasticsearch.tls.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     auth:
       username: ""
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
+      ## @extra global.elasticsearch.auth.secret configuration to provide the authentication secret.
+      secret:
+        ## @param global.elasticsearch.auth.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.elasticsearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param global.elasticsearch.auth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
       ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
     disableExporter: false
     ## @extra global.elasticsearch.url Configuration to configure elasticsearch url

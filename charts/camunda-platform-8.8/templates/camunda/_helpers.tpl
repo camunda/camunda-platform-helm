@@ -785,6 +785,8 @@ normalizeSecretConfiguration
 {{- $config := .config | default dict -}}
 {{- $plaintextKey := .plaintextKey | default "password" -}}
 {{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+{{- $defName := .defaultSecretName | default "" -}}
+{{- $defKey  := .defaultSecretKey  | default "password" -}}
 
 {{- $result := dict "secretRef" nil "plaintext" "" -}}
 
@@ -823,6 +825,12 @@ normalizeSecretConfiguration
   {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
 {{- end }}
 
+{{/* final fallback to the caller‑supplied default */}}
+{{- if and (not $result.secretRef) (eq $result.plaintext "") (ne $defName "") -}}
+  {{- $_ := set $result "secretRef" (dict "name" $defName "key" $defKey) -}}
+{{- end }}
+
+
 {{- toYaml $result -}}
 {{- end -}}
 
@@ -838,6 +846,7 @@ Usage:
 */}}
 {{- define "camundaPlatform.emitEnvVarFromSecretConfig" -}}
 {{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.secretRef (ne $norm.plaintext "") -}}
 - name: {{ .envName }}
 {{- if $norm.secretRef }}
   valueFrom:
@@ -845,6 +854,7 @@ Usage:
       name: {{ $norm.secretRef.name }}
       key:  {{ $norm.secretRef.key }}
 {{- else }}
-  value: {{ $norm.plaintext | default "" | quote }}
+  value: {{ $norm.plaintext | quote }}
 {{- end }}
+{{- end -}}
 {{- end -}}
