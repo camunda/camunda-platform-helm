@@ -42,7 +42,7 @@ spec:
             - name: NODE_ENV
               value: "production"
             - name: PLAY_ENABLED
-              value: {{ ternary "false" "true" .Values.global.noSecondaryStorage }}
+              value: {{ ternary "false" "true" .Values.global.noDb }}
             - name: NODE_OPTIONS
               value: "--max-old-space-size=128"
             - name: PUSHER_APP_ID
