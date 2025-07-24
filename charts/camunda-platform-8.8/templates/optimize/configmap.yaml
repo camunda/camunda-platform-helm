@@ -1,4 +1,4 @@
-{{- if and .Values.optimize.enabled (not .Values.global.noSecondaryStorage) -}}
+{{- if and .Values.optimize.enabled (not .Values.global.noDb) -}}
 kind: ConfigMap
 metadata:
   name: {{ include "optimize.fullname" . }}-configuration
