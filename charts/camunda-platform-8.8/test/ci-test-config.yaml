@@ -61,6 +61,11 @@ integration:
           exclude: []
           shortname: oske
           auth: keycloak
+        - name: identity-migration
+          enabled: true
+          exclude: []
+          shortname: idmike
+          auth: keycloak
         - name: elasticsearch
           enabled: true
           exclude: []
