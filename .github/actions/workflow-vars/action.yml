@@ -118,7 +118,7 @@ runs:
       # Ensure ingress host is under 63 characters (DNS label limit)
       # Truncate to 58 chars max and append 4 random chars
       RANDOM_SUFFIX=$(openssl rand -hex 2)
-      TEST_INGRESS_HOST="$(printf '%s' "$TEST_INGRESS_HOST" | head -c 58 | sed 's/-$//')-${RANDOM_SUFFIX}"
+      TEST_INGRESS_HOST="$(printf '%s' "$TEST_INGRESS_HOST" | head -c 40 | sed 's/-$//')-${RANDOM_SUFFIX}"
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
 
