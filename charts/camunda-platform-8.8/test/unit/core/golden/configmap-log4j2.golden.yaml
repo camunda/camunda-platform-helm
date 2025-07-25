@@ -83,8 +83,8 @@ data:
           snapshotPeriod: "5m"
           disk:
             freeSpace:
-              processing: "3GB"
-              replication: "2GB"
+              processing: "2GB"
+              replication: "1GB"
 
         # zeebe.broker.threads
         threads:
