@@ -1,0 +1,455 @@
+{{/*
+This file name should start with an underscore to avoid rendering it as a template.
+It is included (imported) in the ConfigMap.
+*/}}
+spring:
+  profiles:
+    active: {{ include "core.enabledProfiles" . | quote }}
+
+server:
+  address: 0.0.0.0
+  port: {{ .Values.core.service.httpPort }}
+  # TODO: Review the SSL settings for the server.
+  # ssl:
+  #   enabled: true
+  #   certificate: /path/to/my/cert.pem
+  #   certificate-private-key: /path
+
+management:
+  server:
+    address: 0.0.0.0
+    port: {{ .Values.core.service.managementPort }}
+    # TODO: Review the SSL settings for the management server.
+    # ssl:
+    #   enabled: true
+  {{- if .Values.core.contextPath }}
+  endpoint: {{ printf "/%s/actuator" .Values.core.contextPath | quote }}
+  {{- end }}
+
+camunda:
+  system:
+    cpu-thread-count: {{ .Values.core.cpuThreadCount }}
+    io-thread-count: {{ .Values.core.ioThreadCount }}
+    clock-controlled: false
+    validate-restore-config: true
+    upgrade:
+      enable-version-check: true
+
+  api:
+    grpc:
+      address: 0.0.0.0
+      port: {{ .Values.core.service.grpcPort }}
+      # TODO: Review the SSL settings for the grpc api.
+      # ssl:
+      #   enabled: true
+      #   certificate: /path/to/my/cert.pem
+      #   certificate-private-key: /path
+      # interceptors: []
+      #   # - id: 'id1'
+      #   #   jar-path: './lib/myInterceptor.jar'
+      #   #   class-name: 'MyGrpcInterceptor'
+      # management-threads: 1
+    # long-polling:
+    #   enabled: true
+    #   timeout: 20000
+    #   probe-timeout: '10s'
+    #   min-empty-responses: 3
+    # rest:
+    #   filters: []
+    #     # - id: 'id1'
+    #     #   jar-path: './lib/myFilter.jar'
+    #     #   class-name: 'MyRestFilter'
+
+  cluster:
+    # metadata:
+    #   sync-delay: '10s'
+    #   sync-request-timeout: '2s'
+    #   gossip-fanout: 2
+    network:
+      host: null
+      advertised-host: null
+      # port-offset: 0
+      # max-message-size: '4MB'
+      # socket-send-buffer: '1MB'
+      # socket-receive-buffer: '1MB'
+      # heartbeat-timeout: '15s'
+      # heartbeat-interval: '5s'
+      command-api:
+        # default-port:
+        # host:
+        port: {{ .Values.core.service.commandPort }}
+        # advertisedHost:
+        # advertisedPort:
+      internal-api:
+        # default-port:
+        # host:
+        port: {{ .Values.core.service.internalPort }}
+        # advertisedHost:
+        # advertisedPort:
+    initial-contact-points:
+      {{- range (untilStep 0 (int .Values.core.clusterSize) 1) }}
+        - {{ include "core.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.core.service.internalPort}}
+      {{- end }}
+    node-count: {{ .Values.core.clusterSize | quote }} #?? Is that should be the same as .Values.core.clusterSize?
+    # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+    # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
+    node-id: ${VALUES_NODE_ID}
+    partition-count: {{ .Values.core.partitionCount | quote }}
+    replication-factor: {{ .Values.core.replicationFactor | quote }}
+    size: {{ .Values.core.clusterSize | quote }}
+    name: {{ tpl .Values.global.zeebeClusterName . }}
+    # membership:
+    #   broadcast-updates: true
+    #   broadcast-disputes: true
+    #   notify-suspect: false
+    #   probe-interval: '1s'
+    #   probe-timeout: '100ms'
+    #   suspect-probes: 3
+    #   failure-timeout: '3s'
+    #   sync-interval: '10s'
+    #   gossip-fanout: 2
+    #   gossip-interval: '250ms'
+    # raft:
+    #   priority-election-enabled: true
+    #   flush-enabled: true
+    #   flush-delay: 0s
+    #   heartbeat-interval: '250ms'
+    #   election-timeout: '2.5s'
+    #   max-appends-per-follower: 6
+    #   max-appends-batch-size: 32KB
+    #   disable-explicit-raft-flush: false
+    #   request-timeout: 2.5s
+    #   snapshot-request-timeout: 2.5s
+    #   snapshot-chunk-size: 1GB
+    #   configuration-change-timeout: 10s
+    #   max-quorum-response-timeout: 0s
+    #   min-step-down-failure-count: 3
+    #   prefer-snapshot-replicationThreshold: 100
+    #   preallocate-segment-files: true
+    # compression-algorithm: 'none'
+
+  data:
+    {{- if .Values.core.history.retention.enabled }}
+    retention:
+      enabled: true
+      minimum-age: {{ .Values.core.history.retention.minimumAge | quote }}
+    {{- end }}
+    snapshot-period: {{ .Values.core.data.snapshotPeriod | quote }}
+    # export:
+    #   distribution-interval: '15s'
+    #   skip-records: []
+    #   execution-metrics-enabled: false
+    # backup:
+    #   repository-name: ''
+    #   snapshot-timeout: 0
+    #   incomplete-check-timeout: 5m
+    #   store: 'NONE'
+    #   s3:
+    #     bucket-name:
+    #     endpoint:
+    #     region:
+    #     access-key:
+    #     secret-key:
+    #     api-call-timeout: '180s'
+    #     force-path-style-access: false
+    #     compression:
+    #     max-concurrent-connections: 50
+    #     connection-acquisition-timeout: '45s'
+    #     base-path:
+    #   gcs:
+    #     bucket-name:
+    #     endpoint:
+    #     host:
+    #     auth: 'AUTO'
+    #   azure:
+    #     endpoint:
+    #     account-name:
+    #     account-key:
+    #     connection-string:
+    #     base-path:
+    #     create-container: true
+    #     sas-token:
+    #       type:
+    #       value:
+    #   filesystem:
+    #     base-path:
+    primary-storage:
+      # directory: './data'
+      # runtime-directory: ''
+      disk:
+        free-space:
+          processing: {{ .Values.core.data.disk.freeSpace.processing | quote }}
+          replication: {{ .Values.core.data.disk.freeSpace.replication | quote }}
+      # logstream:
+      #   log-segment-size: '128MB'
+      #   log-index-density: 100
+      # rocksdb:
+      #   memory-limit: '512MB'
+      #   [placeholder for legacy experimental.rocksdb properties]
+    secondary-storage:
+      type: {{ include "core.secondaryStorage" . | quote -}}
+      {{- if .Values.global.elasticsearch.enabled }}
+      elasticsearch:
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
+        # field-date-format: 'date_time'
+        # socket-timeout: '10s'
+        # connection-timeout: '30s'
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        # TODO: Review the password settings for elasticsearch.
+        password: ''
+        # TODO: Review the security settings for elasticsearch.
+        security:
+          enabled: false
+          certificate-path: ''
+          verify-hostname: true
+          self-signed: false
+        # interceptor-plugins: []
+        #   # - id: ''
+        #   #   class-name: ''
+        #   #   jar-path: ''
+        index-prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+        # number-of-shards: 1
+        # number-of-replicas: 0
+        # number-of-shards-per-index: {}
+        # number-of-replicas-per-index: {}
+        # variable-size-threshold: 8191
+        # wait-for-importers: true
+        # bulk:
+        #   delay: 5
+        #   size: 1000
+        # process-cache:
+        #   max-cache-size: 10000
+        # form-cache:
+        #   max-cache-size: 10000
+        # batch-operation-cache:
+        #   max-cache-size: 10000
+        # create-schema: true
+        # post-export:
+        #   batch-size: 100
+        #   delay-between-runs: '2s'
+        #   max-delay-between-runs: '60s'
+        #   ignore-missing-data: false
+        # incident-notifier:
+        #   webhook: ''
+        #   auth0-domain: ''
+        #   m2m-client-id: ''
+        #   m2m-client-secret: ''
+        #   m2m-audience: ''
+        # batch-operations:
+        #   export-items-on-creation: true
+        # history:
+        #   els-rollover-date-format: 'date'
+        #   rollover-interval: '1d'
+        #   rollover-batch-size: 100
+        #   wait-period-before-archiving: '1h'
+        #   delay-between-runs: '2s'
+        #   max-delay-between-runs: '60s'
+        #   policy-name: 'camunda-history-retention-policy'
+      {{- end }}
+      {{- if .Values.global.opensearch.enabled }}
+      opensearch:
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
+        # field-date-format: 'date_time'
+        # socket-timeout: '10s'
+        # connection-timeout: '30s'
+        username: {{ .Values.global.opensearch.auth.username | quote }}
+        # TODO: Review the password settings for opensearch.
+        password: ''
+        # TODO: Review the security settings for opensearch.
+        security:
+          enabled: false
+          certificate-path: ''
+          verify-hostname: true
+          self-signed: false
+        # interceptor-plugins:
+        #   - id: ''
+        #     class-name: ''
+        #     jar-path: ''
+        index-prefix: {{ .Values.global.opensearch.prefix | quote }}
+        # number-of-shards: 1
+        # number-of-replicas: 0
+        # number-of-shards-per-index: {}
+        # number-of-replicas-per-index: {}
+        # variable-size-threshold: 8191
+        # wait-for-importers: true
+        # bulk:
+        #   delay: 5
+        #   size: 1000
+        # process-cache:
+        #   max-cache-size: 10000
+        # form-cache:
+        #   max-cache-size: 10000
+        # batch-operation-cache:
+        #   max-cache-size: 10000
+        # create-schema: true
+        # post-export:
+        #   batch-size: 100
+        #   delay-between-runs: '2s'
+        #   max-delay-between-runs: '60s'
+        #   ignore-missing-data: false
+        # incident-notifier:
+        #   webhook: ''
+        #   auth0-domain: ''
+        #   m2m-client-id: ''
+        #   m2m-client-secret: ''
+        #   m2m-audience: ''
+        # batch-operations:
+        #   export-items-on-creation: true
+        # history:
+        #   els-rollover-date-format: 'date'
+        #   rollover-interval: '1d'
+        #   rollover-batch-size: 100
+        #   wait-period-before-archiving: '1h'
+        #   delay-between-runs: '2s'
+        #   max-delay-between-runs: '60s'
+        #   policy-name: 'camunda-history-retention-policy'
+    {{- end }}
+    # NOTE: The exporters are optional in the new unified configuration.
+    # They are automatically enabled if the secondary storage is set to elasticsearch or opensearch.
+    # exporters:
+    #   elasticsearch:
+    #     class-name: 'io.camunda.zeebe.exporter.ElasticsearchExporter'
+    #     jar-path: 
+    #     args:
+    #   opensearch:
+    #     class-name: 'io.camunda.zeebe.exporter.opensearch.OpensearchExporter'
+    #     jar-path: 
+    #     args:
+
+  # monitoring:
+  #   metrics:
+  #     actor: true
+  #     jfr: true
+  #   disk:
+  #     enabled: true
+  #     interval: '1s'
+
+  # processing:
+  #   max-commands-in-batch: 100
+  #   enable-async-scheduled-tasks: true
+  #   scheduled-tasks-check-interval: '1s'
+  #   skip-positions: []
+  #   enable-preconditions-check: false
+  #   enable-foreign-key-checks : false
+  #   enable-yielding-duedate-checker: true
+  #   enable-async-message-ttl-checker: false
+  #   enable-async-timer-duedate-checker: false
+  #   enable-straightthrough-processsing-loop-detector: true
+  #   enable-identity-setup: true
+  #   enable-message-body-on-expired: false
+  #   flow-control:
+  #     request: (this is a LimitCfg object)
+  #       enabled: true
+  #       windowed: true
+  #       algorithm: 'aimd'
+  #       aimd:
+  #         request-timeout: '200ms'
+  #         initial-limit: 100
+  #         min-limit: 1
+  #         max-limit: 1000
+  #         backoff-ratio: 0.9
+  #       fixed:
+  #         limit: 20
+  #       gradient:
+  #         min-limit: 10
+  #         initial-limit: 20
+  #         rtt-tolerance: 2.0
+  #       gradient2:
+  #         min-limit: 10
+  #         initial-limit: 20
+  #         rtt-tolerance: 2.0
+  #         long-window: 600
+  #       vegas:
+  #         alpha: 3
+  #         beta: 6
+  #         initial-limit: 20
+  #       legacy-vegas:
+  #         initial-limit: 1024
+  #         max-concurrency: 1024*32
+  #         alpha-limit: 0.7
+  #         beta-limit: 0.95
+  #     write:
+  #       enabled: false
+  #       limit:
+  #       ramp-up: '0s'
+  #       throttle:
+  #         enabled: false
+  #         acceptable-backlog: 100000
+  #         minimum-limit: 100
+  #         resolution: '100s'
+
+  security:
+    # TODO: Review the base-url config.
+    base-url: {{ include "identity.internalUrl" . | quote }}
+    issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+    issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+    redirect-root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl . | quote }}
+    client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+    audience: {{ include "core.authAudience" . | quote }}
+    # resource-permission-update-period: '30s'
+    # user-access-restrictions-enabled: true
+    authentication:
+      unprotected-api: {{ .Values.global.security.authentication.unprotectedApi }}
+      method: 'oidc'
+      {{- if eq .Values.global.security.authentication.method "oidc" }}
+      oidc:
+        client-id: {{ include "core.authClientId" . | quote }}
+      {{- end }}
+    authorization: {{ .Values.global.security.authorizations.enabled }}
+    # csrf-prevention-enabled: true
+    multi-tenancy: {{ .Values.global.multitenancy.enabled }}
+    # TODO: Review the security settings.
+    transport-layer-security:
+      cluster:
+        auth-type:
+        certificate-chain-path: 
+        certificate-private-key-path:
+        key-store: './cluster.jks'
+        key-store-password: ${CLUSTER_KEY_STORE_PW}
+
+  webapp:
+    common:
+      enterprise: true 
+      roles:
+        - owner
+      # TODO: Change after moving `global.security` to `core.security`.
+      users:
+        user-id: 'demo'
+        user-password: 'demo'
+        user-display-name: 'demo'
+        # operator-user-id: 'act'
+        # operator-password: 'act'
+        # operator-display-name: 'act'
+        # reader-user-id: 'view'
+        # reader-password: 'view'
+        # reader-display-name: 'view'
+    {{- if .Values.core.profiles.operate }}
+    operate:
+      enabled: true
+      # operation-executor:
+      #   enabled: true
+      #   thread-count: 3
+      #   queue-size: 10
+      #   batch-size: 500
+      #   deletion-batch-size: 5000
+      #   worker-id: random-uuid
+      #   lock-timeout: '60s'
+      # alerting-webbook: ''
+      zeebe:
+        gateway-address: {{ (printf "%s:%d" (include "core.fullname" .) .Values.core.service.grpcPort)| quote }}
+        # TODO: Check the security settings for zeebe gateway.
+        secure: false
+        certificate-path: ''
+      # TODO: Check the importer settings for operate.
+      importer-enabled: true
+    {{- end }}
+    {{- if .Values.core.profiles.tasklist }}
+    tasklist:
+      enabled: true
+      # TODO: Check the importer settings for tasklist.
+      importer-enabled: true
+    {{- end }}
+    session:
+      persistent: true

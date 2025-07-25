@@ -327,7 +327,7 @@
                         },
                         "disableExporter": {
                             "type": "boolean",
-                            "description": "DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled",
+                            "description": "(DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.",
                             "default": false
                         },
                         "url": {
@@ -439,6 +439,16 @@
                                     "default": 443
                                 }
                             }
+                        },
+                        "clusterName": {
+                            "type": "string",
+                            "description": "TBA",
+                            "default": "opensearch"
+                        },
+                        "prefix": {
+                            "type": "string",
+                            "description": "TBA",
+                            "default": "zeebe-record"
                         }
                     }
                 },
@@ -2523,7 +2533,7 @@
                             "properties": {
                                 "url": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.",
+                                    "description": "(DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.",
                                     "default": ""
                                 },
                                 "host": {
@@ -4422,6 +4432,11 @@
                     "description": "if true, extra info is printed.",
                     "default": false
                 },
+                "profilesOverride": {
+                    "type": "string",
+                    "description": "TAB",
+                    "default": "\"\""
+                },
                 "image": {
                     "type": "object",
                     "properties": {
@@ -4790,12 +4805,12 @@
                                         "processing": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "3GB"
+                                            "default": "2GB"
                                         },
                                         "replication": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "2GB"
+                                            "default": "1GB"
                                         }
                                     }
                                 }
@@ -4817,7 +4832,7 @@
                 },
                 "extraInitContainers": {
                     "type": "array",
-                    "description": "(Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters",
+                    "description": "(DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters",
                     "default": [],
                     "items": {}
                 },

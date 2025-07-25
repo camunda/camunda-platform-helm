@@ -82,3 +82,23 @@ app.kubernetes.io/component: core
 {{- define "core.authTokenScope" -}}
     {{- .Values.global.identity.auth.core.tokenScope -}}
 {{- end -}}
+
+{{- define "core.enabledProfiles" -}}
+    {{- $enabledProfiles := list -}}
+    {{- range $k, $v := .Values.core.profiles }}
+    {{- if eq $v true }}
+        {{- $enabledProfiles = append $enabledProfiles $k }}
+    {{- end }}
+    {{- end }}
+    {{- join "," $enabledProfiles }}
+{{- end -}}
+
+{{- define "core.secondaryStorage" -}}
+    {{- if .Values.global.elasticsearch.enabled -}}
+        elasticsearch
+    {{- else if .Values.global.opensearch.enabled -}}
+        opensearch
+    {{- else -}}
+        {{- fail "Please enable a secondary storage type. Either Elasticsearch or OpenSearch" -}}
+    {{- end -}}
+{{- end -}}
