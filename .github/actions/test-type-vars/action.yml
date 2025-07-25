@@ -69,7 +69,7 @@ runs:
         # Charts dir.
         charts_base_dir="$(echo ${integration_vars} | jq -r '.vars.chartsBaseDir')"
         echo "TEST_CHART_DIR=${charts_base_dir}/${{ inputs.chart-dir }}" | tee -a $GITHUB_ENV
-        echo "ABSOLUTE_TEST_CHART_DIR=/home/runner/work/camunda-platform-helm/${CHART_PATH}" | tee -a $GITHUB_ENV
+        echo "ABSOLUTE_TEST_CHART_DIR=${GITHUB_WORKSPACE}/${CHART_PATH}" | tee -a $GITHUB_ENV
 
         if [[ "${{ inputs.enterprise }}" == "true" ]]; then
           echo "TEST_HELM_EXTRA_ARGS=--values ${charts_base_dir}/${{ inputs.chart-dir }}/values-enterprise.yaml" | tee -a $GITHUB_ENV
