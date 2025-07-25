@@ -369,7 +369,12 @@ jobs:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-      
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+
         run: |
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
