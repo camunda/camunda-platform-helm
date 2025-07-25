@@ -111,7 +111,16 @@ runs:
         export INGRESS_HOSTNAME_BASE=ci.distro.ultrawombat.com
       fi
 
-      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${INGRESS_HOSTNAME_BASE}"
+      # Constants for hostname length management
+      MAX_LABEL=63
+      SUFFIX="-${{ inputs.setup-flow }}-${{ inputs.platform }}"         # e.g. "-install-gke"
+      
+      # Clamp identifier to prevent long hostnames
+      SAFE_ID="${{ inputs.identifier-base }}"
+      SAFE_ID="${SAFE_ID:0:$((MAX_LABEL - ${#SUFFIX}))}"
+      
+      # Build the hostname with clamped identifier
+      TEST_INGRESS_HOST="${SAFE_ID}${SUFFIX}.${INGRESS_HOSTNAME_BASE}"
       if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
