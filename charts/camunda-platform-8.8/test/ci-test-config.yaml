@@ -50,12 +50,12 @@ integration:
           exclude: []
           shortname: esoi
           auth: oidc
-          # not supported
         - name: multitenancy
-          enabled: false
+          enabled: true
           shortname: mtke
           exclude: []
           auth: keycloak
+          # not supported
         - name: opensearch
           enabled: false
           exclude: []
