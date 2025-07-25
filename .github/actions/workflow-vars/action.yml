@@ -111,14 +111,16 @@ runs:
         export INGRESS_HOSTNAME_BASE=ci.distro.ultrawombat.com
       fi
 
+      # Truncate to 58 chars max and append 4 random chars
+      RANDOM_SUFFIX=$(openssl rand -hex 2)
+      TEST_IDENTIFIER="$(printf '%s' "$TEST_IDENTIFIER" | head -c 40 | sed 's/-$//')-${RANDOM_SUFFIX}"
+
       TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${INGRESS_HOSTNAME_BASE}"
       if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
+        GITHUB_WORKFLOW_JOB_ID="$(printf '%s' "$GITHUB_WORKFLOW_JOB_ID" | head -c 40 | sed 's/-$//')-${RANDOM_SUFFIX}"
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
       # Ensure ingress host is under 63 characters (DNS label limit)
-      # Truncate to 58 chars max and append 4 random chars
-      RANDOM_SUFFIX=$(openssl rand -hex 2)
-      TEST_INGRESS_HOST="$(printf '%s' "$TEST_INGRESS_HOST" | head -c 40 | sed 's/-$//')-${RANDOM_SUFFIX}"
       # The var is needed in some non-shell steps.
       echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
 
