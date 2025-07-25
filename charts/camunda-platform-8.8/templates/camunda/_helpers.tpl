@@ -777,3 +777,84 @@ Release templates.
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
   {{- end }}
 {{- end -}}
+
+{{/*
+normalizeSecretConfiguration
+*/}}
+{{- define "camundaPlatform.normalizeSecretConfiguration" -}}
+{{- $config := .config | default dict -}}
+{{- $plaintextKey := .plaintextKey | default "password" -}}
+{{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+{{- $defName := .defaultSecretName | default "" -}}
+{{- $defKey  := .defaultSecretKey  | default "password" -}}
+
+{{- $result := dict "secretRef" nil "plaintext" "" -}}
+
+{{/* New style secret */}}
+{{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
+  {{- $_ := set $result "secretRef" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
+
+{{/* New style plaintext */}}
+{{- else if and $config.secret $config.secret.inlineSecret -}}
+  {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
+
+{{/* Legacy: string + legacyKeyField => treat as secret name */}}
+{{- else if and (hasKey $config "existingSecret")
+                (kindIs "string" $config.existingSecret)
+                (ne $config.existingSecret "")
+                (hasKey $config $legacyKeyField)
+                (ne (get $config $legacyKeyField | default "") "") -}}
+  {{- $_ := set $result "secretRef" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
+
+{{/* Legacy: object form */}}
+{{- else if and (hasKey $config "existingSecret")
+                (kindIs "map" $config.existingSecret)
+                (ne ($config.existingSecret.name | default "") "") -}}
+  {{- $name := $config.existingSecret.name -}}
+  {{- $key  := (get $config $legacyKeyField | default "password") -}}
+  {{- $_ := set $result "secretRef" (dict "name" $name "key" $key) -}}
+
+{{/* Legacy: string literal fallback => plaintext */}}
+{{- else if and (hasKey $config "existingSecret")
+                (kindIs "string" $config.existingSecret)
+                (ne $config.existingSecret "") -}}
+  {{- $_ := set $result "plaintext" $config.existingSecret -}}
+
+{{/* Fallback plaintext key */}}
+{{- else if (hasKey $config $plaintextKey) -}}
+  {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
+{{- end }}
+
+{{/* final fallback to the caller‑supplied default */}}
+{{- if and (not $result.secretRef) (eq $result.plaintext "") (ne $defName "") -}}
+  {{- $_ := set $result "secretRef" (dict "name" $defName "key" $defKey) -}}
+{{- end }}
+
+
+{{- toYaml $result -}}
+{{- end -}}
+
+{{/*
+emitEnvVarFromSecretConfig
+Usage:
+  {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+      "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+      "config"  .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitEnvVarFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.secretRef (ne $norm.plaintext "") -}}
+- name: {{ .envName }}
+{{- if $norm.secretRef }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $norm.secretRef.name }}
+      key:  {{ $norm.secretRef.key }}
+{{- else }}
+  value: {{ $norm.plaintext | quote }}
+{{- end }}
+{{- end -}}
+{{- end -}}

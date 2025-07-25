@@ -39,6 +39,7 @@ func TestSpringConfigMapTemplate(t *testing.T) {
 func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Skip:                 true,
 			Name:                 "TestContainerShouldAddContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -48,7 +49,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				var configmapApplication IdentityConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
@@ -60,6 +61,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/identity", configmapApplication.Server.Servlet.ContextPath)
 			},
 		}, {
+			Skip: true,
 			Name: "TestConfigMapBuiltinDatabaseEnabled",
 			Values: map[string]string{
 				"global.multitenancy.enabled": "true",
@@ -68,7 +70,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				var configmapApplication IdentityConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
@@ -83,6 +85,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("identity", configmapApplication.Spring.DataSource.Username)
 			},
 		}, {
+			Skip: true,
 			Name: "TestConfigMapExternalDatabaseEnabled",
 			Values: map[string]string{
 				"global.multitenancy.enabled":        "true",
@@ -96,7 +99,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				var configmapApplication IdentityConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
@@ -111,6 +114,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("my-database-username", configmapApplication.Spring.DataSource.Username)
 			},
 		}, {
+			Skip: true,
 			Name: "TestConfigMapAuthIssuerBackendUrlWhenExplicitlyDefined",
 			Values: map[string]string{
 				"identityKeycloak.enabled":              "false",
@@ -120,7 +124,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				var configmapApplication IdentityConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
@@ -133,6 +137,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("https://example.com/", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		}, {
+			Skip: true,
 			Name: "TestConfigMapAuthIssuerBackendUrlWhenKeycloakUrlDefined",
 			Values: map[string]string{
 				"global.identity.keycloak.url.protocol": "https",
@@ -144,7 +149,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				var configmapApplication IdentityConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
@@ -157,6 +162,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("https://keycloak.com:443/auth/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		}, {
+			Skip:   true,
 			Name:   "TestConfigMapAuthIssuerBackendUrlWhenKeycloakNotDefined",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {

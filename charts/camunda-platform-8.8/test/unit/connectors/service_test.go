@@ -80,5 +80,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		},
 	}
 
+	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

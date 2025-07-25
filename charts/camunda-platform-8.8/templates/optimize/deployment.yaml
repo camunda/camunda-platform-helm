@@ -46,12 +46,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            {{- if and .Values.global.elasticsearch.external  (include "elasticsearch.passwordIsDefined" .) }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
-                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- if .Values.global.elasticsearch.external }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
+                "config"        .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
@@ -136,12 +135,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            {{- if and .Values.global.elasticsearch.external  (include "elasticsearch.passwordIsDefined" .) }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
-                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- if .Values.global.elasticsearch.external }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
+                "config"        .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
