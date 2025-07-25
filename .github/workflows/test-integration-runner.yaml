@@ -87,7 +87,7 @@ on:
         type: string
       scenario:
         required: false
-        default: "base"
+        default: "elasticsearch"
         type: string
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
@@ -145,7 +145,7 @@ on:
       shortname:
         description: The shortname of the scenario.
         required: true
-        default: ""
+        default: "eske"
         type: string
       namespace-prefix:
         description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
@@ -368,6 +368,13 @@ jobs:
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+
         run: |
           echo "Extra values from workflow:"
           echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
