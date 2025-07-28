@@ -9,7 +9,6 @@ spring:
 server:
   address: 0.0.0.0
   port: {{ .Values.core.service.httpPort }}
-  # TODO: Review the SSL settings for the server.
   # ssl:
   #   enabled: true
   #   certificate: /path/to/my/cert.pem
@@ -19,7 +18,6 @@ management:
   server:
     address: 0.0.0.0
     port: {{ .Values.core.service.managementPort }}
-    # TODO: Review the SSL settings for the management server.
     # ssl:
     #   enabled: true
   {{- if .Values.core.contextPath }}
@@ -39,7 +37,6 @@ camunda:
     grpc:
       address: 0.0.0.0
       port: {{ .Values.core.service.grpcPort }}
-      # TODO: Review the SSL settings for the grpc api.
       # ssl:
       #   enabled: true
       #   certificate: /path/to/my/cert.pem
@@ -90,7 +87,8 @@ camunda:
       {{- range (untilStep 0 (int .Values.core.clusterSize) 1) }}
         - {{ include "core.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.core.service.internalPort}}
       {{- end }}
-    node-count: {{ .Values.core.clusterSize | quote }} #?? Is that should be the same as .Values.core.clusterSize?
+    # TODO: Double-check if this is the same as .Values.core.clusterSize.
+    node-count: {{ .Values.core.clusterSize | quote }}
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
     node-id: ${VALUES_NODE_ID}
@@ -174,222 +172,53 @@ camunda:
     #   filesystem:
     #     base-path:
     primary-storage:
-      # directory: './data'
-      # runtime-directory: ''
       disk:
         free-space:
           processing: {{ .Values.core.data.disk.freeSpace.processing | quote }}
           replication: {{ .Values.core.data.disk.freeSpace.replication | quote }}
-      # logstream:
-      #   log-segment-size: '128MB'
-      #   log-index-density: 100
-      # rocksdb:
-      #   memory-limit: '512MB'
-      #   [placeholder for legacy experimental.rocksdb properties]
     secondary-storage:
       type: {{ include "core.secondaryStorage" . | quote -}}
       {{- if .Values.global.elasticsearch.enabled }}
       elasticsearch:
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
-        # field-date-format: 'date_time'
-        # socket-timeout: '10s'
-        # connection-timeout: '30s'
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
-        # TODO: Review the password settings for elasticsearch.
-        password: ''
-        # TODO: Review the security settings for elasticsearch.
+        password: ${VALUES_ELASTICSEARCH_PASSWORD:}
+        {{- if .Values.global.elasticsearch.tls.enabled }}
         security:
           enabled: false
+          # TODO: Check what kind of certificate is expected here?
           certificate-path: ''
           verify-hostname: true
           self-signed: false
-        # interceptor-plugins: []
-        #   # - id: ''
-        #   #   class-name: ''
-        #   #   jar-path: ''
+        {{- end }}
         index-prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-        # number-of-shards: 1
-        # number-of-replicas: 0
-        # number-of-shards-per-index: {}
-        # number-of-replicas-per-index: {}
-        # variable-size-threshold: 8191
-        # wait-for-importers: true
-        # bulk:
-        #   delay: 5
-        #   size: 1000
-        # process-cache:
-        #   max-cache-size: 10000
-        # form-cache:
-        #   max-cache-size: 10000
-        # batch-operation-cache:
-        #   max-cache-size: 10000
-        # create-schema: true
-        # post-export:
-        #   batch-size: 100
-        #   delay-between-runs: '2s'
-        #   max-delay-between-runs: '60s'
-        #   ignore-missing-data: false
-        # incident-notifier:
-        #   webhook: ''
-        #   auth0-domain: ''
-        #   m2m-client-id: ''
-        #   m2m-client-secret: ''
-        #   m2m-audience: ''
-        # batch-operations:
-        #   export-items-on-creation: true
-        # history:
-        #   els-rollover-date-format: 'date'
-        #   rollover-interval: '1d'
-        #   rollover-batch-size: 100
-        #   wait-period-before-archiving: '1h'
-        #   delay-between-runs: '2s'
-        #   max-delay-between-runs: '60s'
-        #   policy-name: 'camunda-history-retention-policy'
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
-        # field-date-format: 'date_time'
-        # socket-timeout: '10s'
-        # connection-timeout: '30s'
         username: {{ .Values.global.opensearch.auth.username | quote }}
-        # TODO: Review the password settings for opensearch.
-        password: ''
-        # TODO: Review the security settings for opensearch.
+        password: ${VALUES_OPENSEARCH_PASSWORD:}
+        {{- if .Values.global.opensearch.tls.enabled }}
         security:
           enabled: false
+          # TODO: Check what kind of certificate is expected here?
           certificate-path: ''
           verify-hostname: true
           self-signed: false
-        # interceptor-plugins:
-        #   - id: ''
-        #     class-name: ''
-        #     jar-path: ''
+        {{- end }}
         index-prefix: {{ .Values.global.opensearch.prefix | quote }}
-        # number-of-shards: 1
-        # number-of-replicas: 0
-        # number-of-shards-per-index: {}
-        # number-of-replicas-per-index: {}
-        # variable-size-threshold: 8191
-        # wait-for-importers: true
-        # bulk:
-        #   delay: 5
-        #   size: 1000
-        # process-cache:
-        #   max-cache-size: 10000
-        # form-cache:
-        #   max-cache-size: 10000
-        # batch-operation-cache:
-        #   max-cache-size: 10000
-        # create-schema: true
-        # post-export:
-        #   batch-size: 100
-        #   delay-between-runs: '2s'
-        #   max-delay-between-runs: '60s'
-        #   ignore-missing-data: false
-        # incident-notifier:
-        #   webhook: ''
-        #   auth0-domain: ''
-        #   m2m-client-id: ''
-        #   m2m-client-secret: ''
-        #   m2m-audience: ''
-        # batch-operations:
-        #   export-items-on-creation: true
-        # history:
-        #   els-rollover-date-format: 'date'
-        #   rollover-interval: '1d'
-        #   rollover-batch-size: 100
-        #   wait-period-before-archiving: '1h'
-        #   delay-between-runs: '2s'
-        #   max-delay-between-runs: '60s'
-        #   policy-name: 'camunda-history-retention-policy'
     {{- end }}
-    # NOTE: The exporters are optional in the new unified configuration.
-    # They are automatically enabled if the secondary storage is set to elasticsearch or opensearch.
-    # exporters:
-    #   elasticsearch:
-    #     class-name: 'io.camunda.zeebe.exporter.ElasticsearchExporter'
-    #     jar-path: 
-    #     args:
-    #   opensearch:
-    #     class-name: 'io.camunda.zeebe.exporter.opensearch.OpensearchExporter'
-    #     jar-path: 
-    #     args:
-
-  # monitoring:
-  #   metrics:
-  #     actor: true
-  #     jfr: true
-  #   disk:
-  #     enabled: true
-  #     interval: '1s'
-
-  # processing:
-  #   max-commands-in-batch: 100
-  #   enable-async-scheduled-tasks: true
-  #   scheduled-tasks-check-interval: '1s'
-  #   skip-positions: []
-  #   enable-preconditions-check: false
-  #   enable-foreign-key-checks : false
-  #   enable-yielding-duedate-checker: true
-  #   enable-async-message-ttl-checker: false
-  #   enable-async-timer-duedate-checker: false
-  #   enable-straightthrough-processsing-loop-detector: true
-  #   enable-identity-setup: true
-  #   enable-message-body-on-expired: false
-  #   flow-control:
-  #     request: (this is a LimitCfg object)
-  #       enabled: true
-  #       windowed: true
-  #       algorithm: 'aimd'
-  #       aimd:
-  #         request-timeout: '200ms'
-  #         initial-limit: 100
-  #         min-limit: 1
-  #         max-limit: 1000
-  #         backoff-ratio: 0.9
-  #       fixed:
-  #         limit: 20
-  #       gradient:
-  #         min-limit: 10
-  #         initial-limit: 20
-  #         rtt-tolerance: 2.0
-  #       gradient2:
-  #         min-limit: 10
-  #         initial-limit: 20
-  #         rtt-tolerance: 2.0
-  #         long-window: 600
-  #       vegas:
-  #         alpha: 3
-  #         beta: 6
-  #         initial-limit: 20
-  #       legacy-vegas:
-  #         initial-limit: 1024
-  #         max-concurrency: 1024*32
-  #         alpha-limit: 0.7
-  #         beta-limit: 0.95
-  #     write:
-  #       enabled: false
-  #       limit:
-  #       ramp-up: '0s'
-  #       throttle:
-  #         enabled: false
-  #         acceptable-backlog: 100000
-  #         minimum-limit: 100
-  #         resolution: '100s'
 
   security:
-    # TODO: Review the base-url config.
+    # TODO: What kind of value is expected here?
     base-url: {{ include "identity.internalUrl" . | quote }}
     issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
     issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
     redirect-root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl . | quote }}
     client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
     audience: {{ include "core.authAudience" . | quote }}
-    # resource-permission-update-period: '30s'
-    # user-access-restrictions-enabled: true
     authentication:
       unprotected-api: {{ .Values.global.security.authentication.unprotectedApi }}
       method: 'oidc'
@@ -398,23 +227,14 @@ camunda:
         client-id: {{ include "core.authClientId" . | quote }}
       {{- end }}
     authorization: {{ .Values.global.security.authorizations.enabled }}
-    # csrf-prevention-enabled: true
     multi-tenancy: {{ .Values.global.multitenancy.enabled }}
-    # TODO: Review the security settings.
-    transport-layer-security:
-      cluster:
-        auth-type:
-        certificate-chain-path: 
-        certificate-private-key-path:
-        key-store: './cluster.jks'
-        key-store-password: ${CLUSTER_KEY_STORE_PW}
 
   webapp:
     common:
       enterprise: true 
       roles:
         - owner
-      # TODO: Change after moving `global.security` to `core.security`.
+      # TODO: Update after moving `global.security` to `core.security`.
       users:
         user-id: 'demo'
         user-password: 'demo'
@@ -439,16 +259,15 @@ camunda:
       # alerting-webbook: ''
       zeebe:
         gateway-address: {{ (printf "%s:%d" (include "core.fullname" .) .Values.core.service.grpcPort)| quote }}
-        # TODO: Check the security settings for zeebe gateway.
         secure: false
         certificate-path: ''
-      # TODO: Check the importer settings for operate.
+      # TODO: What kind of value is expected here compared to the 8.7 version?
       importer-enabled: true
     {{- end }}
     {{- if .Values.core.profiles.tasklist }}
     tasklist:
       enabled: true
-      # TODO: Check the importer settings for tasklist.
+      # TODO: What kind of value is expected here compared to the 8.7 version?
       importer-enabled: true
     {{- end }}
     session:
