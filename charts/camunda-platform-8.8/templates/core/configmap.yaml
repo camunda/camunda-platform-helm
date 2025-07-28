@@ -231,9 +231,9 @@ data:
               claim-name: {{ index $mappingRule "claimName" | quote }}
               claim-value: {{ index $mappingRule "claimValue" | quote }}
             {{- end }}
-          default-roles.connectors.mapping-rules:
+          default-roles.connectors.mappingRules:
             - "connectors-client-mapping-rule"
-          default-roles.admin.mapping-rules:
+          default-roles.admin.mappingRules:
             {{- range $mappingRule := .Values.global.security.initialization.mappingRules }}
             - {{ index $mappingRule "mappingRuleID" | quote }}
             {{- end }}
