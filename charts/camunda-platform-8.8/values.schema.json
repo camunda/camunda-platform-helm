@@ -327,7 +327,7 @@
                         },
                         "disableExporter": {
                             "type": "boolean",
-                            "description": "DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled",
+                            "description": "(DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.",
                             "default": false
                         },
                         "url": {
@@ -352,7 +352,7 @@
                         },
                         "clusterName": {
                             "type": "string",
-                            "description": "Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch",
+                            "description": "defines the name of the Elasticsearch cluster.",
                             "default": "elasticsearch"
                         },
                         "prefix": {
@@ -439,6 +439,16 @@
                                     "default": 443
                                 }
                             }
+                        },
+                        "clusterName": {
+                            "type": "string",
+                            "description": "defines the name of the OpenSearch cluster.",
+                            "default": "opensearch"
+                        },
+                        "prefix": {
+                            "type": "string",
+                            "description": "defines the prefix used for OpenSearch indices or records.",
+                            "default": "zeebe-record"
                         }
                     }
                 },
@@ -2523,7 +2533,7 @@
                             "properties": {
                                 "url": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.",
+                                    "description": "(DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.",
                                     "default": ""
                                 },
                                 "host": {
@@ -4422,6 +4432,11 @@
                     "description": "if true, extra info is printed.",
                     "default": false
                 },
+                "profilesOverride": {
+                    "type": "string",
+                    "description": "defines the override for the profiles as comma-separated string.",
+                    "default": "\"\""
+                },
                 "image": {
                     "type": "object",
                     "properties": {
@@ -4817,7 +4832,7 @@
                 },
                 "extraInitContainers": {
                     "type": "array",
-                    "description": "(Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters",
+                    "description": "(DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters",
                     "default": [],
                     "items": {}
                 },
