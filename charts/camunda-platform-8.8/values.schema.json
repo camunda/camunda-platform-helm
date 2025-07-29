@@ -867,6 +867,11 @@
                     "description": "Array of extra objects to deploy with the release.",
                     "default": [],
                     "items": {}
+                },
+                "noDb": {
+                    "type": "boolean",
+                    "description": "if true, enables engine-only/no-db mode; this disables all secondary-storage-dependent features and components.",
+                    "default": false
                 }
             }
         },
