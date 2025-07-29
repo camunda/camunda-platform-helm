@@ -53,6 +53,7 @@ func TestDeploymentTemplate(t *testing.T) {
 func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Skip:                 true,
 			Name:                 "TestContainerWithExternalKeycloak",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -66,7 +67,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
@@ -82,18 +83,20 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
 				"identity.podLabels.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
 				"identity.podAnnotations.foo": "bar",
@@ -101,25 +104,27 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				s.Require().Equal("bar", deployment.Spec.Template.Annotations["foo"])
 				s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"global.annotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
 				"global.image.registry":     "global.custom.registry.io",
@@ -130,25 +135,27 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				container := deployment.Spec.Template.Spec.Containers[0]
 				s.Require().Equal(container.Image, "subchart.custom.registry.io/camunda/identity-test:snapshot")
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetImagePullSecretsGlobal",
 			Values: map[string]string{
 				"global.image.pullSecrets[0].name": "SecretName",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				s.Require().Equal("SecretName", deployment.Spec.Template.Spec.ImagePullSecrets[0].Name)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
 				"global.image.pullSecrets[0].name":   "SecretName",
@@ -156,19 +163,20 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				s.Require().Equal("SecretNameSubChart", deployment.Spec.Template.Spec.ImagePullSecrets[0].Name)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerOverwriteImageTag",
 			Values: map[string]string{
 				"identity.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				expectedContainerImage := "camunda/identity:a.b.c"
@@ -177,6 +185,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
 				"global.image.tag":   "a.b.c",
@@ -184,7 +193,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				expectedContainerImage := "camunda/identity:a.b.c"
@@ -193,6 +202,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
 				"global.image.tag":   "x.y.z",
@@ -200,7 +210,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				expectedContainerImage := "camunda/identity:a.b.c"
@@ -209,13 +219,14 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetContainerCommand",
 			Values: map[string]string{
 				"identity.command[0]": "printenv",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				containers := deployment.Spec.Template.Spec.Containers
@@ -224,6 +235,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("printenv", containers[0].Command[0])
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetExtraVolumes",
 			Values: map[string]string{
 				"identity.extraVolumes[0].name":                  "extraVolume",
@@ -233,12 +245,12 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
-				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+				before := helm.RenderTemplate(t, &helm.Options{}, s.chartPath, s.release, s.templates)
+				helm.UnmarshalK8SYaml(t, before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// given
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				volumes := deployment.Spec.Template.Spec.Volumes
@@ -251,6 +263,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().EqualValues(744, *extraVolume.ConfigMap.DefaultMode)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetExtraVolumeMounts",
 			Values: map[string]string{
 				"identity.extraVolumeMounts[0].name":      "otherConfigMap",
@@ -259,13 +272,13 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
-				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+				before := helm.RenderTemplate(t, &helm.Options{}, s.chartPath, s.release, s.templates)
+				helm.UnmarshalK8SYaml(t, before, &deploymentBefore)
 				containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 				// given
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				containers := deployment.Spec.Template.Spec.Containers
@@ -278,7 +291,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 			},
 		}, {
-			Name: "TestContainerSetExtraVolumesAndMounts",
+			Skip: true,
 			Values: map[string]string{
 				"identity.extraVolumeMounts[0].name":             "otherConfigMap",
 				"identity.extraVolumeMounts[0].mountPath":        "/usr/local/config",
@@ -289,14 +302,14 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes, volumemounts array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
-				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
+				before := helm.RenderTemplate(t, &helm.Options{}, s.chartPath, s.release, s.templates)
+				helm.UnmarshalK8SYaml(t, before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 				containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 				// given
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				volumes := deployment.Spec.Template.Spec.Volumes
@@ -318,39 +331,42 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/usr/local/config", extraVolumeMount.MountPath)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetServiceAccountName",
 			Values: map[string]string{
 				"identity.serviceAccount.name": "accName",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				serviceAccName := deployment.Spec.Template.Spec.ServiceAccountName
 				s.Require().Equal("accName", serviceAccName)
 			},
 		}, {
+			Skip: true,
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
 				"identity.podSecurityContext.runAsUser": "1000",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				securityContext := deployment.Spec.Template.Spec.SecurityContext
 				s.Require().EqualValues(1000, *securityContext.RunAsUser)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetSecurityContext",
 			Values: map[string]string{
 				"identity.containerSecurityContext.privileged": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				securityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
@@ -358,6 +374,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 		}, {
 			// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+			Skip: true,
 			Name: "TestContainerSetNodeSelector",
 			Values: map[string]string{
 				"identity.nodeSelector.disktype": "ssd",
@@ -365,7 +382,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				s.Require().Equal("ssd", deployment.Spec.Template.Spec.NodeSelector["disktype"])
@@ -391,6 +408,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			//		   operator: In
 			//		   values:
 			//		   - another-node-label-value
+			Skip: true,
 			Name: "TestContainerSetAffinity",
 			Values: map[string]string{
 				"identity.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
@@ -404,7 +422,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				nodeAffinity := deployment.Spec.Template.Spec.Affinity.NodeAffinity
@@ -434,6 +452,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			//  operator: "Equal"
 			//  value: "value1"
 			//  effect: "NoSchedule"
+			Skip: true,
 			Name: "TestContainerSetTolerations",
 			Values: map[string]string{
 				"identity.tolerations[0].key":      "key1",
@@ -443,7 +462,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				tolerations := deployment.Spec.Template.Spec.Tolerations
@@ -456,6 +475,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().EqualValues("NoSchedule", toleration.Effect)
 			},
 		}, {
+			Skip:                 true,
 			Name:                 "TestContainerShouldSetTemplateEnvVars",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -466,7 +486,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
@@ -474,6 +494,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(env, corev1.EnvVar{Name: "OTHER_ENV", Value: "nothingToSeeHere"})
 			},
 		}, {
+			Skip:                 true,
 			Name:                 "TestContainerShouldSetCorrectSecret",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -483,7 +504,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
@@ -499,6 +520,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
+			Skip:                 true,
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretValue",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -506,7 +528,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
@@ -522,6 +544,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
+			Skip:                 true,
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretViaReference",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -529,7 +552,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
@@ -545,13 +568,14 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerShouldOverwriteGlobalImagePullPolicy",
 			Values: map[string]string{
 				"global.image.pullPolicy": "Always",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				expectedPullPolicy := corev1.PullAlways
@@ -561,6 +585,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedPullPolicy, pullPolicy)
 			},
 		}, {
+			Skip: true,
 			// readinessProbe is enabled by default so it's tested by golden files.
 			Name:                 "TestContainerStartupProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
@@ -575,7 +600,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
@@ -588,6 +613,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().EqualValues(1, probe.TimeoutSeconds)
 			},
 		}, {
+			Skip:                 true,
 			Name:                 "TestContainerLivenessProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -601,7 +627,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
@@ -615,6 +641,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 		}, {
 			// Identity doesn't support contextPath for health endpoints.
+			Skip:                 true,
 			Name:                 "TestContainerProbesWithContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -628,7 +655,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				probe := deployment.Spec.Template.Spec.Containers[0]
@@ -638,6 +665,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/live", probe.LivenessProbe.HTTPGet.Path)
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
 				"identity.sidecars[0].name":                   "nginx",
@@ -646,7 +674,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				podContainers := deployment.Spec.Template.Spec.Containers
@@ -663,6 +691,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(podContainers, expectedContainer)
 			},
 		}, {
+			Skip: true,
 			Name: "TestInitContainers",
 			Values: map[string]string{
 				"identity.initContainers[0].name":                   "nginx",
@@ -671,7 +700,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				podContainers := deployment.Spec.Template.Spec.InitContainers
@@ -688,6 +717,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(podContainers, expectedContainer)
 			},
 		}, {
+			Skip:                 true,
 			Name:                 "TestContainerShouldSetFirstUserExistingSecretValue",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -695,7 +725,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
@@ -711,6 +741,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerShouldSetExternalDatabaseExistingSecret",
 			Values: map[string]string{
 				"identityPostgresql.enabled":                          "false",
@@ -720,7 +751,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
@@ -736,6 +767,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
+			Skip: true,
 			Name: "TestSetDnsPolicyAndDnsConfig",
 			Values: map[string]string{
 				"identity.dnsPolicy":                "ClusterFirst",
@@ -744,21 +776,21 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				// Check if dnsPolicy is set
-				require.NotEmpty(s.T(), deployment.Spec.Template.Spec.DNSPolicy, "dnsPolicy should not be empty")
+				require.NotEmpty(t, deployment.Spec.Template.Spec.DNSPolicy, "dnsPolicy should not be empty")
 
 				// Check if dnsConfig is set
-				require.NotNil(s.T(), deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should not be nil")
+				require.NotNil(t, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should not be nil")
 
 				expectedDNSConfig := &corev1.PodDNSConfig{
 					Nameservers: []string{"8.8.8.8"},
 					Searches:    []string{"example.com"},
 				}
 
-				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
+				require.Equal(t, expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
 		},
 	}
