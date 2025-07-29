@@ -231,7 +231,7 @@ camunda:
 
   webapp:
     common:
-      enterprise: true 
+      enterprise: true
       roles:
         - owner
       # TODO: Update after moving `global.security` to `core.security`.

@@ -223,7 +223,7 @@ global:
       protocol: http
       host: "{{ .Release.Name }}-elasticsearch"
       port: 9200
-    ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
+    ## @param global.elasticsearch.clusterName defines the name of the Elasticsearch cluster.
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
@@ -259,9 +259,9 @@ global:
       protocol: https
       host: ""
       port: 443
-    ## @param global.opensearch.clusterName TBA
+    ## @param global.opensearch.clusterName defines the name of the OpenSearch cluster.
     clusterName: "opensearch"
-    ## @param global.opensearch.prefix TBA
+    ## @param global.opensearch.prefix defines the prefix used for OpenSearch indices or records.
     prefix: zeebe-record
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
@@ -2241,14 +2241,14 @@ core:
   ## @param core.debug if true, extra info is printed.
   debug: false
 
-  ## @param core.profiles [object] TBA
+  ## @param core.profiles [object] defines which components of the orchestration core are enabled (e.g., broker, identity, operate).
   profiles:
     broker: true
     identity: true
     operate: true
     tasklist: true
 
-  ## @param core.profilesOverride [string] TAB
+  ## @param core.profilesOverride [string] defines the override for the profiles as comma-separated string.
   profilesOverride: ""
 
   ## @extra core.image configuration to configure the image specifics
