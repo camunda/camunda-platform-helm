@@ -185,6 +185,7 @@ tasks:
         {{ .TEST_HELM_EXTRA_ARGS }}
       fi
 
+
       if [[ "${TEST_AUTH_TYPE}" == "basic" ]]; then
         helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
