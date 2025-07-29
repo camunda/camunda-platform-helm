@@ -102,7 +102,7 @@
                                         "groupsClaim": {
                                             "type": "string",
                                             "description": "group claim.",
-                                            "default": ""
+                                            "default": "groups"
                                         }
                                     }
                                 }
