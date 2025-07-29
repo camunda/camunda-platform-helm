@@ -1,22 +1,35 @@
-{{- if .Values.identity.migration.enabled }}
+{{- if .Values.core.migration.identity.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "identity.fullname" . }}-migration
-  labels: {{- include "identityMigration.labels" . | nindent 4 }}
+  labels: {{- include "core.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
+  backoffLimit: {{ .Values.core.migration.identity.backoffLimit }}
   template:
     metadata:
       labels:
-        {{- include "identityMigration.labels" . | nindent 8 }}
+        {{- include "core.labels" . | nindent 8 }}
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "core.imagePullSecrets" . | nindent 8 }}
-      # TODO: Add an initContainer to wait for the core pod to start. No need to wait for the management identity because the core relies on management identity.
       {{- if .Values.core.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: wait-for-core
+          {{- if .Values.core.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          image: curlimages/curl:8.15.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://{{ include "core.fullname" . }}-gateway:{{ .Values.core.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}; do
+                echo "waiting for Orchestration Cluster"; sleep 5;
+              done
       containers:
         - name: camunda-migration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
