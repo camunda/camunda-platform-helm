@@ -80,6 +80,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
