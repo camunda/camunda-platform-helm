@@ -177,6 +177,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
+        {{ eq (env "TEST_LATEST_ALPHA") true | ternary (printf "--values %s/values-latest.yaml" ../../../../${CHART_PATH}) "" }}  \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
@@ -193,6 +194,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-basic.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
+        {{ eq (env "TEST_LATEST_ALPHA") true | ternary (printf "--values %s/values-latest.yaml" ../../../../${CHART_PATH}) "" }}  \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
@@ -208,6 +210,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-keycloak.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
+        {{ eq (env "TEST_LATEST_ALPHA") true | ternary (printf "--values %s/values-latest.yaml" ../../../../${CHART_PATH}) "" }}  \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
