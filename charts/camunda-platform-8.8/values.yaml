@@ -96,7 +96,7 @@ global:
         ## @param global.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
         ## @param global.security.authentication.oidc.groupsClaim group claim.
-        groupsClaim: ""
+        groupsClaim: "groups"
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
@@ -213,7 +213,7 @@ global:
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
-      ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
+    ## @param  global.elasticsearch.disableExporter (DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.
     disableExporter: false
     ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
@@ -223,7 +223,7 @@ global:
       protocol: http
       host: "{{ .Release.Name }}-elasticsearch"
       port: 9200
-    ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
+    ## @param global.elasticsearch.clusterName defines the name of the Elasticsearch cluster.
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
@@ -259,6 +259,10 @@ global:
       protocol: https
       host: ""
       port: 443
+    ## @param global.opensearch.clusterName defines the name of the OpenSearch cluster.
+    clusterName: "opensearch"
+    ## @param global.opensearch.prefix defines the prefix used for OpenSearch indices or records.
+    prefix: zeebe-record
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
@@ -1334,7 +1338,7 @@ webModeler:
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
     # Note: Currently, the only supported database system is PostgreSQL.
     externalDatabase:
-      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.
+      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.
       # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
       url: ""
       ## @param webModeler.restapi.externalDatabase.host Database host (used when url is not provided)
@@ -2237,6 +2241,16 @@ core:
   ## @param core.debug if true, extra info is printed.
   debug: false
 
+  ## @param core.profiles [object] defines which components of the orchestration core are enabled (e.g., broker, identity, operate).
+  profiles:
+    broker: true
+    identity: true
+    operate: true
+    tasklist: true
+
+  ## @param core.profilesOverride [string] defines the override for the profiles as comma-separated string.
+  profilesOverride: ""
+
   ## @extra core.image configuration to configure the image specifics
   image:
     ## @param core.image.registry can be used to set container image registry.
@@ -2432,7 +2446,7 @@ core:
   extraVolumes: []
   ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
-  ## @param core.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  ## @param core.extraInitContainers (DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
   ## @param core.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
