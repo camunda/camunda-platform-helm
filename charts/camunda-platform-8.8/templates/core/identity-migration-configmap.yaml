@@ -12,7 +12,7 @@ data:
           {{- if not ( eq .Values.global.identity.auth.type "KEYCLOAK" ) }}
           oidc:
             audiences:
-              identity: {{ .Values.global.identity.auth.identity }}
+              identity: {{ include "identity.authAudience" . | quote }}
               operate: {{ .Values.global.identity.auth.core }}
               tasklist: {{ .Values.global.identity.auth.core }}
               zeebe: {{ .Values.global.identity.auth.core }}
