@@ -102,7 +102,7 @@
                                         "groupsClaim": {
                                             "type": "string",
                                             "description": "group claim.",
-                                            "default": ""
+                                            "default": "groups"
                                         }
                                     }
                                 }
@@ -4790,12 +4790,12 @@
                                         "processing": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "3GB"
+                                            "default": "2GB"
                                         },
                                         "replication": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "2GB"
+                                            "default": "1GB"
                                         }
                                     }
                                 }
