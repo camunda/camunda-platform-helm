@@ -1329,6 +1329,8 @@ webModeler:
     image:
       ## @param webModeler.restapi.image.repository defines which image repository to use for the restapi Docker image
       repository: camunda/web-modeler-restapi
+      ## @param webModeler.restapi.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
@@ -1566,6 +1568,8 @@ webModeler:
     image:
       ## @param webModeler.webapp.image.repository defines which image repository to use for the webapp Docker image
       repository: camunda/web-modeler-webapp
+      ## @param webModeler.webapp.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
@@ -1734,6 +1738,8 @@ webModeler:
     image:
       ## @param webModeler.websockets.image.repository defines which image repository to use for the websockets Docker image
       repository: camunda/web-modeler-websockets
+      ## @param webModeler.websockets.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
