@@ -65,12 +65,11 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- if (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
             {{- end}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
@@ -154,12 +153,11 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- if (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
             {{- end}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}

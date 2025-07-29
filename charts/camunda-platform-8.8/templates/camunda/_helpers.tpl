@@ -858,3 +858,22 @@ Usage:
 {{- end }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+hasSecretConfig
+Returns a boolean indicating whether there is a valid secret configuration.
+Usage:
+  {{ if include "camundaPlatform.hasSecretConfig" (dict
+      "config"  .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  ) }}
+*/}}
+{{- define "camundaPlatform.hasSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.secretRef (ne $norm.plaintext "") -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}

@@ -262,11 +262,27 @@ global:
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.opensearch.tls.secret configuration to provide the TLS secret.
+      secret:
+        ## @param global.opensearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
+        existingSecret: ""
+        ## @param global.opensearch.tls.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     auth:
       username: ""
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
+      ## @extra global.opensearch.auth.secret configuration to provide the authentication secret.
+      secret:
+        ## @param global.opensearch.auth.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.opensearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param global.opensearch.auth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     ## @extra global.opensearch.url Configuration to configure opensearch url
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
     ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
