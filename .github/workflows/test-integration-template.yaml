@@ -98,8 +98,8 @@ on:
         type: string
         description: Enable enterprise values
       values-digest:
-        required: true
-        default: "false"
+        required: false
+        default: "true"
         type: string
         description: Enable digest values
       camunda-helm-post-render:

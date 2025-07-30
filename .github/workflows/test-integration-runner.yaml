@@ -159,7 +159,7 @@ on:
         description: Enable enterprise values
       values-digest:
         required: false
-        default: "false"
+        default: "true"
         type: string
         description: Enable digest values
 
