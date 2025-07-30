@@ -8,7 +8,7 @@ vars:
 
 dotenv:
 - ../vars/common.env
-# - ../vars/dynamic.env
+- ../vars/dynamic.env
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
