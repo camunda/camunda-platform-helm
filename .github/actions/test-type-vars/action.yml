@@ -28,7 +28,7 @@ runs:
     - name: Get test type vars
       shell: bash
       env:
-        CHART_PATH: charts/${{ inputs.chart-dir }}
+        CHART_PATH: ${{ inputs.chart-dir }}
       id: vars
       run: |
         matrix_file="${CHART_PATH}/test/ci-test-config.yaml"
