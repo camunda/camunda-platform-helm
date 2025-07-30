@@ -77,7 +77,7 @@ runs:
         if [[ "${{ inputs.enterprise }}" == "true" ]]; then
           helm_extra_args="--values ${charts_base_dir}/${CHART_PATH}/values-enterprise.yaml"
         fi
-        if [[ -f "${charts_base_dir}/${{ inputs.chart-dir }}/values-digest.yaml" ]]; then
+        if [[ -f "${charts_base_dir}/${CHART_PATH}/values-digest.yaml" ]]; then
           helm_extra_args="${helm_extra_args} --values ${charts_base_dir}/${CHART_PATH}/values-digest.yaml"
         fi
 
