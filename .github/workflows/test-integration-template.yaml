@@ -50,7 +50,7 @@ on:
         required: false
         default: true
         type: boolean
-      latest-alpha:
+      values-latest:
         required: false
         default: false
         type: boolean
@@ -231,7 +231,7 @@ jobs:
       infra-type: ${{ inputs.infra-type }}
       flow: ${{ matrix.scenario.flow }}
       test-enabled: ${{ inputs.test-enabled }}
-      latest-alpha: ${{ inputs.latest-alpha }}
+      values-latest: ${{ inputs.values-latest }}
       e2e-enabled: ${{ inputs.e2e-enabled }}
       extra-values: ${{ inputs.extra-values }}
       vault-secret-mapping: ${{ inputs.vault-secret-mapping }}

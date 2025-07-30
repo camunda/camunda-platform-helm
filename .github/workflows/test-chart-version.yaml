@@ -162,7 +162,7 @@ jobs:
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
-      latest-alpha: ${{ contains(matrix.version, needs.grab-latest-chart.outputs.latest-chart) && !contains(github.head_ref || github.ref, 'release-please') }}
+      values-latest: ${{ contains(matrix.version, needs.grab-latest-chart.outputs.latest-chart) && !contains(github.head_ref || github.ref, 'release-please') }}
       pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
