@@ -155,7 +155,7 @@ jobs:
 
   integation-tests:
     name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
-    needs: [init, matrix-version-only, validation, grab-latest-chart]
+    needs: [init, matrix-version-only, validation]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
