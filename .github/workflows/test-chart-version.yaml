@@ -124,7 +124,7 @@ jobs:
   kind-testing:
     if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
     name: Local cluster - KIND ${{ matrix.version }}
-    needs: [init, matrix-version-only, validation]
+    needs: [init, matrix-version-only]
     strategy:
       fail-fast: false
       matrix:
