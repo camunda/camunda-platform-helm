@@ -222,7 +222,7 @@ jobs:
       identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
       camunda-helm-repo: ${{ inputs.camunda-helm-repo }}
       camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
-      camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+      camunda-helm-git-ref: latest-alpha
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
       caller-git-ref: ${{ inputs.caller-git-ref }}
       deployment-ttl: ${{ inputs.deployment-ttl }}
