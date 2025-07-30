@@ -509,8 +509,8 @@ global:
   #       test: test
   extraManifests: []
 
-  ## @param global.noDb if true, enables engine-only/no-db mode; this disables all secondary-storage-dependent features and components.
-  noDb: false
+  ## @param global.noSecondaryStorage if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.
+  noSecondaryStorage: false
 
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
