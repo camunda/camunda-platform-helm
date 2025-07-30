@@ -77,6 +77,8 @@ runs:
         fi
 
         if [[ -f "${CHART_PATH}/values-digest.yaml" ]]; then
+          echo "print working directory"
+          pwd
           helm_extra_args="${helm_extra_args} --values ${charts_base_dir}/${CHART_DIR}/values-digest.yaml"
         fi
 
