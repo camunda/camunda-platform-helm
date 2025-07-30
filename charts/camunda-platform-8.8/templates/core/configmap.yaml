@@ -277,6 +277,9 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
+        {{- if .Values.core.migration.identity.enabled }}
+        importerEnabled: true
+        {{- end }}
         persistentSessionsEnabled: true
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
@@ -361,6 +364,9 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
+        {{- if .Values.core.migration.identity.enabled }}
+        importerEnabled: true
+        {{- end }}
         {{- if .Values.global.multitenancy.enabled }}
         multiTenancy:
           enabled: true
