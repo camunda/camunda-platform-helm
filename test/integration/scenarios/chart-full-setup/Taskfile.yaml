@@ -8,7 +8,7 @@ vars:
 
 dotenv:
 - ../vars/common.env
-- ../vars/dynamic.env
+# - ../vars/dynamic.env
 - ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
@@ -177,14 +177,13 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        echo $( [ "$TEST_LATEST_ALPHA" = "true" ] && echo "--values ../../../../${CHART_PATH}/values-latest.yaml" )
+        {{ eq (env "TEST_LATEST_ALPHA") "true" | ternary (printf "--values %s/values-latest.yaml" (env "TEST_CHART_DIR")) "" }} \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
       fi
-
 
       if [[ "${TEST_AUTH_TYPE}" == "basic" ]]; then
         helm install integration {{ .TEST_CHART_NAME }} \
@@ -195,7 +194,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-basic.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        echo $( [ "$TEST_LATEST_ALPHA" = "true" ] && echo "--values ../../../../${CHART_PATH}/values-latest.yaml" )
+        {{ eq (env "TEST_LATEST_ALPHA") "true" | ternary (printf "--values %s/values-latest.yaml" (env "TEST_CHART_DIR")) "" }} \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
@@ -211,7 +210,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-keycloak.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        echo $( [ "$TEST_LATEST_ALPHA" = "true" ] && echo "--values ../../../../${CHART_PATH}/values-latest.yaml" )
+        {{ eq (env "TEST_LATEST_ALPHA") "true" | ternary (printf "--values %s/values-latest.yaml" (env "TEST_CHART_DIR")) "" }} \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
