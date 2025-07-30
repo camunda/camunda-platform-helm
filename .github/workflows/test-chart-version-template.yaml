@@ -12,10 +12,10 @@ on:
         description: Camunda version to test
         required: true
         type: string
-      values-latest:
-        required: false
-        default: false
-        type: boolean
+      # values-latest:
+      #   required: false
+      #   default: false
+      #   type: boolean
       case:
         description: Type
         required: true
@@ -107,4 +107,4 @@ jobs:
       exclude: ${{inputs.exclude}}
       platforms: ${{ matrix.platform }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
-      values-latest: ${{ inputs.values-latest }}
+      # values-latest: ${{ inputs.values-latest }}
