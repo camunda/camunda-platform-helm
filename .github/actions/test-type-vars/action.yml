@@ -82,7 +82,7 @@ runs:
           helm_extra_args="${helm_extra_args} --values ${charts_base_dir}/${CHART_DIR}/values-digest.yaml"
         fi
         echo "ls charts"
-        ls "${charts_base_dir}/${CHART_DIR}"
+        ls "${TEST_CHART_DIR}"
         echo "chart_base_dir"
         echo $charts_base_dir
         echo "CHART_PATH"
