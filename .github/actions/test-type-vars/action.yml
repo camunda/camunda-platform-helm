@@ -85,8 +85,8 @@ runs:
         pwd
         echo "just ls"
         ls
-        echo "ls charts"
-        ls "../../../${CHART_DIR}"
+        echo "ls chart_dir"
+        ls "${CHART_DIR}"
         echo "chart_base_dir"
         echo $charts_base_dir
         echo "CHART_PATH"
