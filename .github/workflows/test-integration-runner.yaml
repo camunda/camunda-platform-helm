@@ -63,10 +63,10 @@ on:
         required: false
         default: true
         type: boolean
-      values-latest:
-        required: false
-        default: true
-        type: boolean
+      # values-latest:
+      #   required: false
+      #   default: true
+      #   type: boolean
       e2e-enabled:
         required: false
         default: true
@@ -397,7 +397,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: "${{ inputs.test-case }}"
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          TEST_VALUES_LATEST: "${{ inputs.values-latest }}"
+          # TEST_VALUES_LATEST: "${{ inputs.values-latest }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_HELM_EXTRA_ARGS: >-

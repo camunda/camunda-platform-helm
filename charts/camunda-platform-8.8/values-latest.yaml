@@ -27,12 +27,6 @@ optimize:
     repository: camunda/optimize
     tag: 8-SNAPSHOT
 
-tasklist:
-  # https://hub.docker.com/r/camunda/tasklist/tags
-  image:
-    repository: camunda/tasklist
-    tag: SNAPSHOT
-
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:

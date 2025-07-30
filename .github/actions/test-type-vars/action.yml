@@ -9,6 +9,8 @@ inputs:
     description: matrix.distro.platform
   enterprise:
     description: Enable enterprise values
+  values-latest:
+    description: Enable enterprise values
 outputs:
   unitTestEnabled:
     description: Should the unit test be executed or not.
@@ -71,6 +73,12 @@ runs:
         echo "TEST_CHART_DIR=${charts_base_dir}/${{ inputs.chart-dir }}" | tee -a $GITHUB_ENV
         echo "ABSOLUTE_TEST_CHART_DIR=${GITHUB_WORKSPACE}/${CHART_PATH}" | tee -a $GITHUB_ENV
 
+        # configuring TEST_HELM_EXTRA_ARGS
         if [[ "${{ inputs.enterprise }}" == "true" ]]; then
-          echo "TEST_HELM_EXTRA_ARGS=--values ${charts_base_dir}/${{ inputs.chart-dir }}/values-enterprise.yaml" | tee -a $GITHUB_ENV
+          helm_extra_args="--values ${charts_base_dir}/${{ inputs.chart-dir }}/values-enterprise.yaml"
         fi
+        if [[ -f "${charts_base_dir}/${{ inputs.chart-dir }}/values-digest.yaml" ]]; then
+          helm_extra_args="$helm_extra_args --values ${charts_base_dir}/${{ inputs.chart-dir }}/values-digest.yaml"
+        fi
+
+        echo "TEST_HELM_EXTRA_ARGS=$helm_extra_args" | tee -a $GITHUB_ENV
