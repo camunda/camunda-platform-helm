@@ -81,6 +81,7 @@ runs:
           helm_extra_args="${helm_extra_args} --values ${charts_base_dir}/${CHART_PATH}/values-digest.yaml"
         fi
 
+        echo "FINDING FILE"
         if [[ -f "${charts_base_dir}/${CHART_PATH}/values-digest.yaml" ]]; then
           echo "FOUND THE DIGEST FILE!!!!!"
         fi
