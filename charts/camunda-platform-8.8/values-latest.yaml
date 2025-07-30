@@ -60,7 +60,7 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     repository: bitnami/keycloak
-    tag: 26.1.4
+    tag: 26.1.5
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
