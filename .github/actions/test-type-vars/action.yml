@@ -57,6 +57,7 @@ runs:
 
         # Values dir.
         values_base_dir="$(echo ${integration_vars} | jq -r '.vars.valuesBaseDir')"
+        # relative path needed for the chart-full-setup Taskfile
         integration_scenarios_values_dir="../../../../${CHART_PATH}/test/${values_base_dir}"
         echo "TEST_VALUES_BASE_DIR=${integration_scenarios_values_dir}" | tee -a $GITHUB_ENV
         # The var is needed in some non-shell steps.
@@ -75,10 +76,12 @@ runs:
 
         # configuring TEST_HELM_EXTRA_ARGS
         if [[ "${{ inputs.enterprise }}" == "true" ]]; then
+        # relative path needed for the chart-full-setup Taskfile
           helm_extra_args="--values ../../../../${CHART_PATH}/values-digest.yaml"
         fi
 
         if [[ "${{ inputs.values-digest }}" == "true" ]] && [[ -f "${CHART_PATH}/values-digest.yaml" ]]; then
+        # relative path needed for the chart-full-setup Taskfile
           helm_extra_args="${helm_extra_args} --values ../../../../${CHART_PATH}/values-digest.yaml"
         fi
 
