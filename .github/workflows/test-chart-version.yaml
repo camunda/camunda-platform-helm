@@ -138,9 +138,22 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
+  grab-latest-chart:
+    name: "Find latest Camunda Platform version"
+    runs-on: ubuntu-latest
+    outputs:
+      latest-chart: ${{ steps.find-latest-chart.outputs.version }}
+    steps:
+      - name: Find latest chart
+        id: find-latest-chart
+        run: |
+          version=$(ls ./charts | grep '^camunda-platform-[0-9]\+\(\.[0-9]\+\)*$' | cut -d'-' -f3 | sort -V | tail -1)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+
   integation-tests:
     name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
-    needs: [init, matrix-version-only, validation]
+    needs: [init, matrix-version-only, validation, grab-latest-chart]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -158,3 +171,4 @@ jobs:
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
       flows: ${{ inputs.flows || 'install,upgrade' }}
+      latest-alpha: ${{ contains(matrix.version, needs.grab-latest-chart.outputs.latest-chart) && !contains(github.head_ref || github.ref, 'release-please') }}
