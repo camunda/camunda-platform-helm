@@ -107,36 +107,36 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  # validation:
-  #   if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
-  #   name: ${{ matrix.version }} - Validation
-  #   needs: [init, matrix-version-only]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
-  #   uses: ./.github/workflows/chart-validate-template.yaml
-  #   with:
-  #     identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
-  #     camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  validation:
+    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
+    name: ${{ matrix.version }} - Validation
+    needs: [init, matrix-version-only]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  # kind-testing:
-  #   if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
-  #   name: Local cluster - KIND ${{ matrix.version }}
-  #   needs: [init, matrix-version-only, validation]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
-  #   permissions:
-  #     contents: read
-  #   secrets: inherit
-  #   uses: ./.github/workflows/test-local-template.yml
-  #   with:
-  #     identifier: "${{ github.event.pull_request.number }}-loc-${{ matrix.version }}"
-  #     camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-  #     camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+  kind-testing:
+    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
+    name: Local cluster - KIND ${{ matrix.version }}
+    needs: [init, matrix-version-only, validation]
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
+    permissions:
+      contents: read
+    secrets: inherit
+    uses: ./.github/workflows/test-local-template.yml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-loc-${{ matrix.version }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   grab-latest-chart:
     name: "Find latest Camunda Platform version"
@@ -155,7 +155,7 @@ jobs:
 
   integation-tests:
     name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
-    needs: [init, matrix-version-only, grab-latest-chart]
+    needs: [init, matrix-version-only, validation, grab-latest-chart]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
