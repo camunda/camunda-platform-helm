@@ -52,7 +52,7 @@ on:
         type: boolean
       latest-alpha:
         required: false
-        default: true
+        default: false
         type: boolean
       e2e-enabled:
         required: false

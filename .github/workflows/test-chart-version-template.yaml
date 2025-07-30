@@ -12,6 +12,10 @@ on:
         description: Camunda version to test
         required: true
         type: string
+      latest-alpha:
+        required: false
+        default: false
+        type: boolean
       case:
         description: Type
         required: true
