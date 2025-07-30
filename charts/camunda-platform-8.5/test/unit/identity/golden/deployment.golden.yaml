@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.5.18"
+    app.kubernetes.io/version: "8.5.19"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: identity
-        app.kubernetes.io/version: "8.5.18"
+        app.kubernetes.io/version: "8.5.19"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,7 +44,7 @@ spec:
         []
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.5.18
+          image: camunda/identity:8.5.19
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
