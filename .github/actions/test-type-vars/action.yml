@@ -28,7 +28,8 @@ runs:
     - name: Get test type vars
       shell: bash
       env:
-        CHART_PATH: ${{ inputs.chart-dir }}
+        CHART_PATH: charts/${{ inputs.chart-dir }}
+        CHART_DIR: ${{ inputs.chart-dir }}
       id: vars
       run: |
         matrix_file="${CHART_PATH}/test/ci-test-config.yaml"
@@ -75,17 +76,17 @@ runs:
 
         # configuring TEST_HELM_EXTRA_ARGS
         if [[ "${{ inputs.enterprise }}" == "true" ]]; then
-          helm_extra_args="--values ${charts_base_dir}/${CHART_PATH}/values-enterprise.yaml"
+          helm_extra_args="--values ${charts_base_dir}/${CHART_DIR}/values-enterprise.yaml"
         fi
-        if [[ -f "${charts_base_dir}/${CHART_PATH}/values-digest.yaml" ]]; then
-          helm_extra_args="${helm_extra_args} --values ${charts_base_dir}/${CHART_PATH}/values-digest.yaml"
+        if [[ -f "${charts_base_dir}/${CHART_DIR}/values-digest.yaml" ]]; then
+          helm_extra_args="${helm_extra_args} --values ${charts_base_dir}/${CHART_DIR}/values-digest.yaml"
         fi
         echo "ls charts"
-        ls "${charts_base_dir}/${CHART_PATH}"
+        ls "${charts_base_dir}/${CHART_DIR}"
         echo "chart_base_dir"
         echo $charts_base_dir
         echo "CHART_PATH"
-        echo $CHART_PATH
+        echo $CHART_DIR
         echo "helm_extra_args"
         echo $helm_extra_args
 
