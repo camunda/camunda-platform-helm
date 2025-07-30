@@ -15,7 +15,7 @@ data:
       exec /usr/local/camunda/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
     else
       exec /usr/local/camunda/bin/camunda
-    fi   
+    fi
 
   {{- if .Values.core.configuration }}
   application.yaml: |

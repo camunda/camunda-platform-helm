@@ -62,7 +62,7 @@ global:
     ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
     existingSecretKey: ""
 
-  ## @extra global.compatibility Compatibility adaptations for Kubernetes platforms
+  ## @extra global.compatibility Compatibility adaptations in the chart.
   compatibility:
     ## Compatibility adaptations for Openshift
     ##
@@ -70,6 +70,12 @@ global:
       ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
       ##
       adaptSecurityContext: disabled
+    ## Compatibility adaptations for Camunda Core.
+    ##
+    core:
+      ## @param global.compatibility.core.enabled if true, enables compatibility layer for Camunda Core between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).
+      ##
+      enabled: true
 
   ## @extra global.config Config used in various places.
   config:
@@ -2233,7 +2239,7 @@ connectors:
 #       #    # #    # #####
 #       #    # #####  #
 #     # #    # #   #  #
-#####   ####  #    # ######
+#####    ####  #    # ######
 ############################
 
 ## @section Orchestration Core Parameters
@@ -2315,7 +2321,7 @@ core:
   javaOpts: >-
     -XX:+HeapDumpOnOutOfMemoryError
     -XX:HeapDumpPath=/usr/local/camunda/data
-    -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log
+    -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
     -XX:+ExitOnOutOfMemoryError
 
   ## @extra core.service configuration for the broker service
@@ -2337,8 +2343,7 @@ core:
     ## @param core.service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
     ## @param core.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
-    extraPorts:
-      []
+    extraPorts: []
       # - name: hazelcast
       #   protocol: TCP
       #   port: 5701
@@ -2578,8 +2583,9 @@ core:
             matchExpressions:
               - key: "app.kubernetes.io/component"
                 operator: In
+                # NOTE: The value is set to "zeebe-broker" for backwards compatibility between 8.7 and 8.8.
                 values:
-                  - core
+                  - zeebe-broker
           topologyKey: "kubernetes.io/hostname"
 
   ## @param core.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
@@ -2609,7 +2615,8 @@ core:
       ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 30d
       ## @param core.history.retention.policyName defines the name of the created and applied ILM policy.
-      policyName: core-record-retention-policy
+      # NOTE: The value is set to "zeebe-record-retention-policy" for backwards compatibility between 8.7 and 8.8.
+      policyName: zeebe-record-retention-policy
 
   ## @param core.configuration if specified, contents will be used as the application.yaml
   configuration: ""
