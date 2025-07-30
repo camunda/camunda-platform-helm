@@ -138,21 +138,6 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  # grab-latest-chart:
-  #   name: "Find latest Camunda Platform version"
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     latest-chart: ${{ steps.find-latest-chart.outputs.version }}
-  #   steps:
-  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-  #     - name: Find latest chart
-  #       id: find-latest-chart
-  #       run: |
-  #         version=$(ls ./charts | grep '^camunda-platform-[0-9]\+\(\.[0-9]\+\)*$' | cut -d'-' -f3 | sort -V | tail -1)
-  #         echo $version
-          # echo "version=$version" >> $GITHUB_OUTPUT
-
-
   integation-tests:
     name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
     needs: [init, matrix-version-only, validation]
@@ -162,7 +147,6 @@ jobs:
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
-      # values-latest: ${{ contains(matrix.version, needs.grab-latest-chart.outputs.latest-chart) && !contains(github.head_ref || github.ref, 'release-please') }}
       pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}

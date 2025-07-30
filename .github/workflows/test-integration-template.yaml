@@ -50,10 +50,6 @@ on:
         required: false
         default: true
         type: boolean
-      # values-latest:
-      #   required: false
-      #   default: false
-      #   type: boolean
       e2e-enabled:
         required: false
         default: true
@@ -222,9 +218,9 @@ jobs:
       identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
       camunda-helm-repo: ${{ inputs.camunda-helm-repo }}
       camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
-      camunda-helm-git-ref: latest-alpha
+      camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-      caller-git-ref: latest-alpha
+      caller-git-ref: ${{ inputs.caller-git-ref }}
       deployment-ttl: ${{ inputs.deployment-ttl }}
       distro-platform: ${{ matrix.distro.platform }}
       distro-type: ${{ matrix.distro.type }}
