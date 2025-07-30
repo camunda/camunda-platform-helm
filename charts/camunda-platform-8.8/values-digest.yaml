@@ -11,7 +11,7 @@ connectors:
 optimize:
   image:
     repository: camunda/optimize
-    tag: 8-SNAPSHOT
+    digest: sha256:4b1a79b534efe23b0c6d7303e872257257e18238a32e8c2cc53f091f6bdbbeac
 
 webModeler:
   restapi:
