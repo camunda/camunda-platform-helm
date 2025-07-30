@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type NoDBTemplateTest struct {
+type NoSecondaryStorageTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -33,26 +33,26 @@ type NoDBTemplateTest struct {
 	templates []string
 }
 
-func TestNoDbTemplate(t *testing.T) {
+func TestNoSecondaryStorageTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &NoDBTemplateTest{
+	suite.Run(t, &NoSecondaryStorageTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 	})
 }
 
-func (s *NoDBTemplateTest) TestNoDbGlobalValue() {
+func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:                 "TestGlobalNoDbTogglesAllExpectedValues",
+			Name:                 "TestGlobalNoSecondaryStorageTogglesAllExpectedValues",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.noDb": "true",
+				"global.noSecondaryStorage": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

@@ -868,9 +868,9 @@
                     "default": [],
                     "items": {}
                 },
-                "noDb": {
+                "noSecondaryStorage": {
                     "type": "boolean",
-                    "description": "if true, enables engine-only/no-db mode; this disables all secondary-storage-dependent features and components.",
+                    "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
                     "default": false
                 }
             }
