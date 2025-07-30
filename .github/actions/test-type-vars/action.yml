@@ -81,4 +81,8 @@ runs:
           helm_extra_args="${helm_extra_args} --values ${charts_base_dir}/${CHART_PATH}/values-digest.yaml"
         fi
 
+        if [[ -f "${charts_base_dir}/${CHART_PATH}/values-digest.yaml" ]]; then
+          echo "FOUND THE DIGEST FILE!!!!!"
+        fi
+
         echo "TEST_HELM_EXTRA_ARGS=${helm_extra_args}" | tee -a $GITHUB_ENV
