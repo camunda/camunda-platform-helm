@@ -1,8 +1,3 @@
-console:
-  image:
-    repository: camunda/console
-    digest: sha256:885826ccc4a6704915b031b8c63b3fb499416908a463d5ce5de29e1bf8974225
-
 connectors:
   image:
     repository: camunda/connectors-bundle
@@ -12,17 +7,6 @@ optimize:
   image:
     repository: camunda/optimize
     digest: sha256:4b1a79b534efe23b0c6d7303e872257257e18238a32e8c2cc53f091f6bdbbeac
-
-webModeler:
-  restapi:
-    image:
-      digest: sha256:4e145aee31322799831800c2ced42ead00fee9969f5fca2fd5fa6368e8792ce6
-  webapp:
-    image:
-      digest: sha256:ed0f1000e548ce287df44370adebde2644a9e976fc94403d725def4a1c7f56e2
-  websockets:
-    image:
-      digest: sha256:e87cf5f390e58b08afe7556b87b655caf8fb73d1d95b71cc01bbce4d059a1d97
 
 core:
   image:
