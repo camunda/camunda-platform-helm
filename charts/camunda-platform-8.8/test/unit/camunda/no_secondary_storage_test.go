@@ -58,14 +58,12 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 				require.NoError(t, err)
 				// Database type should be none
 				require.Contains(t, output, "database:\n        type: none")
-				// Agentic AI and inbouond connectors should be disabled
+				// Agentic AI and inbound connectors should be disabled
 				require.Contains(t, output, "webhook:\n          enabled: false")
 				require.Contains(t, output, "polling:\n          enabled: false")
 				require.Contains(t, output, "agenticai:\n          enabled: false")
 				// Optimize should not be rendered
-				require.NotContains(t, output, "charts/optimize")
-				// Connectors should not be rendered
-				require.NotContains(t, output, "charts/connectors")
+				require.NotContains(t, output, "templates/optimize")
 			},
 		},
 	}
