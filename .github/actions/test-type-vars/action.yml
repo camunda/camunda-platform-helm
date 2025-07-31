@@ -77,7 +77,7 @@ runs:
 
         # configuring TEST_HELM_EXTRA_ARGS
         if [[ "${{ inputs.enterprise }}" == "true" ]]; then
-          helm_extra_args="--values ../../../../${CHART_PATH}/values-digest.yaml"
+          helm_extra_args="--values ${TEST_RELATIVE_CHART_PATH}/values-digest.yaml"
         fi
 
         if [[ "${{ inputs.values-digest }}" == "true" ]] && [[ -f "${CHART_PATH}/values-digest.yaml" ]]; then
