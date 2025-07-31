@@ -27,12 +27,6 @@ optimize:
     repository: camunda/optimize
     tag: 8-SNAPSHOT
 
-tasklist:
-  # https://hub.docker.com/r/camunda/tasklist/tags
-  image:
-    repository: camunda/tasklist
-    tag: SNAPSHOT
-
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
@@ -60,7 +54,7 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     repository: bitnami/keycloak
-    tag: 23.0.7
+    tag: 26.1.5
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:

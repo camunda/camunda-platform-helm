@@ -152,6 +152,16 @@ on:
         required: false
         default: ""
         type: string
+      values-enterprise:
+        required: false
+        default: "false"
+        type: string
+        description: Enable enterprise values
+      values-digest:
+        required: false
+        default: "true"
+        type: string
+        description: Enable digest values
 
 permissions:
   contents: read
@@ -294,6 +304,8 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          values-enterprise: "${{ inputs.values-enterprise }}"
+          values-digest: "${{ inputs.values-digest }}"
 
       - name: CI Setup - Add Helm repos and update helm dependencies
         run: |

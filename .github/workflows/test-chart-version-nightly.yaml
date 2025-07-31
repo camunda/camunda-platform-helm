@@ -47,4 +47,4 @@ jobs:
       scenario: ${{ matrix.scenario }}
       auth: ${{ matrix.auth }}
       exclude: ${{ matrix.exclude }}
-      enterprise: ${{ matrix.enterprise }}
+      values-enterprise: ${{ matrix.values-enterprise }}

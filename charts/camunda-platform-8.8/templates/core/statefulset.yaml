@@ -142,6 +142,23 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
             {{- end }}
+            {{/*
+            Passwords for variable substitution.
+            */}}
+            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
+            - name: VALUES_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled (include "opensearch.passwordIsDefined" .) }}
+            - name: VALUES_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end}}
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
@@ -159,7 +176,6 @@ spec:
               name: {{ default "management" .Values.core.service.managementName }}
             - containerPort: {{ .Values.core.service.grpcPort }}
               name: {{ default "gateway" .Values.core.service.grpcName }}
-
           {{- if .Values.core.startupProbe.enabled }}
           startupProbe:
             httpGet:

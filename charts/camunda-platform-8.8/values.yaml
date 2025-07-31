@@ -96,7 +96,7 @@ global:
         ## @param global.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
         ## @param global.security.authentication.oidc.groupsClaim group claim.
-        groupsClaim: ""
+        groupsClaim: "groups"
     ## Authorizations configuration.
     ## @extra global.security.authorizations
     authorizations:
@@ -120,12 +120,12 @@ global:
           name: Demo User
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
-      mappings:
-        ## @param global.security.initialization.mappings[0].mappingID the mapping-id of an initial mapping.
-        - mappingID: demo-user-mapping
-          ## @param global.security.initialization.mappings[0].claimName the claim-name of an initial mapping.
+      mappingRules:
+        ## @param global.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
+        - mappingRuleID: demo-user-mapping-rule
+          ## @param global.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
           claimName: preferred_username
-          ## @param global.security.initialization.mappings[0].claimValue the name of an initial user.
+          ## @param global.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
           claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
@@ -213,7 +213,7 @@ global:
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
-      ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
+    ## @param  global.elasticsearch.disableExporter (DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.
     disableExporter: false
     ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
@@ -223,7 +223,7 @@ global:
       protocol: http
       host: "{{ .Release.Name }}-elasticsearch"
       port: 9200
-    ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
+    ## @param global.elasticsearch.clusterName defines the name of the Elasticsearch cluster.
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
@@ -259,6 +259,10 @@ global:
       protocol: https
       host: ""
       port: 443
+    ## @param global.opensearch.clusterName defines the name of the OpenSearch cluster.
+    clusterName: "opensearch"
+    ## @param global.opensearch.prefix defines the prefix used for OpenSearch indices or records.
+    prefix: zeebe-record
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
@@ -1300,8 +1304,6 @@ webModeler:
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
     tag: 8.8.0-alpha6
-    ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-    digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1325,6 +1327,8 @@ webModeler:
     image:
       ## @param webModeler.restapi.image.repository defines which image repository to use for the restapi Docker image
       repository: camunda/web-modeler-restapi
+      ## @param webModeler.restapi.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
@@ -1334,7 +1338,7 @@ webModeler:
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
     # Note: Currently, the only supported database system is PostgreSQL.
     externalDatabase:
-      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.
+      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.
       # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
       url: ""
       ## @param webModeler.restapi.externalDatabase.host Database host (used when url is not provided)
@@ -1562,6 +1566,8 @@ webModeler:
     image:
       ## @param webModeler.webapp.image.repository defines which image repository to use for the webapp Docker image
       repository: camunda/web-modeler-webapp
+      ## @param webModeler.webapp.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
@@ -1730,6 +1736,8 @@ webModeler:
     image:
       ## @param webModeler.websockets.image.repository defines which image repository to use for the websockets Docker image
       repository: camunda/web-modeler-websockets
+      ## @param webModeler.websockets.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
@@ -2237,6 +2245,16 @@ core:
   ## @param core.debug if true, extra info is printed.
   debug: false
 
+  ## @param core.profiles [object] defines which components of the orchestration core are enabled (e.g., broker, identity, operate).
+  profiles:
+    broker: true
+    identity: true
+    operate: true
+    tasklist: true
+
+  ## @param core.profilesOverride [string] defines the override for the profiles as comma-separated string.
+  profilesOverride: ""
+
   ## @extra core.image configuration to configure the image specifics
   image:
     ## @param core.image.registry can be used to set container image registry.
@@ -2252,6 +2270,11 @@ core:
 
   ## @extra core.migration configuration for migration purposes for the orchestration cluster
   migration:
+    process:
+    ## @param core.migration.process.enabled if true, the process migration occurs.
+      enabled: false
+    ## @param core.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      backoffLimit: 6
     identity:
       ## @param core.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
       enabled: false
@@ -2427,7 +2450,7 @@ core:
   extraVolumes: []
   ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
-  ## @param core.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  ## @param core.extraInitContainers (DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
   ## @param core.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
