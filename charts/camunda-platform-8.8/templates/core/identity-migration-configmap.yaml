@@ -9,6 +9,14 @@ data:
       migration:
         identity:
           mode: {{ .Values.global.identity.auth.type }}
+          {{- if not ( eq .Values.global.identity.auth.type "KEYCLOAK" ) }}
+          oidc:
+            audiences:
+              identity: {{ include "identity.authAudience" . | quote }}
+              operate: {{ .Values.global.identity.auth.core }}
+              tasklist: {{ .Values.global.identity.auth.core }}
+              zeebe: {{ .Values.global.identity.auth.core }}
+          {{- end }}
           cluster:
             cluster-name: {{ tpl .Values.global.zeebeClusterName . }}
             cluster-size: {{ .Values.core.clusterSize }}
