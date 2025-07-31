@@ -85,4 +85,7 @@ runs:
           helm_extra_args="${helm_extra_args} --values ../../../../${CHART_PATH}/values-digest.yaml"
         fi
 
+        echo "PRINT PATH:"
+        echo: "--values ${charts_base_dir}/${{ inputs.chart-dir }}/values-enterprise.yaml"
+
         echo "TEST_HELM_EXTRA_ARGS=${helm_extra_args}" | tee -a $GITHUB_ENV
