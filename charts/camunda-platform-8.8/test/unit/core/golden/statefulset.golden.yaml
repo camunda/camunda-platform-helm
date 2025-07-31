@@ -149,7 +149,7 @@ spec:
               - key: app.kubernetes.io/component
                 operator: In
                 values:
-                - core
+                - zeebe-broker
             topologyKey: kubernetes.io/hostname
 # yamllint enable
   volumeClaimTemplates:
