@@ -867,6 +867,11 @@
                     "description": "Array of extra objects to deploy with the release.",
                     "default": [],
                     "items": {}
+                },
+                "noSecondaryStorage": {
+                    "type": "boolean",
+                    "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
+                    "default": false
                 }
             }
         },
