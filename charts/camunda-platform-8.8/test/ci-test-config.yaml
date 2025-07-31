@@ -71,4 +71,4 @@ integration:
           exclude: []
           auth: basic
           shortname: elbae
-          values-enterprise: true
+          enterprise: true

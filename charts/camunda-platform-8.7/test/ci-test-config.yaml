@@ -52,4 +52,4 @@ integration:
           enabled: true
           exclude: []
           auth: keycloak
-          values-enterprise: true
+          enterprise: true
