@@ -42,7 +42,7 @@ runs:
             echo "    scenario: $(echo "$nightlyScenario" | yq e '.name' -)" >> matrix_versions.txt
             echo "    auth: $(echo "$nightlyScenario" | yq e '.auth' -)" >> matrix_versions.txt
             echo "    exclude: $(echo "$nightlyScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
-            echo "    enterprise: $(echo "$nightlyScenario" | yq e '.enterprise // "false"' -)" >> matrix_versions.txt
+            echo "    values-enterprise: $(echo "$nightlyScenario" | yq e '.values-enterprise // "false"' -)" >> matrix_versions.txt
           done
             sed -i -e '$s/,$/]\n/' matrix_versions.txt
 

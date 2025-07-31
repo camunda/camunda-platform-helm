@@ -92,7 +92,7 @@ on:
         required: false
         default: ""
         type: string
-      enterprise:
+      values-enterprise:
         required: false
         default: "false"
         type: string
@@ -254,6 +254,7 @@ jobs:
       teleport-token: ${{ inputs.teleport-token }}
       namespace-prefix: ${{ inputs.namespace-prefix }}
       values-digest: ${{ inputs.values-digest }}
+      values-enterprise: ${{ inputs.values-enterprise }}
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
