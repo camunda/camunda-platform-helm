@@ -29,6 +29,8 @@ runs:
       shell: bash
       env:
         CHART_PATH: charts/${{ inputs.chart-dir }}
+        # relative path needed for the chart-full-setup Taskfile
+        TEST_RELATIVE_CHART_PATH: ../../../../charts/${{ inputs.chart-dir }}
       id: vars
       run: |
         matrix_file="${CHART_PATH}/test/ci-test-config.yaml"
@@ -57,8 +59,7 @@ runs:
 
         # Values dir.
         values_base_dir="$(echo ${integration_vars} | jq -r '.vars.valuesBaseDir')"
-        # relative path needed for the chart-full-setup Taskfile
-        integration_scenarios_values_dir="../../../../${CHART_PATH}/test/${values_base_dir}"
+        integration_scenarios_values_dir="${TEST_RELATIVE_CHART_PATH}/test/${values_base_dir}"
         echo "TEST_VALUES_BASE_DIR=${integration_scenarios_values_dir}" | tee -a $GITHUB_ENV
         # The var is needed in some non-shell steps.
         echo "test-values-base-dir=${integration_scenarios_values_dir}" | tee -a $GITHUB_OUTPUT
@@ -76,16 +77,12 @@ runs:
 
         # configuring TEST_HELM_EXTRA_ARGS
         if [[ "${{ inputs.enterprise }}" == "true" ]]; then
-        # relative path needed for the chart-full-setup Taskfile
           helm_extra_args="--values ../../../../${CHART_PATH}/values-digest.yaml"
         fi
 
         if [[ "${{ inputs.values-digest }}" == "true" ]] && [[ -f "${CHART_PATH}/values-digest.yaml" ]]; then
-        # relative path needed for the chart-full-setup Taskfile
-          helm_extra_args="${helm_extra_args} --values ../../../../${CHART_PATH}/values-digest.yaml"
+          helm_extra_args="${helm_extra_args} --values ${TEST_RELATIVE_CHART_PATH}/values-digest.yaml"
         fi
 
-        echo "PRINT PATH:"
-        echo "--values ${charts_base_dir}/${{ inputs.chart-dir }}/values-enterprise.yaml"
 
         echo "TEST_HELM_EXTRA_ARGS=${helm_extra_args}" | tee -a $GITHUB_ENV
