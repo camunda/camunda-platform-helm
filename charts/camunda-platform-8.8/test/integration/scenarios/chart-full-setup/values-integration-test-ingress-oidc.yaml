@@ -76,8 +76,8 @@ global:
     authorizations:
       enabled: true
     initialization:
-      mappings:
-        - mappingID: demo-user-mapping
+      mappingRules:
+        - mappingRuleID: demo-user-mapping-rule
           claimName: oid
           claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
 
@@ -147,30 +147,30 @@ core:
         external-dns.alpha.kubernetes.io/hostname: "core-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
   env:
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_MAPPINGID
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMNAME
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
       value: "oid"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_0_CLAIMVALUE
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
       value: d70412f6-5a6e-4271-8e45-fa497056ac1e
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_MAPPINGID
-      value: "venom-client-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_CLAIMNAME
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
       value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_1_CLAIMVALUE
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
       value: "venom"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_MAPPINGID
-      value: "connectors-client-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_CLAIMNAME
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
       value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGS_2_CLAIMVALUE
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
       value: "connectors"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_0
-      value: "demo-user-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_1
-      value: "venom-client-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGS_2
-      value: "connectors-client-mapping"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"
 
 elasticsearch:
   maxUnavailable: 0
