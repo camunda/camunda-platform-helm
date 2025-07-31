@@ -29,7 +29,7 @@ runs:
       shell: bash
       env:
         CHART_PATH: charts/${{ inputs.chart-dir }}
-        # relative path needed for the chart-full-setup Taskfile
+        # relative path needed for the chart-full-setup Taskfile (test/integration/scenarios/chart-full-setup)
         TEST_RELATIVE_CHART_PATH: ../../../../charts/${{ inputs.chart-dir }}
       id: vars
       run: |
