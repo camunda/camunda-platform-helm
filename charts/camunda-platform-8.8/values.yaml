@@ -2611,7 +2611,7 @@ core:
               - key: "app.kubernetes.io/component"
                 operator: In
                 values:
-                  - core
+                  - zeebe-broker
           topologyKey: "kubernetes.io/hostname"
 
   ## @param core.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
