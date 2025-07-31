@@ -120,12 +120,12 @@ global:
           name: Demo User
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
-      mappings:
-        ## @param global.security.initialization.mappings[0].mappingID the mapping-id of an initial mapping.
-        - mappingID: demo-user-mapping
-          ## @param global.security.initialization.mappings[0].claimName the claim-name of an initial mapping.
+      mappingRules:
+        ## @param global.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
+        - mappingRuleID: demo-user-mapping-rule
+          ## @param global.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
           claimName: preferred_username
-          ## @param global.security.initialization.mappings[0].claimValue the name of an initial user.
+          ## @param global.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
           claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
@@ -1304,8 +1304,6 @@ webModeler:
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
     tag: 8.8.0-alpha6
-    ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-    digest: ""
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1329,6 +1327,8 @@ webModeler:
     image:
       ## @param webModeler.restapi.image.repository defines which image repository to use for the restapi Docker image
       repository: camunda/web-modeler-restapi
+      ## @param webModeler.restapi.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
@@ -1566,6 +1566,8 @@ webModeler:
     image:
       ## @param webModeler.webapp.image.repository defines which image repository to use for the webapp Docker image
       repository: camunda/web-modeler-webapp
+      ## @param webModeler.webapp.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
@@ -1734,6 +1736,8 @@ webModeler:
     image:
       ## @param webModeler.websockets.image.repository defines which image repository to use for the websockets Docker image
       repository: camunda/web-modeler-websockets
+      ## @param webModeler.websockets.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
@@ -2269,7 +2273,7 @@ core:
     process:
     ## @param core.migration.process.enabled if true, the process migration occurs.
       enabled: false
-    ## @param core.migration.process.enabled if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+    ## @param core.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
     identity:
       ## @param core.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
