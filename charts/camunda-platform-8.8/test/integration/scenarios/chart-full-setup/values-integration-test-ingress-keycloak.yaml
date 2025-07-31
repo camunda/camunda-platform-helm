@@ -136,7 +136,6 @@ core:
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
       value: "connectors-client-mapping-rule"
 
-
 console:
   enabled: true
   contextPath: "/"
