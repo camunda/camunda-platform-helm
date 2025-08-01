@@ -26,6 +26,21 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 {{- end }}
 
 {{/*
+Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
+*/}}
+{{- if .Values.global.noSecondaryStorage }}
+  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+    {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
+        "When \"global.noSecondaryStorage\" is enabled, both Elasticsearch and OpenSearch must be disabled."
+        "Please ensure that \"global.elasticsearch.enabled: false\" and \"global.opensearch.enabled: false\""
+        "are set when using \"global.noSecondaryStorage: true\"."
+        "Secondary storage components cannot be enabled when noSecondaryStorage is true."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if the auth type is set to non-Keycloak and its requirements are not met which are:
 - Global Identity issuerBackendUrl.
 */}}

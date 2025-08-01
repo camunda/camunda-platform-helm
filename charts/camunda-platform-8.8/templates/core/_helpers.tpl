@@ -94,7 +94,9 @@ app.kubernetes.io/component: core
 {{- end -}}
 
 {{- define "core.secondaryStorage" -}}
-    {{- if .Values.global.elasticsearch.enabled -}}
+    {{- if .Values.global.noSecondaryStorage -}}
+        none
+    {{- else if .Values.global.elasticsearch.enabled -}}
         elasticsearch
     {{- else if .Values.global.opensearch.enabled -}}
         opensearch
