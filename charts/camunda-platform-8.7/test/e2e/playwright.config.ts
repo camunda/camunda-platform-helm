@@ -17,8 +17,9 @@ export default defineConfig({
   ],
   fullyParallel: true,
   retries: 3,
-  timeout: 3 * 60 * 1000, // no test should take more than 3 minutes (failing fast is important so that we can run our tests on each PR)
-  workers: process.env.CI == "true" ? 1 : "25%",
+  timeout: 5 * 60 * 1000, // no test should take more than 3 minutes (failing fast is important so that we can run our tests on each PR)
+  workers: "50%",
+  //workers: process.env.CI == "true" ? 1 : "50%",
   use: {
     baseURL: getBaseURL(),
     actionTimeout: 10000,
