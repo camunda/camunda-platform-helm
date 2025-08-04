@@ -1562,6 +1562,36 @@
                             }
                         }
                     }
+                },
+                "volumePermissions": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
+                        }
+                    }
+                },
+                "metrics": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/postgres-exporter"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -1975,6 +2005,21 @@
                             "type": "string",
                             "description": "defines the key within the existing secret object.",
                             "default": "identity-keycloak-admin-password"
+                        }
+                    }
+                },
+                "keycloakConfigCli": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/keycloak-config-cli"
+                                }
+                            }
                         }
                     }
                 }
@@ -5923,6 +5968,16 @@
                             "type": "boolean",
                             "description": "",
                             "default": true
+                        },
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
                         }
                     }
                 },
@@ -5953,6 +6008,51 @@
                             "type": "boolean",
                             "description": "",
                             "default": false
+                        }
+                    }
+                },
+                "metrics": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/elasticsearch-exporter"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
+                        }
+                    }
+                },
+                "copyTlsCerts": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
                         }
                     }
                 }
