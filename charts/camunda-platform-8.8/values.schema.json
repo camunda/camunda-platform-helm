@@ -1825,6 +1825,36 @@
                                     }
                                 }
                             }
+                        },
+                        "volumePermissions": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "bitnamilegacy/os-shell"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "metrics": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "bitnamilegacy/postgres-exporter"
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
