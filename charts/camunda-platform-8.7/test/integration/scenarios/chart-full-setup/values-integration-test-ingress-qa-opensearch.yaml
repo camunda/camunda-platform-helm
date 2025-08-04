@@ -11,9 +11,9 @@ global:
       username: "$OPENSEARCH_USERNAME"
       password: "$OPENSEARCH_PASSWORD"
     url:
-      protocol: https
-      host: "$AWS_HOST_URL"
-      port: 443
+      protocol: $OPENSEARCH_PROTOCOL
+      host: "$OPENSEARCH_HOST"
+      port: $OPENSEARCH_PORT
 elasticsearch:
   enabled: false
 zeebe:
