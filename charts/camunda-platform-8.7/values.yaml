@@ -2769,6 +2769,14 @@ identityKeycloak:
         enabled: true
         runAsNonRoot: true
         fsGroup: 1001
+    volumePermissions:
+      image:
+        ## @param identityKeycloak.postgresql.volumePermissions.image.repository
+        repository: bitnamilegacy/os-shell
+    metrics:
+      image:
+        ## @param identityKeycloak.postgresql.metrics.image.repository
+        repository: bitnamilegacy/postgres-exporter
   # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
   # Docs: https://www.keycloak.org/server/reverseproxy
   ## @param identityKeycloak.proxy keycloak proxy

@@ -1413,6 +1413,14 @@ identity:
       image:
         repository: bitnamilegacy/postgresql
         tag: 15.10.0
+      volumePermissions:
+        image:
+          ## @param identity.keycloak.postgresql.volumePermissions.image.repository
+          repository: bitnamilegacy/os-shell
+      metrics:
+        image:
+          ## @param identity.keycloak.postgresql.metrics.image.repository
+          repository: bitnamilegacy/postgres-exporter
 
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true

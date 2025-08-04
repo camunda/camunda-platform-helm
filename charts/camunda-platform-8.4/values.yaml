@@ -2097,6 +2097,14 @@ identity:
           enabled: true
           runAsNonRoot: true
           fsGroup: 1001
+      volumePermissions:
+        image:
+          ## @param identity.keycloak.postgresql.volumePermissions.image.repository
+          repository: bitnamilegacy/os-shell
+      metrics:
+        image:
+          ## @param identity.keycloak.postgresql.metrics.image.repository
+          repository: bitnamilegacy/postgres-exporter
 
     ## @param identity.keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
     enabled: true
