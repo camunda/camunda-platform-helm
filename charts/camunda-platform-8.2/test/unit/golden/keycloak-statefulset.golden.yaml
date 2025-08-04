@@ -64,7 +64,7 @@ spec:
             name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:19.0.3
+          image: docker.io/bitnamilegacy/keycloak:19.0.3
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true

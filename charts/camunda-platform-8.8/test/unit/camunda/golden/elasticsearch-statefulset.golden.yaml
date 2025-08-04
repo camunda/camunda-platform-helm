@@ -89,7 +89,7 @@ spec:
               ephemeral-storage: 50Mi
               memory: 128Mi
         - name: copy-default-plugins
-          image: docker.io/bitnami/elasticsearch:8.18.0
+          image: docker.io/bitnamilegacy/elasticsearch:8.18.0
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -133,7 +133,7 @@ spec:
               subPath: app-plugins-dir
       containers:
         - name: elasticsearch
-          image: docker.io/bitnami/elasticsearch:8.18.0
+          image: docker.io/bitnamilegacy/elasticsearch:8.18.0
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
