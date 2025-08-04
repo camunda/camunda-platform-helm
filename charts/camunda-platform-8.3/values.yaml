@@ -1658,6 +1658,14 @@ identity:
       ## @param identity.postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
       ##
       existingSecret:
+    volumePermissions:
+      image:
+        ## @param identity.postgresql.volumePermissions.image.repository
+        repository: bitnamilegacy/os-shell
+    metrics:
+      image:
+        ## @param identity.postgresql.metrics.image.repository
+        repository: bitnamilegacy/postgres-exporter
 
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
@@ -1959,6 +1967,10 @@ identity:
       existingSecret: ""
       ## @param identity.keycloak.auth.passwordSecretKey defines the key within the existing secret object.
       passwordSecretKey: "admin-password"
+    keycloakConfigCli:
+      image:
+        ## @param identity.keycloak.keycloakConfigCli.image.repository
+        repository: bitnamilegacy/keycloak-config-cli
 
 
 #######################################################################
@@ -3124,6 +3136,9 @@ elasticsearch:
   sysctlImage:
   ## @param elasticsearch.sysctlImage.enabled
     enabled: true
+    image:
+      ## @param elasticsearch.sysctlImage.image.repository
+      repository: bitnamilegacy/os-shell
   data:
     ## @param elasticsearch.data.replicaCount
     replicaCount: 0
@@ -3133,6 +3148,18 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
+  metrics:
+    image:
+      ## @param elasticsearch.metrics.image.repository
+      repository: bitnamilegacy/elasticsearch-exporter
+  volumePermissions:
+    image:
+      ## @param elasticsearch.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  copyTlsCerts:
+    image:
+      ## @param elasticsearch.copyTlsCerts.image.repository
+      repository: bitnamilegacy/os-shell
 
 
 #####################################################################
