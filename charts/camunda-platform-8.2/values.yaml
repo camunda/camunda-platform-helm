@@ -1405,7 +1405,7 @@ identity:
     postgresql:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
-        repository: bitnami/postgresql
+        repository: bitnamilegacy/postgresql
         tag: 15.10.0
 
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
@@ -1414,7 +1414,7 @@ identity:
     # Keycloak.image configuration.
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
-      repository: bitnami/keycloak
+      repository: bitnamilegacy/keycloak
       tag: 19.0.3
 
     # Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
@@ -2507,7 +2507,7 @@ retentionPolicy:
     # Image.registry can be used to set container image registry.
     registry: ""
     # Image.repository defines which image repository to use
-    repository: bitnami/elasticsearch-curator-archived
+    repository: bitnamilegacy/elasticsearch-curator-archived
     # Image.tag defines the tag / version which should be used in the chart
     tag: 5.8.4
 

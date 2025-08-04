@@ -59,12 +59,12 @@ identity:
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags?page=&page_size=&ordering=&name=8.2
     image:
-      repository: bitnami/keycloak
+      repository: bitnamilegacy/keycloak
       tag: 19.0.3
     postgresql:
       # https://hub.docker.com/r/bitnami/postgresql/tags?page=&page_size=&ordering=&name=8.2
       image:
-        repository: bitnami/postgresql
+        repository: bitnamilegacy/postgresql
         tag: 15.10.0
 
 #
@@ -80,5 +80,5 @@ elasticsearch:
 retentionPolicy:
   # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags
   image:
-    repository: bitnami/elasticsearch-curator-archived
+    repository: bitnamilegacy/elasticsearch-curator-archived
     tag: 5.8.4

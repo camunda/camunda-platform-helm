@@ -1969,7 +1969,7 @@ identity:
     ## @param identity.postgresql.image.tag PostgreSQL image tag
     ##
     image:
-      repository: bitnami/postgresql
+      repository: bitnamilegacy/postgresql
       tag: 15.10.0-debian-12-r2
     ## @param identity.postgresql.nameOverride the name used for Identity PostgreSQL.
     ##
@@ -2026,7 +2026,7 @@ identity:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
         ## @param identity.keycloak.postgresql.image.repository image repo
-        repository: bitnami/postgresql
+        repository: bitnamilegacy/postgresql
         ## @param identity.keycloak.postgresql.image.tag image tag
         tag: 15.10.0-debian-12-r2
       primary:
@@ -2091,7 +2091,7 @@ identity:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
       ## @param identity.keycloak.image.repository image repo
-      repository: bitnami/keycloak
+      repository: bitnamilegacy/keycloak
       ## @param identity.keycloak.image.tag image tag
       tag: 22.0.5
 
@@ -3172,7 +3172,7 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository
-    repository: bitnami/elasticsearch
+    repository: bitnamilegacy/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.9.2
   ## @param elasticsearch.extraVolumes[0].name
