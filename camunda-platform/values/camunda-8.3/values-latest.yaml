@@ -63,12 +63,12 @@ identity:
   keycloak:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
-      repository: bitnami/keycloak
+      repository: bitnamilegacy/keycloak
       tag: 22.0.5
     postgresql:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
-        repository: bitnami/postgresql
+        repository: bitnamilegacy/postgresql
         tag: 15.10.0-debian-12-r2
 
 #
@@ -78,5 +78,5 @@ identity:
 elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
-    repository: bitnami/elasticsearch
+    repository: bitnamilegacy/elasticsearch
     tag: 8.8.2
