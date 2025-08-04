@@ -227,7 +227,9 @@ camunda:
         client-id: {{ include "core.authClientId" . | quote }}
       {{- end }}
     authorization: {{ .Values.global.security.authorizations.enabled }}
-    multi-tenancy: {{ .Values.global.multitenancy.enabled }}
+    multiTenancy:
+      checksEnabled: {{ .Values.global.multitenancy.checksEnabled }}
+      apiEnabled: {{ .Values.global.multitenancy.apiEnabled }}
 
   webapp:
     common:
@@ -263,12 +265,20 @@ camunda:
         certificate-path: ''
       # TODO: What kind of value is expected here compared to the 8.7 version?
       importer-enabled: true
+      {{- if .Values.global.multitenancy.checksEnabled }}
+      multiTenancy:
+        enabled: true
+      {{- end }}
     {{- end }}
     {{- if .Values.core.profiles.tasklist }}
     tasklist:
       enabled: true
       # TODO: What kind of value is expected here compared to the 8.7 version?
       importer-enabled: true
+      {{- if .Values.global.multitenancy.checksEnabled }}
+      multiTenancy:
+        enabled: true
+      {{- end }}
     {{- end }}
     session:
       persistent: true
