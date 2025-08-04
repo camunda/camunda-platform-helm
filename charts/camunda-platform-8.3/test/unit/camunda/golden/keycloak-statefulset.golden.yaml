@@ -99,7 +99,7 @@ spec:
             name: quarkus
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:22.0.5
+          image: docker.io/bitnamilegacy/keycloak:22.0.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

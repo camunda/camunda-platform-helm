@@ -74,7 +74,7 @@ spec:
             requests: {}
       containers:
         - name: elasticsearch
-          image: docker.io/bitnami/elasticsearch:8.8.2
+          image: docker.io/bitnamilegacy/elasticsearch:8.8.2
           imagePullPolicy: "IfNotPresent"
           securityContext:
             runAsNonRoot: true

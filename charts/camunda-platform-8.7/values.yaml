@@ -49,6 +49,12 @@ global:
       helm.sh/hook: 'pre-install'
       helm.sh/resource-policy: 'keep'
 
+  ## Security configuration
+  ## @extra global.security
+  security:
+    ## @skip global.security.allowInsecureImages
+    allowInsecureImages: true
+
   ## License configuration.
   ## @extra global.license
   license:
@@ -2633,7 +2639,7 @@ identityPostgresql:
   ## @param identityPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   ##
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: 15.10.0-debian-12-r2
     digest: ""
   ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
@@ -2657,6 +2663,14 @@ identityPostgresql:
       adminPasswordKey: "postgres-password"
       ## @param identityPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
       userPasswordKey: "password"
+  volumePermissions:
+    image:
+      ## @param identityPostgresql.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  metrics:
+    image:
+      ## @param identityPostgresql.metrics.image.repository
+      repository: bitnamilegacy/postgres-exporter
 
 # Identity.
 #    # ###### #   #  ####  #       ####    ##   #    #
@@ -2715,7 +2729,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       ## @param identityKeycloak.postgresql.image.repository image repo
-      repository: bitnami/postgresql
+      repository: bitnamilegacy/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
       tag: 15.10.0-debian-12-r2
       ## @param identityKeycloak.postgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
@@ -2755,6 +2769,14 @@ identityKeycloak:
         enabled: true
         runAsNonRoot: true
         fsGroup: 1001
+    volumePermissions:
+      image:
+        ## @param identityKeycloak.postgresql.volumePermissions.image.repository
+        repository: bitnamilegacy/os-shell
+    metrics:
+      image:
+        ## @param identityKeycloak.postgresql.metrics.image.repository
+        repository: bitnamilegacy/postgres-exporter
   # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
   # Docs: https://www.keycloak.org/server/reverseproxy
   ## @param identityKeycloak.proxy keycloak proxy
@@ -2853,6 +2875,10 @@ identityKeycloak:
     existingSecret: ""
     ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
     passwordSecretKey: "admin-password"
+  keycloakConfigCli:
+    image:
+      ## @param identityKeycloak.keycloakConfigCli.image.repository
+      repository: bitnamilegacy/keycloak-config-cli
 
 
 #######################################################################
@@ -3540,7 +3566,7 @@ postgresql:
   ## @param postgresql.image.tag PostgreSQL image tag
   ## @param postgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: 14.18.0-debian-12-r0
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
@@ -3861,7 +3887,7 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository
-    repository: bitnami/elasticsearch
+    repository: bitnamilegacy/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.17.4
     ## @param elasticsearch.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
@@ -3905,6 +3931,9 @@ elasticsearch:
   sysctlImage:
   ## @param elasticsearch.sysctlImage.enabled
     enabled: true
+    image:
+      ## @param elasticsearch.sysctlImage.image.repository
+      repository: bitnamilegacy/os-shell
   data:
     ## @param elasticsearch.data.replicaCount
     replicaCount: 0
@@ -3914,6 +3943,18 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
+  metrics:
+    image:
+      ## @param elasticsearch.metrics.image.repository
+      repository: bitnamilegacy/elasticsearch-exporter
+  volumePermissions:
+    image:
+      ## @param elasticsearch.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  copyTlsCerts:
+    image:
+      ## @param elasticsearch.copyTlsCerts.image.repository
+      repository: bitnamilegacy/os-shell
 
 
 #####################################################################

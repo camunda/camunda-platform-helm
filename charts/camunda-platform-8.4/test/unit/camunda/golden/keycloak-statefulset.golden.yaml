@@ -79,7 +79,7 @@ spec:
           - -c
           - cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/*
             /quarkus
-          image: 'docker.io/bitnami/keycloak:22.0.5'
+          image: 'docker.io/bitnamilegacy/keycloak:22.0.5'
           imagePullPolicy: Always
           name: copy-configs
           securityContext:
@@ -99,7 +99,7 @@ spec:
             name: quarkus
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:22.0.5
+          image: docker.io/bitnamilegacy/keycloak:22.0.5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
