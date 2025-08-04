@@ -1504,7 +1504,7 @@
                         "repository": {
                             "type": "string",
                             "description": "PostgreSQL repo",
-                            "default": "bitnami/postgresql"
+                            "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
@@ -1672,7 +1672,7 @@
                                 "repository": {
                                     "type": "string",
                                     "description": "image repo",
-                                    "default": "bitnami/postgresql"
+                                    "default": "bitnamilegacy/postgresql"
                                 },
                                 "tag": {
                                     "type": "string",
@@ -3809,7 +3809,7 @@
                         "repository": {
                             "type": "string",
                             "description": "PostgreSQL repo",
-                            "default": "bitnami/postgresql"
+                            "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
@@ -5805,7 +5805,7 @@
                         "repository": {
                             "type": "string",
                             "description": "",
-                            "default": "bitnami/elasticsearch"
+                            "default": "bitnamilegacy/elasticsearch"
                         },
                         "tag": {
                             "type": "string",
