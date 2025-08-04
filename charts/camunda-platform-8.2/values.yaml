@@ -1426,6 +1426,12 @@ identity:
     # Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
     tls:
       enabled: false
+    volumePermissions:
+      image:
+        repository: bitnamilegacy/bitnami-shell
+    metrics:
+      image:
+        repository: bitnamilegacy/postgres-exporter
 
     # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
     # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
@@ -1490,6 +1496,9 @@ identity:
       # Keycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
       # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
       existingSecret: ""
+    keycloakConfigCli:
+      image:
+        repository: bitnamilegacy/keycloak-config-cli
 
 
 #######################################################################
@@ -1998,6 +2007,12 @@ postgresql:
     password: ""
     # Postgresql.auth.database defines the name of the database to be created for Web Modeler
     database: web-modeler
+  volumePermissions:
+    image:
+      repository: bitnamilegacy/bitnami-shell
+  metrics:
+    image:
+      repository: bitnamilegacy/postgres-exporter
 
 #####################################################################
  #####
