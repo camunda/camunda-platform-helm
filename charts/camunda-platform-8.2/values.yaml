@@ -53,6 +53,12 @@ global:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  ## Security configuration
+  ## @extra global.security
+  security:
+    ## @skip global.security.allowInsecureImages
+    allowInsecureImages: true
+
   # Ingress configuration to configure the ingress resource
   ingress:
     # Ingress.enabled if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.

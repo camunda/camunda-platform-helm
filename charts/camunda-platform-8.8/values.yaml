@@ -85,6 +85,8 @@ global:
   ## Security configuration
   ## @extra global.security
   security:
+    ## @skip global.security.allowInsecureImages
+    allowInsecureImages: true
     ## Authentication configuration
     ## @extra global.security.authentication
     authentication:
