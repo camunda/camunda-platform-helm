@@ -423,6 +423,8 @@ jobs:
         run: |
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
           # The Zeebe team advised to use SNAPSHOT tag instead.
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
           TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set zeebe.image.tag=SNAPSHOT"
           echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set zeebe.image.tag=SNAPSHOT"
