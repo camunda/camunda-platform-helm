@@ -20,7 +20,7 @@ data:
       url: {{ include "identity.externalUrl" . | quote }}
       {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
       flags:
-        multi-tenancy: {{ .Values.global.multitenancy.enabled | quote }}
+        multi-tenancy: {{ .Values.global.multitenancy.checksEnabled | quote }}
       {{- end }}
 
       {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
