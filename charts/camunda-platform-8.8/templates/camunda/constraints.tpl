@@ -81,12 +81,34 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{- end }}
 
 {{/*
-Fail with a message if Console is enabled but managed Identity is not enabled.
+Fail with a message if Console is enabled but management Identity is not enabled.
 */}}
 {{- if and .Values.console.enabled (not .Values.identity.enabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Console is enabled but managed Identity is not enabled."
-      "Please ensure that if Console is enabled, managed Identity must also be enabled."
+      "Console is enabled but management Identity is not enabled."
+      "Please ensure that if Console is enabled, management Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Optimize is enabled but management Identity is not enabled.
+*/}}
+{{- if and .Values.optimize.enabled (not .Values.identity.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Optimize is enabled but management Identity is not enabled."
+      "Please ensure that if Optimize is enabled, management Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Web Modeler is enabled but management Identity is not enabled.
+*/}}
+{{- if and .Values.webModeler.enabled (not .Values.identity.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Web Modeler is enabled but management Identity is not enabled."
+      "Please ensure that if Web Modeler is enabled, management Identity must also be enabled."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
