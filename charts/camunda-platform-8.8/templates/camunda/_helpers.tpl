@@ -859,7 +859,7 @@ Usage:
   valueFrom:
     secretKeyRef:
       name: {{ $norm.secretRef.name }}
-      key:  {{ $norm.secretRef.key }}
+      key: {{ $norm.secretRef.key }}
 {{- else }}
   value: {{ $norm.plaintext | quote }}
 {{- end }}
