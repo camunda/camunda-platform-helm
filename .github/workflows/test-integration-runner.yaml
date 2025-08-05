@@ -375,7 +375,7 @@ jobs:
             kubectl apply -f ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
           fi
 
-      - name: Helm - Execute before install lifecycle tasks
+      - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -418,7 +418,28 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
+
+      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
+        if: inputs.flow == 'upgrade'
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
+
       - name: Helm - Upgrade - Setup helm extra args
+        if: inputs.flow == 'upgrade'
+        run: |
+          TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS}"
+          echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
+
+      - name: Helm - Upgrade ALPHA - Setup helm extra args
         if: inputs.flow == 'upgrade' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
         run: |
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
@@ -427,11 +448,6 @@ jobs:
           echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set zeebe.image.tag=SNAPSHOT"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
-
-      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
-        if: inputs.flow == 'upgrade'
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         if: inputs.flow == 'upgrade'
