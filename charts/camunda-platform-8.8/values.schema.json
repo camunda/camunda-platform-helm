@@ -5999,15 +5999,10 @@
                             "description": "",
                             "default": true
                         },
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "bitnamilegacy/os-shell"
-                                }
-                            }
+                        "repository": {
+                            "type": "string",
+                            "description": "",
+                            "default": "bitnamilegacy/os-shell"
                         }
                     }
                 },
