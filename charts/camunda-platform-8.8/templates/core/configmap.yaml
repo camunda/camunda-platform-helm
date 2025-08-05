@@ -166,7 +166,7 @@ data:
               {{- end }}
           {{- end }}
         {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
-          CamundaExporter:
+          camundaexporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
