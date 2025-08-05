@@ -1,0 +1,19 @@
+connectors:
+  image:
+    repository: camunda/connectors-bundle
+    digest: sha256:390604b501229d100ba8a67c9d0c8cda2c377b157a7f8ab6b727904aa33d541d
+
+optimize:
+  image:
+    repository: camunda/optimize
+    digest: sha256:4b1a79b534efe23b0c6d7303e872257257e18238a32e8c2cc53f091f6bdbbeac
+
+core:
+  image:
+    repository: camunda/camunda
+    digest: sha256:3356f755b8b1d3f797d74bac6da6043de0085cfd2251a76e097684b9c93727a4
+
+identity:
+  image:
+    digest: sha256:f35c73b116d1bab9f497aef64edd261c82bbcfc2ecfb5d89d33cf5d880520f5c
+

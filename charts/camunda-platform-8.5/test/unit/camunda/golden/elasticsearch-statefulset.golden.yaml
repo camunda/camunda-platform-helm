@@ -54,7 +54,7 @@ spec:
       initContainers:
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
-          image: docker.io/bitnami/os-shell:12-debian-12-r18
+          image: docker.io/bitnamilegacy/os-shell:12-debian-12-r18
           imagePullPolicy: "IfNotPresent"
           command:
             - /bin/bash
@@ -83,7 +83,7 @@ spec:
               ephemeral-storage: 50Mi
               memory: 128Mi
         - name: copy-default-plugins
-          image: docker.io/bitnami/elasticsearch:8.12.2
+          image: docker.io/bitnamilegacy/elasticsearch:8.12.2
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -127,7 +127,7 @@ spec:
               subPath: app-plugins-dir
       containers:
         - name: elasticsearch
-          image: docker.io/bitnami/elasticsearch:8.12.2
+          image: docker.io/bitnamilegacy/elasticsearch:8.12.2
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false

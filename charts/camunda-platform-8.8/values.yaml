@@ -1,3 +1,5 @@
+
+
 # Default values for Camunda Helm chart.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
@@ -85,12 +87,16 @@ global:
   ## Multitenancy configuration.
   ## @extra global.multitenancy
   multitenancy:
-    ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
-    enabled: false
+    ## @param global.multitenancy.checksEnabled if true, then enable multitenancy checks in all applicable components.
+    checksEnabled: false
+    ## @param global.multitenancy.apiEnabled if true, then enable multitenancy API used for tenant management.
+    apiEnabled: true
 
   ## Security configuration
   ## @extra global.security
   security:
+    ## @skip global.security.allowInsecureImages
+    allowInsecureImages: true
     ## Authentication configuration
     ## @extra global.security.authentication
     authentication:
@@ -126,12 +132,12 @@ global:
           name: Demo User
           ## @extra global.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
-      mappings:
-        ## @param global.security.initialization.mappings[0].mappingID the mapping-id of an initial mapping.
-        - mappingID: demo-user-mapping
-          ## @param global.security.initialization.mappings[0].claimName the claim-name of an initial mapping.
+      mappingRules:
+        ## @param global.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
+        - mappingRuleID: demo-user-mapping-rule
+          ## @param global.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
           claimName: preferred_username
-          ## @param global.security.initialization.mappings[0].claimValue the name of an initial user.
+          ## @param global.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
           claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
@@ -840,7 +846,7 @@ identityPostgresql:
   ## @param identityPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   ##
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: 15.10.0-debian-12-r2
     digest: ""
   ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
@@ -864,6 +870,14 @@ identityPostgresql:
       adminPasswordKey: "identity-postgresql-admin-password"
       ## @param identityPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
       userPasswordKey: "identity-postgresql-user-password"
+  volumePermissions:
+    image:
+      ## @param identityPostgresql.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  metrics:
+    image:
+      ## @param identityPostgresql.metrics.image.repository
+      repository: bitnamilegacy/postgres-exporter
 
 # Identity.
 #    # ###### #   #  ####  #       ####    ##   #    #
@@ -923,7 +937,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       ## @param identityKeycloak.postgresql.image.repository image repo
-      repository: bitnami/postgresql
+      repository: bitnamilegacy/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
       tag: 15.10.0-debian-12-r2
       ## @param identityKeycloak.postgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
@@ -963,6 +977,14 @@ identityKeycloak:
         enabled: true
         runAsNonRoot: true
         fsGroup: 1001
+    volumePermissions:
+      image:
+        ## @param identityKeycloak.postgresql.volumePermissions.image.repository
+        repository: bitnamilegacy/os-shell
+    metrics:
+      image:
+        ## @param identityKeycloak.postgresql.metrics.image.repository
+        repository: bitnamilegacy/postgres-exporter
   # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
   # Docs: https://www.keycloak.org/server/reverseproxy
   ## @param identityKeycloak.proxy keycloak proxy
@@ -1061,6 +1083,10 @@ identityKeycloak:
     existingSecret: camunda-credentials
     ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
     passwordSecretKey: identity-keycloak-admin-password
+  keycloakConfigCli:
+    image:
+      ## @param identityKeycloak.keycloakConfigCli.image.repository
+      repository: bitnamilegacy/keycloak-config-cli
 
 #################################################
 #####
@@ -1947,7 +1973,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.tag PostgreSQL image tag
   ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: 14.18.0-debian-12-r0
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
@@ -2910,7 +2936,7 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository
-    repository: bitnami/elasticsearch
+    repository: bitnamilegacy/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.18.0
     ## @param elasticsearch.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
@@ -2953,6 +2979,8 @@ elasticsearch:
   sysctlImage:
     ## @param elasticsearch.sysctlImage.enabled
     enabled: true
+    ## @param elasticsearch.sysctlImage.repository
+    repository: bitnamilegacy/os-shell
   data:
     ## @param elasticsearch.data.replicaCount
     replicaCount: 0
@@ -2962,6 +2990,18 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
+  metrics:
+    image:
+      ## @param elasticsearch.metrics.image.repository
+      repository: bitnamilegacy/elasticsearch-exporter
+  volumePermissions:
+    image:
+      ## @param elasticsearch.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  copyTlsCerts:
+    image:
+      ## @param elasticsearch.copyTlsCerts.image.repository
+      repository: bitnamilegacy/os-shell
 
 #####################################################################
 ######
