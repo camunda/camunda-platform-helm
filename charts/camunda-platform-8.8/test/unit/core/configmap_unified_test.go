@@ -52,12 +52,30 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 		},
 		{
-			Name: "TestApplicationYamlShouldContainEnabledProfiles",
+			Name: "TestApplicationYamlShouldContainEnabledProfilesBroker",
 			Values: map[string]string{
-				"core.profiles.broker": "false",
+				"core.profiles.broker":              "false",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "identity,operate,tasklist",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainEnabledProfilesOperate",
+			Values: map[string]string{
+				"core.profiles.operate":             "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "broker,identity,tasklist",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainEnabledProfilesTasklist",
+			Values: map[string]string{
+				"core.profiles.tasklist":            "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "broker,identity,operate",
 			},
 		},
 		{
@@ -108,13 +126,36 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			},
 		},
 		{
-			Name: "TestApplicationYamlShouldContainEnabledProfiles",
+			Name: "TestApplicationYamlShouldContainEnabledProfilesBroker",
 			Values: map[string]string{
 				"global.compatibility.core.enabled": "true",
+				"core.profiles.broker":              "null",
 				"zeebe.enabled":                     "false",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "identity,operate,tasklist",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainEnabledProfilesOperate",
+			Values: map[string]string{
+				"global.compatibility.core.enabled": "true",
+				"core.profiles.operate":             "null",
+				"operate.enabled":                   "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainEnabledProfilesTasklist",
+			Values: map[string]string{
+				"global.compatibility.core.enabled": "true",
+				"core.profiles.tasklist":            "null",
+				"tasklist.enabled":                  "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist",
 			},
 		},
 		{
@@ -126,6 +167,50 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			},
 			Expected: map[string]string{
 				"configmapApplication.management.endpoint": "/custom/actuator",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainPortServer",
+			Values: map[string]string{
+				"global.compatibility.core.enabled": "true",
+				"zeebeGateway.enabled":              "true",
+				"zeebeGateway.service.restPort":     "1111",
+			},
+			Expected: map[string]string{
+				"configmapApplication.server.port": "1111",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainPortGRPC",
+			Values: map[string]string{
+				"global.compatibility.core.enabled": "true",
+				"zeebeGateway.enabled":              "true",
+				"zeebeGateway.service.grpcPort":     "1111",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.api.grpc.port": "1111",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainPortCommandAPI",
+			Values: map[string]string{
+				"global.compatibility.core.enabled": "true",
+				"zeebeGateway.enabled":              "true",
+				"zeebeGateway.service.commandPort":  "1111",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.cluster.network.command-api.port": "1111",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainPortInternalAPI",
+			Values: map[string]string{
+				"global.compatibility.core.enabled": "true",
+				"zeebeGateway.enabled":              "true",
+				"zeebeGateway.service.internalPort": "1111",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.cluster.network.internal-api.port": "1111",
 			},
 		},
 	}

@@ -112,16 +112,16 @@ Core compatibility.
         {{- end -}}
         {{- if ((.Values.zeebeGateway).service) -}}
             {{- if ((.Values.zeebeGateway.service).restPort) -}}
-                {{- $_ := set .Values.core "httpPort" .Values.zeebeGateway.service.restPort -}}
+                {{- $_ := set .Values.core.service "httpPort" .Values.zeebeGateway.service.restPort -}}
             {{- end -}}
             {{- if ((.Values.zeebeGateway.service).grpcPort) -}}
-                {{- $_ := set .Values.core "grpcPort" .Values.zeebeGateway.service.grpcPort -}}
+                {{- $_ := set .Values.core.service "grpcPort" .Values.zeebeGateway.service.grpcPort -}}
             {{- end -}}
             {{- if ((.Values.zeebeGateway.service).commandPort) -}}
-                {{- $_ := set .Values.core "commandPort" .Values.zeebeGateway.service.commandPort -}}
+                {{- $_ := set .Values.core.service "commandPort" .Values.zeebeGateway.service.commandPort -}}
             {{- end -}}
             {{- if ((.Values.zeebeGateway.service).internalPort) -}}
-                {{- $_ := set .Values.core "internalPort" .Values.zeebeGateway.service.internalPort -}}
+                {{- $_ := set .Values.core.service "internalPort" .Values.zeebeGateway.service.internalPort -}}
             {{- end -}}
         {{- end -}}
     {{- end -}}
@@ -129,14 +129,14 @@ Core compatibility.
     {{/*
     Operate => Core.
     */}}
-    {{- if .Values.operate -}}
+    {{- if and .Values.operate .Values.operate.enabled -}}
         {{- $_ := set .Values.core.profiles "operate" .Values.operate.enabled -}}
     {{- end -}}
 
     {{/*
     Tasklist => Core.
     */}}
-    {{- if .Values.tasklist -}}
+    {{- if and .Values.tasklist .Values.tasklist.enabled -}}
         {{- $_ := set .Values.core.profiles "tasklist" .Values.tasklist.enabled -}}
     {{- end -}}
 {{- end -}}
@@ -262,7 +262,7 @@ Usage:
     {{/*
     Tasklist => Core.
     */}}
-    {{- if and .Values.operate .Values.tasklist.enabled -}}
+    {{- if and .Values.tasklist .Values.tasklist.enabled -}}
         {{/*
         tasklist.configuration => core.configuration
         */}}

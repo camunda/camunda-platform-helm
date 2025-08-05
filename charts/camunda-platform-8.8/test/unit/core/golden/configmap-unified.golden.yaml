@@ -107,8 +107,6 @@ data:
             - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
             - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
             - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
-        # TODO: Double-check if this is the same as .Values.core.clusterSize.
-        node-count: "3"
         # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
         # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
         node-id: ${VALUES_NODE_ID}
@@ -148,8 +146,8 @@ data:
     
       data:
         retention:
-          enabled: |
-            map[enabled:false minimumAge:30d policyName:zeebe-record-retention-policy]
+          enabled: false
+          minimum-age: "30d"
         snapshot-period: "5m"
         # export:
         #   distribution-interval: '15s'
@@ -202,6 +200,8 @@ data:
             username: ""
             password: ${VALUES_ELASTICSEARCH_PASSWORD:}
             index-prefix: "zeebe-record"
+            history:
+              policy-name: "zeebe-record-retention-policy"
     
       security:
         # TODO: What kind of value is expected here?
@@ -215,7 +215,9 @@ data:
           unprotected-api: false
           method: 'oidc'
         authorization: true
-        multi-tenancy: false
+        multiTenancy:
+          checksEnabled: false
+          apiEnabled: true
     
       webapp:
         common:
