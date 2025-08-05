@@ -3583,9 +3583,8 @@ elasticsearch:
   sysctlImage:
   ## @param elasticsearch.sysctlImage.enabled
     enabled: true
-    image:
-      ## @param elasticsearch.sysctlImage.image.repository
-      repository: bitnamilegacy/os-shell
+    ## @param elasticsearch.sysctlImage.repository
+    repository: bitnamilegacy/os-shell
   data:
     ## @param elasticsearch.data.replicaCount
     replicaCount: 0
