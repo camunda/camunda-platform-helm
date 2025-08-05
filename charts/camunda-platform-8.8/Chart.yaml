@@ -109,3 +109,5 @@ annotations:
       description: "Correct rendering for global.identity.auth.identity.existingSecret.name"
     - kind: fixed
       description: "Allow string literal overrides for existingSecret for all components"
+    - kind: fixed
+      description: "Fix web modeler restapi and webapp replicas"
