@@ -273,6 +273,8 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
+            secret/data/products/web-modeler/ci/common CAMUNDA_CONTAINER_REGISTRY_USER;
+            secret/data/products/web-modeler/ci/common CAMUNDA_CONTAINER_REGISTRY_PASSWORD;
           exportEnv: true
 
       - name: CI Setup - Authenticate to cluster
@@ -360,6 +362,9 @@ jobs:
           --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
+        env:
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.CAMUNDA_CONTAINER_REGISTRY_USER }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.CAMUNDA_CONTAINER_REGISTRY_PASSWORD }}
 
       - name: Cluster Setup - Configure TLS Certificates/Secrets
         run: |
