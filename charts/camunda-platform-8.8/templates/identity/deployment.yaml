@@ -139,7 +139,6 @@ spec:
               "config" .Values.global.identity.auth.admin
             ) | nindent 12 }}
             {{- end }}
-            {{- end }}
             {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
@@ -150,15 +149,14 @@ spec:
                   name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
                   key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
               {{- end }}
-            {{- end }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "CAMUNDA_OPTIMIZE_SECRET"
               "config" .Values.global.identity.auth.optimize
-              "plaintextKey" "existingSecret"
               "legacyKeyField" "existingSecretKey"
             ) | nindent 12 }}
+            {{- end }}
             {{- end }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
