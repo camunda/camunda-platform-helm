@@ -46,6 +46,8 @@ data:
             name: "camunda-platform-test-zeebe"
             version: "8.8.0-alpha6"
             authentication: "BASIC"
+            authorizations:
+              enabled: true
             url:
               zeebe:
                 grpc: "grpc://camunda-platform-test-core:26500"
