@@ -139,6 +139,7 @@ spec:
               "config" .Values.global.identity.auth.admin
             ) | nindent 12 }}
             {{- end }}
+            {{- end }}
             {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
