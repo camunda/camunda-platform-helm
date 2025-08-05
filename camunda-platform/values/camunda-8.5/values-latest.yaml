@@ -30,7 +30,7 @@ operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.5.17
+    tag: 8.5.18
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
