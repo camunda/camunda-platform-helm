@@ -236,14 +236,16 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 
 {{/* Check if legacy configuration is used */}}
 {{- $hasLegacyConfig := false -}}
-{{- if or (and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "") "") (ne (get $config $legacySecretKey) ""))
-          (and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "") "") (ne (get $config $plaintextKey) "")) -}}
-  {{- $hasLegacyConfig = true -}}
+{{- if and $config (kindOf $config | eq "map") -}}
+  {{- if or (and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "" | toString) "") (ne (get $config $legacySecretKey | toString) ""))
+            (and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "" | toString) "") (ne (get $config $plaintextKey | toString) "")) -}}
+    {{- $hasLegacyConfig = true -}}
+  {{- end -}}
 {{- end -}}
 
 {{/* Check if new configuration is used */}}
 {{- $hasNewConfig := false -}}
-{{- if and (hasKey $config "secret") $config.secret -}}
+{{- if and $config (kindOf $config | eq "map") (hasKey $config "secret") $config.secret -}}
   {{- if or (ne ($config.secret.existingSecret | default "") "") (ne ($config.secret.inlineSecret | default "") "") -}}
     {{- $hasNewConfig = true -}}
   {{- end -}}
@@ -285,7 +287,7 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 {{- end -}}
 
 {{/* Warn about insecure legacy plaintext usage */}}
-{{- if and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "") "") (ne (get $config $plaintextKey) "") -}}
+{{- if and $config (kindOf $config | eq "map") (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "" | toString) "") (ne (get $config $plaintextKey | toString) "") -}}
 {{- $warningMessage := printf "%s %s %s %s %s"
     "[camunda][warning]"
     (printf "SECURITY: %s is using legacy plaintext field '%s' at '%s.%s'." $component $plaintextKey $path $plaintextKey)
