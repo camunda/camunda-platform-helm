@@ -34,7 +34,7 @@ tasks:
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --timeout 20m0s \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+        --wait {{ .TEST_HELM_EXTRA_ARGS_UPGRADE }}
       fi
 
       if [[ "${TEST_AUTH_TYPE}" == "basic" ]]; then
@@ -47,7 +47,7 @@ tasks:
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --timeout 20m0s \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+        --wait {{ .TEST_HELM_EXTRA_ARGS_UPGRADE }}
       fi
 
       if [[ "${TEST_AUTH_TYPE}" == "keycloak" ]]; then
@@ -60,5 +60,5 @@ tasks:
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --timeout 20m0s \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+        --wait {{ .TEST_HELM_EXTRA_ARGS_UPGRADE }}
       fi
