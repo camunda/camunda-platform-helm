@@ -75,7 +75,7 @@ spec:
             runAsUser: 0
       containers:
         - name: elasticsearch
-          image: docker.io/bitnami/elasticsearch:8.9.2
+          image: docker.io/bitnamilegacy/elasticsearch:8.9.2
           imagePullPolicy: "IfNotPresent"
           securityContext:
             runAsNonRoot: true

@@ -170,7 +170,7 @@
                 "repository": {
                     "type": "string",
                     "description": "PostgreSQL image repository",
-                    "default": "bitnami/postgresql"
+                    "default": "bitnamilegacy/postgresql"
                 },
                 "tag": {
                     "type": "string",
@@ -1670,7 +1670,7 @@
                         "repository": {
                             "type": "string",
                             "description": "Init container volume-permissions image repository",
-                            "default": "bitnami/os-shell"
+                            "default": "bitnamilegacy/os-shell"
                         },
                         "tag": {
                             "type": "string",
@@ -1792,7 +1792,7 @@
                         "repository": {
                             "type": "string",
                             "description": "PostgreSQL Prometheus Exporter image repository",
-                            "default": "bitnami/postgres-exporter"
+                            "default": "bitnamilegacy/postgres-exporter"
                         },
                         "tag": {
                             "type": "string",

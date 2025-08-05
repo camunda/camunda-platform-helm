@@ -105,7 +105,7 @@ spec:
                   name: {{ include "identity.keycloak.authExistingSecret" . }}
                   key: {{ include "identity.keycloak.authExistingSecretKey" . }}
 
-            {{- if .Values.identity.migration.enabled }}
+            {{- if .Values.core.migration.identity.enabled }}
             - name: KEYCLOAK_CLIENTS_2_ID
               value: migration
             - name: KEYCLOAK_CLIENTS_2_NAME

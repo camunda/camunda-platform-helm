@@ -49,6 +49,12 @@ global:
       helm.sh/hook: 'pre-install'
       helm.sh/resource-policy: 'keep'
 
+  ## Security configuration
+  ## @extra global.security
+  security:
+    ## @skip global.security.allowInsecureImages
+    allowInsecureImages: true
+
   ## Multitenancy configuration.
   ## @extra global.multitenancy
   multitenancy:
@@ -1969,7 +1975,7 @@ identity:
     ## @param identity.postgresql.image.tag PostgreSQL image tag
     ##
     image:
-      repository: bitnami/postgresql
+      repository: bitnamilegacy/postgresql
       tag: 15.10.0-debian-12-r2
     ## @param identity.postgresql.nameOverride the name used for Identity PostgreSQL.
     ##
@@ -1987,6 +1993,14 @@ identity:
       ## @param identity.postgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
       ##
       existingSecret:
+    volumePermissions:
+      image:
+        ## @param identity.postgresql.volumePermissions.image.repository
+        repository: bitnamilegacy/os-shell
+    metrics:
+      image:
+        ## @param identity.postgresql.metrics.image.repository
+        repository: bitnamilegacy/postgres-exporter
 
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
@@ -2026,7 +2040,7 @@ identity:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
         ## @param identity.keycloak.postgresql.image.repository image repo
-        repository: bitnami/postgresql
+        repository: bitnamilegacy/postgresql
         ## @param identity.keycloak.postgresql.image.tag image tag
         tag: 15.10.0-debian-12-r2
       primary:
@@ -2083,6 +2097,14 @@ identity:
           enabled: true
           runAsNonRoot: true
           fsGroup: 1001
+      volumePermissions:
+        image:
+          ## @param identity.keycloak.postgresql.volumePermissions.image.repository
+          repository: bitnamilegacy/os-shell
+      metrics:
+        image:
+          ## @param identity.keycloak.postgresql.metrics.image.repository
+          repository: bitnamilegacy/postgres-exporter
 
     ## @param identity.keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
     enabled: true
@@ -2091,7 +2113,7 @@ identity:
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
       ## @param identity.keycloak.image.repository image repo
-      repository: bitnami/keycloak
+      repository: bitnamilegacy/keycloak
       ## @param identity.keycloak.image.tag image tag
       tag: 22.0.5
 
@@ -2290,6 +2312,10 @@ identity:
       existingSecret: ""
       ## @param identity.keycloak.auth.passwordSecretKey defines the key within the existing secret object.
       passwordSecretKey: "admin-password"
+    keycloakConfigCli:
+      image:
+        ## @param identity.keycloak.keycloakConfigCli.image.repository
+        repository: bitnamilegacy/keycloak-config-cli
 
 
 #######################################################################
@@ -3172,7 +3198,7 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository
-    repository: bitnami/elasticsearch
+    repository: bitnamilegacy/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.9.2
   ## @param elasticsearch.extraVolumes[0].name
@@ -3228,6 +3254,9 @@ elasticsearch:
   sysctlImage:
   ## @param elasticsearch.sysctlImage.enabled
     enabled: true
+    image:
+      ## @param elasticsearch.sysctlImage.image.repository
+      repository: bitnamilegacy/os-shell
   data:
     ## @param elasticsearch.data.replicaCount
     replicaCount: 0
@@ -3237,6 +3266,18 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
+  metrics:
+    image:
+      ## @param elasticsearch.metrics.image.repository
+      repository: bitnamilegacy/elasticsearch-exporter
+  volumePermissions:
+    image:
+      ## @param elasticsearch.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  copyTlsCerts:
+    image:
+      ## @param elasticsearch.copyTlsCerts.image.repository
+      repository: bitnamilegacy/os-shell
 
 
 #####################################################################

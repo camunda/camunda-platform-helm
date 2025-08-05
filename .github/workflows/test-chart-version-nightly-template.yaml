@@ -24,8 +24,8 @@ on:
         description: Scenario
         required: true
         type: string
-      enterprise:
-        description: Enterprise values
+      values-enterprise:
+        description: Enable enterprise values
         required: false
         default: "false"
         type: string
@@ -64,5 +64,5 @@ jobs:
       scenario: "${{ inputs.scenario }}"
       auth: "${{ inputs.auth }}"
       exclude: "${{ inputs.exclude }}"
-      enterprise: "${{ inputs.enterprise }}"
+      values-enterprise: "${{ inputs.values-enterprise }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
