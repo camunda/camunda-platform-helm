@@ -195,7 +195,109 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
+
+  {{/* Secret configuration warnings */}}
+  {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 {{- end }}
+
+{{/*
+**************************************************************
+Secret configuration constraint helpers.
+
+These constraints validate new vs legacy secret configuration usage across Camunda components
+**************************************************************
+*/}}
+
+{{/*
+camundaPlatform.secretConfigurationWarnings
+Generates warnings for secret configuration issues.
+Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+*/}}
+{{- define "camundaPlatform.secretConfigurationWarnings" -}}
+{{- $secretConfigs := list 
+  (dict "path" "global.elasticsearch.tls" "config" .Values.global.elasticsearch.tls)
+  (dict "path" "global.elasticsearch.auth" "config" .Values.global.elasticsearch.auth)
+  (dict "path" "global.opensearch.tls" "config" .Values.global.opensearch.tls) 
+  (dict "path" "global.opensearch.auth" "config" .Values.global.opensearch.auth)
+  (dict "path" "global.identity.auth.admin" "config" .Values.global.identity.auth.admin)
+  (dict "path" "global.identity.auth.console" "config" .Values.global.identity.auth.console)
+  (dict "path" "global.identity.auth.connectors" "config" .Values.global.identity.auth.connectors)
+  (dict "path" "global.identity.auth.core" "config" .Values.global.identity.auth.core)
+  (dict "path" "global.identity.auth.optimize" "config" .Values.global.identity.auth.optimize)
+  (dict "path" "identity.firstUser" "config" .Values.identity.firstUser)
+-}}
+
+{{- range $secretConfigs -}}
+{{- $config := .config -}}
+{{- $path := .path -}}
+{{- $component := $path -}}
+{{- $plaintextKey := .plaintextKey | default "password" -}}
+{{- $legacySecretKey := .legacySecretKey | default "existingSecret" -}}
+
+{{/* Check if legacy configuration is used */}}
+{{- $hasLegacyConfig := false -}}
+{{- if or (and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "") "") (ne (get $config $legacySecretKey) ""))
+          (and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "") "") (ne (get $config $plaintextKey) "")) -}}
+  {{- $hasLegacyConfig = true -}}
+{{- end -}}
+
+{{/* Check if new configuration is used */}}
+{{- $hasNewConfig := false -}}
+{{- if and (hasKey $config "secret") $config.secret -}}
+  {{- if or (ne ($config.secret.existingSecret | default "") "") (ne ($config.secret.inlineSecret | default "") "") -}}
+    {{- $hasNewConfig = true -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* Warn about using old method instead of new */}}
+{{- if and $hasLegacyConfig (not $hasNewConfig) -}}
+{{- $warningMessage := printf "%s %s %s %s %s"
+    "[camunda][warning]"
+    (printf "DEPRECATION: %s is using legacy secret configuration at '%s'." $component $path)
+    "This method is deprecated and will be removed in a future version."
+    (printf "Please migrate to the new format: '%s.secret.existingSecret' for referencing secrets" $path)
+    (printf "or '%s.secret.inlineSecret' for plain-text values (non-production only)." $path)
+-}}
+{{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+{{- end -}}
+
+{{/* Warn when both legacy and new are used */}}
+{{- if and $hasLegacyConfig $hasNewConfig -}}
+{{- $warningMessage := printf "%s %s %s %s"
+    "[camunda][warning]"
+    (printf "%s has both legacy and new secret configuration defined at '%s'." $component $path)
+    "The new configuration will take precedence and the legacy configuration will be ignored."
+    "Please remove the legacy configuration to avoid confusion."
+-}}
+{{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+{{- end -}}
+
+{{/* Warn about insecure inlineSecret usage */}}
+{{- if and $hasNewConfig (ne ($config.secret.inlineSecret | default "") "") -}}
+{{- $warningMessage := printf "%s %s %s %s %s"
+    "[camunda][warning]"
+    (printf "SECURITY: %s is using 'inlineSecret' at '%s.secret.inlineSecret'." $component $path)
+    "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
+    "For production environments, please use Kubernetes Secrets"
+    (printf "with '%s.secret.existingSecret' and '%s.secret.existingSecretKey'." $path $path)
+-}}
+{{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+{{- end -}}
+
+{{/* Warn about insecure legacy plaintext usage */}}
+{{- if and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "") "") (ne (get $config $plaintextKey) "") -}}
+{{- $warningMessage := printf "%s %s %s %s %s"
+    "[camunda][warning]"
+    (printf "SECURITY: %s is using legacy plaintext field '%s' at '%s.%s'." $component $plaintextKey $path $plaintextKey)
+    "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
+    "For production environments, please use Kubernetes Secrets"
+    (printf "with '%s.secret.existingSecret' and '%s.secret.existingSecretKey'." $path $path)
+-}}
+{{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+{{- end -}}
+
+{{- end -}}
+{{- end -}}
 
 {{/*
 **************************************************************
