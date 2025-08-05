@@ -250,6 +250,14 @@
       ],
     },
     {
+      // This docker image appears to require authentication, and is only used for 8.2 HC's so I'm disabling it to prevent issues with renovate.
+      enabled: false,
+      matchPackageNames: [
+        'bitnamilegacy/elasticsearch-curator-archived',
+        'elasticsearch-curator-archived',
+      ],
+    },
+    {
       // Enable app patch version update in the previous Camunda Helm charts.
       matchDatasources: [
         'helmv3',
