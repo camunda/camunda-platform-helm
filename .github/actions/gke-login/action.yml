@@ -32,6 +32,15 @@ runs:
     uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
     with:
       credentials_json: '${{ inputs.credentials-json }}'
+  - name: Debug - Print GHA creds JSON
+    shell: bash
+    run: |
+      echo "GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
+      if [[ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]]; then
+        cat "$GOOGLE_APPLICATION_CREDENTIALS"
+      else
+        echo "Credentials file not found"
+      fi
   - name: Get GKE credentials
     uses: google-github-actions/get-gke-credentials@9025e8f90f2d8e0c3dafc3128cc705a26d992a6a # v2
     with:
