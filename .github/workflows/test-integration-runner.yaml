@@ -656,26 +656,6 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
-        id: vars
-        uses: ./.github/actions/workflow-vars
-        with:
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          setup-flow: ${{ inputs.flow }}
-          platform: ${{ inputs.distro-platform }}
-          identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-          chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-
-      - name: CI Setup - Set test type vars
-        id: test-type-vars
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
-
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -807,26 +787,6 @@ jobs:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
-
-      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
-        id: vars
-        uses: ./.github/actions/workflow-vars
-        with:
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          setup-flow: ${{ inputs.flow }}
-          platform: ${{ inputs.distro-platform }}
-          identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-          chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-
-      - name: CI Setup - Set test type vars
-        id: test-type-vars
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
 
       - uses: actions/setup-node@v4
         with:
