@@ -398,7 +398,7 @@ jobs:
 
         run: |
           echo "Extra values from workflow:"
-          echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
+          echo '${{ inputs.extra-values }}' | tee /tmp/extra-values-file.yaml
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
@@ -604,7 +604,7 @@ jobs:
         continue-on-error: false
         run: |
           echo "Extra values from workflow:"
-          echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
+          echo '${{ inputs.extra-values }}' | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.venom.env
 
       - name: Test - ⭐️ Run Venom Preflight TestSuite ⭐️
