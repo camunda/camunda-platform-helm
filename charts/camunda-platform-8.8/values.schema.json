@@ -68,10 +68,15 @@
                 "multitenancy": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
+                        "checksEnabled": {
                             "type": "boolean",
-                            "description": "if true, then enable multitenancy in all applicable components.",
+                            "description": "if true, then enable multitenancy checks in all applicable components.",
                             "default": false
+                        },
+                        "apiEnabled": {
+                            "type": "boolean",
+                            "description": "if true, then enable multitenancy API used for tenant management.",
+                            "default": true
                         }
                     }
                 },
@@ -102,7 +107,7 @@
                                         "groupsClaim": {
                                             "type": "string",
                                             "description": "group claim.",
-                                            "default": ""
+                                            "default": "groups"
                                         }
                                     }
                                 }
@@ -146,23 +151,23 @@
                                         }
                                     }
                                 },
-                                "mappings": {
+                                "mappingRules": {
                                     "type": "array",
-                                    "description": "the mapping-id of an initial mapping.",
+                                    "description": "the mapping-rule-id of an initial mapping rule.",
                                     "items": {
                                         "type": "object",
                                         "properties": {
-                                            "mappingID": {
+                                            "mappingRuleID": {
                                                 "type": "string",
-                                                "description": "the mapping-id of an initial mapping."
+                                                "description": "the mapping-rule-id of an initial mapping rule."
                                             },
                                             "claimName": {
                                                 "type": "string",
-                                                "description": "the claim-name of an initial mapping."
+                                                "description": "the claim-name of an initial mapping rule."
                                             },
                                             "claimValue": {
                                                 "type": "string",
-                                                "description": "the name of an initial user."
+                                                "description": "the claim-value of an initial mapping rule."
                                             }
                                         }
                                     }
@@ -347,7 +352,7 @@
                         },
                         "clusterName": {
                             "type": "string",
-                            "description": "Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch",
+                            "description": "defines the name of the Elasticsearch cluster.",
                             "default": "elasticsearch"
                         },
                         "prefix": {
@@ -434,6 +439,16 @@
                                     "default": 443
                                 }
                             }
+                        },
+                        "clusterName": {
+                            "type": "string",
+                            "description": "defines the name of the OpenSearch cluster.",
+                            "default": "opensearch"
+                        },
+                        "prefix": {
+                            "type": "string",
+                            "description": "defines the prefix used for OpenSearch indices or records.",
+                            "default": "zeebe-record"
                         }
                     }
                 },
@@ -1499,7 +1514,7 @@
                         "repository": {
                             "type": "string",
                             "description": "PostgreSQL repo",
-                            "default": "bitnami/postgresql"
+                            "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
@@ -1553,6 +1568,36 @@
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "identity-postgresql-user-password"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
+                        }
+                    }
+                },
+                "metrics": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/postgres-exporter"
                                 }
                             }
                         }
@@ -1667,7 +1712,7 @@
                                 "repository": {
                                     "type": "string",
                                     "description": "image repo",
-                                    "default": "bitnami/postgresql"
+                                    "default": "bitnamilegacy/postgresql"
                                 },
                                 "tag": {
                                     "type": "string",
@@ -1786,6 +1831,36 @@
                                             "type": "number",
                                             "description": "",
                                             "default": 1001
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "volumePermissions": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "bitnamilegacy/os-shell"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "metrics": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "bitnamilegacy/postgres-exporter"
                                         }
                                     }
                                 }
@@ -1970,6 +2045,21 @@
                             "type": "string",
                             "description": "defines the key within the existing secret object.",
                             "default": "identity-keycloak-admin-password"
+                        }
+                    }
+                },
+                "keycloakConfigCli": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/keycloak-config-cli"
+                                }
+                            }
                         }
                     }
                 }
@@ -2480,11 +2570,6 @@
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
                             "default": "8.8.0-alpha6"
                         },
-                        "digest": {
-                            "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
-                        },
                         "pullSecrets": {
                             "type": "array",
                             "description": "can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
@@ -2508,6 +2593,11 @@
                                     "type": "string",
                                     "description": "defines which image repository to use for the restapi Docker image",
                                     "default": "camunda/web-modeler-restapi"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "default": ""
                                 }
                             }
                         },
@@ -2528,7 +2618,7 @@
                             "properties": {
                                 "url": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.",
+                                    "description": "(DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.",
                                     "default": ""
                                 },
                                 "host": {
@@ -2977,6 +3067,11 @@
                                     "type": "string",
                                     "description": "defines which image repository to use for the webapp Docker image",
                                     "default": "camunda/web-modeler-webapp"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "default": ""
                                 }
                             }
                         },
@@ -3355,6 +3450,11 @@
                                     "type": "string",
                                     "description": "defines which image repository to use for the websockets Docker image",
                                     "default": "camunda/web-modeler-websockets"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "default": ""
                                 }
                             }
                         },
@@ -3794,7 +3894,7 @@
                         "repository": {
                             "type": "string",
                             "description": "PostgreSQL repo",
-                            "default": "bitnami/postgresql"
+                            "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
@@ -4419,13 +4519,18 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, all related resources are deployed via the helm release",
+                    "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
                 "debug": {
                     "type": "boolean",
                     "description": "if true, extra info is printed.",
                     "default": false
+                },
+                "profilesOverride": {
+                    "type": "string",
+                    "description": "defines the override for the profiles as comma-separated string.",
+                    "default": "\"\""
                 },
                 "image": {
                     "type": "object",
@@ -4455,6 +4560,41 @@
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
                             "default": [],
                             "items": {}
+                        }
+                    }
+                },
+                "migration": {
+                    "type": "object",
+                    "properties": {
+                        "process": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the process migration occurs.",
+                                    "default": false
+                                },
+                                "backoffLimit": {
+                                    "type": "number",
+                                    "description": "if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
+                                    "default": 6
+                                }
+                            }
+                        },
+                        "identity": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs",
+                                    "default": false
+                                },
+                                "backoffLimit": {
+                                    "type": "number",
+                                    "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
+                                    "default": 6
+                                }
+                            }
                         }
                     }
                 },
@@ -4775,12 +4915,12 @@
                                         "processing": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "3GB"
+                                            "default": "2GB"
                                         },
                                         "replication": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "2GB"
+                                            "default": "1GB"
                                         }
                                     }
                                 }
@@ -4802,7 +4942,7 @@
                 },
                 "extraInitContainers": {
                     "type": "array",
-                    "description": "(Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters",
+                    "description": "(DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters",
                     "default": [],
                     "items": {}
                 },
@@ -5750,7 +5890,7 @@
                         "repository": {
                             "type": "string",
                             "description": "",
-                            "default": "bitnami/elasticsearch"
+                            "default": "bitnamilegacy/elasticsearch"
                         },
                         "tag": {
                             "type": "string",
@@ -5868,6 +6008,11 @@
                             "type": "boolean",
                             "description": "",
                             "default": true
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "",
+                            "default": "bitnamilegacy/os-shell"
                         }
                     }
                 },
@@ -5898,6 +6043,51 @@
                             "type": "boolean",
                             "description": "",
                             "default": false
+                        }
+                    }
+                },
+                "metrics": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/elasticsearch-exporter"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
+                        }
+                    }
+                },
+                "copyTlsCerts": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
                         }
                     }
                 }

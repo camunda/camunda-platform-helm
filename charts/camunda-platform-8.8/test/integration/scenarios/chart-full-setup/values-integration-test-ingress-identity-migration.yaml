@@ -1,0 +1,4 @@
+core:
+  migration:
+    identity:
+      enabled: true

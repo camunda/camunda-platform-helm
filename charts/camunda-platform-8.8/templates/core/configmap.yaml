@@ -81,7 +81,7 @@ data:
           network:
             host: 0.0.0.0
             port: {{ .Values.core.service.grpcPort }}
-          {{- if .Values.global.multitenancy.enabled }}
+          {{- if .Values.global.multitenancy.checksEnabled }}
           multitenancy:
             enabled: true
           {{- end }}
@@ -218,28 +218,29 @@ data:
               email: {{ $user.email | quote }}
             {{- end }}
           default-roles.admin.users:
-            {{- range $mapping := .Values.global.security.initialization.users }}
-            - {{ index $mapping "username" | quote }}
+            {{- range $user := .Values.global.security.initialization.users }}
+            - {{ index $user "username" | quote }}
             {{- end }}
           {{- else if eq .Values.global.security.authentication.method "oidc" }}
-          mappings:
-            - mapping-id: "connectors-client-mapping"
+          mapping-rules:
+            - mapping-rule-id: "connectors-client-mapping-rule"
               claim-name: "client_id"
               claim-value: "connectors"
-            {{- range $mapping := .Values.global.security.initialization.mappings }}
-            - mapping-id: {{ index $mapping "mappingID" | quote }}
-              claim-name: {{ index $mapping "claimName" | quote }}
-              claim-value: {{ index $mapping "claimValue" | quote }}
+            {{- range $mappingRule := .Values.global.security.initialization.mappingRules }}
+            - mapping-rule-id: {{ index $mappingRule "mappingRuleID" | quote }}
+              claim-name: {{ index $mappingRule "claimName" | quote }}
+              claim-value: {{ index $mappingRule "claimValue" | quote }}
             {{- end }}
-          default-roles.connectors.mappings:
-            - "connectors-client-mapping"
-          default-roles.admin.mappings:
-            {{- range $mapping := .Values.global.security.initialization.mappings }}
-            - {{ index $mapping "mappingID" | quote }}
+          default-roles.connectors.mappingRules:
+            - "connectors-client-mapping-rule"
+          default-roles.admin.mappingRules:
+            {{- range $mappingRule := .Values.global.security.initialization.mappingRules }}
+            - {{ index $mappingRule "mappingRuleID" | quote }}
             {{- end }}
           {{- end }}
         multiTenancy:
-            enabled: {{ .Values.global.multitenancy.enabled }}
+          checksEnabled: {{ .Values.global.multitenancy.checksEnabled }}
+          apiEnabled: {{ .Values.global.multitenancy.apiEnabled }}
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:
@@ -277,11 +278,14 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
+        {{- if .Values.core.migration.identity.enabled }}
+        importerEnabled: true
+        {{- end }}
         persistentSessionsEnabled: true
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
         {{- end }}
-        {{- if .Values.global.multitenancy.enabled }}
+        {{- if .Values.global.multitenancy.checksEnabled }}
         multiTenancy:
           enabled: true
         {{- end }}
@@ -361,7 +365,10 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
-        {{- if .Values.global.multitenancy.enabled }}
+        {{- if .Values.core.migration.identity.enabled }}
+        importerEnabled: true
+        {{- end }}
+        {{- if .Values.global.multitenancy.checksEnabled }}
         multiTenancy:
           enabled: true
         {{- end }}

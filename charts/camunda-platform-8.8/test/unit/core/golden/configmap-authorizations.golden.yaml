@@ -83,8 +83,8 @@ data:
           snapshotPeriod: "5m"
           disk:
             freeSpace:
-              processing: "3GB"
-              replication: "2GB"
+              processing: "2GB"
+              replication: "1GB"
 
         # zeebe.broker.threads
         threads:
@@ -131,7 +131,8 @@ data:
           default-roles.admin.users:
             - "demo"
         multiTenancy:
-            enabled: false
+          checksEnabled: false
+          apiEnabled: true
 
       #
       # Camunda Database Configuration.
