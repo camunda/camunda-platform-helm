@@ -362,8 +362,17 @@ jobs:
             if [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.5"* ]]; then
               kubectl apply -n $TEST_NAMESPACE \
                 -f .github/config/external-secret/external-secret-8.5-integration-test-credentials.yaml
+            elif [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.6"* ]]; then
+              kubectl apply -n $TEST_NAMESPACE \
+                -f .github/config/external-secret/external-secret-8.6-integration-test-credentials.yaml
+            elif [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.7"* ]]; then
+              kubectl apply -n $TEST_NAMESPACE \
+                -f .github/config/external-secret/external-secret-8.7-integration-test-credentials.yaml
+            elif [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.8"* ]]; then
+              kubectl apply -n $TEST_NAMESPACE \
+                -f .github/config/external-secret/external-secret-8.8-integration-test-credentials.yaml
             else
-              # For backward compatibility with other versions.
+              # For backward compatibility with other versions (alpha, future versions).
               kubectl apply -n $TEST_NAMESPACE \
                 -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
             fi
