@@ -197,6 +197,46 @@ Usage:
             "oldName" "zeebe.env"
             "newName" "core.env"
         ) }}
+        {{/*
+        zeebe.envFrom => core.envFrom
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebe.envFrom)
+            "oldName" "zeebe.envFrom"
+            "newName" "core.envFrom"
+        ) }}
+        {{/*
+        zeebe.initContainers => core.initContainers
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebe.initContainers)
+            "oldName" "zeebe.initContainers"
+            "newName" "core.initContainers"
+        ) }}
+        {{/*
+        zeebe.sidecars => core.sidecars
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebe.sidecars)
+            "oldName" "zeebe.sidecars"
+            "newName" "core.sidecars"
+        ) }}
+        {{/*
+        zeebe.extraVolumes => core.extraVolumes
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebe.extraVolumes)
+            "oldName" "zeebe.extraVolumes"
+            "newName" "core.extraVolumes"
+        ) }}
+        {{/*
+        zeebe.extraVolumeMounts => core.extraVolumeMounts
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebe.extraVolumeMounts)
+            "oldName" "zeebe.extraVolumeMounts"
+            "newName" "core.extraVolumeMounts"
+        ) }}
     {{- end -}}
 
     {{/*
@@ -226,6 +266,46 @@ Usage:
             "condition" (.Values.zeebeGateway.env)
             "oldName" "zeebeGateway.env"
             "newName" "core.env"
+        ) }}
+        {{/*
+        zeebeGateway.envFrom => core.envFrom
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebeGateway.envFrom)
+            "oldName" "zeebeGateway.envFrom"
+            "newName" "core.envFrom"
+        ) }}
+        {{/*
+        zeebeGateway.initContainers => core.initContainers
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebeGateway.initContainers)
+            "oldName" "zeebeGateway.initContainers"
+            "newName" "core.initContainers"
+        ) }}
+        {{/*
+        zeebeGateway.sidecars => core.sidecars
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebeGateway.sidecars)
+            "oldName" "zeebeGateway.sidecars"
+            "newName" "core.sidecars"
+        ) }}
+        {{/*
+        zeebeGateway.extraVolumes => core.extraVolumes
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebeGateway.extraVolumes)
+            "oldName" "zeebeGateway.extraVolumes"
+            "newName" "core.extraVolumes"
+        ) }}
+        {{/*
+        zeebeGateway.extraVolumeMounts => core.extraVolumeMounts
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.zeebeGateway.extraVolumeMounts)
+            "oldName" "zeebeGateway.extraVolumeMounts"
+            "newName" "core.extraVolumeMounts"
         ) }}
     {{- end -}}
 
@@ -257,6 +337,46 @@ Usage:
             "oldName" "operate.env"
             "newName" "core.env"
         ) }}
+        {{/*
+        operate.envFrom => core.envFrom
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.operate.envFrom)
+            "oldName" "operate.envFrom"
+            "newName" "core.envFrom"
+        ) }}
+        {{/*
+        operate.initContainers => core.initContainers
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.operate.initContainers)
+            "oldName" "operate.initContainers"
+            "newName" "core.initContainers"
+        ) }}
+        {{/*
+        operate.sidecars => core.sidecars
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.operate.sidecars)
+            "oldName" "operate.sidecars"
+            "newName" "core.sidecars"
+        ) }}
+        {{/*
+        operate.extraVolumes => core.extraVolumes
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.operate.extraVolumes)
+            "oldName" "operate.extraVolumes"
+            "newName" "core.extraVolumes"
+        ) }}
+        {{/*
+        operate.extraVolumeMounts => core.extraVolumeMounts
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.operate.extraVolumeMounts)
+            "oldName" "operate.extraVolumeMounts"
+            "newName" "core.extraVolumeMounts"
+        ) }}
     {{- end -}}
 
     {{/*
@@ -286,6 +406,46 @@ Usage:
             "condition" (.Values.tasklist.env)
             "oldName" "tasklist.env"
             "newName" "core.env"
+        ) }}
+        {{/*
+        tasklist.envFrom => core.envFrom
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.tasklist.envFrom)
+            "oldName" "tasklist.envFrom"
+            "newName" "core.envFrom"
+        ) }}
+        {{/*
+        tasklist.initContainers => core.initContainers
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.tasklist.initContainers)
+            "oldName" "tasklist.initContainers"
+            "newName" "core.initContainers"
+        ) }}
+        {{/*
+        tasklist.sidecars => core.sidecars
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.tasklist.sidecars)
+            "oldName" "tasklist.sidecars"
+            "newName" "core.sidecars"
+        ) }}
+        {{/*
+        tasklist.extraVolumes => core.extraVolumes
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.tasklist.extraVolumes)
+            "oldName" "tasklist.extraVolumes"
+            "newName" "core.extraVolumes"
+        ) }}
+        {{/*
+        tasklist.extraVolumeMounts => core.extraVolumeMounts
+        */}}
+        {{ include "camundaPlatform.manualMigrationRequired" (dict
+            "condition" (.Values.tasklist.extraVolumeMounts)
+            "oldName" "tasklist.extraVolumeMounts"
+            "newName" "core.extraVolumeMounts"
         ) }}
     {{- end -}}
 {{- end -}}
