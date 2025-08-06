@@ -62,11 +62,11 @@ data:
         headless:
           service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
         webhook:
-          enabled: {{ ternary false (and (hasKey .Values.connectors "webhook") (default false .Values.connectors.webhook.enabled)) .Values.global.noSecondaryStorage }}
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
         polling:
-          enabled: {{ ternary false (and (hasKey .Values.connectors "polling") (default false .Values.connectors.polling.enabled)) .Values.global.noSecondaryStorage }}
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
         agenticai:
-          enabled: {{ ternary false (and (hasKey .Values.connectors "agenticai") (default false .Values.connectors.agenticai.enabled)) .Values.global.noSecondaryStorage }}
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
     logging:
 {{- with .Values.connectors.logging }}
 {{ . | toYaml | indent 6 }}
