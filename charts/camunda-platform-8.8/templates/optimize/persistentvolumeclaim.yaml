@@ -1,4 +1,4 @@
-{{- if and .Values.optimize.enabled .Values.optimize.persistence.enabled (not .Values.optimize.persistence.existingClaim) }}
+{{- if and .Values.optimize.enabled (not .Values.global.noSecondaryStorage) .Values.optimize.persistence.enabled (not .Values.optimize.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
