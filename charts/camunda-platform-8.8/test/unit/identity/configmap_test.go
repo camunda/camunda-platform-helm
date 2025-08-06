@@ -62,7 +62,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapBuiltinDatabaseEnabled",
 			Values: map[string]string{
-				"global.multitenancy.checksEnabled": "true",
+				"global.multitenancy.checks.enabled": "true",
 				"identityPostgresql.enabled":  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -85,7 +85,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapExternalDatabaseEnabled",
 			Values: map[string]string{
-				"global.multitenancy.checksEnabled":        "true",
+				"global.multitenancy.checks.enabled":        "true",
 				"identityPostgresql.enabled":         "false",
 				"identity.externalDatabase.enabled":  "true",
 				"identity.externalDatabase.host":     "my-database-host",
