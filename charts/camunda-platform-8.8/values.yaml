@@ -516,6 +516,9 @@ global:
   #       test: test
   extraManifests: []
 
+  ## @param global.noSecondaryStorage if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.
+  noSecondaryStorage: false
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #############################################################################################################
