@@ -62,25 +62,18 @@ runs:
       PLATFORM=${{ inputs.platform }}
       echo PLATFORM=${{ inputs.platform }} | tee -a $GITHUB_ENV
 
-      # NOTE: We should use the matrix job id var once it's available.
-      # https://github.com/orgs/community/discussions/40291
-      GITHUB_WORKFLOW_JOB_ID=$(uuidgen | head -c 6)
-
       echo "Env vars:"
-
-      # Workflow.
-      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
-      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
-
-      # Identifier
-      local_identifier=${{ inputs.identifier-base }}
-      if [[ -z "${{ inputs.identifier-base }}" ]]; then
-        local_identifier="no-id-use-ran-$(uuidgen | head -c 6)"
-      fi
-
       # Namespace.
       TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
       TEST_NAMESPACE="$NAMESPACE_PREFIX-$(echo ${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+    
+      # NOTE: We should use the matrix job id var once it's available.
+      # https://github.com/orgs/community/discussions/40291
+      # NOTE we are using a hash here rather than a random value so that the namepsace is deterministic
+      GITHUB_WORKFLOW_JOB_ID=$(echo -n "$TEST_NAMESPACE" | sha256sum | head -c 6)
+      # Workflow.
+      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
+      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
 
       if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-${{ github.run_id }}-${GITHUB_WORKFLOW_JOB_ID}"
@@ -96,6 +89,12 @@ runs:
       echo "TEST_CAMUNDA_HELM_DIR_ALPHA=${TEST_CAMUNDA_HELM_DIR_ALPHA}" | tee -a $GITHUB_ENV
 
       echo "Output vars:"
+
+      # Identifier
+      local_identifier=${{ inputs.identifier-base }}
+      if [[ -z "${{ inputs.identifier-base }}" ]]; then
+        local_identifier="no-id-use-ran-$(uuidgen | head -c 6)"
+      fi
 
       # Deployment identifier.
       TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${local_identifier} | sed 's/\./-/g')"
