@@ -647,7 +647,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestOptimizeMultiTenancyEnabled",
 			Values: map[string]string{
-				"global.multitenancy.checksEnabled": "true",
+				"global.multitenancy.checks.enabled": "true",
 				"identityPostgresql.enabled":  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
