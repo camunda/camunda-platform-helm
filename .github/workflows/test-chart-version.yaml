@@ -54,6 +54,10 @@ on:
         required: false
         default: true
         type: boolean
+      deployment-ttl:
+        required: false
+        default: 1h
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -158,3 +162,4 @@ jobs:
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
       flows: ${{ inputs.flows || 'install,upgrade' }}
+      deployment-ttl: ${{ inputs.deployment-ttl }}

@@ -38,7 +38,7 @@ on:
       deployment-ttl:
         description: Define a TTL for the lifespan of the deployment.
         required: false
-        default: ""
+        default: 1h
         type: string
       platforms:
         default: gke
