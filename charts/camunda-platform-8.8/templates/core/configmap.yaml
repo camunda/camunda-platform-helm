@@ -128,7 +128,7 @@ data:
 
         # zeebe.broker.exporters
         exporters:
-        {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
+        {{- if or (and .Values.global.elasticsearch.enabled .Values.global.exporter.enabled) (and .Values.global.elasticsearch.enabled .Values.optimize.enabled) }}
           elasticsearch:
             className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             args:
@@ -145,7 +145,7 @@ data:
                 minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
                 policyName: {{ .Values.core.history.retention.policyName | quote }}
               {{- end }}
-        {{- else if .Values.global.opensearch.enabled }}
+        {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) }}
           opensearch:
             className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
             args:

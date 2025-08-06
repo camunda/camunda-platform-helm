@@ -330,11 +330,6 @@
                                 }
                             }
                         },
-                        "disableExporter": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.",
-                            "default": false
-                        },
                         "url": {
                             "type": "object",
                             "properties": {
@@ -859,6 +854,16 @@
                                     }
                                 }
                             }
+                        }
+                    }
+                },
+                "exporter": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
+                            "default": false
                         }
                     }
                 },
