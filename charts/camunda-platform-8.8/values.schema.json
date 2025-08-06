@@ -330,11 +330,6 @@
                                 }
                             }
                         },
-                        "disableExporter": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.",
-                            "default": false
-                        },
                         "url": {
                             "type": "object",
                             "properties": {
@@ -862,11 +857,26 @@
                         }
                     }
                 },
+                "exporter": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
+                            "default": false
+                        }
+                    }
+                },
                 "extraManifests": {
                     "type": "array",
                     "description": "Array of extra objects to deploy with the release.",
                     "default": [],
                     "items": {}
+                },
+                "noSecondaryStorage": {
+                    "type": "boolean",
+                    "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
+                    "default": false
                 }
             }
         },
