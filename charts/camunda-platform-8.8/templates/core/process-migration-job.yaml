@@ -17,6 +17,19 @@ spec:
       {{- if .Values.core.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: wait-for-core
+          {{- if .Values.core.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          image: curlimages/curl:8.15.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://{{ include "core.fullname" . }}-gateway:{{ .Values.core.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}; do
+                echo "waiting for Orchestration Cluster"; sleep 5;
+              done
       containers:
         - name: camunda-migration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
