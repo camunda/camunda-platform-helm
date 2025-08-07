@@ -227,7 +227,9 @@ camunda:
         client-id: {{ include "core.authClientId" . | quote }}
       {{- end }}
     authorization: {{ .Values.global.security.authorizations.enabled }}
-    multi-tenancy: {{ .Values.global.multitenancy.enabled }}
+    multiTenancy:
+      checksEnabled: {{ .Values.global.multitenancy.checksEnabled }}
+      apiEnabled: {{ .Values.global.multitenancy.apiEnabled }}
 
   webapp:
     common:
