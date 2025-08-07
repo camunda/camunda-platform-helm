@@ -802,59 +802,59 @@ Usage:
   ) }}
 */}}
 {{- define "camundaPlatform.normalizeSecretConfiguration" -}}
-  {{- $config := .config | default dict -}}
-  {{- $plaintextKey := .plaintextKey | default "password" -}}
-  {{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
-  {{- $defName := .defaultSecretName | default "" -}}
-  {{- $defKey := .defaultSecretKey | default "password" -}}
+{{- $config := .config | default dict -}}
+{{- $plaintextKey := .plaintextKey | default "password" -}}
+{{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+{{- $defName := .defaultSecretName | default "" -}}
+{{- $defKey := .defaultSecretKey | default "password" -}}
 
-  {{- $result := dict "ref" nil "plaintext" "" -}}
+{{- $result := dict "ref" nil "plaintext" "" -}}
 
-  {{/* New (>= 8.8): existingSecret + existingSecretKey */}}
-  {{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
-    {{- $_ := set $result "ref" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
+{{/* New (>= 8.8): existingSecret + existingSecretKey */}}
+{{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
+  {{- $_ := set $result "ref" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
 
-  {{/* New (>= 8.8): inlineSecret for plaintext values */}}
-  {{- else if and $config.secret $config.secret.inlineSecret -}}
-    {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
+{{/* New (>= 8.8): inlineSecret for plaintext values */}}
+{{- else if and $config.secret $config.secret.inlineSecret -}}
+  {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
 
-  {{/* Legacy (< 8.8): string + keyField => secret reference */}}
-  {{- else if and
-      (hasKey $config "existingSecret")
-      (kindIs "string" $config.existingSecret)
-      $config.existingSecret
-      (hasKey $config $legacyKeyField)
-      (ne (get $config $legacyKeyField | default "") "")
-  -}}
-    {{- $_ := set $result "ref" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
+{{/* Legacy (< 8.8): string + keyField => secret reference */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "string" $config.existingSecret)
+    $config.existingSecret
+    (hasKey $config $legacyKeyField)
+    (ne (get $config $legacyKeyField | default "") "")
+-}}
+  {{- $_ := set $result "ref" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
 
-  {{/* Legacy (< 8.8): object form for secret reference */}}
-  {{- else if and
-      (hasKey $config "existingSecret")
-      (kindIs "map" $config.existingSecret)
-      (ne ($config.existingSecret.name | default "") "")
-  -}}
-    {{- $_ := set $result "ref" (dict "name" $config.existingSecret.name "key" (get $config $legacyKeyField)) -}}
+{{/* Legacy (< 8.8): object form for secret reference */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "map" $config.existingSecret)
+    (ne ($config.existingSecret.name | default "") "")
+-}}
+  {{- $_ := set $result "ref" (dict "name" $config.existingSecret.name "key" (get $config $legacyKeyField)) -}}
 
-  {{/* Legacy (< 8.8): string fallback for plaintext values */}}
-  {{- else if and
-      (hasKey $config "existingSecret")
-      (kindIs "string" $config.existingSecret)
-      $config.existingSecret
-  -}}
-    {{- $_ := set $result "plaintext" $config.existingSecret -}}
+{{/* Legacy (< 8.8): string fallback for plaintext values */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "string" $config.existingSecret)
+    $config.existingSecret
+-}}
+  {{- $_ := set $result "plaintext" $config.existingSecret -}}
 
-  {{/* Fallback: direct plaintext key */}}
-  {{- else if (hasKey $config $plaintextKey) -}}
-    {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
-  {{- end }}
+{{/* Fallback: direct plaintext key */}}
+{{- else if (hasKey $config $plaintextKey) -}}
+  {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
+{{- end }}
 
-  {{/* Final fallback to the caller‑supplied default */}}
-  {{- if and (not $result.ref) (not $result.plaintext) $defName -}}
-    {{- $_ := set $result "ref" (dict "name" $defName "key" $defKey) -}}
-  {{- end }}
+{{/* Final fallback to the caller‑supplied default */}}
+{{- if and (not $result.ref) (not $result.plaintext) $defName -}}
+  {{- $_ := set $result "ref" (dict "name" $defName "key" $defKey) -}}
+{{- end }}
 
-  {{- toYaml $result -}}
+{{- toYaml $result -}}
 {{- end -}}
 
 {{/*
