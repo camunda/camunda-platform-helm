@@ -65,16 +65,6 @@
                         }
                     }
                 },
-                "multitenancy": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, then enable multitenancy in all applicable components.",
-                            "default": false
-                        }
-                    }
-                },
                 "security": {
                     "type": "object",
                     "properties": {
@@ -972,6 +962,16 @@
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
                             "default": [],
                             "items": {}
+                        }
+                    }
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to enable multitenancy in management identity",
+                            "default": false
                         }
                     }
                 },
@@ -4593,6 +4593,31 @@
                                     "type": "number",
                                     "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
+                                }
+                            }
+                        }
+                    }
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "checks": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable multitenancy checks in all applicable components.",
+                                    "default": false
+                                }
+                            }
+                        },
+                        "api": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable multitenancy API used for tenant management.",
+                                    "default": true
                                 }
                             }
                         }
