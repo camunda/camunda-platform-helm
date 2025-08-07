@@ -228,7 +228,6 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
     with:
-      values-config: ${{ inputs.values-config }}
       auth: ${{ inputs.auth }}
       exclude: ${{ inputs.exclude }}
       identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
@@ -265,6 +264,7 @@ jobs:
       namespace-prefix: ${{ inputs.namespace-prefix }}
       values-digest: ${{ inputs.values-digest }}
       values-enterprise: ${{ inputs.values-enterprise }}
+      values-config: ${{ inputs.values-config }}
 
   print-outputs:
     name: Print outputs
