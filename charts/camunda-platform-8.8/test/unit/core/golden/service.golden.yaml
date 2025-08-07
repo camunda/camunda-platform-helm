@@ -3,14 +3,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: camunda-platform-test-zeebe
+  name: camunda-platform-test-core
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/component: core
     app.kubernetes.io/version: "8.8.0-alpha6"
   annotations:
 spec:
@@ -33,4 +33,4 @@ spec:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/component: core

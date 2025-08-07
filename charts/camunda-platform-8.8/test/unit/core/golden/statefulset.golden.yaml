@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/component: core
     app.kubernetes.io/version: "8.8.0-alpha6"
   annotations:
 spec:
@@ -22,8 +22,8 @@ spec:
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
-      app.kubernetes.io/component: zeebe-broker
-  serviceName: camunda-platform-test-zeebe
+      app.kubernetes.io/component: core
+  serviceName: camunda-platform-test-core
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/component: zeebe-broker
+        app.kubernetes.io/component: core
         app.kubernetes.io/version: "8.8.0-alpha6"
       annotations:
     spec:
@@ -69,7 +69,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: camunda-platform-test-zeebe
+              value: camunda-platform-test-core
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -128,13 +128,13 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-configuration
+            name: camunda-platform-test-core-configuration
             defaultMode: 492
         - name: exporters
           emptyDir: {}
         - name: tmp
           emptyDir: {}
-      serviceAccountName: camunda-platform-test-zeebe
+      serviceAccountName: camunda-platform-test-core
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
