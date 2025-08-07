@@ -139,7 +139,7 @@ spec:
               cpu: 600m
               memory: 400Mi
           ports:
-            - containerPort: 8080
+            - containerPort: 8084
               name: http
               protocol: TCP
             - containerPort: 8082
