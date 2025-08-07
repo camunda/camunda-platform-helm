@@ -834,7 +834,7 @@ Usage:
       (kindIs "map" $config.existingSecret)
       (ne ($config.existingSecret.name | default "") "")
   -}}
-    {{- $_ := set $result "ref" (dict "name" $config.existingSecret.name "key" (get $config $legacyKeyField | default "password")) -}}
+    {{- $_ := set $result "ref" (dict "name" $config.existingSecret.name "key" (get $config $legacyKeyField)) -}}
 
   {{/* Legacy (< 8.8): string fallback for plaintext values */}}
   {{- else if and
