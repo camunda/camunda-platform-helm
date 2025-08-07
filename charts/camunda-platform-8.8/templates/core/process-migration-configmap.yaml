@@ -26,8 +26,10 @@ data:
           cluster-name: opensearch
           cluster-type: opensearch
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
         username: {{ .Values.global.opensearch.auth.username }}
         password: ${VALUES_DATABASE_PASSWORD:}
+        {{- end }}
     {{- end }}
       migration:
         process:
