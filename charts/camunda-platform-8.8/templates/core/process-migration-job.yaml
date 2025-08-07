@@ -31,7 +31,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.fullname" . }}-elasticsearch
                   key: {{ .Values.global.elasticsearch.auth.existingSecretKey }}
-            {{ else }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password -}}
             - name: VALUES_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
