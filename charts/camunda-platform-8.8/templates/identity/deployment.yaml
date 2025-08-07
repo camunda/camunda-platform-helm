@@ -214,7 +214,7 @@ spec:
           resources:
             {{- toYaml .Values.identity.resources | nindent 12 }}
           ports:
-            - containerPort: 8080
+            - containerPort: 8084
               name: http
               protocol: TCP
             - containerPort: 8082
