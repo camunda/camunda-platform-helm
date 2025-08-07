@@ -60,10 +60,26 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
-            
-            
-            
-            
+            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-connectors-client-token
+            - name: VALUES_KEYCLOAK_INIT_CORE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-core-client-token
+            - name: VALUES_KEYCLOAK_INIT_CONSOLE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-console-client-token
+            - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
             - name: KEYCLOAK_CLIENTS_0_NAME
               value: Connectors
             - name: KEYCLOAK_CLIENTS_0_ID
@@ -107,7 +123,11 @@ spec:
                 secretKeyRef:
                   name: camunda-credentials
                   key: identity-keycloak-admin-password
-            
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-firstuser-password
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
