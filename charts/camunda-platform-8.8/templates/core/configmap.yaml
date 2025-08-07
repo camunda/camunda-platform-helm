@@ -278,7 +278,7 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
-        {{- if .Values.core.migration.identity.enabled }}
+        {{- if .Values.core.migration.process.enabled }}
         importerEnabled: true
         {{- end }}
         persistentSessionsEnabled: true
@@ -365,7 +365,7 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
-        {{- if .Values.core.migration.identity.enabled }}
+        {{- if .Values.core.migration.process.enabled }}
         importerEnabled: true
         {{- end }}
         {{- if .Values.global.multitenancy.checksEnabled }}
