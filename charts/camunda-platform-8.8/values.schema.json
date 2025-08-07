@@ -975,6 +975,16 @@
                         }
                     }
                 },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to enable multitenancy in management identity",
+                            "default": false
+                        }
+                    }
+                },
                 "sidecars": {
                     "type": "array",
                     "description": "can be used to attach extra containers to the identity deployment",
