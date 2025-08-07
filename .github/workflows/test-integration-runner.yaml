@@ -48,7 +48,7 @@ on:
       deployment-ttl:
         description: Define a TTL for the lifespan of the deployment.
         required: false
-        default: "30m"
+        default: "12h"
         type: string
       distro-platform:
         default: gke
@@ -207,11 +207,6 @@ jobs:
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}      
-      ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
-      TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
-      CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
-      TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
-      TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -786,100 +781,6 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - name: Install uuidgen
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y uuid-runtime
-          sudo apt-get install -y gettext
-          sudo apt-get install -y build-essential
-          sudo apt-get install -y libssl-dev
-
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
-            make
-
-      - name: Upload on failure
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: install.log
-          path: /home/runner/.asdf/downloads/make/4.3
-
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
-        id: vars
-        uses: ./.github/actions/workflow-vars
-        with:
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          setup-flow: ${{ inputs.flow }}
-          platform: ${{ inputs.distro-platform }}
-          identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-          chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          prefix: ${{ inputs.namespace-prefix }}
-
-      - name: CI Setup - Set test type vars
-        id: test-type-vars
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
-
-      - name: CI Setup - Authenticate to cluster
-        id: cluster-auth
-        uses: ./.github/actions/cluster-auth
-        with:
-          platform: ${{ inputs.distro-platform }}
-          auth-data: ${{ inputs.auth-data }}
-        env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
-          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
-          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
-          GKE_SA:           ${{ secrets[inputs.service-account] }}
-          ROSA_URL:         ${{ secrets[inputs.server-url] }}
-          ROSA_USER:        ${{ secrets[inputs.username] }}
-          ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-      - name: Cache - node_modules
-        id: cache-node
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
-          key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
-          restore-keys: |
-            node_modules-${{ runner.os }}-
-
-      - name: Cache - Playwright
-        id: cache-playwright
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
-          restore-keys: |
-            playwright-automation-${{ runner.os }}-
-
-      - name: Test - ⭐️ Run Playwright E2E TestSuite (Github Runner) ⭐️
-        run: |
-          cd $GITHUB_WORKSPACE/scripts
-          ./run-e2e-tests.sh --absolute-chart-path ${{env.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{env.TEST_NAMESPACE}} --shard-index ${{ matrix.shardIndex }} --shard-total ${{ matrix.shardTotal }} $( [ "${{ inputs.run-all-e2e-tests }}" = "false" ] && echo "--run-smoke-tests" ) $( [ "${{ inputs.scenario }}" = "qa-opensearch" ] && echo "--opensearch" ) $( [ "${{ inputs.scenario }}" = "qa-elasticsearch-rba" ] && echo "--rba" ) $( [ "${{ inputs.scenario }}" = "qa-elasticsearch-mt" ] && echo "--mt" ) --verbose --not-ci
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
