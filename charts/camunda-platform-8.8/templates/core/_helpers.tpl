@@ -5,7 +5,7 @@
 */}}
 {{- define "core.fullname" -}}
     {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "core"
+        "componentName" "zeebe"
         "componentValues" .Values.core
         "context" $
     ) -}}
@@ -22,7 +22,7 @@
 [core] Defines extra labels for core.
 */}}
 {{ define "core.extraLabels" -}}
-app.kubernetes.io/component: core
+app.kubernetes.io/component: zeebe-broker
 app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.core "chart" .Chart) | quote }}
 {{- end }}
 
@@ -41,7 +41,7 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 */}}
 {{- define "core.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: core
+app.kubernetes.io/component: zeebe-broker
 {{- end -}}
 
 {{/*
