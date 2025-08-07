@@ -85,7 +85,7 @@ data:
           network:
             host: 0.0.0.0
             port: {{ .Values.orchestration.service.grpcPort }}
-          {{- if .Values.global.multitenancy.checks.enabled }}
+          {{- if .Values.orchestration.multitenancy.checks.enabled }}
           multitenancy:
             enabled: true
           {{- end }}
@@ -243,8 +243,8 @@ data:
             {{- end }}
           {{- end }}
         multiTenancy:
-          checksEnabled: {{ .Values.global.multitenancy.checks.enabled }}
-          apiEnabled: {{ .Values.global.multitenancy.api.enabled }}
+          checksEnabled: {{ .Values.core.multitenancy.checks.enabled }}
+          apiEnabled: {{ .Values.core.multitenancy.api.enabled }}
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:
@@ -289,7 +289,7 @@ data:
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
         {{- end }}
-        {{- if .Values.global.multitenancy.checks.enabled }}
+        {{- if .Values.core.multitenancy.checks.enabled }}
         multiTenancy:
           enabled: true
         {{- end }}
@@ -372,7 +372,7 @@ data:
         {{- if .Values.orchestration.migration.process.enabled }}
         importerEnabled: true
         {{- end }}
-        {{- if .Values.global.multitenancy.checks.enabled }}
+        {{- if .Values.core.multitenancy.checks.enabled }}
         multiTenancy:
           enabled: true
         {{- end }}

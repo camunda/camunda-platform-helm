@@ -12,11 +12,11 @@ Fail with a message if Multi-Tenancy is enabled and its requirements are not met
 - Identity Auth enabled for other apps.
 Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/multi-tenancy/
 */}}
-{{- if .Values.global.multitenancy.checks.enabled }}
+{{- if .Values.core.multitenancy.checks.enabled }}
   {{- $identityDatabaseEnabled := (or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled) }}
   {{- if has false (list $identityAuthEnabled $identityDatabaseEnabled) }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
-        "The Multi-Tenancy feature \"global.multitenancy\" requires Identity enabled and configured with database."
+        "The Multi-Tenancy feature \"core.multitenancy\" requires Identity enabled and configured with database."
         "Ensure that \"identity.enabled: true\" and \"global.identity.auth.enabled: true\""
         "and Identity database is configured built-in PostgreSQL chart via \"identityPostgresql\""
         "or configure an external database via \"identity.externalDatabase\"."
