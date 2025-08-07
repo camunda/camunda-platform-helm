@@ -8,10 +8,25 @@ data:
     spring:
       profiles:
         active: process-migration
+    {{ if .Values.global.elasticsearch.enabled }}
     camunda:
+      connect:
+        cluster-name: elasticsearch
+        cluster-type: elasticsearch
       database:
-        username: ${VALUES_DATABASE_USERNAME:}
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        username: {{ .Values.global.elasticsearch.auth.username }}
         password: ${VALUES_DATABASE_PASSWORD:}
+    {{ else }}
+    camunda:
+      connect:
+        cluster-name: opensearch
+        cluster-type: opensearch
+      database:
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        username: {{ .Values.global.opensearch.auth.username }}
+        password: ${VALUES_DATABASE_PASSWORD:}
+    {{- end }}
       migration:
         process:
           batch-size: 5
