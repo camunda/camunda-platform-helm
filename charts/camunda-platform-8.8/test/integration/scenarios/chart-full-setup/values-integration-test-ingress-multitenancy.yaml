@@ -1,7 +1,6 @@
 global:
   multitenancy:
-    checksEnabled: true
-    apiEnabled: true
+    enabled: true
 
   identity:
     auth:
