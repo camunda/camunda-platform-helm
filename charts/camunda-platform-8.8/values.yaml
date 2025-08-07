@@ -598,7 +598,7 @@ identity:
   ## Multitenancy configuration
   ## @extra identity.multitenancy
   multitenancy:
-    ## @param identity.multitenancy can be used to enable multitenancy in management identity
+    ## @param identity.multitenancy.enabled can be used to enable multitenancy in management identity
     enabled: false
 
   ## @param identity.sidecars can be used to attach extra containers to the identity deployment
