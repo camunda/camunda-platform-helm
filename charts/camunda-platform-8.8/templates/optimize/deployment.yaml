@@ -65,7 +65,7 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) }}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
                 "config" .Values.global.opensearch.auth
@@ -153,7 +153,7 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) }}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
                 "config" .Values.global.opensearch.auth

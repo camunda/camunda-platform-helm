@@ -787,58 +787,74 @@ Release templates.
 
 {{/*
 normalizeSecretConfiguration
+Normalizes secret configuration from various input formats to a standardized output format.
+Supports both new-style (>= 8.8: secret.existingSecret/secret.inlineSecret) and legacy formats (< 8.8).
+Returns a dict with "ref" and "plaintext" keys.
+- "ref": dict with "name" and "key" fields for Kubernetes secret reference, or nil if not using secret
+- "plaintext": string value for inline plaintext, or empty string if using secret reference
+Usage:
+  {{ include "camundaPlatform.normalizeSecretConfiguration" (dict
+      "config" .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+      "defaultSecretName" "my-default-secret"
+      "defaultSecretKey" "password"
+  ) }}
 */}}
 {{- define "camundaPlatform.normalizeSecretConfiguration" -}}
-{{- $config := .config | default dict -}}
-{{- $plaintextKey := .plaintextKey | default "password" -}}
-{{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
-{{- $defName := .defaultSecretName | default "" -}}
-{{- $defKey  := .defaultSecretKey  | default "password" -}}
+  {{- $config := .config | default dict -}}
+  {{- $plaintextKey := .plaintextKey | default "password" -}}
+  {{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+  {{- $defName := .defaultSecretName | default "" -}}
+  {{- $defKey := .defaultSecretKey | default "password" -}}
 
-{{- $result := dict "secretRef" nil "plaintext" "" -}}
+  {{- $result := dict "ref" nil "plaintext" "" -}}
 
-{{/* New style secret */}}
-{{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
-  {{- $_ := set $result "secretRef" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
+  {{/* New (>= 8.8): existingSecret + existingSecretKey */}}
+  {{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
+    {{- $_ := set $result "ref" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
 
-{{/* New style plaintext */}}
-{{- else if and $config.secret $config.secret.inlineSecret -}}
-  {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
+  {{/* New (>= 8.8): inlineSecret for plaintext values */}}
+  {{- else if and $config.secret $config.secret.inlineSecret -}}
+    {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
 
-{{/* Legacy: string + legacyKeyField => treat as secret name */}}
-{{- else if and (hasKey $config "existingSecret")
-                (kindIs "string" $config.existingSecret)
-                (ne $config.existingSecret "")
-                (hasKey $config $legacyKeyField)
-                (ne (get $config $legacyKeyField | default "") "") -}}
-  {{- $_ := set $result "secretRef" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
+  {{/* Legacy (< 8.8): string + keyField => secret reference */}}
+  {{- else if and
+      (hasKey $config "existingSecret")
+      (kindIs "string" $config.existingSecret)
+      $config.existingSecret
+      (hasKey $config $legacyKeyField)
+      (ne (get $config $legacyKeyField | default "") "")
+  -}}
+    {{- $_ := set $result "ref" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
 
-{{/* Legacy: object form */}}
-{{- else if and (hasKey $config "existingSecret")
-                (kindIs "map" $config.existingSecret)
-                (ne ($config.existingSecret.name | default "") "") -}}
-  {{- $name := $config.existingSecret.name -}}
-  {{- $key  := (get $config $legacyKeyField | default "password") -}}
-  {{- $_ := set $result "secretRef" (dict "name" $name "key" $key) -}}
+  {{/* Legacy (< 8.8): object form for secret reference */}}
+  {{- else if and
+      (hasKey $config "existingSecret")
+      (kindIs "map" $config.existingSecret)
+      (ne ($config.existingSecret.name | default "") "")
+  -}}
+    {{- $_ := set $result "ref" (dict "name" $config.existingSecret.name "key" (get $config $legacyKeyField | default "password")) -}}
 
-{{/* Legacy: string literal fallback => plaintext */}}
-{{- else if and (hasKey $config "existingSecret")
-                (kindIs "string" $config.existingSecret)
-                (ne $config.existingSecret "") -}}
-  {{- $_ := set $result "plaintext" $config.existingSecret -}}
+  {{/* Legacy (< 8.8): string fallback for plaintext values */}}
+  {{- else if and
+      (hasKey $config "existingSecret")
+      (kindIs "string" $config.existingSecret)
+      $config.existingSecret
+  -}}
+    {{- $_ := set $result "plaintext" $config.existingSecret -}}
 
-{{/* Fallback plaintext key */}}
-{{- else if (hasKey $config $plaintextKey) -}}
-  {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
-{{- end }}
+  {{/* Fallback: direct plaintext key */}}
+  {{- else if (hasKey $config $plaintextKey) -}}
+    {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
+  {{- end }}
 
-{{/* final fallback to the caller‑supplied default */}}
-{{- if and (not $result.secretRef) (eq $result.plaintext "") (ne $defName "") -}}
-  {{- $_ := set $result "secretRef" (dict "name" $defName "key" $defKey) -}}
-{{- end }}
+  {{/* Final fallback to the caller‑supplied default */}}
+  {{- if and (not $result.ref) (not $result.plaintext) $defName -}}
+    {{- $_ := set $result "ref" (dict "name" $defName "key" $defKey) -}}
+  {{- end }}
 
-
-{{- toYaml $result -}}
+  {{- toYaml $result -}}
 {{- end -}}
 
 {{/*
@@ -853,13 +869,13 @@ Usage:
 */}}
 {{- define "camundaPlatform.emitEnvVarFromSecretConfig" -}}
 {{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
-{{- if or $norm.secretRef (ne $norm.plaintext "") -}}
+{{- if or $norm.ref $norm.plaintext -}}
 - name: {{ .envName }}
-{{- if $norm.secretRef }}
+{{- if $norm.ref }}
   valueFrom:
     secretKeyRef:
-      name: {{ $norm.secretRef.name }}
-      key: {{ $norm.secretRef.key }}
+      name: {{ $norm.ref.name }}
+      key: {{ $norm.ref.key }}
 {{- else }}
   value: {{ $norm.plaintext | quote }}
 {{- end }}
@@ -868,19 +884,22 @@ Usage:
 
 {{/*
 hasSecretConfig
-Returns a boolean indicating whether there is a valid secret configuration.
+Returns a string indicating whether there is a valid secret configuration.
+Named templates don't return bools, only strings [1].
 Usage:
-  {{ if include "camundaPlatform.hasSecretConfig" (dict
+  {{ if eq (include "camundaPlatform.hasSecretConfig" (dict
       "config"  .Values.identity.firstUser
       "plaintextKey" "password"
       "legacyKeyField" "existingSecretKey"
-  ) }}
+  )) "true" }}
+
+[1] https://github.com/helm/helm/issues/11231
 */}}
 {{- define "camundaPlatform.hasSecretConfig" -}}
 {{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
-{{- if or $norm.secretRef (ne $norm.plaintext "") -}}
-true
+{{- if or $norm.ref $norm.plaintext -}}
+"true"
 {{- else -}}
-false
+"false"
 {{- end -}}
 {{- end -}}
