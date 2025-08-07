@@ -21,7 +21,7 @@
             {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
         {{- else -}}
-            {{- "http://localhost:8080" -}}
+            {{- "http://localhost:8084" -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}
