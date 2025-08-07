@@ -649,7 +649,7 @@
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
-                                            "default": "http://localhost:8084"
+                                            "default": "http://localhost:8070"
                                         }
                                     }
                                 },

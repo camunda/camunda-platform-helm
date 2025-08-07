@@ -40,7 +40,7 @@ data:
           from-name: "Camunda 8"
 
         server:
-          url: "http://localhost:8084"
+          url: "http://localhost:8070"
         clusters:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
