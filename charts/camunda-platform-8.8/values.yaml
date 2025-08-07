@@ -78,15 +78,7 @@ global:
     ## @param global.config.requestBodySize defines applications request body size which used for upload files.
     requestBodySize: 10MB
 
-  ## Multitenancy configuration.
-  ## @extra global.multitenancy
-  multitenancy:
-    checks:
-      ## @param global.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
-      enabled: false
-    api:
-      ## @param global.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
-      enabled: true
+  ## Multitenancy configuration. - placeholder
 
   ## Security configuration
   ## @extra global.security
@@ -2314,6 +2306,16 @@ core:
       enabled: false
       ## @param core.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
+
+  ## Multitenancy configuration
+  ## @extra core.multitenancy
+  multitenancy:
+    checks:
+      ## @param core.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
+      enabled: false
+    api:
+      ## @param core.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
+      enabled: true
 
   ## @param core.sidecars can be used to attach extra containers to the deployment
   sidecars: []
