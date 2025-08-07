@@ -8,16 +8,18 @@ data:
     spring:
       profiles:
         active: process-migration
-    {{ if .Values.global.elasticsearch.enabled }}
+    {{- if .Values.global.elasticsearch.enabled }}
     camunda:
       database:
         connect:
           cluster-name: elasticsearch
           cluster-type: elasticsearch
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
         username: {{ .Values.global.elasticsearch.auth.username }}
         password: ${VALUES_DATABASE_PASSWORD:}
-    {{ else }}
+        {{- end }}
+    {{- else }}
     camunda:
       database:
         connect:
