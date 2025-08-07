@@ -22,7 +22,7 @@ data:
     # However, it's not possilbe to mix between the configuration and environment variable for the same object
     # like arrays and maps.
     identity:
-      url: "http://localhost:8080"
+      url: "http://localhost:8084"
 
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
@@ -130,7 +130,7 @@ data:
             - name: "Web Modeler"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
-              root-url: "http://localhost:8084"
+              root-url: "http://localhost:8070"
               redirect-uris:
                 - "/login-callback"
           apis:
@@ -182,7 +182,7 @@ data:
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         webmodeler:
-          root-url: "http://localhost:8084"
+          root-url: "http://localhost:8070"
       # Clients are passed as environment variables.
       clients:
       users:
@@ -204,7 +204,7 @@ data:
             id: "camunda-identity"
             type: CONFIDENTIAL
             secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
-            root-url: "http://localhost:8080"
+            root-url: "http://localhost:8084"
             redirect-uris:
               - "/auth/login-callback"
       # The presets key should be removed when 8.6.0 of the applications are released
