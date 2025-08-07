@@ -93,12 +93,6 @@ data:
 
         # zeebe.broker.exporters
         exporters:
-          elasticsearch:
-            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-            args:
-              url: "http://camunda-platform-test-elasticsearch:9200"
-              index:
-                prefix: "zeebe-record"
           CamundaExporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
@@ -137,7 +131,8 @@ data:
           default-roles.admin.users:
             - "demo"
         multiTenancy:
-            enabled: false
+          checksEnabled: false
+          apiEnabled: true
 
       #
       # Camunda Database Configuration.

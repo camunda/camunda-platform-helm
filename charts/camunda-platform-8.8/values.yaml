@@ -81,8 +81,10 @@ global:
   ## Multitenancy configuration.
   ## @extra global.multitenancy
   multitenancy:
-    ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
-    enabled: false
+    ## @param global.multitenancy.checksEnabled if true, then enable multitenancy checks in all applicable components.
+    checksEnabled: false
+    ## @param global.multitenancy.apiEnabled if true, then enable multitenancy API used for tenant management.
+    apiEnabled: true
 
   ## Security configuration
   ## @extra global.security
@@ -570,6 +572,11 @@ global:
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+  
+  ## @extra global.exporter configuration for Elasticsearch and Opensearch exporters.
+  exporter:
+    ## @param global.exporter.enabled if true, enables Elasticsearch and Opensearch exporters.
+    enabled: false
 
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:
@@ -582,6 +589,9 @@ global:
   #     data:
   #       test: test
   extraManifests: []
+
+  ## @param global.noSecondaryStorage if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.
+  noSecondaryStorage: false
 
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
@@ -661,7 +671,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha6
+    tag: 8.8.0-alpha7
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1189,7 +1199,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.0-alpha6
+    tag: 8.8.0-alpha7
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1407,7 +1417,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0-alpha6
+    tag: 8.8.0-alpha7
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -3050,9 +3060,8 @@ elasticsearch:
   sysctlImage:
     ## @param elasticsearch.sysctlImage.enabled
     enabled: true
-    image:
-      ## @param elasticsearch.sysctlImage.image.repository
-      repository: bitnamilegacy/os-shell
+    ## @param elasticsearch.sysctlImage.repository
+    repository: bitnamilegacy/os-shell
   data:
     ## @param elasticsearch.data.replicaCount
     replicaCount: 0

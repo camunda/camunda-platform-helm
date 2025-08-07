@@ -45,7 +45,6 @@ func TestRestAPIConfigmapTemplate(t *testing.T) {
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
@@ -72,7 +71,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
@@ -99,7 +97,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"identity.fullnameOverride": "custom-identity-fullname",
@@ -126,7 +123,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"identity.nameOverride": "custom-identity",
@@ -153,7 +149,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.auth.type":                    "MICROSOFT",
@@ -182,7 +177,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.keycloak.url.protocol": "http",
@@ -211,7 +205,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrlWithCustomPort() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.keycloak.url.protocol": "http",
@@ -240,7 +233,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"webModeler.restapi.mail.smtpUser":     "modeler-user",
@@ -268,7 +260,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"webModelerPostgresql.enabled":                 "false",
@@ -299,7 +290,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	testCases := []struct {
 		name                   string
@@ -315,14 +305,15 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			values := map[string]string{
-				"webModelerPostgresql.enabled":          "false",
-				"global.zeebeClusterName":               "test-zeebe",
-				"global.identity.auth.enabled":          tc.authEnabled,
-				"global.security.authentication.method": tc.authMethod,
-				"core.image.tag":                        "8.x.x-alpha1",
-				"core.contextPath":                      "/core",
-				"core.service.grpcPort":                 "26600",
-				"core.service.httpPort":                 "8090",
+				"webModelerPostgresql.enabled":           "false",
+				"global.zeebeClusterName":                "test-zeebe",
+				"global.identity.auth.enabled":           tc.authEnabled,
+				"global.security.authentication.method":  tc.authMethod,
+				"global.security.authorizations.enabled": "false",
+				"core.image.tag":                         "8.x.x-alpha1",
+				"core.contextPath":                       "/core",
+				"core.service.grpcPort":                  "26600",
+				"core.service.httpPort":                  "8090",
 			}
 			maps.Insert(values, maps.All(requiredValues))
 			options := &helm.Options{
@@ -347,14 +338,14 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
 			s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
+			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
 			s.Require().Equal("grpc://camunda-platform-test-core:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
-			s.Require().Equal("http://camunda-platform-test-core:8090/core/v1", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
+			s.Require().Equal("http://camunda-platform-test-core:8090/core", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
 		})
 	}
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"webModeler.restapi.clusters[0].id":             "test-cluster-1",
@@ -423,7 +414,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"webModelerPostgresql.enabled": "false",
@@ -451,7 +441,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
@@ -478,7 +467,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuerBackendUrlProperty() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
@@ -505,7 +493,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeycloakUrlProperties() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"global.identity.keycloak.url.protocol": "https",
@@ -536,7 +523,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	// given
 	values := map[string]string{
 		"webModelerPostgresql.enabled":                 "false",

@@ -68,10 +68,15 @@
                 "multitenancy": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
+                        "checksEnabled": {
                             "type": "boolean",
-                            "description": "if true, then enable multitenancy in all applicable components.",
+                            "description": "if true, then enable multitenancy checks in all applicable components.",
                             "default": false
+                        },
+                        "apiEnabled": {
+                            "type": "boolean",
+                            "description": "if true, then enable multitenancy API used for tenant management.",
+                            "default": true
                         }
                     }
                 },
@@ -364,11 +369,6 @@
                                     }
                                 }
                             }
-                        },
-                        "disableExporter": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.",
-                            "default": false
                         },
                         "url": {
                             "type": "object",
@@ -1037,11 +1037,26 @@
                         }
                     }
                 },
+                "exporter": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
+                            "default": false
+                        }
+                    }
+                },
                 "extraManifests": {
                     "type": "array",
                     "description": "Array of extra objects to deploy with the release.",
                     "default": [],
                     "items": {}
+                },
+                "noSecondaryStorage": {
+                    "type": "boolean",
+                    "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
+                    "default": false
                 }
             }
         },
@@ -1150,7 +1165,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -2289,7 +2304,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -2758,7 +2773,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -6199,15 +6214,10 @@
                             "description": "",
                             "default": true
                         },
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "bitnamilegacy/os-shell"
-                                }
-                            }
+                        "repository": {
+                            "type": "string",
+                            "description": "",
+                            "default": "bitnamilegacy/os-shell"
                         }
                     }
                 },

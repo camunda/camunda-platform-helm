@@ -81,7 +81,7 @@ data:
           network:
             host: 0.0.0.0
             port: {{ .Values.core.service.grpcPort }}
-          {{- if .Values.global.multitenancy.enabled }}
+          {{- if .Values.global.multitenancy.checksEnabled }}
           multitenancy:
             enabled: true
           {{- end }}
@@ -128,7 +128,7 @@ data:
 
         # zeebe.broker.exporters
         exporters:
-        {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
+        {{- if or (and .Values.global.elasticsearch.enabled .Values.global.exporter.enabled) (and .Values.global.elasticsearch.enabled .Values.optimize.enabled) }}
           elasticsearch:
             className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             args:
@@ -145,7 +145,7 @@ data:
                 minimumAge: {{ .Values.core.history.retention.minimumAge | quote }}
                 policyName: {{ .Values.core.history.retention.policyName | quote }}
               {{- end }}
-        {{- else if .Values.global.opensearch.enabled }}
+        {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) }}
           opensearch:
             className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
             args:
@@ -239,7 +239,8 @@ data:
             {{- end }}
           {{- end }}
         multiTenancy:
-            enabled: {{ .Values.global.multitenancy.enabled }}
+          checksEnabled: {{ .Values.global.multitenancy.checksEnabled }}
+          apiEnabled: {{ .Values.global.multitenancy.apiEnabled }}
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:
@@ -252,7 +253,7 @@ data:
       #
       {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
       database:
-        type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
+        type: {{ if .Values.global.noSecondaryStorage }}none{{ else if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
         {{- if .Values.global.elasticsearch.enabled }}
         # Cluster name
         clusterName: {{ .Values.global.elasticsearch.clusterName }}
@@ -277,14 +278,14 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
-        {{- if .Values.core.migration.identity.enabled }}
+        {{- if .Values.core.migration.process.enabled }}
         importerEnabled: true
         {{- end }}
         persistentSessionsEnabled: true
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
         {{- end }}
-        {{- if .Values.global.multitenancy.enabled }}
+        {{- if .Values.global.multitenancy.checksEnabled }}
         multiTenancy:
           enabled: true
         {{- end }}
@@ -364,10 +365,10 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
-        {{- if .Values.core.migration.identity.enabled }}
+        {{- if .Values.core.migration.process.enabled }}
         importerEnabled: true
         {{- end }}
-        {{- if .Values.global.multitenancy.enabled }}
+        {{- if .Values.global.multitenancy.checksEnabled }}
         multiTenancy:
           enabled: true
         {{- end }}
