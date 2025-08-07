@@ -84,15 +84,7 @@ global:
     ## @param global.config.requestBodySize defines applications request body size which used for upload files.
     requestBodySize: 10MB
 
-  ## Multitenancy configuration.
-  ## @extra global.multitenancy
-  multitenancy:
-    checks:
-      ## @param global.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
-      enabled: false
-    api:
-      ## @param global.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
-      enabled: true
+  ## Multitenancy configuration. - placeholder
 
   ## Security configuration
   ## @extra global.security
@@ -2336,6 +2328,16 @@ orchestration:
 
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
+
+  ## Multitenancy configuration
+  ## @extra orchestration.multitenancy
+  multitenancy:
+    checks:
+      ## @param orchestration.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
+      enabled: false
+    api:
+      ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
+      enabled: true
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
