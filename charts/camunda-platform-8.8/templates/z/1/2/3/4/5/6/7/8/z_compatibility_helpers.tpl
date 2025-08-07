@@ -56,16 +56,18 @@ Core compatibility.
 
         {{/*
             zeebe.retention => core.history.retention
+            # TODO: Update the retention values after review the correct path with the dev team.
+            {{- if (.Values.zeebe.retention).enabled -}}
+                {{- $_ := set .Values.core.history.retention "enabled" .Values.zeebe.retention.enabled -}}
+                {{- if ((.Values.zeebe.retention).minimumAge) -}}
+                    {{- $_ := set .Values.core.history.retention "minimumAge" .Values.zeebe.retention.minimumAge -}}
+                {{- end -}}
+                {{- if ((.Values.zeebe.retention).policyName) -}}
+                    {{- $_ := set .Values.core.history.retention "policyName" .Values.zeebe.retention.policyName -}}
+                {{- end -}}
+            {{- end -}}
         */}}
-        {{- if (.Values.zeebe.retention).enabled -}}
-            {{- $_ := set .Values.core.history.retention "enabled" .Values.zeebe.retention.enabled -}}
-            {{- if ((.Values.zeebe.retention).minimumAge) -}}
-                {{- $_ := set .Values.core.history.retention "minimumAge" .Values.zeebe.retention.minimumAge -}}
-            {{- end -}}
-            {{- if ((.Values.zeebe.retention).policyName) -}}
-                {{- $_ := set .Values.core.history.retention "policyName" .Values.zeebe.retention.policyName -}}
-            {{- end -}}
-        {{- end -}}
+
 
         {{/*
             zeebe.resources => core.resources
