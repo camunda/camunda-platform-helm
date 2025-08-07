@@ -131,7 +131,8 @@ data:
           default-roles.admin.users:
             - "demo"
         multiTenancy:
-            enabled: false
+          checksEnabled: false
+          apiEnabled: true
 
       #
       # Camunda Database Configuration.
