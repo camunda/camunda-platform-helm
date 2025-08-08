@@ -170,16 +170,28 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{ .Values.global.identity.keycloak.contextPath | default "/auth/" }}
 {{- end -}}
 
+
+{{/*
+[identity] Get port part of a url, return empty string if port is 80 or 443.
+*/}}
+{{- define "identity.keycloak.portUrl" -}}
+  {{- if or (eq (include "identity.keycloak.port" .) "80") (eq (include "identity.keycloak.port" .) "443") -}}
+      {{- "" -}}
+  {{- else -}}
+      {{- printf ":%s" (include "identity.keycloak.port" .) -}}
+  {{- end -}}
+{{- end -}}
+
 {{/*
 [identity] Get Keycloak full URL (protocol, host, port, and contextPath).
 */}}
 {{- define "identity.keycloak.url" -}}
     {{- include "identity.keycloak.isConfigured" . -}}
     {{-
-      printf "%s://%s:%s%s"
+      printf "%s://%s%s%s"
         (include "identity.keycloak.protocol" .)
         (include "identity.keycloak.host" .)
-        (include "identity.keycloak.port" .)
+        (include "identity.keycloak.portUrl" .)
         (include "identity.keycloak.contextPath" .)
     -}}
 {{- end -}}
