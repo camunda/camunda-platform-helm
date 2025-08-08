@@ -876,6 +876,14 @@ identity:
     password: ""
     existingSecret: ""
     existingSecretPasswordKey: ""
+    ## @extra identity.externalDatabase.secret configuration to provide the external database password secret.
+    secret:
+      ## @param identity.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+      existingSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""

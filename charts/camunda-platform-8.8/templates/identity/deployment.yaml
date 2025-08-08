@@ -159,7 +159,13 @@ spec:
             ) | nindent 12 }}
             {{- end }}
             {{- end }}
-            {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+            {{- if .Values.identity.externalDatabase.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "IDENTITY_DATABASE_PASSWORD"
+              "config" .Values.identity.externalDatabase
+              "legacyKeyField" "existingSecretPasswordKey"
+            ) | nindent 12 }}
+            {{- else if .Values.identityPostgresql.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
