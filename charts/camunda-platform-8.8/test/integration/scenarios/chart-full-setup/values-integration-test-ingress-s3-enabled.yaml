@@ -3,7 +3,7 @@ global:
     activeStoreId: "aws"
     type:
       aws:
-        enabled: "aws"
+        enabled: true
         storeId: "aws"
         bucketPath: "documents"
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
