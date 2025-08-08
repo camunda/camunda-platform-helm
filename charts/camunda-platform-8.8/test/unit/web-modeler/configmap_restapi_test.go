@@ -305,14 +305,15 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			values := map[string]string{
-				"webModelerPostgresql.enabled":          "false",
-				"global.zeebeClusterName":               "test-zeebe",
-				"global.identity.auth.enabled":          tc.authEnabled,
-				"global.security.authentication.method": tc.authMethod,
-				"core.image.tag":                        "8.x.x-alpha1",
-				"core.contextPath":                      "/core",
-				"core.service.grpcPort":                 "26600",
-				"core.service.httpPort":                 "8090",
+				"webModelerPostgresql.enabled":           "false",
+				"global.zeebeClusterName":                "test-zeebe",
+				"global.identity.auth.enabled":           tc.authEnabled,
+				"global.security.authentication.method":  tc.authMethod,
+				"global.security.authorizations.enabled": "false",
+				"core.image.tag":                         "8.x.x-alpha1",
+				"core.contextPath":                       "/core",
+				"core.service.grpcPort":                  "26600",
+				"core.service.httpPort":                  "8090",
 			}
 			maps.Insert(values, maps.All(requiredValues))
 			options := &helm.Options{
@@ -337,8 +338,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
 			s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
+			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
 			s.Require().Equal("grpc://camunda-platform-test-core:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
-			s.Require().Equal("http://camunda-platform-test-core:8090/core/v1", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
+			s.Require().Equal("http://camunda-platform-test-core:8090/core", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
 		})
 	}
 }
@@ -521,31 +523,30 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
-    // given
-    values := map[string]string{
-        "webModelerPostgresql.enabled":                 "false",
-        "webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
-        "webModeler.restapi.externalDatabase.port":     "65432",
-        "webModeler.restapi.externalDatabase.database": "custom-modeler-db",
-    }
-    maps.Insert(values, maps.All(requiredValues))
-    options := &helm.Options{
-        SetValues:      values,
-        KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-    }
+	// given
+	values := map[string]string{
+		"webModelerPostgresql.enabled":                 "false",
+		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
+		"webModeler.restapi.externalDatabase.port":     "65432",
+		"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
 
-    // when
-    output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-    var configmap corev1.ConfigMap
-    var configmapApplication WebModelerRestAPIApplicationYAML
-    helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-    err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-    if err != nil {
-        s.Fail("Failed to unmarshal yaml. error=", err)
-    }
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
 
-    // then
-    s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
+	// then
+	s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
 }
-

@@ -49,6 +49,12 @@ data:
       connector:
         headless:
           service-url: "camunda-platform-test-connectors-headless"
+        webhook:
+          enabled: true
+        polling:
+          enabled: true
+        agenticai:
+          enabled: true
     logging:
       level:
         io.camunda.connector: ERROR

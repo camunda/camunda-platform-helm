@@ -4,6 +4,11 @@ name: "Test - Integration - Template"
 on:
   workflow_call:
     inputs:
+      values-config:
+        type: string
+        description: Some of the values files will allow subsitutions. For example, on the image.tags. This config supplies those values
+        default: '{}'
+        required: false
       identifier:
         description: The unique identifier of used in the deployment hostname.
         required: true
@@ -81,7 +86,7 @@ on:
         type: string
       shortname:
         required: false
-        default: "elasticsearch"
+        default: "es"
         type: string
       auth:
         required: false
@@ -135,6 +140,10 @@ on:
         required: false
         default: false
         type: boolean
+    outputs:
+      deployment-url:
+        description: The URL of the deployed application.
+        value: ${{ jobs.print-outputs.outputs.deployment-url }}
 
 permissions:
   contents: read
@@ -255,6 +264,39 @@ jobs:
       namespace-prefix: ${{ inputs.namespace-prefix }}
       values-digest: ${{ inputs.values-digest }}
       values-enterprise: ${{ inputs.values-enterprise }}
+      values-config: ${{ inputs.values-config }}
+
+  print-outputs:
+    name: Print outputs
+    runs-on: ubuntu-latest
+    needs: [runner]
+    outputs:
+      deployment-url: ${{ steps.vars.outputs.ingress-host }}
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: 30m
+          setup-flow: install
+          platform: gke
+          identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
+          ingress-hostname-base: ci.distro.ultrawombat.com
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: 8.7
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: Print outputs
+        run: |
+          echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
+          echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:

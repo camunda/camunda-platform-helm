@@ -19,6 +19,8 @@ tasks:
 
   # https://docs.camunda.io/docs/self-managed/setup/upgrade/
   exec:
+    env:
+      TEST_AUTH_TYPE: "{{ .TEST_AUTH_TYPE }}"
     cmds:
     - |
       #elif does not work properly in Taskfile. This is why the if statements are separated

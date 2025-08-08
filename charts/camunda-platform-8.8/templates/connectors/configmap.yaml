@@ -61,6 +61,12 @@ data:
       connector:
         headless:
           service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
+        webhook:
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+        polling:
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+        agenticai:
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
     logging:
 {{- with .Values.connectors.logging }}
 {{ . | toYaml | indent 6 }}

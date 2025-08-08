@@ -31,7 +31,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.6.13
+    tag: 8.6.14
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
@@ -43,7 +43,7 @@ webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.16
+    tag: 8.6.17
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
