@@ -140,6 +140,11 @@ on:
         required: false
         default: false
         type: boolean
+      always-delete-namespace:
+        description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
+        default: false
+        type: boolean
+        required: false
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -265,6 +270,7 @@ jobs:
       values-digest: ${{ inputs.values-digest }}
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
+      always-delete-namespace: ${{ inputs.always-delete-namespace }}
 
   print-outputs:
     name: Print outputs
