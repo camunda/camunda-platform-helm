@@ -351,7 +351,8 @@ Identity.
 
 {{/*
 *******************************************************************************
-Web Modeler.
+Web Modeler
+The old key was deprecated in 8.5 and renamed in the 8.8 release.
 *******************************************************************************
 */}}
 
@@ -359,7 +360,6 @@ Web Modeler.
   {{/*
   - renamed: postgresql => webModelerPostgresql
   */}}
-
   {{ include "camundaPlatform.keyRenamed" (dict
     "condition" (.Values.postgresql)
     "oldName" "postgresql"
@@ -369,54 +369,27 @@ Web Modeler.
 
 {{/*
 *******************************************************************************
-Core replacment (Zeebe, Zeebe Gateway, Operate, Optimize, Tasklist).
+Zeebe Gateway
+The old key was deprecated and renamed (with backward compatibility) in 8.5
+then removed in the 8.8 release.
 *******************************************************************************
 */}}
 
-{{- if (.Values.zeebe).enabled -}}
-  {{ include "camundaPlatform.keyRemoved" (dict
-    "condition" (.Values.zeebe)
-    "oldName" "zeebe"
-  ) }}
-{{- end }}
-
-{{- if or (.Values.zeebeGateway).enabled (index .Values "zeebe-gateway").enabled -}}
-  {{ include "camundaPlatform.keyRemoved" (dict
-    "condition" (.Values.zeebeGateway)
-    "oldName" "zeebeGateway"
-  ) }}
-  {{ include "camundaPlatform.keyRemoved" (dict
+{{- if (index .Values "zeebe-gateway").enabled -}}
+  {{/*
+  - renamed: zeebe-gateway => zeebeGateway
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
     "condition" (index .Values "zeebe-gateway")
     "oldName" "zeebe-gateway"
-  ) }}
-{{- end }}
-
-{{- if (.Values.operate).enabled -}}
-  {{ include "camundaPlatform.keyRemoved" (dict
-    "condition" (.Values.operate)
-    "oldName" "operate"
-  ) }}
-{{- end }}
-
-{{/*
-{{- if (.Values.optimize).enabled -}}
-  {{ include "camundaPlatform.keyRemoved" (dict
-    "condition" (.Values.optimize)
-    "oldName" "optimize"
-  ) }}
-{{- end }}
-*/}}
-
-{{- if (.Values.tasklist).enabled -}}
-  {{ include "camundaPlatform.keyRemoved" (dict
-    "condition" (.Values.tasklist)
-    "oldName" "tasklist"
+    "newName" "zeebeGateway"
   ) }}
 {{- end }}
 
 {{/*
 *******************************************************************************
 Separated Ingress.
+The old key was deprecated in 8.6 and removed in the 8.8 release.
 *******************************************************************************
 */}}
 

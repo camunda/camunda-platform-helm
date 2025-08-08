@@ -52,6 +52,16 @@
                                     "default": "disabled"
                                 }
                             }
+                        },
+                        "core": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables compatibility layer for Camunda Core between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
+                                    "default": true
+                                }
+                            }
                         }
                     }
                 },
@@ -4660,7 +4670,7 @@
                 "javaOpts": {
                     "type": "string",
                     "description": "can be used to set java options",
-                    "default": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
+                    "default": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
                 },
                 "service": {
                     "type": "object",
@@ -5267,7 +5277,7 @@
                                 "policyName": {
                                     "type": "string",
                                     "description": "defines the name of the created and applied ILM policy.",
-                                    "default": "core-record-retention-policy"
+                                    "default": "zeebe-record-retention-policy"
                                 }
                             }
                         }
