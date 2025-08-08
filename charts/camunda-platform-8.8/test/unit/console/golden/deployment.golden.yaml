@@ -70,7 +70,7 @@ spec:
             - name: NODE_ENV
               value: prod
             - name: KEYCLOAK_INTERNAL_BASE_URL
-              value: "http://camunda-platform-test-keycloak:80/auth"
+              value: "http://camunda-platform-test-keycloak/auth"
             - name: KEYCLOAK_BASE_URL
               value: "http://localhost:18080/auth"
             - name: KEYCLOAK_REALM

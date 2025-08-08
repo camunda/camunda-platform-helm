@@ -41,7 +41,7 @@ data:
     {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     path = {{ include "webModeler.websocketContextPath" . | quote }}
     {{- end }}
-    forceTLS = {{ include "webModeler.websocketTlsEnabled" . | quote }}
+    forceTLS = {{ include "webModeler.websocketTlsEnabled" . }}
 
     {{- if .Values.identity.enabled }}
 
