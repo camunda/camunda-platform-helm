@@ -18,6 +18,9 @@ data:
   {{- if .Values.global.documentStore.type.aws.bucketTtl }}
   DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | quote }}
   {{- end }}
+  {{- if .Values.global.documentStore.type.aws.region }}
+  AWS_REGION: {{ .Values.global.documentStore.type.aws.region | quote }}
+  {{- end }}
   {{- else if eq $active "gcp" }}
     {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_CLASS: {{ .Values.global.documentStore.type.gcp.class | quote }}
