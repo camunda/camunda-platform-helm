@@ -26,7 +26,7 @@ data:
 
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
-        backend-url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+        backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
 
       component-presets:
         connectors:
@@ -43,7 +43,7 @@ data:
             - name: "Console"
               id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
               type: public
-              root-url: "http://localhost:8080"
+              root-url: "http://localhost:8087"
               redirect-uris:
                 - "/"
           apis:
@@ -170,7 +170,7 @@ data:
                 - audience: "web-modeler-api"
                   definition: admin:*
     keycloak:
-      url: "http://camunda-platform-test-keycloak:80/auth"
+      url: "http://camunda-platform-test-keycloak/auth"
       setup:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
@@ -232,7 +232,7 @@ data:
             - name: "Console"
               id: ${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
               type: public
-              root-url: "http://localhost:8080"
+              root-url: "http://localhost:8087"
               redirect-uris:
                 - "/"
     server:
