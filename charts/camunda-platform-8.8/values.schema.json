@@ -37,6 +37,26 @@
                             "type": "string",
                             "description": "you can provide the key within the existing secret object for Camunda license key.",
                             "default": ""
+                        },
+                        "secret": {
+                            "type": "object",
+                            "properties": {
+                                "inlineSecret": {
+                                    "type": "string",
+                                    "description": "can be used to provide the license as a plain-text value for non-production usage.",
+                                    "default": ""
+                                },
+                                "existingSecret": {
+                                    "type": "string",
+                                    "description": "can be used to reference an existing Kubernetes Secret containing the license.",
+                                    "default": ""
+                                },
+                                "existingSecretKey": {
+                                    "type": "string",
+                                    "description": "defines the key within the existing secret object.",
+                                    "default": ""
+                                }
+                            }
                         }
                     }
                 },
