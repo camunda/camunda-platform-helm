@@ -784,3 +784,122 @@ Release templates.
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.core.contextPath .Values.core.metrics.prometheus }}
   {{- end }}
 {{- end -}}
+
+{{/*
+normalizeSecretConfiguration
+Normalizes secret configuration from various input formats to a standardized output format.
+Supports both new-style (>= 8.8: secret.existingSecret/secret.inlineSecret) and legacy formats (< 8.8).
+Returns a dict with "ref" and "plaintext" keys.
+- "ref": dict with "name" and "key" fields for Kubernetes secret reference, or nil if not using secret
+- "plaintext": string value for inline plaintext, or empty string if using secret reference
+Usage:
+  {{ include "camundaPlatform.normalizeSecretConfiguration" (dict
+      "config" .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+      "defaultSecretName" "my-default-secret"
+      "defaultSecretKey" "password"
+  ) }}
+*/}}
+{{- define "camundaPlatform.normalizeSecretConfiguration" -}}
+{{- $config := .config | default dict -}}
+{{- $plaintextKey := .plaintextKey | default "password" -}}
+{{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+{{- $defName := .defaultSecretName | default "" -}}
+{{- $defKey := .defaultSecretKey | default "password" -}}
+
+{{- $result := dict "ref" nil "plaintext" "" -}}
+
+{{/* New (>= 8.8): existingSecret + existingSecretKey */}}
+{{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
+  {{- $_ := set $result "ref" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
+
+{{/* New (>= 8.8): inlineSecret for plaintext values */}}
+{{- else if and $config.secret $config.secret.inlineSecret -}}
+  {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
+
+{{/* Legacy (< 8.8): string + keyField => secret reference */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "string" $config.existingSecret)
+    $config.existingSecret
+    (hasKey $config $legacyKeyField)
+    (ne (get $config $legacyKeyField | default "") "")
+-}}
+  {{- $_ := set $result "ref" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
+
+{{/* Legacy (< 8.8): object form for secret reference */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "map" $config.existingSecret)
+    (ne ($config.existingSecret.name | default "") "")
+-}}
+  {{- $_ := set $result "ref" (dict "name" $config.existingSecret.name "key" (get $config $legacyKeyField)) -}}
+
+{{/* Legacy (< 8.8): string fallback for plaintext values */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "string" $config.existingSecret)
+    $config.existingSecret
+-}}
+  {{- $_ := set $result "plaintext" $config.existingSecret -}}
+
+{{/* Fallback: direct plaintext key */}}
+{{- else if (hasKey $config $plaintextKey) -}}
+  {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
+{{- end }}
+
+{{/* Final fallback to the caller‑supplied default */}}
+{{- if and (not $result.ref) (not $result.plaintext) $defName -}}
+  {{- $_ := set $result "ref" (dict "name" $defName "key" $defKey) -}}
+{{- end }}
+
+{{- toYaml $result -}}
+{{- end -}}
+
+{{/*
+emitEnvVarFromSecretConfig
+Usage:
+  {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+      "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+      "config"  .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitEnvVarFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.ref $norm.plaintext -}}
+- name: {{ .envName }}
+{{- if $norm.ref }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $norm.ref.name }}
+      key: {{ $norm.ref.key }}
+{{- else }}
+  value: {{ $norm.plaintext | quote }}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+hasSecretConfig
+Returns a string indicating whether there is a valid secret configuration.
+Named templates don't return bools, only strings [1].
+Usage:
+  {{ if eq (include "camundaPlatform.hasSecretConfig" (dict
+      "config"  .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  )) "true" }}
+
+[1] https://github.com/helm/helm/issues/11231
+*/}}
+{{- define "camundaPlatform.hasSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.ref $norm.plaintext -}}
+"true"
+{{- else -}}
+"false"
+{{- end -}}
+{{- end -}}

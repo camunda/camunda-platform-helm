@@ -59,11 +59,7 @@ spec:
               name: http
               protocol: TCP
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars

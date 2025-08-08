@@ -37,6 +37,26 @@
                             "type": "string",
                             "description": "you can provide the key within the existing secret object for Camunda license key.",
                             "default": ""
+                        },
+                        "secret": {
+                            "type": "object",
+                            "properties": {
+                                "inlineSecret": {
+                                    "type": "string",
+                                    "description": "can be used to provide the license as a plain-text value for non-production usage.",
+                                    "default": ""
+                                },
+                                "existingSecret": {
+                                    "type": "string",
+                                    "description": "can be used to reference an existing Kubernetes Secret containing the license.",
+                                    "default": ""
+                                },
+                                "existingSecretKey": {
+                                    "type": "string",
+                                    "description": "defines the key within the existing secret object.",
+                                    "default": ""
+                                }
+                            }
                         }
                     }
                 },
@@ -307,6 +327,26 @@
                                     "type": "string",
                                     "description": "provide an already existing tls secret for connecting to external elasticsearch",
                                     "default": ""
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the TLS certificate as a plain-text value for non-production usage.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS certificate.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object.",
+                                            "default": ""
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -332,8 +372,33 @@
                                     "type": "string",
                                     "description": "you can provide an existing secret key for the external elasticsearch password",
                                     "default": "password"
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object.",
+                                            "default": ""
+                                        }
+                                    }
                                 }
                             }
+                        },
+                        "disableExporter": {
+                            "type": "boolean",
+                            "description": "(DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.",
+                            "default": false
                         },
                         "url": {
                             "type": "object",
@@ -397,6 +462,26 @@
                                     "type": "string",
                                     "description": "provide an already existing tls secret for connecting to external opensearch",
                                     "default": ""
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the TLS certificate as a plain-text value for non-production usage.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS certificate.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object.",
+                                            "default": ""
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -422,6 +507,26 @@
                                     "type": "string",
                                     "description": "you can provide an existing secret key for the external opensearch password",
                                     "default": "password"
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object.",
+                                            "default": ""
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -560,6 +665,26 @@
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
                                             "default": "identity-admin-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -621,6 +746,26 @@
                                             "description": "defines the key within the existing secret object.",
                                             "default": "identity-console-client-token"
                                         },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
@@ -665,6 +810,26 @@
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
                                             "default": "identity-connectors-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -685,6 +850,26 @@
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
                                             "default": "identity-core-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -715,6 +900,26 @@
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
                                             "default": "identity-optimize-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -945,6 +1150,26 @@
                             "type": "string",
                             "description": "defines the key within the existing secret object.",
                             "default": "identity-firstuser-password"
+                        },
+                        "secret": {
+                            "type": "object",
+                            "properties": {
+                                "inlineSecret": {
+                                    "type": "string",
+                                    "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                    "default": ""
+                                },
+                                "existingSecret": {
+                                    "type": "string",
+                                    "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                    "default": ""
+                                },
+                                "existingSecretKey": {
+                                    "type": "string",
+                                    "description": "defines the key within the existing secret object.",
+                                    "default": ""
+                                }
+                            }
                         }
                     }
                 },
@@ -1420,6 +1645,26 @@
                             "type": "string",
                             "description": "Name of an existing secret key containing the database credentials",
                             "default": ""
+                        },
+                        "secret": {
+                            "type": "object",
+                            "properties": {
+                                "inlineSecret": {
+                                    "type": "string",
+                                    "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                    "default": ""
+                                },
+                                "existingSecret": {
+                                    "type": "string",
+                                    "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                    "default": ""
+                                },
+                                "existingSecretKey": {
+                                    "type": "string",
+                                    "description": "defines the key within the existing secret object.",
+                                    "default": ""
+                                }
+                            }
                         }
                     }
                 },
