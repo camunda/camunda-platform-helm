@@ -1645,6 +1645,26 @@
                             "type": "string",
                             "description": "Name of an existing secret key containing the database credentials",
                             "default": ""
+                        },
+                        "secret": {
+                            "type": "object",
+                            "properties": {
+                                "inlineSecret": {
+                                    "type": "string",
+                                    "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                    "default": ""
+                                },
+                                "existingSecret": {
+                                    "type": "string",
+                                    "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                    "default": ""
+                                },
+                                "existingSecretKey": {
+                                    "type": "string",
+                                    "description": "defines the key within the existing secret object.",
+                                    "default": ""
+                                }
+                            }
                         }
                     }
                 },
