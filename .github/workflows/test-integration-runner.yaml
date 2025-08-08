@@ -167,6 +167,11 @@ on:
         default: "true"
         type: string
         description: Enable digest values
+      always-delete-namespace:
+        description: Always delete the namespace after the test run
+        default: false
+        type: boolean
+        required: false
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -917,8 +922,18 @@ jobs:
           ref: ${{ inputs.caller-git-ref }}
 
       - name: CI Cleanup - 🚨 Mark namespace as failed 🚨
-        if: failure()
+        if: always() && ${{ inputs.always-delete-namespace }}
         run: |
+          if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
+            if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+            else
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+            fi
+          else
+            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+          fi
           kubectl annotate ns ${{ env.TEST_NAMESPACE }} build-failed=true
-          kubectl annotate ns ${{ env.TEST_NAMESPACE }} cleaner/ttl=1d
-          kubectl annotate ns ${{ env.TEST_NAMESPACE }} janitor/ttl=1d
