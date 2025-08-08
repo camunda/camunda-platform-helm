@@ -392,13 +392,14 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
+          EXTRA_VALUES: ${{ inputs.extra-values }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
 
         run: |
           echo "Extra values from workflow:"
-          echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
+          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
@@ -601,10 +602,11 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+          EXTRA_VALUES: ${{ inputs.extra-values }}
         continue-on-error: false
         run: |
           echo "Extra values from workflow:"
-          echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
+          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.venom.env
 
       - name: Test - ⭐️ Run Venom Preflight TestSuite ⭐️
