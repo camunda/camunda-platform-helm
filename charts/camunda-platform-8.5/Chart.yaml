@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.9.0
+version: 10.10.0
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -69,18 +69,12 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Support configure replicas for web modeler restapi and webapp"
+      description: "Introduce e2e tests for helm charts"
     - kind: added
-      description: "8.8 integration test playwright"
-    - kind: added
-      description: "Implement mutable global.commonLabels value"
-    - kind: added
-      description: "Add extraVolumeClaimTemplates support"
+      description: "Enable values to be source from this repo rather than push from the QA repo"
     - kind: changed
-      description: "Add local values file per chart version"
+      description: "Change bitnami docker images to bitnamilegacy"
     - kind: fixed
-      description: "Add scheme into templates for use by connectors"
+      description: "Add digest to web-modeler components"
     - kind: fixed
-      description: "Update params for existingSecret "
-    - kind: fixed
-      description: "Replace GKE with teleport EKS cluster"
+      description: "Sysctl images were not updated with the bitnamilegacy repo name"
