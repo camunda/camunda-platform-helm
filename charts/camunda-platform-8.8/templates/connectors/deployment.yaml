@@ -39,11 +39,11 @@ spec:
               name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             {{- if eq .Values.global.security.authentication.method "oidc" }}
             - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:

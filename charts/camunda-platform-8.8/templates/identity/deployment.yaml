@@ -36,11 +36,11 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict

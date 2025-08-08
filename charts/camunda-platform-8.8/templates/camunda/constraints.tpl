@@ -230,6 +230,7 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 */}}
 {{- define "camundaPlatform.secretConfigurationWarnings" -}}
   {{- $secretConfigs := list 
+    (dict "path" "global.license" "config" .Values.global.license "plaintextKey" "key")
     (dict "path" "global.elasticsearch.tls" "config" .Values.global.elasticsearch.tls)
     (dict "path" "global.elasticsearch.auth" "config" .Values.global.elasticsearch.auth)
     (dict "path" "global.opensearch.tls" "config" .Values.global.opensearch.tls) 

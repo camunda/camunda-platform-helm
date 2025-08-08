@@ -63,6 +63,14 @@ global:
     existingSecret: ""
     ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
     existingSecretKey: ""
+    ## @extra global.license.secret configuration to provide the license secret.
+    secret:
+      ## @param global.license.secret.inlineSecret can be used to provide the license as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param global.license.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the license.
+      existingSecret: ""
+      ## @param global.license.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @extra global.compatibility Compatibility adaptations for Kubernetes platforms
   compatibility:
