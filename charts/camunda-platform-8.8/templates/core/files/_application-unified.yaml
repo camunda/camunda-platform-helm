@@ -21,7 +21,7 @@ management:
     # ssl:
     #   enabled: true
   {{- if .Values.core.contextPath }}
-  endpoint: {{ printf "/%s/actuator" .Values.core.contextPath | quote }}
+  endpoint: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath "actuator") | quote }}
   {{- end }}
 
 camunda:
@@ -87,8 +87,6 @@ camunda:
       {{- range (untilStep 0 (int .Values.core.clusterSize) 1) }}
         - {{ include "core.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.core.service.internalPort}}
       {{- end }}
-    # TODO: Double-check if this is the same as .Values.core.clusterSize.
-    node-count: {{ .Values.core.clusterSize | quote }}
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
     node-id: ${VALUES_NODE_ID}
@@ -127,11 +125,9 @@ camunda:
     # compression-algorithm: 'none'
 
   data:
-    {{- if .Values.core.history.retention.enabled }}
     retention:
-      enabled: true
+      enabled: {{ .Values.core.history.retention.enabled }}
       minimum-age: {{ .Values.core.history.retention.minimumAge | quote }}
-    {{- end }}
     snapshot-period: {{ .Values.core.data.snapshotPeriod | quote }}
     # export:
     #   distribution-interval: '15s'
@@ -193,6 +189,8 @@ camunda:
           self-signed: false
         {{- end }}
         index-prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+        history:
+          policy-name: {{ .Values.core.history.retention.policyName | quote }}
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
@@ -209,6 +207,8 @@ camunda:
           self-signed: false
         {{- end }}
         index-prefix: {{ .Values.global.opensearch.prefix | quote }}
+        history:
+          policy-name: {{ .Values.core.history.retention.policyName | quote }}
     {{- end }}
 
   security:
@@ -258,7 +258,7 @@ camunda:
       #   lock-timeout: '60s'
       # alerting-webbook: ''
       zeebe:
-        gateway-address: {{ (printf "%s:%d" (include "core.fullname" .) .Values.core.service.grpcPort)| quote }}
+        gateway-address: {{ (printf "%s:%v" (include "core.fullname" .) .Values.core.service.grpcPort)| quote }}
         secure: false
         certificate-path: ''
       # TODO: What kind of value is expected here compared to the 8.7 version?
