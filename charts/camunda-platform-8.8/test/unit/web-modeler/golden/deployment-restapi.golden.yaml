@@ -56,7 +56,10 @@ spec:
             - name: JAVA_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
             - name: SPRING_DATASOURCE_PASSWORD
-              value: "camunda-platform-test-postgresql-web-modeler"
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-postgresql-web-modeler
+                  key: web-modeler-postgresql-user-password
             
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
