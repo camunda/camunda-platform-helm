@@ -51,8 +51,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "SPRING_DATASOURCE_PASSWORD"
                 "config" .Values.webModelerPostgresql.auth
-                "plaintextKey" "password"
-                "legacyKeyField" "existingSecretKey"
             ) | nindent 12 }}
             {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
