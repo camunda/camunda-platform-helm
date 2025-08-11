@@ -99,11 +99,10 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             {{- if .Values.global.identity.auth.enabled }}
-            - name: VALUES_CAMUNDA_CORE_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "core.authClientSecretName" . }}
-                  key: {{ include "core.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_CORE_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.core
+            ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
