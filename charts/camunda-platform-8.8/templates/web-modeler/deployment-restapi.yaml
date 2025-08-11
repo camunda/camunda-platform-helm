@@ -48,10 +48,11 @@ spec:
                 "legacyKeyField" "existingSecretPasswordKey"
             ) | nindent 12 }}
             {{- else }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "SPRING_DATASOURCE_PASSWORD"
-                "config" .Values.webModelerPostgresql.auth
-            ) | nindent 12 }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.webModelerPostgresql.auth.existingSecret }}
+                  key: {{ .Values.webModelerPostgresql.auth.secretKeys.userPasswordKey }}
             {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_MAIL_PASSWORD"
