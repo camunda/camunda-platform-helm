@@ -177,11 +177,10 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "optimize.authClientSecretName" . }}
-                  key: {{ include "optimize.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.optimize
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
