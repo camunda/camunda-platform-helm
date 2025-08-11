@@ -241,6 +241,8 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
     (dict "path" "global.identity.auth.core" "config" .Values.global.identity.auth.core)
     (dict "path" "global.identity.auth.optimize" "config" .Values.global.identity.auth.optimize)
     (dict "path" "identity.firstUser" "config" .Values.identity.firstUser)
+    (dict "path" "webModeler.restapi.externalDatabase" "config" .Values.webModeler.restapi.externalDatabase)
+    (dict "path" "webModeler.restapi.mail" "config" .Values.webModeler.restapi.mail "plaintextKey" "smtpPassword")
   -}}
 
   {{- range $secretConfigs -}}
