@@ -93,7 +93,7 @@ data:
 
         # zeebe.broker.exporters
         exporters:
-          CamundaExporter:
+          camundaexporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
