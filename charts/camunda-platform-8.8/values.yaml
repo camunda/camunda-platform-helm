@@ -1488,6 +1488,14 @@ webModeler:
       existingSecret: ""
       ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string Key in the Secret data that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: "database-password"
+      ## @extra webModeler.restapi.externalDatabase.secret configuration to provide the database password secret.
+      secret:
+        ## @param webModeler.restapi.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
     mail:
@@ -1505,6 +1513,14 @@ webModeler:
       existingSecret: ""
       ## @param webModeler.restapi.mail.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the SMTP password
       existingSecretPasswordKey: "smtp-password"
+      ## @extra webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
+      secret:
+        ## @param webModeler.restapi.mail.secret.inlineSecret can be used to provide the SMTP password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the SMTP password.
+        existingSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
       ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
       # NOTE: This value is mandatory.
       fromAddress: ""

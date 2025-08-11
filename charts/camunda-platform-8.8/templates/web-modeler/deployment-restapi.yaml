@@ -41,19 +41,26 @@ spec:
             ) | nindent 12 }}
             - name: JAVA_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "webModeler.restapi.databaseSecretName" . }}
-                  key: {{ include "webModeler.restapi.databaseSecretKey" . }}
-            {{- $smtpSecretName := (include "webModeler.restapi.smtpSecretName" .) }}
-            {{- if $smtpSecretName }}
-            - name: RESTAPI_MAIL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $smtpSecretName }}
-                  key: {{ include "webModeler.restapi.smtpSecretKey" . }}
+            {{- if not .Values.webModelerPostgresql.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "SPRING_DATASOURCE_PASSWORD"
+                "config" .Values.webModeler.restapi.externalDatabase
+                "legacyKeyField" "existingSecretPasswordKey"
+            ) | nindent 12 }}
+            {{- else }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "SPRING_DATASOURCE_PASSWORD"
+                "config" .Values.webModelerPostgresql.auth
+                "plaintextKey" "password"
+                "legacyKeyField" "existingSecretKey"
+            ) | nindent 12 }}
             {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "RESTAPI_MAIL_PASSWORD"
+                "config" .Values.webModeler.restapi.mail
+                "plaintextKey" "smtpPassword"
+                "legacyKeyField" "existingSecretPasswordKey"
+            ) | nindent 12 }}
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
