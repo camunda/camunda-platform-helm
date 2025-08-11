@@ -17,6 +17,19 @@ spec:
       {{- if .Values.core.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: wait-for-core
+          {{- if .Values.core.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          image: curlimages/curl:8.15.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://{{ include "core.fullname" . }}-gateway:{{ .Values.core.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}; do
+                echo "waiting for Orchestration Cluster"; sleep 5;
+              done
       containers:
         - name: camunda-migration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
@@ -26,25 +39,19 @@ spec:
           {{- end }}
           env:
             {{- if and .Values.global.elasticsearch.external .Values.global.elasticsearch.auth.password -}}
-            - name: VALUES_DATABASE_USERNAME
-              value: {{ .Values.global.elasticsearch.auth.username }}
             - name: VALUES_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.fullname" . }}-elasticsearch
                   key: {{ .Values.global.elasticsearch.auth.existingSecretKey }}
             {{- end }}
-            {{- if and .Values.global.opensearch.external .Values.global.opensearch.auth.password -}}
-            - name: VALUES_DATABASE_USERNAME
-              value: {{ .Values.global.opensearch.auth.username }}
+            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password -}}
             - name: VALUES_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.fullname" . }}-opensearch
                   key: {{ .Values.global.opensearch.auth.existingSecretKey }}
             {{- end }}
-            - name: JAVA_TOOL_OPTIONS
-              value:  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
           command:
             - /usr/local/camunda/bin/process-migration
           resources:
