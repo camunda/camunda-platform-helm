@@ -898,8 +898,8 @@ Usage:
 {{- define "camundaPlatform.hasSecretConfig" -}}
 {{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
 {{- if or $norm.ref $norm.plaintext -}}
-"true"
+true
 {{- else -}}
-"false"
+false
 {{- end -}}
 {{- end -}}
