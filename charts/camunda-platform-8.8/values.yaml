@@ -2309,7 +2309,7 @@ core:
     process:
       ## @param core.migration.process.enabled if true, the process migration occurs.
       enabled: false
-      ## @param core.migration.process.backoffLimit can be used to define the back off limit.
+      ## @param core.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
       ## @param core.migration.process.batchSize can be used to define the batch size.
       batchSize: 5
