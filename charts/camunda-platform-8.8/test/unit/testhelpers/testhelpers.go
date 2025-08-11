@@ -4,6 +4,7 @@
 package testhelpers
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -176,6 +177,7 @@ func verifyConfigMap(t *testing.T, testCase string, configmap corev1.ConfigMap, 
 // getConfigMapFieldValue function traverses a nested map structure based on a given key path.
 // It handles maps with both interface{} and string keys, converting them as necessary to retrieve the desired value.
 // If the key is not found or the final value is not a string, the function returns an empty string.
+// TODO: Replace this code with some library, we should not have such logic in the test code.
 func getConfigMapFieldValue(configmapApplication map[string]any, keyPath []string) string {
 	var current any = configmapApplication
 
@@ -194,15 +196,23 @@ func getConfigMapFieldValue(configmapApplication map[string]any, keyPath []strin
 			// If the current level is already a map with string keys, move to the next level
 			current = nestedMap[key]
 		} else {
-			// If the key is not found, return an empty string
+			// If the key is not found or current is not a map, return an empty string
 			return ""
 		}
 	}
 
-	// If the final value is a string, return it
-	if value, ok := current.(string); ok {
-		return value
+	// Return string if possible, otherwise attempt to convert to string
+	switch v := current.(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return v.String()
+	case int, int8, int16, int32, int64,
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64, bool:
+		return fmt.Sprintf("%v", v)
+	default:
+		// Unsupported type
+		return ""
 	}
-	// If the final value is not a string, return an empty string
-	return ""
 }
