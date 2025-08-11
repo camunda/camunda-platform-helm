@@ -195,10 +195,6 @@ This is mainly used to access the external Keycloak service in the global Ingres
     {{- end }}
 {{- end -}}
 
-{{- define "identity.authClientSecret" -}}
-  {{- .Values.global.identity.auth.identity.existingSecret -}}
-{{- end -}}
-
 {{/*
 [identity] Get name of Keycloak auth existing secret. For more details:
 https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/

@@ -63,18 +63,6 @@ app.kubernetes.io/component: core
     {{- .Values.global.identity.auth.core.clientId | default "core" -}}
 {{- end -}}
 
-{{- define "core.authClientSecretName" -}}
-    {{- if and .Values.global.identity.auth.core.existingSecret (not (typeIs "string" .Values.global.identity.auth.core.existingSecret)) -}}
-        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.core.existingSecret "context" $) -}}
-    {{- else -}}
-        {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "core") -}}
-    {{- end -}}
-{{- end -}}
-
-{{- define "core.authClientSecretKey" -}}
-    {{ .Values.global.identity.auth.core.existingSecretKey }}
-{{- end -}}
-
 {{- define "core.authAudience" -}}
     {{- .Values.global.identity.auth.core.audience | default "core-api" -}}
 {{- end -}}

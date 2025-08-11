@@ -193,21 +193,7 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
     {{- end -}}
 {{- end -}}
 
-{{/*
-[camunda-platform] Get Camunda license secret name.
-*/}}
-{{- define "camundaPlatform.licenseSecretName" -}}
-  {{- $defaultSecretName := printf "%s-license" (include "camundaPlatform.fullname" .) -}}
-  {{- .Values.global.license.existingSecret | default $defaultSecretName -}}
-{{- end -}}
 
-{{/*
-[camunda-platform] Get Camunda license secret key.
-*/}}
-{{- define "camundaPlatform.licenseSecretKey" -}}
-  {{- $defaultSecretKey := "CAMUNDA_LICENSE_KEY" -}}
-  {{- .Values.global.license.existingSecretKey | default $defaultSecretKey -}}
-{{- end -}}
 
 
 {{/*
@@ -332,67 +318,9 @@ Elasticsearch and Opensearch templates.
     {{ .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.global.opensearch.url.port }}
 {{- end -}}
 
-{{/*
-[elasticsearch] Get name of elasticsearch auth existing secret. For more details:
-https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
-*/}}
-{{- define "elasticsearch.authExistingSecret" -}}
-    {{- if .Values.global.elasticsearch.auth.existingSecret }}
-        {{- .Values.global.elasticsearch.auth.existingSecret -}}
-    {{- else -}}
-        {{ include "camundaPlatform.fullname" . }}-elasticsearch
-    {{- end }}
-{{- end -}}
 
-{{/*
-[elasticsearch] Get elasticsearch auth existing secret key.
-*/}}
-{{- define "elasticsearch.authExistingSecretKey" -}}
-    {{- if .Values.global.elasticsearch.auth.existingSecretKey }}
-        {{- .Values.global.elasticsearch.auth.existingSecretKey -}}
-    {{- else -}}
-        password
-    {{- end }}
-{{- end -}}
 
-{{/*
-[elasticsearch] Used as a boolean to determine whether any password is defined.
-Do not use this for its string value.
-*/}}
-{{- define "elasticsearch.passwordIsDefined" -}}
-{{- (cat .Values.global.elasticsearch.auth.existingSecret .Values.global.elasticsearch.auth.password) -}}
-{{- end -}}
 
-{{/*
-[opensearch] Used as a boolean to determine whether any password is defined.
-Do not use this for its string value.
-*/}}
-{{- define "opensearch.passwordIsDefined" -}}
-{{- (cat .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) -}}
-{{- end -}}
-
-{{/*
-[opensearch] Get name of elasticsearch auth existing secret. For more details:
-https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
-*/}}
-{{- define "opensearch.authExistingSecret" -}}
-    {{- if .Values.global.opensearch.auth.existingSecret }}
-        {{- .Values.global.opensearch.auth.existingSecret -}}
-    {{- else -}}
-        {{ include "camundaPlatform.fullname" . }}-opensearch
-    {{- end }}
-{{- end -}}
-
-{{/*
-[opensearch] Get opensearch auth existing secret key.
-*/}}
-{{- define "opensearch.authExistingSecretKey" -}}
-    {{- if .Values.global.opensearch.auth.existingSecretKey }}
-        {{- .Values.global.opensearch.auth.existingSecretKey -}}
-    {{- else -}}
-        password
-    {{- end }}
-{{- end -}}
 
 {{/*
 ********************************************************************************
