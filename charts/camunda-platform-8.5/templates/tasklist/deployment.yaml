@@ -139,7 +139,7 @@ spec:
           {{- if .Values.tasklist.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.startupProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.startupProbe.probePath) }}
               scheme: {{ .Values.tasklist.startupProbe.scheme }}
               port: http
             initialDelaySeconds: {{ .Values.tasklist.startupProbe.initialDelaySeconds }}
@@ -151,7 +151,7 @@ spec:
           {{- if .Values.tasklist.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.readinessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath) }}
               scheme: {{ .Values.tasklist.readinessProbe.scheme }}
               port: http
             initialDelaySeconds: {{ .Values.tasklist.readinessProbe.initialDelaySeconds }}
@@ -163,7 +163,7 @@ spec:
           {{- if .Values.tasklist.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.livenessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.livenessProbe.probePath) }}
               scheme: {{ .Values.tasklist.livenessProbe.scheme }}
               port: http
             initialDelaySeconds: {{ .Values.tasklist.livenessProbe.initialDelaySeconds }}
