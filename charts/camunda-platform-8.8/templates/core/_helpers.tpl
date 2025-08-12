@@ -48,8 +48,8 @@ app.kubernetes.io/component: core
 [core] Define variables related to multitenancy checks
 */}}
 {{- define "core.multitenancyChecksEnabled" -}}
-  {{- if .Values.core.checks.enabled -}}
-    {{ .Values.core.checks.enabled }}
+  {{- if .Values.core.multitenancy.checks.enabled -}}
+    {{ .Values.core.multitenancy.checks.enabled }}
   {{- else if .Values.global.multitenancy.enabled -}}
     {{ .Values.global.multitenancy.enabled }}
   {{- end -}}
