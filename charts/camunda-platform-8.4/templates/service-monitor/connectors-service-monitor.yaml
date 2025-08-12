@@ -14,7 +14,7 @@ spec:
       app.kubernetes.io/component: connectors
   endpoints:
     - honorLabels: true
-      path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.metrics.prometheus }}
+      path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.metrics.prometheus) }}
       port: http
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}
