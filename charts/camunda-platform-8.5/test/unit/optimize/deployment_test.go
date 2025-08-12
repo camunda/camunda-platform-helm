@@ -570,6 +570,30 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 			},
 		}, {
+			// readinessProbe is enabled by default so it's tested by golden files.
+			Name:                 "TestContainerProbesWithContextPathWithTrailingSlash",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"optimize.contextPath":              "/test/",
+				"optimize.startupProbe.enabled":     "true",
+				"optimize.startupProbe.probePath":   "/start",
+				"optimize.readinessProbe.enabled":   "true",
+				"optimize.readinessProbe.probePath": "/ready",
+				"optimize.livenessProbe.enabled":    "true",
+				"optimize.livenessProbe.probePath":  "/live",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				probe := deployment.Spec.Template.Spec.Containers[0]
+
+				s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+				s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+			},
+		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
 				"optimize.sidecars[0].name":                   "nginx",
