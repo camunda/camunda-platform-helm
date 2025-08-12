@@ -36,7 +36,7 @@ data:
           username-claim: {{ .Values.global.security.authentication.oidc.usernameClaim | quote }}
           groups-claim: {{ .Values.global.security.authentication.oidc.groupsClaim | quote }}
           client-id: {{ include "orchestration.authClientId" . | quote }}
-          client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+          client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
           audiences:
             - {{ include "orchestration.authClientId" . | quote }}
             - {{ .Values.global.identity.auth.orchestration.audience | quote }}

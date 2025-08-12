@@ -9,8 +9,8 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: core
-    app.kubernetes.io/version: "8.8.0-alpha7"
+    app.kubernetes.io/component: orchestration
+    app.kubernetes.io/version: "8.8.0-alpha6"
 apiVersion: v1
 data:
   startup.sh: |
@@ -93,7 +93,7 @@ data:
 
         # zeebe.broker.exporters
         exporters:
-          camundaexporter:
+          CamundaExporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:

@@ -217,7 +217,7 @@ camunda:
     issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
     issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
     redirect-root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl . | quote }}
-    client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+    client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
     audience: {{ include "orchestration.authAudience" . | quote }}
     authentication:
       unprotected-api: {{ .Values.global.security.authentication.unprotectedApi }}

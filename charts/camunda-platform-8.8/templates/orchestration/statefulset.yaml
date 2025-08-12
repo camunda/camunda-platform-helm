@@ -106,7 +106,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             {{- if .Values.global.identity.auth.enabled }}
-            - name: VALUES_CAMUNDA_CORE_CLIENT_SECRET
+            - name: VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "orchestration.authClientSecretName" . }}

@@ -1,5 +1,5 @@
 {{- if and .Values.prometheusServiceMonitor.enabled .Values.global.identity.auth.enabled -}}
-apiVersion: monitoring.orchestrationos.com/v1
+apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-identity

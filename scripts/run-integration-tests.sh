@@ -52,14 +52,14 @@ setup_env_file() {
 
   if [[ "$test_suite_path" == *"8.8"* ]]; then
     if [[ "$namespace" == *"camunda-"* ]]; then #gke
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     else
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
@@ -70,14 +70,14 @@ setup_env_file() {
 
   if [[ "$test_suite_path" == *"8.7"* ]]; then
     if [[ "$namespace" == *"camunda-"* ]]; then # gke
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     else
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)

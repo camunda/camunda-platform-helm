@@ -53,7 +53,7 @@
                                 }
                             }
                         },
-                        "core": {
+                        "orchestration": {
                             "type": "object",
                             "properties": {
                                 "enabled": {
@@ -668,23 +668,23 @@
                                         }
                                     }
                                 },
-                                "core": {
+                                "orchestration": {
                                     "type": "object",
                                     "properties": {
                                         "audience": {
                                             "type": "string",
                                             "description": "defines the audience, which is used by Orchestration Cluster.",
-                                            "default": "core-api"
+                                            "default": "orchestration-api"
                                         },
                                         "clientId": {
                                             "type": "string",
                                             "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
-                                            "default": "core"
+                                            "default": "orchestration"
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
-                                            "default": "identity-core-client-token"
+                                            "default": "identity-orchestration-client-token"
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -2710,7 +2710,7 @@
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)",
+                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)",
                             "default": [],
                             "items": {}
                         },
@@ -4069,7 +4069,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4524,7 +4524,7 @@
                 }
             }
         },
-        "core": {
+        "orchestration": {
             "type": "object",
             "properties": {
                 "enabled": {
@@ -4558,7 +4558,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4850,7 +4850,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "description": "defines the secret name which contains the TLS private key and certificate",
-                                            "default": "camunda-platform-core-grpc"
+                                            "default": "camunda-platform-orchestration-grpc"
                                         }
                                     }
                                 }
@@ -4910,7 +4910,7 @@
                 },
                 "persistenceType": {
                     "type": "string",
-                    "description": "defines the type of persistence which is used by core. Possible values are: disk, local and memory.",
+                    "description": "defines the type of persistence which is used by orchestration. Possible values are: disk, local and memory.",
                     "default": "disk"
                 },
                 "pvcSize": {
@@ -5370,7 +5370,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",

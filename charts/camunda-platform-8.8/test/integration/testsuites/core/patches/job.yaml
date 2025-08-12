@@ -15,7 +15,7 @@ spec:
             secretKeyRef:
               name: integration-test-credentials
               key: identity-admin-client-token
-        - name: VENOM_VAR_CORE_CLIENT_SECRET
+        - name: VENOM_VAR_ORCHESTRATION_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: integration-test-credentials

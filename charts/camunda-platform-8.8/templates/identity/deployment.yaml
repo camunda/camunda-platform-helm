@@ -48,7 +48,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "connectors.authClientSecretName" . }}
                   key: {{ include "connectors.authClientSecretKey" . }}
-            - name: VALUES_KEYCLOAK_INIT_CORE_SECRET
+            - name: VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "orchestration.authClientSecretName" . }}
