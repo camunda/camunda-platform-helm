@@ -1208,6 +1208,91 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Introduce e2e tests for helm charts"
+        - kind: added
+          description: "Enable values to be source from this repo rather than push from the QA repo"
+        - kind: changed
+          description: "Change bitnami docker images to bitnamilegacy"
+        - kind: fixed
+          description: "Set zeebe freespace config to application defaults"
+        - kind: fixed
+          description: "Add digest to web-modeler components"
+        - kind: fixed
+          description: "Sysctl images were not updated with the bitnamilegacy repo name"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.18.3
+    apiVersion: v2
+    appVersion: 8.7.x
+    created: "2025-08-12T15:16:04.610176521Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 24.9.0
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: ea619cc1064d37e28147d90dfd0083652d80af5c47c1a03a878b4b011ee1bdf4
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.7-12.4.0/camunda-platform-12.4.0.tgz
+    version: 12.4.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Move disk settings to configmap"
         - kind: added
           description: "Add database name, host, port values to webmodeler.restapi.externalDatabase"
@@ -19813,4 +19898,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-08-12T13:18:50.601818987Z"
+generated: "2025-08-12T15:16:04.610985969Z"
