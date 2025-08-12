@@ -71,14 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Introduce e2e tests for helm charts"
-    - kind: added
-      description: "Enable values to be source from this repo rather than push from the QA repo"
-    - kind: changed
-      description: "Change bitnami docker images to bitnamilegacy"
-    - kind: fixed
-      description: "Add digest to web-modeler components"
-    - kind: fixed
-      description: "Sysctl images were not updated with the bitnamilegacy repo name"
+  artifacthub.io/changes: ""
