@@ -146,7 +146,7 @@ spec:
           {{- if .Values.zeebe.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.zeebe.contextPath }}{{ .Values.zeebe.startupProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.zeebe.contextPath .Values.zeebe.startupProbe.probePath) }}
               scheme: {{ .Values.zeebe.startupProbe.scheme }}
               port: {{ .Values.zeebe.service.httpPort  }}
             initialDelaySeconds: {{ .Values.zeebe.startupProbe.initialDelaySeconds }}
@@ -158,7 +158,7 @@ spec:
           {{- if .Values.zeebe.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.zeebe.contextPath }}{{ .Values.zeebe.readinessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.zeebe.contextPath .Values.zeebe.readinessProbe.probePath) }}
               scheme: {{ .Values.zeebe.readinessProbe.scheme }}
               port: {{ .Values.zeebe.service.httpPort  }}
             initialDelaySeconds: {{ .Values.zeebe.readinessProbe.initialDelaySeconds }}
@@ -170,7 +170,7 @@ spec:
           {{- if .Values.zeebe.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.zeebe.contextPath }}{{ .Values.zeebe.livenessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.zeebe.contextPath .Values.zeebe.livenessProbe.probePath) }}
               scheme: {{ .Values.zeebe.livenessProbe.scheme }}
               port: {{ .Values.zeebe.service.httpPort  }}
             initialDelaySeconds: {{ .Values.zeebe.livenessProbe.initialDelaySeconds }}
