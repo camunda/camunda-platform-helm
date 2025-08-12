@@ -880,6 +880,35 @@ func (s *statefulSetTest) TestContainerProbesWithContextPath() {
 	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 }
 
+func (s *statefulSetTest) TestContainerProbesWithContextPathWithTrailingSlash() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.contextPath":              "/test/", // notice the trailing slash
+			"zeebe.startupProbe.enabled":     "true",
+			"zeebe.startupProbe.probePath":   "/start",
+			"zeebe.readinessProbe.enabled":   "true",
+			"zeebe.readinessProbe.probePath": "/ready",
+			"zeebe.livenessProbe.enabled":    "true",
+			"zeebe.livenessProbe.probePath":  "/live",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	probe := statefulSet.Spec.Template.Spec.Containers[0]
+
+	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+}
+
 func (s *statefulSetTest) TestContainerSetSidecar() {
 	// given
 	options := &helm.Options{
