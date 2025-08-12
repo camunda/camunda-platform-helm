@@ -228,8 +228,8 @@ camunda:
       {{- end }}
     authorization: {{ .Values.global.security.authorizations.enabled }}
     multiTenancy:
-      checksEnabled: {{ .Values.core.multitenancy.checks.enabled }}
-      apiEnabled: {{ .Values.core.multitenancy.api.enabled }}
+      checksEnabled: {{ include "core.multitenancyChecksEnabled" . }}
+      apiEnabled: {{ include "core.multitenancyApiEnabled" . }}
 
   webapp:
     common:

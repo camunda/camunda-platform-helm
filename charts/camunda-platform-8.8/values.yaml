@@ -84,7 +84,11 @@ global:
     ## @param global.config.requestBodySize defines applications request body size which used for upload files.
     requestBodySize: 10MB
 
-  ## Multitenancy configuration. - placeholder
+  ## Multitenancy configuration.
+  ## @extra global.multitenancy
+  multitenancy:
+    ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
+    enabled: false
 
   ## Security configuration
   ## @extra global.security
