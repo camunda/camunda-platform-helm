@@ -43,7 +43,7 @@ data:
             - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
             - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
           {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
-          issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
+          issuer-uri: {{ (include "camundaPlatform.authIssuerBackendUrl" .) | quote }}
           redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
   {{- else if eq .Values.global.security.authentication.method "basic" }}
       profiles:

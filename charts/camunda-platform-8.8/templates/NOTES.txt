@@ -81,11 +81,11 @@ If you don't have an ingress controller you can use `kubectl port-forward` to ac
 
 {{ if .Values.identity.enabled -}}
 Identity:
-> kubectl port-forward svc/{{ .Release.Name }}-identity 8080:80
+> kubectl port-forward svc/{{ .Release.Name }}-identity 8084:80
 {{- end }}
 {{ if .Values.webModeler.enabled -}}
 Web Modeler:
-> kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8084:80
+> kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
 {{ if .Values.connectors.enabled -}}

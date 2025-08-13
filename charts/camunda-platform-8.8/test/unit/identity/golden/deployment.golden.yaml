@@ -109,7 +109,7 @@ spec:
             - name: KEYCLOAK_CLIENTS_1_ROOT_URL
               value: "http://localhost:8082"
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
-              value: /login/oauth2/code/core
+              value: /login/oauth2/code/orchestration
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_1
               value: /sso-callback
             - name: KEYCLOAK_CLIENTS_1_TYPE
@@ -139,7 +139,7 @@ spec:
               cpu: 600m
               memory: 400Mi
           ports:
-            - containerPort: 8080
+            - containerPort: 8084
               name: http
               protocol: TCP
             - containerPort: 8082

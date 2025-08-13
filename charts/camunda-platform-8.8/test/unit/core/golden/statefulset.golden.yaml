@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: core
+    app.kubernetes.io/component: orchestration
     app.kubernetes.io/version: "8.8.0-alpha7"
   annotations:
 spec:
@@ -22,8 +22,8 @@ spec:
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
-      app.kubernetes.io/component: core
-  serviceName: camunda-platform-test-core
+      app.kubernetes.io/component: orchestration
+  serviceName: camunda-platform-test-orchestration
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/component: core
+        app.kubernetes.io/component: orchestration
         app.kubernetes.io/version: "8.8.0-alpha7"
       annotations:
     spec:
@@ -44,7 +44,7 @@ spec:
       initContainers:
         []
       containers:
-        - name: core
+        - name: orchestration
           image: camunda/camunda:8.8.0-alpha7
           imagePullPolicy: Always
           securityContext:
@@ -69,7 +69,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: camunda-platform-test-core
+              value: camunda-platform-test-orchestration
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -134,7 +134,7 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
-      serviceAccountName: camunda-platform-test-core
+      serviceAccountName: camunda-platform-test-orchestration
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

@@ -379,7 +379,7 @@ global:
         ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8080"
+        redirectUrl: "http://localhost:8087"
 
       ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
       webModeler:
@@ -392,7 +392,7 @@ global:
         ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8084"
+        redirectUrl: "http://localhost:8070"
 
       #######################
       # Orchestration Cluster
