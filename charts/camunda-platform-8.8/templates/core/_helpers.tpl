@@ -47,9 +47,9 @@ app.kubernetes.io/component: core
 {{/*
 [core] Define variables related to multitenancy checks
 */}}
-{{- define "core.multitenancyChecksEnabled" -}}
-  {{- if .Values.core.multitenancy.checks.enabled -}}
-    {{ .Values.core.multitenancy.checks.enabled }}
+{{- define "orchestration.multitenancyChecksEnabled" -}}
+  {{- if .Values.orchestration.multitenancy.checks.enabled -}}
+    {{ .Values.orchestration.multitenancy.checks.enabled }}
   {{- else if .Values.global.multitenancy.enabled -}}
     {{ .Values.global.multitenancy.enabled }}
   {{- end -}}
@@ -58,9 +58,9 @@ app.kubernetes.io/component: core
 {{/*
 [core] Define variables related to multitenancy api
 */}}
-{{- define "core.multitenancyApiEnabled" -}}
-  {{- if .Values.core.checks.enabled -}}
-    {{ .Values.core.multitenancy.api.enabled }}
+{{- define "orchestration.multitenancyApiEnabled" -}}
+  {{- if .Values.orchestration.checks.enabled -}}
+    {{ .Values.orchestration.multitenancy.api.enabled }}
   {{- else if .Values.global.multitenancy.enabled -}}
     {{ .Values.global.multitenancy.enabled }}
   {{- end -}}
