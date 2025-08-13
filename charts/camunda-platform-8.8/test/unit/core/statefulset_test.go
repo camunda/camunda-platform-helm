@@ -668,13 +668,13 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerProbesWithContextPathWithTrailingSlash",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"core.contextPath":              "/test/",
-				"core.startupProbe.enabled":     "true",
-				"core.startupProbe.probePath":   "/start",
-				"core.readinessProbe.enabled":   "true",
-				"core.readinessProbe.probePath": "/ready",
-				"core.livenessProbe.enabled":    "true",
-				"core.livenessProbe.probePath":  "/live",
+				"orchestration.contextPath":              "/test/",
+				"orchestration.startupProbe.enabled":     "true",
+				"orchestration.startupProbe.probePath":   "/start",
+				"orchestration.readinessProbe.enabled":   "true",
+				"orchestration.readinessProbe.probePath": "/ready",
+				"orchestration.livenessProbe.enabled":    "true",
+				"orchestration.livenessProbe.probePath":  "/live",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
