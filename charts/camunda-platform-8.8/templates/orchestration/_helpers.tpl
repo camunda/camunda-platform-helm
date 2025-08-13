@@ -59,7 +59,7 @@ app.kubernetes.io/component: orchestration
 [orchestration] Define variables related to multitenancy api
 */}}
 {{- define "orchestration.multitenancyApiEnabled" -}}
-  {{- if .Values.orchestration.checks.enabled -}}
+  {{- if .Values.orchestration.multitenancy.api.enabled -}}
     {{ .Values.orchestration.multitenancy.api.enabled }}
   {{- else if .Values.global.multitenancy.enabled -}}
     {{ .Values.global.multitenancy.enabled }}
