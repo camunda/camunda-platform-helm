@@ -54,6 +54,8 @@ data:
           network:
             host: 0.0.0.0
             port: 26500
+          multitenancy:
+            enabled: 
 
         # zeebe.broker.network
         network:
@@ -131,7 +133,7 @@ data:
           default-roles.admin.users:
             - "demo"
         multiTenancy:
-          checksEnabled: false
+          checksEnabled: 
           apiEnabled: true
 
       #
@@ -149,6 +151,8 @@ data:
       #
       operate:
         persistentSessionsEnabled: true
+        multiTenancy:
+          enabled: 
 
         # ELS instance to store Operate data
         elasticsearch:
@@ -182,6 +186,8 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
+        multiTenancy:
+          enabled: 
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.

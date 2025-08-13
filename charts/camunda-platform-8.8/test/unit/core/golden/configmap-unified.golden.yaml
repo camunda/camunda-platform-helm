@@ -216,7 +216,7 @@ data:
           method: 'oidc'
         authorization: true
         multiTenancy:
-          checksEnabled: false
+          checksEnabled: 
           apiEnabled: true
     
       webapp:
