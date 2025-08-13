@@ -38,11 +38,10 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "core.authClientSecretName" . }}
-                  key: {{ include "core.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.core
+            ) | nindent 12 }}
           command:
             - /usr/local/camunda/bin/identity-migration
           resources:

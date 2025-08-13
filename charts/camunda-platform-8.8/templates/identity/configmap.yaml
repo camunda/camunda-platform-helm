@@ -23,11 +23,14 @@ data:
         multi-tenancy: {{ .Values.global.multitenancy.enabled | quote }}
       {{- end }}
 
-      {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
       client-id: {{ include "identity.authClientId" . | quote }}
       {{- end }}
-      {{- if and (.Values.global.identity.auth.identity.existingSecret) (eq (typeOf .Values.global.identity.auth.identity.existingSecret) "string") }}
-      client-secret: {{ include "identity.authClientSecret" . | quote }}
+      {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+      {{- if $config.plaintext }}
+      client-secret: {{ $config.plaintext | quote }}
+      {{- else if $config.ref }}
+      client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
       {{- end }}
 
       authProvider:
@@ -311,11 +314,12 @@ data:
     camunda:
       identity:
         audience: {{ include "identity.authAudience" . | quote }}
-        {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
         client-id: {{ include "identity.authClientId" .  | quote }}
-        {{- if eq (typeOf .Values.global.identity.auth.identity.existingSecret) "string" }}
-        client-secret: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
-        {{- else }}
+        {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+        {{- if $config.plaintext }}
+        client-secret: {{ $config.plaintext | quote }}
+        {{- else if $config.ref }}
         client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
         {{- end }}
         {{- end }}
