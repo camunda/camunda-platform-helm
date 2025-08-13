@@ -45,6 +45,28 @@ app.kubernetes.io/component: orchestration
 {{- end -}}
 
 {{/*
+[orchestration] Define variables related to multitenancy checks
+*/}}
+{{- define "orchestration.multitenancyChecksEnabled" -}}
+  {{- if .Values.orchestration.multitenancy.checks.enabled -}}
+    {{ .Values.orchestration.multitenancy.checks.enabled }}
+  {{- else if .Values.global.multitenancy.enabled -}}
+    {{ .Values.global.multitenancy.enabled }}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[orchestration] Define variables related to multitenancy api
+*/}}
+{{- define "orchestration.multitenancyApiEnabled" -}}
+  {{- if .Values.orchestration.checks.enabled -}}
+    {{ .Values.orchestration.multitenancy.api.enabled }}
+  {{- else if .Values.global.multitenancy.enabled -}}
+    {{ .Values.global.multitenancy.enabled }}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 [orchestration] Create the name of the service account to use.
 */}}
 {{- define "orchestration.serviceAccountName" -}}
