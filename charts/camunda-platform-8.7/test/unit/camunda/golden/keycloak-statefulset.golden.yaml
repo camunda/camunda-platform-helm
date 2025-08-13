@@ -9,22 +9,21 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 26.3.2
+    app.kubernetes.io/version: 26.3.1
     app.kubernetes.io/component: keycloak
-    app.kubernetes.io/part-of: keycloak
 spec:
   replicas: 1
   revisionHistoryLimit: 10
   podManagementPolicy: Parallel
   serviceName: camunda-platform-test-keycloak-headless
   updateStrategy:
+    rollingUpdate: {}
     type: RollingUpdate
   selector:
     matchLabels:
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/name: keycloak
       app.kubernetes.io/component: keycloak
-      app.kubernetes.io/part-of: keycloak
   template:
     metadata:
       annotations:
@@ -32,9 +31,9 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 26.3.2
+        app.kubernetes.io/version: 26.3.1
         app.kubernetes.io/component: keycloak
-        app.kubernetes.io/part-of: keycloak
+        app.kubernetes.io/app-version: 26.3.1
     spec:
       serviceAccountName: camunda-platform-test-keycloak
       
@@ -49,7 +48,6 @@ spec:
                   matchLabels:
                     app.kubernetes.io/instance: camunda-platform-test
                     app.kubernetes.io/name: keycloak
-                    app.kubernetes.io/component: keycloak
                 topologyKey: kubernetes.io/hostname
               weight: 1
         nodeAffinity:
@@ -65,6 +63,21 @@ spec:
         - name: prepare-write-dirs
           image: docker.io/camunda/keycloak:26.3.1
           imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              . /opt/bitnami/scripts/liblog.sh
+
+              info "Copying writable dirs to empty dir"
+              # In order to not break the application functionality we need to make some
+              # directories writable, so we need to copy it to an empty dir volume
+              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/lib/quarkus /emptydir/app-quarkus-dir
+              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/data /emptydir/app-data-dir
+              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/providers /emptydir/app-providers-dir
+              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/themes /emptydir/app-themes-dir
+              info "Copy operation completed"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -80,28 +93,11 @@ spec:
               type: RuntimeDefault
           resources:
             limits:
-              cpu: 150m
-              ephemeral-storage: 2Gi
-              memory: 192Mi
+              cpu: 2000m
+              memory: 2Gi
             requests:
-              cpu: 100m
-              ephemeral-storage: 50Mi
-              memory: 128Mi
-          command:
-            - /bin/bash
-          args:
-            - -ec
-            - |
-              . /opt/bitnami/scripts/liblog.sh
-        
-              info "Copying writable dirs to empty dir"
-              # In order to not break the application functionality we need to make some
-              # directories writable, so we need to copy it to an empty dir volume
-              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/lib/quarkus /emptydir/app-quarkus-dir
-              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/data /emptydir/app-data-dir
-              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/providers /emptydir/app-providers-dir
-              cp -r --preserve=mode,timestamps /opt/bitnami/keycloak/themes /emptydir/app-themes-dir
-              info "Copy operation completed"
+              cpu: 1000m
+              memory: 1Gi
           volumeMounts:
            - name: empty-dir
              mountPath: /emptydir
@@ -128,6 +124,16 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD_FILE
+              value: /opt/bitnami/keycloak/secrets/admin-password
+            - name: KEYCLOAK_DATABASE_PASSWORD_FILE
+              value: /opt/bitnami/keycloak/secrets/db-password
+            - name: KEYCLOAK_HTTP_RELATIVE_PATH
+              value: "/auth/"
+            - name: KC_SPI_ADMIN_REALM
+              value: "master"
             - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
               value: 'false'
           envFrom:
@@ -148,7 +154,7 @@ spec:
               containerPort: 7800
           livenessProbe:
             failureThreshold: 3
-            initialDelaySeconds: 120
+            initialDelaySeconds: 300
             periodSeconds: 1
             successThreshold: 1
             timeoutSeconds: 5
